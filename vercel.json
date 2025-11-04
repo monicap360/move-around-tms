@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "functions": {
+    "app/api/**/*.{js,ts}": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://wqeidcatuwqtzwhvmqfr.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "NODE_ENV": "production"
+  },
+  "routes": [{ "src": "/(.*)", "dest": "/app/$1" }],
+  "regions": ["iad1"],
+  "crons": []
+}

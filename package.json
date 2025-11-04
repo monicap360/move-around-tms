@@ -3,10 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:fast": "next dev --turbo --experimental-https",
     "build": "next build",
+    "build:fast": "next build --turbo --experimental-build-mode=compile",
+    "build:turbo": "next build --turbo",
+    "build:production": "next build --turbo --experimental-build-mode=compile",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "eslint"
+    "start:turbo": "next start --turbo",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "type-check": "tsc --noEmit",
+    "build:parallel": "npm run type-check && npm run lint && npm run build:fast",
+    "ci:build": "npm run lint && npm run type-check && npm run build:production"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
@@ -43,5 +53,9 @@
     "tailwindcss": "^4",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0"
   }
 }
