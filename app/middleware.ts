@@ -35,6 +35,11 @@ export async function middleware(request: Request) {
     cookieHeader.includes(name + "=")
   );
 
+  // Allow homepage (/) for everyone - no auth required
+  if (pathname === "/") {
+    return undefined; // continue
+  }
+
   // If not logged in and trying to access a protected route, redirect to login
   if (!hasAuthCookie && pathname !== "/login") {
     const redirectUrl = new URL("/login", request.url);
@@ -44,11 +49,6 @@ export async function middleware(request: Request) {
 
   // If logged in and trying to access /login, send to dashboard
   if (hasAuthCookie && pathname === "/login") {
-    return Response.redirect(new URL("/dashboard", request.url).toString());
-  }
-
-  // If logged in and accessing root, redirect to dashboard
-  if (hasAuthCookie && pathname === "/") {
     return Response.redirect(new URL("/dashboard", request.url).toString());
   }
 
