@@ -54,18 +54,19 @@ Outputs:
 
 ---
 
-## Deployment (SiteGround)
+Deployment
+Deploy to Vercel (Recommended):
 
-See [DEPLOY.md](./DEPLOY.md) for step-by-step SiteGround Node.js hosting instructions.
+1. Connect your GitHub repository to Vercel
+2. Add environment variables in Vercel dashboard
+3. Deploy automatically on git push
 
-Quick summary:
-1. Build locally with `npm run build`
-2. Upload `.next/`, `public/`, and `package.json` to `/public_html_movearoundtms.app/`
-3. Configure Node.js app in Site Tools:
-   - Start File: `.next/standalone/server.js`
-   - Add all env vars
-4. Start the app
-5. Visit `/api/health` to verify env setup
+Alternative deployment options:
+- Netlify
+- Railway
+- Any Node.js hosting provider
+
+Visit `/api/health` to verify environment setup after deployment.
 
 ---
 
@@ -78,11 +79,6 @@ Create `.env.local` (not committed):
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_ALLOWED_SIGNUP_DOMAINS=yourcompany.com
-# Public (client-side)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_ALLOWED_SIGNUP_DOMAINS=yourcompany.com
-ADMIN_TOKEN=your-secret-admin-token  # used only by /api/admin/*; UI now calls non-admin proxies
 
 # Server-only
 SUPABASE_URL=https://your-project.supabase.co
@@ -102,16 +98,16 @@ RECAPTCHA_SECRET=your-recaptcha-secret  # optional: enable server verification o
 
 ---
 
-## Email deliverability (SPF, DKIM, DMARC)
+## Email Configuration
 
-To keep emails out of spam:
-- SPF: Add a TXT record on your domain like `v=spf1 include:spf.yourprovider.com ~all` (provider will give exact value).
-- DKIM: Enable DKIM in your SMTP provider and publish the provided CNAME/TXT records.
-- DMARC: Add a TXT record like `v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com; pct=100` and tune policy as needed (`none`, `quarantine`, `reject`).
-- From address: Use a domain you control (e.g., quotes@yourdomain.com) that matches your SPF/DKIM setup.
-- Reverse DNS: Ensure your provider manages PTR correctly (most do automatically).
+For production email delivery, configure:
 
-After records propagate, test with tools like Gmail headers, mail‑tester.com, or your provider’s deliverability checker.
+1. **SMTP Provider**: Use a service like SendGrid, Mailgun, or AWS SES
+2. **DNS Records**: Set up SPF, DKIM, and DMARC records for your domain  
+3. **Environment Variables**: Add SMTP credentials to your hosting platform
+4. **Test Delivery**: Use `/api/health` to verify SMTP configuration
+
+Consult your email provider's documentation for specific DNS record values.
 
 ---
 
