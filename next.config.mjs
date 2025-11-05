@@ -1,3 +1,5 @@
+import path from 'path'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // For Vercel deployment optimization
@@ -64,6 +66,13 @@ const nextConfig = {
     
     // Optimize memory usage
     config.optimization.minimize = !dev;
+    
+    // Ensure path alias '@' resolves to the app directory so imports like '@/components/..' work
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(process.cwd(), 'app'),
+    };
     
     return config;
   },
