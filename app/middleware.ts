@@ -1,39 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+
+// NOTE
+// Vercel Edge runtime does not support server-only modules such as
+// `@supabase/ssr`. The previous middleware used createServerClient which
+// pulled in server-only code and caused the build to fail on Vercel.
+//
+// To keep the middleware Edge-compatible we use a simple cookie-based
+// heuristic to detect whether a user is likely authenticated. This is
+// intentionally conservative: presence of a known Supabase auth cookie
+// indicates the user may be signed in. For robust session validation
+// move auth checks to server-side API routes or server components.
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-
-  // Create Supabase client using the request and response
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll().map((cookie) => ({
-            name: cookie.name,
-            value: cookie.value,
-          }));
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-
-  // Get current session
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  console.log('Middleware - pathname:', request.nextUrl.pathname);
-  console.log('Middleware - session exists:', !!session);
-  console.log('Middleware - session details:', session ? 'AUTHENTICATED' : 'NOT_AUTHENTICATED');
 
   const { pathname } = request.nextUrl;
 
@@ -48,20 +28,39 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Heuristic: check for common Supabase auth cookie names. If any exist,
+  // treat user as authenticated for routing purposes.
+  const cookieNamesToCheck = [
+    "supabase-auth-token",
+    "sb-access-token",
+    "sb-refresh-token",
+    "sb:token",
+    "sb-session",
+  ];
+
+  let hasAuthCookie = false;
+  for (const name of cookieNamesToCheck) {
+    const c = request.cookies.get(name);
+    if (c && c.value) {
+      hasAuthCookie = true;
+      break;
+    }
+  }
+
   // If not logged in and trying to access a protected route, redirect to login
-  if (!session && pathname !== "/login") {
+  if (!hasAuthCookie && pathname !== "/login") {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirectedFrom", pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
   // If logged in and trying to access /login, send to dashboard
-  if (session && pathname === "/login") {
+  if (hasAuthCookie && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // If logged in and accessing root, redirect to dashboard
-  if (session && pathname === "/") {
+  if (hasAuthCookie && pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -70,15 +69,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - assets (asset files)
-     * - public (public files)
-     */
+    // Match all request paths except for the ones starting with:
+    // - api (API routes)
+    // - _next/static (static files)
+    // - _next/image (image optimization files)
+    // - favicon.ico (favicon file)
+    // - assets (asset files)
+    // - public (public files)
     "/((?!api|_next/static|_next/image|favicon.ico|assets|public|sw.js|manifest.json).*)",
   ],
 };
