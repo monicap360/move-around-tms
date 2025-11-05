@@ -1,21 +1,14 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-// NOTE
-// Vercel Edge runtime does not support server-only modules such as
-// `@supabase/ssr`. The previous middleware used createServerClient which
-// pulled in server-only code and caused the build to fail on Vercel.
+// Edge-compatible middleware that avoids importing `next/server` so
+// Vercel Edge Functions won't reject the bundle during deployment.
 //
-// To keep the middleware Edge-compatible we use a simple cookie-based
-// heuristic to detect whether a user is likely authenticated. This is
-// intentionally conservative: presence of a known Supabase auth cookie
-// indicates the user may be signed in. For robust session validation
-// move auth checks to server-side API routes or server components.
+// This middleware uses a conservative cookie-presence heuristic to
+// approximate authentication state for routing/redirects. For secure
+// validation, perform server-side checks in API routes or server
+// components instead.
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-
-  const { pathname } = request.nextUrl;
+export async function middleware(request: Request) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
 
   // Allow login page and static assets to load freely
   if (
@@ -25,11 +18,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/public") ||
     pathname.startsWith("/auth/callback")
   ) {
-    return response;
+    return undefined; // continue
   }
 
-  // Heuristic: check for common Supabase auth cookie names. If any exist,
-  // treat user as authenticated for routing purposes.
+  const cookieHeader = request.headers.get("cookie") || "";
+
   const cookieNamesToCheck = [
     "supabase-auth-token",
     "sb-access-token",
@@ -38,44 +31,32 @@ export async function middleware(request: NextRequest) {
     "sb-session",
   ];
 
-  let hasAuthCookie = false;
-  for (const name of cookieNamesToCheck) {
-    const c = request.cookies.get(name);
-    if (c && c.value) {
-      hasAuthCookie = true;
-      break;
-    }
-  }
+  const hasAuthCookie = cookieNamesToCheck.some((name) =>
+    cookieHeader.includes(name + "=")
+  );
 
   // If not logged in and trying to access a protected route, redirect to login
   if (!hasAuthCookie && pathname !== "/login") {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirectedFrom", pathname);
-    return NextResponse.redirect(redirectUrl);
+    return Response.redirect(redirectUrl.toString());
   }
 
   // If logged in and trying to access /login, send to dashboard
   if (hasAuthCookie && pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return Response.redirect(new URL("/dashboard", request.url).toString());
   }
 
   // If logged in and accessing root, redirect to dashboard
   if (hasAuthCookie && pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return Response.redirect(new URL("/dashboard", request.url).toString());
   }
 
-  return response;
+  return undefined;
 }
 
 export const config = {
   matcher: [
-    // Match all request paths except for the ones starting with:
-    // - api (API routes)
-    // - _next/static (static files)
-    // - _next/image (image optimization files)
-    // - favicon.ico (favicon file)
-    // - assets (asset files)
-    // - public (public files)
     "/((?!api|_next/static|_next/image|favicon.ico|assets|public|sw.js|manifest.json).*)",
   ],
 };
