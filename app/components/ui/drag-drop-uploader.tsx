@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useState } from "react";
 import { Upload as UploadIcon, FileText, Image as ImageIcon, X } from "lucide-react";
-import { safeAlert } from "@/lib/utils/alert";
+import { safeAlert } from "../../lib/utils/alert";
 
 interface FileWithPreview extends File {
   preview?: string;

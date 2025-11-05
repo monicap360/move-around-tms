@@ -1,14 +1,14 @@
 "use client";
 import { useState, useCallback } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import DragDropUploader, { type FileWithPreview } from "@/components/ui/drag-drop-uploader";
-import FilePreviewCard, { type FilePreviewData } from "@/components/ui/file-preview-card";
-import { MultiUploadProgress } from "@/components/ui/upload-progress";
-import { safeAlert } from "@/lib/utils/alert";
+import { supabase } from "../lib/supabaseClient";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import DragDropUploader, { type FileWithPreview } from "../components/ui/drag-drop-uploader";
+import FilePreviewCard, { type FilePreviewData } from "../components/ui/file-preview-card";
+import { MultiUploadProgress } from "../components/ui/upload-progress";
+import { safeAlert } from "../lib/utils/alert";
 import { 
   Upload, 
   Building, 

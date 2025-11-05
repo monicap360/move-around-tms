@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { supabase } from "../../lib/supabaseClient";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import { Upload, CheckCircle } from "lucide-react";
 
 export default function DriverApplicationPage() {

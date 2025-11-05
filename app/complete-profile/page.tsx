@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { supabase } from "../lib/supabaseClient";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { User, Truck, Building2, Shield, Users, Briefcase, Wrench } from "lucide-react";
 
 type UserRole = "driver" | "owner" | "office_staff" | "manager" | "hr" | "mechanic" | null;

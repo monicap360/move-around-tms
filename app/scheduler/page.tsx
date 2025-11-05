@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { autoScheduleLoads } from "@/lib/scheduler";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { autoScheduleLoads } from "../lib/scheduler";
 
 export default function SchedulerPage() {
   const [log, setLog] = useState<any[]>([]);

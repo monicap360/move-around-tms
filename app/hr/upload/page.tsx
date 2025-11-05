@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { supabase } from "../../lib/supabaseClient";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import { Upload, Image, FileText, Building, Truck } from "lucide-react";
 
 type UploadType = 'driver_document' | 'company_logo' | 'ticket_template' | 'form_template';

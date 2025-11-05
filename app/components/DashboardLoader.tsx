@@ -1,4 +1,4 @@
-import { Spinner } from "@/components/ui";
+import { Spinner } from "../components/ui";
 
 export default function DashboardLoader() {
   return (

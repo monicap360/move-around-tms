@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { supabase } from "../lib/supabaseClient";
+import { supabaseAdmin } from "../lib/supabaseAdmin";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { Database, CheckCircle, XCircle, AlertTriangle, Upload } from "lucide-react";
 
 export default function SetupDatabasePage() {

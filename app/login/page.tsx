@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,9 +10,9 @@ export default function LoginPage() {
   const router = useRouter();
   const { supabase } = useSupabase();
 
-  // 🧪 TEMPORARY: Check environment variables are loaded
-  console.log("🔧 SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log("🔧 SUPABASE_KEY_PRESENT:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  // ?? TEMPORARY: Check environment variables are loaded
+  console.log("?? SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("?? SUPABASE_KEY_PRESENT:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

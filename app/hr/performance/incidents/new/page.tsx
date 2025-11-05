@@ -1,10 +1,10 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
+import { Input } from "../../../../components/ui/input";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../../../../lib/supabaseClient";
 import Link from "next/link";
 import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
