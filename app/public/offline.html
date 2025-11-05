@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Ronyx Logistics TMS</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .offline-container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+        }
+        
+        .truck-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .features {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .features h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .features li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .retry-button {
+            background: white;
+            color: #3b82f6;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .checking {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="truck-icon">🚛</div>
+        <h1>You're Offline</h1>
+        <p>Don't worry! Your Ronyx Logistics TMS is designed to work offline. Some features are still available even without an internet connection.</p>
+        
+        <div class="features">
+            <h3>Available Offline:</h3>
+            <ul>
+                <li>View your driver profile and information</li>
+                <li>Access cached compliance documents</li>
+                <li>Review recent notifications</li>
+                <li>Browse uploaded tickets (cached)</li>
+                <li>View fleet and maintenance records</li>
+            </ul>
+        </div>
+        
+        <p>Your data will automatically sync when you're back online. Any actions you take offline will be saved and processed when connection is restored.</p>
+        
+        <button class="retry-button" onclick="checkConnection()">
+            Check Connection
+        </button>
+        
+        <div class="status" id="status">
+            Click to check your internet connection
+        </div>
+    </div>
+
+    <script>
+        let isChecking = false;
+        
+        function checkConnection() {
+            if (isChecking) return;
+            
+            isChecking = true;
+            const button = document.querySelector('.retry-button');
+            const status = document.getElementById('status');
+            
+            button.textContent = 'Checking...';
+            button.classList.add('checking');
+            status.textContent = 'Checking connection...';
+            
+            // Try to fetch a simple endpoint
+            fetch('/', { 
+                method: 'HEAD',
+                cache: 'no-cache'
+            })
+            .then(response => {
+                if (response.ok) {
+                    status.textContent = 'Connection restored! Redirecting...';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error('Connection failed');
+                }
+            })
+            .catch(() => {
+                button.textContent = 'Check Connection';
+                button.classList.remove('checking');
+                status.textContent = 'Still offline. Please check your internet connection.';
+                isChecking = false;
+            });
+        }
+        
+        // Auto-check connection every 30 seconds
+        setInterval(() => {
+            if (!isChecking && navigator.onLine) {
+                checkConnection();
+            }
+        }, 30000);
+        
+        // Listen for online events
+        window.addEventListener('online', () => {
+            if (!isChecking) {
+                checkConnection();
+            }
+        });
+        
+        // Show connection status
+        window.addEventListener('offline', () => {
+            document.getElementById('status').textContent = 'Connection lost. Working offline...';
+        });
+        
+        window.addEventListener('online', () => {
+            document.getElementById('status').textContent = 'Connection detected. Checking...';
+        });
+    </script>
+</body>
+</html>
