@@ -118,3 +118,5 @@ const nextConfig = {
 
 export default nextConfig;
 // Force fresh deployment - 11/04/2025 18:32:28
+
+// Vercel deployment trigger - 2025-11-04 18:54:41
