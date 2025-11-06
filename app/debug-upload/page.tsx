@@ -272,9 +272,9 @@ export default function DebugUploadPage() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => window.location.href = '/login'}
+              onClick={() => window.location.href = '/dashboard'}
             >
-              🔐 Go to Login
+              🏠 Go to Dashboard
             </Button>
             <Button 
               variant="outline" 

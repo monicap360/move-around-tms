@@ -58,12 +58,12 @@ export default function Dashboard() {
   }, [supabase])
 
   const handleSignOut = async () => {
+    // No sign out needed - just refresh the page since there's no authentication
     try {
-      console.log('🚪 Signing out...')
-      await supabase.auth.signOut()
-      window.location.href = '/login'
+      console.log('� Refreshing dashboard...')
+      window.location.reload()
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Refresh error:', error)
     }
   }
 

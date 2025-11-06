@@ -11,8 +11,8 @@ export function UserMenu() {
   if (!user) return null;
 
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = "/login";
+    // No sign out needed - just refresh since there's no authentication
+    window.location.reload();
   };
 
   return (
