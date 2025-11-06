@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "../lib/supabase-provider";
+import { signInWithProvider } from "../lib/auth";
 import { Spinner } from "../components/ui/spinner";
 import { LoadingOverlay } from "../components/ui/loading-overlay";
 
@@ -19,7 +20,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-    const handleLogin = async (e: React.FormEvent) => {
+  const handleGitHubLogin = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    
+    try {
+      await signInWithProvider("github");
+      // The OAuth flow will redirect to GitHub, then back to /auth/callback
+    } catch (err) {
+      setErrorMessage("Failed to initiate GitHub login");
+      console.error("GitHub login error:", err);
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrorMessage('')
@@ -104,7 +119,7 @@ export default function LoginPage() {
           <p style={{ color: "red", textAlign: "center" }}>{errorMessage}</p>
         )}
 
-                <button
+        <button
           type="submit"
           disabled={loading}
           className="flex items-center justify-center gap-2"
@@ -116,6 +131,7 @@ export default function LoginPage() {
             borderRadius: "6px",
             cursor: loading ? "not-allowed" : "pointer",
             width: "100%",
+            marginBottom: "1rem",
           }}
         >
           {loading ? (
@@ -126,6 +142,27 @@ export default function LoginPage() {
           ) : (
             "Sign In"
           )}
+        </button>
+
+        <div style={{ textAlign: "center", margin: "1rem 0", color: "#666" }}>
+          or
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGitHubLogin}
+          disabled={loading}
+          style={{
+            backgroundColor: "#24292e",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: loading ? "not-allowed" : "pointer",
+            width: "100%",
+          }}
+        >
+          Sign in with GitHub
         </button>
       </form>
       

@@ -33,7 +33,7 @@ export async function signInWithProvider(provider: "google" | "facebook" | "gith
   const redirectUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/auth/callback`
     : process.env.NODE_ENV === 'production'
-    ? 'https://app.movearoundtms.com/auth/callback'
+    ? 'https://movearoundtms.com/auth/callback'
     : 'http://localhost:3000/auth/callback';
     
   const { data, error } = await supabase.auth.signInWithOAuth({ 
