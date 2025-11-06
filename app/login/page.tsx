@@ -169,6 +169,27 @@ export default function LoginPage() {
 
         <button
           type="button"
+          onClick={() => {
+            setEmail("test@movearoundtms.com");
+            setPassword("TestPass123!");
+            console.log("🧪 Test credentials set - now click Sign In");
+          }}
+          style={{
+            backgroundColor: "#059669",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            width: "100%",
+            marginBottom: "0.5rem",
+          }}
+        >
+          Use Test Credentials
+        </button>
+
+        <button
+          type="button"
           onClick={handleGitHubLogin}
           disabled={loading}
           style={{
@@ -181,7 +202,7 @@ export default function LoginPage() {
             width: "100%",
           }}
         >
-          Sign in with GitHub
+          Sign in with GitHub (Debug Mode)
         </button>
       </form>
       
