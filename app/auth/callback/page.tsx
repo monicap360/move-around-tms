@@ -12,6 +12,17 @@ export default function AuthCallback() {
     console.log('📍 URL:', window.location.href)
     console.log('🔍 Search params:', window.location.search)
     console.log('🔗 Hash:', window.location.hash)
+    console.log('🕐 Timestamp:', new Date().toISOString())
+    
+    // Add detailed URL analysis
+    const urlParams = new URLSearchParams(window.location.search)
+    console.log('🔍 All URL parameters:')
+    for (const [key, value] of urlParams.entries()) {
+      console.log(`  ${key}: ${value}`)
+    }
+    
+    // Add delay to prevent quick redirect and allow debugging
+    setStatus('🔍 Analyzing callback parameters... (pausing for debug)')
     
     const checkSession = async () => {
       try {
@@ -36,8 +47,9 @@ export default function AuthCallback() {
           }
         }
         
-        // Wait a moment for Supabase to process the callback
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Wait longer to allow debugging and proper callback processing
+        setStatus('⏳ Waiting for Supabase to process callback...')
+        await new Promise(resolve => setTimeout(resolve, 5000))
         
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         console.log('🔍 Callback session check:', session)
@@ -45,7 +57,7 @@ export default function AuthCallback() {
         
         if (session) {
           console.log('✅ Session found! User:', session.user?.email)
-          setStatus(`Session found for ${session.user?.email}! Redirecting...`)
+          setStatus(`✅ SUCCESS! Session found for ${session.user?.email}! Will redirect in 3 seconds...`)
           setTimeout(() => {
             window.location.href = '/dashboard'
           }, 2000)
