@@ -104,8 +104,8 @@ export default function ProductionDebugPage() {
         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e8f4f8', borderRadius: '5px' }}>
           <h3 style={{ margin: '0 0 10px 0', color: '#0070f3' }}>Expected Values for Production:</h3>
           <ul style={{ margin: '0', paddingLeft: '20px' }}>
-            <li><strong>hostname:</strong> app.movearoundtms.com</li>
-            <li><strong>origin:</strong> https://app.movearoundtms.com</li>
+            <li><strong>hostname:</strong> movearoundtms.com</li>
+            <li><strong>origin:</strong> https://movearoundtms.com</li>
             <li><strong>supabaseUrl:</strong> https://wqeidcatuwqtzwhvmqfr.supabase.co</li>
             <li><strong>hasSupabaseKey:</strong> true</li>
             <li><strong>nodeEnv:</strong> production</li>

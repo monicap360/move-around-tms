@@ -278,7 +278,7 @@ export default function DebugUploadPage() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => window.open('https://app.movearoundtms.com/api/debug-production', '_blank')}
+              onClick={() => window.open('https://movearoundtms.com/api/debug-production', '_blank')}
             >
               🌐 Test Production
             </Button>

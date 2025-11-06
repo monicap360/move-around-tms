@@ -240,6 +240,26 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={async () => {
+            console.log('🔧 Running full Supabase diagnostic...');
+            window.location.href = '/supabase-test';
+          }}
+          style={{
+            backgroundColor: "#8b5cf6",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            width: "100%",
+            marginBottom: "0.5rem",
+          }}
+        >
+          🔧 Run Supabase Diagnostic
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
             console.log('🧪 Testing direct dashboard access...');
             // Test if we can just go to dashboard directly
             window.location.href = '/dashboard';
