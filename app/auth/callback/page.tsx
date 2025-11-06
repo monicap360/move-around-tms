@@ -19,34 +19,62 @@ export default function AuthCallback() {
         
         setStatus('Exchanging authorization code...')
         
-        // Handle the auth callback - this exchanges the code for a session
-        const { data, error } = await supabase.auth.getSession()
+        // Extract the code from URL parameters
+        const urlParams = new URLSearchParams(window.location.search)
+        const code = urlParams.get('code')
+        const error = urlParams.get('error')
+        
+        console.log('🔑 Auth code:', code ? 'Present' : 'Missing')
+        console.log('❌ Auth error:', error || 'None')
         
         if (error) {
-          console.error('❌ Auth callback error:', error)
-          setStatus(`Authentication failed: ${error.message}`)
+          console.error('❌ OAuth error from provider:', error)
+          setStatus(`Authentication failed: ${error}`)
           setTimeout(() => {
-            router.push('/login?error=' + encodeURIComponent(error.message))
+            router.push('/login?error=' + encodeURIComponent(error))
           }, 3000)
           return
         }
         
-        if (data.session) {
+        if (!code) {
+          console.error('❌ No authorization code found')
+          setStatus('No authorization code received')
+          setTimeout(() => {
+            router.push('/login?error=no_code')
+          }, 3000)
+          return
+        }
+        
+        // Exchange code for session using exchangeCodeForSession
+        console.log('🔄 Exchanging code for session...')
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        
+        if (exchangeError) {
+          console.error('❌ Code exchange error:', exchangeError)
+          setStatus(`Session exchange failed: ${exchangeError.message}`)
+          setTimeout(() => {
+            router.push('/login?error=' + encodeURIComponent(exchangeError.message))
+          }, 3000)
+          return
+        }
+        
+        if (data.session && data.user) {
           console.log('✅ Authentication successful!')
-          console.log('👤 User:', data.session.user.email)
-          console.log('🎯 Provider:', data.session.user.app_metadata?.provider)
+          console.log('👤 User:', data.user.email)
+          console.log('🎯 Provider:', data.user.app_metadata?.provider)
+          console.log('🔐 Session:', data.session.access_token ? 'Created' : 'Missing token')
           
           setStatus('Success! Redirecting to dashboard...')
           
-          // Successful authentication
+          // Successful authentication - redirect to dashboard
           setTimeout(() => {
             router.push('/dashboard')
           }, 1000)
         } else {
-          console.log('⚠️ No session found in callback')
-          setStatus('No session found. Redirecting to login...')
+          console.log('⚠️ No session created after code exchange')
+          setStatus('Failed to create session. Redirecting to login...')
           setTimeout(() => {
-            router.push('/login?error=no_session')
+            router.push('/login?error=no_session_created')
           }, 2000)
         }
       } catch (err) {
