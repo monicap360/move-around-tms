@@ -25,15 +25,21 @@ export default function LoginPage() {
     setErrorMessage("");
     
     try {
-      console.log('🚀 Starting GitHub OAuth...');
+      console.log('🚀 Starting GitHub OAuth with flow state fix...');
+      
+      // Clear any existing auth state first
+      await supabase.auth.signOut();
+      
+      // Wait a moment before starting new flow
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: false,
           queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           }
         }
       });
@@ -43,8 +49,8 @@ export default function LoginPage() {
         setErrorMessage(`GitHub login failed: ${error.message}`);
         setLoading(false);
       } else {
-        console.log('✅ OAuth initiated successfully');
-        // The browser will redirect to GitHub, so we don't need to set loading to false
+        console.log('✅ OAuth initiated successfully', data);
+        // The browser will redirect to GitHub
       }
     } catch (err) {
       console.error("💥 GitHub login error:", err);

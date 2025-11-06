@@ -15,12 +15,33 @@ export default function AuthCallback() {
     
     const checkSession = async () => {
       try {
+        // Check for flow state error first
+        const urlParams = new URLSearchParams(window.location.search)
+        const error = urlParams.get('error')
+        const errorCode = urlParams.get('error_code')
+        const errorDescription = urlParams.get('error_description')
+        
+        if (error || errorCode) {
+          console.error('❌ OAuth callback error:', { error, errorCode, errorDescription })
+          setStatus(`OAuth Error: ${errorDescription || error}`)
+          
+          if (errorCode === 'flow_state_not_found') {
+            setStatus('Flow state error - trying direct session check...')
+            
+            // For flow state errors, try a direct approach
+            setTimeout(() => {
+              window.location.href = '/login?error=flow_state_error'
+            }, 3000)
+            return
+          }
+        }
+        
         // Wait a moment for Supabase to process the callback
         await new Promise(resolve => setTimeout(resolve, 2000))
         
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         console.log('🔍 Callback session check:', session)
-        console.log('❌ Callback error:', error)
+        console.log('❌ Callback session error:', sessionError)
         
         if (session) {
           console.log('✅ Session found! User:', session.user?.email)
@@ -30,10 +51,10 @@ export default function AuthCallback() {
           }, 2000)
         } else {
           console.log('❌ No session in callback')
-          setStatus('No session created. Check console for details.')
+          setStatus('No session created. Flow state may have been lost.')
           setTimeout(() => {
-            window.location.href = '/login?error=callback_no_session'
-          }, 5000) // Longer delay to see what's happening
+            window.location.href = '/login?error=no_session_after_callback'
+          }, 5000)
         }
       } catch (err) {
         console.error('💥 Callback error:', err)
