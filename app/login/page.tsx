@@ -95,7 +95,7 @@ export default function LoginPage() {
           minWidth: "300px",
         }}
       >
-        <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>Login</h2>
+        <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>Login to MoveAround TMS</h2>
 
         <input
           type="email"
