@@ -55,10 +55,8 @@ export default function AuthCallback() {
           
           setStatus('Success! Redirecting to dashboard...')
           
-          // Successful authentication - redirect to dashboard
-          setTimeout(() => {
-            router.push('/dashboard')
-          }, 1000)
+          // Successful authentication - immediate redirect
+          window.location.href = '/dashboard'
         } else {
           console.log('⚠️ No session found - authentication may still be processing')
           console.log('🔄 Waiting for session to be established...')
@@ -69,7 +67,7 @@ export default function AuthCallback() {
             
             if (retrySession && retrySession.user) {
               console.log('✅ Session established on retry!')
-              router.push('/dashboard')
+              window.location.href = '/dashboard'
             } else {
               console.log('⚠️ Still no session after retry')
               setStatus('Authentication incomplete. Redirecting to login...')
