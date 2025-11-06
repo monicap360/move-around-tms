@@ -50,10 +50,59 @@ export default function LoginPage() {
     }
   };
 
-  const handleTestCredentials = () => {
-    setEmail("test@movearoundtms.com");
-    setPassword("TestPass123!");
-    console.log("🧪 Test credentials set - now click Sign In");
+  const handleTestCredentials = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    
+    try {
+      console.log('🧪 Creating test user...');
+      
+      // Try to sign up a test user first
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: "test@movearoundtms.com",
+        password: "TestPass123!",
+        options: {
+          data: {
+            full_name: "Test User",
+            role: "admin"
+          }
+        }
+      });
+      
+      console.log('🔍 SignUp result:', signUpData);
+      console.log('❌ SignUp error:', signUpError);
+      
+      if (signUpError && signUpError.message.includes('already registered')) {
+        // User exists, try to login
+        console.log('👤 User exists, trying login...');
+        
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: "test@movearoundtms.com",
+          password: "TestPass123!"
+        });
+        
+        if (loginError) {
+          setErrorMessage('Test user login failed: ' + loginError.message);
+        } else if (loginData.session) {
+          console.log('✅ Test login successful!');
+          window.location.href = '/dashboard';
+        }
+      } else if (signUpData.user && !signUpError) {
+        console.log('✅ Test user created successfully!');
+        if (signUpData.session) {
+          window.location.href = '/dashboard';
+        } else {
+          setErrorMessage('Test user created but needs email confirmation');
+        }
+      } else {
+        setErrorMessage('Failed to create test user: ' + (signUpError?.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('💥 Test credentials error:', err);
+      setErrorMessage('Test setup failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -173,18 +222,19 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={handleTestCredentials}
+          disabled={loading}
           style={{
             backgroundColor: "#059669",
             color: "#fff",
             padding: "0.5rem 1rem",
             border: "none",
             borderRadius: "6px",
-            cursor: "pointer",
+            cursor: loading ? "not-allowed" : "pointer",
             width: "100%",
             marginBottom: "0.5rem",
           }}
         >
-          Use Test Credentials
+          {loading ? "Creating Test User..." : "Create & Use Test User"}
         </button>
 
         <button
