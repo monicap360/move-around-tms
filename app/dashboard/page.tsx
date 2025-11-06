@@ -14,41 +14,42 @@ export default function Dashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('🔍 Dashboard: Checking authentication...')
+        console.log('� Dashboard: Login bypassed - direct access enabled')
         
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        console.log('🔍 Dashboard session:', session)
-        console.log('❌ Dashboard session error:', error)
-        
-        if (error) {
-          console.error('❌ Dashboard auth error:', error)
-          window.location.replace('/login?error=dashboard_auth_error')
-          return
+        // Skip authentication - set default user for demo
+        const mockUser = {
+          id: 'demo-user-id',
+          email: 'demo@movearoundtms.com',
+          user_metadata: {
+            full_name: 'Demo User'
+          }
         }
         
-        if (session?.user) {
-          console.log('✅ Dashboard: User found:', session.user.email)
-          setUser(session.user)
-          
-          // Check admin status using new API
-          try {
+        console.log('✅ Dashboard: Using demo user for direct access')
+        setUser(mockUser)
+        setIsAdmin(true) // Grant admin access for demo
+        
+        // Optional: Still try to get real session if available, but don't require it
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            console.log('✅ Real session found, using actual user:', session.user.email)
+            setUser(session.user)
+            
+            // Check real admin status
             const adminRes = await fetch('/api/admin/status')
             const adminData = await adminRes.json()
             if (adminRes.ok) {
               setIsAdmin(adminData.isAdmin)
             }
-          } catch (adminError) {
-            console.log('Admin status check failed:', adminError)
           }
-        } else {
-          console.log('⚠️ Dashboard: No session found, redirecting to login')
-          // Redirect to login if not authenticated
-          window.location.replace('/login?error=no_dashboard_session')
+        } catch (sessionError) {
+          console.log('Session check failed, using demo mode:', sessionError)
         }
+        
       } catch (error) {
-        console.error('💥 Dashboard auth check error:', error)
-        window.location.replace('/login?error=dashboard_check_failed')
+        console.error('💥 Dashboard setup error:', error)
+        // Don't redirect on error - just use demo mode
       } finally {
         setLoading(false)
       }
