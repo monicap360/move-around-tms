@@ -1,14 +1,17 @@
 "use client";
 
-import { useAuth } from "../contexts/AuthContext";
+// import { useAuth } from "../contexts/AuthContext"; // 🚨 REMOVED - Authentication disabled
 import { useState } from "react";
 import { User, LogOut, Settings } from "lucide-react";
 
 export function UserMenu() {
-  const { user, signOut } = useAuth();
+  // const { user, signOut } = useAuth(); // 🚨 REMOVED - Authentication disabled
   const [isOpen, setIsOpen] = useState(false);
+  
+  // 🚨 DEMO USER MODE - Always show menu
+  const user = { email: "demo@movearoundtms.com", name: "Demo User" };
 
-  if (!user) return null;
+  // if (!user) return null; // 🚨 REMOVED - Always show menu now
 
   const handleSignOut = async () => {
     // No sign out needed - just refresh since there's no authentication
