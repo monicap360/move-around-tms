@@ -1,10 +1,5 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-
-// Middleware to protect admin API routes with a simple bearer token.
-// Applies to paths matching /api/:path* (see config below). Adjust the
-// `publicAllowList` to exempt endpoints that should remain public (webhooks,
-// payment checkout creation, etc.).
+// Unified Edge-compatible middleware for both API protection and page routing
+// This handles both authentication routing and API token validation
 
 const publicAllowList = [
   '/api/merch/create-checkout',
@@ -14,28 +9,84 @@ const publicAllowList = [
   '/api/webhooks/sms', // Allow Twilio SMS webhook
 ]
 
-export function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname
+export function middleware(request: Request) {
+  const url = new URL(request.url)
+  const pathname = url.pathname
 
-  // Allow explicitly public API endpoints
-  if (publicAllowList.includes(pathname)) return NextResponse.next()
+  // Handle API routes - API protection logic
+  if (pathname.startsWith('/api')) {
+    // Allow explicitly public API endpoints
+    if (publicAllowList.includes(pathname)) return undefined // continue
 
-  // Only protect API routes (config matcher already limits middleware to /api)
-  const authHeader = req.headers.get('authorization') || ''
-  const expected = process.env.ADMIN_TOKEN
+    // Protect API routes with bearer token
+    const authHeader = request.headers.get('authorization') || ''
+    const expected = process.env.ADMIN_TOKEN
 
-  if (!expected) {
-    // If ADMIN_TOKEN is not set, block by default and help the developer notice.
-    console.warn('ADMIN_TOKEN not set — middleware will block protected API routes until you set it in .env.local')
+    if (!expected) {
+      console.warn('ADMIN_TOKEN not set  middleware will block protected API routes until you set it in .env.local')
+    }
+
+    if (authHeader !== `Bearer ${expected}`) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Unauthorized' }), 
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    return undefined // continue
   }
 
-  if (authHeader !== `Bearer ${expected}`) {
-    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+  // Handle page routes - Authentication routing logic
+  // Allow static assets and auth callback to load freely
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.startsWith("/assets") ||
+    pathname.startsWith("/public") ||
+    pathname.startsWith("/auth/callback")
+  ) {
+    return undefined // continue
   }
 
-  return NextResponse.next()
+  const cookieHeader = request.headers.get("cookie") || ""
+
+  const cookieNamesToCheck = [
+    "supabase-auth-token",
+    "sb-access-token", 
+    "sb-refresh-token",
+    "sb:token",
+    "sb-session",
+  ]
+
+  const hasAuthCookie = cookieNamesToCheck.some((name) =>
+    cookieHeader.includes(name + "=")
+  )
+
+  // Allow homepage (/) for everyone - no auth required
+  if (pathname === "/") {
+    return undefined // continue
+  }
+
+  // If not logged in and trying to access a protected route, redirect to login
+  if (!hasAuthCookie && pathname !== "/login") {
+    const redirectUrl = new URL("/login", request.url)
+    redirectUrl.searchParams.set("redirectedFrom", pathname)
+    return Response.redirect(redirectUrl.toString())
+  }
+
+  // If logged in and trying to access /login, send to dashboard
+  if (hasAuthCookie && pathname === "/login") {
+    return Response.redirect(new URL("/dashboard", request.url).toString())
+  }
+
+  return undefined
 }
 
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|assets|public|sw.js|manifest.json).*)",
+  ],
 }
