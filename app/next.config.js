@@ -1,19 +1,42 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // For SiteGround deployment - regular build first, then we'll handle static files
+  // 🚨 DISABLE ALL CACHING TO FIX VERCEL ISSUES
   images: {
     unoptimized: true
   },
   
-  // Set trailing slash for better compatibility
-  trailingSlash: true,
+  // Force fresh builds
+  trailingSlash: false,
   
-  // Output for SiteGround deployment with server functions
+  // Disable static optimization to prevent caching
   output: 'standalone',
   
   // Skip type checking during build to focus on the core issue
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  // 🔥 FORCE NO CACHING
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate, max-age=0'
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache'
+          },
+          {
+            key: 'Expires',
+            value: '0'
+          }
+        ]
+      }
+    ]
   },
   
   // Environment variables
