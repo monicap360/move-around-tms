@@ -7,18 +7,6 @@
       "use": "@vercel/next"
     }
   ],
-  "redirects": [
-    {
-      "source": "https://www.movearoundtms.com/(.*)",
-      "destination": "https://movearoundtms.com/$1",
-      "permanent": true
-    },
-    {
-      "source": "/",
-      "destination": "/login",
-      "permanent": false
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
