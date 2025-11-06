@@ -25,11 +25,30 @@ export default function LoginPage() {
     setErrorMessage("");
     
     try {
-      await signInWithProvider("github");
-      // The OAuth flow will redirect to GitHub, then back to /auth/callback
+      console.log('🚀 Starting GitHub OAuth...');
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('❌ OAuth initiation error:', error);
+        setErrorMessage(`GitHub login failed: ${error.message}`);
+        setLoading(false);
+      } else {
+        console.log('✅ OAuth initiated successfully');
+        // The browser will redirect to GitHub, so we don't need to set loading to false
+      }
     } catch (err) {
+      console.error("💥 GitHub login error:", err);
       setErrorMessage("Failed to initiate GitHub login");
-      console.error("GitHub login error:", err);
       setLoading(false);
     }
   };

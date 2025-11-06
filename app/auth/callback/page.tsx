@@ -17,52 +17,41 @@ export default function AuthCallback() {
         console.log('🔗 URL hash:', window.location.hash)
         console.log('🔍 URL search:', window.location.search)
         
-        setStatus('Exchanging authorization code...')
+        setStatus('Processing authentication...')
         
-        // Extract the code from URL parameters
+        // Check for OAuth error in URL
         const urlParams = new URLSearchParams(window.location.search)
-        const code = urlParams.get('code')
         const error = urlParams.get('error')
-        
-        console.log('🔑 Auth code:', code ? 'Present' : 'Missing')
-        console.log('❌ Auth error:', error || 'None')
+        const errorDescription = urlParams.get('error_description')
         
         if (error) {
-          console.error('❌ OAuth error from provider:', error)
+          console.error('❌ OAuth error from provider:', error, errorDescription)
           setStatus(`Authentication failed: ${error}`)
           setTimeout(() => {
-            router.push('/login?error=' + encodeURIComponent(error))
+            router.push('/login?error=' + encodeURIComponent(errorDescription || error))
           }, 3000)
           return
         }
         
-        if (!code) {
-          console.error('❌ No authorization code found')
-          setStatus('No authorization code received')
+        // For PKCE flow, Supabase handles the code exchange automatically
+        // We just need to check if we have a session
+        console.log('🔄 Checking for session...')
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError)
+          setStatus(`Session error: ${sessionError.message}`)
           setTimeout(() => {
-            router.push('/login?error=no_code')
+            router.push('/login?error=' + encodeURIComponent(sessionError.message))
           }, 3000)
           return
         }
         
-        // Exchange code for session using exchangeCodeForSession
-        console.log('🔄 Exchanging code for session...')
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        
-        if (exchangeError) {
-          console.error('❌ Code exchange error:', exchangeError)
-          setStatus(`Session exchange failed: ${exchangeError.message}`)
-          setTimeout(() => {
-            router.push('/login?error=' + encodeURIComponent(exchangeError.message))
-          }, 3000)
-          return
-        }
-        
-        if (data.session && data.user) {
+        if (session && session.user) {
           console.log('✅ Authentication successful!')
-          console.log('👤 User:', data.user.email)
-          console.log('🎯 Provider:', data.user.app_metadata?.provider)
-          console.log('🔐 Session:', data.session.access_token ? 'Created' : 'Missing token')
+          console.log('👤 User:', session.user.email)
+          console.log('🎯 Provider:', session.user.app_metadata?.provider)
+          console.log('🔐 Session:', session.access_token ? 'Valid' : 'No token')
           
           setStatus('Success! Redirecting to dashboard...')
           
@@ -71,10 +60,23 @@ export default function AuthCallback() {
             router.push('/dashboard')
           }, 1000)
         } else {
-          console.log('⚠️ No session created after code exchange')
-          setStatus('Failed to create session. Redirecting to login...')
-          setTimeout(() => {
-            router.push('/login?error=no_session_created')
+          console.log('⚠️ No session found - authentication may still be processing')
+          console.log('🔄 Waiting for session to be established...')
+          
+          // Try again after a short delay - sometimes sessions take a moment
+          setTimeout(async () => {
+            const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession()
+            
+            if (retrySession && retrySession.user) {
+              console.log('✅ Session established on retry!')
+              router.push('/dashboard')
+            } else {
+              console.log('⚠️ Still no session after retry')
+              setStatus('Authentication incomplete. Redirecting to login...')
+              setTimeout(() => {
+                router.push('/login?error=no_session_established')
+              }, 2000)
+            }
           }, 2000)
         }
       } catch (err) {
