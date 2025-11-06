@@ -8,23 +8,55 @@ export default function AuthCallback() {
   const [status, setStatus] = useState('Processing authentication...')
   
   useEffect(() => {
-    console.log('� SIMPLE AUTH CALLBACK START')
+    console.log('🔥 CALLBACK DEBUG START')
+    console.log('📍 URL:', window.location.href)
+    console.log('🔍 Search params:', window.location.search)
+    console.log('🔗 Hash:', window.location.hash)
     
-    // Simple approach - just redirect to dashboard and let middleware handle auth
-    const timer = setTimeout(() => {
-      console.log('� Simple redirect to dashboard')
-      window.location.href = '/dashboard'
-    }, 1500)
+    const checkSession = async () => {
+      try {
+        // Wait a moment for Supabase to process the callback
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('🔍 Callback session check:', session)
+        console.log('❌ Callback error:', error)
+        
+        if (session) {
+          console.log('✅ Session found! User:', session.user?.email)
+          setStatus(`Session found for ${session.user?.email}! Redirecting...`)
+          setTimeout(() => {
+            window.location.href = '/dashboard'
+          }, 2000)
+        } else {
+          console.log('❌ No session in callback')
+          setStatus('No session created. Check console for details.')
+          setTimeout(() => {
+            window.location.href = '/login?error=callback_no_session'
+          }, 5000) // Longer delay to see what's happening
+        }
+      } catch (err) {
+        console.error('💥 Callback error:', err)
+        setStatus('Callback error: ' + err)
+        setTimeout(() => {
+          window.location.href = '/login?error=callback_exception'
+        }, 5000)
+      }
+    }
     
-    return () => clearTimeout(timer)
-  }, [])
+    checkSession()
+  }, [supabase])
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-lg text-gray-600">{status}</p>
-        <p className="text-sm text-gray-500 mt-2">Check the browser console for detailed logs</p>
+        <h2 className="text-xl font-semibold mb-2">Processing Authentication</h2>
+        <p className="text-gray-600 mb-4">{status}</p>
+        <div className="text-sm text-gray-500 space-y-1">
+          <p>🔍 URL: {typeof window !== 'undefined' ? window.location.href : 'Loading...'}</p>
+          <p>📊 Check console (F12) for detailed logs</p>
+        </div>
       </div>
     </div>
   )
