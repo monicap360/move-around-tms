@@ -4,75 +4,309 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoveAround TMS - Super Admin Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'movearound': {
-                            'primary': '#7c3aed',
-                            'secondary': '#2563eb'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    
+    <!-- Global Theme CSS -->
+    <link rel="stylesheet" href="/assets/theme-viable.css">
+    
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%);
+        /* Custom dashboard styles using theme variables */
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #0d2946 100%);
+            color: var(--white);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        .card-hover {
+        
+        .dashboard-main {
+            background: var(--neutral);
+            min-height: calc(100vh - 80px);
+            padding: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            color: var(--text);
+            font-weight: 600;
+            opacity: 0.8;
+        }
+        
+        .stat-icon {
+            font-size: 3rem;
+            float: right;
+            opacity: 0.7;
+        }
+        
+        .partners-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .partner-card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
             transition: all 0.3s ease;
         }
-        .card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        
+        .partner-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
-        .stat-card {
-            background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        
+        .partner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .partner-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .partner-email {
+            color: var(--text);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        .partner-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .partner-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        
+        .partner-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 2px solid #e0e0e0;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+        
+        .system-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .system-card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--accent);
+        }
+        
+        .system-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .system-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .system-icon {
+            font-size: 2.5rem;
+        }
+        
+        .system-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .system-desc {
+            color: var(--text);
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+        }
+        
+        .view-selector {
+            background: var(--white);
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+        }
+        
+        .view-selector:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .welcome-section {
+            margin-bottom: 2rem;
+        }
+        
+        .welcome-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-subtitle {
+            color: var(--text);
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .theme-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
     </style>
 </head>
-<body class="gradient-bg min-h-screen">
-    <!-- Header -->
-    <header class="bg-white shadow-lg border-b-4 border-purple-600">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <!-- Logo Section -->
-                <div class="flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                        <span class="text-white font-bold text-xl">M</span>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">MoveAround TMS</h1>
-                        <p class="text-sm text-purple-600 font-medium">Super Admin Portal - Global Control</p>
-                    </div>
+<body>
+    <!-- Header using topbar class from theme -->
+    <header class="dashboard-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto;">
+            <!-- Logo Section -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 50px; height: 50px; background: var(--accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 800; font-size: 1.5rem;">
+                    M
                 </div>
+                <div>
+                    <h1 style="margin: 0; font-size: 1.8rem; font-weight: 800;">MoveAround TMS</h1>
+                    <p style="margin: 0; opacity: 0.9; font-weight: 500;">Super Admin Portal - Global Control</p>
+                </div>
+            </div>
 
-                <!-- View Switcher & User Info -->
-                <div class="flex items-center space-x-4">
-                    <select id="viewSwitcher" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="admin">🎛️ System Admin Dashboard</option>
-                        <optgroup label="Partner Portals">
-                            <option value="partner-ronyx">🟡 RonYX Dashboard (Veronica)</option>
-                            <option value="partner-elite">🔵 Elite Transport (Maria)</option>
-                            <option value="partner-meighoo">🟢 Meighoo Logistics (Anil)</option>
-                            <option value="partner-garza">🔴 Garza Transport (Miram)</option>
-                        </optgroup>
-                        <optgroup label="System Sections">
-                            <option value="hr">👥 HR Management</option>
-                            <option value="payroll">💰 Payroll System</option>
-                            <option value="analytics">📊 System Analytics</option>
-                        </optgroup>
-                    </select>
-                    
-                    <div class="text-right">
-                        <p class="font-medium text-gray-900" id="userName">Super Administrator</p>
-                        <p class="text-sm text-gray-600">Global Access</p>
+            <!-- Navigation & User -->
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <select id="viewSwitcher" class="view-selector">
+                    <option value="admin">🎛️ System Admin Dashboard</option>
+                    <optgroup label="Partner Portals">
+                        <option value="partner-ronyx">🟡 RonYX Dashboard (Veronica)</option>
+                        <option value="partner-elite">🔵 Elite Transport (Maria)</option>
+                        <option value="partner-meighoo">🟢 Meighoo Logistics (Anil)</option>
+                        <option value="partner-garza">🔴 Garza Transport (Miram)</option>
+                    </optgroup>
+                    <optgroup label="System Sections">
+                        <option value="hr">👥 HR Management</option>
+                        <option value="payroll">💰 Payroll System</option>
+                        <option value="analytics">📊 System Analytics</option>
+                    </optgroup>
+                </select>
+                
+                <div class="user-info">
+                    <div>
+                        <div style="font-weight: 700; text-align: right;" id="userName">Super Administrator</div>
+                        <div style="opacity: 0.8; font-size: 0.9rem; text-align: right;">Global Access</div>
                     </div>
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-medium shadow-lg">
+                    <div class="user-avatar">
                         <span id="userInitial">A</span>
                     </div>
                 </div>
@@ -81,119 +315,71 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Welcome Section -->
-        <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back, <span id="userGreeting">Admin!</span>
-            </h2>
-            <p class="text-gray-600">Complete system control and partner oversight</p>
+    <main class="dashboard-main">
+        <div style="max-width: 1400px; margin: 0 auto;">
+            
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h2 class="welcome-title">
+                    Welcome back, <span id="userGreeting">Admin!</span>
+                </h2>
+                <p class="welcome-subtitle">Complete system control and partner oversight</p>
+            </div>
+
+            <!-- Super Admin Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🤝</div>
+                    <div class="stat-label">Total Partners</div>
+                    <div class="stat-value">4</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🏢</div>
+                    <div class="stat-label">Total Companies</div>
+                    <div class="stat-value">23</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-label">Active Users</div>
+                    <div class="stat-value">89</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">💚</div>
+                    <div class="stat-label">System Health</div>
+                    <div class="stat-value">98%</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🚛</div>
+                    <div class="stat-label">Active Drivers</div>
+                    <div class="stat-value">156</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-label">Monthly Revenue</div>
+                    <div class="stat-value">$45,750</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🎫</div>
+                    <div class="stat-label">Active Tickets</div>
+                    <div class="stat-value">42</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-label">Pending Items</div>
+                    <div class="stat-value">8</div>
+                </div>
         </div>
 
-        <!-- Super Admin Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total Partners</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">4</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        🤝
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total Companies</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">23</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        🏢
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Active Users</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">89</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        👥
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">System Health</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">98%</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        💚
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Active Drivers</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">156</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        🚛
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Monthly Revenue</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">$45,750</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        💰
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Active Tickets</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">42</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        🎫
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Pending Items</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">8</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        ⏳
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Partner Management Grid -->
-        <div class="mb-8">
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Partner Management</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Partner Management Section -->
+            <h3 class="section-title">Partner Management</h3>
+            <div class="partners-grid">
                 
                 <!-- RonYX Logistics -->
                 <div class="bg-white rounded-xl shadow-lg p-6 card-hover border border-gray-100">
