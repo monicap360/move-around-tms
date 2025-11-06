@@ -25,38 +25,35 @@ export default function LoginPage() {
     setErrorMessage("");
     
     try {
-      console.log('🚀 Starting GitHub OAuth with flow state fix...');
+      console.log('🚀 Trying direct GitHub URL approach...');
       
-      // Clear any existing auth state first
-      await supabase.auth.signOut();
+      // Build GitHub OAuth URL manually to bypass Supabase PKCE flow
+      const clientId = 'your-github-client-id'; // You'll need to replace this
+      const redirectUri = encodeURIComponent('https://wqeidcatuwqtzwhvmqfr.supabase.co/auth/v1/callback');
+      const scope = encodeURIComponent('user:email');
+      const state = Math.random().toString(36).substring(7);
       
-      // Wait a moment before starting new flow
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: false,
-          queryParams: {
-            prompt: 'select_account',
-          }
-        }
-      });
+      console.log('🔗 GitHub URL:', githubUrl);
       
-      if (error) {
-        console.error('❌ OAuth initiation error:', error);
-        setErrorMessage(`GitHub login failed: ${error.message}`);
-        setLoading(false);
-      } else {
-        console.log('✅ OAuth initiated successfully', data);
-        // The browser will redirect to GitHub
-      }
+      // Store state for verification
+      sessionStorage.setItem('oauth_state', state);
+      
+      // Direct redirect to GitHub
+      window.location.href = githubUrl;
+      
     } catch (err) {
       console.error("💥 GitHub login error:", err);
       setErrorMessage("Failed to initiate GitHub login");
       setLoading(false);
     }
+  };
+
+  const handleTestCredentials = () => {
+    setEmail("test@movearoundtms.com");
+    setPassword("TestPass123!");
+    console.log("🧪 Test credentials set - now click Sign In");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -175,11 +172,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={() => {
-            setEmail("test@movearoundtms.com");
-            setPassword("TestPass123!");
-            console.log("🧪 Test credentials set - now click Sign In");
-          }}
+          onClick={handleTestCredentials}
           style={{
             backgroundColor: "#059669",
             color: "#fff",
@@ -196,6 +189,27 @@ export default function LoginPage() {
 
         <button
           type="button"
+          onClick={async () => {
+            console.log('🧪 Testing direct dashboard access...');
+            // Test if we can just go to dashboard directly
+            window.location.href = '/dashboard';
+          }}
+          style={{
+            backgroundColor: "#f59e0b",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            width: "100%",
+            marginBottom: "0.5rem",
+          }}
+        >
+          Test Dashboard Access (No Auth)
+        </button>
+
+        <button
+          type="button"
           onClick={handleGitHubLogin}
           disabled={loading}
           style={{
@@ -208,7 +222,7 @@ export default function LoginPage() {
             width: "100%",
           }}
         >
-          Sign in with GitHub (Debug Mode)
+          Sign in with GitHub (Broken - Skip for Now)
         </button>
       </form>
       
