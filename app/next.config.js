@@ -1,51 +1,37 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🚨 DISABLE ALL CACHING TO FIX VERCEL ISSUES
+  // 🏗️ SITEGROUND STATIC EXPORT CONFIGURATION
+  output: 'export',
+  
+  // Required for static export
   images: {
     unoptimized: true
   },
   
-  // Force fresh builds
-  trailingSlash: false,
+  // Set base path and asset prefix if needed
+  basePath: '',
   
-  // Disable static optimization to prevent caching
-  output: 'standalone',
+  // Disable server features for static export
+  trailingSlash: true,
   
-  // Skip type checking during build to focus on the core issue
+  // Ensure trailing slashes for static hosting
+  trailingSlash: true,
+  
+  // Skip type checking during build
   typescript: {
     ignoreBuildErrors: true,
   },
-
-  // 🔥 FORCE NO CACHING
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate, max-age=0'
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache'
-          },
-          {
-            key: 'Expires',
-            value: '0'
-          }
-        ]
-      }
-    ]
-  },
   
-  // Environment variables
+  // Environment variables (embedded at build time)
   env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: 'https://wqeidcatuwqtzwhvmqfr.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZWlkY2F0dXdxdHp3aHZtcWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNjkxNzcsImV4cCI6MjA3Njk0NTE3N30.E8bSplLakPK0obSoyhddRt64V8rFXS7ZMlaIQQaI0TQ',
   },
 
-  // No redirects - allow proper auth flow
+  // Disable server-side features
+  experimental: {
+    serverActions: false,
+  }
 }
 
 module.exports = nextConfig
