@@ -2,6 +2,13 @@ import path from 'path'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Turbopack configuration to fix workspace root warning
+  experimental: {
+    turbo: {
+      root: process.cwd(),
+    },
+  },
+  
   // For Vercel deployment optimization
   images: {
     unoptimized: false,
