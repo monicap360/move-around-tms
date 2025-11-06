@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getSession, signOut } from '../lib/auth'
+import { useSupabase } from '../lib/supabase-provider'
 import AdminManager from '../components/AdminManager'
 import UserDropdown from '../components/UserDropdown'
 
 export default function Dashboard() {
+  const { supabase } = useSupabase()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -13,8 +14,21 @@ export default function Dashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await getSession()
+        console.log('🔍 Dashboard: Checking authentication...')
+        
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        console.log('🔍 Dashboard session:', session)
+        console.log('❌ Dashboard session error:', error)
+        
+        if (error) {
+          console.error('❌ Dashboard auth error:', error)
+          window.location.replace('/login?error=dashboard_auth_error')
+          return
+        }
+        
         if (session?.user) {
+          console.log('✅ Dashboard: User found:', session.user.email)
           setUser(session.user)
           
           // Check admin status using new API
@@ -28,22 +42,25 @@ export default function Dashboard() {
             console.log('Admin status check failed:', adminError)
           }
         } else {
+          console.log('⚠️ Dashboard: No session found, redirecting to login')
           // Redirect to login if not authenticated
-          window.location.replace('/login')
+          window.location.replace('/login?error=no_dashboard_session')
         }
       } catch (error) {
-        console.error('Auth check error:', error)
-        window.location.replace('/login')
+        console.error('💥 Dashboard auth check error:', error)
+        window.location.replace('/login?error=dashboard_check_failed')
       } finally {
         setLoading(false)
       }
     }
     checkAuth()
-  }, [])
+  }, [supabase])
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      console.log('🚪 Signing out...')
+      await supabase.auth.signOut()
+      window.location.href = '/login'
     } catch (error) {
       console.error('Sign out error:', error)
     }
