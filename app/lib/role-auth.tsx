@@ -10,7 +10,7 @@ const supabase = createClient(
 
 interface UserProfile {
   id: string
-  role: 'super_admin' | 'partner' | 'owner' | 'staff' | 'user'
+  role: 'super_admin' | 'partner' | 'owner' | 'company_admin' | 'staff' | 'user'
   full_name: string
   company_id?: string
 }
@@ -93,14 +93,16 @@ export function useRoleBasedAuth() {
   }
 
   function getRedirectPath(): string {
-    if (!profile) return '/login'
+    if (!profile) return '/auth'
 
     switch (profile.role) {
       case 'super_admin':
         return '/admin/dashboard' // Full admin access
+      case 'owner':
+        return '/owner/dashboard' // Owner global access (Sylvia)
       case 'partner':
         return '/partners/dashboard' // Partner-specific dashboard
-      case 'owner':
+      case 'company_admin':
       case 'staff':
         return '/company/dashboard' // Company dashboard
       default:

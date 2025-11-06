@@ -1,0 +1,30 @@
+{
+  "brand": "RonYX Logistics LLC",
+  "primary": "#C9A348",
+  "secondary": "#222222", 
+  "background": "#FFFFFF",
+  "accent": "#F5F5F5",
+  "text": {
+    "primary": "#222222",
+    "secondary": "#666666",
+    "light": "#FFFFFF"
+  },
+  "logo": "/partners/ronyx/logo.png",
+  "tagline": "Driven by Strength & Precision",
+  "navigation": {
+    "background": "#C9A348",
+    "text": "#FFFFFF",
+    "hover": "#B8932F"
+  },
+  "cards": {
+    "background": "#FFFFFF", 
+    "border": "#E5E5E5",
+    "shadow": "0 2px 8px rgba(201, 163, 72, 0.15)"
+  },
+  "buttons": {
+    "primary": "#C9A348",
+    "primaryHover": "#B8932F",
+    "secondary": "#222222",
+    "secondaryHover": "#333333"
+  }
+}

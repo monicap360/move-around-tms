@@ -62,10 +62,13 @@ export default function AuthPage() {
       case 'super_admin':
         window.location.href = '/admin'
         break
+      case 'owner':
+        window.location.href = '/owner/dashboard'
+        break
       case 'partner':
         window.location.href = '/partners/dashboard'
         break
-      case 'owner':
+      case 'company_admin':
       case 'staff':
         window.location.href = '/company/dashboard'
         break
