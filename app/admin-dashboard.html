@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoveAround TMS - Super Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'movearound': {
+                            'primary': '#7c3aed',
+                            'secondary': '#2563eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b-4 border-purple-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <span class="text-white font-bold text-xl">M</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">MoveAround TMS</h1>
+                        <p class="text-sm text-purple-600 font-medium">Super Admin Portal - Global Control</p>
+                    </div>
+                </div>
+
+                <!-- View Switcher & User Info -->
+                <div class="flex items-center space-x-4">
+                    <select id="viewSwitcher" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="admin">🎛️ System Admin Dashboard</option>
+                        <optgroup label="Partner Portals">
+                            <option value="partner-ronyx">🟡 RonYX Dashboard (Veronica)</option>
+                            <option value="partner-elite">🔵 Elite Transport (Maria)</option>
+                            <option value="partner-meighoo">🟢 Meighoo Logistics (Anil)</option>
+                            <option value="partner-garza">🔴 Garza Transport (Miram)</option>
+                        </optgroup>
+                        <optgroup label="System Sections">
+                            <option value="hr">👥 HR Management</option>
+                            <option value="payroll">💰 Payroll System</option>
+                            <option value="analytics">📊 System Analytics</option>
+                        </optgroup>
+                    </select>
+                    
+                    <div class="text-right">
+                        <p class="font-medium text-gray-900" id="userName">Super Administrator</p>
+                        <p class="text-sm text-gray-600">Global Access</p>
+                    </div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-medium shadow-lg">
+                        <span id="userInitial">A</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">
+                Welcome back, <span id="userGreeting">Admin!</span>
+            </h2>
+            <p class="text-gray-600">Complete system control and partner oversight</p>
+        </div>
+
+        <!-- Super Admin Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Partners</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">4</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        🤝
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Companies</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">23</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        🏢
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Users</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">89</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        👥
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">System Health</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">98%</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        💚
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Drivers</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">156</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        🚛
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Monthly Revenue</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">$45,750</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        💰
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Tickets</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">42</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        🎫
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Pending Items</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">8</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        ⏳
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Partner Management Grid -->
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6">Partner Management</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                <!-- RonYX Logistics -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">RonYX Logistics LLC</h4>
+                            <p class="text-sm text-gray-600">Veronica Butanda</p>
+                        </div>
+                        <div class="w-4 h-4 rounded-full shadow-inner" style="background-color: #C9A348;"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xl font-bold text-gray-900">8</p>
+                            <p class="text-xs text-gray-600">Companies</p>
+                        </div>
+                        <div>
+                            <p class="text-xl font-bold" style="color: #C9A348;">$1,850</p>
+                            <p class="text-xs text-gray-600">Commission</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="window.open('/partners/ronyx/', '_blank')" class="flex-1 py-2 px-3 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity" style="background-color: #C9A348;">
+                            View Portal
+                        </button>
+                        <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors">
+                            Manage
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Elite Transport -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">Elite Transport Solutions</h4>
+                            <p class="text-sm text-gray-600">Maria Elizondo</p>
+                        </div>
+                        <div class="w-4 h-4 rounded-full shadow-inner" style="background-color: #2563eb;"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xl font-bold text-gray-900">6</p>
+                            <p class="text-xs text-gray-600">Companies</p>
+                        </div>
+                        <div>
+                            <p class="text-xl font-bold" style="color: #2563eb;">$1,200</p>
+                            <p class="text-xs text-gray-600">Commission</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="window.open('/partners/elite/', '_blank')" class="flex-1 py-2 px-3 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity" style="background-color: #2563eb;">
+                            View Portal
+                        </button>
+                        <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors">
+                            Manage
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Meighoo Logistics -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">Meighoo Logistics</h4>
+                            <p class="text-sm text-gray-600">Anil Meighoo</p>
+                        </div>
+                        <div class="w-4 h-4 rounded-full shadow-inner" style="background-color: #16a34a;"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xl font-bold text-gray-900">4</p>
+                            <p class="text-xs text-gray-600">Companies</p>
+                        </div>
+                        <div>
+                            <p class="text-xl font-bold" style="color: #16a34a;">$950</p>
+                            <p class="text-xs text-gray-600">Commission</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="window.open('/partners/meighoo/', '_blank')" class="flex-1 py-2 px-3 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity" style="background-color: #16a34a;">
+                            View Portal
+                        </button>
+                        <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors">
+                            Manage
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Garza Transport -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">Garza Transport Group</h4>
+                            <p class="text-sm text-gray-600">Miram Garza</p>
+                        </div>
+                        <div class="w-4 h-4 rounded-full shadow-inner" style="background-color: #dc2626;"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xl font-bold text-gray-900">5</p>
+                            <p class="text-xs text-gray-600">Companies</p>
+                        </div>
+                        <div>
+                            <p class="text-xl font-bold" style="color: #dc2626;">$1,100</p>
+                            <p class="text-xs text-gray-600">Commission</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="window.open('/partners/garza/', '_blank')" class="flex-1 py-2 px-3 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity" style="background-color: #dc2626;">
+                            View Portal
+                        </button>
+                        <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors">
+                            Manage
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Management -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-6 rounded-xl border-2 bg-blue-50 border-blue-200 card-hover">
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="text-3xl">👥</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-blue-800">User Management</h4>
+                        <p class="text-sm text-gray-600 mt-1">Manage roles, permissions, and user accounts</p>
+                    </div>
+                </div>
+                <button onclick="window.open('/admin/users.html', '_blank')" class="w-full py-2 px-4 rounded-lg text-white font-medium transition-colors bg-blue-600 hover:bg-blue-700">
+                    Access User Management
+                </button>
+            </div>
+            
+            <div class="p-6 rounded-xl border-2 bg-purple-50 border-purple-200 card-hover">
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="text-3xl">⚙️</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-purple-800">System Configuration</h4>
+                        <p class="text-sm text-gray-600 mt-1">Configure system settings and integrations</p>
+                    </div>
+                </div>
+                <button onclick="window.open('/admin/settings.html', '_blank')" class="w-full py-2 px-4 rounded-lg text-white font-medium transition-colors bg-purple-600 hover:bg-purple-700">
+                    Access System Configuration
+                </button>
+            </div>
+            
+            <div class="p-6 rounded-xl border-2 bg-emerald-50 border-emerald-200 card-hover">
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="text-3xl">📈</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-emerald-800">Analytics & Reports</h4>
+                        <p class="text-sm text-gray-600 mt-1">View system analytics and generate reports</p>
+                    </div>
+                </div>
+                <button onclick="window.open('/admin/analytics.html', '_blank')" class="w-full py-2 px-4 rounded-lg text-white font-medium transition-colors bg-emerald-600 hover:bg-emerald-700">
+                    Access Analytics & Reports
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // User detection and personalization
+        function initializeUser() {
+            // Detect user from URL params or local storage
+            const urlParams = new URLSearchParams(window.location.search);
+            const userParam = urlParams.get('user');
+            
+            let userName = 'Administrator';
+            let userGreeting = 'Admin!';
+            let userInitial = 'A';
+            
+            // Check for specific users
+            if (userParam) {
+                switch(userParam.toLowerCase()) {
+                    case 'monica':
+                        userName = 'Monica Peña';
+                        userGreeting = 'Monica! 🌟';
+                        userInitial = 'M';
+                        break;
+                    case 'breanna':
+                        userName = 'Breanna Camario';
+                        userGreeting = 'Breanna! 💫';
+                        userInitial = 'B';
+                        break;
+                    case 'shamsa':
+                        userName = 'Shamsa Al Ansari';
+                        userGreeting = 'Shamsa! ✨';
+                        userInitial = 'S';
+                        break;
+                    case 'sylvia':
+                        userName = 'Sylvia Peña';
+                        userGreeting = 'Sylvia! 👑';
+                        userInitial = 'S';
+                        break;
+                }
+            }
+            
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('userGreeting').textContent = userGreeting;
+            document.getElementById('userInitial').textContent = userInitial;
+        }
+
+        // View switcher functionality
+        document.getElementById('viewSwitcher').addEventListener('change', function() {
+            const selected = this.value;
+            
+            if (selected === 'admin') return; // Stay on current page
+            
+            if (selected.startsWith('partner-')) {
+                const partner = selected.replace('partner-', '');
+                window.open(`/partners/${partner}/`, '_blank');
+            } else {
+                window.open(`/${selected}.html`, '_blank');
+            }
+        });
+
+        // Real-time stats updates (placeholder)
+        function updateStats() {
+            // This would connect to your real data source
+            // For now, we'll just show the static data
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUser();
+            updateStats();
+        });
+    </script>
+</body>
+</html>

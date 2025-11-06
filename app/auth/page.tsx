@@ -57,13 +57,11 @@ export default function AuthPage() {
       return
     }
 
-    // Role-based routing
+    // Role-based routing - Unified approach
     switch (profile.role) {
       case 'super_admin':
+        // Monica, Breanna, Shamsa, Sylvia all go to admin dashboard
         window.location.href = '/admin'
-        break
-      case 'owner':
-        window.location.href = '/owner/dashboard'
         break
       case 'partner':
         window.location.href = '/partners/dashboard'

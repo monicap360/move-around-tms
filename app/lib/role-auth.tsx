@@ -97,9 +97,8 @@ export function useRoleBasedAuth() {
 
     switch (profile.role) {
       case 'super_admin':
-        return '/admin/dashboard' // Full admin access
-      case 'owner':
-        return '/owner/dashboard' // Owner global access (Sylvia)
+        // Monica, Breanna, Shamsa, Sylvia - unified admin access
+        return '/admin' // Full admin dashboard
       case 'partner':
         return '/partners/dashboard' // Partner-specific dashboard
       case 'company_admin':
