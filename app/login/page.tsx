@@ -25,23 +25,23 @@ export default function LoginPage() {
     setErrorMessage("");
     
     try {
-      console.log('🚀 Trying direct GitHub URL approach...');
+      console.log('🚀 Starting GitHub OAuth with Supabase...');
       
-      // Build GitHub OAuth URL manually to bypass Supabase PKCE flow
-      const clientId = 'your-github-client-id'; // You'll need to replace this
-      const redirectUri = encodeURIComponent('https://wqeidcatuwqtzwhvmqfr.supabase.co/auth/v1/callback');
-      const scope = encodeURIComponent('user:email');
-      const state = Math.random().toString(36).substring(7);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
       
-      const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+      console.log('🔍 GitHub OAuth response:', { data, error });
       
-      console.log('🔗 GitHub URL:', githubUrl);
-      
-      // Store state for verification
-      sessionStorage.setItem('oauth_state', state);
-      
-      // Direct redirect to GitHub
-      window.location.href = githubUrl;
+      if (error) {
+        console.error('❌ GitHub OAuth error:', error);
+        setErrorMessage(`GitHub login failed: ${error.message}`);
+        setLoading(false);
+      }
+      // If successful, user will be redirected to GitHub
       
     } catch (err) {
       console.error("💥 GitHub login error:", err);
