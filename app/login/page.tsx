@@ -278,6 +278,7 @@ export default function LoginPage() {
           Test Dashboard Access (No Auth)
         </button>
 
+{/* GitHub OAuth disabled - causing redirect delays
         <button
           type="button"
           onClick={handleGitHubLogin}
@@ -294,6 +295,7 @@ export default function LoginPage() {
         >
           Sign in with GitHub (Broken - Skip for Now)
         </button>
+        */}
       </form>
       
       {/* Global loading overlay for authentication */}
