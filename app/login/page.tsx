@@ -50,6 +50,61 @@ export default function LoginPage() {
     }
   };
 
+  const handleSylviaAccount = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    
+    try {
+      console.log('👤 Creating Sylvia account...');
+      
+      // Try to sign up Sylvia first
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: "sylviaypena@yahoo.com",
+        password: "4124Huey",
+        options: {
+          data: {
+            full_name: "Sylvia Pena",
+            role: "admin"
+          }
+        }
+      });
+      
+      console.log('🔍 Sylvia SignUp result:', signUpData);
+      console.log('❌ Sylvia SignUp error:', signUpError);
+      
+      if (signUpError && signUpError.message.includes('already registered')) {
+        // User exists, try to login
+        console.log('👤 Sylvia exists, trying login...');
+        
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: "sylviaypena@yahoo.com",
+          password: "4124Huey"
+        });
+        
+        if (loginError) {
+          setErrorMessage('Sylvia login failed: ' + loginError.message);
+        } else if (loginData.session) {
+          console.log('✅ Sylvia login successful!');
+          window.location.href = '/dashboard';
+        }
+      } else if (signUpData.user && !signUpError) {
+        console.log('✅ Sylvia account created successfully!');
+        if (signUpData.session) {
+          window.location.href = '/dashboard';
+        } else {
+          setErrorMessage('Sylvia account created but needs email confirmation');
+        }
+      } else {
+        setErrorMessage('Failed to create Sylvia account: ' + (signUpError?.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('💥 Sylvia account error:', err);
+      setErrorMessage('Sylvia setup failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTestCredentials = async () => {
     setLoading(true);
     setErrorMessage("");
@@ -235,6 +290,44 @@ export default function LoginPage() {
           }}
         >
           {loading ? "Creating Test User..." : "Create & Use Test User"}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSylviaAccount}
+          disabled={loading}
+          style={{
+            backgroundColor: "#7c3aed",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: loading ? "not-allowed" : "pointer",
+            width: "100%",
+            marginBottom: "0.5rem",
+          }}
+        >
+          {loading ? "Setting up Sylvia..." : "Create & Login as Sylvia"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            console.log('🚀 Direct access - bypassing login');
+            window.location.href = '/dashboard';
+          }}
+          style={{
+            backgroundColor: "#dc2626",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            width: "100%",
+            marginBottom: "0.5rem",
+          }}
+        >
+          🚀 Skip Login - Direct Access (Emergency)
         </button>
 
         <button
