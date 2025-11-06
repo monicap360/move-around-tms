@@ -33,49 +33,90 @@ export default function AuthCallback() {
           return
         }
         
+        // Check URL for session fragments (hash-based auth)
+        const hash = window.location.hash
+        if (hash) {
+          console.log('🔗 Hash found:', hash)
+          // Let Supabase process the hash
+          console.log('🔄 Processing auth hash...')
+          await new Promise(resolve => setTimeout(resolve, 1000)) // Give Supabase time to process
+        }
+        
         // For PKCE flow, Supabase handles the code exchange automatically
         // We just need to check if we have a session
         console.log('🔄 Checking for session...')
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
+        console.log('🔍 Session data:', session)
+        console.log('❌ Session error:', sessionError)
+        
         if (sessionError) {
-          console.error('❌ Session error:', sessionError)
+          console.error('❌ Session error details:', sessionError)
           setStatus(`Session error: ${sessionError.message}`)
           setTimeout(() => {
-            router.push('/login?error=' + encodeURIComponent(sessionError.message))
+            window.location.href = '/login?error=' + encodeURIComponent(sessionError.message)
           }, 3000)
           return
         }
         
         if (session && session.user) {
           console.log('✅ Authentication successful!')
-          console.log('👤 User:', session.user.email)
+          console.log('👤 User email:', session.user.email)
+          console.log('👤 User ID:', session.user.id)
           console.log('🎯 Provider:', session.user.app_metadata?.provider)
-          console.log('🔐 Session:', session.access_token ? 'Valid' : 'No token')
+          console.log('🔐 Access token present:', !!session.access_token)
+          console.log('🕒 Token expires at:', session.expires_at)
           
           setStatus('Success! Redirecting to dashboard...')
           
+          // Test if we can make an authenticated request
+          try {
+            const { data: userData, error: userError } = await supabase.auth.getUser()
+            console.log('🧪 Test getUser result:', userData, userError)
+          } catch (testErr) {
+            console.log('🧪 Test getUser error:', testErr)
+          }
+          
           // Successful authentication - immediate redirect
+          console.log('🚀 Redirecting to dashboard...')
           window.location.href = '/dashboard'
         } else {
           console.log('⚠️ No session found - authentication may still be processing')
+          console.log('🔄 Session data was:', session)
           console.log('🔄 Waiting for session to be established...')
           
-          // Try again after a short delay - sometimes sessions take a moment
-          setTimeout(async () => {
+          setStatus('Waiting for session to establish...')
+          
+          // Try multiple times with increasing delays
+          let retryCount = 0
+          const maxRetries = 5
+          
+          const retryCheck = async () => {
+            retryCount++
+            console.log(`🔄 Retry attempt ${retryCount}/${maxRetries}`)
+            
             const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession()
+            console.log(`🔍 Retry ${retryCount} session:`, retrySession)
+            console.log(`❌ Retry ${retryCount} error:`, retryError)
             
             if (retrySession && retrySession.user) {
               console.log('✅ Session established on retry!')
+              console.log('👤 Retry user:', retrySession.user.email)
               window.location.href = '/dashboard'
+            } else if (retryCount < maxRetries) {
+              console.log(`⏳ Retry ${retryCount} failed, trying again in ${retryCount * 1000}ms...`)
+              setTimeout(retryCheck, retryCount * 1000)
             } else {
-              console.log('⚠️ Still no session after retry')
-              setStatus('Authentication incomplete. Redirecting to login...')
+              console.log('⚠️ All retries exhausted, no session established')
+              setStatus('Authentication failed. Redirecting to login...')
               setTimeout(() => {
-                router.push('/login?error=no_session_established')
+                window.location.href = '/login?error=session_timeout'
               }, 2000)
             }
-          }, 2000)
+          }
+          
+          // Start first retry after 1 second
+          setTimeout(retryCheck, 1000)
         }
       } catch (err) {
         console.error('💥 Callback processing error:', err)
