@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import "../veronica/styles.css";
+import "../../veronica/styles.css";
 
-export default function RonyxLoginPage() {
-  const [email, setEmail] = useState("");
+export default function RonyxBrandedLoginPage() {
+  const [email, setEmail] = useState("melidazvl@outlook.com"); // Pre-fill Veronica's email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,25 +28,16 @@ export default function RonyxLoginPage() {
       return;
     }
 
-    const role = data.user?.user_metadata?.role;
-    const userEmail = data.user?.email;
-    
-    // Special routing for Veronica's ROnyx Fleet Management
-    if (userEmail === "melidazvl@outlook.com" || role === "manager") {
-      router.push("/veronica"); // ROnyx Manager Dashboard
-    } else if (role === "admin") {
-      router.push("/dashboard");
-    } else {
-      router.push("/home");
-    }
+    // Direct to ROnyx Manager Dashboard
+    router.push("/veronica");
   }
 
   return (
     <div className="ronyx-login">
       <div className="login-box">
         <img src="/ronyx_logo.svg" alt="ROnyx Logo" className="ronyx-logo" />
-        <h2>Welcome to ROnyx Fleet Portal</h2>
-        <p className="login-tagline">Powered by Move Around TMS™</p>
+        <h2>ROnyx Fleet Management</h2>
+        <p className="login-tagline">Manager Portal • Powered by Move Around TMS™</p>
 
         <form onSubmit={handleLogin}>
           <input
@@ -64,11 +55,16 @@ export default function RonyxLoginPage() {
             required
           />
           <button type="submit" disabled={loading}>
-            {loading ? "Signing In..." : "Login"}
+            {loading ? "Signing In..." : "Access Dashboard"}
           </button>
         </form>
 
         {error && <p className="error-message">{error}</p>}
+        
+        <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#999' }}>
+          <p>ROnyx Fleet Management Portal</p>
+          <p>Dedicated access for Veronica Butanda</p>
+        </div>
       </div>
     </div>
   );
