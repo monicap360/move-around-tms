@@ -10,7 +10,7 @@ const supabase = createClient(
 
 interface UserProfile {
   id: string
-  role: 'super_admin' | 'partner' | 'owner' | 'company_admin' | 'staff' | 'user'
+  role: 'super_admin' | 'partner' | 'manager' | 'owner' | 'company_admin' | 'staff' | 'user'
   full_name: string
   company_id?: string
 }
@@ -105,6 +105,7 @@ export function useRoleBasedAuth() {
         // Monica, Breanna, Shamsa, Sylvia - unified admin access
         return '/admin' // Full admin dashboard
       case 'partner':
+      case 'manager':
         return '/partners/dashboard' // Generic partner dashboard
       case 'company_admin':
       case 'staff':
@@ -120,7 +121,9 @@ export function useRoleBasedAuth() {
     const roleHierarchy = {
       'super_admin': 5,
       'partner': 4,
+      'manager': 4,
       'owner': 3,
+      'company_admin': 3,
       'staff': 2,
       'user': 1
     }
