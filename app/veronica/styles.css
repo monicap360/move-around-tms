@@ -174,36 +174,10 @@
   max-width: 400px;
 }
 
-.logo-section {
-  margin-bottom: 1rem;
-}
-
 .ronyx-logo {
   max-height: 80px;
   margin-bottom: 1rem;
   filter: drop-shadow(0 0 8px #F7931E);
-}
-
-.logo-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80px;
-  margin-bottom: 1rem;
-}
-
-.logo-fallback.hidden {
-  display: none;
-}
-
-.logo-text {
-  font-size: 3rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #F7931E, #e8851a);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 0 8px rgba(247, 147, 30, 0.5));
 }
 
 .login-box h2 {

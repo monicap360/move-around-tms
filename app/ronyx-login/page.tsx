@@ -28,40 +28,16 @@ export default function RonyxLoginPage() {
       return;
     }
 
-    // Check user role and redirect accordingly
     const role = data.user?.user_metadata?.role;
-    const userEmail = data.user?.email;
-    
-    // Special routing for Veronica (ROnyx manager)
-    if (userEmail === "melidazvl@outlook.com" || role === "manager") {
-      router.push("/veronica");
-    } else if (role === "admin" || role === "super_admin") {
-      router.push("/admin");
-    } else if (role === "partner") {
-      router.push("/partners/dashboard");
-    } else {
-      router.push("/dashboard");
-    }
+    if (role === "manager") router.push("/veronica");
+    else if (role === "admin") router.push("/dashboard");
+    else router.push("/home");
   }
 
   return (
     <div className="ronyx-login">
       <div className="login-box">
-        <div className="logo-section">
-          <img 
-            src="/ronyx_logo.png" 
-            alt="ROnyx Logo" 
-            className="ronyx-logo"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-          <div className="logo-fallback hidden">
-            <div className="logo-text">ROnyx</div>
-          </div>
-        </div>
+        <img src="/ronyx_logo.png" alt="ROnyx Logo" className="ronyx-logo" />
         <h2>Welcome to ROnyx Fleet Portal</h2>
         <p className="login-tagline">Powered by Move Around TMS™</p>
 
@@ -86,11 +62,6 @@ export default function RonyxLoginPage() {
         </form>
 
         {error && <p className="error-message">{error}</p>}
-        
-        <div className="login-footer">
-          <p>ROnyx Fleet Management</p>
-          <p className="copyright">© 2025 Move Around TMS™</p>
-        </div>
       </div>
     </div>
   );
