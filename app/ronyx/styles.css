@@ -1,0 +1,65 @@
+/* === Ronyx Login Page === */
+.ronyx-login {
+  background: linear-gradient(135deg, #000000 70%, #F7931E 100%);
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Poppins', sans-serif;
+}
+
+.login-box {
+  background-color: rgba(0, 0, 0, 0.85);
+  padding: 2rem 3rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 0 25px rgba(247, 147, 30, 0.45);
+  width: 100%;
+  max-width: 400px;
+}
+
+.ronyx-logo {
+  max-height: 80px;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 8px #F7931E);
+}
+
+.login-tagline {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 1.5rem;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 1rem;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #111;
+  color: white;
+  font-size: 1rem;
+}
+
+.login-box button {
+  background-color: #F7931E;
+  color: black;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-box button:hover {
+  background-color: #ff9f3a;
+}
+
+.error-message {
+  color: #ff4d4d;
+  margin-top: 0.8rem;
+  font-weight: bold;
+}
