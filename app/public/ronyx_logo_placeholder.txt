@@ -1,0 +1,9 @@
+<!-- ROnyx Logo Placeholder -->
+<!-- Upload ronyx_logo.png to /public/ directory -->
+<!-- Recommended specs:
+  - Format: PNG with transparent background
+  - Size: 200x80 pixels (or similar ratio)
+  - Colors: Orange (#F7931E) and white/gray
+  - Text: "ROnyx" or "ROnyx Fleet" branding
+  - Style: Modern, professional fleet management logo
+-->
