@@ -1,0 +1,43 @@
+.veronica-dashboard {
+  background-color: #1E1E1E;
+  color: #FFFFFF;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.header-logo {
+  max-height: 70px;
+  filter: drop-shadow(0 0 8px #F7931E);
+}
+
+.powered {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.section-title {
+  color: #F7931E;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid #444;
+  padding: 0.75rem;
+}
+
+.data-table th {
+  color: #F7931E;
+}
