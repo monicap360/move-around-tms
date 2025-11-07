@@ -13,7 +13,8 @@ export default function VeronicaLayout({ children }: { children: React.ReactNode
         <p className="powered">Powered by Move Around TMS™</p>
         <nav className="header-nav">
           <a href="/partners/ronyx" className="nav-link">← RonYX Portal</a>
-          <a href="/veronica" className="nav-link active">Owner-Operators</a>
+          <a href="/veronica" className="nav-link">Owner-Operators</a>
+          <a href="/veronica/change-password" className="nav-link">🔐 Change Password</a>
         </nav>
       </header>
       <main className="dashboard-content">{children}</main>
