@@ -95,12 +95,17 @@ export function useRoleBasedAuth() {
   function getRedirectPath(): string {
     if (!profile) return '/auth'
 
+    // Special case for RonYX partner - Veronica Butanda
+    if (user?.email === 'melidazvl@outlook.com') {
+      return '/partners/ronyx' // RonYX branded dashboard
+    }
+
     switch (profile.role) {
       case 'super_admin':
         // Monica, Breanna, Shamsa, Sylvia - unified admin access
         return '/admin' // Full admin dashboard
       case 'partner':
-        return '/partners/dashboard' // Partner-specific dashboard
+        return '/partners/dashboard' // Generic partner dashboard
       case 'company_admin':
       case 'staff':
         return '/company/dashboard' // Company dashboard

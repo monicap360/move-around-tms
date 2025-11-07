@@ -1,0 +1,275 @@
+/* RonYX Fleet Management - Custom Brand Styling */
+/* Veronica Butanda - Owner-Operator Hub */
+
+:root {
+  /* RonYX Brand Colors */
+  --ronyx-primary: #F7931E;
+  --ronyx-bg: #1E1E1E;
+  --ronyx-text: #FFFFFF;
+  --ronyx-card: #2A2A2A;
+  --ronyx-border: #404040;
+  --ronyx-hover: #E8851A;
+  --ronyx-success: #22C55E;
+  --ronyx-warning: #F59E0B;
+  --ronyx-danger: #EF4444;
+}
+
+/* Override global theme for RonYX sections */
+.ronyx-dashboard * {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Custom RonYX Components */
+.ronyx-card {
+  background: var(--ronyx-card);
+  border: 1px solid var(--ronyx-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(247, 147, 30, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ronyx-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(247, 147, 30, 0.2);
+  border-color: var(--ronyx-primary);
+}
+
+.ronyx-button {
+  background: var(--ronyx-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.ronyx-button:hover {
+  background: var(--ronyx-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(247, 147, 30, 0.3);
+}
+
+.ronyx-button-outline {
+  background: transparent;
+  color: var(--ronyx-primary);
+  border: 2px solid var(--ronyx-primary);
+}
+
+.ronyx-button-outline:hover {
+  background: var(--ronyx-primary);
+  color: white;
+}
+
+/* RonYX Table Styling */
+.ronyx-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--ronyx-card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ronyx-table th {
+  background: var(--ronyx-bg);
+  color: var(--ronyx-text);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--ronyx-primary);
+}
+
+.ronyx-table td {
+  padding: 1rem;
+  color: var(--ronyx-text);
+  border-bottom: 1px solid var(--ronyx-border);
+}
+
+.ronyx-table tr:hover {
+  background: rgba(247, 147, 30, 0.05);
+}
+
+/* RonYX Form Elements */
+.ronyx-input {
+  background: var(--ronyx-card);
+  color: var(--ronyx-text);
+  border: 2px solid var(--ronyx-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.ronyx-input:focus {
+  outline: none;
+  border-color: var(--ronyx-primary);
+  box-shadow: 0 0 0 3px rgba(247, 147, 30, 0.1);
+}
+
+.ronyx-select {
+  background: var(--ronyx-card);
+  color: var(--ronyx-text);
+  border: 2px solid var(--ronyx-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* RonYX Status Indicators */
+.ronyx-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ronyx-status-active {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--ronyx-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.ronyx-status-pending {
+  background: rgba(247, 147, 30, 0.2);
+  color: var(--ronyx-primary);
+  border: 1px solid rgba(247, 147, 30, 0.3);
+}
+
+.ronyx-status-overdue {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--ronyx-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* RonYX Navigation */
+.ronyx-nav {
+  background: var(--ronyx-bg);
+  border-bottom: 3px solid var(--ronyx-primary);
+}
+
+.ronyx-nav-item {
+  color: var(--ronyx-text);
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  margin: 0 0.25rem;
+}
+
+.ronyx-nav-item:hover {
+  background: rgba(247, 147, 30, 0.1);
+  color: var(--ronyx-primary);
+}
+
+.ronyx-nav-item.active {
+  background: var(--ronyx-primary);
+  color: white;
+}
+
+/* RonYX Badges and Labels */
+.ronyx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--ronyx-card);
+  border: 1px solid var(--ronyx-border);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ronyx-badge-primary {
+  background: rgba(247, 147, 30, 0.1);
+  border-color: var(--ronyx-primary);
+  color: var(--ronyx-primary);
+}
+
+/* RonYX Loading States */
+.ronyx-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(247, 147, 30, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--ronyx-primary);
+  animation: ronyx-spin 1s ease-in-out infinite;
+}
+
+@keyframes ronyx-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* RonYX Responsive Design */
+@media (max-width: 768px) {
+  .ronyx-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ronyx-operators-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ronyx-quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .ronyx-header {
+    padding: 1rem;
+  }
+  
+  .ronyx-logo-section {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .ronyx-user-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .ronyx-quick-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* RonYX Animations */
+@keyframes ronyx-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ronyx-animate-in {
+  animation: ronyx-fadeIn 0.6s ease-out forwards;
+}
+
+/* RonYX Print Styles */
+@media print {
+  .ronyx-dashboard {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .ronyx-card {
+    border: 1px solid #ccc !important;
+    background: white !important;
+  }
+  
+  .ronyx-button {
+    display: none;
+  }
+}

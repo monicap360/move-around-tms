@@ -1,30 +1,36 @@
 {
-  "brand": "RonYX Logistics LLC",
-  "primary": "#C9A348",
-  "secondary": "#222222", 
-  "background": "#FFFFFF",
-  "accent": "#F5F5F5",
+  "brand": "RonYX Fleet Management",
+  "primary": "#F7931E",
+  "secondary": "#1E1E1E", 
+  "background": "#1E1E1E",
+  "accent": "#F7931E",
   "text": {
-    "primary": "#222222",
-    "secondary": "#666666",
-    "light": "#FFFFFF"
+    "primary": "#FFFFFF",
+    "secondary": "#CCCCCC",
+    "light": "#F7931E"
   },
-  "logo": "/partners/ronyx/logo.png",
-  "tagline": "Driven by Strength & Precision",
+  "logo": "/partners/ronyx/ronyx-logo.png",
+  "tagline": "Powered by Move Around TMS™",
   "navigation": {
-    "background": "#C9A348",
+    "background": "#1E1E1E",
     "text": "#FFFFFF",
-    "hover": "#B8932F"
+    "hover": "#F7931E"
   },
   "cards": {
-    "background": "#FFFFFF", 
-    "border": "#E5E5E5",
-    "shadow": "0 2px 8px rgba(201, 163, 72, 0.15)"
+    "background": "#2A2A2A", 
+    "border": "#404040",
+    "shadow": "0 4px 12px rgba(247, 147, 30, 0.2)"
   },
   "buttons": {
-    "primary": "#C9A348",
-    "primaryHover": "#B8932F",
-    "secondary": "#222222",
-    "secondaryHover": "#333333"
+    "primary": "#F7931E",
+    "primaryHover": "#E8851A",
+    "secondary": "#404040",
+    "secondaryHover": "#555555"
+  },
+  "dashboard": {
+    "title": "RonYX Fleet Management Portal",
+    "subtitle": "Owner-Operator Hub",
+    "owner": "Veronica Butanda",
+    "email": "melidazvl@outlook.com"
   }
 }
