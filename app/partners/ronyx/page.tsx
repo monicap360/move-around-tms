@@ -92,19 +92,19 @@ export default function RonYXDashboard() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 1rem'
           }}></div>
-          <p style={{ color: '#ccc' }}>Loading RonYX Fleet Portal...</p>
+          <p style={{ color: '#ccc' }}>Loading ROnyx Fleet Portal...</p>
         </div>
       </div>
     )
   }
 
-  // Check if user has access to RonYX dashboard
+  // Check if user has access to ROnyx dashboard
   if (!hasPermission('partner') && user?.email !== 'melidazvl@outlook.com') {
     return (
       <div className="ronyx-dashboard" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', color: '#ccc' }}>
           <h1 style={{ color: '#F7931E', fontSize: '2rem', marginBottom: '1rem' }}>Access Denied</h1>
-          <p>RonYX Fleet Management access required.</p>
+          <p>ROnyx Fleet Management access required.</p>
           <Link href="/" style={{ color: '#F7931E', textDecoration: 'none' }}>
             Return to Main Dashboard
           </Link>
@@ -120,7 +120,7 @@ export default function RonYXDashboard() {
       minHeight: '100vh',
       fontFamily: 'Inter, sans-serif'
     }}>
-      {/* RonYX Branded Header */}
+      {/* ROnyx Branded Header */}
       <header style={{ 
         background: 'linear-gradient(135deg, #1E1E1E 0%, #2d2d2d 100%)',
         borderBottom: '3px solid #F7931E',
@@ -134,7 +134,7 @@ export default function RonYXDashboard() {
           maxWidth: '1400px', 
           margin: '0 auto' 
         }}>
-          {/* RonYX Logo & Branding */}
+          {/* ROnyx Logo & Branding */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
             <div style={{ 
               width: '60px',
@@ -158,7 +158,7 @@ export default function RonYXDashboard() {
                 color: '#FFFFFF', 
                 margin: 0 
               }}>
-                RonYX Fleet Management
+                ROnyx Fleet Management
               </h1>
               <p style={{ color: '#F7931E', fontWeight: 600, margin: 0 }}>
                 Owner-Operator Hub
@@ -234,7 +234,7 @@ export default function RonYXDashboard() {
                 e.currentTarget.style.color = '#F7931E'
               }}
             >
-              📊 Detailed Owner-Operator Dashboard →
+              📊 ROnyx Manager Dashboard →
             </Link>
           </div>
         </div>

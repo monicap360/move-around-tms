@@ -1,4 +1,4 @@
-# 🚀 VERONICA BUTANDA (RonYX) - ACCOUNT SETUP GUIDE
+# 🚀 VERONICA BUTANDA (ROnyx) - ACCOUNT SETUP GUIDE
 
 ## 👤 User Account Details
 
@@ -99,7 +99,7 @@ WHERE partner_id IS NULL;
 
 ### 3. **Dashboard Navigation**
 - **Primary Dashboard**: `/veronica` - Owner-operator data table
-- **Visual Portal**: `/partners/ronyx` - RonYX branded overview
+- **Visual Portal**: `/partners/ronyx` - ROnyx branded overview
 - **Security**: `/veronica/change-password` - Password management
 
 ---
@@ -118,7 +118,7 @@ WHERE partner_id IS NULL;
 roleHierarchy = {
   'super_admin': 5,  // Monica, Breanna, Shamsa, Sylvia
   'partner': 4,      // Generic partners  
-  'manager': 4,      // Veronica (RonYX)
+  'manager': 4,      // Veronica (ROnyx)
   'owner': 3,        // Company owners
   'company_admin': 3, // Company administrators
   'staff': 2,        // Regular staff
@@ -160,7 +160,7 @@ After setup, verify:
 
 - **Login**: `https://ronyx.movearoundtms.app/login`
 - **Dashboard**: `https://ronyx.movearoundtms.app/veronica`
-- **RonYX Portal**: `https://ronyx.movearoundtms.app/partners/ronyx`
+- **ROnyx Portal**: `https://ronyx.movearoundtms.app/partners/ronyx`
 - **Settings**: `https://ronyx.movearoundtms.app/veronica/change-password`
 
 ---
@@ -184,6 +184,6 @@ After setup, verify:
 ## 🎨 Branding Confirmed
 
 - **Theme**: Dark background (#1E1E1E) with orange accents (#F7931E)
-- **Identity**: "RonYX Fleet Management Portal"
+- **Identity**: "ROnyx Fleet Management Portal"
 - **Powered By**: "Move Around TMS™"
 - **Logo**: Upload to `/public/veronica_logo.png`

@@ -5,7 +5,7 @@
 Main Domain: movearoundtms.com (marketing/info site)
 App Subdomain: movearoundtms.app (TMS application)
 Partner Subdomains:
-├── ronyx.movearoundtms.app (Veronica Butanda - RonYX Logistics)
+├── ronyx.movearoundtms.app (Veronica Butanda - ROnyx Logistics)
 ├── elite.movearoundtms.app (Maria Elizondo - Elite Transport)
 ├── meighoo.movearoundtms.app (Anil Meighoo - Meighoo Logistics)
 └── garza.movearoundtms.app (Miram Garza - Garza Transport)
@@ -60,7 +60,7 @@ Partner Subdomains:
 - Sylvia: `https://movearoundtms.app/admin-dashboard.html?user=sylvia`
 
 ### **Partner Portal Access**
-- RonYX (Veronica): `https://ronyx.movearoundtms.app/`
+- ROnyx (Veronica): `https://ronyx.movearoundtms.app/`
 - Elite (Maria): `https://elite.movearoundtms.app/`
 - Meighoo (Anil): `https://meighoo.movearoundtms.app/`
 - Garza (Miram): `https://garza.movearoundtms.app/`
