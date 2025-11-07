@@ -16,6 +16,32 @@
   filter: drop-shadow(0 0 8px #F7931E);
 }
 
+.header-nav {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.nav-link {
+  color: #999;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #F7931E;
+  background-color: rgba(247, 147, 30, 0.1);
+}
+
+.nav-link.active {
+  color: #F7931E;
+  background-color: rgba(247, 147, 30, 0.2);
+  font-weight: bold;
+}
+
 .powered {
   color: #888;
   font-size: 0.9rem;

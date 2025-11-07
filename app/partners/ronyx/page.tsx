@@ -213,6 +213,30 @@ export default function RonYXDashboard() {
           <p style={{ color: '#ccc', fontSize: '1.1rem' }}>
             Manage your owner-operators and track fleet performance
           </p>
+          <div style={{ marginTop: '1rem' }}>
+            <Link 
+              href="/veronica" 
+              style={{ 
+                color: '#F7931E', 
+                textDecoration: 'none',
+                padding: '0.5rem 1rem',
+                border: '1px solid #F7931E',
+                borderRadius: '6px',
+                fontSize: '0.9rem',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F7931E'
+                e.currentTarget.style.color = '#1E1E1E'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#F7931E'
+              }}
+            >
+              📊 Detailed Owner-Operator Dashboard →
+            </Link>
+          </div>
         </div>
 
         {/* Fleet Stats Overview */}

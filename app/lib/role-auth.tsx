@@ -97,7 +97,7 @@ export function useRoleBasedAuth() {
 
     // Special case for RonYX partner - Veronica Butanda
     if (user?.email === 'melidazvl@outlook.com') {
-      return '/partners/ronyx' // RonYX branded dashboard
+      return '/veronica' // Veronica's detailed Next.js dashboard
     }
 
     switch (profile.role) {
