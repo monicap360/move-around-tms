@@ -1,11 +1,71 @@
+  // Approve Ticket logic
+  // Approve Ticket logic (full implementation)
+  async function approveTicket() {
+    if (!selectedTicket) return;
+    try {
+      // 1. Save updated fields (if dispatcher edited)
+      let updatedFields: any = {};
+      if (ocrFields) {
+        updatedFields = {
+          tons: ocrFields.tons,
+          material_name: ocrFields.material,
+          price_per_ton: ocrFields.price_per_ton,
+          total_amount: ocrFields.total_amount,
+          ticket_number: ocrFields.ticket_number,
+          customer_name: ocrFields.customer_name,
+          plant_name: ocrFields.plant,
+        };
+      }
+      await supabase
+        .from('aggregate_tickets')
+        .update({
+          ...updatedFields,
+          status: 'approved',
+        })
+        .eq('id', selectedTicket.id);
+
+      // 2. Recalculate pay (Phase 1 function already exists)
+      await supabase.rpc('calculate_driver_pay', { ticket_id: selectedTicket.id });
+
+      // 3. Update load auto-advance
+      await supabase.rpc('auto_advance_load', { ticket_id: selectedTicket.id });
+
+      // 4. Insert into load_status_history (handled by auto_advance_load)
+
+      // 5. Broadcast realtime update (optional, if using supabase.realtime)
+      if (realtimeClient) {
+        const channel = realtimeClient.channel(`ticket:${selectedTicket.id}:ocr`, { config: { private: true } });
+        channel.send({
+          type: 'broadcast',
+          event: 'ticket_approved',
+          payload: { ticket_id: selectedTicket.id, status: 'approved' }
+        });
+      }
+
+      // 6. UI Behavior: lock fields, show badge, close modal, mark complete
+      setOcrStatus('approved');
+      toast.success('Ticket approved!');
+      await loadTicketData();
+      setTimeout(() => {
+        setSelectedTicket(null);
+        setOcrFields(null);
+      }, 1200);
+    } catch (error) {
+      toast.error('Failed to approve ticket.');
+      console.error(error);
+    }
+  }
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
+import { createClient } from '@supabase/supabase-js';
+import { uploadTicketImage } from "../../utils/uploadTicketImage";
+import toast from "react-hot-toast";
 import { 
   FileText, 
   Truck, 
@@ -41,7 +101,7 @@ interface AggregateTicket {
   delivery_location: string;
   pickup_date: string;
   delivery_date: string;
-  status: 'pending' | 'approved' | 'invoiced' | 'paid' | 'cancelled';
+  status: 'pending' | 'approved' | 'invoiced' | 'paid' | 'cancelled' | 'ocr_completed';
   odometer_start: number;
   odometer_end: number;
   fuel_used: number;
@@ -50,15 +110,15 @@ interface AggregateTicket {
   // Related data
   driver_name?: string;
   truck_number?: string;
-}
+// ...existing code (no stray bracket at end)
 
 interface Driver {
   id: string;
   name: string;
   phone: string;
   cdl_number: string;
+// ...existing code... (no stray bracket at end)
 }
-
 interface TruckInfo {
   id: string;
   truck_number: string;
@@ -67,7 +127,6 @@ interface TruckInfo {
   year: number;
 }
 
-export default function AggregateTicketsPage() {
   const [tickets, setTickets] = useState<AggregateTicket[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trucks, setTrucks] = useState<TruckInfo[]>([]);
@@ -77,11 +136,73 @@ export default function AggregateTicketsPage() {
   const [dateFilter, setDateFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<AggregateTicket | null>(null);
+  const [ocrFields, setOcrFields] = useState<any>(null);
+  const [ocrStatus, setOcrStatus] = useState<'pending' | 'completed' | 'approved'>('pending');
+  const [session, setSession] = useState<any>(null);
+  const [realtimeClient, setRealtimeClient] = useState<any>(null);
+  // Fetch session and set up realtime client
+  useEffect(() => {
+    const fetchSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      if (session) {
+        // Use the already-imported supabase client for realtime
+        await supabase.realtime.setAuth(session.access_token);
+        setRealtimeClient(supabase);
+      }
+    };
+    fetchSession();
+  }, []);
 
-  const [newTicket, setNewTicket] = useState({
+  // Real-time OCR subscription logic
+  useEffect(() => {
+    if (!realtimeClient || !session || !selectedTicket) return;
+    const channel = realtimeClient.channel(`ticket:${selectedTicket.id}:ocr`, { config: { private: true } });
+    const ocrHandler = (payload: any) => {
+      updateOCRUI(payload.data);
+    };
+    channel.on('broadcast', { event: 'ocr_completed' }, ocrHandler);
+    channel.subscribe();
+    return () => {
+      channel.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeClient, session, selectedTicket]);
+
+  // Update UI with OCR data
+  const updateOCRUI = useCallback((data: any) => {
+    setOcrFields(data.fields);
+    setOcrStatus('completed');
+    // Optionally update ticket status in UI
+    setTickets(prev => prev.map(t => t.id === selectedTicket?.id ? { ...t, status: 'ocr_completed' } : t));
+  }, [selectedTicket]);
+
+  const [newTicket, setNewTicket] = useState<{
+    ticket_number: string;
+    driver_id: string;
+    driver_name: string;
+    truck_id: string;
+    truck_number: string;
+    customer_name: string;
+    material_type: string;
+    quantity: number;
+    unit: string;
+    rate: number;
+    pickup_location: string;
+    delivery_location: string;
+    pickup_date: string;
+    delivery_date: string;
+    odometer_start: number;
+    odometer_end: number;
+    fuel_used: number;
+    notes: string;
+    image: File | null;
+  }>({
     ticket_number: '',
     driver_id: '',
+    driver_name: '',
     truck_id: '',
+    truck_number: '',
     customer_name: '',
     material_type: '',
     quantity: 0,
@@ -94,10 +215,19 @@ export default function AggregateTicketsPage() {
     odometer_start: 0,
     odometer_end: 0,
     fuel_used: 0,
-    notes: ''
+    notes: '',
+    image: null
   });
+  const [organizationId, setOrganizationId] = useState("");
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setOrganizationId(user?.user_metadata?.organization_id || "");
+      setUserId(user?.id || "");
+    };
+    fetchUser();
     loadTicketData();
   }, []);
 
@@ -117,6 +247,7 @@ export default function AggregateTicketsPage() {
       const { data: driverData, error: driverError } = await supabase
         .from('drivers')
         .select('id, name, phone, cdl_number')
+        .eq('organization_id', organizationId)
         .order('name');
 
       if (driverError) console.error("Error loading drivers:", driverError);
@@ -125,6 +256,7 @@ export default function AggregateTicketsPage() {
       const { data: truckData, error: truckError } = await supabase
         .from('trucks')
         .select('id, truck_number, make, model, year')
+        .eq('organization_id', organizationId)
         .order('truck_number');
 
       if (truckError) console.error("Error loading trucks:", truckError);
@@ -149,29 +281,80 @@ export default function AggregateTicketsPage() {
 
   async function createTicket() {
     try {
+      if (!organizationId || !userId) {
+        toast.error("Missing organization or user ID.");
+        return;
+      }
       const ticketNumber = `TKT-${Date.now().toString().slice(-8)}`;
       const total = newTicket.quantity * newTicket.rate;
 
-      const { data, error } = await supabase
+      // 1. Create ticket row first
+      const { data: ticketRow, error: insertError } = await supabase
         .from('aggregate_tickets')
         .insert([{
           ...newTicket,
           ticket_number: ticketNumber,
           total_amount: total,
-          status: 'pending'
+          status: 'pending',
+          organization_id: organizationId
         }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+      const ticket_id = ticketRow.id;
+
+      // 2. Upload image with metadata
+      if (newTicket.image) {
+        const { url, error: uploadError } = await uploadTicketImage(
+          newTicket.image,
+          organizationId,
+          ticket_id,
+          userId
+        );
+        if (uploadError) {
+          toast.error("Image upload failed.");
+          return;
+        }
+        // 3. Update ticket with image URL
+        await supabase
+          .from('aggregate_tickets')
+          .update({ ticket_image_url: url })
+          .eq('id', ticket_id);
+
+        // 4. Call OCR Edge Function
+        const { data: ocr } = await supabase.functions.invoke("vision-ocr", {
+          body: {
+            image_url: url,
+            organization_id: organizationId,
+            ticket_id
+          }
+        });
+        if (ocr) {
+          // Auto-fill fields from OCR
+          setNewTicket(nt => ({
+            ...nt,
+            driver_id: ocr.driver_id || nt.driver_id,
+            driver_name: ocr.driver_name || nt.driver_name,
+            truck_id: ocr.truck_id || nt.truck_id,
+            truck_number: ocr.truck_number || nt.truck_number,
+            material_type: ocr.material || nt.material_type,
+            quantity: ocr.tons || nt.quantity,
+            pickup_location: ocr.jobsite || nt.pickup_location,
+            delivery_location: ocr.jobsite || nt.delivery_location,
+            notes: ocr.ticket_number ? `Ticket #: ${ocr.ticket_number}` : nt.notes
+          }));
+          toast.success("OCR data extracted and fields auto-filled.");
+        }
+      }
 
       await loadTicketData();
       setShowCreateModal(false);
       resetNewTicket();
-      
+      toast.success("Ticket uploaded successfully!");
     } catch (error) {
       console.error("Error creating ticket:", error);
-      alert("Failed to create ticket. Please try again.");
+      toast.error("Failed to create ticket. Please try again.");
     }
   }
 
@@ -179,7 +362,9 @@ export default function AggregateTicketsPage() {
     setNewTicket({
       ticket_number: '',
       driver_id: '',
+      driver_name: '',
       truck_id: '',
+      truck_number: '',
       customer_name: '',
       material_type: '',
       quantity: 0,
@@ -192,7 +377,8 @@ export default function AggregateTicketsPage() {
       odometer_start: 0,
       odometer_end: 0,
       fuel_used: 0,
-      notes: ''
+      notes: '',
+      image: null
     });
   }
 
@@ -418,7 +604,11 @@ export default function AggregateTicketsPage() {
                   {filteredTickets.map((ticket) => (
                     <tr key={ticket.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 font-mono text-xs">{ticket.ticket_number}</td>
-                      <td className="p-3">{getStatusBadge(ticket.status)}</td>
+                      <td className="p-3">{getStatusBadge(ticket.status)}
+                        {selectedTicket && selectedTicket.id === ticket.id && ocrStatus === 'completed' && (
+                          <span className="ml-2 text-green-600"><CheckCircle className="inline w-4 h-4" /> OCR Complete</span>
+                        )}
+                      </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-gray-500" />
@@ -458,6 +648,44 @@ export default function AggregateTicketsPage() {
           )}
         </CardContent>
       </Card>
+      {/* Ticket Details OCR Fields (if selected) */}
+      {selectedTicket && (
+        <Card className={`mt-6 ${ocrStatus === 'approved' ? 'bg-green-50 border-green-400' : ''}`}>
+          <CardHeader>
+            <CardTitle>
+              OCR Fields
+              {ocrStatus === 'approved' && (
+                <span className="ml-4 px-2 py-1 bg-green-600 text-white rounded text-xs">Ticket Approved</span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ocrFields ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div><b>Material:</b> {ocrFields.material}</div>
+                <div><b>Tons:</b> {ocrFields.tons}</div>
+                <div><b>Plant:</b> {ocrFields.plant}</div>
+                <div><b>Ticket #:</b> {ocrFields.ticket_number}</div>
+                <div><b>Customer:</b> {ocrFields.customer_name}</div>
+                <div><b>Price/Ton:</b> {ocrFields.price_per_ton}</div>
+                <div><b>Total:</b> {ocrFields.total_amount}</div>
+                {/* Add more fields as needed */}
+                <div className="col-span-2 text-green-600 font-bold flex items-center gap-2">
+                  {ocrStatus === 'completed' && <><CheckCircle className="w-5 h-5" /> OCR Complete</>}
+                  {ocrStatus === 'approved' && <><CheckCircle className="w-5 h-5" /> Ticket Approved</>}
+                </div>
+                <div className="col-span-2 flex gap-2 mt-4">
+                  <Button variant="success" onClick={approveTicket} disabled={ocrStatus === 'approved'}>
+                    <CheckCircle className="w-4 h-4 mr-1" /> Approve Ticket
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>Waiting for OCR results...</div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create Ticket Modal */}
       {showCreateModal && (
@@ -594,6 +822,12 @@ export default function AggregateTicketsPage() {
                 <Button onClick={createTicket}>
                   Create Ticket
                 </Button>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={e => setNewTicket(nt => ({ ...nt, image: e.target.files?.[0] || null }))}
+                  className="mt-2"
+                />
               </div>
             </CardContent>
           </Card>

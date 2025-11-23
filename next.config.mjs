@@ -1,60 +1,30 @@
+// next.config.mjs
+// Next.js core configuration file.
+
+const nextConfig = {
+  reactStrictMode: true,
+  experimental: { serverActions: true },
+  images: { domains: ["supabase.co"] },
+};
+
+export default nextConfig;
+<<<<<<< HEAD
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // For Vercel deployment optimization
-  images: {
-    unoptimized: false,
-    domains: ['wqeidcatuwqtzwhvmqfr.supabase.co']
-  },
-  
-  // Remove trailing slash for Vercel
-  trailingSlash: false,
-  
-  // Standard output for Vercel
-  // output: 'standalone', // Remove this for Vercel deployment
-  
-  // Enable type checking for better error detection
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-  
-  // Environment variables
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  },
+// next.config.mjs
+// Core Next.js configuration.
 
-  // Performance optimizations
-  compiler: {
-    // Remove console.logs in production
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
+const nextConfig = {
+  reactStrictMode: true,
+  experimental: { serverActions: true },
+  images: { domains: ["supabase.co"] },
+};
 
-  // Webpack optimizations for faster builds
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Enable parallel processing
-    config.parallelism = 100;
-    
-    // Optimize chunk splitting for better caching
-    if (!isServer) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-            priority: 10,
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            priority: 5,
-          },
-        },
-      };
+export default nextConfig;
     }
 
+<<<<<<< HEAD
     return config;
   },
 
@@ -71,10 +41,47 @@ const nextConfig = {
       rules: {
         '*.tsx': ['@vercel/next/typescript-transform'],
         '*.ts': ['@vercel/next/typescript-transform'],
+=======
+    // Enable turbo mode for faster compilation
+    config.mode = dev ? 'development' : 'production';
+    
+    // Optimize memory usage
+    config.optimization.minimize = !dev;
+    
+    // Ensure path alias '@' resolves to the app directory so imports like '@/components/..' work
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(process.cwd(), 'app'),
+    };
+    
+    return config;
+  },
+
+  // Server external packages
+  serverExternalPackages: ['@supabase/supabase-js'],
+  
+  // Experimental features for performance
+  experimental: {
+    // Enable optimized package imports
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-tabs', '@radix-ui/react-select', '@radix-ui/react-progress'],
+    
+    // Memory optimizations
+    webVitalsAttribution: ['CLS', 'LCP'],
+  },
+  
+  // Turbopack configuration
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+>>>>>>> 34e73bd382610bff689903bedc8d62eed355fc8a
       },
     },
   },
   
+<<<<<<< HEAD
   // Build optimizations
   poweredByHeader: false,
   generateEtags: true,
@@ -84,3 +91,30 @@ const nextConfig = {
 }
 
 export default nextConfig;
+=======
+  // Optimize build output
+  poweredByHeader: false,
+  generateEtags: false,
+  
+  // Headers for better caching
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
+// Force fresh deployment - 11/04/2025 18:32:28
+
+// Vercel deployment trigger - 2025-11-04 18:54:41
+
+// Author fix commit - 2025-11-05
+// trigger vercel build - 2025-11-05
+
+>>>>>>> 34e73bd382610bff689903bedc8d62eed355fc8a

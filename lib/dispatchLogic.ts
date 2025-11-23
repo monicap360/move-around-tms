@@ -1,3 +1,34 @@
+// lib/dispatchLogic.ts
+// Logic for assigning available drivers to pending loads.
+
+import { supabase } from "@/lib/supabaseClient";
+
+export async function dispatchNextLoad(driverId: string) {
+  const { data: load, error } = await supabase
+    .from("loads")
+    .select("*")
+    .eq("status", "Pending")
+    .limit(1)
+    .single();
+
+  if (error || !load) return null;
+
+  const { error: assignErr } = await supabase
+    .from("driver_assignments")
+    .insert({
+      driver_id: driverId,
+      load_id: load.id,
+      status: "Dispatched",
+    });
+
+  if (assignErr) {
+    console.error("Dispatch error:", assignErr);
+    return null;
+  }
+
+  await supabase.from("loads").update({ status: "Dispatched" }).eq("id", load.id);
+  return load;
+}
 // Dispatch logic utilities
 export interface Truck {
   id: string;
@@ -57,7 +88,6 @@ export async function autoAssignBackupTruck(originalTruckId: string, loadId: str
       success: true,
       message: 'Backup truck assigned successfully',
       assignment: {
-        loadId,
         truckId: selectedTruck.id,
         driverId: selectedTruck.driverId,
         truckNumber: selectedTruck.number
@@ -98,3 +128,56 @@ function calculateDistance(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
+=======
+// lib/dispatchLogic.ts
+// Server-side dispatch helper functions — intended to be used from API routes.
+
+import { supabase } from '@/lib/supabaseClient'
+
+export async function findBackupTruck(driverId: string) {
+  // Get the driver's qualified truck types
+  const { data: driverQuals, error: dqError } = await supabase
+    .from('driver_qualifications')
+    .select('truck_type')
+    .eq('driver_id', driverId)
+    .eq('qualified', true)
+
+  if (dqError) {
+    console.error('Error fetching driver qualifications', dqError)
+    return null
+  }
+
+  if (!driverQuals || driverQuals.length === 0) return null
+
+  // pick first qualified type (could be improved to prefer certain types)
+  const type = driverQuals[0].truck_type
+
+  const { data: trucks, error: tError } = await supabase
+    .from('trucks')
+    .select('*')
+    .eq('truck_type', type)
+    .eq('status', 'Ready')
+    .limit(1)
+
+  if (tError) {
+    console.error('Error fetching trucks', tError)
+    return null
+  }
+
+  return trucks && trucks.length ? trucks[0] : null
+}
+
+export async function autoAssignBackupTruck(driverId: string) {
+  const backup = await findBackupTruck(driverId)
+  if (!backup) return { success: false, message: 'No backup truck found.' }
+
+  // Update driver_assignments table - this assumes driver_assignments exists
+  const { error } = await supabase
+    .from('driver_assignments')
+    .update({ truck_id: backup.id, status: 'Reassigned' })
+    .eq('driver_id', driverId)
+
+  if (error) return { success: false, message: error.message }
+  return { success: true, message: `Driver reassigned to ${backup.unit_number || backup.unit || backup.id}` }
+}
+>>>>>>> 34e73bd382610bff689903bedc8d62eed355fc8a

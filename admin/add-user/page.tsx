@@ -57,33 +57,30 @@ export default function AddUserPage() {
     }
   };
 
-        if (isAdminTokenExpired()) {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess("");
 
+    if (!adminToken || isAdminTokenExpired()) {
+      setError("Admin token required or expired. Please enter your token above.");
+      setLoading(false);
+      return;
+    }
     try {
-      if (!adminToken) {
-        setError("Admin token required. Please enter your token above.");
-        setLoading(false);
-        return;
-      }
       const res = await fetch("/api/admin/add-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${adminToken}`,
         },
-            if (!adminToken || isAdminTokenExpired()) {
-              setError("Admin token required or expired. Please enter your token above.");
-              setLoading(false);
-              return;
-            }
+        body: JSON.stringify({ email, password, role, company }),
+      });
+      const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to add user");
       }
-
       setSuccess(
         `User created successfully! User ID: ${data.user.id}. ${
           data.confirmationRequired
@@ -258,7 +255,9 @@ export default function AddUserPage() {
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-700 text-sm">{error}</p>
-                    <ErrorBanner message={error} />
+                <ErrorBanner message={error} />
+              </div>
+            )}
             {success && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-700 text-sm">{success}</p>

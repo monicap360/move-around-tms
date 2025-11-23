@@ -1,33 +1,41 @@
+export const dynamic = 'force-dynamic';
 
-"use client";
 
-import { useEffect, useState } from "react";
-import { getAdminToken } from "../../../lib/adminToken";
-import { ErrorBanner } from "../../../components/ErrorBanner";
+import React, { useState } from "react";
 
-export default function DriversAdminPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function DriverProfilePage() {
+  const [driver, setDriver] = useState({
+    id: "sample-1",
+    name: "John Doe",
+    license: "A1234567",
+    status: "Active",
+  });
+  const [deleted, setDeleted] = useState(false);
 
-  useEffect(() => {
-    const adminToken = getAdminToken();
-    if (!adminToken) {
-      setError("Admin token missing or expired. Please re-enter your admin token.");
-      return;
-    }
-
-    setToken(adminToken);
-  }, []);
-
-  if (error) return <ErrorBanner message={error} />;
-
-  if (!token) return <p>Loading...</p>;
+  const handleDelete = () => {
+    // Simulate delete
+    setDeleted(true);
+  };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Drivers Admin</h1>
-      {/* Rest of your admin page */}
-    </div>
+    <main className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Driver Profile</h1>
+      {!deleted ? (
+        <div className="border rounded p-4 mb-4 bg-white shadow">
+          <div className="mb-2"><strong>Name:</strong> {driver.name}</div>
+          <div className="mb-2"><strong>License:</strong> {driver.license}</div>
+          <div className="mb-2"><strong>Status:</strong> {driver.status}</div>
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            onClick={handleDelete}
+          >
+            Delete Driver
+          </button>
+        </div>
+      ) : (
+        <div className="text-green-600 font-semibold">Driver deleted.</div>
+      )}
+    </main>
   );
 }
 

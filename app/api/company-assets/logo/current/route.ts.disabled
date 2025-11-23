@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from "next/server";
+import { CompanyAssetsService } from "@/lib/services/company-assets";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * GET /api/company-assets/logo/current
+ * Get the most recent company logo
+ */
+export async function GET() {
+  try {
+    const result = await CompanyAssetsService.getCurrentLogo();
+
+    if (result.error) {
+      // If no logo found, return null data instead of error
+      if (result.error.message.includes('No rows')) {
+        return NextResponse.json({
+          success: true,
+          data: null,
+          message: 'No company logo found',
+        });
+      }
+
+      return NextResponse.json(
+        { success: false, error: result.error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+    });
+
+  } catch (error) {
+    console.error('Error fetching current company logo:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch current company logo' },
+      { status: 500 }
+    );
+  }
+}

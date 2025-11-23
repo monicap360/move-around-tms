@@ -19,18 +19,16 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#3b82f6" />
         <meta name="description" content="Enterprise Transportation Management System for Ronyx Logistics LLC" />
-        <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Ronyx TMS" />
       </head>
-      <body className="h-screen bg-gray-100 text-gray-800">
+      <body className="flex bg-gray-100">
         <SupabaseProvider>
           <LoadingProvider>
             <ClientLayoutWrapper>
-              {children}
+              <main className="ml-60 mt-12 p-6 w-full">{children}</main>
             </ClientLayoutWrapper>
           </LoadingProvider>
         </SupabaseProvider>

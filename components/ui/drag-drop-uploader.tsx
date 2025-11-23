@@ -1,7 +1,10 @@
+// components/ui/drag-drop-uploader.tsx
+// Drag & drop file uploader with progress display.
+
+
 "use client";
 import { useCallback, useState } from "react";
 import { Upload as UploadIcon, FileText, Image as ImageIcon, X } from "lucide-react";
-import { safeAlert } from "@/lib/utils/alert";
 
 interface FileWithPreview extends File {
   preview?: string;
@@ -31,7 +34,7 @@ export default function DragDropUploader({
   const validateFile = (file: File): boolean => {
     // Check file size
     if (file.size > maxFileSize * 1024 * 1024) {
-      safeAlert(`File ${file.name} is too large. Maximum size is ${maxFileSize}MB.`);
+      alert(`File ${file.name} is too large. Maximum size is ${maxFileSize}MB.`);
       return false;
     }
 
@@ -44,7 +47,7 @@ export default function DragDropUploader({
     });
 
     if (!isValidType) {
-      safeAlert(`File ${file.name} is not a supported format.`);
+      alert(`File ${file.name} is not a supported format.`);
       return false;
     }
 
@@ -56,7 +59,7 @@ export default function DragDropUploader({
     const validFiles = files.filter(validateFile);
     
     if (validFiles.length > maxFiles) {
-      safeAlert(`You can only upload up to ${maxFiles} files at once.`);
+      alert(`You can only upload up to ${maxFiles} files at once.`);
       validFiles.splice(maxFiles);
     }
 

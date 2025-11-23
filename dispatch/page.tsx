@@ -1,49 +1,30 @@
-"use client";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import DispatchSidebar from "../components/DispatchSidebar";
+import LoadBoard from "../components/LoadBoard";
+import DriverPanel from "../components/DriverPanel";
+import MessagesPanel from "../components/MessagesPanel";
+import Timeline from "../components/Timeline";
+import StatusTracker from "../components/StatusTracker";
 
-export default function DispatchPage() {
+export default function DispatchDashboard() {
   return (
-    <div className="p-8">
-      <Card className="shadow-lg border border-gray-200 bg-white">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
-          <CardTitle>Dispatch Center</CardTitle>
-        </CardHeader>
-        <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>
-            Assign and track loads in real time. Manage pickup and drop-off
-            scheduling and route optimization.
-          </p>
-          <p className="text-sm text-gray-500">
-            Coming soon: map view, load boards, and dispatcher-to-driver chat.
-          </p>
-
-          <div className="mt-4">
-            <Button
-              onClick={async () => {
-                try {
-                  // Example: suggest a reassignment for Lilia G.
-                  const res = await fetch('/api/reassign', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ driverName: 'Lilia G.' }),
-                  })
-                  const data = await res.json()
-                  if (data.ok) {
-                    alert(`Suggested truck: ${data.suggestedTruck.unit} (type: ${data.suggestedTruck.truck_type})`)
-                  } else {
-                    alert(`No suggestion: ${data.message}`)
-                  }
-                } catch (err) {
-                  alert('Error while requesting suggestion: ' + String(err))
-                }
-              }}
-            >
-              Suggest Reassignment
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen bg-gray-50">
+      <DispatchSidebar />
+      <main className="flex-1 p-6 grid grid-cols-2 gap-6">
+        <section>
+          <h2 className="text-xl font-bold mb-2">Load Board</h2>
+          <LoadBoard />
+          <h2 className="text-xl font-bold mt-8 mb-2">Driver Panel</h2>
+          <DriverPanel />
+        </section>
+        <section>
+          <h2 className="text-xl font-bold mb-2">Messages</h2>
+          <MessagesPanel />
+          <h2 className="text-xl font-bold mt-8 mb-2">Timeline</h2>
+          <Timeline />
+          <h2 className="text-xl font-bold mt-8 mb-2">Status Tracker</h2>
+          <StatusTracker />
+        </section>
+      </main>
     </div>
   );
 }

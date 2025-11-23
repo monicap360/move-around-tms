@@ -1,3 +1,24 @@
+// lib/security.ts
+// Basic sanitization and token utility functions.
+
+export function sanitize(input: string): string {
+  return input.replace(/[<>]/g, "");
+}
+
+export function hasValidToken(token?: string) {
+  return typeof token === "string" && token.length > 20;
+}
+// lib/security.ts
+// Basic input sanitizer & token utilities.
+
+export function sanitize(input: string): string {
+  return input.replace(/[<>]/g, "");
+}
+
+export function hasValidToken(token?: string) {
+  return typeof token === "string" && token.length > 20;
+}
+<<<<<<< HEAD
 import { NextRequest, NextResponse } from 'next/server';
 import supabaseAdmin from './supabaseAdmin';
 import { verifyJWT } from './jwt';
@@ -278,3 +299,34 @@ export function requireSameOrigin(request: NextRequest) {
   
   return true
 }
+=======
+import type { NextRequest } from 'next/server'
+
+export function isSameOrigin(req: NextRequest) {
+  try {
+    const origin = req.headers.get('origin') || ''
+    const referer = req.headers.get('referer') || ''
+    const requestOrigin = new URL(req.url).origin
+    const allowed = process.env.NEXT_PUBLIC_BASE_URL || ''
+
+    // Prefer Origin header; fallback to Referer
+    const headerOrigin = origin || (referer ? new URL(referer).origin : '')
+
+    if (!headerOrigin) return false
+
+    // Allow if matches current request origin
+    if (headerOrigin === requestOrigin) return true
+
+    // Allow if matches explicitly configured base URL
+    if (allowed && headerOrigin === allowed) return true
+
+    return false
+  } catch {
+    return false
+  }
+}
+
+export function requireSameOrigin(req: NextRequest) {
+  return isSameOrigin(req)
+}
+>>>>>>> 34e73bd382610bff689903bedc8d62eed355fc8a

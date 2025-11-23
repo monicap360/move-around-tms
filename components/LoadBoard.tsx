@@ -11,70 +11,41 @@ import {
   DollarSign, 
   Calendar,
   Search,
-  Filter,
-  RefreshCw,
-  Star,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  Route,
-  Package
-} from "lucide-react";
 
-interface Load {
-  id: string;
-  origin: {
-    city: string;
-    state: string;
-    zipCode: string;
-    coordinates?: { lat: number; lng: number };
-  };
-  destination: {
-    city: string;
-    state: string;
-    zipCode: string;
-    coordinates?: { lat: number; lng: number };
-  };
-  pickupDate: string;
-  deliveryDate?: string;
-  equipment: 'van' | 'flatbed' | 'reefer' | 'tanker' | 'container' | 'other';
-  weight: number;
-  length?: number;
-  rate: number;
-  rateType: 'per_mile' | 'flat_rate' | 'percentage';
-  miles: number;
-  ratePerMile: number;
-  commodity: string;
-  broker: {
-    name: string;
-    mcNumber?: string;
-    rating: number;
-    paymentTerms: string;
-  };
-  requirements?: string[];
-  hazmat: boolean;
-  teamDriver: boolean;
-  expedite: boolean;
-  status: 'available' | 'booked' | 'in_transit' | 'delivered';
-  createdAt: string;
-  expires?: string;
-}
-
-interface SearchFilters {
-  originRadius: number;
-  destinationRadius: number;
-  equipmentType: string;
-  minRate: number;
-  maxWeight: number;
-  pickupDateRange: { start: string; end: string };
-  excludeHazmat: boolean;
-  teamDriverOnly: boolean;
-}
-
-export default function LoadBoard() {
-  const [loads, setLoads] = useState<Load[]>([]);
-  const [filteredLoads, setFilteredLoads] = useState<Load[]>([]);
-  const [loading, setLoading] = useState(true);
+  export default function LoadBoard() {
+    // TODO: Integrate Supabase loads query
+    return (
+      <div className="bg-white rounded shadow p-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-semibold">Loads</span>
+          <button className="px-3 py-1 bg-blue-600 text-white rounded">Refresh</button>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Driver</th>
+              <th>Origin</th>
+              <th>Destination</th>
+              <th>ACK</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Example row */}
+            <tr>
+              <td>12345</td>
+              <td><span className="bg-green-100 text-green-700 px-2 py-1 rounded">Acknowledged</span></td>
+              <td>John Doe</td>
+              <td>Plant A</td>
+              <td>Site B</td>
+              <td><button className="px-2 py-1 bg-green-600 text-white rounded">ACK</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  }
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
