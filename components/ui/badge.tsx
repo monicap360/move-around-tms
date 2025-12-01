@@ -1,33 +1,3 @@
-<<<<<<< HEAD
-import React from 'react';
-
-interface BadgeProps {
-  children: React.ReactNode;
-  variant?: 'default' | 'secondary' | 'destructive' | 'outline';
-  className?: string;
-}
-
-export const Badge: React.FC<BadgeProps> = ({ 
-  children, 
-  variant = 'default',
-  className = "" 
-}) => {
-  const baseClasses = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
-  
-  const variantClasses = {
-    default: "border-transparent bg-blue-600 text-white hover:bg-blue-700",
-    secondary: "border-transparent bg-gray-100 text-gray-900 hover:bg-gray-200",
-    destructive: "border-transparent bg-red-600 text-white hover:bg-red-700",
-    outline: "border-gray-300 text-gray-900"
-  };
-
-  return (
-    <div className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
-      {children}
-    </div>
-  );
-};
-=======
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -67,4 +37,3 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 export { Badge, badgeVariants }
->>>>>>> 34e73bd382610bff689903bedc8d62eed355fc8a

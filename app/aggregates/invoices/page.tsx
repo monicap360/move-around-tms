@@ -38,10 +38,11 @@ export default function InvoicesPage() {
   }, [form.line_items]);
 
   useEffect(() => {
+
     const load = async () => {
       setLoading(true);
       try {
-  const data = await api<{ invoices: any[] }>("/api/invoices");
+        const data = await api<{ invoices: any[] }>("/api/aggregates/invoices");
         setInvoices(data.invoices);
       } catch (e) {
         console.error(e);
@@ -66,7 +67,7 @@ export default function InvoicesPage() {
         primary_state: form.primary_state,
         line_items: form.line_items,
       };
-  const data = await api<{ invoice: any }>("/api/invoices", { method: 'POST', body: JSON.stringify(payload) });
+      const data = await api<{ invoice: any }>("/api/aggregates/invoices", { method: 'POST', body: JSON.stringify(payload) });
       setInvoices((arr) => [data.invoice, ...arr]);
     } catch (e) {
       alert((e as Error).message);

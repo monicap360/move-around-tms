@@ -3,6 +3,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* MoveAround Galaxy Theme (with customer customization) */
+:root {
+  --color-primary: #2D2A4A;
+  --color-secondary: #6C63FF;
+  --color-accent: #00FFD0;
+  --color-background: #181828;
+  --color-surface: #23233A;
+  --color-text: #FFFFFF;
+  --color-muted: #A0A0C0;
+  --color-success: #00FFB0;
+  --color-warning: #FFD600;
+  --color-error: #FF4B6E;
+  --color-info: #6C63FF;
+  --color-border: #35355A;
+}
+
+/* Customer overrides: add a .customer-theme class to <body> and override any variable */
+.customer-theme {
+  /* Example: */
+  /* --color-primary: #FF8800; */
+}
+
 body {
   font-family: "Inter", "Roboto", "Helvetica Neue", sans-serif;
 }

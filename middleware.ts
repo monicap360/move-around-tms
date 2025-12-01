@@ -1,30 +1,22 @@
-// middleware.ts
-// Access middleware — expand later for session validation.
 
-
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
+import { NextResponse } from "next/server";
 
-// Tell Next.js which routes this applies to
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|login|auth|api).*)"],
-};
-
-export async function middleware(req: NextRequest) {
+// 🚀 Middleware disabled — all routes allowed.
+// This ensures no authentication checks and no login interception.
+export function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // Redirect unauthenticated users
-  if (!session && !req.nextUrl.pathname.startsWith("/login")) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    return NextResponse.redirect(redirectUrl);
-  }
-
+  // Optional simple security headers (safe + recommended)
+  res.headers.set("X-Frame-Options", "SAMEORIGIN");
+  res.headers.set("X-Content-Type-Options", "nosniff");
+  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   return res;
 }
+
+// Middleware applies to all routes except static assets
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|api).*)"
+  ],
+};

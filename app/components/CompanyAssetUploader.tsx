@@ -11,7 +11,7 @@ interface CompanyAssetUploaderProps {
   onUploadComplete?: (asset: any) => void;
 }
 
-export function CompanyAssetUploader({ assetType, onUploadComplete }: CompanyAssetUploaderProps) {
+const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
@@ -185,4 +185,7 @@ export function CompanyAssetUploader({ assetType, onUploadComplete }: CompanyAss
       </CardContent>
     </Card>
   );
+
 }
+
+export default CompanyAssetUploader;
