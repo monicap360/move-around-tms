@@ -1,16 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // For Vercel deployment optimization
+  // Image optimization for Digital Ocean deployment
   images: {
     unoptimized: false,
     domains: ['wqeidcatuwqtzwhvmqfr.supabase.co']
   },
   
-  // Remove trailing slash for Vercel
   trailingSlash: false,
-  
-  // Standard output for Vercel
-  // output: 'standalone', // Remove this for Vercel deployment
   
   // Enable type checking for better error detection
   typescript: {
@@ -58,21 +54,12 @@ const nextConfig = {
     return config;
   },
 
-  // Vercel-optimized settings
+  // Standard settings for Node.js deployment
   experimental: {
-    // Enable server actions
-    serverActions: true,
     // Enable concurrent features for faster builds
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
     // Optimize CSS handling
     optimizeCss: true,
-    // Enable turbo mode for faster builds
-    turbo: {
-      rules: {
-        '*.tsx': ['@vercel/next/typescript-transform'],
-        '*.ts': ['@vercel/next/typescript-transform'],
-      },
-    },
   },
   
   // Build optimizations

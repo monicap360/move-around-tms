@@ -56,8 +56,6 @@ const nextConfig = {
 
   // Standard settings for Node.js deployment
   experimental: {
-    // Enable server actions
-    serverActions: true,
     // Enable concurrent features for faster builds
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
     // Optimize CSS handling
