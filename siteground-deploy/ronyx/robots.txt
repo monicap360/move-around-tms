@@ -1,0 +1,75 @@
+# Robots.txt for Ronyx Fleet Management Portal
+# https://ronyx.movearoundtms.app/robots.txt
+
+User-agent: *
+Allow: /
+Allow: /login.html
+Allow: /assets/css/
+Allow: /assets/js/
+Allow: /assets/images/
+Allow: /manifest.json
+
+# Disallow sensitive areas
+Disallow: /api/
+Disallow: /.env
+Disallow: /config/
+Disallow: /admin/
+Disallow: /private/
+Disallow: /tmp/
+Disallow: /*.log
+Disallow: /*.sql
+Disallow: /*.backup
+
+# Allow CSS and JS files for better rendering
+Allow: *.css
+Allow: *.js
+Allow: *.svg
+Allow: *.png
+Allow: *.jpg
+Allow: *.jpeg
+Allow: *.gif
+Allow: *.webp
+Allow: *.woff
+Allow: *.woff2
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://ronyx.movearoundtms.app/sitemap.xml
+
+# Additional directives for specific bots
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: TwitterBot
+Allow: /
+
+# Block unwanted bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Security and performance
+User-agent: *
+Request-rate: 1/1s
+Visit-time: 0600-2300

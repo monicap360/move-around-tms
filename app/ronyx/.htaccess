@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# Proxy Supabase REST API
+RewriteRule ^api/supabase/(.*)$ https://wqeidcatuwqtzwhvmqfr.supabase.co/rest/v1/$1 [P,L]
+
+# Proxy Supabase Auth API
+RewriteRule ^auth/v1/(.*)$ https://wqeidcatuwqtzwhvmqfr.supabase.co/auth/v1/$1 [P,L]
+
+# CORS headers for Supabase responses
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE"
+Header always set Access-Control-Allow-Headers "Authorization, Content-Type, apikey, x-client-info"

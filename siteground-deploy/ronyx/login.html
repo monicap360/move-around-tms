@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Ronyx Fleet Portal</title>
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Login to Ronyx Fleet Management Portal - Secure access to fleet operations">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="./assets/css/main.css">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-box fade-in">
+            <!-- Logo -->
+            <img src="./ronyx_logo.png" alt="Ronyx Fleet Management Logo" class="login-logo">
+            
+            <!-- Title -->
+            <h1 class="login-title">Welcome to Ronyx Fleet Portal</h1>
+            <p class="login-subtitle">Powered by Move Around TMS™</p>
+            
+            <!-- Login Form -->
+            <form id="loginForm" novalidate>
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email"
+                        class="form-input" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                        spellcheck="false"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password"
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+                
+                <button type="submit" class="btn btn-block" style="margin-top: 1.5rem;">
+                    Login to Fleet Portal
+                </button>
+            </form>
+            
+            <!-- Error Message -->
+            <div id="error" class="error-message" style="display: none;"></div>
+            
+            <!-- Additional Info -->
+            <div style="margin-top: 2rem; text-align: center;">
+                <p style="color: #666; font-size: 0.85rem; margin-bottom: 1rem;">
+                    Secure access to your fleet management dashboard
+                </p>
+                
+                <!-- Demo Credentials (Remove in production) -->
+                <div style="background: rgba(247, 147, 30, 0.1); padding: 1rem; border-radius: 8px; border-left: 3px solid #F7931E; margin-top: 1.5rem;">
+                    <p style="color: #F7931E; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                        🔐 Demo Access
+                    </p>
+                    <p style="color: #ccc; font-size: 0.8rem; line-height: 1.4;">
+                        Contact your administrator for login credentials.<br>
+                        New to the system? Reach out for account setup.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Footer Links -->
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #333; text-align: center;">
+                <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+                    <a href="#" style="color: #F7931E; text-decoration: none; font-size: 0.85rem;" onclick="showForgotPassword()">
+                        Forgot Password?
+                    </a>
+                    <a href="#" style="color: #F7931E; text-decoration: none; font-size: 0.85rem;" onclick="showSupport()">
+                        Need Help?
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        justify-content: center;
+        align-items: center;
+    ">
+        <div style="text-align: center; color: white;">
+            <div class="spinner" style="margin: 0 auto 1rem;"></div>
+            <p>Signing you in...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="./assets/js/main.js"></script>
+    
+    <!-- Login-specific JavaScript -->
+    <script>
+        // Enhanced login functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const emailField = document.getElementById('email');
+            const passwordField = document.getElementById('password');
+            
+            // Enhanced form validation
+            function validateEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+            
+            // Real-time validation feedback
+            emailField.addEventListener('blur', function() {
+                const email = this.value.trim();
+                if (email && !validateEmail(email)) {
+                    this.style.borderColor = '#ff6b6b';
+                    showValidationMessage('Please enter a valid email address');
+                } else {
+                    this.style.borderColor = '#333';
+                    hideValidationMessage();
+                }
+            });
+            
+            // Password strength indicator (basic)
+            passwordField.addEventListener('input', function() {
+                const password = this.value;
+                if (password.length > 0 && password.length < 6) {
+                    this.style.borderColor = '#ff9f3a';
+                } else if (password.length >= 6) {
+                    this.style.borderColor = '#22c55e';
+                } else {
+                    this.style.borderColor = '#333';
+                }
+            });
+            
+            // Enter key handling
+            passwordField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loginForm.dispatchEvent(new Event('submit'));
+                }
+            });
+            
+            // Auto-focus email field
+            emailField.focus();
+            
+            // Prevent double submission
+            let isSubmitting = false;
+            
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (isSubmitting) return;
+                
+                const email = emailField.value.trim();
+                const password = passwordField.value;
+                
+                // Client-side validation
+                if (!email || !password) {
+                    showError('Please enter both email and password');
+                    return;
+                }
+                
+                if (!validateEmail(email)) {
+                    showError('Please enter a valid email address');
+                    emailField.focus();
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError('Password must be at least 6 characters long');
+                    passwordField.focus();
+                    return;
+                }
+                
+                // Show loading state
+                isSubmitting = true;
+                showLoadingOverlay();
+                hideError();
+                
+                try {
+                    // Attempt login (handled by main.js)
+                    console.log('🔐 Attempting login for:', email);
+                    
+                    // The actual login is handled by the main.js handleLoginSubmit function
+                    // This is just additional UI enhancements
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showError(error.message || 'Login failed. Please try again.');
+                } finally {
+                    isSubmitting = false;
+                    hideLoadingOverlay();
+                }
+            });
+            
+            console.log('🔐 Login page enhancements loaded');
+        });
+        
+        // Helper functions for enhanced UX
+        function showValidationMessage(message) {
+            hideValidationMessage(); // Remove any existing message
+            
+            const validationDiv = document.createElement('div');
+            validationDiv.id = 'validationMessage';
+            validationDiv.style.cssText = `
+                color: #ff6b6b;
+                font-size: 0.8rem;
+                margin-top: 0.5rem;
+                text-align: left;
+            `;
+            validationDiv.textContent = message;
+            
+            const emailField = document.getElementById('email');
+            emailField.parentNode.appendChild(validationDiv);
+        }
+        
+        function hideValidationMessage() {
+            const existing = document.getElementById('validationMessage');
+            if (existing) {
+                existing.remove();
+            }
+        }
+        
+        function showLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+        
+        function showForgotPassword() {
+            alert('Password reset functionality coming soon!\n\nFor now, please contact your administrator for password assistance:\n\n📧 support@movearoundtms.app\n📞 Support Line: Available during business hours');
+        }
+        
+        function showSupport() {
+            alert('Need Help?\n\n📧 Email: support@movearoundtms.app\n📞 Phone: Contact your administrator\n🌐 Portal: https://ronyx.movearoundtms.app\n\nOur support team is available during business hours to help with:\n• Account setup and access\n• Technical issues\n• Feature questions\n• Training resources');
+        }
+        
+        // Auto-clear error message when user starts typing
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('#email, #password')) {
+                const errorDiv = document.getElementById('error');
+                if (errorDiv && errorDiv.style.display !== 'none') {
+                    setTimeout(() => {
+                        errorDiv.style.display = 'none';
+                    }, 2000);
+                }
+            }
+        });
+        
+        // Prevent password managers from autofilling incorrectly
+        window.addEventListener('load', function() {
+            // Small delay to let password managers do their thing first
+            setTimeout(() => {
+                const emailField = document.getElementById('email');
+                const passwordField = document.getElementById('password');
+                
+                // If both fields are filled by password manager, enable submit button
+                if (emailField.value && passwordField.value) {
+                    console.log('🔐 Credentials auto-filled by password manager');
+                }
+            }, 1000);
+        });
+    </script>
+    
+    <!-- Accessibility enhancements -->
+    <script>
+        // Keyboard navigation enhancements
+        document.addEventListener('keydown', function(e) {
+            // ESC key clears error messages
+            if (e.key === 'Escape') {
+                hideError();
+                hideValidationMessage();
+            }
+            
+            // Tab order management
+            if (e.key === 'Tab') {
+                const focusableElements = 'input, button, a[href]';
+                const focusable = Array.from(document.querySelectorAll(focusableElements));
+                const currentIndex = focusable.indexOf(document.activeElement);
+                
+                if (e.shiftKey) {
+                    // Shift+Tab (backwards)
+                    if (currentIndex <= 0) {
+                        focusable[focusable.length - 1].focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    // Tab (forwards)  
+                    if (currentIndex >= focusable.length - 1) {
+                        focusable[0].focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

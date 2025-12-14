@@ -1,0 +1,445 @@
+// Duplicate file. This file is not needed and should be removed to avoid import/export conflicts.
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedLoad, setSelectedLoad] = useState<Load | null>(null);
+  
+  const [filters, setFilters] = useState<SearchFilters>({
+    originRadius: 50,
+    destinationRadius: 50,
+    equipmentType: 'all',
+    minRate: 0,
+    maxWeight: 80000,
+    pickupDateRange: { start: '', end: '' },
+    excludeHazmat: false,
+    teamDriverOnly: false,
+  });
+
+  useEffect(() => {
+    loadAvailableLoads();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [loads, searchTerm, filters]);
+
+  const loadAvailableLoads = async () => {
+    try {
+      setLoading(true);
+      
+      // In a real implementation, this would connect to DAT, Truckstop.com, or other load boards
+      // For now, we'll simulate with sample data
+      const sampleLoads: Load[] = [
+        {
+          id: 'LD001',
+          origin: { city: 'Houston', state: 'TX', zipCode: '77001' },
+          destination: { city: 'Atlanta', state: 'GA', zipCode: '30301' },
+          pickupDate: '2025-11-02',
+          deliveryDate: '2025-11-04',
+          equipment: 'van',
+          weight: 45000,
+          length: 48,
+          rate: 2800,
+          rateType: 'flat_rate',
+          miles: 789,
+          ratePerMile: 3.55,
+          commodity: 'Electronics',
+          broker: {
+            name: 'Prime Logistics',
+            mcNumber: 'MC-123456',
+            rating: 4.5,
+            paymentTerms: 'Quick Pay 1-2 days'
+          },
+          requirements: ['TWIC Card', 'No touch freight'],
+          hazmat: false,
+          teamDriver: false,
+          expedite: false,
+          status: 'available',
+          createdAt: '2025-10-31T10:00:00Z',
+          expires: '2025-11-01T18:00:00Z'
+        },
+        {
+          id: 'LD002',
+          origin: { city: 'Los Angeles', state: 'CA', zipCode: '90001' },
+          destination: { city: 'Denver', state: 'CO', zipCode: '80201' },
+          pickupDate: '2025-11-03',
+          deliveryDate: '2025-11-05',
+          equipment: 'flatbed',
+          weight: 48000,
+          rate: 2200,
+          rateType: 'flat_rate',
+          miles: 1016,
+          ratePerMile: 2.17,
+          commodity: 'Building Materials',
+          broker: {
+            name: 'Western Freight Solutions',
+            mcNumber: 'MC-789012',
+            rating: 4.2,
+            paymentTerms: 'NET 30'
+          },
+          requirements: ['Tarps', 'Straps provided'],
+          hazmat: false,
+          teamDriver: false,
+          expedite: true,
+          status: 'available',
+          createdAt: '2025-10-31T08:30:00Z',
+          expires: '2025-11-01T20:00:00Z'
+        },
+        {
+          id: 'LD003',
+          origin: { city: 'Chicago', state: 'IL', zipCode: '60601' },
+          destination: { city: 'Miami', state: 'FL', zipCode: '33101' },
+          pickupDate: '2025-11-04',
+          equipment: 'reefer',
+          weight: 40000,
+          rate: 3500,
+          rateType: 'flat_rate',
+          miles: 1377,
+          ratePerMile: 2.54,
+          commodity: 'Frozen Foods',
+          broker: {
+            name: 'Cold Chain Logistics',
+            mcNumber: 'MC-345678',
+            rating: 4.8,
+            paymentTerms: 'Factor Friendly'
+          },
+          requirements: ['Temperature controlled', 'HACCP certified'],
+          hazmat: false,
+          teamDriver: true,
+          expedite: false,
+          status: 'available',
+          createdAt: '2025-10-31T12:15:00Z'
+        }
+      ];
+      
+      setLoads(sampleLoads);
+      
+    } catch (error) {
+      console.error('Error loading loads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = loads;
+
+    // Search term filter
+    if (searchTerm) {
+      filtered = filtered.filter(load => 
+        load.origin.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        load.destination.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        load.commodity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        load.broker.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Equipment type filter
+    if (filters.equipmentType !== 'all') {
+      filtered = filtered.filter(load => load.equipment === filters.equipmentType);
+    }
+
+    // Rate filter
+    if (filters.minRate > 0) {
+      filtered = filtered.filter(load => load.ratePerMile >= filters.minRate);
+    }
+
+    // Weight filter
+    filtered = filtered.filter(load => load.weight <= filters.maxWeight);
+
+    // Hazmat filter
+    if (filters.excludeHazmat) {
+      filtered = filtered.filter(load => !load.hazmat);
+    }
+
+    // Team driver filter
+    if (filters.teamDriverOnly) {
+      filtered = filtered.filter(load => load.teamDriver);
+    }
+
+    setFilteredLoads(filtered);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadAvailableLoads();
+    setRefreshing(false);
+  };
+
+  const bookLoad = async (loadId: string) => {
+    try {
+      // In real implementation, this would send booking request to load board
+      console.log('Booking load:', loadId);
+      
+      setLoads(prev => prev.map(load => 
+        load.id === loadId ? { ...load, status: 'booked' as const } : load
+      ));
+      
+      alert('Load booking request sent successfully!');
+      
+    } catch (error) {
+      console.error('Error booking load:', error);
+      alert('Failed to book load. Please try again.');
+    }
+  };
+
+  const getEquipmentIcon = (equipment: string) => {
+    switch (equipment) {
+      case 'flatbed': return '🚛';
+      case 'reefer': return '🧊';
+      case 'tanker': return '🛢️';
+      default: return '📦';
+    }
+  };
+
+  const getRateColor = (ratePerMile: number) => {
+    if (ratePerMile >= 3.0) return 'text-green-600';
+    if (ratePerMile >= 2.5) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Load Board</h1>
+          <p className="text-gray-600">Find available loads and manage bookings</p>
+        </div>
+        
+        <Button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh Loads
+        </Button>
+      </div>
+
+      {/* Search and Filters */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by city, commodity, or broker..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+            </Button>
+          </div>
+          
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Equipment Type</label>
+                <select
+                  value={filters.equipmentType}
+                  onChange={(e) => setFilters(prev => ({ ...prev, equipmentType: e.target.value }))}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="all">All Equipment</option>
+                  <option value="van">Dry Van</option>
+                  <option value="flatbed">Flatbed</option>
+                  <option value="reefer">Refrigerated</option>
+                  <option value="tanker">Tanker</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Min Rate/Mile</label>
+                <Input
+                  type="number"
+                  step="0.25"
+                  value={filters.minRate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, minRate: parseFloat(e.target.value) || 0 }))}
+                  placeholder="$0.00"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={filters.excludeHazmat}
+                    onChange={(e) => setFilters(prev => ({ ...prev, excludeHazmat: e.target.checked }))}
+                  />
+                  <span className="text-sm">No Hazmat</span>
+                </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={filters.teamDriverOnly}
+                    onChange={(e) => setFilters(prev => ({ ...prev, teamDriverOnly: e.target.checked }))}
+                  />
+                  <span className="text-sm">Team Only</span>
+                </label>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Results Summary */}
+      <div className="mb-4">
+        <p className="text-gray-600">
+          Showing {filteredLoads.length} of {loads.length} available loads
+        </p>
+      </div>
+
+      {/* Load List */}
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredLoads.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-600 mb-2">No loads found</h3>
+            <p className="text-gray-500">Try adjusting your search criteria or filters</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredLoads.map((load) => (
+            <Card key={load.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{getEquipmentIcon(load.equipment)}</span>
+                    <div>
+                      <h3 className="font-semibold text-lg">Load {load.id}</h3>
+                      <p className="text-gray-600">{load.commodity}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-600">
+                      ${load.rate.toLocaleString()}
+                    </p>
+                    <p className={`text-sm ${getRateColor(load.ratePerMile)}`}>
+                      ${load.ratePerMile.toFixed(2)}/mile
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Route */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-green-500" />
+                    <span className="font-medium">{load.origin.city}, {load.origin.state}</span>
+                  </div>
+                  <Route className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-red-500" />
+                    <span className="font-medium">{load.destination.city}, {load.destination.state}</span>
+                  </div>
+                  <Badge variant="outline">{load.miles} miles</Badge>
+                </div>
+                
+                {/* Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Pickup Date</p>
+                    <p className="font-medium">{new Date(load.pickupDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Weight</p>
+                    <p className="font-medium">{load.weight.toLocaleString()} lbs</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Equipment</p>
+                    <p className="font-medium capitalize">{load.equipment}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Broker</p>
+                    <div className="flex items-center gap-1">
+                      <p className="font-medium">{load.broker.name}</p>
+                      <div className="flex">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3 h-3 ${
+                              i < Math.floor(load.broker.rating) 
+                                ? 'fill-yellow-400 text-yellow-400' 
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {load.hazmat && <Badge variant="destructive">Hazmat</Badge>}
+                  {load.teamDriver && <Badge variant="secondary">Team Driver</Badge>}
+                  {load.expedite && <Badge variant="default">Expedite</Badge>}
+                  <Badge variant="outline">{load.broker.paymentTerms}</Badge>
+                </div>
+                
+                {/* Requirements */}
+                {load.requirements && load.requirements.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-1">Requirements:</p>
+                    <p className="text-sm">{load.requirements.join(', ')}</p>
+                  </div>
+                )}
+                
+                {/* Actions */}
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-500">
+                    Posted {new Date(load.createdAt).toLocaleString()}
+                    {load.expires && (
+                      <span className="ml-2">
+                        • Expires {new Date(load.expires).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      View Details
+                    </Button>
+                    <Button 
+                      onClick={() => bookLoad(load.id)}
+                      disabled={load.status !== 'available'}
+                      size="sm"
+                    >
+                      {load.status === 'available' ? 'Book Load' : 'Booked'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

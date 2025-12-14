@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - Ronyx Fleet Portal</title>
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Page not found - Return to Ronyx Fleet Management Portal">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="./assets/css/main.css">
+    
+    <!-- Inline styles for 404 page -->
+    <style>
+        .error-404 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .error-container {
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(247, 147, 30, 0.45);
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: 700;
+            color: #F7931E;
+            margin: 0;
+            line-height: 1;
+            text-shadow: 0 0 20px rgba(247, 147, 30, 0.5);
+        }
+        
+        .error-title {
+            font-size: 2rem;
+            color: white;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            color: #ccc;
+            font-size: 1.1rem;
+            margin: 1.5rem 0 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .error-logo {
+            height: 60px;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 0 8px #F7931E);
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            margin: 2rem 0;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #111;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #F7931E;
+        }
+        
+        .helpful-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+            width: 100%;
+        }
+        
+        .link-card {
+            background: rgba(247, 147, 30, 0.1);
+            border: 1px solid #F7931E;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .link-card:hover {
+            background: rgba(247, 147, 30, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .link-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .link-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #F7931E;
+        }
+        
+        .link-description {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
+            
+            .error-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .helpful-links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-404">
+        <div class="error-container fade-in">
+            <!-- Logo -->
+            <img src="./ronyx_logo.png" alt="Ronyx Fleet Management Logo" class="error-logo">
+            
+            <!-- Error Code -->
+            <h1 class="error-code">404</h1>
+            
+            <!-- Error Title -->
+            <h2 class="error-title">Page Not Found</h2>
+            
+            <!-- Error Message -->
+            <p class="error-message">
+                Sorry, the page you're looking for doesn't exist or has been moved. 
+                Let's get you back to your fleet management dashboard.
+            </p>
+            
+            <!-- Search Box -->
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="Search for a page or feature..."
+                    id="searchInput"
+                >
+                <button class="btn" onclick="performSearch()">Search</button>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="error-actions">
+                <a href="./index.html" class="btn" style="text-decoration: none;">
+                    🏠 Back to Dashboard
+                </a>
+                <a href="./login.html" class="btn btn-outline" style="text-decoration: none;">
+                    🔐 Login Page
+                </a>
+            </div>
+            
+            <!-- Helpful Links -->
+            <div class="helpful-links">
+                <a href="./index.html" class="link-card">
+                    <div class="link-icon">📊</div>
+                    <div class="link-title">Dashboard</div>
+                    <div class="link-description">Main fleet management dashboard</div>
+                </a>
+                
+                <a href="./login.html" class="link-card">
+                    <div class="link-icon">🔐</div>
+                    <div class="link-title">Login</div>
+                    <div class="link-description">Access your account</div>
+                </a>
+                
+                <a href="#" onclick="showSupport()" class="link-card">
+                    <div class="link-icon">🎧</div>
+                    <div class="link-title">Support</div>
+                    <div class="link-description">Get help from our team</div>
+                </a>
+                
+                <a href="#" onclick="reportIssue()" class="link-card">
+                    <div class="link-icon">🐛</div>
+                    <div class="link-title">Report Issue</div>
+                    <div class="link-description">Found a broken link?</div>
+                </a>
+            </div>
+            
+            <!-- Additional Info -->
+            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #333;">
+                <p style="color: #666; font-size: 0.9rem;">
+                    If you believe this is an error, please contact support with the URL you were trying to access.
+                </p>
+                <p style="color: #F7931E; font-size: 0.85rem; margin-top: 1rem;">
+                    Ronyx Fleet Management Portal • Powered by Move Around TMS™
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // Auto-focus search input
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // Focus after a brief delay to ensure page is fully loaded
+                setTimeout(() => searchInput.focus(), 500);
+                
+                // Handle Enter key in search
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        performSearch();
+                    }
+                });
+            }
+        });
+        
+        // Search functionality
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+            
+            // Define search mappings
+            const searchMappings = {
+                'dashboard': './index.html',
+                'home': './index.html',
+                'fleet': './index.html',
+                'login': './login.html',
+                'sign in': './login.html',
+                'signin': './login.html',
+                'auth': './login.html',
+                'drivers': './index.html#drivers',
+                'vehicles': './index.html#fleet',
+                'routes': './index.html#routes',
+                'reports': './index.html#reports',
+                'maintenance': './index.html#maintenance',
+                'analytics': './index.html#analytics'
+            };
+            
+            // Check for exact matches
+            let destination = null;
+            for (const [keyword, url] of Object.entries(searchMappings)) {
+                if (searchTerm.includes(keyword)) {
+                    destination = url;
+                    break;
+                }
+            }
+            
+            if (destination) {
+                window.location.href = destination;
+            } else {
+                // No match found
+                alert(`No results found for "${searchTerm}".\n\nSuggestions:\n• Try "dashboard" for the main page\n• Try "login" for the login page\n• Try "fleet" for vehicle management\n• Try "drivers" for driver management\n\nOr use the links below to navigate.`);
+            }
+        }
+        
+        // Support function
+        function showSupport() {
+            const supportInfo = `
+🎧 Need Support?
+
+📧 Email: support@movearoundtms.app
+📞 Phone: Contact your administrator
+🌐 Portal: https://ronyx.movearoundtms.app
+
+📋 What to include when contacting support:
+• The URL you were trying to access
+• What you were trying to do
+• Any error messages you saw
+• Your browser and device information
+
+⏰ Support Hours:
+Monday - Friday: 8 AM - 6 PM
+Weekend: Emergency support available
+
+Our team is here to help with:
+✓ Account access issues
+✓ Technical problems
+✓ Feature questions
+✓ Training and onboarding
+            `.trim();
+            
+            alert(supportInfo);
+        }
+        
+        // Report issue function
+        function reportIssue() {
+            const currentUrl = window.location.href;
+            const referrer = document.referrer || 'Direct access';
+            
+            const issueReport = `
+🐛 Report a Problem
+
+Current URL: ${currentUrl}
+Came from: ${referrer}
+Browser: ${navigator.userAgent}
+Time: ${new Date().toLocaleString()}
+
+To report this issue:
+
+1. 📧 Email: support@movearoundtms.app
+   Subject: "404 Error Report - Broken Link"
+
+2. 📋 Include this information:
+   • URL that didn't work: ${currentUrl}
+   • Where you clicked the link
+   • What you expected to find
+
+3. 🔄 We'll investigate and fix the issue
+
+Thank you for helping us improve the Ronyx Fleet Portal!
+            `.trim();
+            
+            alert(issueReport);
+            
+            // Optional: Pre-fill email (if email client is configured)
+            const emailSubject = encodeURIComponent('404 Error Report - Broken Link');
+            const emailBody = encodeURIComponent(`
+I encountered a 404 error on the Ronyx Fleet Portal.
+
+URL that didn't work: ${currentUrl}
+Browser: ${navigator.userAgent}
+Time: ${new Date().toLocaleString()}
+
+Details:
+[Please describe what you were trying to do and where you clicked]
+
+            `);
+            
+            // This will attempt to open the default email client
+            // Comment out if not desired
+            // window.location.href = `mailto:support@movearoundtms.app?subject=${emailSubject}&body=${emailBody}`;
+        }
+        
+        // Back button handling
+        window.addEventListener('popstate', function(event) {
+            // If user uses browser back button, redirect to dashboard instead of staying on 404
+            if (document.referrer && !document.referrer.includes('404')) {
+                window.location.href = './index.html';
+            }
+        });
+        
+        // Log 404 for analytics (optional)
+        console.log('📄 404 Page loaded:', {
+            url: window.location.href,
+            referrer: document.referrer,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        });
+        
+        // Auto-redirect after extended inactivity (10 minutes)
+        setTimeout(function() {
+            if (confirm('You\'ve been on this error page for a while. Would you like to go back to the dashboard?')) {
+                window.location.href = './index.html';
+            }
+        }, 10 * 60 * 1000); // 10 minutes
+        
+        console.log('🚫 404 page loaded - Ronyx Fleet Portal');
+    </script>
+</body>
+</html>
