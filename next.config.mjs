@@ -12,7 +12,7 @@ const nextConfig = {
     domains: ["supabase.co"],
   },
 
-  // Improve performance on Vercel
+  // Improve performance
   poweredByHeader: false,
   compress: true,
   generateEtags: true,
@@ -21,7 +21,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
-}
 
-export default nextConfig
->>>>>>> e53244d ( SITEGROUND DEPLOYMENT SOLUTIONS - Complete File Guides)

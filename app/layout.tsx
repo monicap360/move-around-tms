@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { ClientLayoutWrapper } from "./components";
 import SupabaseProvider from "./lib/supabase-provider";
 import { LoadingProvider } from "./components/ui/providers/use-loading";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function RootLayout({
   children,
@@ -34,7 +33,6 @@ export default function RootLayout({
             </ClientLayoutWrapper>
           </LoadingProvider>
         </SupabaseProvider>
-        <SpeedInsights />
       </body>
     </html>
   );
