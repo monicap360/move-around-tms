@@ -31,7 +31,7 @@ Security:
 - Never expose provider secret keys to the browser. Call provider SDKs from
   the server route (`app/api/merch/create-checkout/route.ts`).
 - Use environment variables (`.env.local`) for keys and add them to your
-  deployment environment (Vercel, Netlify, etc.).
+  deployment environment (Digital Ocean, Netlify, etc.).
 
 Next steps:
 - Implement real provider integration in the server route. For Stripe, use
