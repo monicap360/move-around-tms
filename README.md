@@ -24,7 +24,7 @@ It integrates authentication, role-based access control, file storage, and admin
 | Storage | Supabase Storage (private bucket) | ✅ RLS Secured |
 | DB | PostgreSQL (RLS Enabled) | ✅ Admin Functions |
 | UI Components | Custom + Tailwind CSS | ✅ Professional Design |
-| Deployment | Vercel + SiteGround | ✅ Multi-Platform |
+| Deployment | Digital Ocean | ✅ Multi-Platform |
 | Language | TypeScript | ✅ Type-Safe |
 
 ## 🧩 Project Structure
@@ -70,7 +70,7 @@ app/
  ├── middleware.ts                    # Route protection
  ├── globals.css                      # Professional styling
  ├── layout.tsx
- ├── next.config.mjs                  # Vercel-optimized config
+ ├── next.config.mjs                  # Next.js config
  └── page.tsx
 ```
 
@@ -270,26 +270,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
+### Digital Ocean Deployment
 
 **Configuration Files:**
-- `vercel.json` - Deployment configuration
-- `next.config.mjs` - Vercel-optimized Next.js config
-
-```json
-// vercel.json
-{
-  "version": 2,
-  "builds": [
-    { "src": "app/next.config.mjs", "use": "@vercel/next" }
-  ],
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://wqeidcatuwqtzwhvmqfr.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key"
-  },
-  "routes": [{ "src": "/(.*)", "dest": "/app/$1" }]
-}
-```
+- `next.config.mjs` - Optimized Next.js configuration for Node.js deployment
 
 ### Deployment Checklist
 
@@ -298,11 +282,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 | ✅ 1 | Push latest commits to GitHub | Ready |
 | ✅ 2 | Environment variables configured | Ready |
 | ✅ 3 | Database functions deployed (`database/functions/is_admin.sql`) | Ready |
-| ✅ 4 | Vercel configuration files created | Ready |
-| ✅ 5 | Build successful (204 pages, 0 errors) | ✅ Verified |
-| ✅ 6 | Admin API routes functional | ✅ Verified |
-| ✅ 7 | UI components working | ✅ Verified |
-| ✅ 8 | Authentication flow tested | ✅ Verified |
+| ✅ 4 | Build successful (204 pages, 0 errors) | ✅ Verified |
+| ✅ 5 | Admin API routes functional | ✅ Verified |
+| ✅ 6 | UI components working | ✅ Verified |
+| ✅ 7 | Authentication flow tested | ✅ Verified |
 
 ### Quick Deploy Commands
 ```bash
@@ -311,7 +294,7 @@ git commit -m "ready for production deployment"
 git push
 ```
 
-Vercel will automatically deploy when you push to the main branch.
+Deploy to Digital Ocean following their Node.js app deployment guide.
 
 ## 🧠 Future Enhancements
 
@@ -362,7 +345,7 @@ Vercel will automatically deploy when you push to the main branch.
 - ✅ Modern Next.js 16.0.1 with Turbopack
 - ✅ Comprehensive error handling
 - ✅ Professional code organization
-- ✅ Vercel-optimized deployment ready
+- ✅ Optimized for Node.js deployment
 
 ## 🚀 Current Status
 
@@ -373,7 +356,7 @@ Vercel will automatically deploy when you push to the main branch.
 - ✅ **Profile System**: Avatar uploads with profiles table integration
 - ✅ **UI Components**: Professional component library (Spinner, LoadingOverlay)
 - ✅ **User Experience**: Modern loading states and professional styling
-- ✅ **Vercel Ready**: Optimized configuration for deployment
+- ✅ **Deployment Ready**: Optimized configuration for Digital Ocean
 - 🔄 **Production**: Ready for deployment with enhanced features
 
 ### Recent Updates (November 4, 2025)
@@ -393,8 +376,7 @@ Vercel will automatically deploy when you push to the main branch.
 - ✅ Added PostgreSQL function for secure admin verification
 
 #### ⚙️ **Configuration Updates**
-- ✅ Created Vercel-optimized `next.config.mjs`
-- ✅ Added comprehensive `vercel.json` deployment config
+- ✅ Created optimized `next.config.mjs` for Node.js deployment
 - ✅ Enhanced middleware for better route protection
 - ✅ Improved auto-assign functionality with corrected imports
 
@@ -451,7 +433,7 @@ Route (app)                     Type
 - Zero TypeScript build errors
 - Comprehensive error handling
 - Modern Supabase SSR implementation
-- Vercel-optimized deployment configuration
+- Production-ready deployment configuration
 - Professional code organization and documentation
 
 ---
@@ -464,7 +446,7 @@ Route (app)                     Type
 - **API Routes**: 50+ secure endpoints
 - **Database Functions**: 3 PostgreSQL functions
 - **Authentication**: Enhanced SSR implementation
-- **Deployment**: Multi-platform ready (Vercel + SiteGround)
+- **Deployment**: Multi-platform ready (Digital Ocean, Railway, Netlify)
 
 ## �👩‍💼 Credits
 
@@ -539,14 +521,16 @@ Outputs:
 
 ---
 
-Deployment
-Deploy to Vercel (Recommended):
+## Deployment
 
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
+Deploy to Digital Ocean or any Node.js hosting provider:
+
+1. Connect your GitHub repository to your hosting platform
+2. Add environment variables in your platform dashboard
 3. Deploy automatically on git push
 
 Alternative deployment options:
+- Digital Ocean App Platform
 - Netlify
 - Railway
 - Any Node.js hosting provider
