@@ -27,6 +27,21 @@ export default function PayrollPage() {
   const [rows, setRows] = useState<PayrollRow[]>([]);
   const [weekStart, setWeekStart] = useState<string>("");
 
+  // Compute summary from rows
+  const summary = rows.length > 0 ? {
+    totalDrivers: rows.length,
+    totalTickets: rows.reduce((sum, r) => sum + (r.tickets_count || 0), 0),
+    approvedTickets: rows.reduce((sum, r) => sum + (r.approved_count || 0), 0),
+    grossPay: rows.reduce((sum, r) => sum + (r.total_driver_pay || 0), 0),
+    netPay: rows.reduce((sum, r) => sum + (r.total_driver_pay || 0), 0), // Adjust if you have net pay logic
+  } : {
+    totalDrivers: 0,
+    totalTickets: 0,
+    approvedTickets: 0,
+    grossPay: 0,
+    netPay: 0,
+  };
+
   useEffect(() => {
     if (!weekStart) setWeekStart(computeCurrentFridayISODate());
   }, [weekStart]);
