@@ -1,48 +1,67 @@
-// Duplicate file. This file is not needed and should be removed to avoid import/export conflicts.
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedLoad, setSelectedLoad] = useState<Load | null>(null);
-  
-  const [filters, setFilters] = useState<SearchFilters>({
-    originRadius: 50,
-    destinationRadius: 50,
-    equipmentType: 'all',
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { MapPin, Search, Filter, RefreshCw, Star, Package } from "lucide-react";
+
+type Filters = {
+  equipmentType: string;
+  minRate: number;
+  maxWeight: number;
+  excludeHazmat: boolean;
+  teamDriverOnly: boolean;
+};
+
+const LoadBoard = () => {
+  const [filters, setFilters] = useState<Filters>({
+    equipmentType: "all",
     minRate: 0,
     maxWeight: 80000,
-    pickupDateRange: { start: '', end: '' },
     excludeHazmat: false,
     teamDriverOnly: false,
   });
 
+  const [showFilters, setShowFilters] = useState(false);
+  const [loads, setLoads] = useState<any[]>([]);
+  const [filteredLoads, setFilteredLoads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
   useEffect(() => {
     loadAvailableLoads();
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
     applyFilters();
+    // eslint-disable-next-line
   }, [loads, searchTerm, filters]);
 
   const loadAvailableLoads = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // In a real implementation, this would connect to DAT, Truckstop.com, or other load boards
-      // For now, we'll simulate with sample data
-      const sampleLoads: Load[] = [
+      // Simulate API call with sample data
+      const sampleLoads = [
         {
           id: 'LD001',
-          origin: { city: 'Houston', state: 'TX', zipCode: '77001' },
-          destination: { city: 'Atlanta', state: 'GA', zipCode: '30301' },
-          pickupDate: '2025-11-02',
-          deliveryDate: '2025-11-04',
+          origin: { city: 'Dallas', state: 'TX', zipCode: '75201' },
+          destination: { city: 'Houston', state: 'TX', zipCode: '77001' },
+          pickupDate: '2025-11-01',
+          deliveryDate: '2025-11-02',
           equipment: 'van',
-          weight: 45000,
-          length: 48,
+          weight: 42000,
           rate: 2800,
           rateType: 'flat_rate',
           miles: 789,
           ratePerMile: 3.55,
           commodity: 'Electronics',
           broker: {
+    minRate: 0,
             name: 'Prime Logistics',
             mcNumber: 'MC-123456',
             rating: 4.5,
@@ -109,11 +128,9 @@
           createdAt: '2025-10-31T12:15:00Z'
         }
       ];
-      
       setLoads(sampleLoads);
-      
     } catch (error) {
-      console.error('Error loading loads:', error);
+      setError('Failed to load loads');
     } finally {
       setLoading(false);
     }
@@ -121,8 +138,6 @@
 
   const applyFilters = () => {
     let filtered = loads;
-
-    // Search term filter
     if (searchTerm) {
       filtered = filtered.filter(load => 
         load.origin.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,30 +146,19 @@
         load.broker.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
-    // Equipment type filter
     if (filters.equipmentType !== 'all') {
       filtered = filtered.filter(load => load.equipment === filters.equipmentType);
     }
-
-    // Rate filter
     if (filters.minRate > 0) {
       filtered = filtered.filter(load => load.ratePerMile >= filters.minRate);
     }
-
-    // Weight filter
     filtered = filtered.filter(load => load.weight <= filters.maxWeight);
-
-    // Hazmat filter
     if (filters.excludeHazmat) {
       filtered = filtered.filter(load => !load.hazmat);
     }
-
-    // Team driver filter
     if (filters.teamDriverOnly) {
       filtered = filtered.filter(load => load.teamDriver);
     }
-
     setFilteredLoads(filtered);
   };
 
@@ -166,23 +170,18 @@
 
   const bookLoad = async (loadId: string) => {
     try {
-      // In real implementation, this would send booking request to load board
-      console.log('Booking load:', loadId);
-      
       setLoads(prev => prev.map(load => 
         load.id === loadId ? { ...load, status: 'booked' as const } : load
       ));
-      
       alert('Load booking request sent successfully!');
-      
     } catch (error) {
-      console.error('Error booking load:', error);
       alert('Failed to book load. Please try again.');
     }
   };
 
   const getEquipmentIcon = (equipment: string) => {
     switch (equipment) {
+      case 'van': return '🚚';
       case 'flatbed': return '🚛';
       case 'reefer': return '🧊';
       case 'tanker': return '🛢️';
@@ -204,7 +203,6 @@
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Load Board</h1>
           <p className="text-gray-600">Find available loads and manage bookings</p>
         </div>
-        
         <Button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -214,7 +212,6 @@
           Refresh Loads
         </Button>
       </div>
-
       {/* Search and Filters */}
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -228,7 +225,6 @@
                 className="pl-10"
               />
             </div>
-            
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
@@ -238,14 +234,13 @@
               Filters
             </Button>
           </div>
-          
           {showFilters && (
             <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Equipment Type</label>
                 <select
                   value={filters.equipmentType}
-                  onChange={(e) => setFilters(prev => ({ ...prev, equipmentType: e.target.value }))}
+                  onChange={(e) => setFilters((prev: Filters) => ({ ...prev, equipmentType: e.target.value }))}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="all">All Equipment</option>
@@ -255,33 +250,30 @@
                   <option value="tanker">Tanker</option>
                 </select>
               </div>
-              
               <div>
                 <label className="block text-sm font-medium mb-1">Min Rate/Mile</label>
                 <Input
                   type="number"
                   step="0.25"
-                  value={filters.minRate}
-                  onChange={(e) => setFilters(prev => ({ ...prev, minRate: parseFloat(e.target.value) || 0 }))}
+                    value={filters.minRate}
+                    onChange={(e) => setFilters((prev: Filters) => ({ ...prev, minRate: parseFloat(e.target.value) || 0 }))}
                   placeholder="$0.00"
                 />
               </div>
-              
               <div className="flex items-center space-x-4">
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={filters.excludeHazmat}
-                    onChange={(e) => setFilters(prev => ({ ...prev, excludeHazmat: e.target.checked }))}
+                      onChange={(e) => setFilters((prev: Filters) => ({ ...prev, excludeHazmat: e.target.checked }))}
                   />
                   <span className="text-sm">No Hazmat</span>
                 </label>
-                
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={filters.teamDriverOnly}
-                    onChange={(e) => setFilters(prev => ({ ...prev, teamDriverOnly: e.target.checked }))}
+                      onChange={(e) => setFilters((prev: Filters) => ({ ...prev, teamDriverOnly: e.target.checked }))}
                   />
                   <span className="text-sm">Team Only</span>
                 </label>
@@ -290,14 +282,12 @@
           )}
         </CardContent>
       </Card>
-
       {/* Results Summary */}
       <div className="mb-4">
         <p className="text-gray-600">
           Showing {filteredLoads.length} of {loads.length} available loads
         </p>
       </div>
-
       {/* Load List */}
       {loading ? (
         <div className="space-y-4">
@@ -336,7 +326,6 @@
                       <p className="text-gray-600">{load.commodity}</p>
                     </div>
                   </div>
-                  
                   <div className="text-right">
                     <p className="text-2xl font-bold text-green-600">
                       ${load.rate.toLocaleString()}
@@ -346,21 +335,20 @@
                     </p>
                   </div>
                 </div>
-                
                 {/* Route */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-green-500" />
                     <span className="font-medium">{load.origin.city}, {load.origin.state}</span>
                   </div>
-                  <Route className="w-4 h-4 text-gray-400" />
+                  {/* Replace with a route icon if available */}
+                  <span className="mx-2">→</span>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-red-500" />
                     <span className="font-medium">{load.destination.city}, {load.destination.state}</span>
                   </div>
                   <Badge variant="outline">{load.miles} miles</Badge>
                 </div>
-                
                 {/* Details */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
@@ -394,7 +382,6 @@
                     </div>
                   </div>
                 </div>
-                
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {load.hazmat && <Badge variant="destructive">Hazmat</Badge>}
@@ -402,7 +389,6 @@
                   {load.expedite && <Badge variant="default">Expedite</Badge>}
                   <Badge variant="outline">{load.broker.paymentTerms}</Badge>
                 </div>
-                
                 {/* Requirements */}
                 {load.requirements && load.requirements.length > 0 && (
                   <div className="mb-4">
@@ -410,7 +396,6 @@
                     <p className="text-sm">{load.requirements.join(', ')}</p>
                   </div>
                 )}
-                
                 {/* Actions */}
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-500">
@@ -421,7 +406,6 @@
                       </span>
                     )}
                   </div>
-                  
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
                       View Details
@@ -442,4 +426,6 @@
       )}
     </div>
   );
-}
+};
+
+export default LoadBoard;
