@@ -26,6 +26,9 @@ const nextConfig = {
   experimental: {
     serverActions: false,
   }
+  // Asset prefix for CDN (if needed)
+  assetPrefix: '',
+>>>>>>> e53244d ( SITEGROUND DEPLOYMENT SOLUTIONS - Complete File Guides)
 }
 
 module.exports = nextConfig

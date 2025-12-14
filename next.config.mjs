@@ -21,3 +21,7 @@ const nextConfig = {
 };
 
 export default nextConfig;
+}
+
+export default nextConfig
+>>>>>>> e53244d ( SITEGROUND DEPLOYMENT SOLUTIONS - Complete File Guides)
