@@ -42,9 +42,9 @@ export default function Sidebar() {
         <h1 className="text-xl font-bold mb-6">MoveAround TMS</h1>
         {/* PRIMARY */}
         <div className="space-y-1">
+          <Link href={`${base}/fast-scan`}><div className={linkClass}>Fast Scan</div></Link>
           <Link href={`${base}/dashboards`}><div className={linkClass}>Dashboard</div></Link>
           <Link href={`${base}/alerts`}><div className={linkClass}>Alerts</div></Link>
-          <Link href={`${base}/fast-scan`}><div className={linkClass}>Fast Scan</div></Link>
         </div>
 
         {/* ANALYTICS */}

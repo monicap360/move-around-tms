@@ -202,115 +202,140 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      {/* Profile Information */}
-      <Card className="shadow-lg border border-gray-200 bg-white">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
-          <CardTitle>Profile Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="mt-6 space-y-6">
-          {/* Avatar Upload - Will be added back later */}
-          <div className="text-center text-gray-500">
-            Avatar upload functionality coming soon
-          </div>
-
-          {/* Profile Form */}
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile?.email || ""}
-                  disabled
-                  className="bg-gray-50"
-                />
-                <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
-              </div>
-
-              <div>
-                <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="text-sm font-medium">Phone</label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your phone number"
-                />
-              </div>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
+      padding: 0,
+    }}>
+      <h1 style={{ fontSize: 48, fontWeight: 700, marginBottom: 16, color: '#1e293b' }}>Settings</h1>
+      <p style={{ fontSize: 20, color: '#475569', marginBottom: 32 }}>
+        Manage your profile, contact info, and password.
+      </p>
+      <div style={{
+        background: '#e0e7ef',
+        borderRadius: 16,
+        boxShadow: '0 2px 8px rgba(30,41,59,0.08)',
+        padding: 32,
+        minWidth: 340,
+        minHeight: 180,
+        width: '100%',
+        maxWidth: 800,
+        marginBottom: 24,
+      }}>
+        {/* Profile Information */}
+        <Card className="shadow-lg border border-gray-200 bg-white">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
+            <CardTitle>Profile Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-6 space-y-6">
+            {/* Avatar Upload - Will be added back later */}
+            <div className="text-center text-gray-500">
+              Avatar upload functionality coming soon
             </div>
 
-            <Button type="submit" disabled={saving} className="w-full md:w-auto">
-              {saving ? "Updating..." : "Update Profile"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            {/* Profile Form */}
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile?.email || ""}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
+                </div>
 
-      {/* Password Change */}
-      <Card className="shadow-lg border border-gray-200 bg-white">
-        <CardHeader className="bg-gradient-to-r from-red-500 to-red-700 text-white rounded-t-lg">
-          <CardTitle>Change Password</CardTitle>
-        </CardHeader>
-        <CardContent className="mt-6">
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="newPassword" className="text-sm font-medium">New Password</label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                />
+                <div>
+                  <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="text-sm font-medium">Phone</label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Enter your phone number"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                />
+              <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                {saving ? "Updating..." : "Update Profile"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Password Change */}
+        <Card className="shadow-lg border border-gray-200 bg-white">
+          <CardHeader className="bg-gradient-to-r from-red-500 to-red-700 text-white rounded-t-lg">
+            <CardTitle>Change Password</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-6">
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="newPassword" className="text-sm font-medium">New Password</label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                  />
+                </div>
               </div>
-            </div>
 
-            <Button 
-              type="submit" 
-              disabled={saving || !newPassword || !confirmPassword}
-              className="w-full md:w-auto bg-red-600 hover:bg-red-700"
-            >
-              {saving ? "Updating..." : "Change Password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button 
+                type="submit" 
+                disabled={saving || !newPassword || !confirmPassword}
+                className="w-full md:w-auto bg-red-600 hover:bg-red-700"
+              >
+                {saving ? "Updating..." : "Change Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      {/* Company Information */}
-      <Card className="shadow-lg border border-gray-200 bg-white">
-        <CardHeader className="bg-gradient-to-r from-green-500 to-green-700 text-white rounded-t-lg">
-          <CardTitle>Company Information</CardTitle>
-        </CardHeader>
-        <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Configure company info, user accounts, roles, and notification preferences.</p>
-          <p>Brand: Move Around TMS™.</p>
-        </CardContent>
-      </Card>
+        {/* Company Information */}
+        <Card className="shadow-lg border border-gray-200 bg-white">
+          <CardHeader className="bg-gradient-to-r from-green-500 to-green-700 text-white rounded-t-lg">
+            <CardTitle>Company Information</CardTitle>
+          </CardHeader>
+          <CardContent className="text-gray-700 mt-4 space-y-2">
+            <p>Configure company info, user accounts, roles, and notification preferences.</p>
+            <p>Brand: Move Around TMS™.</p>
+          </CardContent>
+        </Card>
+      </div>
+      <footer style={{ color: '#94a3b8', fontSize: 14, marginTop: 40 }}>© {new Date().getFullYear()} Move Around TMS</footer>
     </div>
   );
 }

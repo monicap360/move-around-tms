@@ -79,121 +79,106 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div className="card-professional">
-          <div className="card-header-professional">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="page-title">
-                  Welcome to Move Around TMS
-                </h1>
-                <p className="page-subtitle">
-                  {user?.email ? `Logged in as ${user.email}` : 'Transportation Management System'}
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                {isAdmin && (
-                  <span className="badge-warning">
-                    👑 Admin
-                  </span>
-                )}
-                <span className={`text-sm ${user?.email_confirmed_at ? 'badge-success' : 'badge-warning'}`}>
-                  {user?.email_confirmed_at ? '✅ Verified' : '⚠️ Email not verified'}
-                </span>
-                <UserDropdown 
-                  user={user} 
-                  isAdmin={isAdmin} 
-                  onSignOut={handleSignOut} 
-                />
-              </div>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
+      padding: 0,
+    }}>
+      <h1 style={{ fontSize: 48, fontWeight: 700, marginBottom: 16, color: '#1e293b' }}>Dashboard</h1>
+      <p style={{ fontSize: 20, color: '#475569', marginBottom: 32 }}>
+        {user?.email ? `Logged in as ${user.email}` : 'Transportation Management System'}
+        {isAdmin && <span style={{ marginLeft: 12, color: '#a21caf', fontWeight: 600 }}>👑 Admin</span>}
+      </p>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: 32,
+        width: '100%',
+        maxWidth: 1000,
+        marginBottom: 40,
+      }}>
+        <div style={{ background: '#e0e7ef', borderRadius: 16, boxShadow: '0 2px 8px rgba(30,41,59,0.08)', padding: 24 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 600, color: '#2563eb', marginBottom: 12 }}>Fleet Overview</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#dbeafe', borderRadius: 8, padding: 12 }}>
+              <span style={{ color: '#1e293b' }}>Active Trucks:</span>
+              <span style={{ color: '#2563eb', fontWeight: 700 }}>24</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#dcfce7', borderRadius: 8, padding: 12 }}>
+              <span style={{ color: '#1e293b' }}>Available Drivers:</span>
+              <span style={{ color: '#059669', fontWeight: 700 }}>18</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fef9c3', borderRadius: 8, padding: 12 }}>
+              <span style={{ color: '#1e293b' }}>Active Routes:</span>
+              <span style={{ color: '#eab308', fontWeight: 700 }}>12</span>
             </div>
           </div>
+        </div>
+        <div style={{ background: '#e0e7ef', borderRadius: 16, boxShadow: '0 2px 8px rgba(30,41,59,0.08)', padding: 24 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 600, color: '#059669', marginBottom: 12 }}>Recent Activity</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ background: '#dbeafe', borderLeft: '4px solid #2563eb', borderRadius: '0 8px 8px 0', padding: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 500, color: '#2563eb' }}>New delivery scheduled</div>
+              <div style={{ fontSize: 13, color: '#2563eb' }}>Route 101 - 2 minutes ago</div>
+            </div>
+            <div style={{ background: '#dcfce7', borderLeft: '4px solid #059669', borderRadius: '0 8px 8px 0', padding: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 500, color: '#059669' }}>Driver inspection complete</div>
+              <div style={{ fontSize: 13, color: '#059669' }}>John Doe - 15 minutes ago</div>
+            </div>
+            <div style={{ background: '#fef9c3', borderLeft: '4px solid #eab308', borderRadius: '0 8px 8px 0', padding: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 500, color: '#eab308' }}>Maintenance reminder</div>
+              <div style={{ fontSize: 13, color: '#eab308' }}>Truck #15 - 1 hour ago</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ background: '#e0e7ef', borderRadius: 16, boxShadow: '0 2px 8px rgba(30,41,59,0.08)', padding: 24 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 600, color: '#0ea5e9', marginBottom: 12 }}>Quick Actions</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <NavAction href="/dispatch" label="Schedule New Route" color="#2563eb" />
+            <NavAction href="/drivers" label="Add New Driver" color="#059669" />
+            <NavAction href="/payroll" label="Generate Report" color="#64748b" />
+            <NavAction href="/file-manager" label="📁 File Manager" color="#0ea5e9" />
+            {isAdmin && (
+              <NavAction href="/admin" label="🛡️ Admin Dashboard" color="#dc2626" />
+            )}
+          </div>
+        // Navigation Action Button for Dashboard Quick Actions
+        import Link from 'next/link';
+
+        function NavAction({ href, label, color }: { href: string; label: string; color: string }) {
+          return (
+            <Link href={href} style={{
+              background: color,
+              color: 'white',
+              borderRadius: 8,
+              padding: 12,
+              fontWeight: 600,
+              fontSize: 18,
+              marginBottom: 6,
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'center',
+              textDecoration: 'none',
+              display: 'block',
+              transition: 'background 0.2s',
+            }}>
+              {label}
+            </Link>
+          );
+        }
         </div>
       </div>
-
-      <div className="grid-responsive">
-        <div className="card-professional">
-          <div className="card-header-professional">
-            <h2 className="card-title-professional">Fleet Overview</h2>
-          </div>
-          <div className="card-content-professional">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-md">
-                <span className="text-gray-700">Active Trucks:</span>
-                <span className="badge-info font-bold">24</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-md">
-                <span className="text-gray-700">Available Drivers:</span>
-                <span className="badge-success font-bold">18</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-md">
-                <span className="text-gray-700">Active Routes:</span>
-                <span className="badge-warning font-bold">12</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-professional">
-          <div className="card-header-professional">
-            <h2 className="card-title-professional">Recent Activity</h2>
-          </div>
-          <div className="card-content-professional">
-            <div className="space-y-3">
-              <div className="p-3 border-l-4 border-blue-400 bg-blue-50 rounded-r-md">
-                <div className="text-sm font-medium text-blue-900">New delivery scheduled</div>
-                <div className="text-xs text-blue-700">Route 101 - 2 minutes ago</div>
-              </div>
-              <div className="p-3 border-l-4 border-green-400 bg-green-50 rounded-r-md">
-                <div className="text-sm font-medium text-green-900">Driver inspection complete</div>
-                <div className="text-xs text-green-700">John Doe - 15 minutes ago</div>
-              </div>
-              <div className="p-3 border-l-4 border-yellow-400 bg-yellow-50 rounded-r-md">
-                <div className="text-sm font-medium text-yellow-900">Maintenance reminder</div>
-                <div className="text-xs text-yellow-700">Truck #15 - 1 hour ago</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-professional">
-          <div className="card-header-professional">
-            <h2 className="card-title-professional">Quick Actions</h2>
-          </div>
-          <div className="card-content-professional">
-            <div className="space-y-2">
-              <button className="btn-primary w-full justify-center">
-                Schedule New Route
-              </button>
-              <button className="btn-success w-full justify-center">
-                Add New Driver
-              </button>
-              <button className="btn-secondary w-full justify-center">
-                Generate Report
-              </button>
-              <button 
-                onClick={() => window.location.href = '/file-manager'}
-                className="btn-secondary w-full justify-center"
-              >
-                📁 File Manager
-              </button>
-              {isAdmin && (
-                <button className="btn-danger w-full justify-center">
-                  🛡️ Admin Dashboard
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Admin Management Section */}
       {isAdmin && (
-        <div className="mt-8">
+        <div style={{ marginTop: 32, width: '100%', maxWidth: 1000 }}>
           <AdminManager />
         </div>
       )}
+      <footer style={{ color: '#94a3b8', fontSize: 14, marginTop: 40 }}>© {new Date().getFullYear()} Move Around TMS</footer>
     </div>
   )
 }

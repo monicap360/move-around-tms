@@ -2,9 +2,9 @@ import React from "react";
 import Link from "next/link";
 
 const navItems = [
+  { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}/fast-scan`, label: "Fast Scan" },
   { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}`, label: "Overview" },
   { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}/dashboards`, label: "Dashboards" },
-  { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}/fast-scan`, label: "Fast Scan" },
   { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}/compliance`, label: "Compliance" },
   { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}/drivers`, label: "Drivers" },
   { href: `/company/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '[company]'}/settings`, label: "Settings" },

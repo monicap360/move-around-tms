@@ -3,17 +3,39 @@ import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card"
 
 export default function DriversPage() {
   return (
-    <div className="p-8">
-      <Card className="shadow-lg border border-gray-200 bg-white">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
-          <CardTitle>Driver Profiles</CardTitle>
-        </CardHeader>
-        <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Upload front/back of CDL, TWIC, ID, and MVR. Track license, medical, and certification expirations.</p>
-          <p>Store W-2/1099 status, pay rate, start date, and contact details.</p>
-          <p>Receive automated alerts 30 days before any document expires.</p>
-        </CardContent>
-      </Card>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
+      padding: 0,
+    }}>
+      <h1 style={{ fontSize: 48, fontWeight: 700, marginBottom: 16, color: '#1e293b' }}>Drivers</h1>
+      <p style={{ fontSize: 20, color: '#475569', marginBottom: 32 }}>
+        Manage driver profiles, documents, and compliance.
+      </p>
+      <div style={{
+        background: '#e0e7ef',
+        borderRadius: 16,
+        boxShadow: '0 2px 8px rgba(30,41,59,0.08)',
+        padding: 32,
+        minWidth: 340,
+        minHeight: 180,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        fontSize: 20,
+        color: '#2563eb',
+        fontWeight: 500,
+        gap: 10,
+      }}>
+        <div>• Upload front/back of CDL, TWIC, ID, and MVR. Track license, medical, and certification expirations.</div>
+        <div>• Store W-2/1099 status, pay rate, start date, and contact details.</div>
+        <div>• Receive automated alerts 30 days before any document expires.</div>
+      </div>
+      <footer style={{ color: '#94a3b8', fontSize: 14, marginTop: 40 }}>© {new Date().getFullYear()} Move Around TMS</footer>
     </div>
   );
 }
