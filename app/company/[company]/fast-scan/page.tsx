@@ -161,8 +161,45 @@ export default function FastScanPage() {
     ticketsByDriverWeek[driver][week].push(scan);
   });
 
+  // CSV export handler
+  function handleExportCSV() {
+    const headers = [
+      'Ticket ID', 'Driver', 'Truck', 'Material', 'Net Weight', 'Status', 'Created At'
+    ];
+    const rows = scansToShow.map(scan => [
+      scan.ticketId,
+      scan.driverId || '',
+      scan.truckId || '',
+      scan.material || '',
+      scan.netWeight || '',
+      scan.status,
+      scan.createdAt
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(String).map(x => '"'+x.replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payroll_export.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="p-8 space-y-8">
+      {/* Fast Scan Transition Banner */}
+      <div className="bg-blue-100 border-l-4 border-blue-500 p-4 mb-6 rounded">
+        <h2 className="text-xl font-bold text-blue-700 mb-2">Transition from Manual Excel Reconciliation to Fast Scan</h2>
+        <ol className="list-decimal pl-6 text-base mb-2">
+          <li>Upload your Excel/CSV sheet of tickets from the pit/material plant or your manual entry.</li>
+          <li>Scan or upload ticket images/PDFs as usual.</li>
+          <li>Fast Scan automatically matches, compares, and flags any mismatches, missing tickets, or errors.</li>
+          <li>Review flagged issues and resolve before payroll runs—no more manual cross-checking!</li>
+        </ol>
+        <p className="text-sm text-blue-700">Fast Scan is built to replace manual spreadsheet reconciliation with automated, error-proof matching. You’ll save hours and catch mistakes before they cost you money.</p>
+      </div>
       {/* Pit CSV Upload (trust signal) */}
       <div className="mb-2">
         <div className="font-semibold text-primary">Pit CSV Upload</div>
@@ -243,6 +280,21 @@ export default function FastScanPage() {
         </label>
       </div>
 
+      {/* Analytics Dashboard Link and Payroll Export Button */}
+      <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <Link
+          href="./fast-scan/analytics-dashboard"
+          className="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded shadow"
+        >
+          📊 Analytics Dashboard
+        </Link>
+        <button
+          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded shadow"
+          onClick={handleExportCSV}
+        >
+          Export Payroll (CSV)
+        </button>
+      </div>
       {/* Weekly driver ticket summary */}
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Driver Ticket Summary (Grouped by Week)</h2>
@@ -380,6 +432,7 @@ export default function FastScanPage() {
       )}
 
       <div className="mt-2 text-xs text-gray-500 italic">Unlike generic OCR tools, Fast Scan™ evaluates documents against operational and compliance risk — not just text extraction.</div>
+      <FastScanSupportChat />
     </div>
   );
 }

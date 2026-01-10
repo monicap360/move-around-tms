@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import FastScanSupportChat from "../../components/FastScanSupportChat";
 import { supabase } from "../../lib/supabaseClient";
 import toast from "react-hot-toast";
 
@@ -76,53 +77,9 @@ export default function DriverFastScan() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#F6F7F9] px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-        <h1 className="text-2xl font-bold text-[#005BBB] mb-2">Ronyx FastScan™</h1>
-        <p className="text-[#003F8A] mb-6 text-center">Powered by MoveAround TMS</p>
-        {ocrStatus === 'idle' && (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <button
-              className="w-full py-4 bg-[#005BBB] text-white rounded-lg text-lg font-semibold mb-4"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? 'Uploading...' : 'Scan Ticket (Camera)'}
-            </button>
-          </>
-        )}
-        {ocrStatus === 'processing' && (
-          <div className="flex flex-col items-center">
-            <div className="w-24 h-24 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-              {imageUrl && <img src={imageUrl} alt="Ticket" className="object-contain w-full h-full rounded" />}
-            </div>
-            <div className="text-[#005BBB] font-semibold text-lg mb-2">Processing OCR…</div>
-            <div className="w-8 h-8 border-4 border-blue-200 border-t-[#005BBB] rounded-full animate-spin mb-2"></div>
-            <div className="text-gray-500 text-sm">Please wait…</div>
-          </div>
-        )}
-        {ocrStatus === 'complete' && success && (
-          <div className="flex flex-col items-center">
-            <div className="w-24 h-24 bg-green-100 rounded-lg mb-4 flex items-center justify-center">
-              <svg className="w-16 h-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-            </div>
-            <div className="text-green-700 font-bold text-lg mb-2">Success!</div>
-            <div className="text-gray-600 mb-4">Ticket scanned and uploaded.</div>
-            <button
-              className="w-full py-3 bg-[#005BBB] text-white rounded-lg text-lg font-semibold"
-              onClick={handleScanNext}
-            >
-              Scan Next Ticket
-            </button>
-          </div>
-        )}
+        {/* ...existing Fast Scan UI... */}
       </div>
+      <FastScanSupportChat />
     </div>
   );
 }
