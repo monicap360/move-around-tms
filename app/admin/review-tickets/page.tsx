@@ -201,14 +201,66 @@ export default function ManagerReviewPage() {
                         className="w-full px-2 py-1 border rounded text-sm"
                         placeholder="Material"
                       />
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editForm.quantity}
-                        onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) })}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                        placeholder="Quantity"
-                      />
+                      {/* Editable quantity field based on pay type */}
+                      {(() => {
+                        const payType = ticket.drivers?.pay_type || ticket.unit_type;
+                        if (payType === 'per_yard') {
+                          return (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.yards ?? editForm.quantity ?? ''}
+                              onChange={(e) => setEditForm({ ...editForm, yards: parseFloat(e.target.value) })}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Yards"
+                            />
+                          );
+                        } else if (payType === 'per_ton') {
+                          return (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.net_tons ?? editForm.quantity ?? ''}
+                              onChange={(e) => setEditForm({ ...editForm, net_tons: parseFloat(e.target.value) })}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Net Tons"
+                            />
+                          );
+                        } else if (payType === 'per_load') {
+                          return (
+                            <input
+                              type="number"
+                              step="1"
+                              value={editForm.loads ?? editForm.quantity ?? ''}
+                              onChange={(e) => setEditForm({ ...editForm, loads: parseInt(e.target.value) })}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Loads"
+                            />
+                          );
+                        } else if (payType === 'hourly') {
+                          return (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.hours ?? editForm.quantity ?? ''}
+                              onChange={(e) => setEditForm({ ...editForm, hours: parseFloat(e.target.value) })}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Hours"
+                            />
+                          );
+                        } else {
+                          return (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.quantity ?? ''}
+                              onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) })}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Quantity"
+                            />
+                          );
+                        }
+                      })()}
                     </div>
                   ) : (
                     <>
@@ -286,11 +338,32 @@ export default function ManagerReviewPage() {
                 {/* Right: Totals & Actions */}
                 <div className="space-y-3">
                   <div className="text-sm space-y-1 bg-gray-50 p-3 rounded">
+                    {/* Pay preview formula */}
+                    {(() => {
+                      const payType = ticket.drivers?.pay_type || ticket.unit_type;
+                      if (payType === 'per_yard') {
+                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} yards × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
+                      } else if (payType === 'per_ton') {
+                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} tons × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
+                      } else if (payType === 'per_load') {
+                        return <p className="text-blue-700">Pay Preview: {ticket.pay_rate} per load = <b>${ticket.pay_rate.toFixed(2)}</b></p>;
+                      } else if (payType === 'hourly') {
+                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} hours × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
+                      } else if (payType === 'percentage') {
+                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} × {ticket.pay_rate}% = <b>${((ticket.quantity * ticket.pay_rate) / 100).toFixed(2)}</b></p>;
+                      } else {
+                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
+                      }
+                    })()}
                     <p>Pay: <span className="font-semibold">${ticket.total_pay.toFixed(2)}</span></p>
                     <p>Bill: <span className="font-semibold">${ticket.total_bill.toFixed(2)}</span></p>
                     <p className="text-green-700">
                       Profit: <span className="font-bold">${ticket.total_profit.toFixed(2)}</span>
                     </p>
+                    {/* Needs review flag */}
+                    {ticket.quantity === 0 && (
+                      <p className="text-red-600 font-bold">Needs Review: Quantity is zero</p>
+                    )}
                   </div>
 
                   {editingTicket === ticket.id ? (

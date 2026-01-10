@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import "@/app/theme/GlobalStyles.css";
-import "@/app/theme/TeslaNebula.css";
 
 export default function OrgLayout({
   children,

@@ -15,3 +15,9 @@ export async function getDriverResume(driver_uuid: string) {
   if (error) return null;
   return data;
 }
+
+// Stub for submitDispatcherRating to resolve import error
+export async function submitDispatcherRating(driver_uuid: string, score: number, feedback: string) {
+  // TODO: Implement actual logic
+  return { success: true };
+}

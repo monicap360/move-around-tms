@@ -1,3 +1,28 @@
+-- Attach trigger to tickets table
+DROP TRIGGER IF EXISTS trg_prevent_ticket_update_if_payroll_locked ON public.tickets;
+CREATE TRIGGER trg_prevent_ticket_update_if_payroll_locked
+BEFORE UPDATE ON public.tickets
+FOR EACH ROW EXECUTE FUNCTION prevent_ticket_update_if_payroll_locked();
+-- Prevent ticket updates if payroll period is locked
+CREATE OR REPLACE FUNCTION prevent_ticket_update_if_payroll_locked()
+RETURNS trigger AS $$
+DECLARE
+  payroll_status TEXT;
+BEGIN
+  IF NEW.payroll_period_id IS NOT NULL THEN
+    SELECT status
+    INTO payroll_status
+    FROM payroll_periods
+    WHERE id = NEW.payroll_period_id;
+
+    IF payroll_status = 'locked' THEN
+      RAISE EXCEPTION 'Payroll period is locked. Ticket updates are not allowed.';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 -- ===========================================
 -- MOVEAROUND TMS
 -- HR + PAYROLL + TAX MANAGEMENT SCHEMA
@@ -13,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.employees (
     full_name         text NOT NULL,
     role_type         text CHECK (role_type IN ('DRIVER','OWNER_OPERATOR','OFFICE_STAFF')) NOT NULL,
     worker_type       text CHECK (worker_type IN ('W2','1099')) NOT NULL,
-    pay_type          text CHECK (pay_type IN ('hourly','percentage','fixed')) NOT NULL,
+    pay_type          text CHECK (pay_type IN ('hourly','percentage','fixed','per_yard','per_ton','per_load')) NOT NULL,
     hourly_rate       numeric(10,2),
     percentage_rate   numeric(5,2),
     salary_amount     numeric(12,2),
@@ -69,7 +94,7 @@ CREATE TABLE IF NOT EXISTS public.payroll_entries (
     deductions         numeric(12,2) DEFAULT 0,
     gross_pay          numeric(12,2) DEFAULT 0,
     net_pay            numeric(12,2) DEFAULT 0,
-    pay_type           text CHECK (pay_type IN ('hourly','percentage','fixed')),
+    pay_type           text CHECK (pay_type IN ('hourly','percentage','fixed','per_yard','per_ton','per_load')),
     filed_941          boolean DEFAULT false,
     filed_1099         boolean DEFAULT false,
     created_at         timestamptz DEFAULT now()
@@ -109,18 +134,30 @@ CREATE TABLE IF NOT EXISTS public.payroll_tax_filings (
 CREATE OR REPLACE FUNCTION public.calc_net_pay()
 RETURNS trigger AS $$
 BEGIN
-    IF NEW.pay_type = 'hourly' THEN
-        NEW.gross_pay := COALESCE(NEW.total_hours,0) * COALESCE(NEW.hourly_rate,0);
-        NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
+  IF NEW.pay_type = 'hourly' THEN
+    NEW.gross_pay := COALESCE(NEW.total_hours,0) * COALESCE(NEW.hourly_rate,0);
+    NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
 
-    ELSIF NEW.pay_type = 'percentage' THEN
-        NEW.gross_pay := COALESCE(NEW.load_revenue,0) * (COALESCE(NEW.percentage_rate,0) / 100);
-        NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
+  ELSIF NEW.pay_type = 'percentage' THEN
+    NEW.gross_pay := COALESCE(NEW.load_revenue,0) * (COALESCE(NEW.percentage_rate,0) / 100);
+    NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
 
-    ELSIF NEW.pay_type = 'fixed' THEN
-        NEW.gross_pay := COALESCE((SELECT salary_amount FROM public.employees WHERE id = NEW.employee_id),0);
-        NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
-    END IF;
+  ELSIF NEW.pay_type = 'fixed' THEN
+    NEW.gross_pay := COALESCE((SELECT salary_amount FROM public.employees WHERE id = NEW.employee_id),0);
+    NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
+
+  ELSIF NEW.pay_type = 'per_yard' THEN
+    NEW.gross_pay := COALESCE(NEW.yards,0) * COALESCE((SELECT yard_rate FROM public.drivers WHERE id = NEW.employee_id),0);
+    NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
+
+  ELSIF NEW.pay_type = 'per_ton' THEN
+    NEW.gross_pay := COALESCE(NEW.net_tons,0) * COALESCE((SELECT ton_rate FROM public.drivers WHERE id = NEW.employee_id),0);
+    NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
+
+  ELSIF NEW.pay_type = 'per_load' THEN
+    NEW.gross_pay := COALESCE((SELECT load_rate FROM public.drivers WHERE id = NEW.employee_id),0);
+    NEW.net_pay   := NEW.gross_pay - COALESCE(NEW.deductions,0);
+  END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

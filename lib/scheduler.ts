@@ -88,3 +88,6 @@ export function findOptimalAssignment(loads: Load[], drivers: Driver[], trucks: 
 
   return assignments;
 }
+
+  // Re-export autoScheduleLoads from app/lib/scheduler.ts for compatibility
+  export { autoScheduleLoads } from '../app/lib/scheduler';

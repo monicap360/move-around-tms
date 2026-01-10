@@ -1,0 +1,13 @@
+{
+  "root": true,
+  "extends": ["next", "next/core-web-vitals"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "[name='org'], [name='tenant'], [name='slug']",
+        "message": "Do not use [org], [tenant], or [slug] as dynamic route segments. Use [company] only."
+      }
+    ]
+  }
+}

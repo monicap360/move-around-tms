@@ -22,10 +22,6 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
 
-  // Disable server-side features for static export
-  experimental: {
-    serverActions: false,
-  }
 }
 
 module.exports = nextConfig

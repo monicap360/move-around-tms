@@ -7,7 +7,7 @@ import { DollarSign, AlertTriangle, User, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function PayrollWeekDetail({ params }: any) {
-  const org = params.org;
+  const company = params.company;
   const weekId = params.week;
   const [week, setWeek] = useState<any>(null);
   const [entries, setEntries] = useState<any[]>([]);
@@ -16,20 +16,20 @@ export default function PayrollWeekDetail({ params }: any) {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await fetch(`/api/company/${org}/payroll/${weekId}`);
+      const res = await fetch(`/api/company/${company}/payroll/${weekId}`);
       const json = await res.json();
       setWeek(json.week);
       setEntries(json.entries);
       setLoading(false);
     }
     load();
-  }, [org, weekId]);
+  }, [company, weekId]);
 
   return (
     <div className="space-y-6">
       <PageHeader title={`Payroll Week: ${week?.week_start} — ${week?.week_end}`}/>
 
-      <Link href={`/company/${org}/payroll`} className="inline-flex items-center text-blue-600 mb-2">
+      <Link href={`/company/${company}/payroll`} className="inline-flex items-center text-blue-600 mb-2">
         <ChevronLeft className="w-4 h-4 mr-1" /> Back to Payroll Weeks
       </Link>
 

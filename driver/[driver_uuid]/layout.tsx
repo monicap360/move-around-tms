@@ -1,7 +1,5 @@
 "use client";
 
-import "@/app/theme/GlobalStyles.css";
-import "@/app/theme/TeslaNebula.css";
 
 export default function DriverLayout({
   children,

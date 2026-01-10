@@ -1,17 +1,5 @@
 // Integration API utilities for external systems
 export interface Driver {
-export interface ApiResponse<T> {
-export async function fetchDrivers(): Promise<ApiResponse<Driver[]>> {
-export async function fetchDriverById(id: string): Promise<ApiResponse<Driver>> {
-// ...existing code...
-export async function updateDriver(id: string, updates: Partial<Driver>): Promise<ApiResponse<Driver>> {
-export async function createDriver(driverData: Omit<Driver, 'id'>): Promise<ApiResponse<Driver>> {
-export async function deleteDriver(id: string): Promise<ApiResponse<null>> {
-// Legacy exports for compatibility
-export const DriverAPI = {
-export async function authenticateApiRequest(request: any): Promise<null | Response> {
-// Integration API utilities for external systems
-export interface Driver {
   id: string;
   name: string;
   email: string;

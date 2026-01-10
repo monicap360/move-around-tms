@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Fail if multiple dynamic segments exist at same depth
+if find app -type d -name "[org]" -o -name "[tenant]" -o -name "[slug]" | grep .; then
+  echo "Error: Forbidden dynamic segments ([org], [tenant], [slug]) found in app/. Use [company] only."
+  exit 1
+fi

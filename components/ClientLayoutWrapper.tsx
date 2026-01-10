@@ -28,6 +28,7 @@ const navigationSections = [
     name: "Main",
     items: [
       { name: "Dashboard", path: "/", icon: BarChart },
+      { name: "Fast Scan", path: "/fastscan/pricing-page", icon: FileText },
       { name: "My Profile", path: "/driver/profile", icon: Users },
       { name: "Customer Portal", path: "/customer-portal", icon: Users },
       { name: "Truck Board", path: "/truck-board", icon: Truck },

@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function AISettingsPage({ params }: any) {
-  const org = params.org;
+  const company = params.company;
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -19,18 +19,18 @@ export default function AISettingsPage({ params }: any) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/company/${org}/settings/ai`)
+    fetch(`/api/company/${company}/settings/ai`)
       .then(res => res.json())
       .then(data => {
         setSettings({ ...DEFAULT_SETTINGS, ...data });
         setLoading(false);
       });
-  }, [org]);
+  }, [company]);
 
   async function saveSettings() {
     setSaving(true);
     setSaved(false);
-    const res = await fetch(`/api/company/${org}/settings/ai`, {
+    const res = await fetch(`/api/company/${company}/settings/ai`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),

@@ -2,10 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Enable modern App Router server actions
-  experimental: {
-    serverActions: true,
-  },
 
   // Allow Supabase storage images
   images: {

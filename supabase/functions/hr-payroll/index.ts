@@ -32,13 +32,44 @@ function json(body: any, status = 200, headers?: Record<string, string>) {
 function calcPay(entry: any, emp: any) {
   const d = Number(entry.deductions || 0)
   let g = 0
+  let needs_review = false;
 
-  if (emp.pay_type === 'hourly') g = Number(entry.total_hours || 0) * Number(emp.hourly_rate || 0)
-  else if (emp.pay_type === 'percentage') g = Number(entry.load_revenue || 0) * (Number(emp.percentage_rate || 0) / 100)
-  else if (emp.pay_type === 'salary') g = Number(emp.salary_amount || 0)
+  switch (emp.pay_type) {
+    case 'hourly':
+      g = Number(entry.total_hours || 0) * Number(emp.hourly_rate || 0);
+      break;
+    case 'percentage':
+      g = Number(entry.load_revenue || 0) * (Number(emp.percentage_rate || 0) / 100);
+      break;
+    case 'salary':
+      g = Number(emp.salary_amount || 0);
+      break;
+    case 'per_yard': {
+      const yards = Number(entry.yards || 0);
+      const rate = Number(emp.yard_rate || 0);
+      g = yards * rate;
+      if (yards === 0) needs_review = true;
+      break;
+    }
+    case 'per_ton': {
+      const tons = Number(entry.net_tons || 0);
+      const rate = Number(emp.ton_rate || 0);
+      g = tons * rate;
+      if (tons === 0) needs_review = true;
+      break;
+    }
+    case 'per_load': {
+      const rate = Number(emp.load_rate || 0);
+      g = rate;
+      break;
+    }
+    default:
+      g = 0;
+      needs_review = true;
+  }
 
-  const n = g - d
-  return { gross: g, net: n }
+  const n = g - d;
+  return { gross: g, net: n, needs_review };
 }
 
 // ────────────────────────────────────────────────

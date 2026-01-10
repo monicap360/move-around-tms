@@ -6,7 +6,7 @@ import Card from "@/components/ui/Card";
 import { Flame, MapPin, TrendingUp, UserCheck, AlertTriangle, Clock, BarChart2 } from "lucide-react";
 
 export default function AnalyticsDashboard({ params }: any) {
-  const org = params.org;
+  const company = params.company;
   const [kpis, setKpis] = useState<any>(null);
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [lanes, setLanes] = useState<any[]>([]);
@@ -17,17 +17,17 @@ export default function AnalyticsDashboard({ params }: any) {
   useEffect(() => {
     async function load() {
       const [k, h, l, s, d, a] = await Promise.all([
-        fetch(`/api/company/${org}/analytics/kpis`).then(r => r.json()),
-        fetch(`/api/company/${org}/analytics/heatmap`).then(r => r.json()),
-        fetch(`/api/company/${org}/analytics/lanes`).then(r => r.json()),
-        fetch(`/api/company/${org}/analytics/scorecards`).then(r => r.json()),
-        fetch(`/api/company/${org}/analytics/diffs`).then(r => r.json()),
-        fetch(`/api/company/${org}/analytics/audit`).then(r => r.json()),
+        fetch(`/api/company/${company}/analytics/kpis`).then(r => r.json()),
+        fetch(`/api/company/${company}/analytics/heatmap`).then(r => r.json()),
+        fetch(`/api/company/${company}/analytics/lanes`).then(r => r.json()),
+        fetch(`/api/company/${company}/analytics/scorecards`).then(r => r.json()),
+        fetch(`/api/company/${company}/analytics/diffs`).then(r => r.json()),
+        fetch(`/api/company/${company}/analytics/audit`).then(r => r.json()),
       ]);
       setKpis(k); setHeatmap(h); setLanes(l); setScorecards(s); setDiffs(d); setAudit(a);
     }
     load();
-  }, [org]);
+  }, [company]);
 
   return (
     <div className="space-y-8">

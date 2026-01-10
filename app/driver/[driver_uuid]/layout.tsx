@@ -1,7 +1,5 @@
-"use client";
 
-import "@/app/theme/GlobalStyles.css";
-import "@/app/theme/TeslaNebula.css";
+"use client";
 
 export default function DriverLayout({
   children,
@@ -10,7 +8,7 @@ export default function DriverLayout({
 }) {
   return (
     <div
-      className="tesla-nebula min-h-screen"
+      className="min-h-screen"
       style={{
         padding: "24px",
         display: "flex",
@@ -20,21 +18,19 @@ export default function DriverLayout({
     >
       {/* HEADER */}
       <header
-        className="glass-panel neon-teal"
+        className="glass-panel"
         style={{
-          width: "100%",
-          padding: "20px",
+          width:  "100%",
+          padding:  "20px",
           borderRadius: "20px",
-          display: "flex",
-          justifyContent: "space-between",
+
         }}
       >
         <div>
           <h2
             style={{
               fontSize: "24px",
-              fontWeight: 600,
-              color: "#00d4b3",
+              fontWeight:  600,
             }}
           >
             Driver HUD

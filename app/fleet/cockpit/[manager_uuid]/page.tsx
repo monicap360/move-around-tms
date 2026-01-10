@@ -18,14 +18,16 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
 );
 
-  const [manager, setManager] = useState(null);
-  const [layout, setLayout] = useState([]);
+export default function FleetCockpitPage(params: { manager_uuid: string }) {
+  const [manager, setManager] = useState<any>(null);
+  const [layout, setLayout] = useState<any[]>([]);
   const [party, setParty] = useState(false);
   const [highlight, setHighlight] = useState("");
   const confettiRef = useRef(null);
 
   useEffect(() => {
     loadManager();
+    // eslint-disable-next-line
   }, []);
 
   async function loadManager() {

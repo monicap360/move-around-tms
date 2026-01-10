@@ -5,7 +5,7 @@ import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle, RefreshCcw } from 
 import Papa from "papaparse";
 
 export default function CsvReconciliationPage({ params }: any) {
-  const org = params.org;
+  const company = params.company;
 
   const [csvRows, setCsvRows] = useState<any[]>([]);
   const [results, setResults] = useState<any>(null);
@@ -24,7 +24,7 @@ export default function CsvReconciliationPage({ params }: any) {
   }
 
   async function reconcileWithDB(rows: any[]) {
-    const response = await fetch(`/api/company/${org}/tickets/reconcile`, {
+    const response = await fetch(`/api/company/${company}/tickets/reconcile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rows })

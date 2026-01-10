@@ -1,67 +1,57 @@
-'use client'
 
-// 🚨 NUCLEAR CACHE BUST - FORCE DASHBOARD ACCESS
-console.log('🚨 AUTHENTICATION REMOVED - FORCING DASHBOARD ACCESS')
-
-// Immediate redirect before React even renders
-if (typeof window !== 'undefined') {
-  const timestamp = Date.now()
-  console.log('🔥 FORCE REDIRECT:', `/dashboard?v=${timestamp}`)
-  window.location.replace(`/dashboard?nocache=${timestamp}`)
-}
+import Link from 'next/link';
 
 export default function HomePage() {
-  // Multiple redirect attempts to bypass ALL caching
-  if (typeof window !== 'undefined') {
-    // Immediate
-    window.location.replace('/dashboard?force=' + Math.random())
-    
-    // Delayed backup
-    setTimeout(() => {
-      window.location.replace('/dashboard')
-    }, 50)
-    
-    // Meta refresh backup
-    document.head.innerHTML += '<meta http-equiv="refresh" content="0; url=/dashboard">'
-  }
-
   return (
-    <div style={{ 
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      backgroundColor: '#dc2626',
-      color: 'white',
+    <div style={{
+      minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 9999,
-      fontSize: '24px'
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
+      padding: 0,
     }}>
-      <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>
-        🚨 NO LOGIN SYSTEM
-      </h1>
-      <h2>AUTHENTICATION COMPLETELY REMOVED</h2>
-      <p style={{ marginTop: '20px' }}>Forcing redirect to dashboard...</p>
-      <button 
-        onClick={() => window.location.replace('/dashboard')}
-        style={{
-          padding: '20px 40px',
-          fontSize: '24px',
-          backgroundColor: 'white',
-          color: '#dc2626',
-          border: 'none',
-          borderRadius: '10px',
-          cursor: 'pointer',
-          marginTop: '30px',
-          fontWeight: 'bold'
-        }}
-      >
-        🚀 MANUAL DASHBOARD ACCESS
-      </button>
+      <h1 style={{ fontSize: 48, fontWeight: 700, marginBottom: 16, color: '#1e293b' }}>Move Around TMS</h1>
+      <p style={{ fontSize: 20, color: '#475569', marginBottom: 40 }}>Welcome! Choose a section to get started:</p>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: 24,
+        width: '100%',
+        maxWidth: 800,
+        marginBottom: 40,
+      }}>
+        <NavButton href="/dashboard" label="Dashboard" color="#2563eb" />
+        <NavButton href="/tickets" label="Tickets" color="#059669" />
+        <NavButton href="/drivers" label="Drivers" color="#f59e42" />
+        <NavButton href="/fleet" label="Fleet" color="#a21caf" />
+        <NavButton href="/payroll" label="Payroll" color="#dc2626" />
+        <NavButton href="/dispatch" label="Dispatch" color="#0ea5e9" />
+        <NavButton href="/settings" label="Settings" color="#64748b" />
+      </div>
+      <footer style={{ color: '#94a3b8', fontSize: 14 }}>© {new Date().getFullYear()} Move Around TMS</footer>
     </div>
-  )
+  );
+}
+
+function NavButton({ href, label, color }: { href: string; label: string; color: string }) {
+  return (
+    <Link href={href} style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 80,
+      background: color,
+      color: 'white',
+      borderRadius: 14,
+      fontSize: 22,
+      fontWeight: 600,
+      textDecoration: 'none',
+      boxShadow: '0 2px 8px rgba(30,41,59,0.08)',
+      transition: 'background 0.2s',
+    }}>
+      {label}
+    </Link>
+  );
 }

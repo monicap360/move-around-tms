@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Truck, User, Loader2, CheckCircle } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui";
 
 // Simple drag-and-drop using HTML5 API for MVP
 export default function DispatchBoard() {

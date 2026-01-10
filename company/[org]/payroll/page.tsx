@@ -7,20 +7,20 @@ import { Calendar, DollarSign, AlertTriangle, ChevronRight } from "lucide-react"
 import Link from "next/link";
 
 export default function PayrollHome({ params }: any) {
-  const org = params.org;
+  const company = params.company;
   const [weeks, setWeeks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await fetch(`/api/company/${org}/payroll/weeks`);
+      const res = await fetch(`/api/company/${company}/payroll/weeks`);
       const json = await res.json();
       setWeeks(json);
       setLoading(false);
     }
     load();
-  }, [org]);
+  }, [company]);
 
   return (
     <div className="space-y-6">
@@ -37,7 +37,7 @@ export default function PayrollHome({ params }: any) {
             {weeks.map((week: any) => (
               <Link
                 key={week.id}
-                href={`/company/${org}/payroll/${week.id}`}
+                href={`/company/${company}/payroll/${week.id}`}
                 className="block"
               >
                 <Card className="p-6 hover:bg-gray-50 cursor-pointer flex flex-col gap-2">

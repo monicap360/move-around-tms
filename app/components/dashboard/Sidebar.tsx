@@ -11,6 +11,8 @@ const supabase = createClient(
 
 export default function Sidebar() {
   const [orgCode, setOrgCode] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showCompliance, setShowCompliance] = useState(false);
 
   useEffect(() => {
     async function loadOrg() {
@@ -30,31 +32,58 @@ export default function Sidebar() {
   }
 
   const base = `/company/${orgCode}`;
-
-  const links = [
-    { name: "Dashboard", href: `${base}/dashboard`, icon: "🏠" },
-    { name: "Drivers", href: `${base}/drivers`, icon: "🚚" },
-    { name: "Dispatch", href: `${base}/dispatch`, icon: "🗂️" },
-    { name: "Tickets", href: `${base}/tickets`, icon: "🎫" },
-    { name: "Fleet", href: `${base}/fleet`, icon: "🚛" },
-    { name: "Payroll", href: `${base}/payroll`, icon: "💵" },
-    { name: "Compliance", href: `${base}/compliance`, icon: "📋" },
-    { name: "Settings", href: `${base}/settings`, icon: "⚙️" },
-    { name: "FastScan", href: `/driver/fastscan`, icon: "📲" },
-  ];
+  // Helper for active link styling (optional: can add usePathname for highlight)
+  const linkClass =
+    "flex items-center px-3 py-2 text-sm rounded transition-colors text-slate-700 hover:bg-gray-100 hover:text-black";
 
   return (
-    <div className="w-64 bg-white shadow h-screen p-5">
-      <h1 className="text-xl font-bold mb-6">MoveAround TMS</h1>
-      <nav className="space-y-2">
-        {links.map((item) => (
-          <Link key={item.name} href={item.href}>
-            <div className="p-3 rounded hover:bg-gray-100 cursor-pointer flex items-center gap-2">
-              <span>{item.icon}</span> {item.name}
+    <aside className="w-60 bg-white shadow h-screen flex flex-col border-r border-slate-200">
+      <div className="p-4 space-y-6 flex-1">
+        <h1 className="text-xl font-bold mb-6">MoveAround TMS</h1>
+        {/* PRIMARY */}
+        <div className="space-y-1">
+          <Link href={`${base}/dashboards`}><div className={linkClass}>Dashboard</div></Link>
+          <Link href={`${base}/alerts`}><div className={linkClass}>Alerts</div></Link>
+          <Link href={`${base}/fast-scan`}><div className={linkClass}>Fast Scan</div></Link>
+        </div>
+
+        {/* ANALYTICS */}
+        <div>
+          <button
+            onClick={() => setShowAnalytics((v) => !v)}
+            className="w-full text-left px-2 py-1 text-[11px] uppercase tracking-wider text-slate-400"
+          >
+            Analytics
+          </button>
+          {showAnalytics && (
+            <div className="mt-1 space-y-1">
+              <Link href={`${base}/dashboards/trends`}><div className={linkClass}>Trends</div></Link>
+              <Link href={`${base}/dashboards/sla`}><div className={linkClass}>SLA</div></Link>
+              <Link href={`${base}/dashboards/risk`}><div className={linkClass}>Risk</div></Link>
             </div>
-          </Link>
-        ))}
-      </nav>
-    </div>
+          )}
+        </div>
+
+        {/* COMPLIANCE */}
+        <div>
+          <button
+            onClick={() => setShowCompliance((v) => !v)}
+            className="w-full text-left px-2 py-1 text-[11px] uppercase tracking-wider text-slate-400"
+          >
+            Compliance
+          </button>
+          {showCompliance && (
+            <div className="mt-1 space-y-1">
+              <Link href={`${base}/compliance`}><div className={linkClass}>Compliance</div></Link>
+              <Link href={`${base}/documents`}><div className={linkClass}>Documents</div></Link>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* FOOTER */}
+      <div className="p-4 border-t border-slate-200">
+        <Link href={`${base}/settings`}><div className={linkClass}>Settings</div></Link>
+      </div>
+    </aside>
   );
 }

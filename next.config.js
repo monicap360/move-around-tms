@@ -29,10 +29,6 @@ const nextConfig = {
     NEXT_PUBLIC_PARTNER_SUBDOMAIN: 'movearoundtms.app'
   },
 
-  // Disable server-side features
-  experimental: {
-    serverActions: false,
-  }
 }
 
 module.exports = nextConfig

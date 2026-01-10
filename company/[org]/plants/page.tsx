@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function PlantsHome({ params }: any) {
-  const org = params.organization_code;
+  const company = params.company;
   const [plants, setPlants] = useState([]);
 
   useEffect(() => {
-    fetch(`/api/company/${org}/plants`)
+    fetch(`/api/company/${company}/plants`)
       .then((r) => r.json())
       .then((d) => setPlants(d.items || []));
-  }, [org]);
+  }, [company]);
 
   return (
     <div className="p-10">
@@ -20,7 +20,7 @@ export default function PlantsHome({ params }: any) {
       </h1>
 
       <Link
-        href={`/company/${org}/plants/new`}
+        href={`/company/${company}/plants/new`}
         className="glass-card p-4 rounded-xl mb-6 inline-block"
       >
         ➕ Add Plant / Pit
@@ -30,7 +30,7 @@ export default function PlantsHome({ params }: any) {
         {plants.map((p: any) => (
           <Link
             key={p.id}
-            href={`/company/${org}/plants/${p.id}`}
+            href={`/company/${company}/plants/${p.id}`}
             className="glass-card p-6 rounded-2xl"
           >
             <h2 className="text-xl font-semibold">{p.name}</h2>
