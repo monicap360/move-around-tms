@@ -133,7 +133,7 @@ export default function PayrollPage() {
         {/* Table */}
         {loading && <p className="text-gray-500">Loading...</p>}
         {!loading && rows.length === 0 && (
-          <p className="text-gray-500">No payroll data found for this week.</p>}
+          <p className="text-gray-500">No payroll data found for this week.</p>
         )}
         {!loading && rows.length > 0 && (
           <div className="overflow-x-auto bg-white border rounded">

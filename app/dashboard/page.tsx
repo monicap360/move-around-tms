@@ -146,30 +146,6 @@ export default function Dashboard() {
               <NavAction href="/admin" label="🛡️ Admin Dashboard" color="#dc2626" />
             )}
           </div>
-        // Navigation Action Button for Dashboard Quick Actions
-        import Link from 'next/link';
-
-        function NavAction({ href, label, color }: { href: string; label: string; color: string }) {
-          return (
-            <Link href={href} style={{
-              background: color,
-              color: 'white',
-              borderRadius: 8,
-              padding: 12,
-              fontWeight: 600,
-              fontSize: 18,
-              marginBottom: 6,
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'center',
-              textDecoration: 'none',
-              display: 'block',
-              transition: 'background 0.2s',
-            }}>
-              {label}
-            </Link>
-          );
-        }
         </div>
       </div>
       {/* Admin Management Section */}
@@ -181,4 +157,28 @@ export default function Dashboard() {
       <footer style={{ color: '#94a3b8', fontSize: 14, marginTop: 40 }}>© {new Date().getFullYear()} Move Around TMS</footer>
     </div>
   )
+}
+
+// Navigation Action Button for Dashboard Quick Actions
+import Link from 'next/link';
+function NavAction({ href, label, color }: { href: string; label: string; color: string }) {
+  return (
+    <Link href={href} style={{
+      background: color,
+      color: 'white',
+      borderRadius: 8,
+      padding: 12,
+      fontWeight: 600,
+      fontSize: 18,
+      marginBottom: 6,
+      border: 'none',
+      cursor: 'pointer',
+      textAlign: 'center',
+      textDecoration: 'none',
+      display: 'block',
+      transition: 'background 0.2s',
+    }}>
+      {label}
+    </Link>
+  );
 }
