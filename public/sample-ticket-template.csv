@@ -1,0 +1,3 @@
+Ticket Number,Date,Time,Customer Name,Driver Name,Truck Number,Material,Plant Name,Destination,Gross Weight,Tare Weight,Net Weight,Quantity,Rate,Total Amount,PO Number,Notes
+123456,2026-01-10,08:15,Acme Construction,John Doe,TX123,Gravel,Martin Marietta,Site A,80000,32000,48000,24,18.75,450.00,PO-001,Delivered on time
+123457,2026-01-10,09:30,Acme Construction,Jane Smith,TX124,Sand,Vulcan Materials,Site B,78000,31000,47000,23,19.00,437.00,PO-002,No issues

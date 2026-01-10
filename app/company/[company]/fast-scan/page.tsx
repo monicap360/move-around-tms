@@ -168,11 +168,38 @@ export default function FastScanPage() {
         <div className="font-semibold text-primary">Pit CSV Upload</div>
         <div className="text-xs text-muted-foreground mb-2">Upload the weekly CSV you receive from your pit or material supplier (e.g., Martin Marietta, Vulcan, etc). Fast Scan will group tickets by driver and week, flag issues, and prepare payroll for you. No manual mapping or reformatting required.</div>
       </div>
-      <div className="mb-4 flex items-center gap-4">
-        <label className="font-semibold">Upload Pit CSV:</label>
-        <input type="file" accept=".csv" onChange={handleCsvUpload} disabled={uploading} />
-        {csvError && <span className="text-red-600 text-xs ml-2">{csvError}</span>}
-        <button className="ml-4 px-3 py-1 rounded bg-gray-200 text-xs" onClick={() => setScans([])}>Clear</button>
+      <div className="mb-4 flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          <label className="font-semibold">Upload Pit/Plant CSV:</label>
+          <input type="file" accept=".csv" onChange={handleCsvUpload} disabled={uploading} />
+          {csvError && <span className="text-red-600 text-xs ml-2">{csvError}</span>}
+          <button className="ml-4 px-3 py-1 rounded bg-gray-200 text-xs" onClick={() => setScans([])}>Clear</button>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          <span>Accepted columns (Axon, Rose Rocket, etc.):</span>
+          <ul className="list-disc ml-6">
+            <li>Ticket Number</li>
+            <li>Date</li>
+            <li>Time</li>
+            <li>Customer Name/ID</li>
+            <li>Driver Name/ID</li>
+            <li>Truck/Unit Number</li>
+            <li>Material/Product Type</li>
+            <li>Plant/Pit Name or ID</li>
+            <li>Destination/Job</li>
+            <li>Gross Weight</li>
+            <li>Tare Weight</li>
+            <li>Net Weight</li>
+            <li>Quantity</li>
+            <li>Rate/Unit Price</li>
+            <li>Total Amount</li>
+            <li>PO/Reference Number</li>
+            <li>Notes/Comments</li>
+          </ul>
+          <span>
+            <a href="/sample-ticket-template.csv" className="underline text-blue-600" download>Download sample CSV template</a>
+          </span>
+        </div>
       </div>
       {/* Role selector */}
       <div className="mb-4 flex items-center gap-4">
