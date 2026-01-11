@@ -28,6 +28,7 @@ export default function HomePage() {
         <NavButton href="/fleet" label="Fleet" color="#a21caf" />
         <NavButton href="/payroll" label="Payroll" color="#dc2626" />
         <NavButton href="/dispatch" label="Dispatch" color="#0ea5e9" />
+        <NavButton href="/reports/excel-tab" label="Reports & Excel" color="#0f766e" />
         <NavButton href="/settings" label="Settings" color="#64748b" />
       </div>
       <footer style={{ color: '#94a3b8', fontSize: 14 }}>© {new Date().getFullYear()} Move Around TMS</footer>
