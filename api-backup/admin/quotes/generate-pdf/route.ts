@@ -1,38 +1,38 @@
 // Generate Branded Quote PDF
 // Creates professional quote PDF with company branding, pricing table, and terms
 
-import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import supabaseAdmin from '@/lib/supabaseAdmin';
+import { NextRequest, NextResponse } from "next/server";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 function authorize(req: NextRequest): boolean {
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers.get("authorization");
   return authHeader === `Bearer ${ADMIN_TOKEN}`;
 }
 
 export async function POST(request: NextRequest) {
   if (!authorize(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
   const { quote_id } = body;
 
   if (!quote_id) {
-    return NextResponse.json({ error: 'Missing quote_id' }, { status: 400 });
+    return NextResponse.json({ error: "Missing quote_id" }, { status: 400 });
   }
 
   // Fetch quote
   const { data: quote, error } = await supabaseAdmin
-    .from('aggregate_quotes')
-    .select('*')
-    .eq('id', quote_id)
+    .from("aggregate_quotes")
+    .select("*")
+    .eq("id", quote_id)
     .single();
 
   if (error || !quote) {
-    return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+    return NextResponse.json({ error: "Quote not found" }, { status: 404 });
   }
 
   try {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([612, 792]); // Letter size
     const { width, height } = page.getSize();
-    
+
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       color: brandBlue,
     });
 
-    page.drawText('RONYX LOGISTICS LLC', {
+    page.drawText("RONYX LOGISTICS LLC", {
       x: 50,
       y: yPos + 50,
       size: 18,
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       color: rgb(1, 1, 1),
     });
 
-    page.drawText('Professional Aggregate Hauling Services', {
+    page.drawText("Professional Aggregate Hauling Services", {
       x: 50,
       y: yPos + 30,
       size: 10,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Space reserved for logo underneath company name
     // Logo placeholder area: x: 50, y: yPos + 5, width: 40, height: 20
 
-    page.drawText('QUOTE', {
+    page.drawText("QUOTE", {
       x: width - 150,
       y: yPos + 40,
       size: 28,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Quote Number and Date
     const quoteNum = `QUO-${quote.id.substring(0, 8).toUpperCase()}`;
-    const quoteDate = new Date(quote.created_at).toLocaleDateString('en-US');
+    const quoteDate = new Date(quote.created_at).toLocaleDateString("en-US");
 
     page.drawText(`Quote #: ${quoteNum}`, {
       x: 50,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     yPos -= 60;
 
     // Customer Information
-    page.drawText('QUOTE FOR:', {
+    page.drawText("QUOTE FOR:", {
       x: 50,
       y: yPos,
       size: 11,
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       color: lightGray,
     });
 
-    page.drawText('SERVICE', {
+    page.drawText("SERVICE", {
       x: 60,
       y: yPos + 5,
       size: 10,
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('UNIT', {
+    page.drawText("UNIT", {
       x: 320,
       y: yPos + 5,
       size: 10,
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('RATE', {
+    page.drawText("RATE", {
       x: 450,
       y: yPos + 5,
       size: 10,
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
     yPos -= 30;
 
     // Service Line Item
-    const serviceName = quote.material || 'Aggregate Hauling';
+    const serviceName = quote.material || "Aggregate Hauling";
     page.drawText(serviceName, {
       x: 60,
       y: yPos,
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
 
     // Additional Notes
     if (quote.notes) {
-      page.drawText('NOTES:', {
+      page.drawText("NOTES:", {
         x: 50,
         y: yPos,
         size: 11,
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Terms & Conditions
-    page.drawText('TERMS & CONDITIONS:', {
+    page.drawText("TERMS & CONDITIONS:", {
       x: 50,
       y: yPos,
       size: 11,
@@ -272,11 +272,11 @@ export async function POST(request: NextRequest) {
     yPos -= 20;
 
     const terms = [
-      '• This quote is valid for 30 days from the date above.',
-      '• Rates subject to change based on fuel costs and market conditions.',
-      '• Payment terms: Net 30 days from invoice date.',
-      '• Minimum order quantities may apply.',
-      '• Services subject to availability and scheduling.',
+      "• This quote is valid for 30 days from the date above.",
+      "• Rates subject to change based on fuel costs and market conditions.",
+      "• Payment terms: Net 30 days from invoice date.",
+      "• Minimum order quantities may apply.",
+      "• Services subject to availability and scheduling.",
     ];
 
     for (const term of terms) {
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
       borderWidth: 1,
     });
 
-    page.drawText('ACCEPTANCE:', {
+    page.drawText("ACCEPTANCE:", {
       x: 60,
       y: yPos - 20,
       size: 10,
@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('By signing below, you accept the terms of this quote:', {
+    page.drawText("By signing below, you accept the terms of this quote:", {
       x: 60,
       y: yPos - 35,
       size: 9,
@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('Signature: _________________________________', {
+    page.drawText("Signature: _________________________________", {
       x: 60,
       y: yPos - 55,
       size: 9,
@@ -327,7 +327,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('Date: _______________', {
+    page.drawText("Date: _______________", {
       x: 360,
       y: yPos - 55,
       size: 9,
@@ -336,29 +336,31 @@ export async function POST(request: NextRequest) {
     });
 
     // Footer
-    page.drawText('© 2025 Ronyx Logistics LLC  •  Move Around TMS™  •  Professional Transportation Services', {
-      x: 80,
-      y: 30,
-      size: 8,
-      font: font,
-      color: gray,
-    });
+    page.drawText(
+      "© 2025 Ronyx Logistics LLC  •  Move Around TMS™  •  Professional Transportation Services",
+      {
+        x: 80,
+        y: 30,
+        size: 8,
+        font: font,
+        color: gray,
+      },
+    );
 
     // Generate PDF
     const pdfBytes = await pdfDoc.save();
 
     return new Response(Buffer.from(pdfBytes), {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Quote-${quoteNum}.pdf"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="Quote-${quoteNum}.pdf"`,
       },
     });
-
   } catch (error: any) {
-    console.error('PDF generation error:', error);
+    console.error("PDF generation error:", error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF', details: error.message },
-      { status: 500 }
+      { error: "Failed to generate PDF", details: error.message },
+      { status: 500 },
     );
   }
 }

@@ -1,7 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Trash2, UserPlus, Shield, Clock } from "lucide-react";
@@ -52,9 +57,9 @@ export default function AdminManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
-      
+
       const json = await res.json();
-      
+
       if (res.ok) {
         setEmail("");
         await fetchAdmins();
@@ -72,7 +77,11 @@ export default function AdminManager() {
   }
 
   async function removeAdmin(adminUser: AdminUser) {
-    if (!confirm(`Remove ${adminUser.email} as admin?\n\nThis will revoke their admin access immediately.`)) {
+    if (
+      !confirm(
+        `Remove ${adminUser.email} as admin?\n\nThis will revoke their admin access immediately.`,
+      )
+    ) {
       return;
     }
 
@@ -97,20 +106,20 @@ export default function AdminManager() {
   }
 
   function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   }
 
   function getRoleBadge(role: string) {
     const colors = {
-      'super_admin': 'bg-purple-100 text-purple-800 border-purple-200',
-      'admin': 'bg-blue-100 text-blue-800 border-blue-200',
-      'default': 'bg-gray-100 text-gray-800 border-gray-200'
+      super_admin: "bg-purple-100 text-purple-800 border-purple-200",
+      admin: "bg-blue-100 text-blue-800 border-blue-200",
+      default: "bg-gray-100 text-gray-800 border-gray-200",
     };
-    
+
     return colors[role as keyof typeof colors] || colors.default;
   }
 
@@ -153,8 +162,15 @@ export default function AdminManager() {
         {/* Admin List */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Current Admins ({admins.length})</h3>
-            <Button variant="outline" size="sm" onClick={fetchAdmins} disabled={loading}>
+            <h3 className="text-lg font-semibold">
+              Current Admins ({admins.length})
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchAdmins}
+              disabled={loading}
+            >
               {loading ? "Refreshing..." : "Refresh"}
             </Button>
           </div>
@@ -177,11 +193,11 @@ export default function AdminManager() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
                       <span className="font-medium">{admin.email}</span>
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={getRoleBadge(admin.role)}
                       >
-                        {admin.role.replace('_', ' ').toUpperCase()}
+                        {admin.role.replace("_", " ").toUpperCase()}
                       </Badge>
                       {!admin.active && (
                         <Badge variant="secondary">Inactive</Badge>
@@ -211,8 +227,14 @@ export default function AdminManager() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
           <div className="font-semibold mb-1">ℹ️ Admin Management Notes:</div>
           <ul className="space-y-1 ml-4">
-            <li>• Only existing users (those who have signed up) can be made admins</li>
-            <li>• Admins can upload/delete shared documents and manage other admins</li>
+            <li>
+              • Only existing users (those who have signed up) can be made
+              admins
+            </li>
+            <li>
+              • Admins can upload/delete shared documents and manage other
+              admins
+            </li>
             <li>• You cannot remove yourself as admin</li>
             <li>• Changes take effect immediately</li>
           </ul>

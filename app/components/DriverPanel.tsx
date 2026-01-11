@@ -7,11 +7,15 @@ export default function DriverPanel() {
         {/* Example driver */}
         <li className="flex items-center justify-between">
           <span>John Doe</span>
-          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">Active</span>
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+            Active
+          </span>
         </li>
         <li className="flex items-center justify-between">
           <span>Jane Smith</span>
-          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">Inactive</span>
+          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+            Inactive
+          </span>
         </li>
       </ul>
     </div>

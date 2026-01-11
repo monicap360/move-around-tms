@@ -43,7 +43,7 @@ export async function fetchMockTrackingData(): Promise<TrackingRecord[]> {
       loadStatus: "In Transit",
       material: "Gravel",
       customer: "Acme Construction",
-      jobSite: "Site A"
+      jobSite: "Site A",
     },
     {
       driverId: "D002",
@@ -62,7 +62,7 @@ export async function fetchMockTrackingData(): Promise<TrackingRecord[]> {
       loadStatus: "Idle",
       material: "Sand",
       customer: "BuildCo",
-      jobSite: "Site B"
+      jobSite: "Site B",
     },
     {
       driverId: "D003",
@@ -81,8 +81,8 @@ export async function fetchMockTrackingData(): Promise<TrackingRecord[]> {
       loadStatus: "Critical",
       material: "Cement",
       customer: "MegaBuild",
-      jobSite: "Site C"
-    }
+      jobSite: "Site C",
+    },
   ];
 }
 
@@ -120,7 +120,9 @@ export async function fetchOmnitracsTrackingData(): Promise<TrackingRecord[]> {
 }
 
 // 5. Fleet Complete
-export async function fetchFleetCompleteTrackingData(): Promise<TrackingRecord[]> {
+export async function fetchFleetCompleteTrackingData(): Promise<
+  TrackingRecord[]
+> {
   // TODO: Implement Fleet Complete API call and map to TrackingRecord
   // See https://developer.fleetcomplete.com/
   return [];

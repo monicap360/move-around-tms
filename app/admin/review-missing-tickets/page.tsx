@@ -2,9 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { AlertTriangle, CheckCircle, XCircle, Ban, FileText, Calendar } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Ban,
+  FileText,
+  Calendar,
+} from "lucide-react";
 
 type MissingTicket = {
   id: string;
@@ -38,7 +50,8 @@ export default function ReviewMissingTicketsPage() {
     try {
       const { data, error } = await supabase
         .from("aggregate_tickets")
-        .select(`
+        .select(
+          `
           id,
           ticket_number,
           material,
@@ -55,7 +68,8 @@ export default function ReviewMissingTicketsPage() {
           created_at,
           aggregate_partners (name),
           drivers (name)
-        `)
+        `,
+        )
         .eq("is_missing_ticket", true)
         .eq("status", "Missing - Pending Approval")
         .order("created_at", { ascending: false });
@@ -81,7 +95,7 @@ export default function ReviewMissingTicketsPage() {
             csv_match_details: t.csv_match_details,
             created_at: t.created_at,
             status: t.status,
-          }))
+          })),
         );
       }
     } catch (err) {
@@ -91,7 +105,10 @@ export default function ReviewMissingTicketsPage() {
     }
   }
 
-  async function handleAction(ticketId: string, action: "approve" | "deny" | "void") {
+  async function handleAction(
+    ticketId: string,
+    action: "approve" | "deny" | "void",
+  ) {
     try {
       setProcessingId(ticketId);
 
@@ -112,7 +129,7 @@ export default function ReviewMissingTicketsPage() {
       }
 
       const updateData: any = { status: newStatus };
-      
+
       // If voiding, set pay to $0
       if (voidTicket) {
         updateData.total_pay = 0;
@@ -154,19 +171,37 @@ export default function ReviewMissingTicketsPage() {
           Review Missing Tickets
         </h1>
         <p className="text-gray-600">
-          Approve, deny, or void tickets submitted by drivers after the pay week ended.
+          Approve, deny, or void tickets submitted by drivers after the pay week
+          ended.
         </p>
       </div>
 
       <Card className="mb-6 bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">📋 Review Guidelines:</h3>
+          <h3 className="font-semibold text-blue-900 mb-2">
+            📋 Review Guidelines:
+          </h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-            <li><strong>Approve:</strong> Accept ticket, pay driver full amount, add to payroll</li>
-            <li><strong>Deny:</strong> Reject ticket, driver receives no pay, not added to payroll</li>
-            <li><strong>Void:</strong> Accept ticket exists but driver receives $0 pay (for tracking/billing only)</li>
-            <li><strong>CSV Reconciliation:</strong> Green checkmark = ticket matches material plant records</li>
-            <li><strong>AI Date Analysis:</strong> System auto-assigns correct pay week based on ticket date</li>
+            <li>
+              <strong>Approve:</strong> Accept ticket, pay driver full amount,
+              add to payroll
+            </li>
+            <li>
+              <strong>Deny:</strong> Reject ticket, driver receives no pay, not
+              added to payroll
+            </li>
+            <li>
+              <strong>Void:</strong> Accept ticket exists but driver receives $0
+              pay (for tracking/billing only)
+            </li>
+            <li>
+              <strong>CSV Reconciliation:</strong> Green checkmark = ticket
+              matches material plant records
+            </li>
+            <li>
+              <strong>AI Date Analysis:</strong> System auto-assigns correct pay
+              week based on ticket date
+            </li>
           </ul>
         </CardContent>
       </Card>
@@ -197,8 +232,10 @@ export default function ReviewMissingTicketsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Column: Ticket Details */}
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-800 mb-2">Ticket Details:</h4>
-                    
+                    <h4 className="font-semibold text-gray-800 mb-2">
+                      Ticket Details:
+                    </h4>
+
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="text-gray-600">Partner:</span>
@@ -214,20 +251,28 @@ export default function ReviewMissingTicketsPage() {
                       </div>
                       <div>
                         <span className="text-gray-600">Quantity:</span>
-                        <p className="font-medium">{ticket.quantity} {ticket.unit_type}</p>
+                        <p className="font-medium">
+                          {ticket.quantity} {ticket.unit_type}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-600">Ticket Date:</span>
-                        <p className="font-medium">{new Date(ticket.ticket_date).toLocaleDateString()}</p>
+                        <p className="font-medium">
+                          {new Date(ticket.ticket_date).toLocaleDateString()}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-600">Driver Pay:</span>
-                        <p className="font-medium text-green-600">${ticket.total_pay.toFixed(2)}</p>
+                        <p className="font-medium text-green-600">
+                          ${ticket.total_pay.toFixed(2)}
+                        </p>
                       </div>
                     </div>
 
                     <div className="pt-3 border-t">
-                      <span className="text-gray-600 text-sm">Target Pay Week:</span>
+                      <span className="text-gray-600 text-sm">
+                        Target Pay Week:
+                      </span>
                       <p className="font-medium flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
                         {ticket.target_week_start} to {ticket.target_week_end}
@@ -242,9 +287,15 @@ export default function ReviewMissingTicketsPage() {
                         </div>
                         {ticket.csv_match_details && (
                           <details className="mt-2 text-xs">
-                            <summary className="cursor-pointer text-blue-600">View Match Details</summary>
+                            <summary className="cursor-pointer text-blue-600">
+                              View Match Details
+                            </summary>
                             <pre className="mt-1 p-2 bg-gray-100 rounded overflow-x-auto">
-                              {JSON.stringify(ticket.csv_match_details, null, 2)}
+                              {JSON.stringify(
+                                ticket.csv_match_details,
+                                null,
+                                2,
+                              )}
                             </pre>
                           </details>
                         )}
@@ -254,13 +305,19 @@ export default function ReviewMissingTicketsPage() {
 
                   {/* Right Column: Driver Reason & Actions */}
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-800 mb-2">Driver's Reason:</h4>
+                    <h4 className="font-semibold text-gray-800 mb-2">
+                      Driver's Reason:
+                    </h4>
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-                      <p className="text-sm text-gray-800">{ticket.missing_ticket_reason}</p>
+                      <p className="text-sm text-gray-800">
+                        {ticket.missing_ticket_reason}
+                      </p>
                     </div>
 
                     <div className="pt-3 border-t">
-                      <h4 className="font-semibold text-gray-800 mb-3">Manager Actions:</h4>
+                      <h4 className="font-semibold text-gray-800 mb-3">
+                        Manager Actions:
+                      </h4>
                       <div className="space-y-2">
                         <Button
                           onClick={() => handleAction(ticket.id, "approve")}
@@ -295,9 +352,17 @@ export default function ReviewMissingTicketsPage() {
                       <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-700">
                         <p className="font-semibold mb-1">Action Details:</p>
                         <ul className="space-y-1 list-disc list-inside">
-                          <li><strong>Approve:</strong> Full pay, appears in payroll</li>
-                          <li><strong>Void:</strong> $0 pay, kept for records/billing</li>
-                          <li><strong>Deny:</strong> No pay, removed from payroll</li>
+                          <li>
+                            <strong>Approve:</strong> Full pay, appears in
+                            payroll
+                          </li>
+                          <li>
+                            <strong>Void:</strong> $0 pay, kept for
+                            records/billing
+                          </li>
+                          <li>
+                            <strong>Deny:</strong> No pay, removed from payroll
+                          </li>
                         </ul>
                       </div>
                     </div>

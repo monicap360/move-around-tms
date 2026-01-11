@@ -1,5 +1,10 @@
 "use client";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 
 export default function ReportsPage() {
   return (
@@ -9,11 +14,16 @@ export default function ReportsPage() {
           <CardTitle>Reports & Analytics</CardTitle>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>View revenue, expense, fuel-cost-per-mile, and profit analytics.</p>
-          <p>Visual charts for IFTA trends, maintenance cost, and driver performance.</p>
+          <p>
+            View revenue, expense, fuel-cost-per-mile, and profit analytics.
+          </p>
+          <p>
+            Visual charts for IFTA trends, maintenance cost, and driver
+            performance.
+          </p>
           <p>Export to PDF/CSV for management review.</p>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

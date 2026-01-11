@@ -13,17 +13,17 @@ export async function GET() {
 
     if (result.error) {
       // If no logo found, return null data instead of error
-      if (result.error.message.includes('No rows')) {
+      if (result.error.message.includes("No rows")) {
         return NextResponse.json({
           success: true,
           data: null,
-          message: 'No company logo found',
+          message: "No company logo found",
         });
       }
 
       return NextResponse.json(
         { success: false, error: result.error.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,12 +31,11 @@ export async function GET() {
       success: true,
       data: result.data,
     });
-
   } catch (error) {
-    console.error('Error fetching current company logo:', error);
+    console.error("Error fetching current company logo:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch current company logo' },
-      { status: 500 }
+      { success: false, error: "Failed to fetch current company logo" },
+      { status: 500 },
     );
   }
 }

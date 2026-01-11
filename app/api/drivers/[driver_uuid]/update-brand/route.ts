@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const client = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function POST(req, { params }) {
@@ -16,7 +16,8 @@ export async function POST(req, { params }) {
     .update({ truck_skin, custom_logo_url })
     .eq("driver_uuid", driver_uuid);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }

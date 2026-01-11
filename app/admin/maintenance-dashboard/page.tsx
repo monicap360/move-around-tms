@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Wrench, AlertTriangle, CheckCircle, Calendar, XCircle } from "lucide-react";
+import {
+  Wrench,
+  AlertTriangle,
+  CheckCircle,
+  Calendar,
+  XCircle,
+} from "lucide-react";
 
 type MaintenanceRequest = {
   id: string;
@@ -59,7 +70,7 @@ export default function MaintenanceDashboard() {
   async function updateStatus(
     requestId: string,
     newStatus: string,
-    scheduledDate?: string
+    scheduledDate?: string,
   ) {
     try {
       setProcessingId(requestId);
@@ -132,15 +143,8 @@ export default function MaintenanceDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div
-          className="cursor-pointer"
-          onClick={() => setFilter("all")}
-        >
-          <Card
-            className={`${
-              filter === "all" ? "ring-2 ring-blue-500" : ""
-            }`}
-          >
+        <div className="cursor-pointer" onClick={() => setFilter("all")}>
+          <Card className={`${filter === "all" ? "ring-2 ring-blue-500" : ""}`}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -153,20 +157,17 @@ export default function MaintenanceDashboard() {
           </Card>
         </div>
 
-        <div
-          className="cursor-pointer"
-          onClick={() => setFilter("critical")}
-        >
+        <div className="cursor-pointer" onClick={() => setFilter("critical")}>
           <Card
-            className={`${
-              filter === "critical" ? "ring-2 ring-red-500" : ""
-            }`}
+            className={`${filter === "critical" ? "ring-2 ring-red-500" : ""}`}
           >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Critical</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.critical}</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {stats.critical}
+                  </p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-red-500" />
               </div>
@@ -174,20 +175,17 @@ export default function MaintenanceDashboard() {
           </Card>
         </div>
 
-        <div
-          className="cursor-pointer"
-          onClick={() => setFilter("unsafe")}
-        >
+        <div className="cursor-pointer" onClick={() => setFilter("unsafe")}>
           <Card
-            className={`${
-              filter === "unsafe" ? "ring-2 ring-orange-500" : ""
-            }`}
+            className={`${filter === "unsafe" ? "ring-2 ring-orange-500" : ""}`}
           >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Unsafe to Drive</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.unsafe}</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {stats.unsafe}
+                  </p>
                 </div>
                 <XCircle className="w-8 h-8 text-orange-500" />
               </div>
@@ -195,10 +193,7 @@ export default function MaintenanceDashboard() {
           </Card>
         </div>
 
-        <div
-          className="cursor-pointer"
-          onClick={() => setFilter("pending")}
-        >
+        <div className="cursor-pointer" onClick={() => setFilter("pending")}>
           <Card
             className={`${
               filter === "pending" ? "ring-2 ring-yellow-500" : ""
@@ -208,12 +203,14 @@ export default function MaintenanceDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {stats.pending}
+                  </p>
+                </div>
+                <Calendar className="w-8 h-8 text-yellow-500" />
               </div>
-              <Calendar className="w-8 h-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -234,8 +231,8 @@ export default function MaintenanceDashboard() {
                 req.priority === "Critical"
                   ? "border-red-300 bg-red-50"
                   : !req.can_drive_safely
-                  ? "border-orange-300 bg-orange-50"
-                  : "border-gray-200"
+                    ? "border-orange-300 bg-orange-50"
+                    : "border-gray-200"
               }`}
             >
               <CardContent className="pt-6">
@@ -253,10 +250,10 @@ export default function MaintenanceDashboard() {
                               req.priority === "Critical"
                                 ? "bg-red-100 text-red-800"
                                 : req.priority === "High"
-                                ? "bg-orange-100 text-orange-800"
-                                : req.priority === "Medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-blue-100 text-blue-800"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : req.priority === "Medium"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-blue-100 text-blue-800"
                             }`}
                           >
                             {req.priority}
@@ -268,7 +265,9 @@ export default function MaintenanceDashboard() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-700 mb-3">{req.description}</p>
+                        <p className="text-sm text-gray-700 mb-3">
+                          {req.description}
+                        </p>
                       </div>
                     </div>
 
@@ -277,7 +276,9 @@ export default function MaintenanceDashboard() {
                         <span className="text-gray-600">Driver:</span>
                         <p className="font-medium">{req.driver_name}</p>
                         {req.driver_phone && (
-                          <p className="text-xs text-gray-500">{req.driver_phone}</p>
+                          <p className="text-xs text-gray-500">
+                            {req.driver_phone}
+                          </p>
                         )}
                       </div>
                       <div>
@@ -298,19 +299,22 @@ export default function MaintenanceDashboard() {
                       {req.mileage && (
                         <div>
                           <span className="text-gray-600">Mileage:</span>
-                          <p className="font-medium">{req.mileage.toLocaleString()} mi</p>
+                          <p className="font-medium">
+                            {req.mileage.toLocaleString()} mi
+                          </p>
                         </div>
                       )}
                     </div>
 
                     <div className="pt-2 border-t text-xs text-gray-500">
                       <p>
-                        Submitted: {new Date(req.submitted_at).toLocaleString()} (
-                        {Math.floor(req.hours_pending)} hours ago)
+                        Submitted: {new Date(req.submitted_at).toLocaleString()}{" "}
+                        ({Math.floor(req.hours_pending)} hours ago)
                       </p>
                       {req.scheduled_date && (
                         <p className="text-blue-600 font-medium">
-                          Scheduled: {new Date(req.scheduled_date).toLocaleDateString()}
+                          Scheduled:{" "}
+                          {new Date(req.scheduled_date).toLocaleDateString()}
                         </p>
                       )}
                     </div>
@@ -350,10 +354,10 @@ export default function MaintenanceDashboard() {
                           req.status === "Completed"
                             ? "bg-green-100 text-green-800"
                             : req.status === "In Progress"
-                            ? "bg-blue-100 text-blue-800"
-                            : req.status === "Scheduled"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-gray-100 text-gray-800"
+                              ? "bg-blue-100 text-blue-800"
+                              : req.status === "Scheduled"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-gray-100 text-gray-800"
                         }`}
                       >
                         {req.status}
@@ -361,8 +365,10 @@ export default function MaintenanceDashboard() {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700">Actions:</p>
-                      
+                      <p className="text-sm font-medium text-gray-700">
+                        Actions:
+                      </p>
+
                       {req.status === "Pending" && (
                         <Button
                           onClick={() => updateStatus(req.id, "Acknowledged")}
@@ -376,7 +382,9 @@ export default function MaintenanceDashboard() {
 
                       <Button
                         onClick={() => {
-                          const date = prompt("Enter scheduled date (YYYY-MM-DD):");
+                          const date = prompt(
+                            "Enter scheduled date (YYYY-MM-DD):",
+                          );
                           if (date) updateStatus(req.id, "Scheduled", date);
                         }}
                         disabled={processingId === req.id}

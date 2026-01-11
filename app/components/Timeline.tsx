@@ -6,10 +6,12 @@ export default function Timeline() {
       <ul className="space-y-2">
         {/* Example timeline event */}
         <li>
-          <span className="text-xs text-gray-500">08:00</span> John Doe acknowledged Load 12345
+          <span className="text-xs text-gray-500">08:00</span> John Doe
+          acknowledged Load 12345
         </li>
         <li>
-          <span className="text-xs text-gray-500">08:15</span> Jane Smith delivered Load 12346
+          <span className="text-xs text-gray-500">08:15</span> Jane Smith
+          delivered Load 12346
         </li>
       </ul>
     </div>

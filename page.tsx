@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import Link from "next/link"
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -13,9 +13,7 @@ export default function Home() {
         The system is live and running.
       </p>
 
-      <p className="text-gray-500 mb-10">
-        Next.js + Supabase + Monica 🚀
-      </p>
+      <p className="text-gray-500 mb-10">Next.js + Supabase + Monica 🚀</p>
 
       <Link
         href="/dashboard"
@@ -24,5 +22,5 @@ export default function Home() {
         👉 Enter Dashboard
       </Link>
     </main>
-  )
+  );
 }

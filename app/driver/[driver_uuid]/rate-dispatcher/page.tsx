@@ -12,11 +12,14 @@ export default function RateDispatcherPage({ params }) {
     setSaving(true);
     setError("");
     try {
-      const res = await fetch(`/api/drivers/${params.driver_uuid}/rate-dispatcher`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ score, feedback }),
-      });
+      const res = await fetch(
+        `/api/drivers/${params.driver_uuid}/rate-dispatcher`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ score, feedback }),
+        },
+      );
       if (!res.ok) throw new Error("Failed to submit rating");
       setSuccess(true);
       setScore(0);
@@ -53,7 +56,7 @@ export default function RateDispatcherPage({ params }) {
           className="w-full p-3 rounded border border-gray-300"
           rows={4}
           value={feedback}
-          onChange={e => setFeedback(e.target.value)}
+          onChange={(e) => setFeedback(e.target.value)}
           placeholder="Share your experience with your dispatcher..."
         />
       </div>
@@ -64,7 +67,11 @@ export default function RateDispatcherPage({ params }) {
       >
         {saving ? "Submitting..." : "Submit Rating"}
       </button>
-      {success && <div className="mt-4 text-green-600 font-medium">Thank you for your feedback!</div>}
+      {success && (
+        <div className="mt-4 text-green-600 font-medium">
+          Thank you for your feedback!
+        </div>
+      )}
       {error && <div className="mt-4 text-red-600 font-medium">{error}</div>}
     </main>
   );

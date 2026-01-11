@@ -1,20 +1,28 @@
 "use client";
 
-import { useState } from 'react';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Upload, Image, FileText } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Upload, Image, FileText } from "lucide-react";
 
 interface CompanyAssetUploaderProps {
-  assetType: 'company_logo' | 'ticket_template';
+  assetType: "company_logo" | "ticket_template";
   onUploadComplete?: (asset: any) => void;
 }
 
-const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploaderProps) => {
+const CompanyAssetUploader = ({
+  assetType,
+  onUploadComplete,
+}: CompanyAssetUploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
-  const [description, setDescription] = useState('');
-  const [tags, setTags] = useState('');
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
 
@@ -33,13 +41,13 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('asset_type', assetType);
-      formData.append('description', description);
-      formData.append('tags', tags);
+      formData.append("file", file);
+      formData.append("asset_type", assetType);
+      formData.append("description", description);
+      formData.append("tags", tags);
 
-      const response = await fetch('/api/company-assets/upload', {
-        method: 'POST',
+      const response = await fetch("/api/company-assets/upload", {
+        method: "POST",
         body: formData,
       });
 
@@ -49,14 +57,14 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
         setUploadResult({
           success: true,
           message: result.message,
-          asset: result.data
+          asset: result.data,
         });
-        
+
         // Reset form
         setFile(null);
-        setDescription('');
-        setTags('');
-        
+        setDescription("");
+        setTags("");
+
         // Call callback if provided
         if (onUploadComplete) {
           onUploadComplete(result.data);
@@ -64,13 +72,13 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
       } else {
         setUploadResult({
           success: false,
-          message: result.error
+          message: result.error,
         });
       }
     } catch (error) {
       setUploadResult({
         success: false,
-        message: 'Upload failed. Please try again.'
+        message: "Upload failed. Please try again.",
       });
     } finally {
       setUploading(false);
@@ -78,15 +86,15 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
   };
 
   const getAcceptedTypes = () => {
-    if (assetType === 'company_logo') {
-      return 'image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml';
+    if (assetType === "company_logo") {
+      return "image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml";
     } else {
-      return 'image/*,application/pdf,text/plain,application/json';
+      return "image/*,application/pdf,text/plain,application/json";
     }
   };
 
   const getIcon = () => {
-    return assetType === 'company_logo' ? (
+    return assetType === "company_logo" ? (
       <Image className="w-6 h-6" />
     ) : (
       <FileText className="w-6 h-6" />
@@ -94,7 +102,9 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
   };
 
   const getTitle = () => {
-    return assetType === 'company_logo' ? 'Upload Company Logo' : 'Upload Ticket Template';
+    return assetType === "company_logo"
+      ? "Upload Company Logo"
+      : "Upload Ticket Template";
   };
 
   return (
@@ -145,8 +155,8 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
         </div>
 
         {/* Upload Button */}
-        <Button 
-          onClick={handleUpload} 
+        <Button
+          onClick={handleUpload}
           disabled={!file || uploading}
           className="w-full"
         >
@@ -158,25 +168,41 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
           ) : (
             <>
               <Upload className="w-4 h-4 mr-2" />
-              Upload {assetType === 'company_logo' ? 'Logo' : 'Template'}
+              Upload {assetType === "company_logo" ? "Logo" : "Template"}
             </>
           )}
         </Button>
 
         {/* Upload Result */}
         {uploadResult && (
-          <div className={`p-3 rounded-md text-sm ${
-            uploadResult.success 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
+          <div
+            className={`p-3 rounded-md text-sm ${
+              uploadResult.success
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
+          >
             {uploadResult.message}
             {uploadResult.success && uploadResult.asset && (
               <div className="mt-2 text-xs">
-                <p><strong>File:</strong> {uploadResult.asset.original_filename}</p>
-                <p><strong>Path:</strong> {uploadResult.asset.file_path}</p>
+                <p>
+                  <strong>File:</strong> {uploadResult.asset.original_filename}
+                </p>
+                <p>
+                  <strong>Path:</strong> {uploadResult.asset.file_path}
+                </p>
                 {uploadResult.asset.public_url && (
-                  <p><strong>URL:</strong> <a href={uploadResult.asset.public_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View File</a></p>
+                  <p>
+                    <strong>URL:</strong>{" "}
+                    <a
+                      href={uploadResult.asset.public_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      View File
+                    </a>
+                  </p>
                 )}
               </div>
             )}
@@ -185,7 +211,6 @@ const CompanyAssetUploader = ({ assetType, onUploadComplete }: CompanyAssetUploa
       </CardContent>
     </Card>
   );
-
-}
+};
 
 export default CompanyAssetUploader;

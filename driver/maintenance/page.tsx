@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Wrench, AlertTriangle, Upload, CheckCircle, Clock } from "lucide-react";
+import {
+  Wrench,
+  AlertTriangle,
+  Upload,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 
 type MaintenanceRequest = {
   id: string;
@@ -19,24 +30,24 @@ type MaintenanceRequest = {
 };
 
 const ISSUE_TYPES = [
-  'Engine/Mechanical',
-  'Brakes',
-  'Tires',
-  'Lights/Electrical',
-  'HVAC/Climate',
-  'Transmission',
-  'Suspension',
-  'Body/Exterior',
-  'Interior',
-  'Safety Equipment',
-  'Other',
+  "Engine/Mechanical",
+  "Brakes",
+  "Tires",
+  "Lights/Electrical",
+  "HVAC/Climate",
+  "Transmission",
+  "Suspension",
+  "Body/Exterior",
+  "Interior",
+  "Safety Equipment",
+  "Other",
 ];
 
 const PRIORITIES = [
-  { value: 'Low', label: 'Low - Can wait', color: 'text-blue-600' },
-  { value: 'Medium', label: 'Medium - Soon', color: 'text-yellow-600' },
-  { value: 'High', label: 'High - This week', color: 'text-orange-600' },
-  { value: 'Critical', label: 'Critical - Immediate', color: 'text-red-600' },
+  { value: "Low", label: "Low - Can wait", color: "text-blue-600" },
+  { value: "Medium", label: "Medium - Soon", color: "text-yellow-600" },
+  { value: "High", label: "High - This week", color: "text-orange-600" },
+  { value: "Critical", label: "Critical - Immediate", color: "text-red-600" },
 ];
 
 export default function DriverMaintenancePage() {
@@ -62,8 +73,10 @@ export default function DriverMaintenancePage() {
 
   async function loadDriverAndRequests() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
         const { data: driver } = await supabase
           .from("drivers")
@@ -117,9 +130,9 @@ export default function DriverMaintenancePage() {
         if (uploadErr) {
           console.error("Photo upload error:", uploadErr);
         } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from("hr_docs")
-            .getPublicUrl(uploadData.path);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("hr_docs").getPublicUrl(uploadData.path);
           photoUrls.push(publicUrl);
         }
       }
@@ -305,11 +318,7 @@ export default function DriverMaintenancePage() {
                 </label>
               </div>
 
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="w-full"
-              >
+              <Button type="submit" disabled={submitting} className="w-full">
                 {submitting ? "Submitting..." : "Submit Maintenance Request"}
               </Button>
             </form>
@@ -345,10 +354,10 @@ export default function DriverMaintenancePage() {
                             req.priority === "Critical"
                               ? "bg-red-100 text-red-800"
                               : req.priority === "High"
-                              ? "bg-orange-100 text-orange-800"
-                              : req.priority === "Medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-blue-100 text-blue-800"
+                                ? "bg-orange-100 text-orange-800"
+                                : req.priority === "Medium"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-blue-100 text-blue-800"
                           }`}
                         >
                           {req.priority}
@@ -358,8 +367,8 @@ export default function DriverMaintenancePage() {
                             req.status === "Completed"
                               ? "bg-green-100 text-green-800"
                               : req.status === "In Progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {req.status}
@@ -371,11 +380,13 @@ export default function DriverMaintenancePage() {
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>Truck: {req.truck_number}</span>
                         <span>
-                          Submitted: {new Date(req.submitted_at).toLocaleString()}
+                          Submitted:{" "}
+                          {new Date(req.submitted_at).toLocaleString()}
                         </span>
                         {req.scheduled_date && (
                           <span className="text-blue-600 font-medium">
-                            Scheduled: {new Date(req.scheduled_date).toLocaleDateString()}
+                            Scheduled:{" "}
+                            {new Date(req.scheduled_date).toLocaleDateString()}
                           </span>
                         )}
                       </div>

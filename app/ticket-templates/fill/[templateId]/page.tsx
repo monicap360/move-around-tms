@@ -1,28 +1,33 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
-import { 
-  Save, 
-  Download, 
-  ArrowLeft, 
-  FileText, 
+import {
+  Save,
+  Download,
+  ArrowLeft,
+  FileText,
   Calendar,
   Building,
   Truck,
   Hash,
   Type,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 
 interface TemplateField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: "text" | "number" | "date" | "select";
   label: string;
   required: boolean;
   x_position: number;
@@ -47,10 +52,14 @@ interface FormData {
   [fieldName: string]: string | number;
 }
 
-export default function TicketFormFillPage({ params }: { params: { templateId?: string } }) {
+export default function TicketFormFillPage({
+  params,
+}: {
+  params: { templateId?: string };
+}) {
   const [template, setTemplate] = useState<TicketTemplate | null>(null);
   const [formData, setFormData] = useState<FormData>({});
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -58,15 +67,15 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
   const templateId = params?.templateId;
 
   useEffect(() => {
-    if (templateId === 'test-fill') {
+    if (templateId === "test-fill") {
       // Load from session storage for testing
-      const tempTemplate = sessionStorage.getItem('temp_template');
+      const tempTemplate = sessionStorage.getItem("temp_template");
       if (tempTemplate) {
         const parsedTemplate = JSON.parse(tempTemplate);
         setTemplate({
-          id: 'temp',
+          id: "temp",
           ...parsedTemplate,
-          template_fields: parsedTemplate.template_fields || []
+          template_fields: parsedTemplate.template_fields || [],
         });
         initializeFormData(parsedTemplate.template_fields || []);
       }
@@ -84,10 +93,10 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
         setTemplate(data.template);
         initializeFormData(data.template.template_fields);
       } else {
-        console.error('Failed to load template');
+        console.error("Failed to load template");
       }
     } catch (error) {
-      console.error('Error loading template:', error);
+      console.error("Error loading template:", error);
     } finally {
       setLoading(false);
     }
@@ -95,36 +104,36 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
 
   const initializeFormData = (fields: TemplateField[]) => {
     const initialData: FormData = {};
-    fields.forEach(field => {
+    fields.forEach((field) => {
       if (field.default_value) {
         initialData[field.name] = field.default_value;
       } else {
-        initialData[field.name] = field.type === 'number' ? 0 : '';
+        initialData[field.name] = field.type === "number" ? 0 : "";
       }
     });
     setFormData(initialData);
   };
 
   const validateForm = (): boolean => {
-    const newErrors: {[key: string]: string} = {};
-    
-    template?.template_fields.forEach(field => {
+    const newErrors: { [key: string]: string } = {};
+
+    template?.template_fields.forEach((field) => {
       if (field.required) {
         const value = formData[field.name];
-        if (!value || (typeof value === 'string' && !value.trim())) {
+        if (!value || (typeof value === "string" && !value.trim())) {
           newErrors[field.name] = `${field.label} is required`;
         }
       }
 
       // Type-specific validation
-      if (field.type === 'number' && formData[field.name]) {
+      if (field.type === "number" && formData[field.name]) {
         const numValue = Number(formData[field.name]);
         if (isNaN(numValue)) {
           newErrors[field.name] = `${field.label} must be a valid number`;
         }
       }
 
-      if (field.type === 'date' && formData[field.name]) {
+      if (field.type === "date" && formData[field.name]) {
         const dateValue = new Date(formData[field.name] as string);
         if (isNaN(dateValue.getTime())) {
           newErrors[field.name] = `${field.label} must be a valid date`;
@@ -137,35 +146,35 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
   };
 
   const handleFieldChange = (fieldName: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [fieldName]: value }));
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
     // Clear error when user starts typing
     if (errors[fieldName]) {
-      setErrors(prev => ({ ...prev, [fieldName]: '' }));
+      setErrors((prev) => ({ ...prev, [fieldName]: "" }));
     }
   };
 
   const handleSaveTicket = async () => {
     if (!validateForm()) {
-      alert('Please fix the validation errors before saving');
+      alert("Please fix the validation errors before saving");
       return;
     }
 
     setSaving(true);
     try {
       // Save ticket data to database
-      const response = await fetch('/api/tickets/create-from-template', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/tickets/create-from-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           template_id: template?.id,
           form_data: formData,
-          partner_name: template?.partner_name
-        })
+          partner_name: template?.partner_name,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        alert('Ticket saved successfully!');
+        alert("Ticket saved successfully!");
         // Redirect to ticket details or list
         window.location.href = `/tickets/${data.ticket.id}`;
       } else {
@@ -173,8 +182,8 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
         alert(`Error saving ticket: ${error.error}`);
       }
     } catch (error) {
-      console.error('Save error:', error);
-      alert('Error saving ticket');
+      console.error("Save error:", error);
+      alert("Error saving ticket");
     } finally {
       setSaving(false);
     }
@@ -182,30 +191,30 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
 
   const handleGeneratePDF = async () => {
     if (!validateForm()) {
-      alert('Please fix the validation errors before generating PDF');
+      alert("Please fix the validation errors before generating PDF");
       return;
     }
 
     setGenerating(true);
     try {
-      const response = await fetch('/api/tickets/generate-pdf-from-template', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/tickets/generate-pdf-from-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           template_id: template?.id,
           form_data: formData,
           template_name: template?.name,
           partner_name: template?.partner_name,
-          base_image_url: template?.base_image_url
-        })
+          base_image_url: template?.base_image_url,
+        }),
       });
 
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `ticket-${template?.name?.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.pdf`;
+        a.download = `ticket-${template?.name?.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -215,25 +224,28 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
         alert(`Error generating PDF: ${error.error}`);
       }
     } catch (error) {
-      console.error('PDF generation error:', error);
-      alert('Error generating PDF');
+      console.error("PDF generation error:", error);
+      alert("Error generating PDF");
     } finally {
       setGenerating(false);
     }
   };
 
   const renderField = (field: TemplateField) => {
-    const value = formData[field.name] || '';
+    const value = formData[field.name] || "";
     const hasError = !!errors[field.name];
 
     const commonProps = {
-      className: `w-full ${hasError ? 'border-red-500' : ''}`,
-      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => 
-        handleFieldChange(field.name, field.type === 'number' ? Number(e.target.value) : e.target.value)
+      className: `w-full ${hasError ? "border-red-500" : ""}`,
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+        handleFieldChange(
+          field.name,
+          field.type === "number" ? Number(e.target.value) : e.target.value,
+        ),
     };
 
     switch (field.type) {
-      case 'text':
+      case "text":
         return (
           <Input
             type="text"
@@ -242,8 +254,8 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
             {...commonProps}
           />
         );
-      
-      case 'number':
+
+      case "number":
         return (
           <Input
             type="number"
@@ -253,22 +265,16 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
             {...commonProps}
           />
         );
-      
-      case 'date':
-        return (
-          <Input
-            type="date"
-            value={value as string}
-            {...commonProps}
-          />
-        );
-      
-      case 'select':
+
+      case "date":
+        return <Input type="date" value={value as string} {...commonProps} />;
+
+      case "select":
         return (
           <select
             value={value as string}
             {...commonProps}
-            className={`px-3 py-2 border rounded-md ${hasError ? 'border-red-500' : 'border-gray-300'}`}
+            className={`px-3 py-2 border rounded-md ${hasError ? "border-red-500" : "border-gray-300"}`}
           >
             <option value="">Select {field.label}</option>
             {field.options?.map((option, index) => (
@@ -278,7 +284,7 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
             ))}
           </select>
         );
-      
+
       default:
         return null;
     }
@@ -300,9 +306,15 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-700">Template Not Found</h3>
-            <p className="text-gray-500 mb-4">The ticket template could not be loaded.</p>
-            <Button onClick={() => window.location.href = '/ticket-templates'}>
+            <h3 className="text-lg font-medium text-gray-700">
+              Template Not Found
+            </h3>
+            <p className="text-gray-500 mb-4">
+              The ticket template could not be loaded.
+            </p>
+            <Button
+              onClick={() => (window.location.href = "/ticket-templates")}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Templates
             </Button>
@@ -318,9 +330,9 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
       <div className="bg-white border-b border-gray-200 px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => window.location.href = '/ticket-templates'}
+            <Button
+              variant="ghost"
+              onClick={() => (window.location.href = "/ticket-templates")}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -341,15 +353,12 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
               disabled={generating}
             >
               <Download className="w-4 h-4 mr-2" />
-              {generating ? 'Generating...' : 'Generate PDF'}
+              {generating ? "Generating..." : "Generate PDF"}
             </Button>
-            {templateId !== 'test-fill' && (
-              <Button
-                onClick={handleSaveTicket}
-                disabled={saving}
-              >
+            {templateId !== "test-fill" && (
+              <Button onClick={handleSaveTicket} disabled={saving}>
                 <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Ticket'}
+                {saving ? "Saving..." : "Save Ticket"}
               </Button>
             )}
           </div>
@@ -378,7 +387,9 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
                   <div key={field.id}>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                      {field.required && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
                     </label>
                     {renderField(field)}
                     {errors[field.name] && (
@@ -417,7 +428,7 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
                       alt="Template"
                       className="w-full rounded-lg border"
                     />
-                    
+
                     {/* Overlay filled fields */}
                     <div className="absolute inset-0">
                       {template.template_fields.map((field) => {
@@ -433,7 +444,7 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
                               top: `${(field.y_position / 1000) * 100}%`, // Normalize based on expected image height
                               width: `${(field.width / 800) * 100}%`,
                               height: `${(field.height / 1000) * 100}%`,
-                              fontSize: Math.max(8, field.height * 0.4)
+                              fontSize: Math.max(8, field.height * 0.4),
                             }}
                           >
                             {String(value).substring(0, 20)}
@@ -466,9 +477,12 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
                   {template.template_fields.map((field) => {
                     const value = formData[field.name];
                     const isComplete = field.required ? !!value : true;
-                    
+
                     return (
-                      <div key={field.id} className="flex items-center justify-between py-1">
+                      <div
+                        key={field.id}
+                        className="flex items-center justify-between py-1"
+                      >
                         <span className="text-sm font-medium text-gray-700">
                           {field.label}
                         </span>
@@ -478,9 +492,11 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
                               {String(value)}
                             </span>
                           )}
-                          <div className={`w-3 h-3 rounded-full ${
-                            isComplete ? 'bg-green-500' : 'bg-gray-300'
-                          }`} />
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              isComplete ? "bg-green-500" : "bg-gray-300"
+                            }`}
+                          />
                         </div>
                       </div>
                     );
@@ -489,11 +505,19 @@ export default function TicketFormFillPage({ params }: { params: { templateId?: 
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-gray-700">Completion Status</span>
-                    <span className={`font-medium ${
-                      Object.keys(errors).length === 0 ? 'text-green-600' : 'text-orange-600'
-                    }`}>
-                      {Object.keys(errors).length === 0 ? 'Ready' : `${Object.keys(errors).length} issues`}
+                    <span className="font-medium text-gray-700">
+                      Completion Status
+                    </span>
+                    <span
+                      className={`font-medium ${
+                        Object.keys(errors).length === 0
+                          ? "text-green-600"
+                          : "text-orange-600"
+                      }`}
+                    >
+                      {Object.keys(errors).length === 0
+                        ? "Ready"
+                        : `${Object.keys(errors).length} issues`}
                     </span>
                   </div>
                 </div>

@@ -8,19 +8,19 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Save, 
-  User, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  ArrowLeft,
+  Save,
+  User,
+  Phone,
+  Mail,
+  MapPin,
   Calendar,
   Car,
   Shield,
   Heart,
   Briefcase,
-  Award
+  Award,
 } from "lucide-react";
 
 export default function NewDriverPage() {
@@ -37,9 +37,9 @@ export default function NewDriverPage() {
     state: "",
     zip: "",
     date_of_birth: "",
-    
+
     // Employment Information
-    hire_date: new Date().toISOString().split('T')[0],
+    hire_date: new Date().toISOString().split("T")[0],
     status: "Active",
     position: "",
     department: "",
@@ -47,7 +47,7 @@ export default function NewDriverPage() {
     years_experience: "",
     pay_rate: "",
     pay_type: "mileage",
-    
+
     // CDL Information
     cdl_number: "",
     cdl_class: "A",
@@ -55,17 +55,17 @@ export default function NewDriverPage() {
     driver_license_state: "",
     endorsements: [] as string[],
     restrictions: "",
-    
+
     // Medical Information
     medical_cert_expiration: "",
     medical_examiner: "",
     medical_restrictions: "",
-    
+
     // Emergency Contact
     emergency_contact_name: "",
     emergency_contact_phone: "",
     emergency_contact_relationship: "",
-    
+
     // Performance (initial values)
     safety_score: 100,
     total_miles: 0,
@@ -73,39 +73,39 @@ export default function NewDriverPage() {
     violation_count: 0,
     on_time_percentage: 100,
     fuel_efficiency: 0,
-    
+
     // Training & Certifications
     hazmat_cert: false,
     hazmat_expiration: "",
     defensive_driving_cert: false,
     defensive_driving_expiration: "",
-    
+
     // Notes
-    notes: ""
+    notes: "",
   });
 
   const endorsementOptions = [
     "H - Hazardous Materials",
-    "N - Tank Vehicles", 
+    "N - Tank Vehicles",
     "P - Passenger",
     "S - School Bus",
     "T - Double/Triple Trailers",
-    "X - Hazmat & Tank Combined"
+    "X - Hazmat & Tank Combined",
   ];
 
   function handleInputChange(field: string, value: any) {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   }
 
   function handleEndorsementChange(endorsement: string, checked: boolean) {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      endorsements: checked 
+      endorsements: checked
         ? [...prev.endorsements, endorsement]
-        : prev.endorsements.filter(e => e !== endorsement)
+        : prev.endorsements.filter((e) => e !== endorsement),
     }));
   }
 
@@ -117,11 +117,13 @@ export default function NewDriverPage() {
       // Prepare data for insert
       const driverData = {
         ...formData,
-        years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
+        years_experience: formData.years_experience
+          ? parseInt(formData.years_experience)
+          : null,
         pay_rate: formData.pay_rate ? parseFloat(formData.pay_rate) : null,
         endorsements: JSON.stringify(formData.endorsements),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase
@@ -136,8 +138,10 @@ export default function NewDriverPage() {
         return;
       }
 
-      alert("Driver created successfully! Onboarding process has been started.");
-      
+      alert(
+        "Driver created successfully! Onboarding process has been started.",
+      );
+
       // Check if onboarding was created (it should be automatic via trigger)
       const { data: onboardingData } = await supabase
         .from("driver_onboarding")
@@ -151,7 +155,6 @@ export default function NewDriverPage() {
       } else {
         router.push(`/hr/drivers/${data.id}`);
       }
-
     } catch (err) {
       console.error("Error creating driver:", err);
       alert("Unexpected error creating driver");
@@ -171,7 +174,9 @@ export default function NewDriverPage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Add New Driver</h1>
-          <p className="text-gray-600">Complete driver profile and employment information</p>
+          <p className="text-gray-600">
+            Complete driver profile and employment information
+          </p>
         </div>
       </div>
 
@@ -198,7 +203,7 @@ export default function NewDriverPage() {
                   placeholder="Enter full name"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Employee ID *
@@ -207,7 +212,9 @@ export default function NewDriverPage() {
                   type="text"
                   required
                   value={formData.employee_id}
-                  onChange={(e) => handleInputChange("employee_id", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("employee_id", e.target.value)
+                  }
                   placeholder="Enter employee ID"
                 />
               </div>
@@ -232,7 +239,9 @@ export default function NewDriverPage() {
                   <Input
                     type="date"
                     value={formData.date_of_birth}
-                    onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("date_of_birth", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -282,7 +291,9 @@ export default function NewDriverPage() {
                     <Input
                       type="text"
                       value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("state", e.target.value)
+                      }
                       placeholder="CA"
                       maxLength={2}
                     />
@@ -321,7 +332,9 @@ export default function NewDriverPage() {
                     type="date"
                     required
                     value={formData.hire_date}
-                    onChange={(e) => handleInputChange("hire_date", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("hire_date", e.target.value)
+                    }
                   />
                 </div>
                 <div>
@@ -330,7 +343,9 @@ export default function NewDriverPage() {
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => handleInputChange("status", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("status", e.target.value)
+                    }
                     className="w-full border rounded-md px-3 py-2 bg-white"
                   >
                     <option value="Active">Active</option>
@@ -348,7 +363,9 @@ export default function NewDriverPage() {
                 <Input
                   type="text"
                   value={formData.position}
-                  onChange={(e) => handleInputChange("position", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("position", e.target.value)
+                  }
                   placeholder="Driver, Lead Driver, etc."
                 />
               </div>
@@ -361,7 +378,9 @@ export default function NewDriverPage() {
                   <Input
                     type="text"
                     value={formData.department}
-                    onChange={(e) => handleInputChange("department", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("department", e.target.value)
+                    }
                     placeholder="Transportation"
                   />
                 </div>
@@ -372,7 +391,9 @@ export default function NewDriverPage() {
                   <Input
                     type="text"
                     value={formData.supervisor}
-                    onChange={(e) => handleInputChange("supervisor", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("supervisor", e.target.value)
+                    }
                     placeholder="Supervisor name"
                   />
                 </div>
@@ -385,7 +406,9 @@ export default function NewDriverPage() {
                 <Input
                   type="number"
                   value={formData.years_experience}
-                  onChange={(e) => handleInputChange("years_experience", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("years_experience", e.target.value)
+                  }
                   placeholder="5"
                   min="0"
                 />
@@ -400,7 +423,9 @@ export default function NewDriverPage() {
                     type="number"
                     step="0.01"
                     value={formData.pay_rate}
-                    onChange={(e) => handleInputChange("pay_rate", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("pay_rate", e.target.value)
+                    }
                     placeholder="0.50"
                   />
                 </div>
@@ -410,7 +435,9 @@ export default function NewDriverPage() {
                   </label>
                   <select
                     value={formData.pay_type}
-                    onChange={(e) => handleInputChange("pay_type", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("pay_type", e.target.value)
+                    }
                     className="w-full border rounded-md px-3 py-2 bg-white"
                   >
                     <option value="mileage">Per Mile</option>
@@ -441,7 +468,9 @@ export default function NewDriverPage() {
                   type="text"
                   required
                   value={formData.cdl_number}
-                  onChange={(e) => handleInputChange("cdl_number", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("cdl_number", e.target.value)
+                  }
                   placeholder="Enter CDL number"
                 />
               </div>
@@ -454,7 +483,9 @@ export default function NewDriverPage() {
                   <select
                     required
                     value={formData.cdl_class}
-                    onChange={(e) => handleInputChange("cdl_class", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("cdl_class", e.target.value)
+                    }
                     className="w-full border rounded-md px-3 py-2 bg-white"
                   >
                     <option value="A">Class A</option>
@@ -469,7 +500,9 @@ export default function NewDriverPage() {
                   <Input
                     type="text"
                     value={formData.driver_license_state}
-                    onChange={(e) => handleInputChange("driver_license_state", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("driver_license_state", e.target.value)
+                    }
                     placeholder="CA"
                     maxLength={2}
                   />
@@ -484,7 +517,9 @@ export default function NewDriverPage() {
                   type="date"
                   required
                   value={formData.cdl_expiration}
-                  onChange={(e) => handleInputChange("cdl_expiration", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("cdl_expiration", e.target.value)
+                  }
                 />
               </div>
 
@@ -494,11 +529,16 @@ export default function NewDriverPage() {
                 </label>
                 <div className="space-y-2">
                   {endorsementOptions.map((endorsement) => (
-                    <label key={endorsement} className="flex items-center gap-2">
+                    <label
+                      key={endorsement}
+                      className="flex items-center gap-2"
+                    >
                       <input
                         type="checkbox"
                         checked={formData.endorsements.includes(endorsement)}
-                        onChange={(e) => handleEndorsementChange(endorsement, e.target.checked)}
+                        onChange={(e) =>
+                          handleEndorsementChange(endorsement, e.target.checked)
+                        }
                         className="rounded border-gray-300"
                       />
                       <span className="text-sm">{endorsement}</span>
@@ -514,7 +554,9 @@ export default function NewDriverPage() {
                 <Input
                   type="text"
                   value={formData.restrictions}
-                  onChange={(e) => handleInputChange("restrictions", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("restrictions", e.target.value)
+                  }
                   placeholder="Any license restrictions"
                 />
               </div>
@@ -537,7 +579,9 @@ export default function NewDriverPage() {
                 <Input
                   type="text"
                   value={formData.emergency_contact_name}
-                  onChange={(e) => handleInputChange("emergency_contact_name", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergency_contact_name", e.target.value)
+                  }
                   placeholder="Emergency contact full name"
                 />
               </div>
@@ -549,7 +593,9 @@ export default function NewDriverPage() {
                 <Input
                   type="tel"
                   value={formData.emergency_contact_phone}
-                  onChange={(e) => handleInputChange("emergency_contact_phone", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("emergency_contact_phone", e.target.value)
+                  }
                   placeholder="(555) 123-4567"
                 />
               </div>
@@ -561,7 +607,12 @@ export default function NewDriverPage() {
                 <Input
                   type="text"
                   value={formData.emergency_contact_relationship}
-                  onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "emergency_contact_relationship",
+                      e.target.value,
+                    )
+                  }
                   placeholder="Spouse, Parent, etc."
                 />
               </div>
@@ -573,7 +624,9 @@ export default function NewDriverPage() {
                 <Input
                   type="date"
                   value={formData.medical_cert_expiration}
-                  onChange={(e) => handleInputChange("medical_cert_expiration", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("medical_cert_expiration", e.target.value)
+                  }
                 />
               </div>
 
@@ -584,7 +637,9 @@ export default function NewDriverPage() {
                 <Input
                   type="text"
                   value={formData.medical_examiner}
-                  onChange={(e) => handleInputChange("medical_examiner", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("medical_examiner", e.target.value)
+                  }
                   placeholder="Dr. Smith"
                 />
               </div>

@@ -61,7 +61,10 @@ export default function TruckSkinSelector({ params }) {
     await fetch(`/api/drivers/${params.driver_uuid}/update-brand`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ truck_skin: selected, custom_logo_url: finalLogoUrl }),
+      body: JSON.stringify({
+        truck_skin: selected,
+        custom_logo_url: finalLogoUrl,
+      }),
     });
     setSaving(false);
     setSuccess(true);
@@ -73,17 +76,47 @@ export default function TruckSkinSelector({ params }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-cyan-950 text-white flex flex-col items-center p-8">
-      <h1 className="text-3xl font-bold mb-6 text-cyan-400 tracking-tight drop-shadow-lg">Tesla-Style Truck Branding</h1>
+      <h1 className="text-3xl font-bold mb-6 text-cyan-400 tracking-tight drop-shadow-lg">
+        Tesla-Style Truck Branding
+      </h1>
       <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl items-start">
         {/* Live Truck Preview */}
         <div className="flex-1 flex flex-col items-center">
           <div className="relative w-72 h-40 mb-4">
             <svg viewBox="0 0 400 200" className="w-full h-full">
-              <rect x="30" y="100" width="340" height="60" rx="18" fill={SKINS.find(s => s.value === selected)?.color || '#222'} stroke="#333" strokeWidth="4" />
-              <polygon points="30,100 80,60 320,60 370,100" fill={SKINS.find(s => s.value === selected)?.color || '#222'} stroke="#333" strokeWidth="4" />
+              <rect
+                x="30"
+                y="100"
+                width="340"
+                height="60"
+                rx="18"
+                fill={SKINS.find((s) => s.value === selected)?.color || "#222"}
+                stroke="#333"
+                strokeWidth="4"
+              />
+              <polygon
+                points="30,100 80,60 320,60 370,100"
+                fill={SKINS.find((s) => s.value === selected)?.color || "#222"}
+                stroke="#333"
+                strokeWidth="4"
+              />
               {/* Wheels */}
-              <circle cx="80" cy="170" r="18" fill="#222" stroke="#111" strokeWidth="6" />
-              <circle cx="320" cy="170" r="18" fill="#222" stroke="#111" strokeWidth="6" />
+              <circle
+                cx="80"
+                cy="170"
+                r="18"
+                fill="#222"
+                stroke="#111"
+                strokeWidth="6"
+              />
+              <circle
+                cx="320"
+                cy="170"
+                r="18"
+                fill="#222"
+                stroke="#111"
+                strokeWidth="6"
+              />
               {/* Logo */}
               {(logoPreview || logoUrl) && (
                 <image
@@ -92,18 +125,26 @@ export default function TruckSkinSelector({ params }) {
                   y="110"
                   width="60"
                   height="40"
-                  style={{ filter: 'drop-shadow(0 0 6px #06b6d4)' }}
+                  style={{ filter: "drop-shadow(0 0 6px #06b6d4)" }}
                 />
               )}
             </svg>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-cyan-300 opacity-80">Live Preview</div>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-cyan-300 opacity-80">
+              Live Preview
+            </div>
           </div>
-          <div className="text-center text-cyan-200 mb-2">{selected ? SKINS.find(s => s.value === selected)?.name : "Choose a skin"}</div>
+          <div className="text-center text-cyan-200 mb-2">
+            {selected
+              ? SKINS.find((s) => s.value === selected)?.name
+              : "Choose a skin"}
+          </div>
         </div>
         {/* Skin and Logo Controls */}
         <div className="flex-1 flex flex-col gap-6">
           <div>
-            <div className="mb-2 font-semibold text-cyan-300">Select Color/Finish</div>
+            <div className="mb-2 font-semibold text-cyan-300">
+              Select Color/Finish
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {SKINS.map((skin) => (
                 <button
@@ -113,9 +154,18 @@ export default function TruckSkinSelector({ params }) {
                   style={{ background: skin.color }}
                   aria-pressed={selected === skin.value}
                 >
-                  <span className="text-base font-bold mb-1" style={{ color: selected === skin.value ? "#06b6d4" : "#222" }}>{skin.name}</span>
+                  <span
+                    className="text-base font-bold mb-1"
+                    style={{
+                      color: selected === skin.value ? "#06b6d4" : "#222",
+                    }}
+                  >
+                    {skin.name}
+                  </span>
                   <div className="w-12 h-4 bg-white rounded" />
-                  {selected === skin.value && <span className="mt-1 text-cyan-200 text-xs">Selected</span>}
+                  {selected === skin.value && (
+                    <span className="mt-1 text-cyan-200 text-xs">Selected</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -126,7 +176,7 @@ export default function TruckSkinSelector({ params }) {
               <input
                 type="text"
                 value={logoUrl}
-                onChange={e => setLogoUrl(e.target.value)}
+                onChange={(e) => setLogoUrl(e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-900 border border-cyan-600 text-white"
                 placeholder="Paste image URL or upload below"
               />
@@ -134,13 +184,15 @@ export default function TruckSkinSelector({ params }) {
                 className="bg-cyan-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-cyan-500 transition"
                 onClick={() => fileInput.current?.click()}
                 type="button"
-              >Upload</button>
+              >
+                Upload
+              </button>
               <input
                 type="file"
                 accept="image/*"
                 ref={fileInput}
-                style={{ display: 'none' }}
-                onChange={e => {
+                style={{ display: "none" }}
+                onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
                     setLogoFile(e.target.files[0]);
                   }
@@ -156,9 +208,15 @@ export default function TruckSkinSelector({ params }) {
                 />
                 <button
                   className="text-xs text-red-400 hover:underline"
-                  onClick={() => { setLogoFile(null); setLogoPreview(""); setLogoUrl(""); }}
+                  onClick={() => {
+                    setLogoFile(null);
+                    setLogoPreview("");
+                    setLogoUrl("");
+                  }}
                   type="button"
-                >Remove</button>
+                >
+                  Remove
+                </button>
               </div>
             )}
           </div>

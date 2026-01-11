@@ -1,533 +1,567 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ROnyx Fleet Management Portal - Veronica Butanda</title>
-    
+
     <!-- Global Theme CSS -->
-    <link rel="stylesheet" href="/assets/theme-viable.css">
-    
+    <link rel="stylesheet" href="/assets/theme-viable.css" />
+
     <!-- Inter Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
-        /* ROnyx Custom Brand Override */
-        :root {
-            --ronyx-bg: #1E1E1E;
-            --ronyx-accent: #F7931E;
-            --ronyx-text: #FFFFFF;
-            --ronyx-card: #2A2A2A;
-            --ronyx-border: #404040;
-        }
-        
-        .ronyx-dashboard {
-            background: var(--ronyx-bg);
-            color: var(--ronyx-text);
-            min-height: 100vh;
-        }
-        
-        .ronyx-header {
-            background: linear-gradient(135deg, var(--ronyx-bg) 0%, #2d2d2d 100%);
-            border-bottom: 3px solid var(--ronyx-accent);
-            padding: 1.5rem 2rem;
-            box-shadow: 0 4px 12px rgba(247, 147, 30, 0.3);
-        }
-        
-        .ronyx-logo-section {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        
-        .ronyx-logo {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--ronyx-accent), #e8851a);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 800;
-            font-size: 1.8rem;
-            box-shadow: 0 4px 12px rgba(247, 147, 30, 0.4);
-        }
-        
-        .ronyx-brand-title {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--ronyx-text);
-            margin: 0;
-        }
-        
-        .ronyx-subtitle {
-            color: var(--ronyx-accent);
-            font-weight: 600;
-            margin: 0;
-        }
-        
-        .ronyx-tagline {
-            color: #999;
-            font-size: 0.9rem;
-            margin: 0;
-        }
-        
-        .ronyx-main {
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .ronyx-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .ronyx-stat-card {
-            background: var(--ronyx-card);
-            border: 1px solid var(--ronyx-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--ronyx-accent);
-        }
-        
-        .ronyx-stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(247, 147, 30, 0.3);
-            border-color: var(--ronyx-accent);
-        }
-        
-        .ronyx-stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--ronyx-accent);
-            margin: 0.5rem 0;
-        }
-        
-        .ronyx-stat-label {
-            color: #ccc;
-            font-weight: 600;
-            opacity: 0.9;
-        }
-        
-        .ronyx-stat-icon {
-            font-size: 3rem;
-            float: right;
-            opacity: 0.7;
-        }
-        
-        .ronyx-section-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--ronyx-text);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .ronyx-section-title::before {
-            content: '';
-            width: 4px;
-            height: 2rem;
-            background: var(--ronyx-accent);
-            border-radius: 2px;
-        }
-        
-        .ronyx-operators-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .ronyx-operator-card {
-            background: var(--ronyx-card);
-            border: 1px solid var(--ronyx-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-        }
-        
-        .ronyx-operator-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(247, 147, 30, 0.2);
-            border-color: var(--ronyx-accent);
-        }
-        
-        .ronyx-operator-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        
-        .ronyx-operator-name {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--ronyx-text);
-        }
-        
-        .ronyx-operator-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-active {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-        
-        .status-pending {
-            background: rgba(247, 147, 30, 0.2);
-            color: var(--ronyx-accent);
-            border: 1px solid rgba(247, 147, 30, 0.3);
-        }
-        
-        .ronyx-operator-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .ronyx-detail-item {
-            color: #ccc;
-            font-size: 0.9rem;
-        }
-        
-        .ronyx-detail-value {
-            color: var(--ronyx-text);
-            font-weight: 600;
-        }
-        
-        .ronyx-btn {
-            background: var(--ronyx-accent);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-        
-        .ronyx-btn:hover {
-            background: #e8851a;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(247, 147, 30, 0.3);
-        }
-        
-        .ronyx-btn-secondary {
-            background: var(--ronyx-border);
-            color: var(--ronyx-text);
-            border: 1px solid var(--ronyx-border);
-        }
-        
-        .ronyx-btn-secondary:hover {
-            background: #555;
-            border-color: #555;
-        }
-        
-        .ronyx-user-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .ronyx-user-avatar {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--ronyx-accent), #e8851a);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.3rem;
-        }
-        
-        .ronyx-welcome {
-            margin-bottom: 2rem;
-        }
-        
-        .ronyx-welcome-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--ronyx-text);
-            margin-bottom: 0.5rem;
-        }
-        
-        .ronyx-welcome-subtitle {
-            color: #ccc;
-            font-size: 1.1rem;
-        }
-        
-        .ronyx-quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .ronyx-action-card {
-            background: var(--ronyx-card);
-            border: 1px solid var(--ronyx-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            text-align: center;
-            border-top: 4px solid var(--ronyx-accent);
-        }
-        
-        .ronyx-action-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(247, 147, 30, 0.3);
-        }
-        
-        .ronyx-action-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .ronyx-action-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--ronyx-text);
-            margin-bottom: 0.5rem;
-        }
-        
-        .ronyx-action-desc {
-            color: #ccc;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-        }
+      /* ROnyx Custom Brand Override */
+      :root {
+        --ronyx-bg: #1e1e1e;
+        --ronyx-accent: #f7931e;
+        --ronyx-text: #ffffff;
+        --ronyx-card: #2a2a2a;
+        --ronyx-border: #404040;
+      }
+
+      .ronyx-dashboard {
+        background: var(--ronyx-bg);
+        color: var(--ronyx-text);
+        min-height: 100vh;
+      }
+
+      .ronyx-header {
+        background: linear-gradient(135deg, var(--ronyx-bg) 0%, #2d2d2d 100%);
+        border-bottom: 3px solid var(--ronyx-accent);
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 12px rgba(247, 147, 30, 0.3);
+      }
+
+      .ronyx-logo-section {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .ronyx-logo {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--ronyx-accent), #e8851a);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 800;
+        font-size: 1.8rem;
+        box-shadow: 0 4px 12px rgba(247, 147, 30, 0.4);
+      }
+
+      .ronyx-brand-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--ronyx-text);
+        margin: 0;
+      }
+
+      .ronyx-subtitle {
+        color: var(--ronyx-accent);
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .ronyx-tagline {
+        color: #999;
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      .ronyx-main {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .ronyx-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .ronyx-stat-card {
+        background: var(--ronyx-card);
+        border: 1px solid var(--ronyx-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        border-left: 4px solid var(--ronyx-accent);
+      }
+
+      .ronyx-stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(247, 147, 30, 0.3);
+        border-color: var(--ronyx-accent);
+      }
+
+      .ronyx-stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--ronyx-accent);
+        margin: 0.5rem 0;
+      }
+
+      .ronyx-stat-label {
+        color: #ccc;
+        font-weight: 600;
+        opacity: 0.9;
+      }
+
+      .ronyx-stat-icon {
+        font-size: 3rem;
+        float: right;
+        opacity: 0.7;
+      }
+
+      .ronyx-section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--ronyx-text);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .ronyx-section-title::before {
+        content: "";
+        width: 4px;
+        height: 2rem;
+        background: var(--ronyx-accent);
+        border-radius: 2px;
+      }
+
+      .ronyx-operators-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .ronyx-operator-card {
+        background: var(--ronyx-card);
+        border: 1px solid var(--ronyx-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .ronyx-operator-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(247, 147, 30, 0.2);
+        border-color: var(--ronyx-accent);
+      }
+
+      .ronyx-operator-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .ronyx-operator-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--ronyx-text);
+      }
+
+      .ronyx-operator-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .status-active {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+
+      .status-pending {
+        background: rgba(247, 147, 30, 0.2);
+        color: var(--ronyx-accent);
+        border: 1px solid rgba(247, 147, 30, 0.3);
+      }
+
+      .ronyx-operator-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .ronyx-detail-item {
+        color: #ccc;
+        font-size: 0.9rem;
+      }
+
+      .ronyx-detail-value {
+        color: var(--ronyx-text);
+        font-weight: 600;
+      }
+
+      .ronyx-btn {
+        background: var(--ronyx-accent);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .ronyx-btn:hover {
+        background: #e8851a;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(247, 147, 30, 0.3);
+      }
+
+      .ronyx-btn-secondary {
+        background: var(--ronyx-border);
+        color: var(--ronyx-text);
+        border: 1px solid var(--ronyx-border);
+      }
+
+      .ronyx-btn-secondary:hover {
+        background: #555;
+        border-color: #555;
+      }
+
+      .ronyx-user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .ronyx-user-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--ronyx-accent), #e8851a);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.3rem;
+      }
+
+      .ronyx-welcome {
+        margin-bottom: 2rem;
+      }
+
+      .ronyx-welcome-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--ronyx-text);
+        margin-bottom: 0.5rem;
+      }
+
+      .ronyx-welcome-subtitle {
+        color: #ccc;
+        font-size: 1.1rem;
+      }
+
+      .ronyx-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .ronyx-action-card {
+        background: var(--ronyx-card);
+        border: 1px solid var(--ronyx-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        text-align: center;
+        border-top: 4px solid var(--ronyx-accent);
+      }
+
+      .ronyx-action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(247, 147, 30, 0.3);
+      }
+
+      .ronyx-action-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .ronyx-action-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--ronyx-text);
+        margin-bottom: 0.5rem;
+      }
+
+      .ronyx-action-desc {
+        color: #ccc;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+      }
     </style>
-</head>
-<body class="ronyx-dashboard">
+  </head>
+  <body class="ronyx-dashboard">
     <!-- RonYX Branded Header -->
     <header class="ronyx-header">
-        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto;">
-            <!-- RonYX Logo & Branding -->
-            <div class="ronyx-logo-section">
-                <div class="ronyx-logo">R</div>
-                <div>
-                    <h1 class="ronyx-brand-title">ROnyx Fleet Management</h1>
-                    <p class="ronyx-subtitle">Owner-Operator Hub</p>
-                    <p class="ronyx-tagline">Powered by Move Around TMS™</p>
-                </div>
-            </div>
-
-            <!-- User Info -->
-            <div class="ronyx-user-info">
-                <div>
-                    <div style="font-weight: 700; text-align: right; color: var(--ronyx-text);">Veronica Butanda</div>
-                    <div style="color: var(--ronyx-accent); font-size: 0.9rem; text-align: right;">Fleet Manager</div>
-                </div>
-                <div class="ronyx-user-avatar">V</div>
-            </div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          max-width: 1400px;
+          margin: 0 auto;
+        "
+      >
+        <!-- RonYX Logo & Branding -->
+        <div class="ronyx-logo-section">
+          <div class="ronyx-logo">R</div>
+          <div>
+            <h1 class="ronyx-brand-title">ROnyx Fleet Management</h1>
+            <p class="ronyx-subtitle">Owner-Operator Hub</p>
+            <p class="ronyx-tagline">Powered by Move Around TMS™</p>
+          </div>
         </div>
+
+        <!-- User Info -->
+        <div class="ronyx-user-info">
+          <div>
+            <div
+              style="
+                font-weight: 700;
+                text-align: right;
+                color: var(--ronyx-text);
+              "
+            >
+              Veronica Butanda
+            </div>
+            <div
+              style="
+                color: var(--ronyx-accent);
+                font-size: 0.9rem;
+                text-align: right;
+              "
+            >
+              Fleet Manager
+            </div>
+          </div>
+          <div class="ronyx-user-avatar">V</div>
+        </div>
+      </div>
     </header>
 
     <!-- Main Dashboard Content -->
     <main class="ronyx-main">
-        
-        <!-- Welcome Section -->
-        <div class="ronyx-welcome">
-            <h2 class="ronyx-welcome-title">Welcome back, Veronica! 👑</h2>
-            <p class="ronyx-welcome-subtitle">Manage your owner-operators and track fleet performance</p>
+      <!-- Welcome Section -->
+      <div class="ronyx-welcome">
+        <h2 class="ronyx-welcome-title">Welcome back, Veronica! 👑</h2>
+        <p class="ronyx-welcome-subtitle">
+          Manage your owner-operators and track fleet performance
+        </p>
+      </div>
+
+      <!-- Fleet Stats Overview -->
+      <div class="ronyx-stats-grid">
+        <div class="ronyx-stat-card">
+          <div class="ronyx-stat-icon">🚛</div>
+          <div class="ronyx-stat-label">Active Operators</div>
+          <div class="ronyx-stat-value">8</div>
         </div>
 
-        <!-- Fleet Stats Overview -->
-        <div class="ronyx-stats-grid">
-            <div class="ronyx-stat-card">
-                <div class="ronyx-stat-icon">🚛</div>
-                <div class="ronyx-stat-label">Active Operators</div>
-                <div class="ronyx-stat-value">8</div>
-            </div>
-            
-            <div class="ronyx-stat-card">
-                <div class="ronyx-stat-icon">💰</div>
-                <div class="ronyx-stat-label">Monthly Revenue</div>
-                <div class="ronyx-stat-value">$12,450</div>
-            </div>
-            
-            <div class="ronyx-stat-card">
-                <div class="ronyx-stat-icon">📋</div>
-                <div class="ronyx-stat-label">Pending Invoices</div>
-                <div class="ronyx-stat-value">3</div>
-            </div>
-            
-            <div class="ronyx-stat-card">
-                <div class="ronyx-stat-icon">⭐</div>
-                <div class="ronyx-stat-label">Fleet Rating</div>
-                <div class="ronyx-stat-value">4.8</div>
-            </div>
+        <div class="ronyx-stat-card">
+          <div class="ronyx-stat-icon">💰</div>
+          <div class="ronyx-stat-label">Monthly Revenue</div>
+          <div class="ronyx-stat-value">$12,450</div>
         </div>
 
-        <!-- Owner-Operators Management -->
-        <h3 class="ronyx-section-title">Owner-Operators</h3>
-        <div class="ronyx-operators-grid">
-            
-            <!-- Operator 1 -->
-            <div class="ronyx-operator-card">
-                <div class="ronyx-operator-header">
-                    <div class="ronyx-operator-name">Rodriguez Transport LLC</div>
-                    <div class="ronyx-operator-status status-active">Active</div>
-                </div>
-                
-                <div class="ronyx-operator-details">
-                    <div class="ronyx-detail-item">
-                        <div>Owner:</div>
-                        <div class="ronyx-detail-value">Carlos Rodriguez</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Monthly Fee:</div>
-                        <div class="ronyx-detail-value">$850</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Trucks:</div>
-                        <div class="ronyx-detail-value">2</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Last Payment:</div>
-                        <div class="ronyx-detail-value">Nov 1, 2024</div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="ronyx-btn" style="flex: 1;">View Details</button>
-                    <button class="ronyx-btn-secondary ronyx-btn">Invoice</button>
-                </div>
-            </div>
-
-            <!-- Operator 2 -->
-            <div class="ronyx-operator-card">
-                <div class="ronyx-operator-header">
-                    <div class="ronyx-operator-name">Elite Hauling Co</div>
-                    <div class="ronyx-operator-status status-active">Active</div>
-                </div>
-                
-                <div class="ronyx-operator-details">
-                    <div class="ronyx-detail-item">
-                        <div>Owner:</div>
-                        <div class="ronyx-detail-value">Maria Santos</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Monthly Fee:</div>
-                        <div class="ronyx-detail-value">$1,200</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Trucks:</div>
-                        <div class="ronyx-detail-value">3</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Last Payment:</div>
-                        <div class="ronyx-detail-value">Oct 28, 2024</div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="ronyx-btn" style="flex: 1;">View Details</button>
-                    <button class="ronyx-btn-secondary ronyx-btn">Invoice</button>
-                </div>
-            </div>
-
-            <!-- Operator 3 -->
-            <div class="ronyx-operator-card">
-                <div class="ronyx-operator-header">
-                    <div class="ronyx-operator-name">Lone Star Freight</div>
-                    <div class="ronyx-operator-status status-pending">Payment Due</div>
-                </div>
-                
-                <div class="ronyx-operator-details">
-                    <div class="ronyx-detail-item">
-                        <div>Owner:</div>
-                        <div class="ronyx-detail-value">James Wilson</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Monthly Fee:</div>
-                        <div class="ronyx-detail-value">$950</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Trucks:</div>
-                        <div class="ronyx-detail-value">1</div>
-                    </div>
-                    <div class="ronyx-detail-item">
-                        <div>Last Payment:</div>
-                        <div class="ronyx-detail-value">Sep 15, 2024</div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="ronyx-btn" style="flex: 1;">Follow Up</button>
-                    <button class="ronyx-btn-secondary ronyx-btn">Send Invoice</button>
-                </div>
-            </div>
+        <div class="ronyx-stat-card">
+          <div class="ronyx-stat-icon">📋</div>
+          <div class="ronyx-stat-label">Pending Invoices</div>
+          <div class="ronyx-stat-value">3</div>
         </div>
 
-        <!-- Quick Actions -->
-        <h3 class="ronyx-section-title">Quick Actions</h3>
-        <div class="ronyx-quick-actions">
-            
-            <div class="ronyx-action-card">
-                <div class="ronyx-action-icon">➕</div>
-                <div class="ronyx-action-title">Add New Operator</div>
-                <div class="ronyx-action-desc">Onboard a new owner-operator to your fleet</div>
-                <button class="ronyx-btn" style="width: 100%;">Add Operator</button>
-            </div>
-            
-            <div class="ronyx-action-card">
-                <div class="ronyx-action-icon">📊</div>
-                <div class="ronyx-action-title">Monthly Reports</div>
-                <div class="ronyx-action-desc">Generate and view financial reports</div>
-                <button class="ronyx-btn" style="width: 100%;">View Reports</button>
-            </div>
-            
-            <div class="ronyx-action-card">
-                <div class="ronyx-action-icon">💳</div>
-                <div class="ronyx-action-title">Payment Management</div>
-                <div class="ronyx-action-desc">Track payments and send invoices</div>
-                <button class="ronyx-btn" style="width: 100%;">Manage Payments</button>
-            </div>
-            
-            <div class="ronyx-action-card">
-                <div class="ronyx-action-icon">⚙️</div>
-                <div class="ronyx-action-title">Fleet Settings</div>
-                <div class="ronyx-action-desc">Configure your brand and preferences</div>
-                <button class="ronyx-btn" style="width: 100%;">Settings</button>
-            </div>
+        <div class="ronyx-stat-card">
+          <div class="ronyx-stat-icon">⭐</div>
+          <div class="ronyx-stat-label">Fleet Rating</div>
+          <div class="ronyx-stat-value">4.8</div>
         </div>
+      </div>
+
+      <!-- Owner-Operators Management -->
+      <h3 class="ronyx-section-title">Owner-Operators</h3>
+      <div class="ronyx-operators-grid">
+        <!-- Operator 1 -->
+        <div class="ronyx-operator-card">
+          <div class="ronyx-operator-header">
+            <div class="ronyx-operator-name">Rodriguez Transport LLC</div>
+            <div class="ronyx-operator-status status-active">Active</div>
+          </div>
+
+          <div class="ronyx-operator-details">
+            <div class="ronyx-detail-item">
+              <div>Owner:</div>
+              <div class="ronyx-detail-value">Carlos Rodriguez</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Monthly Fee:</div>
+              <div class="ronyx-detail-value">$850</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Trucks:</div>
+              <div class="ronyx-detail-value">2</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Last Payment:</div>
+              <div class="ronyx-detail-value">Nov 1, 2024</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem">
+            <button class="ronyx-btn" style="flex: 1">View Details</button>
+            <button class="ronyx-btn-secondary ronyx-btn">Invoice</button>
+          </div>
+        </div>
+
+        <!-- Operator 2 -->
+        <div class="ronyx-operator-card">
+          <div class="ronyx-operator-header">
+            <div class="ronyx-operator-name">Elite Hauling Co</div>
+            <div class="ronyx-operator-status status-active">Active</div>
+          </div>
+
+          <div class="ronyx-operator-details">
+            <div class="ronyx-detail-item">
+              <div>Owner:</div>
+              <div class="ronyx-detail-value">Maria Santos</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Monthly Fee:</div>
+              <div class="ronyx-detail-value">$1,200</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Trucks:</div>
+              <div class="ronyx-detail-value">3</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Last Payment:</div>
+              <div class="ronyx-detail-value">Oct 28, 2024</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem">
+            <button class="ronyx-btn" style="flex: 1">View Details</button>
+            <button class="ronyx-btn-secondary ronyx-btn">Invoice</button>
+          </div>
+        </div>
+
+        <!-- Operator 3 -->
+        <div class="ronyx-operator-card">
+          <div class="ronyx-operator-header">
+            <div class="ronyx-operator-name">Lone Star Freight</div>
+            <div class="ronyx-operator-status status-pending">Payment Due</div>
+          </div>
+
+          <div class="ronyx-operator-details">
+            <div class="ronyx-detail-item">
+              <div>Owner:</div>
+              <div class="ronyx-detail-value">James Wilson</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Monthly Fee:</div>
+              <div class="ronyx-detail-value">$950</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Trucks:</div>
+              <div class="ronyx-detail-value">1</div>
+            </div>
+            <div class="ronyx-detail-item">
+              <div>Last Payment:</div>
+              <div class="ronyx-detail-value">Sep 15, 2024</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem">
+            <button class="ronyx-btn" style="flex: 1">Follow Up</button>
+            <button class="ronyx-btn-secondary ronyx-btn">Send Invoice</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <h3 class="ronyx-section-title">Quick Actions</h3>
+      <div class="ronyx-quick-actions">
+        <div class="ronyx-action-card">
+          <div class="ronyx-action-icon">➕</div>
+          <div class="ronyx-action-title">Add New Operator</div>
+          <div class="ronyx-action-desc">
+            Onboard a new owner-operator to your fleet
+          </div>
+          <button class="ronyx-btn" style="width: 100%">Add Operator</button>
+        </div>
+
+        <div class="ronyx-action-card">
+          <div class="ronyx-action-icon">📊</div>
+          <div class="ronyx-action-title">Monthly Reports</div>
+          <div class="ronyx-action-desc">
+            Generate and view financial reports
+          </div>
+          <button class="ronyx-btn" style="width: 100%">View Reports</button>
+        </div>
+
+        <div class="ronyx-action-card">
+          <div class="ronyx-action-icon">💳</div>
+          <div class="ronyx-action-title">Payment Management</div>
+          <div class="ronyx-action-desc">Track payments and send invoices</div>
+          <button class="ronyx-btn" style="width: 100%">Manage Payments</button>
+        </div>
+
+        <div class="ronyx-action-card">
+          <div class="ronyx-action-icon">⚙️</div>
+          <div class="ronyx-action-title">Fleet Settings</div>
+          <div class="ronyx-action-desc">
+            Configure your brand and preferences
+          </div>
+          <button class="ronyx-btn" style="width: 100%">Settings</button>
+        </div>
+      </div>
     </main>
 
     <script>
-        // Initialize RonYX Dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('ROnyx Fleet Management Portal loaded for Veronica Butanda');
-            
-            // Add interactive features here
-            const operatorCards = document.querySelectorAll('.ronyx-operator-card');
-            operatorCards.forEach(card => {
-                card.addEventListener('click', function(e) {
-                    if (e.target.tagName !== 'BUTTON') {
-                        // Handle card click for details view
-                        console.log('Operator card clicked');
-                    }
-                });
-            });
+      // Initialize RonYX Dashboard
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log(
+          "ROnyx Fleet Management Portal loaded for Veronica Butanda",
+        );
+
+        // Add interactive features here
+        const operatorCards = document.querySelectorAll(".ronyx-operator-card");
+        operatorCards.forEach((card) => {
+          card.addEventListener("click", function (e) {
+            if (e.target.tagName !== "BUTTON") {
+              // Handle card click for details view
+              console.log("Operator card clicked");
+            }
+          });
         });
+      });
     </script>
-</body>
+  </body>
 </html>

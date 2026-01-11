@@ -50,8 +50,14 @@ export default function FastScanUpload() {
       >
         {uploading ? "Uploading..." : "Select File"}
       </button>
-      {message && <p className="text-xs text-green-600 dark:text-green-400 mt-2">{message}</p>}
-      <p className="text-xs text-gray-500">Drag & drop or use your camera on mobile</p>
+      {message && (
+        <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+          {message}
+        </p>
+      )}
+      <p className="text-xs text-gray-500">
+        Drag & drop or use your camera on mobile
+      </p>
     </div>
   );
 }

@@ -52,7 +52,9 @@ export default function UploadCsvPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-4">
-      <h1 className="text-2xl font-bold mb-4">Pit Ticket CSV Upload & Mapping</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        Pit Ticket CSV Upload & Mapping
+      </h1>
       <div className="mb-4">
         <label className="block font-semibold mb-1">Upload CSV File</label>
         <input
@@ -68,7 +70,7 @@ export default function UploadCsvPage() {
         <input
           type="text"
           value={pitName}
-          onChange={e => setPitName(e.target.value)}
+          onChange={(e) => setPitName(e.target.value)}
           placeholder="Auto-detect or enter manually"
           className="border rounded px-2 py-1 w-full"
         />
@@ -82,7 +84,10 @@ export default function UploadCsvPage() {
           <ul className="text-sm bg-gray-50 rounded p-2">
             {Object.entries(mapping || {}).map(([key, val]) => (
               <li key={key}>
-                <span className="font-mono text-gray-700">{key}</span>: <span className="text-blue-700">{val || <span className="text-red-500">(not found)</span>}</span>
+                <span className="font-mono text-gray-700">{key}</span>:{" "}
+                <span className="text-blue-700">
+                  {val || <span className="text-red-500">(not found)</span>}
+                </span>
               </li>
             ))}
           </ul>
@@ -95,8 +100,10 @@ export default function UploadCsvPage() {
             <table className="min-w-full text-xs border">
               <thead>
                 <tr>
-                  {headers.map(h => (
-                    <th key={h} className="border px-2 py-1 bg-gray-100">{h}</th>
+                  {headers.map((h) => (
+                    <th key={h} className="border px-2 py-1 bg-gray-100">
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -104,7 +111,9 @@ export default function UploadCsvPage() {
                 {rows.map((row, i) => (
                   <tr key={i}>
                     {headers.map((h, j) => (
-                      <td key={j} className="border px-2 py-1">{row.raw_data?.[j] ?? ""}</td>
+                      <td key={j} className="border px-2 py-1">
+                        {row.raw_data?.[j] ?? ""}
+                      </td>
                     ))}
                   </tr>
                 ))}

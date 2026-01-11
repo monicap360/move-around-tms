@@ -50,7 +50,13 @@ const LoadDetails = () => {
         ))}
       </div>
       <div className="bg-white rounded shadow p-6 min-h-[300px]">
-        {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : !load ? <div>No load found.</div> : (
+        {loading ? (
+          <div>Loading...</div>
+        ) : error ? (
+          <div className="text-red-600">{error}</div>
+        ) : !load ? (
+          <div>No load found.</div>
+        ) : (
           <>
             {tab === "info" && <InfoTab load={load} />}
             {tab === "documents" && <DocumentsTab load={load} />}
@@ -70,18 +76,25 @@ function InfoTab({ load }: { load: any }) {
     <div>
       <h2 className="text-lg font-semibold mb-2">Load Information</h2>
       <ul className="space-y-1">
-        <li>Load number: <span className="font-mono">#{load.load_number}</span></li>
+        <li>
+          Load number: <span className="font-mono">#{load.load_number}</span>
+        </li>
         <li>Pickup date: {load.pickup_date || "--"}</li>
         <li>Delivery date: {load.delivery_date || "--"}</li>
         <li>Shipper: {load.shipper_name || "--"}</li>
         <li>Receiver: {load.receiver_name || "--"}</li>
         <li>Commodity: {load.commodity || "--"}</li>
-        <li>Weight & pieces: {load.weight || "--"} / {load.pieces || "--"}</li>
+        <li>
+          Weight & pieces: {load.weight || "--"} / {load.pieces || "--"}
+        </li>
         <li>Rate confirmation: {load.rate_confirmation || "--"}</li>
         <li>Contact info: {load.contact_info || "--"}</li>
         <li>Instructions / Notes: {load.notes || "--"}</li>
       </ul>
-      <div className="mt-4">Assigned Driver/Truck/Trailer: {load.driver_name || "--"} / {load.truck_number || "--"} / {load.trailer_number || "--"}</div>
+      <div className="mt-4">
+        Assigned Driver/Truck/Trailer: {load.driver_name || "--"} /{" "}
+        {load.truck_number || "--"} / {load.trailer_number || "--"}
+      </div>
     </div>
   );
 }
@@ -103,17 +116,24 @@ function DocumentsTab({ load }: { load: any }) {
       return;
     }
     const filePath = `loads/${load.id}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, file);
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(filePath, file);
     if (uploadError) {
       setError(uploadError.message);
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
+    const { data: urlData } = supabase.storage
+      .from("documents")
+      .getPublicUrl(filePath);
     const newDoc = { name: file.name, url: urlData?.publicUrl };
     const updatedDocs = [...docs, newDoc];
     setDocs(updatedDocs);
-    const { error: dbError } = await supabase.from("loads").update({ documents: updatedDocs }).eq("id", load.id);
+    const { error: dbError } = await supabase
+      .from("loads")
+      .update({ documents: updatedDocs })
+      .eq("id", load.id);
     if (dbError) {
       setError(dbError.message);
       setUploading(false);
@@ -140,18 +160,41 @@ function DocumentsTab({ load }: { load: any }) {
   return (
     <div>
       <h2 className="text-lg font-semibold mb-2">Documents</h2>
-      <input type="file" accept="application/pdf,image/*" className="mb-2" onChange={handleUpload} disabled={uploading} />
+      <input
+        type="file"
+        accept="application/pdf,image/*"
+        className="mb-2"
+        onChange={handleUpload}
+        disabled={uploading}
+      />
       {uploading && <div className="text-blue-600 mb-2">Uploading...</div>}
       {refreshing && <div className="text-blue-600 mb-2">Refreshing...</div>}
       {error && <div className="text-red-600 mb-2">{error}</div>}
       {success && <div className="text-green-600 mb-2">{success}</div>}
-      <button className="bg-gray-200 px-2 py-1 rounded mb-2" onClick={refreshDocs} disabled={refreshing}>Refresh Documents</button>
+      <button
+        className="bg-gray-200 px-2 py-1 rounded mb-2"
+        onClick={refreshDocs}
+        disabled={refreshing}
+      >
+        Refresh Documents
+      </button>
       <ul className="mt-2 space-y-1">
-        {docs.length === 0 ? <li>No documents uploaded.</li> : docs.map((doc, idx) => (
-          <li key={idx} className="flex items-center gap-2">
-            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{doc.name}</a>
-          </li>
-        ))}
+        {docs.length === 0 ? (
+          <li>No documents uploaded.</li>
+        ) : (
+          docs.map((doc, idx) => (
+            <li key={idx} className="flex items-center gap-2">
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
+                {doc.name}
+              </a>
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );
@@ -226,7 +269,16 @@ function PaymentsTab({ loadId }: { loadId: string }) {
       <h3 className="text-lg font-semibold mb-2">Payments</h3>
       {loading && <div>Loading...</div>}
       {refreshing && <div className="text-blue-600 mb-2">Refreshing...</div>}
-      <div className="mb-2">Status: <span className={paymentStatus === "Paid" ? "text-green-600" : "text-red-600"}>{paymentStatus}</span></div>
+      <div className="mb-2">
+        Status:{" "}
+        <span
+          className={
+            paymentStatus === "Paid" ? "text-green-600" : "text-red-600"
+          }
+        >
+          {paymentStatus}
+        </span>
+      </div>
       <div className="flex gap-2 mb-2">
         <button
           className="bg-green-500 text-white px-3 py-1 rounded disabled:opacity-50"
@@ -327,12 +379,48 @@ function StatusTab({ load }: { load: any }) {
         <li>Paid: {paid ? "Yes" : "No"}</li>
       </ul>
       <div className="flex gap-2 mb-2">
-        <button className="px-3 py-1 rounded bg-blue-600 text-white" disabled={saving || status === "assigned"} onClick={() => updateField("status", "assigned")}>Mark Assigned</button>
-        <button className="px-3 py-1 rounded bg-blue-600 text-white" disabled={saving || status === "in_progress"} onClick={() => updateField("status", "in_progress")}>Mark In Progress</button>
-        <button className="px-3 py-1 rounded bg-green-600 text-white" disabled={saving || status === "completed"} onClick={() => updateField("status", "completed")}>Mark Completed</button>
-        <button className="px-3 py-1 rounded bg-gray-600 text-white" disabled={saving || podReceived} onClick={() => updateField("pod_received", true)}>Mark POD Received</button>
-        <button className="px-3 py-1 rounded bg-yellow-600 text-white" disabled={saving || paid} onClick={() => updateField("paid", true)}>Mark Paid</button>
-        <button className="bg-gray-200 text-black px-2 py-1 rounded" onClick={refreshStatus} disabled={refreshing}>Refresh Status</button>
+        <button
+          className="px-3 py-1 rounded bg-blue-600 text-white"
+          disabled={saving || status === "assigned"}
+          onClick={() => updateField("status", "assigned")}
+        >
+          Mark Assigned
+        </button>
+        <button
+          className="px-3 py-1 rounded bg-blue-600 text-white"
+          disabled={saving || status === "in_progress"}
+          onClick={() => updateField("status", "in_progress")}
+        >
+          Mark In Progress
+        </button>
+        <button
+          className="px-3 py-1 rounded bg-green-600 text-white"
+          disabled={saving || status === "completed"}
+          onClick={() => updateField("status", "completed")}
+        >
+          Mark Completed
+        </button>
+        <button
+          className="px-3 py-1 rounded bg-gray-600 text-white"
+          disabled={saving || podReceived}
+          onClick={() => updateField("pod_received", true)}
+        >
+          Mark POD Received
+        </button>
+        <button
+          className="px-3 py-1 rounded bg-yellow-600 text-white"
+          disabled={saving || paid}
+          onClick={() => updateField("paid", true)}
+        >
+          Mark Paid
+        </button>
+        <button
+          className="bg-gray-200 text-black px-2 py-1 rounded"
+          onClick={refreshStatus}
+          disabled={refreshing}
+        >
+          Refresh Status
+        </button>
       </div>
     </div>
   );

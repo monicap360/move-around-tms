@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SERVICE_ROLE_KEY")!, // secure + RLS bypass
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
     );
 
     const {
@@ -78,8 +78,9 @@ Deno.serve(async (req) => {
       });
 
     if (uploadError) {
-      return new Response(`Upload failed: ${uploadError.message}`,
-        { status: 500 });
+      return new Response(`Upload failed: ${uploadError.message}`, {
+        status: 500,
+      });
     }
 
     // 7. INSERT METADATA
@@ -97,8 +98,9 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertErr) {
-      return new Response(`Database insert error: ${insertErr.message}`,
-        { status: 500 });
+      return new Response(`Database insert error: ${insertErr.message}`, {
+        status: 500,
+      });
     }
 
     // 8. PUBLIC URL
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
         url: publicUrl,
         file_id: doc.id,
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
     return new Response(`Unexpected error: ${err.message}`, { status: 500 });

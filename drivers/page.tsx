@@ -1,5 +1,10 @@
 "use client";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+} from "../components/ui/card";
 
 export default function DriversPage() {
   return (
@@ -9,8 +14,13 @@ export default function DriversPage() {
           <CardTitle>Driver Profiles</CardTitle>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Upload front/back of CDL, TWIC, ID, and MVR. Track license, medical, and certification expirations.</p>
-          <p>Store W-2/1099 status, pay rate, start date, and contact details.</p>
+          <p>
+            Upload front/back of CDL, TWIC, ID, and MVR. Track license, medical,
+            and certification expirations.
+          </p>
+          <p>
+            Store W-2/1099 status, pay rate, start date, and contact details.
+          </p>
           <p>Receive automated alerts 30 days before any document expires.</p>
         </CardContent>
       </Card>

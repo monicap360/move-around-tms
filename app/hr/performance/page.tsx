@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Progress } from "../../components/ui/progress";
@@ -8,10 +13,10 @@ import { Input } from "../../components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   TrendingDown,
-  Shield, 
+  Shield,
   AlertTriangle,
   Award,
   Clock,
@@ -27,7 +32,7 @@ import {
   BarChart3,
   Calendar,
   CheckCircle,
-  XCircle
+  XCircle,
 } from "lucide-react";
 
 type DriverPerformance = {
@@ -72,7 +77,9 @@ type PerformanceStats = {
 };
 
 export default function PerformanceDashboard() {
-  const [driverPerformance, setDriverPerformance] = useState<DriverPerformance[]>([]);
+  const [driverPerformance, setDriverPerformance] = useState<
+    DriverPerformance[]
+  >([]);
   const [safetyAlerts, setSafetyAlerts] = useState<SafetyAlert[]>([]);
   const [stats, setStats] = useState<PerformanceStats>({
     totalDrivers: 0,
@@ -82,7 +89,7 @@ export default function PerformanceDashboard() {
     totalIncidents: 0,
     totalViolations: 0,
     averageMPG: 0,
-    averageOnTime: 0
+    averageOnTime: 0,
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,19 +128,47 @@ export default function PerformanceDashboard() {
       // Calculate statistics
       if (performanceData) {
         const totalDrivers = performanceData.length;
-        const highPerformers = performanceData.filter((d: any) => d.current_safety_score >= 90).length;
-        const atRiskDrivers = performanceData.filter((d: any) => d.current_safety_score < 70).length;
-        const averageSafetyScore = totalDrivers > 0 
-          ? Math.round(performanceData.reduce((sum: number, d: any) => sum + (d.current_safety_score || 0), 0) / totalDrivers)
-          : 0;
-        const totalIncidents = performanceData.reduce((sum: number, d: any) => sum + (d.incidents_12mo || 0), 0);
-        const totalViolations = performanceData.reduce((sum: number, d: any) => sum + (d.violations_12mo || 0), 0);
-        const averageMPG = totalDrivers > 0
-          ? +(performanceData.reduce((sum: number, d: any) => sum + (d.recent_mpg || 0), 0) / totalDrivers).toFixed(1)
-          : 0;
-        const averageOnTime = totalDrivers > 0
-          ? +(performanceData.reduce((sum: number, d: any) => sum + (d.recent_on_time_pct || 0), 0) / totalDrivers).toFixed(1)
-          : 0;
+        const highPerformers = performanceData.filter(
+          (d: any) => d.current_safety_score >= 90,
+        ).length;
+        const atRiskDrivers = performanceData.filter(
+          (d: any) => d.current_safety_score < 70,
+        ).length;
+        const averageSafetyScore =
+          totalDrivers > 0
+            ? Math.round(
+                performanceData.reduce(
+                  (sum: number, d: any) => sum + (d.current_safety_score || 0),
+                  0,
+                ) / totalDrivers,
+              )
+            : 0;
+        const totalIncidents = performanceData.reduce(
+          (sum: number, d: any) => sum + (d.incidents_12mo || 0),
+          0,
+        );
+        const totalViolations = performanceData.reduce(
+          (sum: number, d: any) => sum + (d.violations_12mo || 0),
+          0,
+        );
+        const averageMPG =
+          totalDrivers > 0
+            ? +(
+                performanceData.reduce(
+                  (sum: number, d: any) => sum + (d.recent_mpg || 0),
+                  0,
+                ) / totalDrivers
+              ).toFixed(1)
+            : 0;
+        const averageOnTime =
+          totalDrivers > 0
+            ? +(
+                performanceData.reduce(
+                  (sum: number, d: any) => sum + (d.recent_on_time_pct || 0),
+                  0,
+                ) / totalDrivers
+              ).toFixed(1)
+            : 0;
 
         setStats({
           totalDrivers,
@@ -143,10 +178,9 @@ export default function PerformanceDashboard() {
           totalIncidents,
           totalViolations,
           averageMPG,
-          averageOnTime
+          averageOnTime,
         });
       }
-
     } catch (err) {
       console.error("Error loading performance data:", err);
     } finally {
@@ -154,16 +188,21 @@ export default function PerformanceDashboard() {
     }
   }
 
-  const filteredDrivers = driverPerformance.filter(driver => {
-    const matchesSearch = driver.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         driver.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredDrivers = driverPerformance.filter((driver) => {
+    const matchesSearch =
+      driver.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
+
     let matchesFilter = true;
-    if (filterBy === "high_performers") matchesFilter = driver.current_safety_score >= 90;
-    else if (filterBy === "at_risk") matchesFilter = driver.current_safety_score < 70;
-    else if (filterBy === "recent_incidents") matchesFilter = driver.incidents_12mo > 0;
-    else if (filterBy === "recent_violations") matchesFilter = driver.violations_12mo > 0;
-    
+    if (filterBy === "high_performers")
+      matchesFilter = driver.current_safety_score >= 90;
+    else if (filterBy === "at_risk")
+      matchesFilter = driver.current_safety_score < 70;
+    else if (filterBy === "recent_incidents")
+      matchesFilter = driver.incidents_12mo > 0;
+    else if (filterBy === "recent_violations")
+      matchesFilter = driver.violations_12mo > 0;
+
     return matchesSearch && matchesFilter;
   });
 
@@ -187,25 +226,29 @@ export default function PerformanceDashboard() {
   });
 
   function getSafetyScoreColor(score: number) {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    if (score >= 70) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-yellow-600";
+    if (score >= 70) return "text-orange-600";
+    return "text-red-600";
   }
 
   function getSafetyScoreBadge(score: number) {
-    if (score >= 90) return 'bg-green-100 text-green-800';
-    if (score >= 80) return 'bg-yellow-100 text-yellow-800';
-    if (score >= 70) return 'bg-orange-100 text-orange-800';
-    return 'bg-red-100 text-red-800';
+    if (score >= 90) return "bg-green-100 text-green-800";
+    if (score >= 80) return "bg-yellow-100 text-yellow-800";
+    if (score >= 70) return "bg-orange-100 text-orange-800";
+    return "bg-red-100 text-red-800";
   }
 
   function getAlertSeverityColor(severity: string) {
     switch (severity.toLowerCase()) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'info': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case "critical":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "warning":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "info":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   }
 
@@ -228,8 +271,12 @@ export default function PerformanceDashboard() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Performance Dashboard</h1>
-            <p className="text-gray-600 mt-1">Monitor driver safety scores, KPIs, and performance metrics</p>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Performance Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Monitor driver safety scores, KPIs, and performance metrics
+            </p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -255,10 +302,14 @@ export default function PerformanceDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Average Safety Score</p>
-                <p className={`text-2xl font-bold ${getSafetyScoreColor(stats.averageSafetyScore)}`}>
+                <p
+                  className={`text-2xl font-bold ${getSafetyScoreColor(stats.averageSafetyScore)}`}
+                >
                   {stats.averageSafetyScore}
                 </p>
-                <p className="text-xs text-gray-500">{stats.totalDrivers} drivers</p>
+                <p className="text-xs text-gray-500">
+                  {stats.totalDrivers} drivers
+                </p>
               </div>
               <Shield className="w-8 h-8 text-blue-500" />
             </div>
@@ -270,7 +321,9 @@ export default function PerformanceDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">High Performers</p>
-                <p className="text-2xl font-bold text-green-600">{stats.highPerformers}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.highPerformers}
+                </p>
                 <p className="text-xs text-gray-500">Score ≥ 90</p>
               </div>
               <Award className="w-8 h-8 text-green-500" />
@@ -283,7 +336,9 @@ export default function PerformanceDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">At-Risk Drivers</p>
-                <p className="text-2xl font-bold text-red-600">{stats.atRiskDrivers}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats.atRiskDrivers}
+                </p>
                 <p className="text-xs text-gray-500">Score &lt; 70</p>
               </div>
               <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -296,8 +351,12 @@ export default function PerformanceDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Fleet Avg MPG</p>
-                <p className="text-2xl font-bold text-green-600">{stats.averageMPG}</p>
-                <p className="text-xs text-gray-500">{stats.averageOnTime}% on-time</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.averageMPG}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {stats.averageOnTime}% on-time
+                </p>
               </div>
               <Fuel className="w-8 h-8 text-green-500" />
             </div>
@@ -363,7 +422,9 @@ export default function PerformanceDashboard() {
                 <div className="text-center py-8">
                   <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500 text-lg">No drivers found</p>
-                  <p className="text-gray-400">Try adjusting your search criteria</p>
+                  <p className="text-gray-400">
+                    Try adjusting your search criteria
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -380,17 +441,28 @@ export default function PerformanceDashboard() {
                     </thead>
                     <tbody>
                       {sortedDrivers.map((driver) => (
-                        <tr key={driver.driver_id} className="border-b hover:bg-gray-50">
+                        <tr
+                          key={driver.driver_id}
+                          className="border-b hover:bg-gray-50"
+                        >
                           <td className="p-3">
                             <div>
-                              <div className="font-medium">{driver.driver_name}</div>
-                              <div className="text-gray-500 text-xs">ID: {driver.employee_id}</div>
+                              <div className="font-medium">
+                                {driver.driver_name}
+                              </div>
+                              <div className="text-gray-500 text-xs">
+                                ID: {driver.employee_id}
+                              </div>
                             </div>
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-2">
-                              <Badge className={getSafetyScoreBadge(driver.current_safety_score)}>
-                                {driver.current_safety_score || 'N/A'}
+                              <Badge
+                                className={getSafetyScoreBadge(
+                                  driver.current_safety_score,
+                                )}
+                              >
+                                {driver.current_safety_score || "N/A"}
                               </Badge>
                               {driver.current_safety_score >= 90 && (
                                 <Award className="w-4 h-4 text-green-500" />
@@ -402,9 +474,16 @@ export default function PerformanceDashboard() {
                           </td>
                           <td className="p-3">
                             <div className="space-y-1 text-xs">
-                              <div>{(driver.recent_miles / 1000).toFixed(0)}k miles</div>
-                              <div>{driver.recent_mpg?.toFixed(1) || 'N/A'} MPG</div>
-                              <div>{driver.recent_on_time_pct?.toFixed(0) || 'N/A'}% on-time</div>
+                              <div>
+                                {(driver.recent_miles / 1000).toFixed(0)}k miles
+                              </div>
+                              <div>
+                                {driver.recent_mpg?.toFixed(1) || "N/A"} MPG
+                              </div>
+                              <div>
+                                {driver.recent_on_time_pct?.toFixed(0) || "N/A"}
+                                % on-time
+                              </div>
                             </div>
                           </td>
                           <td className="p-3">
@@ -425,7 +504,9 @@ export default function PerformanceDashboard() {
                                   {driver.violations_12mo} violations
                                 </div>
                               ) : (
-                                <div className="text-green-600">No violations</div>
+                                <div className="text-green-600">
+                                  No violations
+                                </div>
                               )}
                             </div>
                           </td>
@@ -434,16 +515,23 @@ export default function PerformanceDashboard() {
                               <div>{driver.trainings_ytd} trainings YTD</div>
                               {driver.last_training_date ? (
                                 <div className="text-gray-500">
-                                  Last: {new Date(driver.last_training_date).toLocaleDateString()}
+                                  Last:{" "}
+                                  {new Date(
+                                    driver.last_training_date,
+                                  ).toLocaleDateString()}
                                 </div>
                               ) : (
-                                <div className="text-red-500">No recent training</div>
+                                <div className="text-red-500">
+                                  No recent training
+                                </div>
                               )}
                             </div>
                           </td>
                           <td className="p-3">
                             <div className="flex gap-1">
-                              <Link href={`/hr/performance/${driver.driver_id}`}>
+                              <Link
+                                href={`/hr/performance/${driver.driver_id}`}
+                              >
                                 <Button variant="outline" size="sm">
                                   <Eye className="w-3 h-3" />
                                 </Button>
@@ -479,17 +567,26 @@ export default function PerformanceDashboard() {
               ) : (
                 <div className="space-y-3">
                   {safetyAlerts.slice(0, 5).map((alert, idx) => (
-                    <div key={idx} className={`border rounded-md p-3 ${getAlertSeverityColor(alert.severity)}`}>
+                    <div
+                      key={idx}
+                      className={`border rounded-md p-3 ${getAlertSeverityColor(alert.severity)}`}
+                    >
                       <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-medium text-sm">{alert.driver_name}</h4>
+                        <h4 className="font-medium text-sm">
+                          {alert.driver_name}
+                        </h4>
                         <Badge variant="outline" className="text-xs">
                           {alert.severity}
                         </Badge>
                       </div>
                       <p className="text-xs mb-1">{alert.message}</p>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">ID: {alert.employee_id}</span>
-                        <span className="text-xs text-gray-500">{alert.alert_type}</span>
+                        <span className="text-xs text-gray-600">
+                          ID: {alert.employee_id}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {alert.alert_type}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -512,11 +609,15 @@ export default function PerformanceDashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total Incidents (12mo)</span>
+                <span className="text-sm text-gray-600">
+                  Total Incidents (12mo)
+                </span>
                 <span className="font-medium">{stats.totalIncidents}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total Violations (12mo)</span>
+                <span className="text-sm text-gray-600">
+                  Total Violations (12mo)
+                </span>
                 <span className="font-medium">{stats.totalViolations}</span>
               </div>
               <div className="flex justify-between">

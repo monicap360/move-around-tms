@@ -9,7 +9,12 @@ interface SystemCardProps {
   type: "uploads" | "fleet" | "loads" | "tickets" | "pay";
 }
 
-export default function SystemCard({ title, items = [], value, type }: SystemCardProps) {
+export default function SystemCard({
+  title,
+  items = [],
+  value,
+  type,
+}: SystemCardProps) {
   return (
     <div className="bg-white rounded-xl p-6 shadow">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
@@ -17,7 +22,9 @@ export default function SystemCard({ title, items = [], value, type }: SystemCar
       {/* PAY CARD */}
       {type === "pay" && (
         <div>
-          <p className="text-3xl font-bold mb-4">${Number(value || 0).toLocaleString()}</p>
+          <p className="text-3xl font-bold mb-4">
+            ${Number(value || 0).toLocaleString()}
+          </p>
           <p className="text-gray-500 text-sm">Month-to-date total</p>
         </div>
       )}
@@ -79,12 +86,17 @@ export default function SystemCard({ title, items = [], value, type }: SystemCar
                 {type === "tickets" && (
                   <>
                     <div>
-                      <p className="font-medium">Ticket #{item.ticket_number}</p>
+                      <p className="font-medium">
+                        Ticket #{item.ticket_number}
+                      </p>
                       <p className="text-xs text-gray-500">
-                        {item.material} — {new Date(item.created_at).toLocaleString()}
+                        {item.material} —{" "}
+                        {new Date(item.created_at).toLocaleString()}
                       </p>
                     </div>
-                    <div className="text-gray-500">{item.paid ? "Paid" : "Unpaid"}</div>
+                    <div className="text-gray-500">
+                      {item.paid ? "Paid" : "Unpaid"}
+                    </div>
                   </>
                 )}
               </div>

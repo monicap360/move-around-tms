@@ -12,6 +12,7 @@ This folder contains the future-proof, client-facing company route for MoveAroun
 - `/app/company/[company]/layout.tsx` — Layout for company routes
 
 ## Best Practices
+
 - Keep this folder clean and isolated from internal system logic.
 - Only add new routes/components here when ready for client-facing features.
 - See project documentation for domain mapping and naming conventions.

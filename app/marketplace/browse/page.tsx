@@ -1,14 +1,14 @@
 // Marketplace Browse Loads Page
 // Unified board for shippers, haulers, brokers
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { getComplianceRules } from '@/lib/complianceRules';
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { getComplianceRules } from "@/lib/complianceRules";
 
 const supabase = createClient();
 
 export default function MarketplaceBrowse() {
-  const [role, setRole] = useState('broker');
+  const [role, setRole] = useState("broker");
   const [loads, setLoads] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,16 +16,21 @@ export default function MarketplaceBrowse() {
     async function fetchLoads() {
       setLoading(true);
       const { data, error } = await supabase
-        .from('loads')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("loads")
+        .select("*")
+        .order("created_at", { ascending: false });
       setLoads(data || []);
       setLoading(false);
     }
     fetchLoads();
     // Supabase Realtime subscription for instant updates
-    const channel = supabase.channel('realtime:loads')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'loads' }, fetchLoads)
+    const channel = supabase
+      .channel("realtime:loads")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "loads" },
+        fetchLoads,
+      )
       .subscribe();
     return () => {
       channel.unsubscribe();
@@ -37,7 +42,11 @@ export default function MarketplaceBrowse() {
       <h1 className="text-3xl font-bold mb-6">Marketplace Loads</h1>
       <div className="mb-4">
         <span className="font-semibold">Role:</span>
-        <select value={role} onChange={e => setRole(e.target.value)} className="ml-2 border rounded p-1">
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="ml-2 border rounded p-1"
+        >
           <option value="shipper">Shipper</option>
           <option value="hauler">Hauler</option>
           <option value="broker">Broker</option>
@@ -64,27 +73,36 @@ export default function MarketplaceBrowse() {
                 <td className="border p-2">{load.weight}</td>
                 <td className="border p-2">{load.status}</td>
                 <td className="border p-2">
-                  {role === 'hauler' && (
+                  {role === "hauler" && (
                     <button
                       className="bg-green-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
                         // Compliance check: block if hauler not compliant (stub)
                         const haulerCompliant = true; // TODO: Replace with real compliance check
                         if (!haulerCompliant) {
-                          alert('You are not compliant to bid on this load.');
-                          await supabase.from('compliance_violations').insert([
-                            { action: 'bid_load', reason: 'Hauler not compliant', timestamp: new Date().toISOString() }
-                          ]);
+                          alert("You are not compliant to bid on this load.");
+                          await supabase
+                            .from("compliance_violations")
+                            .insert([
+                              {
+                                action: "bid_load",
+                                reason: "Hauler not compliant",
+                                timestamp: new Date().toISOString(),
+                              },
+                            ]);
                           return;
                         }
-                        await supabase.from('loads').update({ status: 'bid' }).eq('id', load.id);
+                        await supabase
+                          .from("loads")
+                          .update({ status: "bid" })
+                          .eq("id", load.id);
                         // TODO: Insert bid record, notify shipper
                       }}
                     >
                       Bid
                     </button>
                   )}
-                  {role === 'broker' && (
+                  {role === "broker" && (
                     <button
                       className="bg-yellow-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
@@ -93,39 +111,60 @@ export default function MarketplaceBrowse() {
                         const haulerCompliant = true; // TODO: Replace with real compliance check
                         const loadCompliant = true; // TODO: Replace with real compliance check
                         if (!brokerCompliant) {
-                          alert('Broker is not compliant to match this load.');
-                          await supabase.from('compliance_violations').insert([
-                            { action: 'match_load', reason: 'Broker not compliant', timestamp: new Date().toISOString() }
-                          ]);
+                          alert("Broker is not compliant to match this load.");
+                          await supabase
+                            .from("compliance_violations")
+                            .insert([
+                              {
+                                action: "match_load",
+                                reason: "Broker not compliant",
+                                timestamp: new Date().toISOString(),
+                              },
+                            ]);
                           return;
                         }
                         if (!haulerCompliant) {
-                          alert('Selected hauler is not compliant.');
-                          await supabase.from('compliance_violations').insert([
-                            { action: 'match_load', reason: 'Hauler not compliant', timestamp: new Date().toISOString() }
-                          ]);
+                          alert("Selected hauler is not compliant.");
+                          await supabase
+                            .from("compliance_violations")
+                            .insert([
+                              {
+                                action: "match_load",
+                                reason: "Hauler not compliant",
+                                timestamp: new Date().toISOString(),
+                              },
+                            ]);
                           return;
                         }
                         if (!loadCompliant) {
-                          alert('Load is not compliant for matching.');
-                          await supabase.from('compliance_violations').insert([
-                            { action: 'match_load', reason: 'Load not compliant', timestamp: new Date().toISOString() }
-                          ]);
+                          alert("Load is not compliant for matching.");
+                          await supabase
+                            .from("compliance_violations")
+                            .insert([
+                              {
+                                action: "match_load",
+                                reason: "Load not compliant",
+                                timestamp: new Date().toISOString(),
+                              },
+                            ]);
                           return;
                         }
-                        await supabase.from('loads').update({ status: 'matched' }).eq('id', load.id);
+                        await supabase
+                          .from("loads")
+                          .update({ status: "matched" })
+                          .eq("id", load.id);
                         // TODO: Assign hauler, notify both parties
                       }}
                     >
                       Match
                     </button>
                   )}
-                  {role === 'shipper' && (
+                  {role === "shipper" && (
                     <button
                       className="bg-blue-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
                         // TODO: Open edit modal or page
-                        alert('Edit load feature coming soon!');
+                        alert("Edit load feature coming soon!");
                       }}
                     >
                       Edit

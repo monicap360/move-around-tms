@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import {
   Upload,
@@ -88,7 +93,9 @@ export default function DriverProfilePage() {
   const [clockLoading, setClockLoading] = useState(false);
 
   // Availability (next 14 days)
-  const [availability, setAvailability] = useState<Record<string, Availability>>({});
+  const [availability, setAvailability] = useState<
+    Record<string, Availability>
+  >({});
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
 
   // Shifts
@@ -134,8 +141,8 @@ export default function DriverProfilePage() {
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
 
-    const start = weekStart.toISOString().split('T')[0];
-    const end = weekEnd.toISOString().split('T')[0];
+    const start = weekStart.toISOString().split("T")[0];
+    const end = weekEnd.toISOString().split("T")[0];
     const isInPayWeek = today >= weekStart && today <= weekEnd;
 
     return { start, end, isInPayWeek };
@@ -143,7 +150,9 @@ export default function DriverProfilePage() {
 
   async function loadDriverData(weekStart?: string, weekEnd?: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
         return;
@@ -165,7 +174,11 @@ export default function DriverProfilePage() {
       setDriver(driverData);
 
       // Load time clock
-      await loadTimeClockData(driverData.id, weekStart || currentWeekStart, weekEnd || currentWeekEnd);
+      await loadTimeClockData(
+        driverData.id,
+        weekStart || currentWeekStart,
+        weekEnd || currentWeekEnd,
+      );
 
       // Load availability for next 14 days
       await loadAvailability(driverData.id);
@@ -178,7 +191,8 @@ export default function DriverProfilePage() {
       const end = weekEnd || currentWeekEnd;
       const { data: ticketsData, error: ticketsErr } = await supabase
         .from("aggregate_tickets")
-        .select(`
+        .select(
+          `
           id,
           ticket_number,
           material,
@@ -188,7 +202,8 @@ export default function DriverProfilePage() {
           status,
           total_pay,
           aggregate_partners (name)
-        `)
+        `,
+        )
         .eq("driver_id", driverData.id)
         .gte("ticket_date", start)
         .lte("ticket_date", end)
@@ -221,9 +236,13 @@ export default function DriverProfilePage() {
     }
   }
 
-  async function loadTimeClockData(driverId: string, weekStart: string, weekEnd: string) {
+  async function loadTimeClockData(
+    driverId: string,
+    weekStart: string,
+    weekEnd: string,
+  ) {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const { data: todayData } = await supabase
         .from("time_clock_entries")
         .select("*")
@@ -353,7 +372,10 @@ export default function DriverProfilePage() {
   }
 
   function updateAvailability(date: string, update: Partial<Availability>) {
-    setAvailability((prev) => ({ ...prev, [date]: { ...prev[date], ...update } as Availability }));
+    setAvailability((prev) => ({
+      ...prev,
+      [date]: { ...prev[date], ...update } as Availability,
+    }));
   }
 
   async function saveAvailability() {
@@ -372,7 +394,9 @@ export default function DriverProfilePage() {
           standby: a?.standby || false,
         };
       });
-      const { error } = await supabase.from("driver_availability").upsert(rows, { onConflict: "driver_id,date" });
+      const { error } = await supabase
+        .from("driver_availability")
+        .upsert(rows, { onConflict: "driver_id,date" });
       if (error) throw error;
     } catch (err: any) {
       alert("Failed to save availability: " + err.message);
@@ -390,7 +414,9 @@ export default function DriverProfilePage() {
 
       const { data: open } = await supabase
         .from("shifts")
-        .select("id, shift_date, start_time, end_time, status, requested_driver_id, assigned_driver_id, truck_id, trucks(name)")
+        .select(
+          "id, shift_date, start_time, end_time, status, requested_driver_id, assigned_driver_id, truck_id, trucks(name)",
+        )
         .eq("status", "open")
         .gte("shift_date", start)
         .lte("shift_date", end)
@@ -400,8 +426,12 @@ export default function DriverProfilePage() {
 
       const { data: mine } = await supabase
         .from("shifts")
-        .select("id, shift_date, start_time, end_time, status, requested_driver_id, assigned_driver_id, truck_id, trucks(name)")
-        .or(`assigned_driver_id.eq.${driverId},and(status.eq.pending_approval,requested_driver_id.eq.${driverId})`)
+        .select(
+          "id, shift_date, start_time, end_time, status, requested_driver_id, assigned_driver_id, truck_id, trucks(name)",
+        )
+        .or(
+          `assigned_driver_id.eq.${driverId},and(status.eq.pending_approval,requested_driver_id.eq.${driverId})`,
+        )
         .gte("shift_date", start)
         .lte("shift_date", end)
         .order("shift_date", { ascending: true })
@@ -432,7 +462,9 @@ export default function DriverProfilePage() {
 
   async function requestSwap(shiftId: string) {
     if (!driver) return;
-    const message = prompt("Optional message to manager about this swap request:");
+    const message = prompt(
+      "Optional message to manager about this swap request:",
+    );
     try {
       const { error } = await supabase.from("shift_swap_requests").insert({
         shift_id: shiftId,
@@ -449,7 +481,10 @@ export default function DriverProfilePage() {
     }
   }
 
-  const totalWeekHours = weekEntries.reduce((sum, e) => sum + (e.total_hours || 0), 0);
+  const totalWeekHours = weekEntries.reduce(
+    (sum, e) => sum + (e.total_hours || 0),
+    0,
+  );
 
   if (loading) {
     return (
@@ -464,7 +499,9 @@ export default function DriverProfilePage() {
       <div className="p-8">
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="pt-6 text-center">
-            <p className="text-blue-800 mb-4">Redirecting to profile setup...</p>
+            <p className="text-blue-800 mb-4">
+              Redirecting to profile setup...
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -500,10 +537,13 @@ export default function DriverProfilePage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
               <div>
-                <p className="font-semibold text-orange-900">Upload Restricted</p>
+                <p className="font-semibold text-orange-900">
+                  Upload Restricted
+                </p>
                 <p className="text-sm text-orange-800">
-                  You can only upload tickets during the current pay week (Friday to Thursday).
-                  Current pay week: {currentWeekStart} to {currentWeekEnd}
+                  You can only upload tickets during the current pay week
+                  (Friday to Thursday). Current pay week: {currentWeekStart} to{" "}
+                  {currentWeekEnd}
                 </p>
               </div>
             </div>
@@ -561,22 +601,35 @@ export default function DriverProfilePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Button
               onClick={handleClockIn}
-              disabled={clockLoading || (!!todayEntry && todayEntry.clock_out === null)}
+              disabled={
+                clockLoading || (!!todayEntry && todayEntry.clock_out === null)
+              }
               className="flex items-center gap-2"
-              variant={!!todayEntry && todayEntry.clock_out === null ? "outline" : "default"}
+              variant={
+                !!todayEntry && todayEntry.clock_out === null
+                  ? "outline"
+                  : "default"
+              }
             >
               <LogIn className="w-4 h-4" /> Clock In
             </Button>
             <Button
               onClick={handleClockOut}
-              disabled={clockLoading || !todayEntry || todayEntry.clock_out !== null}
+              disabled={
+                clockLoading || !todayEntry || todayEntry.clock_out !== null
+              }
               className="flex items-center gap-2"
             >
               <LogOut className="w-4 h-4" /> Clock Out
             </Button>
             <Button
               onClick={handleLunchStart}
-              disabled={clockLoading || !todayEntry || todayEntry.clock_out !== null || todayEntry.lunch_start !== null}
+              disabled={
+                clockLoading ||
+                !todayEntry ||
+                todayEntry.clock_out !== null ||
+                todayEntry.lunch_start !== null
+              }
               className="flex items-center gap-2"
               variant="outline"
             >
@@ -584,7 +637,12 @@ export default function DriverProfilePage() {
             </Button>
             <Button
               onClick={handleLunchEnd}
-              disabled={clockLoading || !todayEntry || todayEntry.lunch_start === null || todayEntry.lunch_end !== null}
+              disabled={
+                clockLoading ||
+                !todayEntry ||
+                todayEntry.lunch_start === null ||
+                todayEntry.lunch_end !== null
+              }
               className="flex items-center gap-2"
               variant="outline"
             >
@@ -594,35 +652,47 @@ export default function DriverProfilePage() {
 
           {todayEntry && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-900 mb-2">Today's Status</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">
+                Today's Status
+              </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
                   <p className="text-blue-700">Clock In</p>
-                  <p className="font-semibold">{new Date(todayEntry.clock_in).toLocaleTimeString()}</p>
+                  <p className="font-semibold">
+                    {new Date(todayEntry.clock_in).toLocaleTimeString()}
+                  </p>
                 </div>
                 {todayEntry.clock_out && (
                   <div>
                     <p className="text-blue-700">Clock Out</p>
-                    <p className="font-semibold">{new Date(todayEntry.clock_out).toLocaleTimeString()}</p>
+                    <p className="font-semibold">
+                      {new Date(todayEntry.clock_out).toLocaleTimeString()}
+                    </p>
                   </div>
                 )}
                 {todayEntry.lunch_start && (
                   <div>
                     <p className="text-blue-700">Lunch Start</p>
-                    <p className="font-semibold">{new Date(todayEntry.lunch_start).toLocaleTimeString()}</p>
+                    <p className="font-semibold">
+                      {new Date(todayEntry.lunch_start).toLocaleTimeString()}
+                    </p>
                   </div>
                 )}
                 {todayEntry.lunch_end && (
                   <div>
                     <p className="text-blue-700">Lunch End</p>
-                    <p className="font-semibold">{new Date(todayEntry.lunch_end).toLocaleTimeString()}</p>
+                    <p className="font-semibold">
+                      {new Date(todayEntry.lunch_end).toLocaleTimeString()}
+                    </p>
                   </div>
                 )}
               </div>
               {todayEntry.total_hours !== null && (
                 <div className="mt-3">
                   <p className="text-blue-700 text-sm">Total Hours Today</p>
-                  <p className="text-2xl font-bold text-blue-900">{todayEntry.total_hours.toFixed(2)} hrs</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {todayEntry.total_hours.toFixed(2)} hrs
+                  </p>
                 </div>
               )}
             </div>
@@ -630,7 +700,9 @@ export default function DriverProfilePage() {
 
           <div>
             <p className="text-sm text-gray-600">Total Hours This Week</p>
-            <p className="text-3xl font-bold text-green-600">{totalWeekHours.toFixed(2)} hrs</p>
+            <p className="text-3xl font-bold text-green-600">
+              {totalWeekHours.toFixed(2)} hrs
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -654,15 +726,27 @@ export default function DriverProfilePage() {
               </thead>
               <tbody>
                 {next14Days.map((d) => {
-                  const a = availability[d] || { date: d, available: false, start_time: null, end_time: null, standby: false };
+                  const a = availability[d] || {
+                    date: d,
+                    available: false,
+                    start_time: null,
+                    end_time: null,
+                    standby: false,
+                  };
                   return (
                     <tr key={d} className="border-b">
-                      <td className="p-3">{new Date(d).toLocaleDateString()}</td>
+                      <td className="p-3">
+                        {new Date(d).toLocaleDateString()}
+                      </td>
                       <td className="p-3">
                         <input
                           type="checkbox"
                           checked={!!a.available}
-                          onChange={(e) => updateAvailability(d, { available: e.target.checked })}
+                          onChange={(e) =>
+                            updateAvailability(d, {
+                              available: e.target.checked,
+                            })
+                          }
                         />
                       </td>
                       <td className="p-3">
@@ -670,7 +754,11 @@ export default function DriverProfilePage() {
                           type="time"
                           className="border rounded px-2 py-1"
                           value={a.start_time || ""}
-                          onChange={(e) => updateAvailability(d, { start_time: e.target.value })}
+                          onChange={(e) =>
+                            updateAvailability(d, {
+                              start_time: e.target.value,
+                            })
+                          }
                           disabled={!a.available}
                         />
                       </td>
@@ -679,7 +767,9 @@ export default function DriverProfilePage() {
                           type="time"
                           className="border rounded px-2 py-1"
                           value={a.end_time || ""}
-                          onChange={(e) => updateAvailability(d, { end_time: e.target.value })}
+                          onChange={(e) =>
+                            updateAvailability(d, { end_time: e.target.value })
+                          }
                           disabled={!a.available}
                         />
                       </td>
@@ -687,7 +777,9 @@ export default function DriverProfilePage() {
                         <input
                           type="checkbox"
                           checked={!!a.standby}
-                          onChange={(e) => updateAvailability(d, { standby: e.target.checked })}
+                          onChange={(e) =>
+                            updateAvailability(d, { standby: e.target.checked })
+                          }
                           disabled={!a.available}
                         />
                       </td>
@@ -717,7 +809,12 @@ export default function DriverProfilePage() {
             <p className="text-gray-500">No open shifts available.</p>
           ) : (
             <div className="space-y-4">
-              {Object.entries(groupBy(openShifts, (s) => getTruckName(s) || "Unassigned Truck")).map(([truck, items]) => (
+              {Object.entries(
+                groupBy(
+                  openShifts,
+                  (s) => getTruckName(s) || "Unassigned Truck",
+                ),
+              ).map(([truck, items]) => (
                 <div key={truck} className="border rounded">
                   <div className="px-4 py-2 font-semibold bg-gray-50 flex items-center gap-2">
                     <TruckIcon className="w-4 h-4" /> {truck}
@@ -735,11 +832,19 @@ export default function DriverProfilePage() {
                       <tbody>
                         {items.map((s) => (
                           <tr key={s.id} className="border-b hover:bg-gray-50">
-                            <td className="p-3">{new Date(s.shift_date).toLocaleDateString()}</td>
-                            <td className="p-3">{s.start_time.substring(0,5)}</td>
-                            <td className="p-3">{s.end_time.substring(0,5)}</td>
                             <td className="p-3">
-                              <Button onClick={() => requestPickup(s.id)}>Request Pickup</Button>
+                              {new Date(s.shift_date).toLocaleDateString()}
+                            </td>
+                            <td className="p-3">
+                              {s.start_time.substring(0, 5)}
+                            </td>
+                            <td className="p-3">
+                              {s.end_time.substring(0, 5)}
+                            </td>
+                            <td className="p-3">
+                              <Button onClick={() => requestPickup(s.id)}>
+                                Request Pickup
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -750,7 +855,9 @@ export default function DriverProfilePage() {
               ))}
             </div>
           )}
-          <p className="text-xs text-gray-500 mt-3">Note: Picking up a shift requires manager approval.</p>
+          <p className="text-xs text-gray-500 mt-3">
+            Note: Picking up a shift requires manager approval.
+          </p>
         </CardContent>
       </Card>
 
@@ -778,21 +885,33 @@ export default function DriverProfilePage() {
                 <tbody>
                   {myShifts.map((s) => (
                     <tr key={s.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3">{new Date(s.shift_date).toLocaleDateString()}</td>
-                      <td className="p-3">{getTruckName(s) || "—"}</td>
-                      <td className="p-3">{s.start_time.substring(0,5)}</td>
-                      <td className="p-3">{s.end_time.substring(0,5)}</td>
                       <td className="p-3">
-                        <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">{s.status}</span>
+                        {new Date(s.shift_date).toLocaleDateString()}
+                      </td>
+                      <td className="p-3">{getTruckName(s) || "—"}</td>
+                      <td className="p-3">{s.start_time.substring(0, 5)}</td>
+                      <td className="p-3">{s.end_time.substring(0, 5)}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
+                          {s.status}
+                        </span>
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2">
                           {s.status === "approved" && (
-                            <Button variant="outline" onClick={() => requestSwap(s.id)}>Request Swap</Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => requestSwap(s.id)}
+                            >
+                              Request Swap
+                            </Button>
                           )}
-                          {s.status === "pending_approval" && s.requested_driver_id === driver.id && (
-                            <span className="text-xs text-gray-600">Pickup pending approval</span>
-                          )}
+                          {s.status === "pending_approval" &&
+                            s.requested_driver_id === driver.id && (
+                              <span className="text-xs text-gray-600">
+                                Pickup pending approval
+                              </span>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -801,7 +920,10 @@ export default function DriverProfilePage() {
               </table>
             </div>
           )}
-          <p className="text-xs text-gray-500 mt-3">You can swap shifts with eligible drivers. Manager approval is required.</p>
+          <p className="text-xs text-gray-500 mt-3">
+            You can swap shifts with eligible drivers. Manager approval is
+            required.
+          </p>
         </CardContent>
       </Card>
 
@@ -819,7 +941,10 @@ export default function DriverProfilePage() {
               {canUpload && (
                 <span>
                   {" "}
-                  <Link href="/driver/upload" className="text-blue-600 underline">
+                  <Link
+                    href="/driver/upload"
+                    className="text-blue-600 underline"
+                  >
                     Upload your first ticket
                   </Link>
                 </span>
@@ -841,7 +966,9 @@ export default function DriverProfilePage() {
                 <tbody>
                   {tickets.map((ticket) => (
                     <tr key={ticket.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3">{new Date(ticket.ticket_date).toLocaleDateString()}</td>
+                      <td className="p-3">
+                        {new Date(ticket.ticket_date).toLocaleDateString()}
+                      </td>
                       <td className="p-3">{ticket.partner_name}</td>
                       <td className="p-3">{ticket.material}</td>
                       <td className="p-3">
@@ -854,8 +981,8 @@ export default function DriverProfilePage() {
                             ticket.status === "Approved"
                               ? "bg-green-100 text-green-800"
                               : ticket.status === "Denied"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
                           {ticket.status}
@@ -883,11 +1010,17 @@ function getTruckName(s: Shift): string | undefined {
 }
 
 // Small helper to group array items by a key selector
-function groupBy<T>(arr: T[], keySelector: (t: T) => string): Record<string, T[]> {
-  return arr.reduce((acc, item) => {
-    const k = keySelector(item);
-    acc[k] = acc[k] || [];
-    acc[k].push(item);
-    return acc;
-  }, {} as Record<string, T[]>);
+function groupBy<T>(
+  arr: T[],
+  keySelector: (t: T) => string,
+): Record<string, T[]> {
+  return arr.reduce(
+    (acc, item) => {
+      const k = keySelector(item);
+      acc[k] = acc[k] || [];
+      acc[k].push(item);
+      return acc;
+    },
+    {} as Record<string, T[]>,
+  );
 }

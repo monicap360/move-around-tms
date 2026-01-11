@@ -33,34 +33,42 @@ create table public.company_assets (
 ## API Endpoints
 
 ### GET /api/company-assets
+
 Retrieve company assets for the authenticated user
 
 **Query Parameters:**
+
 - `type` (optional): Filter by asset type (`company_logo` | `ticket_template`)
 - `latest` (optional): Get only the most recent asset (`true`)
 - `tags` (optional): Filter by tags (comma-separated)
 
 **Example:**
+
 ```javascript
 // Get all assets
-const response = await fetch('/api/company-assets');
+const response = await fetch("/api/company-assets");
 
 // Get only logos
-const logos = await fetch('/api/company-assets?type=company_logo');
+const logos = await fetch("/api/company-assets?type=company_logo");
 
 // Get latest logo
-const latestLogo = await fetch('/api/company-assets?type=company_logo&latest=true');
+const latestLogo = await fetch(
+  "/api/company-assets?type=company_logo&latest=true",
+);
 ```
 
 ### POST /api/company-assets
+
 Create a new company asset
 
 **Required Fields:**
+
 - `asset_type`: `'company_logo'` | `'ticket_template'`
 - `file_path`: Storage path to the file
 - `original_filename`: Original filename
 
 **Optional Fields:**
+
 - `description`: Asset description
 - `file_size`: File size in bytes
 - `mime_type`: MIME type (e.g., 'image/png')
@@ -68,32 +76,37 @@ Create a new company asset
 - `metadata`: Additional JSON metadata
 
 **Example:**
+
 ```javascript
-const newAsset = await fetch('/api/company-assets', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+const newAsset = await fetch("/api/company-assets", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    asset_type: 'company_logo',
-    file_path: '/uploads/logos/company-logo.png',
-    original_filename: 'company-logo.png',
-    description: 'Main company logo',
+    asset_type: "company_logo",
+    file_path: "/uploads/logos/company-logo.png",
+    original_filename: "company-logo.png",
+    description: "Main company logo",
     file_size: 15432,
-    mime_type: 'image/png',
-    tags: ['logo', 'primary', 'branding']
-  })
+    mime_type: "image/png",
+    tags: ["logo", "primary", "branding"],
+  }),
 });
 ```
 
 ### GET /api/company-assets/[id]
+
 Get a specific asset by ID
 
 ### PUT /api/company-assets/[id]
+
 Update an existing asset (description, tags, metadata only)
 
 ### DELETE /api/company-assets/[id]
+
 Delete a specific asset
 
 ### GET /api/company-assets/logo/current
+
 Get the most recent company logo
 
 ## TypeScript Types
@@ -102,7 +115,7 @@ Get the most recent company logo
 interface CompanyAsset {
   id: string;
   user_id: string | null;
-  asset_type: 'company_logo' | 'ticket_template';
+  asset_type: "company_logo" | "ticket_template";
   file_path: string;
   original_filename: string;
   description?: string | null;
@@ -117,20 +130,21 @@ interface CompanyAsset {
 ## Service Class Usage
 
 ### Database Service
+
 ```typescript
-import { CompanyAssetsService } from '@/lib/services/company-assets';
+import { CompanyAssetsService } from "@/lib/services/company-assets";
 
 // Get all assets
 const { data, error } = await CompanyAssetsService.getAssets();
 
 // Get logos only
-const logos = await CompanyAssetsService.getAssets('company_logo');
+const logos = await CompanyAssetsService.getAssets("company_logo");
 
 // Create new asset
 const newAsset = await CompanyAssetsService.createAsset({
-  asset_type: 'company_logo',
-  file_path: '/path/to/file',
-  original_filename: 'logo.png'
+  asset_type: "company_logo",
+  file_path: "/path/to/file",
+  original_filename: "logo.png",
 });
 
 // Get current logo
@@ -138,29 +152,38 @@ const currentLogo = await CompanyAssetsService.getCurrentLogo();
 ```
 
 ### Storage Service
+
 ```typescript
-import { CompanyAssetsStorageService } from '@/lib/services/company-assets-storage';
+import { CompanyAssetsStorageService } from "@/lib/services/company-assets-storage";
 
 // Upload logo
-const logoUpload = await CompanyAssetsStorageService.uploadLogo(file, 'company-logo.png');
+const logoUpload = await CompanyAssetsStorageService.uploadLogo(
+  file,
+  "company-logo.png",
+);
 
 // Upload ticket template
-const templateUpload = await CompanyAssetsStorageService.uploadTicketTemplate(file);
+const templateUpload =
+  await CompanyAssetsStorageService.uploadTicketTemplate(file);
 
 // Get public URL
-const publicUrl = await CompanyAssetsStorageService.getPublicUrl('logos/logo.png');
+const publicUrl =
+  await CompanyAssetsStorageService.getPublicUrl("logos/logo.png");
 
 // Validate file before upload
-const validation = CompanyAssetsStorageService.validateFileType(file, 'company_logo');
+const validation = CompanyAssetsStorageService.validateFileType(
+  file,
+  "company_logo",
+);
 if (!validation.valid) {
   console.error(validation.error);
 }
 
 // List files in folder
-const files = await CompanyAssetsStorageService.listFiles('logos');
+const files = await CompanyAssetsStorageService.listFiles("logos");
 
 // Delete file
-await CompanyAssetsStorageService.deleteFile('logos/old-logo.png');
+await CompanyAssetsStorageService.deleteFile("logos/old-logo.png");
 ```
 
 ## File Validation
@@ -168,11 +191,13 @@ await CompanyAssetsStorageService.deleteFile('logos/old-logo.png');
 The system validates uploaded files:
 
 ### Size Limits
+
 - Maximum file size: **10MB**
 
 ### Allowed File Types
 
 **Company Logos:**
+
 - `image/jpeg`, `image/jpg`
 - `image/png`
 - `image/gif`
@@ -180,12 +205,14 @@ The system validates uploaded files:
 - `image/svg+xml`
 
 **Ticket Templates:**
+
 - All image formats above
 - `application/pdf`
 - `text/plain`
 - `application/json`
 
 ### Storage Structure
+
 ```
 company_assets/
 ├── logos/
@@ -226,9 +253,11 @@ using (bucket_id = 'company_assets');
 ### File Upload API
 
 #### POST /api/company-assets/upload
+
 Upload files with automatic storage and database record creation
 
 **Form Data:**
+
 - `file`: File to upload (required)
 - `asset_type`: `'company_logo'` | `'ticket_template'` (required)
 - `description`: Asset description (optional)
@@ -236,33 +265,39 @@ Upload files with automatic storage and database record creation
 - `metadata`: JSON metadata string (optional)
 
 **Example:**
+
 ```javascript
 const formData = new FormData();
-formData.append('file', fileInput.files[0]);
-formData.append('asset_type', 'company_logo');
-formData.append('description', 'Main company logo');
-formData.append('tags', 'logo,primary,branding');
+formData.append("file", fileInput.files[0]);
+formData.append("asset_type", "company_logo");
+formData.append("description", "Main company logo");
+formData.append("tags", "logo,primary,branding");
 
-const response = await fetch('/api/company-assets/upload', {
-  method: 'POST',
-  body: formData
+const response = await fetch("/api/company-assets/upload", {
+  method: "POST",
+  body: formData,
 });
 ```
 
 #### GET /api/company-assets/files/[...path]
+
 Get public or signed URLs for files
 
 **Query Parameters:**
+
 - `signed`: Get signed URL (`true` | `false`)
 - `expires`: Expiration time in seconds (default: 3600)
 
 **Example:**
+
 ```javascript
 // Get public URL
-const publicUrl = await fetch('/api/company-assets/files/logos/logo.png');
+const publicUrl = await fetch("/api/company-assets/files/logos/logo.png");
 
 // Get signed URL (for private access)
-const signedUrl = await fetch('/api/company-assets/files/logos/logo.png?signed=true&expires=7200');
+const signedUrl = await fetch(
+  "/api/company-assets/files/logos/logo.png?signed=true&expires=7200",
+);
 ```
 
 ## Migration
@@ -275,6 +310,7 @@ supabase db push
 ```
 
 Or execute the SQL directly in your Supabase SQL editor:
+
 1. `supabase/migrations/20241101_create_company_assets.sql` - Table and RLS
 2. `supabase/migrations/20241101_create_company_assets_storage.sql` - Storage policies
 

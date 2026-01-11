@@ -1,98 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ronyx Logistics LLC | Move Around TMS</title>
-  <style>
-    body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(180deg, #0b1e3d 0%, #002b5c 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #fff;
-    }
-    .box {
-      background: #fff;
-      color: #000;
-      padding: 40px;
-      border-radius: 12px;
-      width: 360px;
-      text-align: center;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-    }
-    h2 {
-      margin-bottom: 4px;
-      color: #0b1e3d;
-    }
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      width: 95%;
-      padding: 10px;
-      margin-top: 8px;
-      background: #004aad;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button:hover {
-      background: #003b8e;
-    }
-    #msg {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h2>Ronyx Logistics LLC</h2>
-    <p>Sign in to Move Around TMS</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ronyx Logistics LLC | Move Around TMS</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(180deg, #0b1e3d 0%, #002b5c 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        color: #fff;
+      }
+      .box {
+        background: #fff;
+        color: #000;
+        padding: 40px;
+        border-radius: 12px;
+        width: 360px;
+        text-align: center;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      }
+      h2 {
+        margin-bottom: 4px;
+        color: #0b1e3d;
+      }
+      input {
+        width: 90%;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      button {
+        width: 95%;
+        padding: 10px;
+        margin-top: 8px;
+        background: #004aad;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:hover {
+        background: #003b8e;
+      }
+      #msg {
+        color: red;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>Ronyx Logistics LLC</h2>
+      <p>Sign in to Move Around TMS</p>
 
-    <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Password" />
-    <button id="loginBtn">Sign In</button>
-    <div id="msg"></div>
-  </div>
+      <input id="email" type="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Password" />
+      <button id="loginBtn">Sign In</button>
+      <div id="msg"></div>
+    </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // ✅ Live Supabase credentials
-    const SUPABASE_URL = "https://wqeidcatuwqtzwhvmqfr.supabase.co";
-    const SUPABASE_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZWlkY2F0dXdxdHp3aHZtcWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNjkxNzcsImV4cCI6MjA3Njk0NTE3N30.E8bSplLakPK0obSoyhddRt64V8rFXS7ZMlaIQQaI0TQ";
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // ✅ Live Supabase credentials
+      const SUPABASE_URL = "https://wqeidcatuwqtzwhvmqfr.supabase.co";
+      const SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZWlkY2F0dXdxdHp3aHZtcWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNjkxNzcsImV4cCI6MjA3Njk0NTE3N30.E8bSplLakPK0obSoyhddRt64V8rFXS7ZMlaIQQaI0TQ";
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    document
-      .getElementById("loginBtn")
-      .addEventListener("click", async () => {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        const msg = document.getElementById("msg");
-        msg.textContent = "";
+      document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value;
+          const msg = document.getElementById("msg");
+          msg.textContent = "";
 
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (error) {
+            msg.textContent = error.message;
+          } else {
+            window.location.href = "/dashboard.html"; // change if your dashboard path differs
+          }
         });
-
-        if (error) {
-          msg.textContent = error.message;
-        } else {
-          window.location.href = "/dashboard.html"; // change if your dashboard path differs
-        }
-      });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

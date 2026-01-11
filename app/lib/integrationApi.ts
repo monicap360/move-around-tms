@@ -5,7 +5,7 @@ export interface Driver {
   email: string;
   phone: string;
   licenseNumber: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
   hireDate: string;
 }
 
@@ -21,107 +21,114 @@ export async function fetchDrivers(): Promise<ApiResponse<Driver[]>> {
     // Mock implementation - in real app, this would call external API
     const mockDrivers: Driver[] = [
       {
-        id: '1',
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '555-0101',
-        licenseNumber: 'DL123456789',
-        status: 'active',
-        hireDate: '2024-01-15'
+        id: "1",
+        name: "John Doe",
+        email: "john.doe@example.com",
+        phone: "555-0101",
+        licenseNumber: "DL123456789",
+        status: "active",
+        hireDate: "2024-01-15",
       },
       {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com', 
-        phone: '555-0102',
-        licenseNumber: 'DL987654321',
-        status: 'active',
-        hireDate: '2024-02-20'
-      }
+        id: "2",
+        name: "Jane Smith",
+        email: "jane.smith@example.com",
+        phone: "555-0102",
+        licenseNumber: "DL987654321",
+        status: "active",
+        hireDate: "2024-02-20",
+      },
     ];
 
     return {
       success: true,
       data: mockDrivers,
-      message: 'Drivers fetched successfully'
+      message: "Drivers fetched successfully",
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch drivers'
+      error: error instanceof Error ? error.message : "Failed to fetch drivers",
     };
   }
 }
 
-export async function fetchDriverById(id: string): Promise<ApiResponse<Driver>> {
+export async function fetchDriverById(
+  id: string,
+): Promise<ApiResponse<Driver>> {
   try {
     // Mock implementation
     const mockDriver: Driver = {
       id,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '555-0101',
-      licenseNumber: 'DL123456789',
-      status: 'active',
-      hireDate: '2024-01-15'
+      name: "John Doe",
+      email: "john.doe@example.com",
+      phone: "555-0101",
+      licenseNumber: "DL123456789",
+      status: "active",
+      hireDate: "2024-01-15",
     };
 
     return {
       success: true,
       data: mockDriver,
-      message: 'Driver fetched successfully'
+      message: "Driver fetched successfully",
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch driver'
+      error: error instanceof Error ? error.message : "Failed to fetch driver",
     };
   }
 }
 
-export async function updateDriver(id: string, updates: Partial<Driver>): Promise<ApiResponse<Driver>> {
+export async function updateDriver(
+  id: string,
+  updates: Partial<Driver>,
+): Promise<ApiResponse<Driver>> {
   try {
     // Mock implementation
     const updatedDriver: Driver = {
       id,
-      name: updates.name || 'John Doe',
-      email: updates.email || 'john.doe@example.com',
-      phone: updates.phone || '555-0101',
-      licenseNumber: updates.licenseNumber || 'DL123456789',
-      status: updates.status || 'active',
-      hireDate: updates.hireDate || '2024-01-15'
+      name: updates.name || "John Doe",
+      email: updates.email || "john.doe@example.com",
+      phone: updates.phone || "555-0101",
+      licenseNumber: updates.licenseNumber || "DL123456789",
+      status: updates.status || "active",
+      hireDate: updates.hireDate || "2024-01-15",
     };
 
     return {
       success: true,
       data: updatedDriver,
-      message: 'Driver updated successfully'
+      message: "Driver updated successfully",
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update driver'
+      error: error instanceof Error ? error.message : "Failed to update driver",
     };
   }
 }
 
-export async function createDriver(driverData: Omit<Driver, 'id'>): Promise<ApiResponse<Driver>> {
+export async function createDriver(
+  driverData: Omit<Driver, "id">,
+): Promise<ApiResponse<Driver>> {
   try {
     // Mock implementation
     const newDriver: Driver = {
       id: Math.random().toString(36).substr(2, 9),
-      ...driverData
+      ...driverData,
     };
 
     return {
       success: true,
       data: newDriver,
-      message: 'Driver created successfully'
+      message: "Driver created successfully",
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create driver'
+      error: error instanceof Error ? error.message : "Failed to create driver",
     };
   }
 }
@@ -132,12 +139,12 @@ export async function deleteDriver(id: string): Promise<ApiResponse<null>> {
     return {
       success: true,
       data: null,
-      message: 'Driver deleted successfully'
+      message: "Driver deleted successfully",
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete driver'
+      error: error instanceof Error ? error.message : "Failed to delete driver",
     };
   }
 }
@@ -151,36 +158,38 @@ export const DriverAPI = {
   deleteDriver,
   // Alias methods for backward compatibility
   getDrivers: fetchDrivers,
-  getDriver: fetchDriverById
+  getDriver: fetchDriverById,
 };
 
-export async function authenticateApiRequest(request: any): Promise<null | Response> {
+export async function authenticateApiRequest(
+  request: any,
+): Promise<null | Response> {
   try {
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       });
     }
-    
+
     const token = authHeader.substring(7);
-    
+
     // Simple validation (in real app, verify JWT token)
     if (token.length < 10) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), { 
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       });
     }
-    
+
     return null; // No error, request is authenticated
   } catch (error) {
-    console.error('API authentication error:', error);
-    return new Response(JSON.stringify({ error: 'Authentication failed' }), { 
+    console.error("API authentication error:", error);
+    return new Response(JSON.stringify({ error: "Authentication failed" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" },
     });
   }
 }

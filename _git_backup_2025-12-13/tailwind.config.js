@@ -1,9 +1,6 @@
 // tailwind.config.js for MoveAround Tesla/SpaceX Brand
 module.exports = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -33,7 +30,8 @@ module.exports = {
       backgroundImage: {
         battery: "linear-gradient(90deg, #00d4b3 0%, #f5d26a 100%)",
         hudArc: "linear-gradient(90deg, #0044ff 0%, #00e9ff 100%)",
-        glass: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(10,26,47,0.92) 100%)",
+        glass:
+          "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(10,26,47,0.92) 100%)",
       },
       letterSpacing: {
         wide: ".04em",

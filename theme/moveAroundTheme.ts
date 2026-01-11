@@ -13,7 +13,8 @@ export const moveAroundTheme = {
     // Gradients
     battery: "linear-gradient(90deg, #00d4b3 0%, #f5d26a 100%)",
     hudArc: "linear-gradient(90deg, #0044ff 0%, #00e9ff 100%)",
-    glass: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(10,26,47,0.92) 100%)",
+    glass:
+      "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(10,26,47,0.92) 100%)",
   },
   typography: {
     fontFamily: "'Inter', 'Tesla', 'Segoe UI', Arial, sans-serif",
@@ -27,7 +28,8 @@ export const moveAroundTheme = {
   effects: {
     glowGold: "0 0 16px 2px #f5d26a99",
     glowBlue: "0 0 16px 2px #00e9ff99",
-    glassPanel: "backdrop-filter: blur(16px); background: rgba(255,255,255,0.08); border: 1.5px solid #00e9ff22; box-shadow: 0 4px 32px #0044ff22;",
+    glassPanel:
+      "backdrop-filter: blur(16px); background: rgba(255,255,255,0.08); border: 1.5px solid #00e9ff22; box-shadow: 0 4px 32px #0044ff22;",
     hologram: "0 0 32px 4px #00e9ff55, 0 0 8px 2px #00d4b355",
   },
   borderRadius: {

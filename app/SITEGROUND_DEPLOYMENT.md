@@ -3,11 +3,13 @@
 ## 🎯 Quick SiteGround Deployment
 
 ### Step 1: Build the Static Site
+
 ```bash
 npm run build
 ```
 
 ### Step 2: Upload to SiteGround
+
 1. Go to SiteGround cPanel → File Manager
 2. Navigate to `public_html` folder
 3. Upload the entire `out` folder contents
@@ -34,7 +36,7 @@ Point your domain (movearoundtms.com) to SiteGround and upload the `out` folder 
 ## 🔧 Future Updates
 
 1. Make code changes locally
-2. Run `npm run build` 
+2. Run `npm run build`
 3. Upload new `out` folder contents
 4. Done! No waiting for deployments or cache clearing.
 

@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Upload, CheckCircle } from "lucide-react";
 
@@ -43,9 +48,9 @@ export default function DriverApplicationPage() {
 
     if (error) throw error;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("hr_docs")
-      .getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("hr_docs").getPublicUrl(filePath);
 
     return publicUrl;
   }
@@ -103,12 +108,11 @@ export default function DriverApplicationPage() {
       if (insertError) throw insertError;
 
       setSuccess(true);
-      
+
       // Redirect after 3 seconds
       setTimeout(() => {
         window.location.href = "/driver/profile";
       }, 3000);
-
     } catch (err: any) {
       console.error("Error submitting application:", err);
       setError(err.message || "Failed to submit application");
@@ -128,8 +132,9 @@ export default function DriverApplicationPage() {
                 Application Submitted!
               </h2>
               <p className="text-green-700 mb-4">
-                Your application has been submitted for review by HR, Manager, and Owner.
-                You'll be notified via email once your application is reviewed.
+                Your application has been submitted for review by HR, Manager,
+                and Owner. You'll be notified via email once your application is
+                reviewed.
               </p>
               <p className="text-sm text-green-600">
                 Redirecting to your profile...
@@ -148,7 +153,8 @@ export default function DriverApplicationPage() {
           <CardTitle>Driver Application</CardTitle>
           <p className="text-sm text-gray-600 mt-2">
             Complete this application to be considered for a driver position.
-            Your application will be reviewed by our HR team, Manager, and Owner.
+            Your application will be reviewed by our HR team, Manager, and
+            Owner.
           </p>
         </CardHeader>
         <CardContent>
@@ -158,7 +164,7 @@ export default function DriverApplicationPage() {
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                 Personal Information
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -219,7 +225,7 @@ export default function DriverApplicationPage() {
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                 Address
               </h3>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Street Address *
@@ -281,7 +287,7 @@ export default function DriverApplicationPage() {
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                 License & Medical Card
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -343,7 +349,7 @@ export default function DriverApplicationPage() {
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                 Emergency Contact
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -378,7 +384,9 @@ export default function DriverApplicationPage() {
                   <input
                     type="text"
                     value={emergencyContactRelation}
-                    onChange={(e) => setEmergencyContactRelation(e.target.value)}
+                    onChange={(e) =>
+                      setEmergencyContactRelation(e.target.value)
+                    }
                     required
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
@@ -391,7 +399,7 @@ export default function DriverApplicationPage() {
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                 Required Documents
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -399,7 +407,9 @@ export default function DriverApplicationPage() {
                   </label>
                   <input
                     type="file"
-                    onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      setLicenseFile(e.target.files?.[0] || null)
+                    }
                     required
                     accept="image/*,.pdf"
                     className="w-full px-3 py-2 border rounded-lg text-sm"
@@ -412,7 +422,9 @@ export default function DriverApplicationPage() {
                   </label>
                   <input
                     type="file"
-                    onChange={(e) => setMedicalCardFile(e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      setMedicalCardFile(e.target.files?.[0] || null)
+                    }
                     required
                     accept="image/*,.pdf"
                     className="w-full px-3 py-2 border rounded-lg text-sm"
@@ -440,11 +452,7 @@ export default function DriverApplicationPage() {
             )}
 
             <div className="flex gap-4">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1"
-              >
+              <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   "Submitting..."
                 ) : (
@@ -457,7 +465,8 @@ export default function DriverApplicationPage() {
             </div>
 
             <p className="text-xs text-gray-500 text-center">
-              * Required fields. Your application will be reviewed by HR, Manager, and Owner.
+              * Required fields. Your application will be reviewed by HR,
+              Manager, and Owner.
             </p>
           </form>
         </CardContent>

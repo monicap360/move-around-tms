@@ -1,12 +1,12 @@
-import supabaseAdmin from '../../lib/supabaseAdmin'
+import supabaseAdmin from "../../lib/supabaseAdmin";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function ExpiringDocsPage() {
   const { data, error } = await supabaseAdmin
-    .from('driver_documents_expiring')
-    .select('*')
-    .order('expiration_date', { ascending: true })
+    .from("driver_documents_expiring")
+    .select("*")
+    .order("expiration_date", { ascending: true });
 
   if (error) {
     return (
@@ -14,15 +14,17 @@ export default async function ExpiringDocsPage() {
         <h1 className="text-2xl font-semibold mb-4">Expiring HR Documents</h1>
         <p className="text-red-600">Failed to load: {error.message}</p>
       </main>
-    )
+    );
   }
 
-  const items = data ?? []
+  const items = data ?? [];
 
   return (
     <main className="p-8">
       <h1 className="text-2xl font-semibold mb-4">Expiring HR Documents</h1>
-      <p className="text-sm text-gray-600 mb-6">Approved documents expiring within 60 days.</p>
+      <p className="text-sm text-gray-600 mb-6">
+        Approved documents expiring within 60 days.
+      </p>
 
       {items.length === 0 ? (
         <div className="text-gray-600">No documents expiring soon.</div>
@@ -43,9 +45,9 @@ export default async function ExpiringDocsPage() {
               {items.map((d: any) => (
                 <tr key={d.id} className="odd:bg-white even:bg-gray-50">
                   <td className="p-2 border-b">{d.id}</td>
-                  <td className="p-2 border-b">{d.driver_id ?? '-'}</td>
-                  <td className="p-2 border-b">{d.doc_type ?? '-'}</td>
-                  <td className="p-2 border-b">{d.expiration_date ?? '-'}</td>
+                  <td className="p-2 border-b">{d.driver_id ?? "-"}</td>
+                  <td className="p-2 border-b">{d.doc_type ?? "-"}</td>
+                  <td className="p-2 border-b">{d.expiration_date ?? "-"}</td>
                   <td className="p-2 border-b">{d.days_until_expiration}</td>
                   <td className="p-2 border-b">{d.status}</td>
                 </tr>
@@ -55,5 +57,5 @@ export default async function ExpiringDocsPage() {
         </div>
       )}
     </main>
-  )
+  );
 }

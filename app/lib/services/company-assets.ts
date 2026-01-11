@@ -1,9 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import type { 
-  CompanyAsset, 
-  CreateCompanyAssetInput, 
-  UpdateCompanyAssetInput 
+import type {
+  CompanyAsset,
+  CreateCompanyAssetInput,
+  UpdateCompanyAssetInput,
 } from "@/lib/types/company-assets";
 
 /**
@@ -21,23 +21,23 @@ export class CompanyAssetsService {
             return cookieStore.get(name)?.value;
           },
         },
-      }
+      },
     );
   }
 
   /**
    * Get all assets for the current user
    */
-  static async getAssets(assetType?: 'company_logo' | 'ticket_template') {
+  static async getAssets(assetType?: "company_logo" | "ticket_template") {
     const supabase = await this.getSupabaseClient();
-    
+
     let query = supabase
-      .from('company_assets')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("company_assets")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (assetType) {
-      query = query.eq('asset_type', assetType);
+      query = query.eq("asset_type", assetType);
     }
 
     return await query;
@@ -48,11 +48,11 @@ export class CompanyAssetsService {
    */
   static async getAssetById(id: string) {
     const supabase = await this.getSupabaseClient();
-    
+
     return await supabase
-      .from('company_assets')
-      .select('*')
-      .eq('id', id)
+      .from("company_assets")
+      .select("*")
+      .eq("id", id)
       .single();
   }
 
@@ -61,15 +61,17 @@ export class CompanyAssetsService {
    */
   static async createAsset(input: CreateCompanyAssetInput) {
     const supabase = await this.getSupabaseClient();
-    
+
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      throw new Error('User not authenticated');
+      throw new Error("User not authenticated");
     }
 
     return await supabase
-      .from('company_assets')
+      .from("company_assets")
       .insert({
         ...input,
         user_id: user.id,
@@ -83,11 +85,11 @@ export class CompanyAssetsService {
    */
   static async updateAsset(id: string, input: UpdateCompanyAssetInput) {
     const supabase = await this.getSupabaseClient();
-    
+
     return await supabase
-      .from('company_assets')
+      .from("company_assets")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
   }
@@ -97,11 +99,8 @@ export class CompanyAssetsService {
    */
   static async deleteAsset(id: string) {
     const supabase = await this.getSupabaseClient();
-    
-    return await supabase
-      .from('company_assets')
-      .delete()
-      .eq('id', id);
+
+    return await supabase.from("company_assets").delete().eq("id", id);
   }
 
   /**
@@ -109,12 +108,12 @@ export class CompanyAssetsService {
    */
   static async getAssetsByTags(tags: string[]) {
     const supabase = await this.getSupabaseClient();
-    
+
     return await supabase
-      .from('company_assets')
-      .select('*')
-      .contains('tags', tags)
-      .order('created_at', { ascending: false });
+      .from("company_assets")
+      .select("*")
+      .contains("tags", tags)
+      .order("created_at", { ascending: false });
   }
 
   /**
@@ -122,12 +121,12 @@ export class CompanyAssetsService {
    */
   static async getCurrentLogo() {
     const supabase = await this.getSupabaseClient();
-    
+
     return await supabase
-      .from('company_assets')
-      .select('*')
-      .eq('asset_type', 'company_logo')
-      .order('created_at', { ascending: false })
+      .from("company_assets")
+      .select("*")
+      .eq("asset_type", "company_logo")
+      .order("created_at", { ascending: false })
       .limit(1)
       .single();
   }

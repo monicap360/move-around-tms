@@ -7,7 +7,9 @@ export default function VeronicaDashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const { data, error } = await supabase.from("owner_operators").select("*");
+      const { data, error } = await supabase
+        .from("owner_operators")
+        .select("*");
       if (error) console.error(error);
       else setOperators(data);
     }

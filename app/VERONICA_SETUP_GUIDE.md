@@ -12,6 +12,7 @@
 ## 💎 OPTION 1: Supabase Dashboard Setup (Recommended)
 
 ### Step 1: Create User Account
+
 1. Go to **Supabase Dashboard** → **Authentication** → **Users**
 2. Click **+ Add User**
 3. Fill in the details:
@@ -23,6 +24,7 @@
 5. Click **Create User**
 
 ### Step 2: Set User Role in Profiles
+
 1. Go to **Supabase Dashboard** → **Table Editor** → **profiles**
 2. Find the user with email `melidazvl@outlook.com`
 3. Set the **role** field to: `manager`
@@ -38,9 +40,9 @@ Run this in your **Supabase SQL Editor**:
 ```sql
 -- Create user account
 INSERT INTO auth.users (
-  id, 
-  email, 
-  encrypted_password, 
+  id,
+  email,
+  encrypted_password,
   email_confirmed_at,
   raw_app_meta_data,
   raw_user_meta_data,
@@ -75,7 +77,7 @@ INSERT INTO public.profiles (
 );
 
 -- Link owner-operators to Veronica's profile (optional)
-UPDATE owner_operators 
+UPDATE owner_operators
 SET partner_id = (SELECT id FROM profiles WHERE email = 'melidazvl@outlook.com')
 WHERE partner_id IS NULL;
 ```
@@ -85,6 +87,7 @@ WHERE partner_id IS NULL;
 ## 🎯 Access & Navigation Flow
 
 ### 1. **Login Process**
+
 - Veronica goes to: `https://ronyx.movearoundtms.app/login`
 - Enters credentials:
   ```
@@ -93,11 +96,13 @@ WHERE partner_id IS NULL;
   ```
 
 ### 2. **Automatic Redirection**
+
 - System detects email: `melidazvl@outlook.com`
 - Auto-redirects to: `/veronica` (detailed dashboard)
 - Role: `manager` (same permissions as `partner`)
 
 ### 3. **Dashboard Navigation**
+
 - **Primary Dashboard**: `/veronica` - Owner-operator data table
 - **Visual Portal**: `/partners/ronyx` - ROnyx branded overview
 - **Security**: `/veronica/change-password` - Password management
@@ -107,6 +112,7 @@ WHERE partner_id IS NULL;
 ## 🛡️ Role & Permissions
 
 ### Manager Role Features:
+
 - ✅ **Owner-Operator Management** - Full CRUD access to her fleet data
 - ✅ **RLS Compliance** - Only sees her own data via partner_id filtering
 - ✅ **Dashboard Access** - Both detailed and visual portals
@@ -114,16 +120,17 @@ WHERE partner_id IS NULL;
 - ✅ **Partner-Level Permissions** - Same access level as other partners
 
 ### Permission Level: **4** (Same as Partner)
+
 ```typescript
 roleHierarchy = {
-  'super_admin': 5,  // Monica, Breanna, Shamsa, Sylvia
-  'partner': 4,      // Generic partners  
-  'manager': 4,      // Veronica (ROnyx)
-  'owner': 3,        // Company owners
-  'company_admin': 3, // Company administrators
-  'staff': 2,        // Regular staff
-  'user': 1          // Basic users
-}
+  super_admin: 5, // Monica, Breanna, Shamsa, Sylvia
+  partner: 4, // Generic partners
+  manager: 4, // Veronica (ROnyx)
+  owner: 3, // Company owners
+  company_admin: 3, // Company administrators
+  staff: 2, // Regular staff
+  user: 1, // Basic users
+};
 ```
 
 ---
@@ -131,11 +138,13 @@ roleHierarchy = {
 ## 🗄️ Database Requirements
 
 ### Required Tables:
+
 1. ✅ **profiles** - User role and information (already exists)
 2. ✅ **owner_operators** - Fleet management data (created)
 3. ✅ **RLS policies** - Data isolation security (implemented)
 
 ### Execute This SQL (if not done):
+
 ```sql
 -- Run the owner_operators table creation script
 -- File: supabase/owner_operators_table.sql
@@ -168,6 +177,7 @@ After setup, verify:
 ## 📞 Support Notes
 
 **First Login Instructions for Veronica:**
+
 1. Go to login page using provided URL
 2. Use temporary password: `RonynxTest123!`
 3. System will redirect to personalized dashboard
@@ -175,6 +185,7 @@ After setup, verify:
 5. Navigate between dashboards using header navigation
 
 **Troubleshooting:**
+
 - If no data shows: Execute `owner_operators_table.sql` in Supabase
 - If access denied: Verify role is set to `manager` in profiles table
 - If redirect fails: Check email spelling matches exactly

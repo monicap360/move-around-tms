@@ -1,18 +1,35 @@
-'use client'
+"use client";
 
-
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { useRoleBasedAuth } from '../../lib/role-auth'
-import { exportNodeAsPng } from '../maintenance/dvir-dashboard/exportAsImage'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useRoleBasedAuth } from "../../lib/role-auth";
+import { exportNodeAsPng } from "../maintenance/dvir-dashboard/exportAsImage";
+import { createClient } from "@/lib/supabase/client";
 // Supabase client for compliance reminders/notifications
 const supabase = createClient();
 // Mock compliance reminders (replace with Supabase query)
 function generateComplianceReminders() {
   return [
-    { id: 1, company: 'ABC Transport Co.', type: 'Document Expiry', due: '2026-01-15', status: 'Pending' },
-    { id: 2, company: 'XYZ Logistics', type: 'Driver Medical', due: '2026-01-20', status: 'Pending' },
-    { id: 3, company: 'Elite Hauling', type: 'Insurance Renewal', due: '2026-01-25', status: 'Sent' },
+    {
+      id: 1,
+      company: "ABC Transport Co.",
+      type: "Document Expiry",
+      due: "2026-01-15",
+      status: "Pending",
+    },
+    {
+      id: 2,
+      company: "XYZ Logistics",
+      type: "Driver Medical",
+      due: "2026-01-20",
+      status: "Pending",
+    },
+    {
+      id: 3,
+      company: "Elite Hauling",
+      type: "Insurance Renewal",
+      due: "2026-01-25",
+      status: "Sent",
+    },
   ];
 }
 // Compliance analytics mock data generator (replace with Supabase query)
@@ -34,92 +51,92 @@ function generateComplianceTrends() {
 }
 
 interface PartnerTheme {
-  brand: string
-  primary: string
-  secondary: string
-  background: string
-  accent?: string
+  brand: string;
+  primary: string;
+  secondary: string;
+  background: string;
+  accent?: string;
   text: {
-    primary: string
-    secondary: string
-    light: string
-  }
-  logo: string
-  tagline: string
+    primary: string;
+    secondary: string;
+    light: string;
+  };
+  logo: string;
+  tagline: string;
   navigation: {
-    background: string
-    text: string
-    hover: string
-  }
+    background: string;
+    text: string;
+    hover: string;
+  };
   cards: {
-    background: string
-    border: string
-    shadow: string
-  }
+    background: string;
+    border: string;
+    shadow: string;
+  };
   buttons: {
-    primary: string
-    primaryHover: string
-    secondary: string
-    secondaryHover: string
-  }
+    primary: string;
+    primaryHover: string;
+    secondary: string;
+    secondaryHover: string;
+  };
 }
 
 interface DashboardStats {
-  companiesOnboarded: number
-  activeDrivers: number
-  hrUploads: number
-  monthlyCommission: number
-  totalReferrals: number
-  pendingApprovals: number
+  companiesOnboarded: number;
+  activeDrivers: number;
+  hrUploads: number;
+  monthlyCommission: number;
+  totalReferrals: number;
+  pendingApprovals: number;
 }
 
 export default function PartnerDashboard() {
-  const { user, profile, partnerInfo, loading } = useRoleBasedAuth()
-  const [theme, setTheme] = useState<PartnerTheme | null>(null)
+  const { user, profile, partnerInfo, loading } = useRoleBasedAuth();
+  const [theme, setTheme] = useState<PartnerTheme | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     companiesOnboarded: 0,
     activeDrivers: 0,
     hrUploads: 0,
     monthlyCommission: 0,
     totalReferrals: 0,
-    pendingApprovals: 0
-  })
+    pendingApprovals: 0,
+  });
 
   // Compliance analytics state
-  const [complianceTrends, setComplianceTrends] = useState([])
-  const complianceSectionRef = useRef<HTMLDivElement>(null)
+  const [complianceTrends, setComplianceTrends] = useState([]);
+  const complianceSectionRef = useRef<HTMLDivElement>(null);
   // Compliance reminders/notifications state
-  const [complianceReminders, setComplianceReminders] = useState([])
-  const [reminderLoading, setReminderLoading] = useState(true)
+  const [complianceReminders, setComplianceReminders] = useState([]);
+  const [reminderLoading, setReminderLoading] = useState(true);
 
   useEffect(() => {
     if (partnerInfo?.theme) {
-      setTheme(partnerInfo.theme as PartnerTheme)
-      loadPartnerStats()
-      setComplianceTrends(generateComplianceTrends())
-      loadComplianceReminders()
-    } else if (profile?.role === 'partner') {
+      setTheme(partnerInfo.theme as PartnerTheme);
+      loadPartnerStats();
+      setComplianceTrends(generateComplianceTrends());
+      loadComplianceReminders();
+    } else if (profile?.role === "partner") {
       // Load default RonYX theme for Veronica
-      loadRonYXTheme()
-      setComplianceTrends(generateComplianceTrends())
-      loadComplianceReminders()
+      loadRonYXTheme();
+      setComplianceTrends(generateComplianceTrends());
+      loadComplianceReminders();
     }
-  }, [partnerInfo, profile])
+  }, [partnerInfo, profile]);
 
   async function loadComplianceReminders() {
-    setReminderLoading(true)
+    setReminderLoading(true);
     // TODO: Replace with Supabase query for real reminders
-    setComplianceReminders(generateComplianceReminders())
-    setReminderLoading(false)
+    setComplianceReminders(generateComplianceReminders());
+    setReminderLoading(false);
   }
 
   async function loadRonYXTheme() {
     try {
-      const response = await fetch('/partners/ronyx/theme.json')
-      const themeData = await response.json()
-      setTheme(themeData)
+      const response = await fetch("/partners/ronyx/theme.json");
+      const themeData = await response.json();
+      setTheme(themeData);
     } catch (error) {
-      console.error('Error loading theme:', error)
+      console.error("Error loading theme:", error);
     }
   }
 
@@ -129,10 +146,10 @@ export default function PartnerDashboard() {
       companiesOnboarded: 12,
       activeDrivers: 48,
       hrUploads: 156,
-      monthlyCommission: 2850.00,
+      monthlyCommission: 2850.0,
       totalReferrals: 15,
-      pendingApprovals: 3
-    })
+      pendingApprovals: 3,
+    });
   }
 
   if (loading) {
@@ -140,39 +157,44 @@ export default function PartnerDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your partner dashboard...</p>
+          <p className="mt-4 text-gray-600">
+            Loading your partner dashboard...
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
-  if (profile?.role !== 'partner') {
+  if (profile?.role !== "partner") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Access Denied
+          </h1>
           <p className="text-gray-600">This dashboard is for partners only.</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!theme) {
-    return <div>Loading theme...</div>
+    return <div>Loading theme...</div>;
   }
 
-  const brandDisplay = theme.brand === "RonYX Logistics LLC" ? "RonYX" : theme.brand
+  const brandDisplay =
+    theme.brand === "RonYX Logistics LLC" ? "RonYX" : theme.brand;
 
   return (
-    <div 
+    <div
       className="min-h-screen"
-      style={{ 
+      style={{
         backgroundColor: theme.background,
-        color: theme.text.primary
+        color: theme.text.primary,
       }}
     >
       {/* Header */}
-      <header 
+      <header
         className="shadow-lg"
         style={{ backgroundColor: theme.navigation.background }}
       >
@@ -181,58 +203,90 @@ export default function PartnerDashboard() {
             {/* Logo Section */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div 
+                <div
                   className="w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg"
-                  style={{ 
+                  style={{
                     backgroundColor: theme.background,
-                    color: theme.primary 
+                    color: theme.primary,
                   }}
                 >
                   R
                 </div>
                 <div>
-                  <h1 
+                  <h1
                     className="text-2xl font-bold"
                     style={{ color: theme.navigation.text }}
                   >
                     {brandDisplay}
                   </h1>
-                  <p 
+                  <p
                     className="text-sm opacity-90"
                     style={{ color: theme.navigation.text }}
                   >
                     {theme.tagline}
                   </p>
-            {/* Compliance Analytics Section */}
-            <div className="mb-8" ref={complianceSectionRef}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-semibold text-lg" style={{ color: theme.text.primary }}>Compliance Analytics (30 days)</div>
-                <div className="flex gap-2">
-                  <button
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
-                    onClick={() => {
-                      const headers = ["Date","Compliant","Noncompliant","Total"];
-                      const rows = complianceTrends.map((d: any) => [d.date, d.compliant, d.noncompliant, d.total]);
-                      const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
-                      const blob = new Blob([csv], { type: "text/csv" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `compliance_analytics_${new Date().toISOString().slice(0,10)}.csv`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >Export CSV</button>
-                  <button
-                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                    onClick={() => {
-                      if (complianceSectionRef.current) exportNodeAsPng(complianceSectionRef.current, `compliance_analytics_${new Date().toISOString().slice(0,10)}.png`);
-                    }}
-                  >Export as Image</button>
-                </div>
-              </div>
-              <ComplianceCalendar data={complianceTrends} />
-            </div>
+                  {/* Compliance Analytics Section */}
+                  <div className="mb-8" ref={complianceSectionRef}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div
+                        className="font-semibold text-lg"
+                        style={{ color: theme.text.primary }}
+                      >
+                        Compliance Analytics (30 days)
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                          onClick={() => {
+                            const headers = [
+                              "Date",
+                              "Compliant",
+                              "Noncompliant",
+                              "Total",
+                            ];
+                            const rows = complianceTrends.map((d: any) => [
+                              d.date,
+                              d.compliant,
+                              d.noncompliant,
+                              d.total,
+                            ]);
+                            const csv = [headers, ...rows]
+                              .map((r) =>
+                                r
+                                  .map(
+                                    (x) =>
+                                      `"${(x || "").toString().replace(/"/g, '""')}"`,
+                                  )
+                                  .join(","),
+                              )
+                              .join("\n");
+                            const blob = new Blob([csv], { type: "text/csv" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `compliance_analytics_${new Date().toISOString().slice(0, 10)}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          Export CSV
+                        </button>
+                        <button
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                          onClick={() => {
+                            if (complianceSectionRef.current)
+                              exportNodeAsPng(
+                                complianceSectionRef.current,
+                                `compliance_analytics_${new Date().toISOString().slice(0, 10)}.png`,
+                              );
+                          }}
+                        >
+                          Export as Image
+                        </button>
+                      </div>
+                    </div>
+                    <ComplianceCalendar data={complianceTrends} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -240,27 +294,29 @@ export default function PartnerDashboard() {
             {/* User Info */}
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p 
+                <p
                   className="font-medium"
                   style={{ color: theme.navigation.text }}
                 >
                   {partnerInfo?.full_name || profile?.full_name}
                 </p>
-                <p 
+                <p
                   className="text-sm opacity-75"
                   style={{ color: theme.navigation.text }}
                 >
                   Partner Dashboard
                 </p>
               </div>
-              <div 
+              <div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-medium"
-                style={{ 
+                style={{
                   backgroundColor: theme.background,
-                  color: theme.primary 
+                  color: theme.primary,
                 }}
               >
-                {(partnerInfo?.full_name || profile?.full_name || 'U')[0].toUpperCase()}
+                {(partnerInfo?.full_name ||
+                  profile?.full_name ||
+                  "U")[0].toUpperCase()}
               </div>
             </div>
           </div>
@@ -272,23 +328,40 @@ export default function PartnerDashboard() {
         {/* Compliance Reminders/Notifications Section */}
         <div className="mb-8 rounded-lg p-6 bg-yellow-50 border-l-4 border-yellow-400">
           <div className="flex items-center justify-between mb-2">
-            <div className="font-semibold text-lg text-yellow-800">Compliance Reminders & Notifications</div>
+            <div className="font-semibold text-lg text-yellow-800">
+              Compliance Reminders & Notifications
+            </div>
             <button
               className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
               onClick={() => {
                 // Export reminders as CSV
-                const headers = ["Company","Type","Due","Status"];
-                const rows = complianceReminders.map((r: any) => [r.company, r.type, r.due, r.status]);
-                const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+                const headers = ["Company", "Type", "Due", "Status"];
+                const rows = complianceReminders.map((r: any) => [
+                  r.company,
+                  r.type,
+                  r.due,
+                  r.status,
+                ]);
+                const csv = [headers, ...rows]
+                  .map((r) =>
+                    r
+                      .map(
+                        (x) => `"${(x || "").toString().replace(/"/g, '""')}"`,
+                      )
+                      .join(","),
+                  )
+                  .join("\n");
                 const blob = new Blob([csv], { type: "text/csv" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `compliance_reminders_${new Date().toISOString().slice(0,10)}.csv`;
+                a.download = `compliance_reminders_${new Date().toISOString().slice(0, 10)}.csv`;
                 a.click();
                 URL.revokeObjectURL(url);
               }}
-            >Export CSV</button>
+            >
+              Export CSV
+            </button>
           </div>
           {reminderLoading ? (
             <div className="py-4 text-gray-400">Loading reminders…</div>
@@ -311,10 +384,17 @@ export default function PartnerDashboard() {
                     <td className="border p-2">{reminder.due}</td>
                     <td className="border p-2">{reminder.status}</td>
                     <td className="border p-2">
-                      {reminder.status === 'Pending' ? (
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded text-xs" onClick={() => alert('Reminder sent!')}>Send Reminder</button>
+                      {reminder.status === "Pending" ? (
+                        <button
+                          className="bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                          onClick={() => alert("Reminder sent!")}
+                        >
+                          Send Reminder
+                        </button>
                       ) : (
-                        <span className="text-green-700 font-semibold">Sent</span>
+                        <span className="text-green-700 font-semibold">
+                          Sent
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -325,8 +405,11 @@ export default function PartnerDashboard() {
         </div>
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2" style={{ color: theme.text.primary }}>
-            Welcome back, {partnerInfo?.full_name?.split(' ')[0] || 'Partner'}!
+          <h2
+            className="text-3xl font-bold mb-2"
+            style={{ color: theme.text.primary }}
+          >
+            Welcome back, {partnerInfo?.full_name?.split(" ")[0] || "Partner"}!
           </h2>
           <p style={{ color: theme.text.secondary }}>
             Here's your partner performance overview
@@ -374,39 +457,74 @@ export default function PartnerDashboard() {
         </div>
 
         {/* Referral Tracker Section with Compliance Status */}
-        <div 
+        <div
           className="rounded-lg p-6"
-          style={{ 
+          style={{
             backgroundColor: theme.cards.background,
             border: `1px solid ${theme.cards.border}`,
-            boxShadow: theme.cards.shadow
+            boxShadow: theme.cards.shadow,
           }}
         >
-          <h3 className="text-xl font-bold mb-4" style={{ color: theme.text.primary }}>
+          <h3
+            className="text-xl font-bold mb-4"
+            style={{ color: theme.text.primary }}
+          >
             Referral Tracker & Compliance Status
           </h3>
           <div className="space-y-4">
             {/* Example companies with compliance status */}
-            <div className="flex justify-between items-center p-4 rounded border-l-4" style={{ borderLeftColor: theme.primary }}>
+            <div
+              className="flex justify-between items-center p-4 rounded border-l-4"
+              style={{ borderLeftColor: theme.primary }}
+            >
               <div>
-                <h4 className="font-medium" style={{ color: theme.text.primary }}>ABC Transport Co.</h4>
-                <p className="text-sm" style={{ color: theme.text.secondary }}>Onboarded: Nov 1, 2025</p>
-                <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">Compliant</span>
+                <h4
+                  className="font-medium"
+                  style={{ color: theme.text.primary }}
+                >
+                  ABC Transport Co.
+                </h4>
+                <p className="text-sm" style={{ color: theme.text.secondary }}>
+                  Onboarded: Nov 1, 2025
+                </p>
+                <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">
+                  Compliant
+                </span>
               </div>
               <div className="text-right">
-                <p className="font-bold" style={{ color: theme.primary }}>$250.00</p>
-                <p className="text-sm" style={{ color: theme.text.secondary }}>Commission</p>
+                <p className="font-bold" style={{ color: theme.primary }}>
+                  $250.00
+                </p>
+                <p className="text-sm" style={{ color: theme.text.secondary }}>
+                  Commission
+                </p>
               </div>
             </div>
-            <div className="flex justify-between items-center p-4 rounded border-l-4" style={{ borderLeftColor: theme.primary }}>
+            <div
+              className="flex justify-between items-center p-4 rounded border-l-4"
+              style={{ borderLeftColor: theme.primary }}
+            >
               <div>
-                <h4 className="font-medium" style={{ color: theme.text.primary }}>XYZ Logistics</h4>
-                <p className="text-sm" style={{ color: theme.text.secondary }}>Onboarded: Oct 28, 2025</p>
-                <span className="text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded">Needs Attention</span>
+                <h4
+                  className="font-medium"
+                  style={{ color: theme.text.primary }}
+                >
+                  XYZ Logistics
+                </h4>
+                <p className="text-sm" style={{ color: theme.text.secondary }}>
+                  Onboarded: Oct 28, 2025
+                </p>
+                <span className="text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                  Needs Attention
+                </span>
               </div>
               <div className="text-right">
-                <p className="font-bold" style={{ color: theme.primary }}>$180.00</p>
-                <p className="text-sm" style={{ color: theme.text.secondary }}>Commission</p>
+                <p className="font-bold" style={{ color: theme.primary }}>
+                  $180.00
+                </p>
+                <p className="text-sm" style={{ color: theme.text.secondary }}>
+                  Commission
+                </p>
               </div>
             </div>
           </div>
@@ -416,59 +534,78 @@ export default function PartnerDashboard() {
         <div className="mt-8 flex space-x-4">
           <button
             className="px-6 py-3 rounded-lg font-medium text-white transition-colors"
-            style={{ 
+            style={{
               backgroundColor: theme.buttons.primary,
             }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.buttons.primaryHover}
-            onMouseOut={(e) => e.currentTarget.style.backgroundColor = theme.buttons.primary}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                theme.buttons.primaryHover)
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = theme.buttons.primary)
+            }
           >
             Add New Company
           </button>
           <button
             className="px-6 py-3 rounded-lg font-medium transition-colors"
-            style={{ 
+            style={{
               backgroundColor: theme.buttons.secondary,
-              color: theme.text.light
+              color: theme.text.light,
             }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = theme.buttons.secondaryHover}
-            onMouseOut={(e) => e.currentTarget.style.backgroundColor = theme.buttons.secondary}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                theme.buttons.secondaryHover)
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = theme.buttons.secondary)
+            }
           >
             View Reports
           </button>
         </div>
       </main>
     </div>
-  )
+  );
 }
 
-function StatCard({ title, value, theme, icon }: { 
-  title: string
-  value: string | number
-  theme: PartnerTheme
-  icon: string 
+function StatCard({
+  title,
+  value,
+  theme,
+  icon,
+}: {
+  title: string;
+  value: string | number;
+  theme: PartnerTheme;
+  icon: string;
 }) {
   return (
-    <div 
+    <div
       className="rounded-lg p-6 transition-transform hover:scale-105"
-      style={{ 
+      style={{
         backgroundColor: theme.cards.background,
         border: `1px solid ${theme.cards.border}`,
-        boxShadow: theme.cards.shadow
+        boxShadow: theme.cards.shadow,
       }}
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium" style={{ color: theme.text.secondary }}>
+          <p
+            className="text-sm font-medium"
+            style={{ color: theme.text.secondary }}
+          >
             {title}
           </p>
-          <p className="text-2xl font-bold" style={{ color: theme.text.primary }}>
+          <p
+            className="text-2xl font-bold"
+            style={{ color: theme.text.primary }}
+          >
             {value}
           </p>
         </div>
-        <div className="text-3xl opacity-60">
-          {icon}
-        </div>
+        <div className="text-3xl opacity-60">{icon}</div>
       </div>
     </div>
-  )
+  );
 }

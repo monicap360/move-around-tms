@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useState } from "react";
 
@@ -29,7 +28,9 @@ export default function TicketsPage({ params }) {
         <ul className="space-y-2">
           {tickets.map((ticket) => (
             <li key={ticket.id} className="border p-4 rounded bg-white shadow">
-              <div className="font-semibold">{ticket.title || `Ticket #${ticket.id}`}</div>
+              <div className="font-semibold">
+                {ticket.title || `Ticket #${ticket.id}`}
+              </div>
               <div>Status: {ticket.status}</div>
               <div>Amount: ${ticket.amount}</div>
             </li>

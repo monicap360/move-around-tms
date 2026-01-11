@@ -9,15 +9,15 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'Asset ID is required' },
-        { status: 400 }
+        { success: false, error: "Asset ID is required" },
+        { status: 400 },
       );
     }
 
@@ -26,7 +26,7 @@ export async function GET(
     if (result.error) {
       return NextResponse.json(
         { success: false, error: result.error.message },
-        { status: result.error.message.includes('not found') ? 404 : 400 }
+        { status: result.error.message.includes("not found") ? 404 : 400 },
       );
     }
 
@@ -34,12 +34,11 @@ export async function GET(
       success: true,
       data: result.data,
     });
-
   } catch (error) {
-    console.error('Error fetching company asset:', error);
+    console.error("Error fetching company asset:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch company asset' },
-      { status: 500 }
+      { success: false, error: "Failed to fetch company asset" },
+      { status: 500 },
     );
   }
 }
@@ -50,7 +49,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -58,14 +57,14 @@ export async function PUT(
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'Asset ID is required' },
-        { status: 400 }
+        { success: false, error: "Asset ID is required" },
+        { status: 400 },
       );
     }
 
     const { description, tags, metadata } = body;
     const updateData: any = {};
-    
+
     if (description !== undefined) updateData.description = description;
     if (tags !== undefined) updateData.tags = tags;
     if (metadata !== undefined) updateData.metadata = metadata;
@@ -75,21 +74,20 @@ export async function PUT(
     if (result.error) {
       return NextResponse.json(
         { success: false, error: result.error.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
       data: result.data,
-      message: 'Company asset updated successfully',
+      message: "Company asset updated successfully",
     });
-
   } catch (error) {
-    console.error('Error updating company asset:', error);
+    console.error("Error updating company asset:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update company asset' },
-      { status: 500 }
+      { success: false, error: "Failed to update company asset" },
+      { status: 500 },
     );
   }
 }
@@ -100,15 +98,15 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'Asset ID is required' },
-        { status: 400 }
+        { success: false, error: "Asset ID is required" },
+        { status: 400 },
       );
     }
 
@@ -117,20 +115,19 @@ export async function DELETE(
     if (result.error) {
       return NextResponse.json(
         { success: false, error: result.error.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Company asset deleted successfully',
+      message: "Company asset deleted successfully",
     });
-
   } catch (error) {
-    console.error('Error deleting company asset:', error);
+    console.error("Error deleting company asset:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete company asset' },
-      { status: 500 }
+      { success: false, error: "Failed to delete company asset" },
+      { status: 500 },
     );
   }
 }

@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function MarketplaceAIRates() {
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [weight, setWeight] = useState('');
-  const [rate, setRate] = useState<number|null>(null);
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [weight, setWeight] = useState("");
+  const [rate, setRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  function mockPredictRate(origin: string, destination: string, weight: string) {
+  function mockPredictRate(
+    origin: string,
+    destination: string,
+    weight: string,
+  ) {
     // Simple mock: $2.50/mile * 1000 miles * tons
     const miles = 1000; // TODO: Replace with real distance calc
     const tons = parseFloat(weight) || 1;
@@ -31,23 +35,45 @@ export default function MarketplaceAIRates() {
         <form onSubmit={handlePredict} className="space-y-4">
           <div>
             <label className="block font-semibold mb-1">Origin</label>
-            <input value={origin} onChange={e => setOrigin(e.target.value)} className="border rounded p-2 w-full" required />
+            <input
+              value={origin}
+              onChange={(e) => setOrigin(e.target.value)}
+              className="border rounded p-2 w-full"
+              required
+            />
           </div>
           <div>
             <label className="block font-semibold mb-1">Destination</label>
-            <input value={destination} onChange={e => setDestination(e.target.value)} className="border rounded p-2 w-full" required />
+            <input
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              className="border rounded p-2 w-full"
+              required
+            />
           </div>
           <div>
             <label className="block font-semibold mb-1">Weight (tons)</label>
-            <input value={weight} onChange={e => setWeight(e.target.value)} className="border rounded p-2 w-full" required />
+            <input
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="border rounded p-2 w-full"
+              required
+            />
           </div>
-          <button type="submit" className="bg-yellow-600 text-white px-6 py-2 rounded" disabled={loading}>
-            {loading ? 'Predicting…' : 'Predict Rate'}
+          <button
+            type="submit"
+            className="bg-yellow-600 text-white px-6 py-2 rounded"
+            disabled={loading}
+          >
+            {loading ? "Predicting…" : "Predict Rate"}
           </button>
         </form>
         {rate !== null && (
           <div className="mt-4 text-lg font-semibold text-yellow-700">
-            Predicted Rate: <span className="font-mono">${rate.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+            Predicted Rate:{" "}
+            <span className="font-mono">
+              ${rate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            </span>
           </div>
         )}
       </div>

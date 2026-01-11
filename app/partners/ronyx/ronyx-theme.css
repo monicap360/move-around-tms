@@ -3,20 +3,20 @@
 
 :root {
   /* RonYX Brand Colors */
-  --ronyx-primary: #F7931E;
-  --ronyx-bg: #1E1E1E;
-  --ronyx-text: #FFFFFF;
-  --ronyx-card: #2A2A2A;
+  --ronyx-primary: #f7931e;
+  --ronyx-bg: #1e1e1e;
+  --ronyx-text: #ffffff;
+  --ronyx-card: #2a2a2a;
   --ronyx-border: #404040;
-  --ronyx-hover: #E8851A;
-  --ronyx-success: #22C55E;
-  --ronyx-warning: #F59E0B;
-  --ronyx-danger: #EF4444;
+  --ronyx-hover: #e8851a;
+  --ronyx-success: #22c55e;
+  --ronyx-warning: #f59e0b;
+  --ronyx-danger: #ef4444;
 }
 
 /* Override global theme for RonYX sections */
 .ronyx-dashboard * {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 /* Custom RonYX Components */
@@ -202,7 +202,9 @@
 }
 
 @keyframes ronyx-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* RonYX Responsive Design */
@@ -210,11 +212,11 @@
   .ronyx-stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .ronyx-operators-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .ronyx-quick-actions {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -224,18 +226,18 @@
   .ronyx-header {
     padding: 1rem;
   }
-  
+
   .ronyx-logo-section {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
   }
-  
+
   .ronyx-user-info {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .ronyx-quick-actions {
     grid-template-columns: 1fr;
   }
@@ -263,12 +265,12 @@
     background: white !important;
     color: black !important;
   }
-  
+
   .ronyx-card {
     border: 1px solid #ccc !important;
     background: white !important;
   }
-  
+
   .ronyx-button {
     display: none;
   }

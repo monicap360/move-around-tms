@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 function unauthorized() {
-  return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(
+    { ok: false, message: "Unauthorized" },
+    { status: 401 },
+  );
 }
 
 // GET: Fetch all driver profiles for HR verification
@@ -17,7 +20,8 @@ export async function GET(req: NextRequest) {
   try {
     const { data: profiles, error } = await supabaseAdmin
       .from("drivers")
-      .select(`
+      .select(
+        `
         id,
         name,
         email,
@@ -33,14 +37,15 @@ export async function GET(req: NextRequest) {
         hr_notes,
         license_document_url,
         medical_card_url
-      `)
+      `,
+      )
       .order("profile_completion_date", { ascending: false });
 
     if (error) {
       console.error("Error fetching driver profiles:", error);
       return NextResponse.json(
         { ok: false, message: "Failed to fetch profiles" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -49,7 +54,7 @@ export async function GET(req: NextRequest) {
     console.error("Unexpected error:", err);
     return NextResponse.json(
       { ok: false, message: err.message || "Unexpected error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -70,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (!profileId || !field) {
       return NextResponse.json(
         { ok: false, message: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -101,7 +106,7 @@ export async function POST(req: NextRequest) {
       console.error("Error updating driver verification:", error);
       return NextResponse.json(
         { ok: false, message: "Failed to update verification" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -110,7 +115,7 @@ export async function POST(req: NextRequest) {
     console.error("Unexpected error:", err);
     return NextResponse.json(
       { ok: false, message: err.message || "Unexpected error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

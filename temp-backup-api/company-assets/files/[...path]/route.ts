@@ -9,38 +9,44 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const resolvedParams = await params;
-    const filePath = resolvedParams.path.join('/');
+    const filePath = resolvedParams.path.join("/");
     const { searchParams } = new URL(request.url);
-    const signed = searchParams.get('signed') === 'true';
-    const expiresIn = parseInt(searchParams.get('expires') || '3600');
+    const signed = searchParams.get("signed") === "true";
+    const expiresIn = parseInt(searchParams.get("expires") || "3600");
 
     if (!filePath) {
       return NextResponse.json(
-        { success: false, error: 'File path is required' },
-        { status: 400 }
+        { success: false, error: "File path is required" },
+        { status: 400 },
       );
     }
 
     // Validate file path prefix for security
-    if (!filePath.startsWith('logos/') && !filePath.startsWith('templates/tickets/')) {
+    if (
+      !filePath.startsWith("logos/") &&
+      !filePath.startsWith("templates/tickets/")
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Invalid file path' },
-        { status: 400 }
+        { success: false, error: "Invalid file path" },
+        { status: 400 },
       );
     }
 
     if (signed) {
       // Get signed URL for temporary access
-      const result = await CompanyAssetsStorageService.getSignedUrl(filePath, expiresIn);
-      
+      const result = await CompanyAssetsStorageService.getSignedUrl(
+        filePath,
+        expiresIn,
+      );
+
       if (result.error) {
         return NextResponse.json(
           { success: false, error: result.error.message },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -48,27 +54,27 @@ export async function GET(
         success: true,
         data: {
           signedUrl: result.data?.signedUrl,
-          expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString()
-        }
+          expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+        },
       });
     } else {
       // Get public URL
-      const publicUrl = await CompanyAssetsStorageService.getPublicUrl(filePath);
-      
+      const publicUrl =
+        await CompanyAssetsStorageService.getPublicUrl(filePath);
+
       return NextResponse.json({
         success: true,
         data: {
           publicUrl,
-          filePath
-        }
+          filePath,
+        },
       });
     }
-
   } catch (error) {
-    console.error('Error getting file URL:', error);
+    console.error("Error getting file URL:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to get file URL' },
-      { status: 500 }
+      { success: false, error: "Failed to get file URL" },
+      { status: 500 },
     );
   }
 }
@@ -79,24 +85,27 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const resolvedParams = await params;
-    const filePath = resolvedParams.path.join('/');
+    const filePath = resolvedParams.path.join("/");
 
     if (!filePath) {
       return NextResponse.json(
-        { success: false, error: 'File path is required' },
-        { status: 400 }
+        { success: false, error: "File path is required" },
+        { status: 400 },
       );
     }
 
     // Validate file path prefix for security
-    if (!filePath.startsWith('logos/') && !filePath.startsWith('templates/tickets/')) {
+    if (
+      !filePath.startsWith("logos/") &&
+      !filePath.startsWith("templates/tickets/")
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Invalid file path' },
-        { status: 400 }
+        { success: false, error: "Invalid file path" },
+        { status: 400 },
       );
     }
 
@@ -105,20 +114,19 @@ export async function DELETE(
     if (result.error) {
       return NextResponse.json(
         { success: false, error: result.error.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'File deleted successfully'
+      message: "File deleted successfully",
     });
-
   } catch (error) {
-    console.error('Error deleting file:', error);
+    console.error("Error deleting file:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete file' },
-      { status: 500 }
+      { success: false, error: "Failed to delete file" },
+      { status: 500 },
     );
   }
 }

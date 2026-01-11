@@ -2,22 +2,38 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Database, CheckCircle, XCircle, AlertTriangle, Upload } from "lucide-react";
+import {
+  Database,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Upload,
+} from "lucide-react";
 
 export default function SetupDatabasePage() {
   const [results, setResults] = useState<string[]>([]);
   const [working, setWorking] = useState(false);
 
   const addResult = (message: string) => {
-    setResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    setResults((prev) => [
+      ...prev,
+      `${new Date().toLocaleTimeString()}: ${message}`,
+    ]);
   };
 
   const createTicketTemplatesTables = async () => {
     setWorking(true);
     setResults([]);
-    addResult("🔄 Starting database setup for ticket templates and DVIR system...");
+    addResult(
+      "🔄 Starting database setup for ticket templates and DVIR system...",
+    );
 
     try {
       // SQL to create ticket_templates table
@@ -198,20 +214,20 @@ export default function SetupDatabasePage() {
 
       // Execute the SQL statements
       addResult("📋 Creating ticket_templates table...");
-      const { error: templatesError } = await supabase.rpc('exec_sql', { 
-        sql: ticketTemplatesSQL 
+      const { error: templatesError } = await supabase.rpc("exec_sql", {
+        sql: ticketTemplatesSQL,
       });
-      
+
       if (templatesError) {
         // Try alternative approach
         addResult("⚠️ RPC not available, using direct query...");
         const { error: directError } = await supabaseAdmin
-          .from('information_schema.tables')
-          .select('table_name')
-          .eq('table_name', 'ticket_templates')
+          .from("information_schema.tables")
+          .select("table_name")
+          .eq("table_name", "ticket_templates")
           .single();
-        
-        if (directError && directError.code === 'PGRST116') {
+
+        if (directError && directError.code === "PGRST116") {
           addResult("✅ ticket_templates table needs to be created manually");
         }
       } else {
@@ -219,55 +235,58 @@ export default function SetupDatabasePage() {
       }
 
       addResult("📋 Creating template_fields table...");
-      const { error: fieldsError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: templateFieldsSQL 
+      const { error: fieldsError } = await supabaseAdmin.rpc("exec_sql", {
+        sql: templateFieldsSQL,
       });
-      
+
       if (!fieldsError) {
         addResult("✅ template_fields table created successfully");
       }
 
       addResult("� Creating DVIR inspections table...");
-      const { error: dvirError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: dvirInspectionsSQL 
+      const { error: dvirError } = await supabaseAdmin.rpc("exec_sql", {
+        sql: dvirInspectionsSQL,
       });
-      
+
       if (!dvirError) {
         addResult("✅ dvir_inspections table created successfully");
       }
 
       addResult("📋 Creating DVIR defects table...");
-      const { error: defectsError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: dvirDefectsSQL 
+      const { error: defectsError } = await supabaseAdmin.rpc("exec_sql", {
+        sql: dvirDefectsSQL,
       });
-      
+
       if (!defectsError) {
         addResult("✅ dvir_defects table created successfully");
       }
 
       addResult("📋 Creating driver onboarding table...");
-      const { error: onboardingError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: driverOnboardingSQL 
+      const { error: onboardingError } = await supabaseAdmin.rpc("exec_sql", {
+        sql: driverOnboardingSQL,
       });
-      
+
       if (!onboardingError) {
         addResult("✅ driver_onboarding table created successfully");
       }
 
       addResult("📋 Creating onboarding documents table...");
-      const { error: onboardingDocsError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: onboardingDocsSQL 
-      });
-      
+      const { error: onboardingDocsError } = await supabaseAdmin.rpc(
+        "exec_sql",
+        {
+          sql: onboardingDocsSQL,
+        },
+      );
+
       if (!onboardingDocsError) {
         addResult("✅ driver_onboarding_documents table created successfully");
       }
 
       addResult("📋 Creating driver documents table...");
-      const { error: driverDocsError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: driverDocumentsSQL 
+      const { error: driverDocsError } = await supabaseAdmin.rpc("exec_sql", {
+        sql: driverDocumentsSQL,
       });
-      
+
       if (!driverDocsError) {
         addResult("✅ driver_documents table created successfully");
       }
@@ -307,8 +326,8 @@ export default function SetupDatabasePage() {
         CREATE INDEX IF NOT EXISTS idx_vehicles_dot_inspection_due ON vehicles(dot_inspection_due);
       `;
 
-      const { error: vehiclesError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: vehiclesSQL 
+      const { error: vehiclesError } = await supabaseAdmin.rpc("exec_sql", {
+        sql: vehiclesSQL,
       });
 
       if (vehiclesError) {
@@ -344,19 +363,24 @@ export default function SetupDatabasePage() {
         CREATE INDEX IF NOT EXISTS idx_maintenance_records_status ON maintenance_records(status);
       `;
 
-      const { error: maintenanceRecordsError } = await supabaseAdmin.rpc('exec_sql', { 
-        sql: maintenanceRecordsSQL 
-      });
+      const { error: maintenanceRecordsError } = await supabaseAdmin.rpc(
+        "exec_sql",
+        {
+          sql: maintenanceRecordsSQL,
+        },
+      );
 
       if (maintenanceRecordsError) {
-        addResult(`❌ Error creating maintenance_records table: ${maintenanceRecordsError.message}`);
+        addResult(
+          `❌ Error creating maintenance_records table: ${maintenanceRecordsError.message}`,
+        );
       } else {
         addResult("✅ maintenance_records table created successfully");
       }
 
       addResult(" Creating indexes and triggers...");
-      await supabaseAdmin.rpc('exec_sql', { sql: indexSQL });
-      await supabaseAdmin.rpc('exec_sql', { sql: triggerSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: indexSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: triggerSQL });
       addResult("✅ Indexes and triggers created successfully");
 
       // Create comprehensive ticket system tables
@@ -430,7 +454,7 @@ export default function SetupDatabasePage() {
         );
       `;
 
-      // Create fleet management table  
+      // Create fleet management table
       addResult("🚚 Creating fleet management table...");
       const fleetManagementSQL = `
         CREATE TABLE IF NOT EXISTS fleet_management (
@@ -494,43 +518,43 @@ export default function SetupDatabasePage() {
       `;
 
       // Execute all the new table creation SQL
-      await supabaseAdmin.rpc('exec_sql', { sql: aggregateTicketsSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: aggregateTicketsSQL });
       addResult("✅ Aggregate tickets table created successfully");
 
-      await supabaseAdmin.rpc('exec_sql', { sql: dotComplianceSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: dotComplianceSQL });
       addResult("✅ DOT compliance table created successfully");
 
-      await supabaseAdmin.rpc('exec_sql', { sql: regulatoryTrackingSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: regulatoryTrackingSQL });
       addResult("✅ Regulatory tracking table created successfully");
 
-      await supabaseAdmin.rpc('exec_sql', { sql: fleetManagementSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: fleetManagementSQL });
       addResult("✅ Fleet management table created successfully");
 
-      await supabaseAdmin.rpc('exec_sql', { sql: auditTrailSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: auditTrailSQL });
       addResult("✅ Audit trail table created successfully");
-      
-      await supabaseAdmin.rpc('exec_sql', { sql: dvirStatsFunction });
+
+      await supabaseAdmin.rpc("exec_sql", { sql: dvirStatsFunction });
       addResult("✅ DVIR statistics function created successfully");
 
       // Test the tables by checking if they exist
       addResult("🔍 Verifying table creation...");
-      
-      const { data: templatesTest, error: templatesTestError } = await supabaseAdmin
-        .from('ticket_templates')
-        .select('id')
-        .limit(1);
-      
+
+      const { data: templatesTest, error: templatesTestError } =
+        await supabaseAdmin.from("ticket_templates").select("id").limit(1);
+
       if (!templatesTestError) {
         addResult("✅ ticket_templates table is accessible");
       } else {
-        addResult(`❌ ticket_templates table error: ${templatesTestError.message}`);
+        addResult(
+          `❌ ticket_templates table error: ${templatesTestError.message}`,
+        );
       }
 
       const { data: fieldsTest, error: fieldsTestError } = await supabaseAdmin
-        .from('template_fields')
-        .select('id')
+        .from("template_fields")
+        .select("id")
         .limit(1);
-      
+
       if (!fieldsTestError) {
         addResult("✅ template_fields table is accessible");
       } else {
@@ -538,10 +562,10 @@ export default function SetupDatabasePage() {
       }
 
       const { data: dvirTest, error: dvirTestError } = await supabaseAdmin
-        .from('dvir_inspections')
-        .select('id')
+        .from("dvir_inspections")
+        .select("id")
         .limit(1);
-      
+
       if (!dvirTestError) {
         addResult("✅ dvir_inspections table is accessible");
       } else {
@@ -549,10 +573,10 @@ export default function SetupDatabasePage() {
       }
 
       const { data: defectsTest, error: defectsTestError } = await supabaseAdmin
-        .from('dvir_defects')
-        .select('id')
+        .from("dvir_defects")
+        .select("id")
         .limit(1);
-      
+
       if (!defectsTestError) {
         addResult("✅ dvir_defects table is accessible");
       } else {
@@ -560,29 +584,33 @@ export default function SetupDatabasePage() {
       }
 
       addResult("🎉 Database setup completed!");
-
     } catch (error) {
       addResult(`❌ Setup error: ${error}`);
-      console.error('Database setup error:', error);
+      console.error("Database setup error:", error);
     }
 
     setWorking(false);
   };
 
-  const createUser = async (email: string, password: string, role: string = 'office') => {
+  const createUser = async (
+    email: string,
+    password: string,
+    role: string = "office",
+  ) => {
     setWorking(true);
     addResult(`🔄 Creating user account for ${email}...`);
 
     try {
       // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        password: password,
-        email_confirm: true, // Auto-confirm email
-      });
+      const { data: authData, error: authError } =
+        await supabaseAdmin.auth.admin.createUser({
+          email: email,
+          password: password,
+          email_confirm: true, // Auto-confirm email
+        });
 
       if (authError || !authData.user) {
-        throw new Error(authError?.message || 'Failed to create user');
+        throw new Error(authError?.message || "Failed to create user");
       }
 
       addResult(`✅ User created in auth system with ID: ${authData.user.id}`);
@@ -600,16 +628,16 @@ export default function SetupDatabasePage() {
         );
       `;
 
-      await supabaseAdmin.rpc('exec_sql', { sql: userRolesSQL });
+      await supabaseAdmin.rpc("exec_sql", { sql: userRolesSQL });
       addResult("✅ user_roles table ready");
 
       // Insert role assignment
       const { error: roleError } = await supabaseAdmin
-        .from('user_roles')
-        .insert({ 
-          user_id: authData.user.id, 
-          role: role, 
-          company: 'Ronyx Logistics LLC' 
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: role,
+          company: "Ronyx Logistics LLC",
         });
 
       if (roleError) {
@@ -617,12 +645,13 @@ export default function SetupDatabasePage() {
       }
 
       addResult(`✅ Role '${role}' assigned successfully`);
-      addResult(`🎉 User ${email} is ready to log in with password: ${password}`);
+      addResult(
+        `🎉 User ${email} is ready to log in with password: ${password}`,
+      );
       addResult(`💡 User should visit /complete-profile after first login`);
-
     } catch (error: any) {
       addResult(`❌ User creation error: ${error.message}`);
-      console.error('User creation error:', error);
+      console.error("User creation error:", error);
     }
 
     setWorking(false);
@@ -635,66 +664,130 @@ export default function SetupDatabasePage() {
 
     try {
       const buckets = [
-        { 
-          name: 'logo', 
-          options: { public: true, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'image/svg+xml'] },
-          description: 'Company logo uploads'
+        {
+          name: "logo",
+          options: {
+            public: true,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "image/svg+xml",
+            ],
+          },
+          description: "Company logo uploads",
         },
-        { 
-          name: 'ticket-templates', 
-          options: { public: true, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'] },
-          description: 'Ticket template background images'
+        {
+          name: "ticket-templates",
+          options: {
+            public: true,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "application/pdf",
+            ],
+          },
+          description: "Ticket template background images",
         },
-        { 
-          name: 'invoice-templates', 
-          options: { public: true, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'] },
-          description: 'Invoice template assets'
+        {
+          name: "invoice-templates",
+          options: {
+            public: true,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "application/pdf",
+            ],
+          },
+          description: "Invoice template assets",
         },
-        { 
-          name: 'driver-documents', 
-          options: { public: false, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'] },
-          description: 'Driver document uploads (private)'
+        {
+          name: "driver-documents",
+          options: {
+            public: false,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "application/pdf",
+            ],
+          },
+          description: "Driver document uploads (private)",
         },
-        { 
-          name: 'dvir-photos', 
-          options: { public: false, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg'] },
-          description: 'DVIR inspection photos'
+        {
+          name: "dvir-photos",
+          options: {
+            public: false,
+            allowedMimeTypes: ["image/png", "image/jpg", "image/jpeg"],
+          },
+          description: "DVIR inspection photos",
         },
-        { 
-          name: 'company-assets', 
-          options: { public: false, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'] },
-          description: 'Company asset documentation'
+        {
+          name: "company-assets",
+          options: {
+            public: false,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "application/pdf",
+            ],
+          },
+          description: "Company asset documentation",
         },
-        { 
-          name: 'aggregate-tickets', 
-          options: { public: false, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'] },
-          description: 'Aggregate delivery tickets and receipts'
+        {
+          name: "aggregate-tickets",
+          options: {
+            public: false,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "application/pdf",
+            ],
+          },
+          description: "Aggregate delivery tickets and receipts",
         },
-        { 
-          name: 'compliance-documents', 
-          options: { public: false, allowedMimeTypes: ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'] },
-          description: 'DOT and regulatory compliance documents'
-        }
+        {
+          name: "compliance-documents",
+          options: {
+            public: false,
+            allowedMimeTypes: [
+              "image/png",
+              "image/jpg",
+              "image/jpeg",
+              "application/pdf",
+            ],
+          },
+          description: "DOT and regulatory compliance documents",
+        },
       ];
 
       for (const bucket of buckets) {
         addResult(`📁 Creating bucket: ${bucket.name}...`);
-        
-        const { data: existingBucket } = await supabaseAdmin
-          .storage
-          .getBucket(bucket.name);
+
+        const { data: existingBucket } = await supabaseAdmin.storage.getBucket(
+          bucket.name,
+        );
 
         if (existingBucket) {
           addResult(`✅ Bucket '${bucket.name}' already exists`);
         } else {
-          const { data, error } = await supabaseAdmin
-            .storage
-            .createBucket(bucket.name, bucket.options);
+          const { data, error } = await supabaseAdmin.storage.createBucket(
+            bucket.name,
+            bucket.options,
+          );
 
           if (error) {
-            addResult(`❌ Failed to create bucket '${bucket.name}': ${error.message}`);
+            addResult(
+              `❌ Failed to create bucket '${bucket.name}': ${error.message}`,
+            );
           } else {
-            addResult(`✅ Created bucket '${bucket.name}' - ${bucket.description}`);
+            addResult(
+              `✅ Created bucket '${bucket.name}' - ${bucket.description}`,
+            );
           }
         }
       }
@@ -708,12 +801,15 @@ export default function SetupDatabasePage() {
       addResult("• driver-documents - Private driver documents");
       addResult("• dvir-photos - DVIR inspection photos");
       addResult("• company-assets - Company asset documentation");
-      addResult("• aggregate-tickets - Aggregate delivery tickets and receipts");
-      addResult("• compliance-documents - DOT and regulatory compliance documents");
-
+      addResult(
+        "• aggregate-tickets - Aggregate delivery tickets and receipts",
+      );
+      addResult(
+        "• compliance-documents - DOT and regulatory compliance documents",
+      );
     } catch (error) {
       addResult(`❌ Storage setup error: ${error}`);
-      console.error('Storage setup error:', error);
+      console.error("Storage setup error:", error);
     }
 
     setWorking(false);
@@ -841,13 +937,14 @@ CREATE TRIGGER update_dvir_defects_updated_at
             Database Setup - Templates & DVIR System
           </CardTitle>
           <p className="text-sm text-gray-600">
-            Create the necessary database tables for ticket templates and DVIR system
+            Create the necessary database tables for ticket templates and DVIR
+            system
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-3">
-            <Button 
-              onClick={createTicketTemplatesTables} 
+            <Button
+              onClick={createTicketTemplatesTables}
               disabled={working}
               className="flex items-center gap-2"
             >
@@ -858,16 +955,16 @@ CREATE TRIGGER update_dvir_defects_updated_at
               )}
               Auto Setup Tables
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={showSQLStatements}
               className="flex items-center gap-2"
             >
               <Database className="h-4 w-4" />
               Show SQL Statements
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={setupStorageBuckets}
               disabled={working}
               className="flex items-center gap-2"
@@ -884,17 +981,26 @@ CREATE TRIGGER update_dvir_defects_updated_at
           {results.length > 0 && (
             <div className="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm max-h-96 overflow-y-auto">
               {results.map((result, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className={
-                    result.includes('✅') ? 'text-green-400' :
-                    result.includes('❌') ? 'text-red-400' :
-                    result.includes('⚠️') ? 'text-yellow-400' :
-                    result.includes('🔍') ? 'text-blue-400' :
-                    result.includes('📋') || result.includes('🔧') ? 'text-purple-400' :
-                    result.includes('🎉') ? 'text-green-300' :
-                    result.includes('--') || result.includes('CREATE') || result.includes('INSERT') ? 'text-cyan-300' :
-                    'text-gray-300'
+                    result.includes("✅")
+                      ? "text-green-400"
+                      : result.includes("❌")
+                        ? "text-red-400"
+                        : result.includes("⚠️")
+                          ? "text-yellow-400"
+                          : result.includes("🔍")
+                            ? "text-blue-400"
+                            : result.includes("📋") || result.includes("🔧")
+                              ? "text-purple-400"
+                              : result.includes("🎉")
+                                ? "text-green-300"
+                                : result.includes("--") ||
+                                    result.includes("CREATE") ||
+                                    result.includes("INSERT")
+                                  ? "text-cyan-300"
+                                  : "text-gray-300"
                   }
                 >
                   {result}
@@ -904,22 +1010,47 @@ CREATE TRIGGER update_dvir_defects_updated_at
           )}
 
           <div className="bg-blue-50 border border-blue-200 rounded p-4">
-            <h3 className="font-semibold text-blue-800 mb-2">What this creates:</h3>
+            <h3 className="font-semibold text-blue-800 mb-2">
+              What this creates:
+            </h3>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• <strong>ticket_templates</strong> - Stores template metadata and settings</li>
-              <li>• <strong>template_fields</strong> - Stores field definitions with positions</li>
-              <li>• <strong>dvir_inspections</strong> - Stores driver vehicle inspection reports</li>
-              <li>• <strong>dvir_defects</strong> - Tracks individual defects and corrections</li>
-              <li>• <strong>driver_onboarding</strong> - Tracks driver onboarding progress</li>
-              <li>• <strong>driver_onboarding_documents</strong> - Stores onboarding document uploads</li>
-              <li>• <strong>driver_documents</strong> - General driver document management</li>
+              <li>
+                • <strong>ticket_templates</strong> - Stores template metadata
+                and settings
+              </li>
+              <li>
+                • <strong>template_fields</strong> - Stores field definitions
+                with positions
+              </li>
+              <li>
+                • <strong>dvir_inspections</strong> - Stores driver vehicle
+                inspection reports
+              </li>
+              <li>
+                • <strong>dvir_defects</strong> - Tracks individual defects and
+                corrections
+              </li>
+              <li>
+                • <strong>driver_onboarding</strong> - Tracks driver onboarding
+                progress
+              </li>
+              <li>
+                • <strong>driver_onboarding_documents</strong> - Stores
+                onboarding document uploads
+              </li>
+              <li>
+                • <strong>driver_documents</strong> - General driver document
+                management
+              </li>
               <li>• Indexes for better query performance</li>
               <li>• Automatic timestamp updates on data changes</li>
             </ul>
           </div>
 
           <div className="bg-orange-50 border border-orange-200 rounded p-4">
-            <h3 className="font-semibold text-orange-800 mb-2">If Auto Setup Fails:</h3>
+            <h3 className="font-semibold text-orange-800 mb-2">
+              If Auto Setup Fails:
+            </h3>
             <ol className="text-sm text-orange-700 space-y-1">
               <li>1. Click "Show SQL Statements" button above</li>
               <li>2. Go to your Supabase Dashboard → SQL Editor</li>
@@ -943,15 +1074,19 @@ CREATE TRIGGER update_dvir_defects_updated_at
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-            <h3 className="font-semibold text-yellow-800 mb-2">Quick User Setup:</h3>
+            <h3 className="font-semibold text-yellow-800 mb-2">
+              Quick User Setup:
+            </h3>
             <p className="text-sm text-yellow-700">
               Create user account for sylviypena@yahoo.com with office role
             </p>
           </div>
 
           <div className="flex gap-3">
-            <Button 
-              onClick={() => createUser('sylviypena@yahoo.com', 'TempPass123!', 'office')} 
+            <Button
+              onClick={() =>
+                createUser("sylviypena@yahoo.com", "TempPass123!", "office")
+              }
               disabled={working}
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
             >
@@ -962,9 +1097,11 @@ CREATE TRIGGER update_dvir_defects_updated_at
               )}
               Create sylviypena@yahoo.com
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => createUser('admin@ronyxlogistics.com', 'AdminPass123!', 'admin')} 
+            <Button
+              variant="outline"
+              onClick={() =>
+                createUser("admin@ronyxlogistics.com", "AdminPass123!", "admin")
+              }
               disabled={working}
               className="flex items-center gap-2"
             >
@@ -974,12 +1111,23 @@ CREATE TRIGGER update_dvir_defects_updated_at
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded p-4">
-            <h3 className="font-semibold text-green-800 mb-2">Default Credentials:</h3>
+            <h3 className="font-semibold text-green-800 mb-2">
+              Default Credentials:
+            </h3>
             <ul className="text-sm text-green-700 space-y-1">
-              <li><strong>Email:</strong> sylviypena@yahoo.com</li>
-              <li><strong>Password:</strong> TempPass123!</li>
-              <li><strong>Role:</strong> office</li>
-              <li><strong>Next Step:</strong> Visit /complete-profile after first login</li>
+              <li>
+                <strong>Email:</strong> sylviypena@yahoo.com
+              </li>
+              <li>
+                <strong>Password:</strong> TempPass123!
+              </li>
+              <li>
+                <strong>Role:</strong> office
+              </li>
+              <li>
+                <strong>Next Step:</strong> Visit /complete-profile after first
+                login
+              </li>
             </ul>
           </div>
         </CardContent>

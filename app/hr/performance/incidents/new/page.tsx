@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { useState, useEffect } from "react";
@@ -31,7 +36,7 @@ export default function NewIncidentPage() {
     was_preventable: "",
     injuries_reported: false,
     police_report_filed: false,
-    investigation_status: "under_investigation"
+    investigation_status: "under_investigation",
   });
 
   useEffect(() => {
@@ -68,13 +73,18 @@ export default function NewIncidentPage() {
         location: formData.location || null,
         description: formData.description,
         vehicle_number: formData.vehicle_number || null,
-        was_preventable: formData.was_preventable === "true" ? true : formData.was_preventable === "false" ? false : null,
+        was_preventable:
+          formData.was_preventable === "true"
+            ? true
+            : formData.was_preventable === "false"
+              ? false
+              : null,
         injuries_reported: formData.injuries_reported,
         police_report_filed: formData.police_report_filed,
         investigation_status: formData.investigation_status,
         reported_by: "system", // In real app, this would be the current user
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
@@ -98,9 +108,9 @@ export default function NewIncidentPage() {
 
   function handleChange(e: any) {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   }
 
@@ -114,8 +124,12 @@ export default function NewIncidentPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Report New Incident</h1>
-          <p className="text-gray-600 mt-1">Document a driver incident for investigation</p>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Report New Incident
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Document a driver incident for investigation
+          </p>
         </div>
       </div>
 
@@ -290,7 +304,10 @@ export default function NewIncidentPage() {
                     id="injuries_reported"
                     className="rounded"
                   />
-                  <label htmlFor="injuries_reported" className="text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="injuries_reported"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Injuries were reported
                   </label>
                 </div>
@@ -304,7 +321,10 @@ export default function NewIncidentPage() {
                     id="police_report_filed"
                     className="rounded"
                   />
-                  <label htmlFor="police_report_filed" className="text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="police_report_filed"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Police report was filed
                   </label>
                 </div>
@@ -320,9 +340,13 @@ export default function NewIncidentPage() {
                   onChange={handleChange}
                   className="w-full border rounded-md px-3 py-2 bg-white"
                 >
-                  <option value="under_investigation">Under Investigation</option>
+                  <option value="under_investigation">
+                    Under Investigation
+                  </option>
                   <option value="pending_review">Pending Review</option>
-                  <option value="awaiting_documentation">Awaiting Documentation</option>
+                  <option value="awaiting_documentation">
+                    Awaiting Documentation
+                  </option>
                   <option value="closed">Closed</option>
                 </select>
               </div>

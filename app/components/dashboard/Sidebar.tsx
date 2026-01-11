@@ -6,7 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
 export default function Sidebar() {
@@ -42,9 +42,15 @@ export default function Sidebar() {
         <h1 className="text-xl font-bold mb-6">MoveAround TMS</h1>
         {/* PRIMARY */}
         <div className="space-y-1">
-          <Link href={`${base}/fast-scan`}><div className={linkClass}>Fast Scan</div></Link>
-          <Link href={`${base}/dashboards`}><div className={linkClass}>Dashboard</div></Link>
-          <Link href={`${base}/alerts`}><div className={linkClass}>Alerts</div></Link>
+          <Link href={`${base}/fast-scan`}>
+            <div className={linkClass}>Fast Scan</div>
+          </Link>
+          <Link href={`${base}/dashboards`}>
+            <div className={linkClass}>Dashboard</div>
+          </Link>
+          <Link href={`${base}/alerts`}>
+            <div className={linkClass}>Alerts</div>
+          </Link>
         </div>
 
         {/* ANALYTICS */}
@@ -57,9 +63,15 @@ export default function Sidebar() {
           </button>
           {showAnalytics && (
             <div className="mt-1 space-y-1">
-              <Link href={`${base}/dashboards/trends`}><div className={linkClass}>Trends</div></Link>
-              <Link href={`${base}/dashboards/sla`}><div className={linkClass}>SLA</div></Link>
-              <Link href={`${base}/dashboards/risk`}><div className={linkClass}>Risk</div></Link>
+              <Link href={`${base}/dashboards/trends`}>
+                <div className={linkClass}>Trends</div>
+              </Link>
+              <Link href={`${base}/dashboards/sla`}>
+                <div className={linkClass}>SLA</div>
+              </Link>
+              <Link href={`${base}/dashboards/risk`}>
+                <div className={linkClass}>Risk</div>
+              </Link>
             </div>
           )}
         </div>
@@ -74,15 +86,21 @@ export default function Sidebar() {
           </button>
           {showCompliance && (
             <div className="mt-1 space-y-1">
-              <Link href={`${base}/compliance`}><div className={linkClass}>Compliance</div></Link>
-              <Link href={`${base}/documents`}><div className={linkClass}>Documents</div></Link>
+              <Link href={`${base}/compliance`}>
+                <div className={linkClass}>Compliance</div>
+              </Link>
+              <Link href={`${base}/documents`}>
+                <div className={linkClass}>Documents</div>
+              </Link>
             </div>
           )}
         </div>
       </div>
       {/* FOOTER */}
       <div className="p-4 border-t border-slate-200">
-        <Link href={`${base}/settings`}><div className={linkClass}>Settings</div></Link>
+        <Link href={`${base}/settings`}>
+          <div className={linkClass}>Settings</div>
+        </Link>
       </div>
     </aside>
   );

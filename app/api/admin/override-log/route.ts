@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function GET(req: Request) {
   const supabase = createClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
+    process.env.SUPABASE_SERVICE_KEY!,
   );
 
   const { searchParams } = new URL(req.url);
@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     .eq("organization_id", org)
     .order("created_at", { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data || []);
 }

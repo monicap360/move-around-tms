@@ -1,19 +1,24 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
-import { 
-  Search, 
-  Plus, 
-  User, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  Search,
+  Plus,
+  User,
+  Phone,
+  Mail,
+  MapPin,
   Calendar,
   FileText,
   Award,
@@ -21,7 +26,7 @@ import {
   CheckCircle,
   Clock,
   Filter,
-  Users
+  Users,
 } from "lucide-react";
 
 type Driver = {
@@ -39,7 +44,7 @@ type Driver = {
   cdl_class: string;
   cdl_expiration: string;
   medical_cert_expiration: string;
-  status: 'Active' | 'Inactive' | 'On Leave' | 'Terminated';
+  status: "Active" | "Inactive" | "On Leave" | "Terminated";
   emergency_contact_name: string;
   emergency_contact_phone: string;
   date_of_birth: string;
@@ -62,7 +67,7 @@ export default function DriversPage() {
     totalDrivers: 0,
     activeDrivers: 0,
     expiringDocs: 0,
-    lowSafetyScore: 0
+    lowSafetyScore: 0,
   });
 
   useEffect(() => {
@@ -74,11 +79,13 @@ export default function DriversPage() {
       // Get drivers with document counts
       const { data: driversData, error } = await supabase
         .from("drivers_enhanced")
-        .select(`
+        .select(
+          `
           *,
           driver_documents (count),
           driver_documents_expiring (count)
-        `)
+        `,
+        )
         .order("name");
 
       if (error) {
@@ -90,23 +97,31 @@ export default function DriversPage() {
         ...driver,
         document_count: driver.driver_documents?.length || 0,
         expiring_docs: driver.driver_documents_expiring?.length || 0,
-        endorsements: driver.endorsements ? JSON.parse(driver.endorsements) : []
+        endorsements: driver.endorsements
+          ? JSON.parse(driver.endorsements)
+          : [],
       }));
 
       setDrivers(driversWithCounts);
 
       // Calculate stats
-      const activeDrivers = driversWithCounts.filter(d => d.status === 'Active').length;
-      const totalExpiringDocs = driversWithCounts.reduce((sum, d) => sum + d.expiring_docs, 0);
-      const lowSafetyDrivers = driversWithCounts.filter(d => d.safety_score < 70).length;
+      const activeDrivers = driversWithCounts.filter(
+        (d) => d.status === "Active",
+      ).length;
+      const totalExpiringDocs = driversWithCounts.reduce(
+        (sum, d) => sum + d.expiring_docs,
+        0,
+      );
+      const lowSafetyDrivers = driversWithCounts.filter(
+        (d) => d.safety_score < 70,
+      ).length;
 
       setStats({
         totalDrivers: driversWithCounts.length,
         activeDrivers,
         expiringDocs: totalExpiringDocs,
-        lowSafetyScore: lowSafetyDrivers
+        lowSafetyScore: lowSafetyDrivers,
       });
-
     } catch (err) {
       console.error("Error loading drivers:", err);
     } finally {
@@ -114,30 +129,37 @@ export default function DriversPage() {
     }
   }
 
-  const filteredDrivers = drivers.filter(driver => {
-    const matchesSearch = driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         driver.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         driver.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || driver.status === statusFilter;
-    
+  const filteredDrivers = drivers.filter((driver) => {
+    const matchesSearch =
+      driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" || driver.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
   function getStatusColor(status: string) {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Inactive': return 'bg-gray-100 text-gray-800';
-      case 'On Leave': return 'bg-yellow-100 text-yellow-800';
-      case 'Terminated': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "Active":
+        return "bg-green-100 text-green-800";
+      case "Inactive":
+        return "bg-gray-100 text-gray-800";
+      case "On Leave":
+        return "bg-yellow-100 text-yellow-800";
+      case "Terminated":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   }
 
   function getSafetyScoreColor(score: number) {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-yellow-600";
+    return "text-red-600";
   }
 
   if (loading) {
@@ -153,8 +175,12 @@ export default function DriversPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Driver Management</h1>
-          <p className="text-gray-600 mt-1">Manage driver profiles, certifications, and performance</p>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Driver Management
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage driver profiles, certifications, and performance
+          </p>
         </div>
         <div className="flex gap-3">
           <Link href="/hr/drivers/new">
@@ -164,9 +190,7 @@ export default function DriversPage() {
             </Button>
           </Link>
           <Link href="/hr">
-            <Button variant="outline">
-              Back to HR
-            </Button>
+            <Button variant="outline">Back to HR</Button>
           </Link>
         </div>
       </div>
@@ -190,7 +214,9 @@ export default function DriversPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Active Drivers</p>
-                <p className="text-2xl font-bold text-green-600">{stats.activeDrivers}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.activeDrivers}
+                </p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
@@ -202,7 +228,9 @@ export default function DriversPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Expiring Documents</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.expiringDocs}</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {stats.expiringDocs}
+                </p>
               </div>
               <Clock className="w-8 h-8 text-orange-500" />
             </div>
@@ -214,7 +242,9 @@ export default function DriversPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Safety Alerts</p>
-                <p className="text-2xl font-bold text-red-600">{stats.lowSafetyScore}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats.lowSafetyScore}
+                </p>
               </div>
               <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
@@ -267,7 +297,9 @@ export default function DriversPage() {
             <div className="text-center py-8">
               <User className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 text-lg">No drivers found</p>
-              <p className="text-gray-400">Try adjusting your search criteria or add a new driver</p>
+              <p className="text-gray-400">
+                Try adjusting your search criteria or add a new driver
+              </p>
               <Link href="/hr/drivers/new">
                 <Button className="mt-4">
                   <Plus className="w-4 h-4 mr-2" />
@@ -295,9 +327,13 @@ export default function DriversPage() {
                       <td className="p-3">
                         <div>
                           <div className="font-medium">{driver.name}</div>
-                          <div className="text-gray-500 text-xs">ID: {driver.employee_id}</div>
+                          <div className="text-gray-500 text-xs">
+                            ID: {driver.employee_id}
+                          </div>
                           {driver.years_experience && (
-                            <div className="text-gray-500 text-xs">{driver.years_experience} years exp.</div>
+                            <div className="text-gray-500 text-xs">
+                              {driver.years_experience} years exp.
+                            </div>
                           )}
                         </div>
                       </td>
@@ -319,27 +355,41 @@ export default function DriversPage() {
                       </td>
                       <td className="p-3">
                         <div>
-                          <div className="font-medium">Class {driver.cdl_class}</div>
-                          <div className="text-xs text-gray-500"># {driver.cdl_number}</div>
+                          <div className="font-medium">
+                            Class {driver.cdl_class}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            # {driver.cdl_number}
+                          </div>
                           {driver.cdl_expiration && (
                             <div className="text-xs text-gray-500">
-                              Exp: {new Date(driver.cdl_expiration).toLocaleDateString()}
+                              Exp:{" "}
+                              {new Date(
+                                driver.cdl_expiration,
+                              ).toLocaleDateString()}
                             </div>
                           )}
-                          {driver.endorsements && driver.endorsements.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {driver.endorsements.slice(0, 3).map((endorsement, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {endorsement}
-                                </Badge>
-                              ))}
-                              {driver.endorsements.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{driver.endorsements.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
+                          {driver.endorsements &&
+                            driver.endorsements.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {driver.endorsements
+                                  .slice(0, 3)
+                                  .map((endorsement, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {endorsement}
+                                    </Badge>
+                                  ))}
+                                {driver.endorsements.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{driver.endorsements.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                         </div>
                       </td>
                       <td className="p-3">
@@ -348,17 +398,22 @@ export default function DriversPage() {
                         </Badge>
                         {driver.hire_date && (
                           <div className="text-xs text-gray-500 mt-1">
-                            Hired: {new Date(driver.hire_date).toLocaleDateString()}
+                            Hired:{" "}
+                            {new Date(driver.hire_date).toLocaleDateString()}
                           </div>
                         )}
                       </td>
                       <td className="p-3">
-                        <div className={`text-2xl font-bold ${getSafetyScoreColor(driver.safety_score)}`}>
-                          {driver.safety_score || 'N/A'}
+                        <div
+                          className={`text-2xl font-bold ${getSafetyScoreColor(driver.safety_score)}`}
+                        >
+                          {driver.safety_score || "N/A"}
                         </div>
                         {driver.safety_score && (
                           <div className="text-xs text-gray-500">
-                            {driver.total_miles ? `${(driver.total_miles / 1000).toFixed(0)}k miles` : 'No miles logged'}
+                            {driver.total_miles
+                              ? `${(driver.total_miles / 1000).toFixed(0)}k miles`
+                              : "No miles logged"}
                           </div>
                         )}
                       </td>
@@ -366,12 +421,16 @@ export default function DriversPage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-1">
                             <FileText className="w-3 h-3 text-green-500" />
-                            <span className="text-sm">{driver.document_count} docs</span>
+                            <span className="text-sm">
+                              {driver.document_count} docs
+                            </span>
                           </div>
                           {driver.expiring_docs > 0 && (
                             <div className="flex items-center gap-1">
                               <AlertCircle className="w-3 h-3 text-orange-500" />
-                              <span className="text-sm text-orange-600">{driver.expiring_docs} expiring</span>
+                              <span className="text-sm text-orange-600">
+                                {driver.expiring_docs} expiring
+                              </span>
                             </div>
                           )}
                         </div>

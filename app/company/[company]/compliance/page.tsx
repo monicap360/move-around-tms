@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 interface Violation {
   ruleId: string;
-  status: 'pass' | 'warn' | 'fail';
+  status: "pass" | "warn" | "fail";
   reason: string;
   evidence: string[];
   timestamp: string;
@@ -17,7 +17,7 @@ export default function CompliancePage() {
     async function fetchViolations() {
       setLoading(true);
       // Replace 'org-1' with actual organizationId
-      const res = await fetch('/api/compliance/list?organizationId=org-1');
+      const res = await fetch("/api/compliance/list?organizationId=org-1");
       const data = await res.json();
       setViolations(data.violations || []);
       setLoading(false);
@@ -28,15 +28,40 @@ export default function CompliancePage() {
   return (
     <div style={{ padding: 40 }}>
       <h1>Compliance</h1>
-      <p>Automated compliance checks and violation tracking for this company.</p>
+      <p>
+        Automated compliance checks and violation tracking for this company.
+      </p>
 
       {/* Related actions block */}
-      <div style={{ marginTop: 24, marginBottom: 24, background: '#f8fafc', padding: 16, borderRadius: 8 }}>
+      <div
+        style={{
+          marginTop: 24,
+          marginBottom: 24,
+          background: "#f8fafc",
+          padding: 16,
+          borderRadius: 8,
+        }}
+      >
         <strong>Related:</strong>
-        <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-          <a href="../alerts" style={{ color: '#2563eb', textDecoration: 'underline' }}>View Alerts</a>
-          <a href="../documents" style={{ color: '#2563eb', textDecoration: 'underline' }}>View Documents</a>
-          <a href="../fast-scan" style={{ color: '#2563eb', textDecoration: 'underline' }}>View Fast Scan</a>
+        <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+          <a
+            href="../alerts"
+            style={{ color: "#2563eb", textDecoration: "underline" }}
+          >
+            View Alerts
+          </a>
+          <a
+            href="../documents"
+            style={{ color: "#2563eb", textDecoration: "underline" }}
+          >
+            View Documents
+          </a>
+          <a
+            href="../fast-scan"
+            style={{ color: "#2563eb", textDecoration: "underline" }}
+          >
+            View Fast Scan
+          </a>
         </div>
       </div>
 
@@ -47,7 +72,9 @@ export default function CompliancePage() {
         ) : violations.length === 0 ? (
           <p>No violations found.</p>
         ) : (
-          <table style={{ width: '100%', marginTop: 16, borderCollapse: 'collapse' }}>
+          <table
+            style={{ width: "100%", marginTop: 16, borderCollapse: "collapse" }}
+          >
             <thead>
               <tr>
                 <th>Rule</th>
@@ -63,7 +90,7 @@ export default function CompliancePage() {
                   <td>{v.ruleId}</td>
                   <td>{v.status}</td>
                   <td>{v.reason}</td>
-                  <td>{v.evidence.join(', ')}</td>
+                  <td>{v.evidence.join(", ")}</td>
                   <td>{v.timestamp}</td>
                 </tr>
               ))}

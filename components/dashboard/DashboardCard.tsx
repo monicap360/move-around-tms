@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface DashboardCardProps {
   title: string;
@@ -11,7 +11,7 @@ export default function DashboardCard({
   title,
   value,
   icon,
-  color = 'bg-gradient-to-r from-blue-500 to-blue-600',
+  color = "bg-gradient-to-r from-blue-500 to-blue-600",
 }: DashboardCardProps) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all hover:scale-105">

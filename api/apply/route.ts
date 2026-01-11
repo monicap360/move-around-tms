@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function POST(req: NextRequest) {
@@ -24,22 +24,27 @@ export async function POST(req: NextRequest) {
         .from("driver-applications")
         .upload(`resumes/${Date.now()}_${resume.name}`, resume, {
           cacheControl: "3600",
-          upsert: false
+          upsert: false,
         });
       if (error) throw new Error("Resume upload failed");
-      resumeUrl = data?.path ? supabase.storage.from("driver-applications").getPublicUrl(data.path).publicUrl : null;
+      resumeUrl = data?.path
+        ? supabase.storage.from("driver-applications").getPublicUrl(data.path)
+            .publicUrl
+        : null;
     }
 
     // Insert application record
-    const { error: insertError } = await supabase.from("driver_applications").insert({
-      name,
-      email,
-      phone,
-      experience,
-      license_type: licenseType,
-      notes,
-      resume_url: resumeUrl
-    });
+    const { error: insertError } = await supabase
+      .from("driver_applications")
+      .insert({
+        name,
+        email,
+        phone,
+        experience,
+        license_type: licenseType,
+        notes,
+        resume_url: resumeUrl,
+      });
     if (insertError) throw new Error("Failed to save application");
 
     return NextResponse.json({ success: true });

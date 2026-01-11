@@ -5,23 +5,27 @@
 /* === CSS VARIABLES === */
 :root {
   /* Ronyx Brand Colors */
-  --ronyx-orange: #F7931E;
+  --ronyx-orange: #f7931e;
   --ronyx-black: #000000;
-  --ronyx-white: #FFFFFF;
-  --ronyx-gray: #1E1E1E;
+  --ronyx-white: #ffffff;
+  --ronyx-gray: #1e1e1e;
   --ronyx-light-gray: #cccccc;
-  
+
   /* Font Family */
-  --font-primary: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  
+  --font-primary: "Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
   /* Gradients */
-  --gradient-main: linear-gradient(135deg, var(--ronyx-black) 70%, var(--ronyx-orange) 100%);
+  --gradient-main: linear-gradient(
+    135deg,
+    var(--ronyx-black) 70%,
+    var(--ronyx-orange) 100%
+  );
   --gradient-card: rgba(0, 0, 0, 0.85);
-  
+
   /* Shadows */
   --shadow-orange: 0 0 25px rgba(247, 147, 30, 0.45);
   --shadow-logo: drop-shadow(0 0 8px var(--ronyx-orange));
-  
+
   /* Transitions */
   --transition-smooth: all 0.3s ease;
 }
@@ -392,8 +396,12 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* === FOOTER === */
@@ -415,33 +423,33 @@ body {
   .header {
     padding: 1rem;
   }
-  
+
   .header-content {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .logo-section {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .main-content {
     padding: 1rem;
   }
-  
+
   .login-box {
     padding: 2rem 1.5rem;
   }
-  
+
   .welcome-section {
     padding: 2rem 1.5rem;
   }
-  
+
   .welcome-title {
     font-size: 1.8rem;
   }
-  
+
   .grid-2,
   .grid-3 {
     grid-template-columns: 1fr;
@@ -453,11 +461,11 @@ body {
     margin: 1rem;
     padding: 2rem 1rem;
   }
-  
+
   .card {
     padding: 1.5rem;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
@@ -486,12 +494,12 @@ body {
   .btn {
     display: none !important;
   }
-  
+
   body {
     background: white !important;
     color: black !important;
   }
-  
+
   .card {
     border: 1px solid #ccc !important;
     box-shadow: none !important;

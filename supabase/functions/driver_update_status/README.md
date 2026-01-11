@@ -3,12 +3,14 @@
 Allows authenticated drivers to update their assigned load status.
 
 ## Requirements
+
 - Must be authenticated via Supabase Auth
 - Load must belong to driver and organization
 - Table: loads
 - Table: load_status_history
 
 ## Deploy
+
 supabase functions deploy driver_update_status --project-ref YOUR_PROJECT --region us-west-2
 
 🚀 Deployment Command

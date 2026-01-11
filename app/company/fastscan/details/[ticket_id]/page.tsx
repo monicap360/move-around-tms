@@ -89,9 +89,7 @@ export default function FastScanTicketDetails() {
 
           <div>
             <div className="text-sm text-muted">Customer</div>
-            <div className="font-medium">
-              {customer?.company_name ?? "—"}
-            </div>
+            <div className="font-medium">{customer?.company_name ?? "—"}</div>
           </div>
 
           <div>
@@ -113,9 +111,7 @@ export default function FastScanTicketDetails() {
 
           <div>
             <div className="text-sm text-muted">Total Profit</div>
-            <div className="font-medium">
-              ${ticket.total_profit.toFixed(2)}
-            </div>
+            <div className="font-medium">${ticket.total_profit.toFixed(2)}</div>
           </div>
         </div>
       </Card>

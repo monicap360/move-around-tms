@@ -1,5 +1,5 @@
 // Invoice data model for accounting module
-export type InvoiceStatus = 'pending' | 'paid' | 'overdue';
+export type InvoiceStatus = "pending" | "paid" | "overdue";
 
 export interface InvoiceLineItem {
   description: string;

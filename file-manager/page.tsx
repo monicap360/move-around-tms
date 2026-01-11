@@ -1,15 +1,28 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 // Using custom Alert component since ../components/ui/alert doesn't exist
-const Alert = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={`border rounded p-4 ${className}`}>{children}</div>
-);
-const AlertDescription = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <div className={className}>{children}</div>
-);
+const Alert = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={`border rounded p-4 ${className}`}>{children}</div>;
+const AlertDescription = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={className}>{children}</div>;
 
 interface FileItem {
   id: string;
@@ -44,10 +57,12 @@ export default function FileManagerPage() {
 
   // Admin status from database
   const [isAdmin, setIsAdmin] = useState(false);
-  
+
   // Separate personal and shared files
-  const personalFiles = files.filter(file => !file.name.startsWith('shared/'));
-  const sharedFiles = files.filter(file => file.name.startsWith('shared/'));
+  const personalFiles = files.filter(
+    (file) => !file.name.startsWith("shared/"),
+  );
+  const sharedFiles = files.filter((file) => file.name.startsWith("shared/"));
 
   // Load files and check admin status on component mount
   useEffect(() => {
@@ -59,12 +74,12 @@ export default function FileManagerPage() {
     try {
       const res = await fetch("/api/admin/check");
       const data = await res.json();
-      
+
       if (res.ok) {
         setIsAdmin(data.isAdmin || false);
       }
     } catch (err) {
-      console.error('Error checking admin status:', err);
+      console.error("Error checking admin status:", err);
       setIsAdmin(false);
     }
   };
@@ -73,23 +88,25 @@ export default function FileManagerPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const res = await fetch("/api/storage/list");
       const json = await res.json();
-      
-      if (!res.ok) throw new Error(json.error || 'Failed to load files');
-      
+
+      if (!res.ok) throw new Error(json.error || "Failed to load files");
+
       setFiles(json.files || []);
       setUser(json.user);
     } catch (err: any) {
       setError(err.message);
-      console.error('Error loading files:', err);
+      console.error("Error loading files:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
@@ -99,49 +116,50 @@ export default function FileManagerPage() {
       setError(null);
 
       const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('folder', user?.id || '');
+      formData.append("file", selectedFile);
+      formData.append("folder", user?.id || "");
 
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
 
       const res = await fetch("/api/storage/upload", {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
       });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
       const json = await res.json();
-      
-      if (!res.ok) throw new Error(json.error || 'Upload failed');
+
+      if (!res.ok) throw new Error(json.error || "Upload failed");
 
       // Reload files to show the new upload
       await loadFiles();
-      
+
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
-
     } catch (err: any) {
       setError(err.message);
-      console.error('Upload error:', err);
+      console.error("Upload error:", err);
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
   };
 
-  const handleSharedFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSharedFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
     if (!isAdmin) {
-      setError('Only admins can upload to shared folder');
+      setError("Only admins can upload to shared folder");
       return;
     }
 
@@ -150,28 +168,27 @@ export default function FileManagerPage() {
       setError(null);
 
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      formData.append("file", selectedFile);
 
       const res = await fetch("/api/storage/shared-upload", {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
       });
 
       const json = await res.json();
-      
-      if (!res.ok) throw new Error(json.error || 'Shared upload failed');
+
+      if (!res.ok) throw new Error(json.error || "Shared upload failed");
 
       // Reload files to show the new upload
       await loadFiles();
-      
+
       // Reset file input
       if (sharedFileInputRef.current) {
-        sharedFileInputRef.current.value = '';
+        sharedFileInputRef.current.value = "";
       }
-
     } catch (err: any) {
       setError(err.message);
-      console.error('Shared upload error:', err);
+      console.error("Shared upload error:", err);
     } finally {
       setUploadingShared(false);
     }
@@ -186,37 +203,38 @@ export default function FileManagerPage() {
       });
 
       const json = await res.json();
-      
-      if (!res.ok) throw new Error(json.error || 'Failed to get download link');
+
+      if (!res.ok) throw new Error(json.error || "Failed to get download link");
 
       // Open in new tab for viewing/downloading
       window.open(json.signedUrl, "_blank");
-      
     } catch (err: any) {
       setError(`Download failed: ${err.message}`);
-      console.error('Download error:', err);
+      console.error("Download error:", err);
     }
   };
 
   const handleFileDelete = async (file: FileItem) => {
-    const isSharedFile = file.name.startsWith('shared/');
-    
+    const isSharedFile = file.name.startsWith("shared/");
+
     if (!confirm(`Are you sure you want to delete "${file.fileName}"?`)) {
       return;
     }
 
     // Check admin permission for shared files
     if (isSharedFile && !isAdmin) {
-      setError('Only admins can delete shared files');
+      setError("Only admins can delete shared files");
       return;
     }
 
     try {
       setError(null);
-      
-      const endpoint = isSharedFile ? "/api/storage/shared-delete" : "/api/storage/delete";
+
+      const endpoint = isSharedFile
+        ? "/api/storage/shared-delete"
+        : "/api/storage/delete";
       const method = isSharedFile ? "POST" : "DELETE";
-      
+
       const res = await fetch(endpoint, {
         method: method,
         headers: { "Content-Type": "application/json" },
@@ -224,41 +242,43 @@ export default function FileManagerPage() {
       });
 
       const json = await res.json();
-      
-      if (!res.ok) throw new Error(json.error || 'Delete failed');
+
+      if (!res.ok) throw new Error(json.error || "Delete failed");
 
       // Remove from local state immediately for better UX
-      setFiles(prev => prev.filter(f => f.id !== file.id));
-      
+      setFiles((prev) => prev.filter((f) => f.id !== file.id));
     } catch (err: any) {
       setError(`Delete failed: ${err.message}`);
-      console.error('Delete error:', err);
+      console.error("Delete error:", err);
     }
   };
 
   const getFileIcon = (file: FileItem) => {
-    if (file.isImage) return '🖼️';
-    if (file.extension === 'pdf') return '📄';
-    if (['doc', 'docx'].includes(file.extension)) return '📝';
-    if (['xls', 'xlsx'].includes(file.extension)) return '📊';
-    if (['ppt', 'pptx'].includes(file.extension)) return '📽️';
-    return '📎';
+    if (file.isImage) return "🖼️";
+    if (file.extension === "pdf") return "📄";
+    if (["doc", "docx"].includes(file.extension)) return "📝";
+    if (["xls", "xlsx"].includes(file.extension)) return "📊";
+    if (["ppt", "pptx"].includes(file.extension)) return "📽️";
+    return "📎";
   };
 
   const getFileTypeColor = (file: FileItem) => {
-    if (file.isImage) return 'bg-green-100 text-green-800';
-    if (file.extension === 'pdf') return 'bg-red-100 text-red-800';
-    if (file.isDocument) return 'bg-blue-100 text-blue-800';
-    return 'bg-gray-100 text-gray-800';
+    if (file.isImage) return "bg-green-100 text-green-800";
+    if (file.extension === "pdf") return "bg-red-100 text-red-800";
+    if (file.isDocument) return "bg-blue-100 text-blue-800";
+    return "bg-gray-100 text-gray-800";
   };
 
   const groupFilesByFolder = (files: FileItem[]) => {
-    const grouped = files.reduce((acc, file) => {
-      const folder = file.user_folder;
-      if (!acc[folder]) acc[folder] = [];
-      acc[folder].push(file);
-      return acc;
-    }, {} as Record<string, FileItem[]>);
+    const grouped = files.reduce(
+      (acc, file) => {
+        const folder = file.user_folder;
+        if (!acc[folder]) acc[folder] = [];
+        acc[folder].push(file);
+        return acc;
+      },
+      {} as Record<string, FileItem[]>,
+    );
 
     return grouped;
   };
@@ -287,9 +307,7 @@ export default function FileManagerPage() {
             <Badge variant="outline">{files.length} files</Badge>
           </CardTitle>
           {user && (
-            <p className="text-sm text-gray-600">
-              Logged in as: {user.email}
-            </p>
+            <p className="text-sm text-gray-600">Logged in as: {user.email}</p>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
@@ -313,23 +331,26 @@ export default function FileManagerPage() {
               className="hidden"
               id="file-upload"
             />
-            <label 
-              htmlFor="file-upload" 
-              className={`cursor-pointer ${uploading ? 'opacity-50' : ''}`}
+            <label
+              htmlFor="file-upload"
+              className={`cursor-pointer ${uploading ? "opacity-50" : ""}`}
             >
               <div className="mb-2 text-4xl">📁</div>
               <div className="font-semibold mb-1">
-                {uploading ? 'Uploading Personal Files...' : 'Upload Personal Files'}
+                {uploading
+                  ? "Uploading Personal Files..."
+                  : "Upload Personal Files"}
               </div>
               <div className="text-sm text-gray-500">
-                Your private files - Supports: Images, PDFs, Documents (Max 50MB)
+                Your private files - Supports: Images, PDFs, Documents (Max
+                50MB)
               </div>
             </label>
-            
+
             {uploading && (
               <div className="mt-4">
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
@@ -351,25 +372,28 @@ export default function FileManagerPage() {
                 className="hidden"
                 id="shared-file-upload"
               />
-              <label 
-                htmlFor="shared-file-upload" 
-                className={`cursor-pointer ${uploadingShared ? 'opacity-50' : ''}`}
+              <label
+                htmlFor="shared-file-upload"
+                className={`cursor-pointer ${uploadingShared ? "opacity-50" : ""}`}
               >
                 <div className="mb-2 text-4xl">🌐</div>
                 <div className="font-semibold mb-1 text-green-800">
-                  {uploadingShared ? 'Uploading Shared Files...' : '👑 Upload Shared Files (Admin Only)'}
+                  {uploadingShared
+                    ? "Uploading Shared Files..."
+                    : "👑 Upload Shared Files (Admin Only)"}
                 </div>
                 <div className="text-sm text-green-700">
-                  Shared with all users - Supports: Images, PDFs, Documents (Max 50MB)
+                  Shared with all users - Supports: Images, PDFs, Documents (Max
+                  50MB)
                 </div>
               </label>
-              
+
               {uploadingShared && (
                 <div className="mt-4">
                   <div className="w-full bg-green-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: '100%' }}
+                      style={{ width: "100%" }}
                     ></div>
                   </div>
                   <p className="text-sm text-green-700 mt-1">Uploading...</p>
@@ -406,13 +430,21 @@ export default function FileManagerPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {personalFiles.map((file) => (
-                    <Card key={file.id} className="border-l-4 border-l-blue-500">
+                    <Card
+                      key={file.id}
+                      className="border-l-4 border-l-blue-500"
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl">{getFileIcon(file)}</span>
+                            <span className="text-2xl">
+                              {getFileIcon(file)}
+                            </span>
                             <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-sm truncate" title={file.fileName}>
+                              <div
+                                className="font-semibold text-sm truncate"
+                                title={file.fileName}
+                              >
                                 {file.fileName}
                               </div>
                               <div className="text-xs text-gray-500">
@@ -420,7 +452,10 @@ export default function FileManagerPage() {
                               </div>
                             </div>
                           </div>
-                          <Badge className={getFileTypeColor(file)} variant="outline">
+                          <Badge
+                            className={getFileTypeColor(file)}
+                            variant="outline"
+                          >
                             {file.extension.toUpperCase()}
                           </Badge>
                         </div>
@@ -460,19 +495,29 @@ export default function FileManagerPage() {
                 <CardTitle className="text-lg flex items-center gap-2">
                   <span>🌐</span>
                   <span>Shared Files (All Users)</span>
-                  <Badge variant="outline" className="bg-green-100">{sharedFiles.length} files</Badge>
+                  <Badge variant="outline" className="bg-green-100">
+                    {sharedFiles.length} files
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sharedFiles.map((file) => (
-                    <Card key={file.id} className="border-l-4 border-l-green-500">
+                    <Card
+                      key={file.id}
+                      className="border-l-4 border-l-green-500"
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl">{getFileIcon(file)}</span>
+                            <span className="text-2xl">
+                              {getFileIcon(file)}
+                            </span>
                             <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-sm truncate" title={file.fileName}>
+                              <div
+                                className="font-semibold text-sm truncate"
+                                title={file.fileName}
+                              >
                                 {file.fileName}
                               </div>
                               <div className="text-xs text-gray-500">
@@ -480,18 +525,18 @@ export default function FileManagerPage() {
                               </div>
                             </div>
                           </div>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${file.isImage ? 'bg-purple-100' : file.isDocument ? 'bg-blue-100' : 'bg-gray-100'}`}
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${file.isImage ? "bg-purple-100" : file.isDocument ? "bg-blue-100" : "bg-gray-100"}`}
                           >
                             {file.extension}
                           </Badge>
                         </div>
-                        
+
                         <div className="text-xs text-gray-500 mb-3">
                           📅 {new Date(file.created_at).toLocaleDateString()}
                         </div>
-                        
+
                         <div className="flex gap-2">
                           <Button
                             size="sm"

@@ -16,7 +16,12 @@ export default function PlantMaterials({ params }: any) {
     <div className="p-10">
       <h1 className="text-2xl font-bold mb-6">Aggregate Materials</h1>
       <div className="glass-card p-6 rounded-xl mb-6">
-        <a href="materials/new" className="glass-card p-3 rounded-lg bg-cyan-600 text-white font-bold inline-block">➕ Add Material</a>
+        <a
+          href="materials/new"
+          className="glass-card p-3 rounded-lg bg-cyan-600 text-white font-bold inline-block"
+        >
+          ➕ Add Material
+        </a>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {materials.map((m: any) => (

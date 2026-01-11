@@ -1,8 +1,8 @@
 // Automated invoice generation on Zelle payment approval
-import { createInvoice, markInvoicePaid } from './invoice.logic';
-import { insertInvoice, updateInvoice } from './supabase';
-import { InvoiceLineItem } from './invoice.types';
-import { generateAndUploadInvoicePDF } from './pdf-upload';
+import { createInvoice, markInvoicePaid } from "./invoice.logic";
+import { insertInvoice, updateInvoice } from "./supabase";
+import { InvoiceLineItem } from "./invoice.types";
+import { generateAndUploadInvoicePDF } from "./pdf-upload";
 
 // Call this when a Zelle payment is approved by admin
 export async function handleZellePaymentApproved(payment: {
@@ -17,10 +17,13 @@ export async function handleZellePaymentApproved(payment: {
   const invoice = createInvoice({
     user_id: payment.user_id,
     amount: payment.amount,
-    description: payment.description || 'Subscription Payment',
+    description: payment.description || "Subscription Payment",
     due_at: payment.created_at,
     line_items: [
-      { description: payment.description || 'Subscription', amount: payment.amount }
+      {
+        description: payment.description || "Subscription",
+        amount: payment.amount,
+      },
     ],
     zelle_receipt_url: payment.file_url,
   });

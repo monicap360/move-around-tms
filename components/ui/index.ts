@@ -6,7 +6,13 @@ export { Input } from "./input";
 export { Label } from "./label";
 export { LoadingOverlay } from "./loading-overlay";
 export { Progress } from "./progress";
-export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+export {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 export { SimpleSelect } from "./simple-select";
 export { SimpleTabs } from "./simple-tabs";
 export { Spinner } from "./spinner";

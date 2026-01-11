@@ -1,7 +1,7 @@
 {
   "brand": "ROnyx Fleet Management",
   "primary": "#F7931E",
-  "secondary": "#1E1E1E", 
+  "secondary": "#1E1E1E",
   "background": "#1E1E1E",
   "accent": "#F7931E",
   "text": {
@@ -17,7 +17,7 @@
     "hover": "#F7931E"
   },
   "cards": {
-    "background": "#2A2A2A", 
+    "background": "#2A2A2A",
     "border": "#404040",
     "shadow": "0 4px 12px rgba(247, 147, 30, 0.2)"
   },

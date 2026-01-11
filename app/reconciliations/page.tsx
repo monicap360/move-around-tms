@@ -1,5 +1,10 @@
 "use client";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 
 export default function ReconciliationsPage() {
   return (
@@ -9,8 +14,14 @@ export default function ReconciliationsPage() {
           <CardTitle>Ticket Reconciliation</CardTitle>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Upload vendor CSV files (Martin Marietta, CEMEX, S-5, Train) for comparison with scanned tickets.</p>
-          <p>Automatically match ticket numbers, dates, truck IDs, and flag any rate discrepancies.</p>
+          <p>
+            Upload vendor CSV files (Martin Marietta, CEMEX, S-5, Train) for
+            comparison with scanned tickets.
+          </p>
+          <p>
+            Automatically match ticket numbers, dates, truck IDs, and flag any
+            rate discrepancies.
+          </p>
           <p>Generate reconciliation summary and export to Excel/PDF.</p>
         </CardContent>
       </Card>

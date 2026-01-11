@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export default function TicketPayrollView({ driver }) {
@@ -40,10 +40,7 @@ export default function TicketPayrollView({ driver }) {
             </p>
             <p>Rate: ${t.rate}</p>
             <p>
-              Pay: {" "}
-              <b>
-                ${(t.weight_out - t.weight_in) * (t.rate / 2000)}
-              </b>
+              Pay: <b>${(t.weight_out - t.weight_in) * (t.rate / 2000)}</b>
             </p>
           </div>
         ))}

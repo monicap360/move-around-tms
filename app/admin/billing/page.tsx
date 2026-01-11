@@ -1,4 +1,3 @@
-
 "use client";
 import React from "react";
 
@@ -11,14 +10,28 @@ export default function AdminBillingPage() {
         {/* Example: List of pending payments with receipt screenshot and approve/reject buttons */}
         <div className="mb-4">
           <div className="flex items-center mb-2">
-            <img src="/example-receipt.png" alt="Receipt" className="h-16 w-16 rounded mr-4 border" />
+            <img
+              src="/example-receipt.png"
+              alt="Receipt"
+              className="h-16 w-16 rounded mr-4 border"
+            />
             <div>
-              <div><span className="font-bold">Company:</span> Example Co</div>
-              <div><span className="font-bold">Amount:</span> $3,500 (Setup Fee)</div>
-              <div><span className="font-bold">Payment Method:</span> Zelle</div>
+              <div>
+                <span className="font-bold">Company:</span> Example Co
+              </div>
+              <div>
+                <span className="font-bold">Amount:</span> $3,500 (Setup Fee)
+              </div>
+              <div>
+                <span className="font-bold">Payment Method:</span> Zelle
+              </div>
             </div>
-            <button className="ml-auto bg-green-600 text-white px-3 py-1 rounded font-semibold">Approve</button>
-            <button className="ml-2 bg-red-600 text-white px-3 py-1 rounded font-semibold">Reject</button>
+            <button className="ml-auto bg-green-600 text-white px-3 py-1 rounded font-semibold">
+              Approve
+            </button>
+            <button className="ml-2 bg-red-600 text-white px-3 py-1 rounded font-semibold">
+              Reject
+            </button>
           </div>
         </div>
         <p>Review uploaded receipts and approve access for paid customers.</p>

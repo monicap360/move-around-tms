@@ -9,15 +9,19 @@ export default function MarketplaceHome() {
         MoveAround Marketplace™
       </h1>
       <p className="opacity-70 max-w-2xl">
-        Exchange loads, collaborate with partner fleets, compare rates,
-        and streamline material deliveries across your network.
+        Exchange loads, collaborate with partner fleets, compare rates, and
+        streamline material deliveries across your network.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card href="/marketplace/browse" title="Browse Loads" emoji="📦" />
         <Card href="/marketplace/post" title="Post a Load" emoji="➕" />
         <Card href="/marketplace/partners" title="Partner Network" emoji="🤝" />
-        <Card href="/marketplace/ai-rates" title="AI Rate Prediction" emoji="🧠" />
+        <Card
+          href="/marketplace/ai-rates"
+          title="AI Rate Prediction"
+          emoji="🧠"
+        />
         <Card href="/marketplace/my-loads" title="My Loads" emoji="📋" />
       </div>
     </div>

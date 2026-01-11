@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const client = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function GET(_req, { params }) {
@@ -15,7 +15,8 @@ export async function GET(_req, { params }) {
     .eq("driver_uuid", driver_uuid)
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
     id: data.id,
@@ -32,6 +33,6 @@ export async function GET(_req, { params }) {
     truck_skin: data.truck_skin,
     custom_logo_url: data.custom_logo_url,
     resume: data.resume_json,
-    updated_at: data.rank_updated_at
+    updated_at: data.rank_updated_at,
   });
 }

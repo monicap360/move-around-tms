@@ -1,13 +1,14 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { Invoice } from '../../accounting/invoice.types';
-import { fetchInvoicesForUser } from '../../accounting/supabase';
+import { useEffect, useState } from "react";
+import { Invoice } from "../../accounting/invoice.types";
+import { fetchInvoicesForUser } from "../../accounting/supabase";
 
 export default function AccountingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   // TODO: Replace with real user ID from auth context
-  const user_id = typeof window !== 'undefined' ? localStorage.getItem('user_id') || '' : '';
+  const user_id =
+    typeof window !== "undefined" ? localStorage.getItem("user_id") || "" : "";
 
   useEffect(() => {
     if (!user_id) return;
@@ -35,15 +36,24 @@ export default function AccountingPage() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map(inv => (
+            {invoices.map((inv) => (
               <tr key={inv.id} className="border-t">
-                <td className="p-2">{inv.id.slice(0,8)}</td>
-                <td className="p-2">${inv.amount.toFixed(2)} {inv.currency}</td>
+                <td className="p-2">{inv.id.slice(0, 8)}</td>
+                <td className="p-2">
+                  ${inv.amount.toFixed(2)} {inv.currency}
+                </td>
                 <td className="p-2 capitalize">{inv.status}</td>
-                <td className="p-2">{inv.issued_at.slice(0,10)}</td>
+                <td className="p-2">{inv.issued_at.slice(0, 10)}</td>
                 <td className="p-2">
                   {inv.pdf_url ? (
-                    <a href={inv.pdf_url} target="_blank" rel="noopener" className="text-blue-600 underline">Download</a>
+                    <a
+                      href={inv.pdf_url}
+                      target="_blank"
+                      rel="noopener"
+                      className="text-blue-600 underline"
+                    >
+                      Download
+                    </a>
                   ) : (
                     <span className="text-gray-400">N/A</span>
                   )}

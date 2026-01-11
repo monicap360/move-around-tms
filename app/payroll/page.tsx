@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -20,7 +19,6 @@ type PayrollRow = {
   all_void: boolean;
 };
 
-
 export default function PayrollPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,19 +26,28 @@ export default function PayrollPage() {
   const [weekStart, setWeekStart] = useState<string>("");
 
   // Compute summary from rows
-  const summary = rows.length > 0 ? {
-    totalDrivers: rows.length,
-    totalTickets: rows.reduce((sum, r) => sum + (r.tickets_count || 0), 0),
-    approvedTickets: rows.reduce((sum, r) => sum + (r.approved_count || 0), 0),
-    grossPay: rows.reduce((sum, r) => sum + (r.total_driver_pay || 0), 0),
-    netPay: rows.reduce((sum, r) => sum + (r.total_driver_pay || 0), 0), // Adjust if you have net pay logic
-  } : {
-    totalDrivers: 0,
-    totalTickets: 0,
-    approvedTickets: 0,
-    grossPay: 0,
-    netPay: 0,
-  };
+  const summary =
+    rows.length > 0
+      ? {
+          totalDrivers: rows.length,
+          totalTickets: rows.reduce(
+            (sum, r) => sum + (r.tickets_count || 0),
+            0,
+          ),
+          approvedTickets: rows.reduce(
+            (sum, r) => sum + (r.approved_count || 0),
+            0,
+          ),
+          grossPay: rows.reduce((sum, r) => sum + (r.total_driver_pay || 0), 0),
+          netPay: rows.reduce((sum, r) => sum + (r.total_driver_pay || 0), 0), // Adjust if you have net pay logic
+        }
+      : {
+          totalDrivers: 0,
+          totalTickets: 0,
+          approvedTickets: 0,
+          grossPay: 0,
+          netPay: 0,
+        };
 
   useEffect(() => {
     if (!weekStart) setWeekStart(computeCurrentFridayISODate());
@@ -71,30 +78,43 @@ export default function PayrollPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
-      padding: 0,
-    }}>
-      <h1 style={{ fontSize: 48, fontWeight: 700, marginBottom: 16, color: '#1e293b' }}>Payroll</h1>
-      <p style={{ fontSize: 20, color: '#475569', marginBottom: 32 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
+        padding: 0,
+      }}
+    >
+      <h1
+        style={{
+          fontSize: 48,
+          fontWeight: 700,
+          marginBottom: 16,
+          color: "#1e293b",
+        }}
+      >
+        Payroll
+      </h1>
+      <p style={{ fontSize: 20, color: "#475569", marginBottom: 32 }}>
         Manage driver pay, tickets, and payroll reports.
       </p>
-      <div style={{
-        background: '#e0e7ef',
-        borderRadius: 16,
-        boxShadow: '0 2px 8px rgba(30,41,59,0.08)',
-        padding: 32,
-        minWidth: 340,
-        minHeight: 180,
-        width: '100%',
-        maxWidth: 1200,
-        marginBottom: 24,
-      }}>
+      <div
+        style={{
+          background: "#e0e7ef",
+          borderRadius: 16,
+          boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
+          padding: 32,
+          minWidth: 340,
+          minHeight: 180,
+          width: "100%",
+          maxWidth: 1200,
+          marginBottom: 24,
+        }}
+      >
         {/* Header */}
         <Card className="shadow-lg border bg-white">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
@@ -103,7 +123,9 @@ export default function PayrollPage() {
           <CardContent className="mt-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Week (Friday)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Week (Friday)
+                </label>
                 <input
                   type="date"
                   value={weekStart}
@@ -114,7 +136,9 @@ export default function PayrollPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{error}</div>
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                {error}
+              </div>
             )}
 
             {/* Summary */}
@@ -123,8 +147,14 @@ export default function PayrollPage() {
                 <SummaryItem label="Drivers" value={summary.totalDrivers} />
                 <SummaryItem label="Tickets" value={summary.totalTickets} />
                 <SummaryItem label="Approved" value={summary.approvedTickets} />
-                <SummaryItem label="Gross Pay" value={`$${summary.grossPay.toFixed(2)}`} />
-                <SummaryItem label="Net Pay" value={`$${summary.netPay.toFixed(2)}`} />
+                <SummaryItem
+                  label="Gross Pay"
+                  value={`$${summary.grossPay.toFixed(2)}`}
+                />
+                <SummaryItem
+                  label="Net Pay"
+                  value={`$${summary.netPay.toFixed(2)}`}
+                />
               </div>
             )}
           </CardContent>
@@ -153,7 +183,10 @@ export default function PayrollPage() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={`${r.driver_id}-${r.pay_day}`} className="border-b hover:bg-gray-50">
+                  <tr
+                    key={`${r.driver_id}-${r.pay_day}`}
+                    className="border-b hover:bg-gray-50"
+                  >
                     <Td>{r.driver_name}</Td>
                     <Td>{r.driver_suffix ?? ""}</Td>
                     <Td>{r.driver_license ?? ""}</Td>
@@ -170,12 +203,20 @@ export default function PayrollPage() {
           </div>
         )}
       </div>
-      <footer style={{ color: '#94a3b8', fontSize: 14, marginTop: 40 }}>© {new Date().getFullYear()} Move Around TMS</footer>
+      <footer style={{ color: "#94a3b8", fontSize: 14, marginTop: 40 }}>
+        © {new Date().getFullYear()} Move Around TMS
+      </footer>
     </div>
   );
 }
 
-function SummaryItem({ label, value }: { label: string; value: string | number }) {
+function SummaryItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
   return (
     <div>
       <div className="text-xs text-gray-500">{label}</div>
@@ -185,7 +226,11 @@ function SummaryItem({ label, value }: { label: string; value: string | number }
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">{children}</th>;
+  return (
+    <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+      {children}
+    </th>
+  );
 }
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="p-3">{children}</td>;
@@ -196,7 +241,9 @@ function computeCurrentFridayISODate(): string {
   const day = now.getUTCDay(); // 0..6
   const iso = ((day + 6) % 7) + 1; // 1..7
   const daysToFriday = (5 - iso + 7) % 7;
-  const friday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const friday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
   friday.setUTCDate(friday.getUTCDate() + daysToFriday);
   return friday.toISOString().slice(0, 10);
 }

@@ -7,7 +7,7 @@ import { User, LogOut, Settings } from "lucide-react";
 export function UserMenu() {
   // const { user, signOut } = useAuth(); // 🚨 REMOVED - Authentication disabled
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // 🚨 DEMO USER MODE - Always show menu
   const user = { email: "demo@movearoundtms.com", name: "Demo User" };
 
@@ -25,7 +25,7 @@ export function UserMenu() {
         className="flex items-center gap-2 p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
       >
         <User className="w-4 h-4" />
-        <span className="text-xs">{user.email?.split('@')[0]}</span>
+        <span className="text-xs">{user.email?.split("@")[0]}</span>
       </button>
 
       {isOpen && (

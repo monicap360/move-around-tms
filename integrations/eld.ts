@@ -22,17 +22,20 @@ export interface ELDProvider {
 
 // Example: Samsara integration stub
 export const samsara: ELDProvider = {
-  name: 'Samsara',
+  name: "Samsara",
   async fetchDriverLocations() {
     // Example: Fetch driver locations from Samsara API
     try {
       const apiKey = process.env.SAMSARA_API_KEY || "YOUR_SAMSARA_API_KEY";
-      const res = await fetch("https://api.samsara.com/v1/fleet/drivers/locations", {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Accept": "application/json"
-        }
-      });
+      const res = await fetch(
+        "https://api.samsara.com/v1/fleet/drivers/locations",
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Accept: "application/json",
+          },
+        },
+      );
       if (!res.ok) throw new Error("Samsara API error: " + res.status);
       const data = await res.json();
       // Map to standard format
@@ -42,7 +45,7 @@ export const samsara: ELDProvider = {
         lat: d.location?.latitude,
         lon: d.location?.longitude,
         status: d.status,
-        updatedAt: d.location?.time
+        updatedAt: d.location?.time,
       }));
     } catch (err) {
       console.error("Samsara fetchDriverLocations error", err);
@@ -54,9 +57,9 @@ export const samsara: ELDProvider = {
       const apiKey = process.env.SAMSARA_API_KEY || "YOUR_SAMSARA_API_KEY";
       const res = await fetch("https://api.samsara.com/v1/fleet/vehicles", {
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Accept": "application/json"
-        }
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json",
+        },
       });
       if (!res.ok) throw new Error("Samsara API error: " + res.status);
       const data = await res.json();
@@ -66,7 +69,7 @@ export const samsara: ELDProvider = {
         status: v.status,
         lat: v.location?.latitude,
         lon: v.location?.longitude,
-        updatedAt: v.location?.time
+        updatedAt: v.location?.time,
       }));
     } catch (err) {
       console.error("Samsara fetchTruckStatus error", err);
@@ -76,19 +79,22 @@ export const samsara: ELDProvider = {
   async fetchHOS() {
     try {
       const apiKey = process.env.SAMSARA_API_KEY || "YOUR_SAMSARA_API_KEY";
-      const res = await fetch("https://api.samsara.com/v1/fleet/hos/duty_status", {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Accept": "application/json"
-        }
-      });
+      const res = await fetch(
+        "https://api.samsara.com/v1/fleet/hos/duty_status",
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Accept: "application/json",
+          },
+        },
+      );
       if (!res.ok) throw new Error("Samsara API error: " + res.status);
       const data = await res.json();
       return (data.drivers || []).map((d: any) => ({
         id: d.id,
         name: d.name,
         hosStatus: d.hosStatus,
-        updatedAt: d.hosStatusUpdatedAt
+        updatedAt: d.hosStatusUpdatedAt,
       }));
     } catch (err) {
       console.error("Samsara fetchHOS error", err);
@@ -99,35 +105,47 @@ export const samsara: ELDProvider = {
 
 // Production-ready KeepTruckin integration stub
 export const keepTruckin: ELDProvider = {
-  name: 'KeepTruckin',
+  name: "KeepTruckin",
   async fetchDriverLocations() {
     // TODO: Integrate with KeepTruckin API
-    throw new Error('KeepTruckin integration not configured. Please add API credentials and implement fetchDriverLocations.');
+    throw new Error(
+      "KeepTruckin integration not configured. Please add API credentials and implement fetchDriverLocations.",
+    );
   },
   async fetchTruckStatus() {
     // TODO: Integrate with KeepTruckin API
-    throw new Error('KeepTruckin integration not configured. Please add API credentials and implement fetchTruckStatus.');
+    throw new Error(
+      "KeepTruckin integration not configured. Please add API credentials and implement fetchTruckStatus.",
+    );
   },
   async fetchHOS() {
     // TODO: Integrate with KeepTruckin API
-    throw new Error('KeepTruckin integration not configured. Please add API credentials and implement fetchHOS.');
+    throw new Error(
+      "KeepTruckin integration not configured. Please add API credentials and implement fetchHOS.",
+    );
   },
 };
 
 // Production-ready Geotab integration stub
 export const geotab: ELDProvider = {
-  name: 'Geotab',
+  name: "Geotab",
   async fetchDriverLocations() {
     // TODO: Integrate with Geotab API
-    throw new Error('Geotab integration not configured. Please add API credentials and implement fetchDriverLocations.');
+    throw new Error(
+      "Geotab integration not configured. Please add API credentials and implement fetchDriverLocations.",
+    );
   },
   async fetchTruckStatus() {
     // TODO: Integrate with Geotab API
-    throw new Error('Geotab integration not configured. Please add API credentials and implement fetchTruckStatus.');
+    throw new Error(
+      "Geotab integration not configured. Please add API credentials and implement fetchTruckStatus.",
+    );
   },
   async fetchHOS() {
     // TODO: Integrate with Geotab API
-    throw new Error('Geotab integration not configured. Please add API credentials and implement fetchHOS.');
+    throw new Error(
+      "Geotab integration not configured. Please add API credentials and implement fetchHOS.",
+    );
   },
 };
 

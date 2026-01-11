@@ -2,22 +2,22 @@ module.exports = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate'
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
           },
           {
-            key: 'Pragma',
-            value: 'no-cache'
+            key: "Pragma",
+            value: "no-cache",
           },
           {
-            key: 'Expires',
-            value: '0'
-          }
-        ]
-      }
-    ]
-  }
-}
+            key: "Expires",
+            value: "0",
+          },
+        ],
+      },
+    ];
+  },
+};

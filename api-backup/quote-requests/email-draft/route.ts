@@ -1,29 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const name: string = body?.name || 'there'
-  const company: string | undefined = body?.company
+  const body = await req.json();
+  const name: string = body?.name || "there";
+  const company: string | undefined = body?.company;
 
-  const subject = `Your Aggregate Hauling Quote Request`
-  const greeting = name && name.toLowerCase() !== 'there' ? `Hi ${name},` : `Hello,`
-  const companyLine = company ? `${company} — ` : ''
+  const subject = `Your Aggregate Hauling Quote Request`;
+  const greeting =
+    name && name.toLowerCase() !== "there" ? `Hi ${name},` : `Hello,`;
+  const companyLine = company ? `${company} — ` : "";
   const text = [
     `${greeting}`,
-    '',
+    "",
     `Thanks for reaching out about aggregate hauling. ${companyLine}we'd love to help. To provide accurate pricing, please confirm:`,
-    '',
+    "",
     `• Material type and source`,
     `• Pickup and delivery locations`,
     `• Estimated tonnage or loads`,
     `• Desired timeline and any special requirements`,
-    '',
+    "",
     `Once we have those details, we’ll send a formal quote the same day.`,
-    '',
+    "",
     `Best regards,`,
     `Ronyx Logistics LLC`,
     `quotes@ronyxlogistics.com`,
-  ].join('\n')
+  ].join("\n");
 
   const html = `
   <p>${greeting}</p>
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
   </ul>
   <p>Once we have those details, we’ll send a formal quote the same day.</p>
   <p>Best regards,<br/>Ronyx Logistics LLC<br/>quotes@ronyxlogistics.com</p>
-  `
+  `;
 
-  return NextResponse.json({ subject, text, html })
+  return NextResponse.json({ subject, text, html });
 }

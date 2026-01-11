@@ -30,7 +30,7 @@ export default function RonyxLoginPage() {
 
     const role = data.user?.user_metadata?.role;
     const userEmail = data.user?.email;
-    
+
     // Special routing for Veronica's ROnyx Fleet Management
     if (userEmail === "melidazvl@outlook.com" || role === "manager") {
       router.push("/veronica"); // ROnyx Manager Dashboard

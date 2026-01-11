@@ -14,7 +14,7 @@ export const defaultBranding: BrandingConfig = {
   faviconUrl: "/favicon.ico",
   primaryColor: "#3b82f6",
   accentColor: "#2563eb",
-  backgroundColor: "#f8fafc"
+  backgroundColor: "#f8fafc",
 };
 
 // In future: fetch per-tenant branding from Supabase or domain

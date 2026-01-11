@@ -15,12 +15,9 @@ export default function DriverMarketplace() {
     async function fetchDrivers() {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
-      const { data } = await supabase
-        .from("drivers")
-        .select("*")
-        .order("rank");
+      const { data } = await supabase.from("drivers").select("*").order("rank");
       setDrivers(data || []);
     }
     fetchDrivers();
@@ -30,10 +27,9 @@ export default function DriverMarketplace() {
     let d = drivers;
     if (search)
       d = d.filter((driver) =>
-        driver.full_name.toLowerCase().includes(search.toLowerCase())
+        driver.full_name.toLowerCase().includes(search.toLowerCase()),
       );
-    if (filterRank)
-      d = d.filter((driver) => driver.rank === filterRank);
+    if (filterRank) d = d.filter((driver) => driver.rank === filterRank);
     setFiltered(d);
   }, [drivers, search, filterRank]);
 
@@ -48,7 +44,9 @@ export default function DriverMarketplace() {
 
   return (
     <div className="p-8 text-white bg-black min-h-screen">
-      <h1 className="text-4xl font-bold mb-6">MoveAround Professional Drivers</h1>
+      <h1 className="text-4xl font-bold mb-6">
+        MoveAround Professional Drivers
+      </h1>
       <div className="flex gap-4 mb-6">
         <input
           className="p-3 rounded bg-gray-900 text-white w-64"
@@ -63,7 +61,9 @@ export default function DriverMarketplace() {
         >
           <option value="">All Ranks</option>
           {ranks.map((rank) => (
-            <option key={rank} value={rank}>{rank}</option>
+            <option key={rank} value={rank}>
+              {rank}
+            </option>
           ))}
         </select>
       </div>

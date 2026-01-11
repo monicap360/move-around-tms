@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { CheckCircle, XCircle, AlertCircle, Eye } from "lucide-react";
 
@@ -25,7 +30,9 @@ export default function HRDriverVerificationPage() {
   const [profiles, setProfiles] = useState<DriverProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminToken, setAdminToken] = useState("");
-  const [selectedProfile, setSelectedProfile] = useState<DriverProfile | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<DriverProfile | null>(
+    null,
+  );
   const [verificationNotes, setVerificationNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -47,7 +54,7 @@ export default function HRDriverVerificationPage() {
       });
 
       if (!response.ok) throw new Error("Failed to load profiles");
-      
+
       const data = await response.json();
       setProfiles(data.profiles || []);
     } catch (err) {
@@ -60,7 +67,7 @@ export default function HRDriverVerificationPage() {
   async function handleVerification(
     profileId: string,
     field: string,
-    value: boolean
+    value: boolean,
   ) {
     setSaving(true);
     try {
@@ -117,7 +124,9 @@ export default function HRDriverVerificationPage() {
           <CardTitle>Pending Verification</CardTitle>
         </CardHeader>
         <CardContent>
-          {profiles.filter((p) => !p.hr_verified && p.profile_completed_by_driver).length === 0 ? (
+          {profiles.filter(
+            (p) => !p.hr_verified && p.profile_completed_by_driver,
+          ).length === 0 ? (
             <p className="text-gray-500 text-center py-8">
               No pending profiles to verify
             </p>
@@ -132,15 +141,19 @@ export default function HRDriverVerificationPage() {
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-lg">{profile.name}</h3>
+                        <h3 className="font-semibold text-lg">
+                          {profile.name}
+                        </h3>
                         <p className="text-sm text-gray-600">{profile.email}</p>
                         <p className="text-sm text-gray-600">{profile.phone}</p>
                         <div className="mt-2 space-y-1">
                           <p className="text-xs">
-                            License: {profile.license_number} (Exp: {profile.license_expiration || "N/A"})
+                            License: {profile.license_number} (Exp:{" "}
+                            {profile.license_expiration || "N/A"})
                           </p>
                           <p className="text-xs">
-                            Medical Card Exp: {profile.medical_card_expiration || "N/A"}
+                            Medical Card Exp:{" "}
+                            {profile.medical_card_expiration || "N/A"}
                           </p>
                         </div>
                       </div>
@@ -168,7 +181,7 @@ export default function HRDriverVerificationPage() {
                                   handleVerification(
                                     profile.id,
                                     "license_verified",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                                 className="w-4 h-4"
@@ -186,7 +199,7 @@ export default function HRDriverVerificationPage() {
                                   handleVerification(
                                     profile.id,
                                     "medical_card_verified",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                                 className="w-4 h-4"
@@ -204,7 +217,7 @@ export default function HRDriverVerificationPage() {
                                   handleVerification(
                                     profile.id,
                                     "documents_verified",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                                 className="w-4 h-4"
@@ -220,7 +233,9 @@ export default function HRDriverVerificationPage() {
                           </label>
                           <textarea
                             value={verificationNotes}
-                            onChange={(e) => setVerificationNotes(e.target.value)}
+                            onChange={(e) =>
+                              setVerificationNotes(e.target.value)
+                            }
                             className="w-full px-3 py-2 border rounded-lg"
                             rows={3}
                             placeholder="Add verification notes..."
@@ -230,7 +245,11 @@ export default function HRDriverVerificationPage() {
                         <div className="flex gap-2">
                           <Button
                             onClick={() =>
-                              handleVerification(profile.id, "hr_verified", true)
+                              handleVerification(
+                                profile.id,
+                                "hr_verified",
+                                true,
+                              )
                             }
                             disabled={saving}
                             className="bg-green-600 hover:bg-green-700"
@@ -282,7 +301,10 @@ export default function HRDriverVerificationPage() {
                   {profiles
                     .filter((p) => p.hr_verified)
                     .map((profile) => (
-                      <tr key={profile.id} className="border-b hover:bg-gray-50">
+                      <tr
+                        key={profile.id}
+                        className="border-b hover:bg-gray-50"
+                      >
                         <td className="p-3 font-medium">{profile.name}</td>
                         <td className="p-3">{profile.email}</td>
                         <td className="p-3">

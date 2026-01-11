@@ -18,9 +18,7 @@ export default function UploadPlantCSV() {
 
   return (
     <div className="p-10 max-w-xl">
-      <h1 className="text-2xl font-bold mb-4">
-        Upload Plant CSV
-      </h1>
+      <h1 className="text-2xl font-bold mb-4">Upload Plant CSV</h1>
 
       <div className="glass-card p-6 rounded-xl">
         <input

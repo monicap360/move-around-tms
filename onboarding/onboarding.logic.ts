@@ -1,8 +1,10 @@
 // Core logic for onboarding progress
-import { OnboardingStatus, OnboardingStep } from './onboarding.types';
-import { v4 as uuidv4 } from 'uuid';
+import { OnboardingStatus, OnboardingStep } from "./onboarding.types";
+import { v4 as uuidv4 } from "uuid";
 
-export function createInitialOnboardingStatus(user_id: string): OnboardingStatus {
+export function createInitialOnboardingStatus(
+  user_id: string,
+): OnboardingStatus {
   return {
     user_id,
     steps: {
@@ -17,7 +19,10 @@ export function createInitialOnboardingStatus(user_id: string): OnboardingStatus
   };
 }
 
-export function markStepComplete(status: OnboardingStatus, step: OnboardingStep): OnboardingStatus {
+export function markStepComplete(
+  status: OnboardingStatus,
+  step: OnboardingStep,
+): OnboardingStatus {
   const steps = { ...status.steps, [step]: true };
   const completed = Object.values(steps).every(Boolean);
   return {

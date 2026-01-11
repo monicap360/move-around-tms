@@ -9,7 +9,6 @@ Your keys are exposed in 15+ files! Act immediately:
 1. **Go to Supabase Dashboard**:
    - Visit: https://supabase.com/dashboard/project/wqeidcatuwqtzwhvmqfr
    - Navigate to: Settings → API
-   
 2. **Reset Both Keys**:
    - Click "Reset" next to "anon public" key
    - Click "Reset" next to "service_role" key
@@ -25,6 +24,7 @@ Your keys are exposed in 15+ files! Act immediately:
 ### 🧹 Step 2: Clean Repository
 
 Remove exposed keys from these files:
+
 ```bash
 # Files containing exposed keys:
 app/DEPLOYMENT.md                     ✅ FIXED
@@ -83,6 +83,7 @@ npm run export  # if available
 ## 📋 DEPLOYMENT CHECKLIST
 
 ### Before Deploying:
+
 - [ ] Rotate Supabase keys
 - [ ] Update .env.local with new keys
 - [ ] Update .env.production with new keys
@@ -91,6 +92,7 @@ npm run export  # if available
 - [ ] Test application functionality
 
 ### After Deploying:
+
 - [ ] Set environment variables in hosting platform
 - [ ] Test login functionality
 - [ ] Test admin features
@@ -130,6 +132,7 @@ vercel --prod
 ## 📞 Support Access
 
 Once deployed, Sylvia can access:
+
 - **Main App**: https://app.movearoundtms.com
 - **UI Demo**: https://app.movearoundtms.com/ui-preview
 - **Login**: https://app.movearoundtms.com/login

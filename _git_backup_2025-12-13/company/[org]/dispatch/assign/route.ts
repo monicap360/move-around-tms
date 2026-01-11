@@ -21,7 +21,10 @@ export async function POST(req: NextRequest, { params }: any) {
     .eq("organization_id", org);
 
   if (loadError || driverError) {
-    return NextResponse.json({ error: loadError?.message || driverError?.message }, { status: 500 });
+    return NextResponse.json(
+      { error: loadError?.message || driverError?.message },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ success: true });
@@ -31,6 +34,6 @@ function createServerAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 }

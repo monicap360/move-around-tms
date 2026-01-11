@@ -25,7 +25,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 Avatar.displayName = "Avatar";
 
@@ -43,13 +43,13 @@ const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
         ref={ref}
         src={src}
         alt={alt}
-        className={`aspect-square h-full w-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity ${className}`}
+        className={`aspect-square h-full w-full object-cover ${imageLoaded ? "opacity-100" : "opacity-0"} transition-opacity ${className}`}
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageError(true)}
         {...props}
       />
     );
-  }
+  },
 );
 AvatarImage.displayName = "AvatarImage";
 
@@ -64,7 +64,7 @@ const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 AvatarFallback.displayName = "AvatarFallback";
 

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle, RefreshCcw } from "lucide-react";
+import {
+  Upload,
+  FileSpreadsheet,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCcw,
+} from "lucide-react";
 import Papa from "papaparse";
 
 export default function CsvReconciliationPage({ params }: any) {
@@ -19,7 +25,7 @@ export default function CsvReconciliationPage({ params }: any) {
       complete: async (res) => {
         setCsvRows(res.data);
         await reconcileWithDB(res.data);
-      }
+      },
     });
   }
 
@@ -27,7 +33,7 @@ export default function CsvReconciliationPage({ params }: any) {
     const response = await fetch(`/api/company/${company}/tickets/reconcile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows })
+      body: JSON.stringify({ rows }),
     });
 
     const output = await response.json();
@@ -39,8 +45,8 @@ export default function CsvReconciliationPage({ params }: any) {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">CSV Reconciliation</h1>
       <p className="text-gray-600">
-        Upload a plant CSV file (Cemex, MM, Vulcan, GCC, TXI, or any custom plant).  
-        The system will automatically:
+        Upload a plant CSV file (Cemex, MM, Vulcan, GCC, TXI, or any custom
+        plant). The system will automatically:
       </p>
 
       <ul className="text-gray-700 list-disc ml-6">
@@ -52,15 +58,15 @@ export default function CsvReconciliationPage({ params }: any) {
       </ul>
 
       <div className="border-2 border-dashed border-gray-300 p-10 rounded-xl text-center">
-        <input 
-          type="file" 
-          accept=".csv" 
-          className="hidden" 
+        <input
+          type="file"
+          accept=".csv"
+          className="hidden"
           id="csvInput"
           onChange={(e) => e.target.files?.[0] && parseCsv(e.target.files[0])}
         />
 
-        <label 
+        <label
           htmlFor="csvInput"
           className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 mx-auto w-fit"
         >
@@ -99,10 +105,27 @@ function ReconciliationResults({ results }: any) {
 function Metrics({ results }: any) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <MetricTile label="Total CSV Rows" value={results.total_rows} icon={<FileSpreadsheet />} />
-      <MetricTile label="Matched Tickets" value={results.matched} icon={<CheckCircle />} />
-      <MetricTile label="Auto-Created Tickets" value={results.created} icon={<Upload />} />
-      <MetricTile label="Exceptions" value={results.exceptions} icon={<AlertTriangle />} color="text-red-600" />
+      <MetricTile
+        label="Total CSV Rows"
+        value={results.total_rows}
+        icon={<FileSpreadsheet />}
+      />
+      <MetricTile
+        label="Matched Tickets"
+        value={results.matched}
+        icon={<CheckCircle />}
+      />
+      <MetricTile
+        label="Auto-Created Tickets"
+        value={results.created}
+        icon={<Upload />}
+      />
+      <MetricTile
+        label="Exceptions"
+        value={results.exceptions}
+        icon={<AlertTriangle />}
+        color="text-red-600"
+      />
     </div>
   );
 }

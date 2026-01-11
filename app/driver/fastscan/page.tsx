@@ -7,7 +7,9 @@ import toast from "react-hot-toast";
 
 export default function DriverFastScan() {
   const [uploading, setUploading] = useState(false);
-  const [ocrStatus, setOcrStatus] = useState<'idle' | 'processing' | 'complete'>('idle');
+  const [ocrStatus, setOcrStatus] = useState<
+    "idle" | "processing" | "complete"
+  >("idle");
   const [success, setSuccess] = useState(false);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function DriverFastScan() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    setOcrStatus('processing');
+    setOcrStatus("processing");
     setSuccess(false);
     try {
       // 1. Auto-create ticket row
@@ -27,14 +29,14 @@ export default function DriverFastScan() {
       const userId = userData?.user?.id;
       const ticketNumber = `DRV-${Date.now().toString().slice(-8)}`;
       const { data: ticketRow, error: insertError } = await supabase
-        .from('tickets') // FIXED TABLE NAME
+        .from("tickets") // FIXED TABLE NAME
         .insert([
           {
             ticket_number: ticketNumber,
-            status: 'pending',
+            status: "pending",
             organization_id: organizationId,
-            driver_id: userId
-          }
+            driver_id: userId,
+          },
         ])
         .select()
         .single();
@@ -44,34 +46,34 @@ export default function DriverFastScan() {
       // 2. Upload file into correct folder inside bucket
       const path = `tickets/${ticket_id}/${file.name}`; // FIXED PATH
       const { error: uploadError } = await supabase.storage
-        .from('ronyx-files')
+        .from("ronyx-files")
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
       setImageUrl(URL.createObjectURL(file));
       // 3. Subscribe for OCR completion
       const channel = supabase.channel(`ticket:${ticket_id}:ocr`, {
-        config: { private: true }
+        config: { private: true },
       });
-      channel.on('broadcast', { event: 'ocr_completed' }, () => {
-        setOcrStatus('complete');
+      channel.on("broadcast", { event: "ocr_completed" }, () => {
+        setOcrStatus("complete");
         setSuccess(true);
-        toast.success('OCR complete!');
+        toast.success("OCR complete!");
       });
       channel.subscribe();
     } catch (error) {
-      toast.error('Upload failed.');
-      setOcrStatus('idle');
+      toast.error("Upload failed.");
+      setOcrStatus("idle");
     } finally {
       setUploading(false);
     }
   };
 
   const handleScanNext = () => {
-    setOcrStatus('idle');
+    setOcrStatus("idle");
     setSuccess(false);
     setTicketId(null);
     setImageUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (

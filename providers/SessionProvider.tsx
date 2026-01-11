@@ -28,9 +28,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Subscribe to auth changes (sign in / sign out)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+      },
+    );
 
     return () => {
       listener.subscription.unsubscribe();
@@ -43,7 +45,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     loading,
   };
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  return (
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+  );
 }
 
 // Hook to access session anywhere

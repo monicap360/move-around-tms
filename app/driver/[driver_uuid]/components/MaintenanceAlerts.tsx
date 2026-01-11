@@ -15,9 +15,7 @@ export default function MaintenanceAlerts({ driver }: any) {
 
   return (
     <section className="glass-panel p-5 rounded-2xl">
-      <h3 className="font-semibold text-lg mb-3">
-        Maintenance Alerts
-      </h3>
+      <h3 className="font-semibold text-lg mb-3">Maintenance Alerts</h3>
 
       {alerts.map((a, i) => (
         <div

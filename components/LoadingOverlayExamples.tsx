@@ -26,8 +26,10 @@ export default function LoadingOverlayExamples() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-2xl font-bold mb-8">MoveAround TMS - Loading Overlay Examples</h1>
-      
+      <h1 className="text-2xl font-bold mb-8">
+        MoveAround TMS - Loading Overlay Examples
+      </h1>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl">
         {/* Login Example */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
@@ -68,7 +70,10 @@ export default function LoadingOverlayExamples() {
 
       {/* Loading Overlays */}
       <LoadingOverlay show={loginLoading} label="Authenticating user..." />
-      <LoadingOverlay show={uploadLoading} label="Uploading files to server..." />
+      <LoadingOverlay
+        show={uploadLoading}
+        label="Uploading files to server..."
+      />
       <LoadingOverlay show={dataLoading} label="Fetching driver data..." />
     </div>
   );

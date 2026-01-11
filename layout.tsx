@@ -7,18 +7,16 @@ import SupabaseProvider from "./lib/supabase-provider";
 import { LoadingProvider } from "./components/ui/providers/use-loading";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#3b82f6" />
-        <meta name="description" content="Enterprise Transportation Management System for Ronyx Logistics LLC" />
+        <meta
+          name="description"
+          content="Enterprise Transportation Management System for Ronyx Logistics LLC"
+        />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

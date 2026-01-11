@@ -6,10 +6,16 @@ export default function StatusTracker() {
       <ul className="space-y-2">
         {/* Example status */}
         <li>
-          <span className="font-bold">Load 12345:</span> <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Acknowledged</span>
+          <span className="font-bold">Load 12345:</span>{" "}
+          <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+            Acknowledged
+          </span>
         </li>
         <li>
-          <span className="font-bold">Load 12346:</span> <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Delivering</span>
+          <span className="font-bold">Load 12346:</span>{" "}
+          <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+            Delivering
+          </span>
         </li>
       </ul>
     </div>

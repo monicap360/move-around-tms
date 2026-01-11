@@ -20,9 +20,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ signedUrl: data?.signedUrl, expiresIn });
-
   } catch (err: any) {
-    console.error('Signed URL API error:', err);
+    console.error("Signed URL API error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

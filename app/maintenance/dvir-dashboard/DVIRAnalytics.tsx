@@ -1,15 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+} from "../../components/ui/card";
 
 function countDefects(dvirs) {
   let total = 0;
   let byItem = {};
-  dvirs.forEach(d => {
-    (d.inspection_items||[]).forEach(i => {
-      if(i.status==="defective") {
+  dvirs.forEach((d) => {
+    (d.inspection_items || []).forEach((i) => {
+      if (i.status === "defective") {
         total++;
-        byItem[i.item] = (byItem[i.item]||0)+1;
+        byItem[i.item] = (byItem[i.item] || 0) + 1;
       }
     });
   });
@@ -17,23 +22,30 @@ function countDefects(dvirs) {
 }
 
 function getUniqueTrucks(dvirs) {
-  return Array.from(new Set(dvirs.map(d=>d.truck_number)));
+  return Array.from(new Set(dvirs.map((d) => d.truck_number)));
 }
 
 export default function DVIRAnalytics({ dvirs }) {
   if (!dvirs || dvirs.length === 0) return null;
   const { total, byItem } = countDefects(dvirs);
   const trucks = getUniqueTrucks(dvirs) as string[];
-  const defectiveDVIRs = dvirs.filter(d => d.overall_status === "defective");
-  const complianceRate = ((dvirs.length-defectiveDVIRs.length)/dvirs.length*100).toFixed(1);
+  const defectiveDVIRs = dvirs.filter((d) => d.overall_status === "defective");
+  const complianceRate = (
+    ((dvirs.length - defectiveDVIRs.length) / dvirs.length) *
+    100
+  ).toFixed(1);
   const mostDefective: [string, number][] = Object.entries(byItem)
     .map(([item, count]) => [String(item), Number(count)] as [string, number])
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
-  const overdueRepairs = dvirs.filter(d => d.overall_status === "defective" && !d.mechanic_signature);
-  const repeatDefects: string[] = trucks.filter(truck => {
-    const truckDVIRs = dvirs.filter(d => d.truck_number === truck);
-    return truckDVIRs.filter(d => d.overall_status === "defective").length >= 3;
+  const overdueRepairs = dvirs.filter(
+    (d) => d.overall_status === "defective" && !d.mechanic_signature,
+  );
+  const repeatDefects: string[] = trucks.filter((truck) => {
+    const truckDVIRs = dvirs.filter((d) => d.truck_number === truck);
+    return (
+      truckDVIRs.filter((d) => d.overall_status === "defective").length >= 3
+    );
   });
 
   return (
@@ -59,18 +71,22 @@ export default function DVIRAnalytics({ dvirs }) {
             <div className="font-semibold mb-1">Most Common Defects:</div>
             <ul className="list-disc ml-6 text-sm">
               {mostDefective.map(([item, count]: [string, number]) => (
-                <li key={item}>{item.replace(/_/g, ' ')}: {count}</li>
+                <li key={item}>
+                  {item.replace(/_/g, " ")}: {count}
+                </li>
               ))}
-              {mostDefective.length===0 && <li>No defects reported</li>}
+              {mostDefective.length === 0 && <li>No defects reported</li>}
             </ul>
           </div>
           <div className="md:col-span-3 mt-4">
-            <div className="font-semibold mb-1">Trucks with Repeat Defects:</div>
+            <div className="font-semibold mb-1">
+              Trucks with Repeat Defects:
+            </div>
             <ul className="list-disc ml-6 text-sm">
               {repeatDefects.map((truck: string) => (
                 <li key={truck}>{truck}</li>
               ))}
-              {repeatDefects.length===0 && <li>None</li>}
+              {repeatDefects.length === 0 && <li>None</li>}
             </ul>
           </div>
         </CardContent>

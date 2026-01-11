@@ -3,5 +3,5 @@ export default function MaintenanceAlerts() {
     <div className="text-sm text-muted-foreground">
       Maintenance alerts coming soon.
     </div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
 // API route: POST /api/company/[org]/plants/import-seed
-import { NextRequest, NextResponse } from 'next/server';
-import pitsPlants from '../../../../../../company/[org]/plants/seed-pits-plants.json';
-import aggregates from '../../../../../../company/[org]/plants/[plant_id]/materials/seed-aggregates.json';
+import { NextRequest, NextResponse } from "next/server";
+import pitsPlants from "../../../../../../company/[org]/plants/seed-pits-plants.json";
+import aggregates from "../../../../../../company/[org]/plants/[plant_id]/materials/seed-aggregates.json";
 
 export async function POST(req: NextRequest, { params }: any) {
   const { org } = params;
@@ -18,5 +18,8 @@ export async function POST(req: NextRequest, { params }: any) {
       // ...
     }
   }
-  return NextResponse.json({ status: 'success', message: 'Seed data imported.' });
+  return NextResponse.json({
+    status: "success",
+    message: "Seed data imported.",
+  });
 }

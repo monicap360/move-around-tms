@@ -13,6 +13,7 @@ supabase functions deploy hr-doc-scan
 POST `https://<project-ref>.supabase.co/functions/v1/hr-doc-scan`
 
 Body:
+
 ```json
 {
   "imageUrl": "https://...",
@@ -31,6 +32,7 @@ Body:
 ```
 
 ## Notes
+
 - Replace `performOcr` with your actual OCR provider.
 - The function creates a row in `driver_documents` with status `Pending Manager Review`.
 - Manager can approve/deny/edit via admin UI and APIs.

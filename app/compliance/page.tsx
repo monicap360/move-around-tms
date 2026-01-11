@@ -9,9 +9,12 @@ export default function CompliancePage() {
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Compliance & IFTA</h1>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Compliance & IFTA
+          </h1>
           <p className="text-gray-600 mt-1">
-            Manage DOT compliance, IFTA fuel tax reporting, and regulatory requirements
+            Manage DOT compliance, IFTA fuel tax reporting, and regulatory
+            requirements
           </p>
         </div>
         <Link href="/admin/compliance">
@@ -24,20 +27,22 @@ export default function CompliancePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {/* FMCSA Clearinghouse Tab */}
-                <Link href="/compliance/fmcsa-clearinghouse">
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-green-600">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <Shield className="w-8 h-8 text-green-600" />
-                        <div>
-                          <p className="font-semibold">FMCSA Clearinghouse</p>
-                          <p className="text-sm text-gray-500">Step-by-step driver registration</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+        {/* FMCSA Clearinghouse Tab */}
+        <Link href="/compliance/fmcsa-clearinghouse">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-green-600">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <Shield className="w-8 h-8 text-green-600" />
+                <div>
+                  <p className="font-semibold">FMCSA Clearinghouse</p>
+                  <p className="text-sm text-gray-500">
+                    Step-by-step driver registration
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
         <Link href="/admin/ifta">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="pt-6">
@@ -45,7 +50,9 @@ export default function CompliancePage() {
                 <DollarSign className="w-8 h-8 text-purple-500" />
                 <div>
                   <p className="font-semibold">IFTA Reporting</p>
-                  <p className="text-sm text-gray-500">Quarterly fuel tax filings</p>
+                  <p className="text-sm text-gray-500">
+                    Quarterly fuel tax filings
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -59,7 +66,9 @@ export default function CompliancePage() {
                 <DollarSign className="w-8 h-8 text-blue-600" />
                 <div>
                   <p className="font-semibold">IFTA Reports Tab</p>
-                  <p className="text-sm text-gray-500">Full IFTA compliance workflow</p>
+                  <p className="text-sm text-gray-500">
+                    Full IFTA compliance workflow
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -73,7 +82,9 @@ export default function CompliancePage() {
                 <Shield className="w-8 h-8 text-blue-500" />
                 <div>
                   <p className="font-semibold">Compliance Tracker</p>
-                  <p className="text-sm text-gray-500">UCR, insurance, DOT compliance</p>
+                  <p className="text-sm text-gray-500">
+                    UCR, insurance, DOT compliance
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -119,19 +130,24 @@ export default function CompliancePage() {
             </h3>
             <div className="space-y-2 text-gray-700 text-sm">
               <p>
-                📊 <strong>Quarterly Filing:</strong> Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
+                📊 <strong>Quarterly Filing:</strong> Q1 (Jan-Mar), Q2
+                (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
               </p>
               <p>
-                🚛 <strong>Trip Tracking:</strong> Automatically calculates miles per jurisdiction from ELD data
+                🚛 <strong>Trip Tracking:</strong> Automatically calculates
+                miles per jurisdiction from ELD data
               </p>
               <p>
-                ⛽ <strong>Fuel Purchases:</strong> Import fuel receipts and match to jurisdictions
+                ⛽ <strong>Fuel Purchases:</strong> Import fuel receipts and
+                match to jurisdictions
               </p>
               <p>
-                📄 <strong>Texas IFTA Reports:</strong> Generate PDFs ready for filing with state authorities
+                📄 <strong>Texas IFTA Reports:</strong> Generate PDFs ready for
+                filing with state authorities
               </p>
               <p>
-                💡 <strong>Tax Calculation:</strong> Computes taxable gallons, rates, and net tax due/refund by state
+                💡 <strong>Tax Calculation:</strong> Computes taxable gallons,
+                rates, and net tax due/refund by state
               </p>
             </div>
           </CardContent>
@@ -145,16 +161,20 @@ export default function CompliancePage() {
             </h3>
             <div className="space-y-2 text-gray-700 text-sm">
               <p>
-                 <strong>UCR Registration:</strong> Unified Carrier Registration annual renewal tracking
+                <strong>UCR Registration:</strong> Unified Carrier Registration
+                annual renewal tracking
               </p>
               <p>
-                🛡️ <strong>Insurance Certificates:</strong> Liability, cargo, and worker's comp coverage tracking
+                🛡️ <strong>Insurance Certificates:</strong> Liability, cargo,
+                and worker's comp coverage tracking
               </p>
               <p>
-                🚨 <strong>DOT Inspections:</strong> Monitor Level 1-6 inspections and violation history
+                🚨 <strong>DOT Inspections:</strong> Monitor Level 1-6
+                inspections and violation history
               </p>
               <p>
-                ⏰ <strong>Expiration Alerts:</strong> 30/60/90 day warnings for expiring documents and certifications
+                ⏰ <strong>Expiration Alerts:</strong> 30/60/90 day warnings for
+                expiring documents and certifications
               </p>
             </div>
           </CardContent>

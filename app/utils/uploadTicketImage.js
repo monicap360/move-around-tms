@@ -2,10 +2,15 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
 
-export const uploadTicketImage = async (file, organization_id, ticket_id, user_id) => {
+export const uploadTicketImage = async (
+  file,
+  organization_id,
+  ticket_id,
+  user_id,
+) => {
   if (!file) return { error: "No file provided." };
 
   const fileExt = file.name.split(".").pop();
@@ -20,8 +25,8 @@ export const uploadTicketImage = async (file, organization_id, ticket_id, user_i
       metadata: {
         organization_id,
         ticket_id,
-        uploaded_by: user_id
-      }
+        uploaded_by: user_id,
+      },
     });
 
   if (error) {
@@ -30,10 +35,8 @@ export const uploadTicketImage = async (file, organization_id, ticket_id, user_i
   }
 
   const {
-    data: { publicUrl }
-  } = supabase.storage
-    .from("scale_ticket_images")
-    .getPublicUrl(filePath);
+    data: { publicUrl },
+  } = supabase.storage.from("scale_ticket_images").getPublicUrl(filePath);
 
   return { url: publicUrl, path: filePath };
 };

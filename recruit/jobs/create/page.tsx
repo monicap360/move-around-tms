@@ -16,7 +16,9 @@ export default function CreateJobPage() {
     const payload = {
       ...form,
       requirements: form.requirements.split(",").map((s) => s.trim()),
-      endorsements_required: form.endorsements_required.split(",").map((s) => s.trim()),
+      endorsements_required: form.endorsements_required
+        .split(",")
+        .map((s) => s.trim()),
     };
     await fetch("/api/hiring/job/create", {
       method: "POST",
@@ -51,20 +53,26 @@ export default function CreateJobPage() {
           className="w-full p-3 rounded bg-gray-900"
           placeholder="Endorsements Required (comma separated)"
           value={form.endorsements_required}
-          onChange={(e) => setForm({ ...form, endorsements_required: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, endorsements_required: e.target.value })
+          }
         />
         <input
           className="w-full p-3 rounded bg-gray-900"
           type="number"
           placeholder="Minimum Experience (years)"
           value={form.min_experience}
-          onChange={(e) => setForm({ ...form, min_experience: Number(e.target.value) })}
+          onChange={(e) =>
+            setForm({ ...form, min_experience: Number(e.target.value) })
+          }
         />
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={form.twic_required}
-            onChange={(e) => setForm({ ...form, twic_required: e.target.checked })}
+            onChange={(e) =>
+              setForm({ ...form, twic_required: e.target.checked })
+            }
           />
           TWIC Required
         </label>
@@ -72,7 +80,9 @@ export default function CreateJobPage() {
           <input
             type="checkbox"
             checked={form.medical_card_required}
-            onChange={(e) => setForm({ ...form, medical_card_required: e.target.checked })}
+            onChange={(e) =>
+              setForm({ ...form, medical_card_required: e.target.checked })
+            }
           />
           Medical Card Required
         </label>

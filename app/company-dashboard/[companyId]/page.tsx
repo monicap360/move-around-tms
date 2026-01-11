@@ -7,10 +7,14 @@ import DashboardCard from "@/components/dashboard/DashboardCard";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export default function CompanyOwnerDashboard({ params }: { params: { companyId: string } }) {
+export default function CompanyOwnerDashboard({
+  params,
+}: {
+  params: { companyId: string };
+}) {
   const companyId = params.companyId;
   const [company, setCompany] = useState<any>(null);
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -75,12 +79,28 @@ export default function CompanyOwnerDashboard({ params }: { params: { companyId:
       <main className="max-w-7xl mx-auto px-6 py-10 space-y-12">
         {/* ANALYTICS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          <DashboardCard title="Active Drivers" value={drivers.length} icon="🚛" />
+          <DashboardCard
+            title="Active Drivers"
+            value={drivers.length}
+            icon="🚛"
+          />
           <DashboardCard title="Tickets" value={tickets.length} icon="🎫" />
-          <DashboardCard title="Payroll Entries" value={payroll.length} icon="💵" />
-          <DashboardCard title="Dispatches" value={dispatches.length} icon="🗂️" />
+          <DashboardCard
+            title="Payroll Entries"
+            value={payroll.length}
+            icon="💵"
+          />
+          <DashboardCard
+            title="Dispatches"
+            value={dispatches.length}
+            icon="🗂️"
+          />
           <DashboardCard title="HR Records" value={hr.length} icon="🧑‍💼" />
-          <DashboardCard title="Compliance" value={compliance.length} icon="✅" />
+          <DashboardCard
+            title="Compliance"
+            value={compliance.length}
+            icon="✅"
+          />
         </div>
         {/* DRIVERS TABLE */}
         <section className="bg-white rounded-xl shadow p-6">
@@ -134,8 +154,14 @@ export default function CompanyOwnerDashboard({ params }: { params: { companyId:
                     <tr key={ticket.id} className="border-b">
                       <td className="p-2">{ticket.ticket_number}</td>
                       <td className="p-2">{ticket.driver_name}</td>
-                      <td className="p-2">{ticket.date ? new Date(ticket.date).toLocaleDateString() : '-'}</td>
-                      <td className="p-2">${ticket.amount?.toLocaleString() || '-'}</td>
+                      <td className="p-2">
+                        {ticket.date
+                          ? new Date(ticket.date).toLocaleDateString()
+                          : "-"}
+                      </td>
+                      <td className="p-2">
+                        ${ticket.amount?.toLocaleString() || "-"}
+                      </td>
                       <td className="p-2">{ticket.status}</td>
                     </tr>
                   ))}
@@ -163,7 +189,9 @@ export default function CompanyOwnerDashboard({ params }: { params: { companyId:
                   {payroll.map((entry) => (
                     <tr key={entry.id} className="border-b">
                       <td className="p-2">{entry.period}</td>
-                      <td className="p-2">${entry.total?.toLocaleString() || '-'}</td>
+                      <td className="p-2">
+                        ${entry.total?.toLocaleString() || "-"}
+                      </td>
                       <td className="p-2">{entry.status}</td>
                     </tr>
                   ))}
@@ -224,7 +252,11 @@ export default function CompanyOwnerDashboard({ params }: { params: { companyId:
                     <tr key={record.id} className="border-b">
                       <td className="p-2">{record.name}</td>
                       <td className="p-2">{record.type}</td>
-                      <td className="p-2">{record.date ? new Date(record.date).toLocaleDateString() : '-'}</td>
+                      <td className="p-2">
+                        {record.date
+                          ? new Date(record.date).toLocaleDateString()
+                          : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -252,7 +284,11 @@ export default function CompanyOwnerDashboard({ params }: { params: { companyId:
                     <tr key={c.id} className="border-b">
                       <td className="p-2">{c.type}</td>
                       <td className="p-2">{c.status}</td>
-                      <td className="p-2">{c.due_date ? new Date(c.due_date).toLocaleDateString() : '-'}</td>
+                      <td className="p-2">
+                        {c.due_date
+                          ? new Date(c.due_date).toLocaleDateString()
+                          : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

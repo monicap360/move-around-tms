@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 // import { Label } from "../../components/ui/label";
@@ -36,26 +41,42 @@ interface LoadRequestData {
 }
 
 // Simple components for demo
-const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
-  <label htmlFor={htmlFor} className="text-sm font-medium leading-none block mb-2">
+const Label = ({
+  children,
+  htmlFor,
+}: {
+  children: React.ReactNode;
+  htmlFor?: string;
+}) => (
+  <label
+    htmlFor={htmlFor}
+    className="text-sm font-medium leading-none block mb-2"
+  >
     {children}
   </label>
 );
 
-const Textarea = ({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <textarea 
-    className={`flex min-h-[80px] w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className || ''}`}
-    {...props} 
+const Textarea = ({
+  className,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+  <textarea
+    className={`flex min-h-[80px] w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className || ""}`}
+    {...props}
   />
 );
 
-const Select = ({ children, value, onValueChange }: { 
-  children: React.ReactNode; 
-  value?: string; 
-  onValueChange?: (value: string) => void 
+const Select = ({
+  children,
+  value,
+  onValueChange,
+}: {
+  children: React.ReactNode;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }) => (
-  <select 
-    value={value} 
+  <select
+    value={value}
     onChange={(e) => onValueChange?.(e.target.value)}
     className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
   >
@@ -63,54 +84,57 @@ const Select = ({ children, value, onValueChange }: {
   </select>
 );
 
-export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormProps) {
+export default function LoadRequestForm({
+  onSubmit,
+  onCancel,
+}: LoadRequestFormProps) {
   const [formData, setFormData] = useState<LoadRequestData>({
     origin: {
-      address: '',
-      city: '',
-      state: '',
-      zipCode: ''
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
     },
     destination: {
-      address: '',
-      city: '',
-      state: '',
-      zipCode: ''
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
     },
-    pickupDate: '',
-    deliveryDate: '',
-    commodity: '',
+    pickupDate: "",
+    deliveryDate: "",
+    commodity: "",
     weight: 0,
-    equipment: '',
-    specialRequirements: ''
+    equipment: "",
+    specialRequirements: "",
   });
 
-  const [pickupDate, setPickupDate] = useState<string>('');
-  const [deliveryDate, setDeliveryDate] = useState<string>('');
+  const [pickupDate, setPickupDate] = useState<string>("");
+  const [deliveryDate, setDeliveryDate] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const submitData = {
       ...formData,
       pickupDate: pickupDate,
-      deliveryDate: deliveryDate
+      deliveryDate: deliveryDate,
     };
-    
+
     onSubmit(submitData);
   };
 
   const updateOrigin = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      origin: { ...prev.origin, [field]: value }
+      origin: { ...prev.origin, [field]: value },
     }));
   };
 
   const updateDestination = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      destination: { ...prev.destination, [field]: value }
+      destination: { ...prev.destination, [field]: value },
     }));
   };
 
@@ -119,7 +143,9 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b">
           <h2 className="text-2xl font-bold">Request New Load</h2>
-          <p className="text-gray-600">Fill out the details for your shipment request</p>
+          <p className="text-gray-600">
+            Fill out the details for your shipment request
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
@@ -138,7 +164,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="origin-address"
                     value={formData.origin.address}
-                    onChange={(e) => updateOrigin('address', e.target.value)}
+                    onChange={(e) => updateOrigin("address", e.target.value)}
                     placeholder="1234 Industrial Blvd"
                     required
                   />
@@ -148,7 +174,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="origin-city"
                     value={formData.origin.city}
-                    onChange={(e) => updateOrigin('city', e.target.value)}
+                    onChange={(e) => updateOrigin("city", e.target.value)}
                     placeholder="Houston"
                     required
                   />
@@ -158,7 +184,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="origin-state"
                     value={formData.origin.state}
-                    onChange={(e) => updateOrigin('state', e.target.value)}
+                    onChange={(e) => updateOrigin("state", e.target.value)}
                     placeholder="TX"
                     maxLength={2}
                     required
@@ -169,7 +195,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="origin-zip"
                     value={formData.origin.zipCode}
-                    onChange={(e) => updateOrigin('zipCode', e.target.value)}
+                    onChange={(e) => updateOrigin("zipCode", e.target.value)}
                     placeholder="77001"
                     maxLength={10}
                     required
@@ -194,7 +220,9 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="dest-address"
                     value={formData.destination.address}
-                    onChange={(e) => updateDestination('address', e.target.value)}
+                    onChange={(e) =>
+                      updateDestination("address", e.target.value)
+                    }
                     placeholder="5678 Commerce St"
                     required
                   />
@@ -204,7 +232,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="dest-city"
                     value={formData.destination.city}
-                    onChange={(e) => updateDestination('city', e.target.value)}
+                    onChange={(e) => updateDestination("city", e.target.value)}
                     placeholder="Atlanta"
                     required
                   />
@@ -214,7 +242,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="dest-state"
                     value={formData.destination.state}
-                    onChange={(e) => updateDestination('state', e.target.value)}
+                    onChange={(e) => updateDestination("state", e.target.value)}
                     placeholder="GA"
                     maxLength={2}
                     required
@@ -225,7 +253,9 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="dest-zip"
                     value={formData.destination.zipCode}
-                    onChange={(e) => updateDestination('zipCode', e.target.value)}
+                    onChange={(e) =>
+                      updateDestination("zipCode", e.target.value)
+                    }
                     placeholder="30301"
                     maxLength={10}
                     required
@@ -252,19 +282,21 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                     type="date"
                     value={pickupDate}
                     onChange={(e) => setPickupDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={new Date().toISOString().split("T")[0]}
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="delivery-date">Delivery Date (Optional)</Label>
+                  <Label htmlFor="delivery-date">
+                    Delivery Date (Optional)
+                  </Label>
                   <Input
                     id="delivery-date"
                     type="date"
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
-                    min={pickupDate || new Date().toISOString().split('T')[0]}
+                    min={pickupDate || new Date().toISOString().split("T")[0]}
                   />
                 </div>
 
@@ -273,7 +305,12 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="commodity"
                     value={formData.commodity}
-                    onChange={(e) => setFormData(prev => ({ ...prev, commodity: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        commodity: e.target.value,
+                      }))
+                    }
                     placeholder="Electronics Equipment"
                     required
                   />
@@ -284,8 +321,13 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
                   <Input
                     id="weight"
                     type="number"
-                    value={formData.weight || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, weight: parseInt(e.target.value) || 0 }))}
+                    value={formData.weight || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        weight: parseInt(e.target.value) || 0,
+                      }))
+                    }
                     placeholder="45000"
                     min="0"
                     max="80000"
@@ -295,9 +337,11 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
 
                 <div>
                   <Label htmlFor="equipment">Equipment Type</Label>
-                  <Select 
-                    value={formData.equipment} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, equipment: value }))}
+                  <Select
+                    value={formData.equipment}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, equipment: value }))
+                    }
                   >
                     <option value="">Select equipment type</option>
                     <option value="van">Dry Van</option>
@@ -311,11 +355,18 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
               </div>
 
               <div>
-                <Label htmlFor="special-requirements">Special Requirements (Optional)</Label>
+                <Label htmlFor="special-requirements">
+                  Special Requirements (Optional)
+                </Label>
                 <Textarea
                   id="special-requirements"
                   value={formData.specialRequirements}
-                  onChange={(e) => setFormData(prev => ({ ...prev, specialRequirements: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      specialRequirements: e.target.value,
+                    }))
+                  }
                   placeholder="Any special handling, permits, or requirements..."
                   rows={3}
                 />
@@ -328,9 +379,7 @@ export default function LoadRequestForm({ onSubmit, onCancel }: LoadRequestFormP
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit">
-              Submit Load Request
-            </Button>
+            <Button type="submit">Submit Load Request</Button>
           </div>
         </form>
       </div>

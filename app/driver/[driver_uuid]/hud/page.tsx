@@ -10,7 +10,7 @@ import DriverAI from "@/components/hud/DriverAI";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export default function DriverHUD({ params }) {
@@ -49,12 +49,10 @@ export default function DriverHUD({ params }) {
   const saveLayout = async (newLayout) => {
     setLayout(newLayout);
 
-    await supabase
-      .from("driver_layouts")
-      .upsert({
-        driver_uuid: params.driver_uuid,
-        layout_json: newLayout,
-      });
+    await supabase.from("driver_layouts").upsert({
+      driver_uuid: params.driver_uuid,
+      layout_json: newLayout,
+    });
 
     console.log("Layout saved.");
   };

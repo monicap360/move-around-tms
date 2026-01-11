@@ -3,6 +3,7 @@
 ## ❌ **CURRENT ISSUE IDENTIFIED**
 
 ### **Problem**: API Routes Block Static Export
+
 - `/api/*` endpoints cannot be statically exported to SiteGround
 - Static hosting doesn't support server-side API routes
 - Build fails because of dynamic API endpoints
@@ -14,17 +15,19 @@
 ## 🎯 **OPTION 1: RONYX-ONLY STATIC DEPLOYMENT (RECOMMENDED)**
 
 ### **What Works on SiteGround Static Hosting:**
-- ✅ **Ronyx Login**: `/ronyx/login/` 
+
+- ✅ **Ronyx Login**: `/ronyx/login/`
 - ✅ **Ronyx Dashboard**: `/ronyx/`
 - ✅ **Supabase Authentication**: Client-side auth works perfectly
 - ✅ **Static Pages**: All React components and styling
 - ✅ **Frontend Assets**: CSS, JS, images, fonts
 
 ### **Files Needed for Ronyx Portal Only:**
+
 ```
 📁 Upload to public_html/ronyx/
 ├── 📁 ronyx/
-│   ├── index.html              → /ronyx dashboard 
+│   ├── index.html              → /ronyx dashboard
 │   └── 📁 login/
 │       └── index.html          → /ronyx/login page
 ├── 📁 _next/
@@ -39,6 +42,7 @@
 ```
 
 ### **Manual Build Process:**
+
 ```bash
 # 1. Temporarily remove API routes for static build
 Move-Item api api-backup
@@ -46,7 +50,7 @@ Move-Item api api-backup
 # 2. Build static export
 npm run build
 
-# 3. Upload /out directory contents to SiteGround  
+# 3. Upload /out directory contents to SiteGround
 # 4. Restore API routes for development
 Move-Item api-backup api
 ```
@@ -56,11 +60,13 @@ Move-Item api-backup api
 ## 🎯 **OPTION 2: HYBRID DEPLOYMENT**
 
 ### **Split Architecture:**
+
 - **SiteGround**: Frontend only (Ronyx portal, dashboards)
 - **Vercel/Netlify**: API routes and server functions
 - **Connection**: Frontend calls external API endpoints
 
 ### **Files for SiteGround (Frontend Only):**
+
 - Same as Option 1 but with API calls pointing to external URLs
 
 ---
@@ -70,11 +76,13 @@ Move-Item api-backup api
 ### **Immediate Steps for Ronyx Portal:**
 
 1. **Backup API Routes**:
+
    ```bash
    Move-Item app/api app/api-backup
    ```
 
 2. **Build Static Export**:
+
    ```bash
    npm run build
    ls out/  # Verify files created
@@ -95,13 +103,14 @@ Move-Item api-backup api
 ## ✅ **EXPECTED SITEGROUND FILE STRUCTURE**
 
 ### **After Upload (`public_html/ronyx/`):**
+
 ```
 📁 ronyx.movearoundtms.app/
 ├── index.html                  → Landing page
-├── 📁 ronyx/  
+├── 📁 ronyx/
 │   ├── index.html             → Ronyx dashboard (✅ Works)
 │   └── 📁 login/
-│       └── index.html         → Ronyx login (✅ Works)  
+│       └── index.html         → Ronyx login (✅ Works)
 ├── 📁 _next/
 │   ├── 📁 static/             → CSS/JS assets (✅ Works)
 │   └── 📁 chunks/             → React chunks (✅ Works)
@@ -115,6 +124,7 @@ Move-Item api-backup api
 ## 🎯 **CRITICAL SUCCESS FACTORS**
 
 ### **What WILL Work on SiteGround:**
+
 - ✅ Ronyx login page with professional branding
 - ✅ Ronyx fleet dashboard with orange theme
 - ✅ Supabase authentication (client-side)
@@ -122,11 +132,13 @@ Move-Item api-backup api
 - ✅ Responsive design and styling
 
 ### **What WON'T Work (No Server):**
+
 - ❌ `/api/*` endpoints (server-side functions)
 - ❌ Server-side rendering features
 - ❌ Dynamic API calls to local backend
 
 ### **Workaround for Missing APIs:**
+
 - **Use Supabase Functions**: Replace API routes with Supabase edge functions
 - **Client-side Logic**: Move server logic to React components
 - **External APIs**: Use third-party services for complex operations
@@ -136,6 +148,7 @@ Move-Item api-backup api
 ## 🚀 **FINAL ANSWER: FILES FOR SITEGROUND**
 
 ### **Essential Files (After Static Build):**
+
 1. **ALL contents** of `/out` directory (created after `npm run build`)
 2. **Upload location**: `public_html/ronyx/` on SiteGround
 3. **Key files**: `ronyx/login/index.html`, `ronyx/index.html`, `_next/static/*`

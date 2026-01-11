@@ -1,8 +1,8 @@
-import React from 'react';
-import dynamic from 'next/dynamic';
+import React from "react";
+import dynamic from "next/dynamic";
 
 // Use a real QR code scanner for production
-const QrReader = dynamic(() => import('react-qr-reader'), { ssr: false });
+const QrReader = dynamic(() => import("react-qr-reader"), { ssr: false });
 
 interface QRCodeScanProps {
   onScan: (data: string) => void;
@@ -14,7 +14,7 @@ const QRCodeScan: React.FC<QRCodeScanProps> = ({ onScan }) => {
   };
   const handleError = (err: any) => {
     // Optionally show error
-    console.error('QR Scan error', err);
+    console.error("QR Scan error", err);
   };
   return (
     <div>

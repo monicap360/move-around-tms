@@ -1,42 +1,42 @@
 // app/advisor-dashboard/page.tsx
-'use client';
+"use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useEffect, useState, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 // ----------------------
 // SUPABASE CLIENT
 // ----------------------
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
 // ----------------------
 // HELPERS
 // ----------------------
 function getLeadStatus(lead: any) {
-  return lead?.status?.toLowerCase() || 'new';
+  return lead?.status?.toLowerCase() || "new";
 }
 
 function getStatusColor(status: string) {
-  switch ((status || '').toLowerCase()) {
-    case 'hot':
-      return '#ff7875';
-    case 'warm':
-      return '#ffd666';
-    case 'cold':
-      return '#b5b5b5';
-    case 'new':
-      return '#bae7ff';
-    case 'sold':
-      return '#52c41a';
-    case 'pending':
-      return '#1890ff';
-    case 'dead lead':
-      return '#8c8c8c';
+  switch ((status || "").toLowerCase()) {
+    case "hot":
+      return "#ff7875";
+    case "warm":
+      return "#ffd666";
+    case "cold":
+      return "#b5b5b5";
+    case "new":
+      return "#bae7ff";
+    case "sold":
+      return "#52c41a";
+    case "pending":
+      return "#1890ff";
+    case "dead lead":
+      return "#8c8c8c";
     default:
-      return '#d9d9d9';
+      return "#d9d9d9";
   }
 }
 
@@ -48,11 +48,11 @@ export default function AdvisorDashboard() {
   const [publicLeads, setPublicLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('7');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("7");
   const [page, setPage] = useState(1);
-  const [showTable, setShowTable] = useState<'agent' | 'public'>('agent');
+  const [showTable, setShowTable] = useState<"agent" | "public">("agent");
 
   const pageSize = 25;
 
@@ -64,8 +64,14 @@ export default function AdvisorDashboard() {
       setLoading(true);
 
       const [agentRes, publicRes] = await Promise.all([
-        supabase.from('agent_leads').select('*').order('created_at', { ascending: false }),
-        supabase.from('public_leads').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from("agent_leads")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("public_leads")
+          .select("*")
+          .order("created_at", { ascending: false }),
       ]);
 
       if (!agentRes.error) setAgentLeads(agentRes.data || []);
@@ -82,10 +88,10 @@ export default function AdvisorDashboard() {
   // ----------------------
   const allLeads = useMemo(
     () => [
-      ...agentLeads.map((l) => ({ ...l, source: 'Advisor' })),
-      ...publicLeads.map((l) => ({ ...l, source: 'Public' })),
+      ...agentLeads.map((l) => ({ ...l, source: "Advisor" })),
+      ...publicLeads.map((l) => ({ ...l, source: "Public" })),
     ],
-    [agentLeads, publicLeads]
+    [agentLeads, publicLeads],
   );
 
   const filteredLeads = useMemo(() => {
@@ -94,19 +100,21 @@ export default function AdvisorDashboard() {
       const matchesSearch =
         !search ||
         (lead.name && lead.name.toLowerCase().includes(search.toLowerCase())) ||
-        (lead.email && lead.email.toLowerCase().includes(search.toLowerCase())) ||
+        (lead.email &&
+          lead.email.toLowerCase().includes(search.toLowerCase())) ||
         (lead.phone && lead.phone.toLowerCase().includes(search.toLowerCase()));
 
-      const matchesStatus = !statusFilter || getLeadStatus(lead) === statusFilter;
+      const matchesStatus =
+        !statusFilter || getLeadStatus(lead) === statusFilter;
 
       const createdAt = lead.created_at ? new Date(lead.created_at) : null;
       let matchesDate = true;
 
-      if (dateFilter === '7') {
+      if (dateFilter === "7") {
         matchesDate =
           !!createdAt &&
           (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24) <= 7;
-      } else if (dateFilter === '30') {
+      } else if (dateFilter === "30") {
         matchesDate =
           !!createdAt &&
           (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24) <= 30;
@@ -120,15 +128,24 @@ export default function AdvisorDashboard() {
   // PAGINATION
   // ----------------------
   const totalPages = Math.ceil(filteredLeads.length / pageSize);
-  const pagedLeads = filteredLeads.slice((page - 1) * pageSize, page * pageSize);
+  const pagedLeads = filteredLeads.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   // ----------------------
   // SUMMARY CARDS
   // ----------------------
   const totalLeads = filteredLeads.length;
-  const hotLeads = filteredLeads.filter((l) => getLeadStatus(l) === 'hot').length;
-  const warmLeads = filteredLeads.filter((l) => getLeadStatus(l) === 'warm').length;
-  const coldLeads = filteredLeads.filter((l) => getLeadStatus(l) === 'cold').length;
+  const hotLeads = filteredLeads.filter(
+    (l) => getLeadStatus(l) === "hot",
+  ).length;
+  const warmLeads = filteredLeads.filter(
+    (l) => getLeadStatus(l) === "warm",
+  ).length;
+  const coldLeads = filteredLeads.filter(
+    (l) => getLeadStatus(l) === "cold",
+  ).length;
 
   const last7Days = filteredLeads.filter((l) => {
     if (!l.created_at) return false;
@@ -140,7 +157,7 @@ export default function AdvisorDashboard() {
   // UI START
   // ----------------------
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: 24 }}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: 24 }}>
       <h1 className="text-2xl font-bold mb-6">Advisor Leads Dashboard</h1>
 
       {/* ---------------------- */}
@@ -148,18 +165,22 @@ export default function AdvisorDashboard() {
       {/* ---------------------- */}
       <div className="flex gap-3 mb-6">
         <button
-          onClick={() => setShowTable('agent')}
+          onClick={() => setShowTable("agent")}
           className={`px-4 py-2 rounded-lg font-medium ${
-            showTable === 'agent' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+            showTable === "agent"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
           }`}
         >
           Advisor Leads
         </button>
 
         <button
-          onClick={() => setShowTable('public')}
+          onClick={() => setShowTable("public")}
           className={`px-4 py-2 rounded-lg font-medium ${
-            showTable === 'public' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+            showTable === "public"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
           }`}
         >
           Public Leads
@@ -216,13 +237,15 @@ export default function AdvisorDashboard() {
             ) : (
               pagedLeads.map((lead) => (
                 <tr key={lead.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3">{lead.name || '-'}</td>
-                  <td className="p-3">{lead.email || '-'}</td>
-                  <td className="p-3">{lead.phone || '-'}</td>
+                  <td className="p-3">{lead.name || "-"}</td>
+                  <td className="p-3">{lead.email || "-"}</td>
+                  <td className="p-3">{lead.phone || "-"}</td>
                   <td className="p-3">
                     <span
                       className="px-2 py-1 rounded text-sm font-medium"
-                      style={{ background: getStatusColor(getLeadStatus(lead)) }}
+                      style={{
+                        background: getStatusColor(getLeadStatus(lead)),
+                      }}
                     >
                       {getLeadStatus(lead)}
                     </span>
@@ -231,7 +254,7 @@ export default function AdvisorDashboard() {
                   <td className="p-3">
                     {lead.created_at
                       ? new Date(lead.created_at).toLocaleDateString()
-                      : '-'}
+                      : "-"}
                   </td>
                 </tr>
               ))
@@ -265,4 +288,3 @@ export default function AdvisorDashboard() {
     </div>
   );
 }
-

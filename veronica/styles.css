@@ -1,9 +1,9 @@
 .veronica-dashboard {
-  background-color: #1E1E1E;
-  color: #FFFFFF;
+  background-color: #1e1e1e;
+  color: #ffffff;
   min-height: 100vh;
   padding: 2rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .header {
@@ -13,7 +13,7 @@
 
 .header-logo {
   max-height: 70px;
-  filter: drop-shadow(0 0 8px #F7931E);
+  filter: drop-shadow(0 0 8px #f7931e);
 }
 
 .header-nav {
@@ -32,12 +32,12 @@
 }
 
 .nav-link:hover {
-  color: #F7931E;
+  color: #f7931e;
   background-color: rgba(247, 147, 30, 0.1);
 }
 
 .nav-link.active {
-  color: #F7931E;
+  color: #f7931e;
   background-color: rgba(247, 147, 30, 0.2);
   font-weight: bold;
 }
@@ -48,7 +48,7 @@
 }
 
 .section-title {
-  color: #F7931E;
+  color: #f7931e;
   margin-bottom: 1rem;
   font-weight: bold;
 }
@@ -65,14 +65,14 @@
 }
 
 .data-table th {
-  color: #F7931E;
+  color: #f7931e;
 }
 
 /* Form Styling */
 .data-form {
   max-width: 500px;
   margin: 0 auto;
-  background-color: #2A2A2A;
+  background-color: #2a2a2a;
   padding: 2rem;
   border-radius: 12px;
   border: 1px solid #444;
@@ -80,7 +80,7 @@
 
 .data-form label {
   display: block;
-  color: #F7931E;
+  color: #f7931e;
   font-weight: 600;
   margin-bottom: 0.5rem;
   margin-top: 1rem;
@@ -93,25 +93,25 @@
 .data-form input {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1E1E1E;
+  background-color: #1e1e1e;
   border: 1px solid #555;
   border-radius: 6px;
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 1rem;
   transition: border-color 0.3s ease;
 }
 
 .data-form input:focus {
   outline: none;
-  border-color: #F7931E;
+  border-color: #f7931e;
   box-shadow: 0 0 0 2px rgba(247, 147, 30, 0.2);
 }
 
 .btn-primary {
   width: 100%;
   padding: 1rem;
-  background-color: #F7931E;
-  color: #1E1E1E;
+  background-color: #f7931e;
+  color: #1e1e1e;
   border: none;
   border-radius: 6px;
   font-size: 1rem;
@@ -122,7 +122,7 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #E8831A;
+  background-color: #e8831a;
   transform: translateY(-1px);
 }
 
@@ -143,26 +143,26 @@
 /* Success and error status styling handled in JavaScript */
 .status-success {
   background-color: rgba(34, 197, 94, 0.2);
-  border: 1px solid #22C55E;
-  color: #22C55E;
+  border: 1px solid #22c55e;
+  color: #22c55e;
 }
 
 .status-error {
   background-color: rgba(239, 68, 68, 0.2);
-  border: 1px solid #EF4444;
-  color: #EF4444;
+  border: 1px solid #ef4444;
+  color: #ef4444;
 }
 
 /* === ROnyx Login Page === */
 
 .ronyx-login {
-  background: linear-gradient(135deg, #000 60%, #F7931E 100%);
+  background: linear-gradient(135deg, #000 60%, #f7931e 100%);
   color: white;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .login-box {
@@ -178,7 +178,7 @@
 .ronyx-logo {
   max-height: 80px;
   margin-bottom: 1rem;
-  filter: drop-shadow(0 0 8px #F7931E);
+  filter: drop-shadow(0 0 8px #f7931e);
 }
 
 .login-tagline {
@@ -199,7 +199,7 @@
 }
 
 .login-box button {
-  background-color: #F7931E;
+  background-color: #f7931e;
   color: black;
   font-weight: bold;
   border: none;

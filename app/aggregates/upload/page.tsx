@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Upload, FileText, Image as ImageIcon } from "lucide-react";
 
@@ -24,11 +29,11 @@ export default function AggregateTicketUpload() {
       setResult(null);
 
       // Upload to Supabase Storage aggregate-tickets bucket
-      const path = `tickets/${new Date().toISOString().split('T')[0]}/${Date.now()}-${file.name}`;
+      const path = `tickets/${new Date().toISOString().split("T")[0]}/${Date.now()}-${file.name}`;
 
       const { data: uploadRes, error: uploadErr } = await supabase.storage
         .from("aggregate-tickets") // Use the dedicated aggregate-tickets bucket
-        .upload(path, file, { upsert: false, cacheControl: '3600' });
+        .upload(path, file, { upsert: false, cacheControl: "3600" });
 
       if (uploadErr) {
         setStatus("❌ Upload failed: " + uploadErr.message);
@@ -56,17 +61,17 @@ export default function AggregateTicketUpload() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ 
-            kind: 'ticket', 
-            file_url: signed.signedUrl 
+          body: JSON.stringify({
+            kind: "ticket",
+            file_url: signed.signedUrl,
           }),
-        }
+        },
       );
 
       const ocr = await res.json();
-      
+
       if (!res.ok) {
         setStatus("❌ Scan failed: " + (ocr?.message || res.statusText));
         setLoading(false);
@@ -76,7 +81,6 @@ export default function AggregateTicketUpload() {
       setResult(ocr);
       setStatus("✅ Ticket scanned successfully!");
       setLoading(false);
-
     } catch (e: any) {
       setStatus("❌ Error: " + (e?.message || "Unexpected error"));
       setLoading(false);
@@ -86,9 +90,12 @@ export default function AggregateTicketUpload() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Upload Aggregate Ticket</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Upload Aggregate Ticket
+        </h1>
         <p className="text-gray-600">
-          Scan aggregate delivery tickets (images or PDFs) to automatically extract partner, material, quantity, and driver info.
+          Scan aggregate delivery tickets (images or PDFs) to automatically
+          extract partner, material, quantity, and driver info.
         </p>
       </div>
 
@@ -113,7 +120,7 @@ export default function AggregateTicketUpload() {
               />
               {file && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  {file.type.startsWith('image/') ? (
+                  {file.type.startsWith("image/") ? (
                     <ImageIcon className="w-4 h-4" />
                   ) : (
                     <FileText className="w-4 h-4" />
@@ -136,11 +143,15 @@ export default function AggregateTicketUpload() {
           </Button>
 
           {status && (
-            <div className={`p-4 rounded-lg ${
-              status.includes('✅') ? 'bg-green-50 text-green-800' :
-              status.includes('❌') ? 'bg-red-50 text-red-800' :
-              'bg-blue-50 text-blue-800'
-            }`}>
+            <div
+              className={`p-4 rounded-lg ${
+                status.includes("✅")
+                  ? "bg-green-50 text-green-800"
+                  : status.includes("❌")
+                    ? "bg-red-50 text-red-800"
+                    : "bg-blue-50 text-blue-800"
+              }`}
+            >
               <p className="font-medium">{status}</p>
             </div>
           )}
@@ -169,7 +180,8 @@ export default function AggregateTicketUpload() {
                         </div>
                         <div>
                           <span className="font-semibold">Quantity:</span>{" "}
-                          {result.ticket.quantity || "N/A"} {result.ticket.unit_type || ""}
+                          {result.ticket.quantity || "N/A"}{" "}
+                          {result.ticket.unit_type || ""}
                         </div>
                         <div>
                           <span className="font-semibold">Driver:</span>{" "}
@@ -180,7 +192,7 @@ export default function AggregateTicketUpload() {
                           {result.ticket.ticket_date || "N/A"}
                         </div>
                       </div>
-                      
+
                       {result.ticket.total_pay && (
                         <div className="pt-2 mt-2 border-t">
                           <span className="font-semibold">Calculated Pay:</span>{" "}
@@ -196,7 +208,7 @@ export default function AggregateTicketUpload() {
                       </div>
                     </>
                   )}
-                  
+
                   <details className="mt-4">
                     <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
                       View Full JSON Response
@@ -214,7 +226,9 @@ export default function AggregateTicketUpload() {
 
       <Card className="mt-6 bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">📱 Scanning Tips:</h3>
+          <h3 className="font-semibold text-blue-900 mb-2">
+            📱 Scanning Tips:
+          </h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
             <li>Take clear photos with good lighting</li>
             <li>Ensure all text is readable and not blurry</li>

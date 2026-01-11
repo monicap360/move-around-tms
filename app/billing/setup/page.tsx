@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -23,10 +22,14 @@ export default function BillingSetupPage() {
     setError("");
     setSuccess(false);
     try {
-      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
+      const user = supabase.auth.getUser
+        ? (await supabase.auth.getUser()).data.user
+        : null;
       const userId = user?.id || "anonymous";
       const path = `zelle-receipts/${userId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("billing").upload(path, file);
+      const { error: uploadError } = await supabase.storage
+        .from("billing")
+        .upload(path, file);
       if (uploadError) throw uploadError;
       // Optionally: Insert a record in a 'payments' table for admin review
       setSuccess(true);
@@ -44,21 +47,44 @@ export default function BillingSetupPage() {
       <div className="border rounded p-4 bg-white shadow mb-6">
         <h2 className="text-xl font-semibold mb-2">How to Pay</h2>
         <ul className="list-disc pl-6 mb-4">
-          <li><span className="font-bold">Zelle:</span> <span className="text-blue-700">409-392-9626</span></li>
+          <li>
+            <span className="font-bold">Zelle:</span>{" "}
+            <span className="text-blue-700">409-392-9626</span>
+          </li>
         </ul>
-        <p className="mb-2">Send your setup fee to the Zelle number above. After payment, upload your receipt or screenshot below. Your account will be unlocked once payment is verified by our team.</p>
+        <p className="mb-2">
+          Send your setup fee to the Zelle number above. After payment, upload
+          your receipt or screenshot below. Your account will be unlocked once
+          payment is verified by our team.
+        </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input type="file" className="mb-2 sm:mb-0 flex-1" accept="image/*,application/pdf" onChange={handleFileChange} />
-          <Button onClick={handleUpload} disabled={!file || uploading} className="w-full sm:w-auto">
+          <input
+            type="file"
+            className="mb-2 sm:mb-0 flex-1"
+            accept="image/*,application/pdf"
+            onChange={handleFileChange}
+          />
+          <Button
+            onClick={handleUpload}
+            disabled={!file || uploading}
+            className="w-full sm:w-auto"
+          >
             {uploading ? "Uploading..." : "Upload Receipt"}
           </Button>
         </div>
-        {success && <div className="text-green-600 mt-2">Receipt uploaded! Awaiting admin verification.</div>}
+        {success && (
+          <div className="text-green-600 mt-2">
+            Receipt uploaded! Awaiting admin verification.
+          </div>
+        )}
         {error && <div className="text-red-600 mt-2">{error}</div>}
       </div>
       <div className="border rounded p-4 bg-white shadow">
         <h2 className="text-lg font-semibold mb-2">Subscription Status</h2>
-        <p className="mb-2">Current status: <span className="font-bold">{status || "Pending verification"}</span></p>
+        <p className="mb-2">
+          Current status:{" "}
+          <span className="font-bold">{status || "Pending verification"}</span>
+        </p>
         {/* TODO: Fetch and display real status from Supabase */}
       </div>
     </main>

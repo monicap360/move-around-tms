@@ -3,6 +3,7 @@
 Uploads a document for a load by an authenticated driver.
 
 ## Requirements
+
 - Must be authenticated via Supabase Auth
 - Driver must exist in `drivers` table with `auth_user_id`
 - Storage bucket: `driver-documents`
@@ -19,12 +20,12 @@ form.append("load_id", "YOUR_LOAD_ID");
 form.append("file", fileInput.files[0]);
 
 await fetch(
-  "https://<project>.functions.supabase.co/driver_upload_document",
-  {
-    method: "POST",
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    body: form,
-  }
+"https://<project>.functions.supabase.co/driver_upload_document",
+{
+method: "POST",
+headers: { Authorization: `Bearer ${session.access_token}` },
+body: form,
+}
 );
 
 🚀 Ready for Deployment

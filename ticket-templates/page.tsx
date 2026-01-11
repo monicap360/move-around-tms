@@ -1,22 +1,27 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-import { 
-  FileText, 
-  Edit, 
-  Eye, 
-  Download, 
-  Plus, 
+import {
+  FileText,
+  Edit,
+  Eye,
+  Download,
+  Plus,
   Search,
   Calendar,
   Building,
   Truck,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 
 interface TemplateAsset {
@@ -24,7 +29,7 @@ interface TemplateAsset {
   file_name: string;
   file_size: number;
   file_type: string;
-  asset_type: 'logo' | 'ticket_template';
+  asset_type: "logo" | "ticket_template";
   description?: string;
   file_url: string;
   created_at: string;
@@ -46,7 +51,7 @@ interface TicketTemplate {
 interface TemplateField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: "text" | "number" | "date" | "select";
   label: string;
   required: boolean;
   x_position: number;
@@ -62,7 +67,9 @@ export default function TicketTemplatesPage() {
   const [ticketTemplates, setTicketTemplates] = useState<TicketTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAsset, setSelectedAsset] = useState<TemplateAsset | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<TemplateAsset | null>(
+    null,
+  );
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
 
   useEffect(() => {
@@ -72,17 +79,18 @@ export default function TicketTemplatesPage() {
 
   const loadAssets = async () => {
     try {
-      const response = await fetch('/api/company-assets');
+      const response = await fetch("/api/company-assets");
       if (response.ok) {
         const data = await response.json();
         // Filter for ticket templates only
-        const ticketAssets = data.assets?.filter(
-          (asset: TemplateAsset) => asset.asset_type === 'ticket_template'
-        ) || [];
+        const ticketAssets =
+          data.assets?.filter(
+            (asset: TemplateAsset) => asset.asset_type === "ticket_template",
+          ) || [];
         setUploadedAssets(ticketAssets);
       }
     } catch (error) {
-      console.error('Error loading assets:', error);
+      console.error("Error loading assets:", error);
     }
   };
 
@@ -90,13 +98,13 @@ export default function TicketTemplatesPage() {
     try {
       // In a real implementation, this would call an API endpoint
       // For now, we'll simulate with localStorage or create the API
-      const response = await fetch('/api/ticket-templates');
+      const response = await fetch("/api/ticket-templates");
       if (response.ok) {
         const data = await response.json();
         setTicketTemplates(data.templates || []);
       }
     } catch (error) {
-      console.error('Error loading templates:', error);
+      console.error("Error loading templates:", error);
       // Initialize empty if API doesn't exist yet
       setTicketTemplates([]);
     } finally {
@@ -119,15 +127,17 @@ export default function TicketTemplatesPage() {
     window.location.href = `/ticket-templates/fill/${template.id}`;
   };
 
-  const filteredAssets = uploadedAssets.filter(asset => 
-    asset.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    asset.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAssets = uploadedAssets.filter(
+    (asset) =>
+      asset.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.description?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const filteredTemplates = ticketTemplates.filter(template => 
-    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.partner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTemplates = ticketTemplates.filter(
+    (template) =>
+      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.partner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   if (loading) {
@@ -149,7 +159,8 @@ export default function TicketTemplatesPage() {
           Ticket Template Manager
         </h1>
         <p className="text-gray-600">
-          Create digital forms from uploaded ticket templates and manage your ticket generation workflow.
+          Create digital forms from uploaded ticket templates and manage your
+          ticket generation workflow.
         </p>
       </div>
 
@@ -166,7 +177,7 @@ export default function TicketTemplatesPage() {
                 className="pl-10"
               />
             </div>
-            <Button onClick={() => window.location.href = '/upload-assets'}>
+            <Button onClick={() => (window.location.href = "/upload-assets")}>
               <Plus className="w-4 h-4 mr-2" />
               Upload Assets
             </Button>
@@ -183,7 +194,9 @@ export default function TicketTemplatesPage() {
                 <FileText className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-900">{uploadedAssets.length}</p>
+                <p className="text-2xl font-bold text-blue-900">
+                  {uploadedAssets.length}
+                </p>
                 <p className="text-sm text-blue-700">Uploaded Templates</p>
               </div>
             </div>
@@ -197,7 +210,9 @@ export default function TicketTemplatesPage() {
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-900">{ticketTemplates.filter(t => t.is_active).length}</p>
+                <p className="text-2xl font-bold text-green-900">
+                  {ticketTemplates.filter((t) => t.is_active).length}
+                </p>
                 <p className="text-sm text-green-700">Active Templates</p>
               </div>
             </div>
@@ -212,7 +227,13 @@ export default function TicketTemplatesPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-purple-900">
-                  {new Set(ticketTemplates.map(t => t.partner_name).filter(Boolean)).size}
+                  {
+                    new Set(
+                      ticketTemplates
+                        .map((t) => t.partner_name)
+                        .filter(Boolean),
+                    ).size
+                  }
                 </p>
                 <p className="text-sm text-purple-700">Partner Templates</p>
               </div>
@@ -228,16 +249,20 @@ export default function TicketTemplatesPage() {
             <Truck className="w-5 h-5" />
             Template Assets ({filteredAssets.length})
           </h2>
-          
+
           {filteredAssets.length === 0 ? (
             <Card className="border-dashed border-2 border-gray-300">
               <CardContent className="pt-6 text-center py-12">
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-700 mb-2">No Template Assets</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">
+                  No Template Assets
+                </h3>
                 <p className="text-gray-500 mb-4">
                   Upload ticket template images to create digital forms
                 </p>
-                <Button onClick={() => window.location.href = '/upload-assets'}>
+                <Button
+                  onClick={() => (window.location.href = "/upload-assets")}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Upload First Template
                 </Button>
@@ -246,14 +271,17 @@ export default function TicketTemplatesPage() {
           ) : (
             <div className="space-y-4">
               {filteredAssets.map((asset) => (
-                <Card key={asset.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={asset.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardContent className="pt-4">
                     <div className="flex items-start gap-4">
                       {/* Preview */}
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                        {asset.file_type.startsWith('image/') ? (
-                          <img 
-                            src={asset.file_url} 
+                        {asset.file_type.startsWith("image/") ? (
+                          <img
+                            src={asset.file_url}
                             alt={asset.file_name}
                             className="w-full h-full object-cover"
                           />
@@ -264,31 +292,37 @@ export default function TicketTemplatesPage() {
 
                       {/* Details */}
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 mb-1">{asset.file_name}</h3>
+                        <h3 className="font-medium text-gray-900 mb-1">
+                          {asset.file_name}
+                        </h3>
                         {asset.description && (
-                          <p className="text-sm text-gray-600 mb-2">{asset.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {asset.description}
+                          </p>
                         )}
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <span>{(asset.file_size / 1024).toFixed(1)} KB</span>
                           <span>•</span>
-                          <span>{new Date(asset.created_at).toLocaleDateString()}</span>
+                          <span>
+                            {new Date(asset.created_at).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
 
                       {/* Actions */}
                       <div className="flex flex-col gap-2">
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => handleCreateTemplateFromAsset(asset)}
                           className="text-xs"
                         >
                           <Edit className="w-3 h-3 mr-1" />
                           Create Form
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => window.open(asset.file_url, '_blank')}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(asset.file_url, "_blank")}
                           className="text-xs"
                         >
                           <Eye className="w-3 h-3 mr-1" />
@@ -309,12 +343,14 @@ export default function TicketTemplatesPage() {
             <CheckCircle2 className="w-5 h-5" />
             Digital Templates ({filteredTemplates.length})
           </h2>
-          
+
           {filteredTemplates.length === 0 ? (
             <Card className="border-dashed border-2 border-gray-300">
               <CardContent className="pt-6 text-center py-12">
                 <Edit className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-700 mb-2">No Digital Templates</h3>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">
+                  No Digital Templates
+                </h3>
                 <p className="text-gray-500 mb-4">
                   Create digital forms from your uploaded template assets
                 </p>
@@ -323,7 +359,9 @@ export default function TicketTemplatesPage() {
                     ← Click "Create Form" on any template asset to get started
                   </p>
                 ) : (
-                  <Button onClick={() => window.location.href = '/upload-assets'}>
+                  <Button
+                    onClick={() => (window.location.href = "/upload-assets")}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Upload Templates First
                   </Button>
@@ -333,44 +371,57 @@ export default function TicketTemplatesPage() {
           ) : (
             <div className="space-y-4">
               {filteredTemplates.map((template) => (
-                <Card key={template.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={template.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardContent className="pt-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-medium text-gray-900">{template.name}</h3>
-                          <Badge variant={template.is_active ? "default" : "secondary"}>
+                          <h3 className="font-medium text-gray-900">
+                            {template.name}
+                          </h3>
+                          <Badge
+                            variant={
+                              template.is_active ? "default" : "secondary"
+                            }
+                          >
                             {template.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </div>
-                        
+
                         {template.partner_name && (
                           <p className="text-sm text-blue-600 mb-1 flex items-center gap-1">
                             <Building className="w-3 h-3" />
                             {template.partner_name}
                           </p>
                         )}
-                        
-                        <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                        
+
+                        <p className="text-sm text-gray-600 mb-2">
+                          {template.description}
+                        </p>
+
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <span>{template.template_fields.length} fields</span>
                           <span>•</span>
-                          <span>{new Date(template.updated_at).toLocaleDateString()}</span>
+                          <span>
+                            {new Date(template.updated_at).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => handleUseTemplate(template)}
                           className="text-xs"
                         >
                           <FileText className="w-3 h-3 mr-1" />
                           Fill Form
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => handleEditTemplate(template)}
                           className="text-xs"
@@ -394,10 +445,14 @@ export default function TicketTemplatesPage() {
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">How Ticket Templates Work</h3>
+              <h3 className="font-semibold text-blue-900 mb-2">
+                How Ticket Templates Work
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
                 <div>
-                  <h4 className="font-medium mb-2">1. Upload Template Assets</h4>
+                  <h4 className="font-medium mb-2">
+                    1. Upload Template Assets
+                  </h4>
                   <ul className="space-y-1 list-disc list-inside text-xs">
                     <li>Upload blank ticket forms from partners</li>
                     <li>High-quality images or PDFs work best</li>

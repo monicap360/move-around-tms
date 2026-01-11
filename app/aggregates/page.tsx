@@ -1,10 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import Link from "next/link";
-import { Upload, FileText, TrendingUp, FileEdit, Settings, Receipt, Mail } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  TrendingUp,
+  FileEdit,
+  Settings,
+  Receipt,
+  Mail,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +33,15 @@ export default async function AggregatesPage() {
           return cookieStore.get(name)?.value;
         },
       },
-    }
+    },
   );
 
   // Check authentication
-  const { data: { session }, error } = await supabase.auth.getSession();
-  
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
   if (error || !session) {
     redirect("/login");
   }
@@ -83,7 +99,9 @@ export default async function AggregatesPage() {
                 <TrendingUp className="w-8 h-8 text-orange-500" />
                 <div>
                   <p className="font-semibold">Profit Reports</p>
-                  <p className="text-sm text-gray-500">Revenue vs Pay, margins</p>
+                  <p className="text-sm text-gray-500">
+                    Revenue vs Pay, margins
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -111,7 +129,9 @@ export default async function AggregatesPage() {
                 <Settings className="w-8 h-8 text-gray-500" />
                 <div>
                   <p className="font-semibold">Material & Rate Management</p>
-                  <p className="text-sm text-gray-500">All material, rate, and job info</p>
+                  <p className="text-sm text-gray-500">
+                    All material, rate, and job info
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -125,7 +145,9 @@ export default async function AggregatesPage() {
                 <Mail className="w-8 h-8 text-red-500" />
                 <div>
                   <p className="font-semibold">Quote Requests</p>
-                  <p className="text-sm text-gray-500">Reply with email drafts</p>
+                  <p className="text-sm text-gray-500">
+                    Reply with email drafts
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -139,7 +161,9 @@ export default async function AggregatesPage() {
                 <Receipt className="w-8 h-8 text-teal-600" />
                 <div>
                   <p className="font-semibold">Invoices</p>
-                  <p className="text-sm text-gray-500">Create & download branded PDFs</p>
+                  <p className="text-sm text-gray-500">
+                    Create & download branded PDFs
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -154,16 +178,20 @@ export default async function AggregatesPage() {
         </CardHeader>
         <CardContent className="space-y-2 text-gray-700">
           <p>
-            📸 <strong>Upload any scanner output:</strong> Take photos with your phone or upload PDFs from document scanners
+            📸 <strong>Upload any scanner output:</strong> Take photos with your
+            phone or upload PDFs from document scanners
           </p>
           <p>
-            🤖 <strong>AI-powered OCR:</strong> Automatically extracts partner, material, quantity, ticket number, and driver
+            🤖 <strong>AI-powered OCR:</strong> Automatically extracts partner,
+            material, quantity, ticket number, and driver
           </p>
           <p>
-            💰 <strong>Auto-calculation:</strong> System calculates pay based on partner rates and material types
+            💰 <strong>Auto-calculation:</strong> System calculates pay based on
+            partner rates and material types
           </p>
           <p>
-            ✅ <strong>Manager review:</strong> All tickets go to "Pending Manager Review" for approval before payroll
+            ✅ <strong>Manager review:</strong> All tickets go to "Pending
+            Manager Review" for approval before payroll
           </p>
         </CardContent>
       </Card>

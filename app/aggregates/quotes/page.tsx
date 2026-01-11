@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { useEffect, useState } from "react";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 type Quote = {
   id: string;
@@ -28,15 +33,15 @@ export default function QuotesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showEmailDraft, setShowEmailDraft] = useState<any>(null);
   const [formData, setFormData] = useState<Partial<Quote>>({
-    company: '',
-    contact_name: '',
-    contact_email: '',
-    billing_type: 'Load',
+    company: "",
+    contact_name: "",
+    contact_email: "",
+    billing_type: "Load",
     rate: 0,
     pay_rate: 0,
-    material: '',
-    notes: '',
-    status: 'Draft',
+    material: "",
+    notes: "",
+    status: "Draft",
   });
 
   useEffect(() => {
@@ -46,8 +51,10 @@ export default function QuotesPage() {
 
   async function fetchQuotes() {
     setLoading(true);
-    const res = await fetch('/api/admin/quotes', {
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}` },
+    const res = await fetch("/api/admin/quotes", {
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+      },
     });
     const json = await res.json();
     if (json.data) setQuotes(json.data);
@@ -55,22 +62,24 @@ export default function QuotesPage() {
   }
 
   async function fetchMaterials() {
-    const res = await fetch('/api/admin/material-rates?active=true', {
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}` },
+    const res = await fetch("/api/admin/material-rates?active=true", {
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+      },
     });
     const json = await res.json();
     if (json.data) setMaterials(json.data);
   }
 
   async function handleSave() {
-    const method = editing ? 'PATCH' : 'POST';
+    const method = editing ? "PATCH" : "POST";
     const body = editing ? { id: editing, ...formData } : formData;
 
-    const res = await fetch('/api/admin/quotes', {
+    const res = await fetch("/api/admin/quotes", {
       method,
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
@@ -84,32 +93,37 @@ export default function QuotesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this quote?')) return;
+    if (!confirm("Delete this quote?")) return;
     const res = await fetch(`/api/admin/quotes?id=${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}` },
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+      },
     });
     if (res.ok) await fetchQuotes();
   }
 
   async function handleStatusChange(id: string, newStatus: string) {
-    const res = await fetch('/api/admin/quotes', {
-      method: 'PATCH',
+    const res = await fetch("/api/admin/quotes", {
+      method: "PATCH",
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ id, status: newStatus }),
     });
     if (res.ok) await fetchQuotes();
   }
 
-  async function generateEmailDraft(quoteId: string, templateType: 'customer' | 'management') {
-    const res = await fetch('/api/admin/quotes/email-draft', {
-      method: 'POST',
+  async function generateEmailDraft(
+    quoteId: string,
+    templateType: "customer" | "management",
+  ) {
+    const res = await fetch("/api/admin/quotes/email-draft", {
+      method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ quote_id: quoteId, template_type: templateType }),
     });
@@ -119,11 +133,11 @@ export default function QuotesPage() {
 
   async function sendEmail() {
     if (!showEmailDraft) return;
-    const res = await fetch('/api/admin/quotes/send-email', {
-      method: 'POST',
+    const res = await fetch("/api/admin/quotes/send-email", {
+      method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         to: showEmailDraft.to,
@@ -134,12 +148,12 @@ export default function QuotesPage() {
     });
     const result = await res.json();
     if (result.success) {
-      alert('Email sent successfully!');
+      alert("Email sent successfully!");
       setShowEmailDraft(null);
     } else if (result.draft_mode) {
       alert(result.message);
     } else {
-      alert('Failed to send email: ' + (result.details || result.error));
+      alert("Failed to send email: " + (result.details || result.error));
     }
   }
 
@@ -151,15 +165,15 @@ export default function QuotesPage() {
 
   function resetForm() {
     setFormData({
-      company: '',
-      contact_name: '',
-      contact_email: '',
-      billing_type: 'Load',
+      company: "",
+      contact_name: "",
+      contact_email: "",
+      billing_type: "Load",
       rate: 0,
       pay_rate: 0,
-      material: '',
-      notes: '',
-      status: 'Draft',
+      material: "",
+      notes: "",
+      status: "Draft",
     });
   }
 
@@ -199,45 +213,61 @@ export default function QuotesPage() {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>{editing ? 'Edit' : 'Create'} Quote</CardTitle>
+            <CardTitle>{editing ? "Edit" : "Create"} Quote</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Company Name *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Company Name *
+                </label>
                 <input
                   type="text"
-                  value={formData.company || ''}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  value={formData.company || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, company: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Contact Name</label>
+                <label className="block text-sm font-medium mb-1">
+                  Contact Name
+                </label>
                 <input
                   type="text"
-                  value={formData.contact_name || ''}
-                  onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                  value={formData.contact_name || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contact_name: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Contact Email *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Contact Email *
+                </label>
                 <input
                   type="email"
-                  value={formData.contact_email || ''}
-                  onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                  value={formData.contact_email || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contact_email: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Material (Quick Select)</label>
+                <label className="block text-sm font-medium mb-1">
+                  Material (Quick Select)
+                </label>
                 <select
                   value=""
                   onChange={(e) => handleMaterialSelect(e.target.value)}
                   className="w-full border rounded px-3 py-2"
                 >
-                  <option value="">-- Select material to auto-fill rates --</option>
+                  <option value="">
+                    -- Select material to auto-fill rates --
+                  </option>
                   {materials.map((m) => (
                     <option key={m.id} value={m.material_name}>
                       {m.material_name} (${m.default_bill_rate})
@@ -246,20 +276,28 @@ export default function QuotesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Material Name</label>
+                <label className="block text-sm font-medium mb-1">
+                  Material Name
+                </label>
                 <input
                   type="text"
-                  value={formData.material || ''}
-                  onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                  value={formData.material || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, material: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                   placeholder="e.g., Limestone, Gravel"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Billing Type *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Billing Type *
+                </label>
                 <select
-                  value={formData.billing_type || 'Load'}
-                  onChange={(e) => setFormData({ ...formData, billing_type: e.target.value })}
+                  value={formData.billing_type || "Load"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, billing_type: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                 >
                   <option value="Load">Load</option>
@@ -269,30 +307,46 @@ export default function QuotesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Customer Rate *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Customer Rate *
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.rate || 0}
-                  onChange={(e) => setFormData({ ...formData, rate: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      rate: parseFloat(e.target.value),
+                    })
+                  }
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Driver Pay Rate</label>
+                <label className="block text-sm font-medium mb-1">
+                  Driver Pay Rate
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.pay_rate || 0}
-                  onChange={(e) => setFormData({ ...formData, pay_rate: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      pay_rate: parseFloat(e.target.value),
+                    })
+                  }
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
                 <select
-                  value={formData.status || 'Draft'}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  value={formData.status || "Draft"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                 >
                   <option value="Draft">Draft</option>
@@ -306,8 +360,10 @@ export default function QuotesPage() {
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Notes</label>
                 <textarea
-                  value={formData.notes || ''}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  value={formData.notes || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                   rows={3}
                   placeholder="Additional details, terms, or special instructions"
@@ -338,7 +394,8 @@ export default function QuotesPage() {
           <CardContent>
             <div className="space-y-3">
               <div>
-                <strong>To:</strong> {showEmailDraft.to || '(Management review)'}
+                <strong>To:</strong>{" "}
+                {showEmailDraft.to || "(Management review)"}
               </div>
               <div>
                 <strong>Subject:</strong> {showEmailDraft.subject}
@@ -371,19 +428,33 @@ export default function QuotesPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Company</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Material</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Rate</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Profit</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">
+                    Company
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">
+                    Material
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">
+                    Rate
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">
+                    Profit
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {quotes.map((quote) => {
                   const profit = (quote.rate || 0) - (quote.pay_rate || 0);
                   const marginPct =
-                    quote.rate > 0 ? ((profit / quote.rate) * 100).toFixed(1) : '0.0';
+                    quote.rate > 0
+                      ? ((profit / quote.rate) * 100).toFixed(1)
+                      : "0.0";
                   return (
                     <tr key={quote.id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-3">
@@ -392,18 +463,26 @@ export default function QuotesPage() {
                           {quote.contact_name} · {quote.contact_email}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm">{quote.material || '-'}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {quote.material || "-"}
+                      </td>
                       <td className="px-4 py-3 text-sm font-mono">
                         ${quote.rate.toFixed(2)}/{quote.billing_type}
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <span className="font-medium text-green-700">${profit.toFixed(2)}</span>
-                        <span className="text-xs text-gray-500 ml-1">({marginPct}%)</span>
+                        <span className="font-medium text-green-700">
+                          ${profit.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({marginPct}%)
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={quote.status}
-                          onChange={(e) => handleStatusChange(quote.id, e.target.value)}
+                          onChange={(e) =>
+                            handleStatusChange(quote.id, e.target.value)
+                          }
                           className="text-xs border rounded px-2 py-1"
                         >
                           <option value="Draft">Draft</option>
@@ -415,24 +494,36 @@ export default function QuotesPage() {
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right space-x-1">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(quote)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(quote)}
+                        >
                           Edit
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => generateEmailDraft(quote.id, 'management')}
+                          onClick={() =>
+                            generateEmailDraft(quote.id, "management")
+                          }
                         >
                           📧 Mgmt
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => generateEmailDraft(quote.id, 'customer')}
+                          onClick={() =>
+                            generateEmailDraft(quote.id, "customer")
+                          }
                         >
                           📧 Cust
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDelete(quote.id)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(quote.id)}
+                        >
                           Del
                         </Button>
                       </td>

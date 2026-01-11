@@ -1,4 +1,3 @@
-
 "use client";
 
 export default function DriverLayout({
@@ -20,17 +19,16 @@ export default function DriverLayout({
       <header
         className="glass-panel"
         style={{
-          width:  "100%",
-          padding:  "20px",
+          width: "100%",
+          padding: "20px",
           borderRadius: "20px",
-
         }}
       >
         <div>
           <h2
             style={{
               fontSize: "24px",
-              fontWeight:  600,
+              fontWeight: 600,
             }}
           >
             Driver HUD

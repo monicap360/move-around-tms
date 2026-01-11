@@ -1,7 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -14,7 +19,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  
+
   // Profile form state
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,7 +33,9 @@ export default function ProfilePage() {
 
   const loadUserProfile = async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       if (currentUser) {
         setUser(currentUser);
         setFullName(currentUser.user_metadata?.full_name || "");
@@ -36,7 +43,7 @@ export default function ProfilePage() {
         setAvatarUrl(currentUser.user_metadata?.avatar_url || "");
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error("Error loading profile:", error);
     } finally {
       setLoading(false);
     }
@@ -44,13 +51,13 @@ export default function ProfilePage() {
 
   const checkAdminStatus = async () => {
     try {
-      const response = await fetch('/api/admin/status');
+      const response = await fetch("/api/admin/status");
       if (response.ok) {
         const data = await response.json();
         setIsAdmin(data.isAdmin);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error("Error checking admin status:", error);
     }
   };
 
@@ -63,12 +70,12 @@ export default function ProfilePage() {
         data: {
           full_name: fullName,
           phone: phone,
-        }
+        },
       });
 
       if (error) throw error;
 
-      alert('✅ Profile updated successfully!');
+      alert("✅ Profile updated successfully!");
       await loadUserProfile(); // Reload to get updated data
     } catch (error: any) {
       alert(`❌ Error updating profile: ${error.message}`);
@@ -81,12 +88,12 @@ export default function ProfilePage() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      alert('❌ Passwords do not match');
+      alert("❌ Passwords do not match");
       return;
     }
 
     if (newPassword.length < 6) {
-      alert('❌ Password must be at least 6 characters');
+      alert("❌ Password must be at least 6 characters");
       return;
     }
 
@@ -94,14 +101,14 @@ export default function ProfilePage() {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword
+        password: newPassword,
       });
 
       if (error) throw error;
 
-      alert('✅ Password updated successfully!');
-      setNewPassword('');
-      setConfirmPassword('');
+      alert("✅ Password updated successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (error: any) {
       alert(`❌ Error updating password: ${error.message}`);
     } finally {
@@ -126,8 +133,8 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => window.history.back()}
           >
@@ -136,7 +143,9 @@ export default function ProfilePage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Profile Settings</h1>
-            <p className="text-gray-600">Manage your account information and preferences</p>
+            <p className="text-gray-600">
+              Manage your account information and preferences
+            </p>
           </div>
         </div>
 
@@ -151,7 +160,8 @@ export default function ProfilePage() {
                 <div>
                   <div className="font-semibold">{user?.email}</div>
                   <div className="text-sm text-gray-600">
-                    Member since {new Date(user?.created_at).toLocaleDateString()}
+                    Member since{" "}
+                    {new Date(user?.created_at).toLocaleDateString()}
                   </div>
                 </div>
               </div>
@@ -205,7 +215,9 @@ export default function ProfilePage() {
                         className="bg-gray-50"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Email cannot be changed
+                    </p>
                   </div>
 
                   <div>
@@ -234,7 +246,7 @@ export default function ProfilePage() {
                 </div>
 
                 <Button type="submit" disabled={saving} className="w-full">
-                  {saving ? 'Updating...' : 'Update Profile'}
+                  {saving ? "Updating..." : "Update Profile"}
                 </Button>
               </form>
             </CardContent>
@@ -274,12 +286,12 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={saving || !newPassword || !confirmPassword}
                   className="w-full"
                 >
-                  {saving ? 'Updating...' : 'Change Password'}
+                  {saving ? "Updating..." : "Change Password"}
                 </Button>
               </form>
             </CardContent>
@@ -296,19 +308,27 @@ export default function ProfilePage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Account Type:</span>
-                <span className="text-sm">{isAdmin ? 'Administrator' : 'Standard User'}</span>
+                <span className="text-sm">
+                  {isAdmin ? "Administrator" : "Standard User"}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Member Since:</span>
-                <span className="text-sm">{new Date(user?.created_at).toLocaleDateString()}</span>
+                <span className="text-sm">
+                  {new Date(user?.created_at).toLocaleDateString()}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Email Verified:</span>
-                <span className="text-sm">{user?.email_confirmed_at ? '✅ Yes' : '❌ No'}</span>
+                <span className="text-sm">
+                  {user?.email_confirmed_at ? "✅ Yes" : "❌ No"}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">User ID:</span>
-                <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{user?.id}</span>
+                <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                  {user?.id}
+                </span>
               </div>
             </CardContent>
           </Card>

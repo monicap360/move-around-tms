@@ -120,13 +120,13 @@ $result | ConvertTo-Json -Depth 10
   "data": [
     {
       "employee_id": "123e4567-e89b-12d3-a456-426614174000",
-      "total_gross": 5000.00,
-      "total_net": 4500.00
+      "total_gross": 5000.0,
+      "total_net": 4500.0
     },
     {
       "employee_id": "223e4567-e89b-12d3-a456-426614174001",
-      "total_gross": 6000.00,
-      "total_net": 5400.00
+      "total_gross": 6000.0,
+      "total_net": 5400.0
     }
   ]
 }
@@ -225,6 +225,7 @@ curl -X POST http://localhost:54321/functions/v1/hr-payroll \
 ## Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "error": "Missing required field: employee_id"
@@ -232,6 +233,7 @@ curl -X POST http://localhost:54321/functions/v1/hr-payroll \
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "error": "Unauthorized"
@@ -239,6 +241,7 @@ curl -X POST http://localhost:54321/functions/v1/hr-payroll \
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "error": "Employee not found"
@@ -246,6 +249,7 @@ curl -X POST http://localhost:54321/functions/v1/hr-payroll \
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "error": "Database query failed: [error message]"
@@ -262,28 +266,28 @@ If calling from your Next.js app:
 // app/api/admin/generate-stub/route.ts
 export async function POST(request: Request) {
   const body = await request.json();
-  
+
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/hr-payroll`,
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        action: 'generate_pay_stub',
+        action: "generate_pay_stub",
         ...body,
       }),
-    }
+    },
   );
 
-  if (response.ok && response.headers.get('content-type')?.includes('pdf')) {
+  if (response.ok && response.headers.get("content-type")?.includes("pdf")) {
     const pdfBuffer = await response.arrayBuffer();
     return new Response(pdfBuffer, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="pay_stub.pdf"',
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'attachment; filename="pay_stub.pdf"',
       },
     });
   }

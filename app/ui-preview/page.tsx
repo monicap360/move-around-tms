@@ -32,12 +32,16 @@ export default function UiPreviewPage() {
           🚛 MoveAround TMS
         </h1>
         <h2 className="text-2xl text-gray-700">UI Components Preview</h2>
-        <p className="text-gray-600 mt-2">Professional fleet management interface components</p>
+        <p className="text-gray-600 mt-2">
+          Professional fleet management interface components
+        </p>
       </div>
 
       {/* Spinner */}
       <section className="bg-white p-6 rounded-lg shadow-md border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">🔄 Spinner Components</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          🔄 Spinner Components
+        </h2>
         <div className="flex gap-8 items-center flex-wrap">
           <div className="text-center">
             <Spinner size="sm" />
@@ -52,7 +56,11 @@ export default function UiPreviewPage() {
             <p className="text-xs text-gray-600 mt-2">Large</p>
           </div>
           <div className="text-center">
-            <Spinner size="md" color="text-green-600" label="Loading drivers..." />
+            <Spinner
+              size="md"
+              color="text-green-600"
+              label="Loading drivers..."
+            />
             <p className="text-xs text-gray-600 mt-2">With Label</p>
           </div>
         </div>
@@ -60,7 +68,9 @@ export default function UiPreviewPage() {
 
       {/* Progress Bar */}
       <section className="bg-white p-6 rounded-lg shadow-md border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">📊 Progress Bar</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          📊 Progress Bar
+        </h2>
         <div className="space-y-4">
           <Progress value={progress} className="w-full" />
           <div className="flex gap-2 items-center">
@@ -70,7 +80,9 @@ export default function UiPreviewPage() {
             >
               Decrease
             </button>
-            <span className="text-sm text-gray-600 min-w-[60px]">{progress}%</span>
+            <span className="text-sm text-gray-600 min-w-[60px]">
+              {progress}%
+            </span>
             <button
               onClick={() => setProgress((p) => Math.min(100, p + 10))}
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
@@ -83,19 +95,28 @@ export default function UiPreviewPage() {
 
       {/* Tabs */}
       <section className="bg-white p-6 rounded-lg shadow-md border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">📑 Navigation Tabs</h2>
-        <SimpleTabs 
-          tabs={["Dashboard", "Drivers", "Fleet", "Reports"]} 
-          onTabChange={(tab) => console.log('Tab selected:', tab)}
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          📑 Navigation Tabs
+        </h2>
+        <SimpleTabs
+          tabs={["Dashboard", "Drivers", "Fleet", "Reports"]}
+          onTabChange={(tab) => console.log("Tab selected:", tab)}
         />
       </section>
 
       {/* Select */}
       <section className="bg-white p-6 rounded-lg shadow-md border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">🎯 Select Dropdown</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          🎯 Select Dropdown
+        </h2>
         <div className="space-y-4">
           <SimpleSelect
-            options={["All Drivers", "Active Drivers", "Inactive Drivers", "Pending Verification"]}
+            options={[
+              "All Drivers",
+              "Active Drivers",
+              "Inactive Drivers",
+              "Pending Verification",
+            ]}
             value={option}
             onChange={setOption}
             placeholder="Select driver status..."
@@ -108,7 +129,9 @@ export default function UiPreviewPage() {
 
       {/* Loading Overlay */}
       <section className="bg-white p-6 rounded-lg shadow-md border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">🌫️ Loading Overlays</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          🌫️ Loading Overlays
+        </h2>
         <div className="flex gap-4 flex-wrap">
           <button
             onClick={handleShowOverlay}
@@ -124,19 +147,19 @@ export default function UiPreviewPage() {
           </button>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          Local overlay shows above this page only. Global overlay covers the entire application.
+          Local overlay shows above this page only. Global overlay covers the
+          entire application.
         </p>
-        
+
         {/* Local loading overlay */}
-        <LoadingOverlay
-          show={showOverlay}
-          label="Testing local overlay..."
-        />
+        <LoadingOverlay show={showOverlay} label="Testing local overlay..." />
       </section>
 
       {/* Feature Summary */}
       <section className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">✨ Component Features</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          ✨ Component Features
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <h3 className="font-medium text-blue-600 mb-2">🎨 Design System</h3>

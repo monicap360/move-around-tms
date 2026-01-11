@@ -1,5 +1,10 @@
 "use client";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 
 export default function TitleRegistrationPage() {
   return (
@@ -9,7 +14,10 @@ export default function TitleRegistrationPage() {
           <CardTitle>Title & Registration</CardTitle>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Store title documents and Unified Carrier Registration (UCR) details.</p>
+          <p>
+            Store title documents and Unified Carrier Registration (UCR)
+            details.
+          </p>
           <p>Renewal and expiration reminders displayed on dashboard.</p>
         </CardContent>
       </Card>

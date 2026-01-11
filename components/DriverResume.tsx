@@ -25,9 +25,15 @@ export default function DriverResume({ driver, resume }: any) {
       <p className="text-sm">{resume?.bio}</p>
 
       <div className="mt-3 text-sm">
-        <p><strong>Skills:</strong> {resume?.skills}</p>
-        <p><strong>Certifications:</strong> {resume?.certifications}</p>
-        <p><strong>Experience:</strong> {resume?.experience}</p>
+        <p>
+          <strong>Skills:</strong> {resume?.skills}
+        </p>
+        <p>
+          <strong>Certifications:</strong> {resume?.certifications}
+        </p>
+        <p>
+          <strong>Experience:</strong> {resume?.experience}
+        </p>
       </div>
     </div>
   );

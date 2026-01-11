@@ -12,7 +12,9 @@ export const clearAdminToken = () => {
   }
 };
 export const getAdminTokenExpiry = () =>
-  typeof window !== "undefined" ? Number(localStorage.getItem("admin_token_expiry")) : 0;
+  typeof window !== "undefined"
+    ? Number(localStorage.getItem("admin_token_expiry"))
+    : 0;
 export const setAdminTokenExpiry = (expiry: number) => {
   if (typeof window !== "undefined") {
     localStorage.setItem("admin_token_expiry", String(expiry));

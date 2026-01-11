@@ -1,89 +1,144 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Move Around TMS — Login</title>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <style>
-    body {
-      background:#0d1b2a;color:#fff;font-family:"Segoe UI",sans-serif;
-      display:flex;flex-direction:column;justify-content:center;align-items:center;
-      height:100vh;margin:0;
-    }
-    .login-box {
-      background:rgba(255,255,255,0.08);padding:2rem;border-radius:16px;
-      text-align:center;width:320px;box-shadow:0 0 20px rgba(0,0,0,0.3);
-    }
-    h1{color:#00b4d8;margin-bottom:.5rem;}
-    h2{color:#adb5bd;font-weight:normal;margin-bottom:1.5rem;font-size:0.9rem;}
-    input,button{
-      width:100%;padding:10px;border:none;border-radius:8px;font-size:1rem;margin-bottom:.8rem;
-      box-sizing:border-box;
-    }
-    input{background:rgba(255,255,255,0.1);color:#fff;}
-    input::placeholder{color:#adb5bd;}
-    button{background:#00b4d8;color:#fff;cursor:pointer;font-weight:600;}
-    button:hover{background:#0096c7;}
-    button:disabled{background:#495057;cursor:not-allowed;}
-    .msg{margin-top:1rem;font-size:.9rem;color:#ffc107;}
-    .error{color:#dc3545;}
-    .success{color:#28a745;}
-  </style>
-</head>
-<body>
-  <div class="login-box">
-    <h1>Move Around TMS</h1>
-    <h2>From Street Smart to Fleet Smart™</h2>
-    <input id="email" type="email" placeholder="Email" autocomplete="email" />
-    <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
-    <button id="loginBtn" onclick="login()">Login</button>
-    <div id="msg" class="msg"></div>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Move Around TMS — Login</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+      body {
+        background: #0d1b2a;
+        color: #fff;
+        font-family: "Segoe UI", sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .login-box {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2rem;
+        border-radius: 16px;
+        text-align: center;
+        width: 320px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        color: #00b4d8;
+        margin-bottom: 0.5rem;
+      }
+      h2 {
+        color: #adb5bd;
+        font-weight: normal;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+      }
+      input,
+      button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin-bottom: 0.8rem;
+        box-sizing: border-box;
+      }
+      input {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      input::placeholder {
+        color: #adb5bd;
+      }
+      button {
+        background: #00b4d8;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:hover {
+        background: #0096c7;
+      }
+      button:disabled {
+        background: #495057;
+        cursor: not-allowed;
+      }
+      .msg {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        color: #ffc107;
+      }
+      .error {
+        color: #dc3545;
+      }
+      .success {
+        color: #28a745;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-box">
+      <h1>Move Around TMS</h1>
+      <h2>From Street Smart to Fleet Smart™</h2>
+      <input id="email" type="email" placeholder="Email" autocomplete="email" />
+      <input
+        id="password"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+      />
+      <button id="loginBtn" onclick="login()">Login</button>
+      <div id="msg" class="msg"></div>
+    </div>
 
-  <script>
-    // --- Move Around TMS login script ---
-    const supabase = window.supabase.createClient(
-      "https://wqeidcatuwqtzwhvmqfr.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZWlkY2F0dXdxdHp3aHZtcWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNjkxNzcsImV4cCI6MjA3Njk0NTE3N30.E8bSplLakPK0obSoyhddRt64V8rFXS7ZMlaIQQaI0TQ"
-    );
+    <script>
+      // --- Move Around TMS login script ---
+      const supabase = window.supabase.createClient(
+        "https://wqeidcatuwqtzwhvmqfr.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZWlkY2F0dXdxdHp3aHZtcWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNjkxNzcsImV4cCI6MjA3Njk0NTE3N30.E8bSplLakPK0obSoyhddRt64V8rFXS7ZMlaIQQaI0TQ",
+      );
 
-    async function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const msg = document.getElementById("msg");
+      async function login() {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const msg = document.getElementById("msg");
 
-      if (!email || !password) {
-        msg.textContent = "Enter both email and password.";
-        msg.style.color = "orange";
-        return;
+        if (!email || !password) {
+          msg.textContent = "Enter both email and password.";
+          msg.style.color = "orange";
+          return;
+        }
+
+        msg.textContent = "Signing in...";
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          msg.textContent = "❌ " + error.message;
+          msg.style.color = "#ff6b6b";
+        } else {
+          msg.textContent = "✅ Login successful! Redirecting...";
+          msg.style.color = "#90ee90";
+          setTimeout(() => (window.location.href = "/"), 800);
+        }
       }
 
-      msg.textContent = "Signing in...";
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Allow Enter key to submit
+      document.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") login();
+      });
 
-      if (error) {
-        msg.textContent = "❌ " + error.message;
-        msg.style.color = "#ff6b6b";
-      } else {
-        msg.textContent = "✅ Login successful! Redirecting...";
-        msg.style.color = "#90ee90";
-        setTimeout(() => (window.location.href = "/"), 800);
-      }
-    }
-
-    // Allow Enter key to submit
-    document.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") login();
-    });
-
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        console.log("User already logged in, redirecting...");
-        window.location.href = "/";
-      }
-    });
-  </script>
-</body>
+      // Check if user is already logged in
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          console.log("User already logged in, redirecting...");
+          window.location.href = "/";
+        }
+      });
+    </script>
+  </body>
 </html>

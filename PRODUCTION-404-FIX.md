@@ -6,7 +6,7 @@
 
 Try these URLs on `app.movearoundtms.com`:
 
-1. **https://app.movearoundtms.com/login** 
+1. **https://app.movearoundtms.com/login**
    - If this works: Authentication is deployed
    - If 404: Entire app needs redeployment
 
@@ -22,6 +22,7 @@ Try these URLs on `app.movearoundtms.com`:
 This means the app isn't properly deployed. You need to:
 
 1. **Build the app locally:**
+
    ```bash
    cd C:\Users\mptra\OneDrive\Desktop\move-around-tms
    npm run build
@@ -37,6 +38,7 @@ This means the app isn't properly deployed. You need to:
 The pages we created today (`/production-debug`, `/auth-test`, `/style-test`) don't exist on production because they weren't deployed yet.
 
 **Solution:** Test with existing pages:
+
 - Use `/login` for authentication testing
 - Use `/` (main dashboard) for debug info (now includes production debug)
 
@@ -45,7 +47,7 @@ The pages we created today (`/production-debug`, `/auth-test`, `/style-test`) do
 This indicates a Supabase configuration issue:
 
 1. **Go to Supabase Dashboard**
-2. **Authentication → URL Configuration** 
+2. **Authentication → URL Configuration**
 3. **Set Site URL:** `https://app.movearoundtms.com`
 4. **Add Redirect URLs:**
    - `https://app.movearoundtms.com/auth/callback`

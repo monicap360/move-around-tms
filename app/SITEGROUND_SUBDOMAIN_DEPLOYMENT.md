@@ -1,6 +1,7 @@
 # 🌐 SiteGround Subdomain Deployment Guide
 
 ## 📋 **Subdomain Structure Overview**
+
 ```
 Main Domain: movearoundtms.com (marketing/info site)
 App Subdomain: movearoundtms.app (TMS application)
@@ -14,6 +15,7 @@ Partner Subdomains:
 ## 🏗️ **SiteGround Directory Structure**
 
 ### **Main App Directory: `/public_html/movearoundtms.app/`**
+
 ```
 /public_html/movearoundtms.app/
 ├── admin-dashboard.html (Super Admin Portal)
@@ -29,6 +31,7 @@ Partner Subdomains:
 ```
 
 ### **Partner Subdomains**
+
 ```
 /public_html/ronyx.movearoundtms.app/
 ├── index.html (Partner Dashboard)
@@ -54,18 +57,21 @@ Partner Subdomains:
 ## 🔗 **Access URLs After DNS Propagation**
 
 ### **Super Admin Access**
+
 - Monica: `https://movearoundtms.app/admin-dashboard.html?user=monica`
 - Breanna: `https://movearoundtms.app/admin-dashboard.html?user=breanna`
 - Shamsa: `https://movearoundtms.app/admin-dashboard.html?user=shamsa`
 - Sylvia: `https://movearoundtms.app/admin-dashboard.html?user=sylvia`
 
 ### **Partner Portal Access**
+
 - ROnyx (Veronica): `https://ronyx.movearoundtms.app/`
 - Elite (Maria): `https://elite.movearoundtms.app/`
 - Meighoo (Anil): `https://meighoo.movearoundtms.app/`
 - Garza (Miram): `https://garza.movearoundtms.app/`
 
 ### **Authentication & System Access**
+
 - Login Portal: `https://movearoundtms.app/auth/`
 - User Management: `https://movearoundtms.app/admin/users.html`
 - System Settings: `https://movearoundtms.app/admin/settings.html`
@@ -74,6 +80,7 @@ Partner Subdomains:
 ## ⚙️ **SiteGround cPanel Setup Steps**
 
 ### **1. Create Subdomains in cPanel**
+
 ```bash
 # In SiteGround cPanel → Subdomains:
 movearoundtms.app → /public_html/movearoundtms.app/
@@ -84,6 +91,7 @@ garza.movearoundtms.app → /public_html/garza.movearoundtms.app/
 ```
 
 ### **2. DNS Configuration**
+
 ```
 # Already configured nameservers:
 ns1.siteground.net
@@ -93,6 +101,7 @@ ns2.siteground.net
 ```
 
 ### **3. SSL Certificates**
+
 ```bash
 # SiteGround cPanel → SSL/TLS → Let's Encrypt:
 - Enable for movearoundtms.app
@@ -105,6 +114,7 @@ ns2.siteground.net
 ## 📦 **Deployment Commands**
 
 ### **Build Static Export**
+
 ```bash
 cd /app
 npm run build
@@ -112,6 +122,7 @@ npm run build
 ```
 
 ### **Upload to SiteGround**
+
 ```bash
 # Main app files → /public_html/movearoundtms.app/
 # Partner portals → respective subdomain folders
@@ -119,6 +130,7 @@ npm run build
 ```
 
 ## 🔐 **Supabase Configuration**
+
 ```sql
 -- Run in Supabase SQL Editor:
 -- File: supabase/SUPER_ADMIN_FINAL.sql
@@ -127,12 +139,14 @@ npm run build
 ```
 
 ## 🎨 **Theme System**
+
 - **Global CSS:** `/assets/theme-viable.css`
 - **Colors:** Navy header, electric blue highlights, orange CTAs
 - **Font:** Inter for professional typography
 - **Consistency:** All dashboards use same theme file
 
 ## 🚀 **Go-Live Checklist**
+
 - [ ] DNS propagation complete (24-48 hours)
 - [ ] All subdomains created in SiteGround cPanel
 - [ ] SSL certificates enabled for all domains
@@ -143,6 +157,7 @@ npm run build
 - [ ] Partner portal access verified
 
 ## 🎯 **Benefits of Subdomain Architecture**
+
 ✅ **Clean URLs:** Each partner gets branded subdomain  
 ✅ **Easy Management:** Centralized theme and assets  
 ✅ **Scalability:** Simple to add new partners  

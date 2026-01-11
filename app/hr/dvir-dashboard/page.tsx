@@ -1,22 +1,27 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Search, 
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Search,
   Filter,
   Calendar,
   Truck,
   User,
   FileText,
   Download,
-  Eye
+  Eye,
 } from "lucide-react";
 
 type DVIRInspection = {
@@ -24,9 +29,12 @@ type DVIRInspection = {
   driver_name: string;
   truck_number: string;
   odometer_reading: number;
-  inspection_type: 'pre_trip' | 'post_trip';
+  inspection_type: "pre_trip" | "post_trip";
   location: string;
-  overall_status: 'satisfactory' | 'defects_corrected' | 'defects_need_correction';
+  overall_status:
+    | "satisfactory"
+    | "defects_corrected"
+    | "defects_need_correction";
   created_at: string;
   updated_at: string;
   defects?: Array<{ count: number }>;
@@ -58,8 +66,8 @@ export default function DVIRDashboardPage() {
       setLoading(true);
 
       // Load DVIR statistics
-      const { data: statsData, error: statsError } = await supabase
-        .rpc('get_dvir_stats');
+      const { data: statsData, error: statsError } =
+        await supabase.rpc("get_dvir_stats");
 
       if (statsError) {
         console.error("Error loading DVIR stats:", statsError);
@@ -69,12 +77,14 @@ export default function DVIRDashboardPage() {
 
       // Load DVIR inspections with defect counts
       let query = supabase
-        .from('dvir_inspections')
-        .select(`
+        .from("dvir_inspections")
+        .select(
+          `
           *,
           defects:dvir_defects(count)
-        `)
-        .order('created_at', { ascending: false })
+        `,
+        )
+        .order("created_at", { ascending: false })
         .limit(50);
 
       const { data: inspectionsData, error: inspectionsError } = await query;
@@ -84,7 +94,6 @@ export default function DVIRDashboardPage() {
       } else {
         setInspections(inspectionsData || []);
       }
-
     } catch (error) {
       console.error("Error loading DVIR data:", error);
     } finally {
@@ -94,12 +103,20 @@ export default function DVIRDashboardPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'satisfactory':
-        return <Badge className="bg-green-100 text-green-800">Satisfactory</Badge>;
-      case 'defects_corrected':
-        return <Badge className="bg-yellow-100 text-yellow-800">Defects Corrected</Badge>;
-      case 'defects_need_correction':
-        return <Badge className="bg-red-100 text-red-800">Needs Correction</Badge>;
+      case "satisfactory":
+        return (
+          <Badge className="bg-green-100 text-green-800">Satisfactory</Badge>
+        );
+      case "defects_corrected":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">
+            Defects Corrected
+          </Badge>
+        );
+      case "defects_need_correction":
+        return (
+          <Badge className="bg-red-100 text-red-800">Needs Correction</Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -107,30 +124,33 @@ export default function DVIRDashboardPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'satisfactory':
+      case "satisfactory":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'defects_corrected':
+      case "defects_corrected":
         return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
-      case 'defects_need_correction':
+      case "defects_need_correction":
         return <XCircle className="w-4 h-4 text-red-600" />;
       default:
         return <AlertTriangle className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const filteredInspections = inspections.filter(inspection => {
-    const matchesSearch = 
+  const filteredInspections = inspections.filter((inspection) => {
+    const matchesSearch =
       inspection.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inspection.truck_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inspection.truck_number
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       inspection.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || inspection.overall_status === statusFilter;
-    
+
+    const matchesStatus =
+      statusFilter === "all" || inspection.overall_status === statusFilter;
+
     let matchesDate = true;
     if (dateFilter !== "all") {
       const inspectionDate = new Date(inspection.created_at);
       const today = new Date();
-      
+
       switch (dateFilter) {
         case "today":
           matchesDate = inspectionDate.toDateString() === today.toDateString();
@@ -145,7 +165,7 @@ export default function DVIRDashboardPage() {
           break;
       }
     }
-    
+
     return matchesSearch && matchesStatus && matchesDate;
   });
 
@@ -189,7 +209,9 @@ export default function DVIRDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Inspections</p>
-                <p className="text-2xl font-bold">{stats?.total_inspections || 0}</p>
+                <p className="text-2xl font-bold">
+                  {stats?.total_inspections || 0}
+                </p>
               </div>
               <FileText className="w-8 h-8 text-blue-500" />
             </div>
@@ -201,7 +223,9 @@ export default function DVIRDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Satisfactory</p>
-                <p className="text-2xl font-bold text-green-600">{stats?.satisfactory_count || 0}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats?.satisfactory_count || 0}
+                </p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
@@ -213,7 +237,9 @@ export default function DVIRDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Defects Corrected</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats?.defects_corrected_count || 0}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {stats?.defects_corrected_count || 0}
+                </p>
               </div>
               <AlertTriangle className="w-8 h-8 text-yellow-500" />
             </div>
@@ -225,7 +251,9 @@ export default function DVIRDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Need Correction</p>
-                <p className="text-2xl font-bold text-red-600">{stats?.defects_need_correction_count || 0}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats?.defects_need_correction_count || 0}
+                </p>
               </div>
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
@@ -237,7 +265,9 @@ export default function DVIRDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Today's Inspections</p>
-                <p className="text-2xl font-bold">{stats?.today_inspections || 0}</p>
+                <p className="text-2xl font-bold">
+                  {stats?.today_inspections || 0}
+                </p>
               </div>
               <Calendar className="w-8 h-8 text-purple-500" />
             </div>
@@ -261,9 +291,9 @@ export default function DVIRDashboardPage() {
                 className="w-64"
               />
             </div>
-            
-            <select 
-              value={statusFilter} 
+
+            <select
+              value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md"
             >
@@ -273,8 +303,8 @@ export default function DVIRDashboardPage() {
               <option value="defects_need_correction">Needs Correction</option>
             </select>
 
-            <select 
-              value={dateFilter} 
+            <select
+              value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md"
             >
@@ -300,7 +330,9 @@ export default function DVIRDashboardPage() {
             <div className="text-center py-8 text-gray-500">
               <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>No DVIR inspections found matching your filters.</p>
-              <p className="text-sm mt-2">Drivers can create inspections using the DVIR form.</p>
+              <p className="text-sm mt-2">
+                Drivers can create inspections using the DVIR form.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -320,7 +352,10 @@ export default function DVIRDashboardPage() {
                 </thead>
                 <tbody>
                   {filteredInspections.map((inspection) => (
-                    <tr key={inspection.id} className="border-b hover:bg-gray-50">
+                    <tr
+                      key={inspection.id}
+                      className="border-b hover:bg-gray-50"
+                    >
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(inspection.overall_status)}
@@ -340,16 +375,28 @@ export default function DVIRDashboardPage() {
                         </div>
                       </td>
                       <td className="p-3">
-                        <Badge variant={inspection.inspection_type === 'pre_trip' ? 'default' : 'secondary'}>
-                          {inspection.inspection_type === 'pre_trip' ? 'Pre-Trip' : 'Post-Trip'}
+                        <Badge
+                          variant={
+                            inspection.inspection_type === "pre_trip"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {inspection.inspection_type === "pre_trip"
+                            ? "Pre-Trip"
+                            : "Post-Trip"}
                         </Badge>
                       </td>
-                      <td className="p-3">{inspection.odometer_reading.toLocaleString()}</td>
+                      <td className="p-3">
+                        {inspection.odometer_reading.toLocaleString()}
+                      </td>
                       <td className="p-3">{inspection.location}</td>
                       <td className="p-3">
                         {(inspection.defects?.[0]?.count || 0) > 0 ? (
                           <div className="flex items-center gap-1">
-                            <span className="text-red-600">{inspection.defects?.[0]?.count || 0}</span>
+                            <span className="text-red-600">
+                              {inspection.defects?.[0]?.count || 0}
+                            </span>
                             <AlertTriangle className="w-4 h-4 text-red-600" />
                           </div>
                         ) : (

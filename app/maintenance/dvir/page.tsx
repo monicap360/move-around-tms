@@ -1,7 +1,12 @@
 "use client";
 import { useState } from "react";
 import { validateDVIR } from "lib/complianceRules";
-import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+} from "../../components/ui/card";
 
 const inspectionItems = [
   [
@@ -79,31 +84,45 @@ export default function DVIRForm() {
     }));
   };
 
-
   const [complianceError, setComplianceError] = useState("");
   const [state, setState] = useState("CA"); // Default to CA, could be dynamic
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Prepare inspection_items array for API
-    const inspection_items = Object.entries(form.inspection).map(([key, status]) => ({
-      item: key,
-      status: status === "ok" ? "satisfactory" : status === "defect" ? "defective" : "unknown"
-    }));
+    const inspection_items = Object.entries(form.inspection).map(
+      ([key, status]) => ({
+        item: key,
+        status:
+          status === "ok"
+            ? "satisfactory"
+            : status === "defect"
+              ? "defective"
+              : "unknown",
+      }),
+    );
 
     // Compliance validation
     const dvirForValidation = {
       ...form,
       inspection: form.inspection,
-      date: form.date
+      date: form.date,
     };
     const compliance = validateDVIR(dvirForValidation, state);
-    if (compliance.missingFields.length > 0 || compliance.invalidDefects.length > 0 || !compliance.intervalOk) {
+    if (
+      compliance.missingFields.length > 0 ||
+      compliance.invalidDefects.length > 0 ||
+      !compliance.intervalOk
+    ) {
       setComplianceError(
         `Not compliant with ${state} rules. ` +
-        (compliance.missingFields.length > 0 ? `Missing: ${compliance.missingFields.join(", ")}. ` : "") +
-        (compliance.invalidDefects.length > 0 ? `Invalid defects: ${compliance.invalidDefects.join(", ")}. ` : "") +
-        (!compliance.intervalOk ? `Inspection interval exceeded.` : "")
+          (compliance.missingFields.length > 0
+            ? `Missing: ${compliance.missingFields.join(", ")}. `
+            : "") +
+          (compliance.invalidDefects.length > 0
+            ? `Invalid defects: ${compliance.invalidDefects.join(", ")}. `
+            : "") +
+          (!compliance.intervalOk ? `Inspection interval exceeded.` : ""),
       );
       return;
     } else {
@@ -117,7 +136,9 @@ export default function DVIRForm() {
       inspection_type: "pre-trip", // or allow user to select
       location: "", // Optionally add location capture
       inspection_items,
-      overall_status: inspection_items.some(i => i.status === "defective") ? "defective" : "satisfactory",
+      overall_status: inspection_items.some((i) => i.status === "defective")
+        ? "defective"
+        : "satisfactory",
       remarks: form.remarks,
       trailer_number: form.trailerNumber,
       company: form.company,
@@ -128,14 +149,14 @@ export default function DVIRForm() {
       mechanic_signature: form.mechanicSignature,
       driver_review: form.driverReview,
       driver_review_signature: form.driverReviewSignature,
-      driver_review_date: form.driverReviewDate
+      driver_review_date: form.driverReviewDate,
     };
 
     try {
       const res = await fetch("/api/dvir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -175,42 +196,92 @@ export default function DVIRForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label>State</label>
-              <select value={state} onChange={e=>setState(e.target.value)} className="input">
+              <select
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="input"
+              >
                 <option value="CA">California</option>
                 <option value="NY">New York</option>
                 <option value="federal">Federal</option>
                 {/* Add more states as needed */}
               </select>
             </div>
-            {complianceError && <div className="text-red-600 font-semibold">{complianceError}</div>}
+            {complianceError && (
+              <div className="text-red-600 font-semibold">
+                {complianceError}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label>Company Name</label>
-                <input name="company" value={form.company} onChange={handleChange} className="input" required />
+                <input
+                  name="company"
+                  value={form.company}
+                  onChange={handleChange}
+                  className="input"
+                  required
+                />
               </div>
               <div>
                 <label>Date</label>
-                <input name="date" type="date" value={form.date} onChange={handleChange} className="input" required />
+                <input
+                  name="date"
+                  type="date"
+                  value={form.date}
+                  onChange={handleChange}
+                  className="input"
+                  required
+                />
               </div>
               <div>
                 <label>Truck/Tractor Number</label>
-                <input name="truckNumber" value={form.truckNumber} onChange={handleChange} className="input" required />
+                <input
+                  name="truckNumber"
+                  value={form.truckNumber}
+                  onChange={handleChange}
+                  className="input"
+                  required
+                />
               </div>
               <div>
                 <label>Trailer Number(s)</label>
-                <input name="trailerNumber" value={form.trailerNumber} onChange={handleChange} className="input" />
+                <input
+                  name="trailerNumber"
+                  value={form.trailerNumber}
+                  onChange={handleChange}
+                  className="input"
+                />
               </div>
               <div>
                 <label>Odometer Reading</label>
-                <input name="odometer" value={form.odometer} onChange={handleChange} className="input" required />
+                <input
+                  name="odometer"
+                  value={form.odometer}
+                  onChange={handleChange}
+                  className="input"
+                  required
+                />
               </div>
               <div>
                 <label>Driver Name</label>
-                <input name="driverName" value={form.driverName} onChange={handleChange} className="input" required />
+                <input
+                  name="driverName"
+                  value={form.driverName}
+                  onChange={handleChange}
+                  className="input"
+                  required
+                />
               </div>
               <div>
                 <label>Driver Signature</label>
-                <input name="driverSignature" value={form.driverSignature} onChange={handleChange} className="input" required />
+                <input
+                  name="driverSignature"
+                  value={form.driverSignature}
+                  onChange={handleChange}
+                  className="input"
+                  required
+                />
               </div>
             </div>
             <div className="mt-6">
@@ -236,7 +307,9 @@ export default function DVIRForm() {
                               type="radio"
                               name={`inspection_${item.key}`}
                               checked={form.inspection[item.key] === "defect"}
-                              onChange={() => handleInspection(item.key, "defect")}
+                              onChange={() =>
+                                handleInspection(item.key, "defect")
+                              }
                             />
                             Defect
                           </label>
@@ -249,20 +322,42 @@ export default function DVIRForm() {
             </div>
             <div>
               <label>Remarks / Defects Found</label>
-              <textarea name="remarks" value={form.remarks} onChange={handleChange} className="input" rows={3} />
+              <textarea
+                name="remarks"
+                value={form.remarks}
+                onChange={handleChange}
+                className="input"
+                rows={3}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
                 <label>Mechanic/Technician Name</label>
-                <input name="mechanicName" value={form.mechanicName} onChange={handleChange} className="input" />
+                <input
+                  name="mechanicName"
+                  value={form.mechanicName}
+                  onChange={handleChange}
+                  className="input"
+                />
               </div>
               <div>
                 <label>Date Repairs Made</label>
-                <input name="repairDate" type="date" value={form.repairDate} onChange={handleChange} className="input" />
+                <input
+                  name="repairDate"
+                  type="date"
+                  value={form.repairDate}
+                  onChange={handleChange}
+                  className="input"
+                />
               </div>
               <div>
                 <label>Mechanic Signature</label>
-                <input name="mechanicSignature" value={form.mechanicSignature} onChange={handleChange} className="input" />
+                <input
+                  name="mechanicSignature"
+                  value={form.mechanicSignature}
+                  onChange={handleChange}
+                  className="input"
+                />
               </div>
             </div>
             <div className="mt-4">
@@ -272,7 +367,9 @@ export default function DVIRForm() {
                   type="radio"
                   name="driverReview"
                   checked={form.driverReview === "corrected"}
-                  onChange={() => setForm((prev) => ({ ...prev, driverReview: "corrected" }))}
+                  onChange={() =>
+                    setForm((prev) => ({ ...prev, driverReview: "corrected" }))
+                  }
                 />
                 I certify that any listed defects have been corrected.
               </label>
@@ -281,22 +378,40 @@ export default function DVIRForm() {
                   type="radio"
                   name="driverReview"
                   checked={form.driverReview === "none"}
-                  onChange={() => setForm((prev) => ({ ...prev, driverReview: "none" }))}
+                  onChange={() =>
+                    setForm((prev) => ({ ...prev, driverReview: "none" }))
+                  }
                 />
                 I certify that no defects were found.
               </label>
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <div>
                   <label>Driver Signature</label>
-                  <input name="driverReviewSignature" value={form.driverReviewSignature} onChange={handleChange} className="input" />
+                  <input
+                    name="driverReviewSignature"
+                    value={form.driverReviewSignature}
+                    onChange={handleChange}
+                    className="input"
+                  />
                 </div>
                 <div>
                   <label>Date</label>
-                  <input name="driverReviewDate" type="date" value={form.driverReviewDate} onChange={handleChange} className="input" />
+                  <input
+                    name="driverReviewDate"
+                    type="date"
+                    value={form.driverReviewDate}
+                    onChange={handleChange}
+                    className="input"
+                  />
                 </div>
               </div>
             </div>
-            <button type="submit" className="mt-6 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit DVIR</button>
+            <button
+              type="submit"
+              className="mt-6 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Submit DVIR
+            </button>
           </form>
         </CardContent>
       </Card>

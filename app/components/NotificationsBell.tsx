@@ -11,8 +11,8 @@ interface Notification {
   message: string;
   created_at: string;
   driver_id?: string;
-  type?: 'compliance' | 'maintenance' | 'hr' | 'system';
-  priority?: 'low' | 'medium' | 'high' | 'critical';
+  type?: "compliance" | "maintenance" | "hr" | "system";
+  priority?: "low" | "medium" | "high" | "critical";
   read?: boolean;
 }
 
@@ -24,33 +24,35 @@ export default function NotificationsBell() {
 
   useEffect(() => {
     loadNotifications();
-    
+
     // Set up polling for new notifications every 30 seconds
     const interval = setInterval(pollNotifications, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/notifications?limit=25', {
+      const response = await fetch("/api/admin/notifications?limit=25", {
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}`,
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
         },
       });
-      
+
       const data = await response.json();
       if (data.ok && data.items) {
-        setNotifications(data.items.map((item: any) => ({
-          ...item,
-          type: classifyNotificationType(item.message),
-          priority: classifyPriority(item.message),
-          read: false
-        })));
+        setNotifications(
+          data.items.map((item: any) => ({
+            ...item,
+            type: classifyNotificationType(item.message),
+            priority: classifyPriority(item.message),
+            read: false,
+          })),
+        );
       }
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error("Error loading notifications:", error);
     } finally {
       setLoading(false);
     }
@@ -58,85 +60,126 @@ export default function NotificationsBell() {
 
   const pollNotifications = async () => {
     try {
-      const response = await fetch(`/api/admin/notifications?limit=10&since=${lastFetch.toISOString()}`, {
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ''}`,
+      const response = await fetch(
+        `/api/admin/notifications?limit=10&since=${lastFetch.toISOString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_TOKEN || ""}`,
+          },
         },
-      });
-      
+      );
+
       const data = await response.json();
       if (data.ok && data.items && data.items.length > 0) {
         const newNotifications = data.items.map((item: any) => ({
           ...item,
           type: classifyNotificationType(item.message),
           priority: classifyPriority(item.message),
-          read: false
+          read: false,
         }));
-        
-        setNotifications(prev => [...newNotifications, ...prev].slice(0, 50));
+
+        setNotifications((prev) => [...newNotifications, ...prev].slice(0, 50));
         setLastFetch(new Date());
-        
+
         // Show browser notification for critical items
-        if ('Notification' in window && Notification.permission === 'granted') {
-          const criticalItems = newNotifications.filter((n: any) => n.priority === 'critical');
+        if ("Notification" in window && Notification.permission === "granted") {
+          const criticalItems = newNotifications.filter(
+            (n: any) => n.priority === "critical",
+          );
           criticalItems.forEach((item: any) => {
-            new Notification('Ronyx Logistics - Critical Alert', {
+            new Notification("Ronyx Logistics - Critical Alert", {
               body: item.message,
-              icon: '/favicon.ico',
-              tag: item.id
+              icon: "/favicon.ico",
+              tag: item.id,
             });
           });
         }
       }
     } catch (error) {
-      console.error('Error polling notifications:', error);
+      console.error("Error polling notifications:", error);
     }
   };
 
-  const classifyNotificationType = (message: string): 'compliance' | 'maintenance' | 'hr' | 'system' => {
+  const classifyNotificationType = (
+    message: string,
+  ): "compliance" | "maintenance" | "hr" | "system" => {
     const msg = message.toLowerCase();
-    if (msg.includes('compliance') || msg.includes('expir') || msg.includes('dot')) return 'compliance';
-    if (msg.includes('maintenance') || msg.includes('dvir') || msg.includes('defect')) return 'maintenance';
-    if (msg.includes('driver') || msg.includes('employee') || msg.includes('hr')) return 'hr';
-    return 'system';
+    if (
+      msg.includes("compliance") ||
+      msg.includes("expir") ||
+      msg.includes("dot")
+    )
+      return "compliance";
+    if (
+      msg.includes("maintenance") ||
+      msg.includes("dvir") ||
+      msg.includes("defect")
+    )
+      return "maintenance";
+    if (
+      msg.includes("driver") ||
+      msg.includes("employee") ||
+      msg.includes("hr")
+    )
+      return "hr";
+    return "system";
   };
 
-  const classifyPriority = (message: string): 'low' | 'medium' | 'high' | 'critical' => {
+  const classifyPriority = (
+    message: string,
+  ): "low" | "medium" | "high" | "critical" => {
     const msg = message.toLowerCase();
-    if (msg.includes('critical') || msg.includes('urgent') || msg.includes('immediate')) return 'critical';
-    if (msg.includes('expires today') || msg.includes('overdue')) return 'high';
-    if (msg.includes('expires') || msg.includes('due')) return 'medium';
-    return 'low';
+    if (
+      msg.includes("critical") ||
+      msg.includes("urgent") ||
+      msg.includes("immediate")
+    )
+      return "critical";
+    if (msg.includes("expires today") || msg.includes("overdue")) return "high";
+    if (msg.includes("expires") || msg.includes("due")) return "medium";
+    return "low";
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'compliance': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'maintenance': return <AlertTriangle className="w-4 h-4 text-red-500" />;
-      case 'hr': return <User className="w-4 h-4 text-blue-500" />;
-      default: return <CheckCircle className="w-4 h-4 text-gray-500" />;
+      case "compliance":
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case "maintenance":
+        return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      case "hr":
+        return <User className="w-4 h-4 text-blue-500" />;
+      default:
+        return <CheckCircle className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 border-red-200';
-      case 'high': return 'bg-orange-100 border-orange-200';
-      case 'medium': return 'bg-yellow-100 border-yellow-200';
-      default: return 'bg-gray-50 border-gray-200';
+      case "critical":
+        return "bg-red-100 border-red-200";
+      case "high":
+        return "bg-orange-100 border-orange-200";
+      case "medium":
+        return "bg-yellow-100 border-yellow-200";
+      default:
+        return "bg-gray-50 border-gray-200";
     }
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const criticalCount = notifications.filter(n => n.priority === 'critical' && !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const criticalCount = notifications.filter(
+    (n) => n.priority === "critical" && !n.read,
+  ).length;
 
   // Request notification permission on first render
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
@@ -152,11 +195,11 @@ export default function NotificationsBell() {
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <Badge 
+          <Badge
             variant={criticalCount > 0 ? "destructive" : "secondary"}
             className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </Badge>
         )}
       </Button>
@@ -193,12 +236,12 @@ export default function NotificationsBell() {
                   <div
                     key={notification.id}
                     className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      !notification.read ? 'bg-blue-50' : ''
-                    } ${getPriorityColor(notification.priority || 'low')}`}
+                      !notification.read ? "bg-blue-50" : ""
+                    } ${getPriorityColor(notification.priority || "low")}`}
                     onClick={() => markAsRead(notification.id)}
                   >
                     <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type || 'system')}
+                      {getNotificationIcon(notification.type || "system")}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 break-words">
                           {notification.message}
@@ -207,7 +250,7 @@ export default function NotificationsBell() {
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
                       </div>
-                      {notification.priority === 'critical' && (
+                      {notification.priority === "critical" && (
                         <Badge variant="destructive" className="text-xs">
                           CRITICAL
                         </Badge>
@@ -228,7 +271,9 @@ export default function NotificationsBell() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                  setNotifications((prev) =>
+                    prev.map((n) => ({ ...n, read: true })),
+                  );
                 }}
                 className="w-full text-sm"
               >

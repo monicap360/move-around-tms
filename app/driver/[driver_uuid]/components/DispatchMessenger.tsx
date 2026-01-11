@@ -8,9 +8,7 @@ export default function DispatchMessenger({ driver }: any) {
   const [typing, setTyping] = useState(false);
 
   useEffect(() => {
-    const sse = new EventSource(
-      `/api/driver/${driver.uuid}/messages`
-    );
+    const sse = new EventSource(`/api/driver/${driver.uuid}/messages`);
 
     sse.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -33,9 +31,7 @@ export default function DispatchMessenger({ driver }: any) {
 
   return (
     <section className="glass-panel p-5 rounded-2xl flex flex-col h-96">
-      <h3 className="font-bold text-xl mb-3">
-        Dispatch Messenger
-      </h3>
+      <h3 className="font-bold text-xl mb-3">Dispatch Messenger</h3>
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-3">
         {messages.map((msg, i) => (
@@ -50,9 +46,7 @@ export default function DispatchMessenger({ driver }: any) {
             {msg.text}
           </div>
         ))}
-        {typing && (
-          <div className="opacity-60 text-sm">Dispatcher typing…</div>
-        )}
+        {typing && <div className="opacity-60 text-sm">Dispatcher typing…</div>}
       </div>
 
       <div className="flex gap-2 mt-3">

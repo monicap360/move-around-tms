@@ -18,16 +18,22 @@ export async function POST(req: Request) {
   }
 
   // Only admins can delete shared files - check using database function
-  const { data: isAdminResult, error: adminError } = await supabase
-    .rpc('is_admin');
+  const { data: isAdminResult, error: adminError } =
+    await supabase.rpc("is_admin");
 
   if (adminError) {
-    console.error('Error checking admin status:', adminError);
-    return NextResponse.json({ error: "Failed to verify admin status" }, { status: 500 });
+    console.error("Error checking admin status:", adminError);
+    return NextResponse.json(
+      { error: "Failed to verify admin status" },
+      { status: 500 },
+    );
   }
 
   if (!isAdminResult) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Admin access required" },
+      { status: 403 },
+    );
   }
 
   const { error } = await supabase.storage

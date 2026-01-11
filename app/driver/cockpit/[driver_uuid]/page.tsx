@@ -11,7 +11,7 @@ import TicketPayrollView from "@/components/cockpit/TicketPayrollView";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export default function DriverCockpit({ params }) {
@@ -39,7 +39,7 @@ export default function DriverCockpit({ params }) {
     { i: "maintenance", x: 0, y: 4, w: 4, h: 3 },
     { i: "ai", x: 4, y: 4, w: 4, h: 3 },
     { i: "branding", x: 0, y: 8, w: 4, h: 3 },
-    { i: "tickets", x: 4, y: 8, w: 4, h: 4 }
+    { i: "tickets", x: 4, y: 8, w: 4, h: 4 },
   ];
 
   return (

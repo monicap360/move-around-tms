@@ -1,20 +1,20 @@
 // Generate Branded Invoice PDF
 // Creates professional invoice PDF from tickets or quotes
 
-import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import supabaseAdmin from '@/lib/supabaseAdmin';
+import { NextRequest, NextResponse } from "next/server";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 function authorize(req: NextRequest): boolean {
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers.get("authorization");
   return authHeader === `Bearer ${ADMIN_TOKEN}`;
 }
 
 export async function POST(request: NextRequest) {
   if (!authorize(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
 
   if (!company || !line_items.length) {
     return NextResponse.json(
-      { error: 'Missing required fields: company, line_items' },
-      { status: 400 }
+      { error: "Missing required fields: company, line_items" },
+      { status: 400 },
     );
   }
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([612, 792]);
     const { width, height } = page.getSize();
-    
+
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       color: brandBlue,
     });
 
-    page.drawText('RONYX LOGISTICS LLC', {
+    page.drawText("RONYX LOGISTICS LLC", {
       x: 50,
       y: yPos + 50,
       size: 18,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       color: rgb(1, 1, 1),
     });
 
-    page.drawText('Professional Aggregate Hauling Services', {
+    page.drawText("Professional Aggregate Hauling Services", {
       x: 50,
       y: yPos + 30,
       size: 10,
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
 
     // Space reserved for logo underneath company name
     // Logo placeholder area: x: 50, y: yPos + 5, width: 40, height: 20
-    
-    page.drawText('INVOICE', {
+
+    page.drawText("INVOICE", {
       x: width - 170,
       y: yPos + 40,
       size: 28,
@@ -93,8 +93,12 @@ export async function POST(request: NextRequest) {
 
     // Invoice Details
     const invNum = invoice_number || `INV-${Date.now().toString().slice(-8)}`;
-    const invDate = invoice_date || new Date().toLocaleDateString('en-US');
-    const dueDate = due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US');
+    const invDate = invoice_date || new Date().toLocaleDateString("en-US");
+    const dueDate =
+      due_date ||
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(
+        "en-US",
+      );
 
     page.drawText(`Invoice #: ${invNum}`, {
       x: 50,
@@ -123,7 +127,7 @@ export async function POST(request: NextRequest) {
     yPos -= 60;
 
     // Bill To
-    page.drawText('BILL TO:', {
+    page.drawText("BILL TO:", {
       x: 50,
       y: yPos,
       size: 11,
@@ -165,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     if (billing_address) {
       yPos -= 15;
-      const addressLines = billing_address.split('\n');
+      const addressLines = billing_address.split("\n");
       for (const line of addressLines) {
         page.drawText(line, {
           x: 50,
@@ -189,7 +193,7 @@ export async function POST(request: NextRequest) {
       color: lightGray,
     });
 
-    page.drawText('DESCRIPTION', {
+    page.drawText("DESCRIPTION", {
       x: 60,
       y: yPos + 5,
       size: 10,
@@ -197,7 +201,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('QTY', {
+    page.drawText("QTY", {
       x: 330,
       y: yPos + 5,
       size: 10,
@@ -205,7 +209,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('RATE', {
+    page.drawText("RATE", {
       x: 400,
       y: yPos + 5,
       size: 10,
@@ -213,7 +217,7 @@ export async function POST(request: NextRequest) {
       color: black,
     });
 
-    page.drawText('AMOUNT', {
+    page.drawText("AMOUNT", {
       x: 480,
       y: yPos + 5,
       size: 10,
@@ -226,10 +230,10 @@ export async function POST(request: NextRequest) {
     // Line Items
     let subtotal = 0;
     for (const item of line_items) {
-      const description = item.description || '';
+      const description = item.description || "";
       const quantity = item.quantity || 0;
       const unit_price = item.unit_price || 0;
-      const amount = item.amount || (quantity * unit_price);
+      const amount = item.amount || quantity * unit_price;
 
       subtotal += amount;
 
@@ -281,7 +285,7 @@ export async function POST(request: NextRequest) {
     yPos -= 25;
 
     // Totals
-    page.drawText('Subtotal:', {
+    page.drawText("Subtotal:", {
       x: 400,
       y: yPos,
       size: 10,
@@ -299,7 +303,7 @@ export async function POST(request: NextRequest) {
 
     yPos -= 20;
 
-    page.drawText('TOTAL:', {
+    page.drawText("TOTAL:", {
       x: 400,
       y: yPos,
       size: 12,
@@ -319,7 +323,7 @@ export async function POST(request: NextRequest) {
 
     // Notes
     if (notes) {
-      page.drawText('NOTES:', {
+      page.drawText("NOTES:", {
         x: 50,
         y: yPos,
         size: 11,
@@ -344,7 +348,7 @@ export async function POST(request: NextRequest) {
 
     // Payment Terms (footer area)
     yPos = 120;
-    page.drawText('PAYMENT TERMS:', {
+    page.drawText("PAYMENT TERMS:", {
       x: 50,
       y: yPos,
       size: 10,
@@ -355,10 +359,10 @@ export async function POST(request: NextRequest) {
     yPos -= 15;
 
     const paymentTerms = [
-      '• Payment due within 30 days of invoice date',
-      '• Make checks payable to: Ronyx Logistics LLC',
-      '• Wire transfer and ACH payment accepted',
-      '• Late payments subject to 1.5% monthly interest',
+      "• Payment due within 30 days of invoice date",
+      "• Make checks payable to: Ronyx Logistics LLC",
+      "• Wire transfer and ACH payment accepted",
+      "• Late payments subject to 1.5% monthly interest",
     ];
 
     for (const term of paymentTerms) {
@@ -373,28 +377,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Footer
-    page.drawText('© 2025 Ronyx Logistics LLC  •  Move Around TMS™  •  Thank you for your business!', {
-      x: 90,
-      y: 30,
-      size: 8,
-      font: font,
-      color: gray,
-    });
+    page.drawText(
+      "© 2025 Ronyx Logistics LLC  •  Move Around TMS™  •  Thank you for your business!",
+      {
+        x: 90,
+        y: 30,
+        size: 8,
+        font: font,
+        color: gray,
+      },
+    );
 
     const pdfBytes = await pdfDoc.save();
 
     return new Response(Buffer.from(pdfBytes), {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Invoice-${invNum}.pdf"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="Invoice-${invNum}.pdf"`,
       },
     });
-
   } catch (error: any) {
-    console.error('Invoice PDF generation error:', error);
+    console.error("Invoice PDF generation error:", error);
     return NextResponse.json(
-      { error: 'Failed to generate invoice PDF', details: error.message },
-      { status: 500 }
+      { error: "Failed to generate invoice PDF", details: error.message },
+      { status: 500 },
     );
   }
 }

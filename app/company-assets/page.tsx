@@ -1,20 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-import { 
-  Building, 
-  FileText, 
-  Image as ImageIcon, 
-  Truck, 
-  Download, 
-  Eye, 
-  Edit, 
+import {
+  Building,
+  FileText,
+  Image as ImageIcon,
+  Truck,
+  Download,
+  Eye,
+  Edit,
   Archive,
-  Search
+  Search,
 } from "lucide-react";
 
 interface CompanyAsset {
@@ -35,8 +40,8 @@ interface CompanyAsset {
 export default function CompanyAssetsPage() {
   const [assets, setAssets] = useState<CompanyAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [filter, setFilter] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("all");
 
   useEffect(() => {
     fetchAssets();
@@ -44,13 +49,13 @@ export default function CompanyAssetsPage() {
 
   const fetchAssets = async () => {
     try {
-      const response = await fetch('/api/company-assets');
+      const response = await fetch("/api/company-assets");
       if (response.ok) {
         const data = await response.json();
         setAssets(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch assets:', error);
+      console.error("Failed to fetch assets:", error);
     } finally {
       setLoading(false);
     }
@@ -58,46 +63,58 @@ export default function CompanyAssetsPage() {
 
   const getAssetIcon = (assetType: string) => {
     switch (assetType) {
-      case 'company_logo': return Building;
-      case 'ticket_template': return Truck;
-      case 'form_template': return FileText;
-      default: return ImageIcon;
+      case "company_logo":
+        return Building;
+      case "ticket_template":
+        return Truck;
+      case "form_template":
+        return FileText;
+      default:
+        return ImageIcon;
     }
   };
 
   const getAssetColor = (assetType: string) => {
     switch (assetType) {
-      case 'company_logo': return 'bg-blue-100 text-blue-800';
-      case 'ticket_template': return 'bg-green-100 text-green-800';
-      case 'form_template': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "company_logo":
+        return "bg-blue-100 text-blue-800";
+      case "ticket_template":
+        return "bg-green-100 text-green-800";
+      case "form_template":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredAssets = assets.filter(asset => {
-    const matchesFilter = !filter || 
+  const filteredAssets = assets.filter((asset) => {
+    const matchesFilter =
+      !filter ||
       asset.original_filename.toLowerCase().includes(filter.toLowerCase()) ||
       asset.description.toLowerCase().includes(filter.toLowerCase()) ||
-      asset.tags.some(tag => tag.toLowerCase().includes(filter.toLowerCase()));
-    
-    const matchesType = selectedType === 'all' || asset.asset_type === selectedType;
-    
+      asset.tags.some((tag) =>
+        tag.toLowerCase().includes(filter.toLowerCase()),
+      );
+
+    const matchesType =
+      selectedType === "all" || asset.asset_type === selectedType;
+
     return matchesFilter && matchesType;
   });
 
   const assetTypes = [
-    { value: 'all', label: 'All Assets' },
-    { value: 'company_logo', label: 'Company Logos' },
-    { value: 'ticket_template', label: 'Ticket Templates' },
-    { value: 'form_template', label: 'Form Templates' }
+    { value: "all", label: "All Assets" },
+    { value: "company_logo", label: "Company Logos" },
+    { value: "ticket_template", label: "Ticket Templates" },
+    { value: "form_template", label: "Form Templates" },
   ];
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -105,9 +122,15 @@ export default function CompanyAssetsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-blue-700 mb-2">Ronyx Logistics LLC</h1>
-          <p className="text-gray-600 mb-4">3741 Graves Ave, Groves, Texas 77619</p>
-          <h2 className="text-2xl font-semibold text-gray-800">Company Assets Management</h2>
+          <h1 className="text-3xl font-bold text-blue-700 mb-2">
+            Ronyx Logistics LLC
+          </h1>
+          <p className="text-gray-600 mb-4">
+            3741 Graves Ave, Groves, Texas 77619
+          </p>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Company Assets Management
+          </h2>
         </div>
 
         {/* Filters */}
@@ -126,10 +149,12 @@ export default function CompanyAssetsPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                {assetTypes.map(type => (
+                {assetTypes.map((type) => (
                   <Button
                     key={type.value}
-                    variant={selectedType === type.value ? "default" : "outline"}
+                    variant={
+                      selectedType === type.value ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setSelectedType(type.value)}
                   >
@@ -151,9 +176,16 @@ export default function CompanyAssetsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Assets Found</h3>
-              <p className="text-gray-600">Upload some company assets to get started.</p>
-              <Button className="mt-4" onClick={() => window.location.href = '/hr/upload'}>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Assets Found
+              </h3>
+              <p className="text-gray-600">
+                Upload some company assets to get started.
+              </p>
+              <Button
+                className="mt-4"
+                onClick={() => (window.location.href = "/hr/upload")}
+              >
                 Upload Assets
               </Button>
             </CardContent>
@@ -163,15 +195,22 @@ export default function CompanyAssetsPage() {
             {filteredAssets.map((asset) => {
               const IconComponent = getAssetIcon(asset.asset_type);
               return (
-                <Card key={asset.id} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={asset.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${getAssetColor(asset.asset_type)}`}>
+                        <div
+                          className={`p-2 rounded-lg ${getAssetColor(asset.asset_type)}`}
+                        >
                           <IconComponent className="w-5 h-5" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">{asset.original_filename}</CardTitle>
+                          <CardTitle className="text-lg">
+                            {asset.original_filename}
+                          </CardTitle>
                           <Badge variant="secondary" className="mt-1">
                             v{asset.version}
                           </Badge>
@@ -183,7 +222,7 @@ export default function CompanyAssetsPage() {
                     <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                       {asset.description}
                     </p>
-                    
+
                     <div className="space-y-2 text-xs text-gray-500 mb-4">
                       <div className="flex justify-between">
                         <span>Size:</span>
@@ -195,7 +234,9 @@ export default function CompanyAssetsPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Uploaded:</span>
-                        <span>{new Date(asset.uploaded_at).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(asset.uploaded_at).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
 
@@ -203,7 +244,11 @@ export default function CompanyAssetsPage() {
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-1">
                           {asset.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {tag}
                             </Badge>
                           ))}
@@ -235,15 +280,21 @@ export default function CompanyAssetsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Button onClick={() => window.location.href = '/hr/upload'}>
+              <Button onClick={() => (window.location.href = "/hr/upload")}>
                 <Building className="w-4 h-4 mr-2" />
                 Upload Logo
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = '/hr/upload'}>
+              <Button
+                variant="outline"
+                onClick={() => (window.location.href = "/hr/upload")}
+              >
                 <Truck className="w-4 h-4 mr-2" />
                 Upload Ticket Template
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = '/hr/upload'}>
+              <Button
+                variant="outline"
+                onClick={() => (window.location.href = "/hr/upload")}
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 Upload Form Template
               </Button>

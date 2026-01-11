@@ -9,8 +9,14 @@ export default function DriverCard({ driver }) {
         <p>Experience: {driver.experience_years} yrs</p>
       </div>
       <div className="mt-3 flex gap-2">
-        {driver.twic && <span className="px-2 py-1 bg-blue-700 rounded-md text-xs">TWIC</span>}
-        {driver.medical_card && <span className="px-2 py-1 bg-green-700 rounded-md text-xs">Medical</span>}
+        {driver.twic && (
+          <span className="px-2 py-1 bg-blue-700 rounded-md text-xs">TWIC</span>
+        )}
+        {driver.medical_card && (
+          <span className="px-2 py-1 bg-green-700 rounded-md text-xs">
+            Medical
+          </span>
+        )}
       </div>
     </div>
   );

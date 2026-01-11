@@ -2,14 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { 
-  ClipboardCheck, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
+import {
+  ClipboardCheck,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
   Calendar,
   Truck,
   Filter,
@@ -18,7 +23,7 @@ import {
   Wrench,
   TrendingUp,
   Users,
-  Clock
+  Clock,
 } from "lucide-react";
 
 interface DVIRInspection {
@@ -26,10 +31,13 @@ interface DVIRInspection {
   driver_name: string;
   truck_number: string;
   odometer_reading: number;
-  inspection_type: 'pre_trip' | 'post_trip';
+  inspection_type: "pre_trip" | "post_trip";
   location: string;
   inspection_items: any[];
-  overall_status: 'satisfactory' | 'defects_corrected' | 'defects_need_correction';
+  overall_status:
+    | "satisfactory"
+    | "defects_corrected"
+    | "defects_need_correction";
   driver_signature?: string;
   mechanic_signature?: string;
   defects_corrected: boolean;
@@ -53,12 +61,12 @@ export default function DVIRAdminDashboard() {
     defectiveInspections: 0,
     pendingCorrections: 0,
     complianceRate: 0,
-    trucksInspectedToday: 0
+    trucksInspectedToday: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchTruck, setSearchTruck] = useState('');
-  const [dateRange, setDateRange] = useState('today');
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchTruck, setSearchTruck] = useState("");
+  const [dateRange, setDateRange] = useState("today");
   const [selectedDVIR, setSelectedDVIR] = useState<DVIRInspection | null>(null);
 
   useEffect(() => {
@@ -67,37 +75,37 @@ export default function DVIRAdminDashboard() {
 
   const loadDVIRData = async () => {
     setLoading(true);
-    
+
     try {
       // Build query with filters
       let query = supabase
-        .from('dvir_inspections')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("dvir_inspections")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       // Apply filters
-      if (filterStatus !== 'all') {
-        query = query.eq('overall_status', filterStatus);
+      if (filterStatus !== "all") {
+        query = query.eq("overall_status", filterStatus);
       }
 
       if (searchTruck) {
-        query = query.ilike('truck_number', `%${searchTruck}%`);
+        query = query.ilike("truck_number", `%${searchTruck}%`);
       }
 
       // Apply date filter
       const now = new Date();
-      if (dateRange === 'today') {
+      if (dateRange === "today") {
         const startOfDay = new Date(now);
         startOfDay.setHours(0, 0, 0, 0);
-        query = query.gte('created_at', startOfDay.toISOString());
-      } else if (dateRange === 'week') {
+        query = query.gte("created_at", startOfDay.toISOString());
+      } else if (dateRange === "week") {
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - 7);
-        query = query.gte('created_at', startOfWeek.toISOString());
-      } else if (dateRange === 'month') {
+        query = query.gte("created_at", startOfWeek.toISOString());
+      } else if (dateRange === "month") {
         const startOfMonth = new Date(now);
         startOfMonth.setMonth(now.getMonth() - 1);
-        query = query.gte('created_at', startOfMonth.toISOString());
+        query = query.gte("created_at", startOfMonth.toISOString());
       }
 
       const { data: dvirData, error } = await query.limit(100);
@@ -105,23 +113,27 @@ export default function DVIRAdminDashboard() {
       if (error) throw error;
 
       setDvirs(dvirData || []);
-      
+
       // Calculate statistics
       calculateStats(dvirData || []);
-
     } catch (error) {
-      console.error('Error loading DVIR data:', error);
+      console.error("Error loading DVIR data:", error);
     }
-    
+
     setLoading(false);
   };
 
   const calculateStats = (dvirData: DVIRInspection[]) => {
     const total = dvirData.length;
-    const satisfactory = dvirData.filter(d => d.overall_status === 'satisfactory').length;
-    const defective = dvirData.filter(d => d.overall_status.includes('defects')).length;
-    const pending = dvirData.filter(d => 
-      d.overall_status === 'defects_need_correction' && !d.defects_corrected
+    const satisfactory = dvirData.filter(
+      (d) => d.overall_status === "satisfactory",
+    ).length;
+    const defective = dvirData.filter((d) =>
+      d.overall_status.includes("defects"),
+    ).length;
+    const pending = dvirData.filter(
+      (d) =>
+        d.overall_status === "defects_need_correction" && !d.defects_corrected,
     ).length;
 
     // Get unique trucks inspected today
@@ -129,8 +141,8 @@ export default function DVIRAdminDashboard() {
     today.setHours(0, 0, 0, 0);
     const trucksToday = new Set(
       dvirData
-        .filter(d => new Date(d.created_at) >= today)
-        .map(d => d.truck_number)
+        .filter((d) => new Date(d.created_at) >= today)
+        .map((d) => d.truck_number),
     ).size;
 
     setStats({
@@ -139,30 +151,30 @@ export default function DVIRAdminDashboard() {
       defectiveInspections: defective,
       pendingCorrections: pending,
       complianceRate: total > 0 ? Math.round((satisfactory / total) * 100) : 0,
-      trucksInspectedToday: trucksToday
+      trucksInspectedToday: trucksToday,
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'satisfactory':
-        return 'text-green-600 bg-green-50 border-green-200';
-      case 'defects_corrected':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'defects_need_correction':
-        return 'text-red-600 bg-red-50 border-red-200';
+      case "satisfactory":
+        return "text-green-600 bg-green-50 border-green-200";
+      case "defects_corrected":
+        return "text-blue-600 bg-blue-50 border-blue-200";
+      case "defects_need_correction":
+        return "text-red-600 bg-red-50 border-red-200";
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return "text-gray-600 bg-gray-50 border-gray-200";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'satisfactory':
+      case "satisfactory":
         return <CheckCircle className="h-4 w-4" />;
-      case 'defects_corrected':
+      case "defects_corrected":
         return <Wrench className="h-4 w-4" />;
-      case 'defects_need_correction':
+      case "defects_need_correction":
         return <AlertTriangle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
@@ -172,58 +184,68 @@ export default function DVIRAdminDashboard() {
   const markDefectsCorrected = async (dvirId: string) => {
     try {
       const { error } = await supabase
-        .from('dvir_inspections')
+        .from("dvir_inspections")
         .update({
           defects_corrected: true,
-          overall_status: 'defects_corrected',
-          updated_at: new Date().toISOString()
+          overall_status: "defects_corrected",
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', dvirId);
+        .eq("id", dvirId);
 
       if (error) throw error;
 
-      alert('DVIR marked as defects corrected!');
+      alert("DVIR marked as defects corrected!");
       loadDVIRData();
     } catch (error) {
-      console.error('Error updating DVIR:', error);
-      alert('Error updating DVIR status');
+      console.error("Error updating DVIR:", error);
+      alert("Error updating DVIR status");
     }
   };
 
   const exportDVIRs = () => {
     // Create CSV content
     const headers = [
-      'Date', 'Time', 'Driver', 'Truck', 'Type', 'Status', 'Odometer', 'Location', 'Defects Corrected'
+      "Date",
+      "Time",
+      "Driver",
+      "Truck",
+      "Type",
+      "Status",
+      "Odometer",
+      "Location",
+      "Defects Corrected",
     ];
-    
+
     const csvContent = [
-      headers.join(','),
-      ...dvirs.map(dvir => [
-        new Date(dvir.created_at).toLocaleDateString(),
-        new Date(dvir.created_at).toLocaleTimeString(),
-        `"${dvir.driver_name}"`,
-        dvir.truck_number,
-        dvir.inspection_type.replace('_', '-').toUpperCase(),
-        dvir.overall_status.replace(/_/g, ' ').toUpperCase(),
-        dvir.odometer_reading,
-        `"${dvir.location || ''}"`,
-        dvir.defects_corrected ? 'Yes' : 'No'
-      ].join(','))
-    ].join('\n');
+      headers.join(","),
+      ...dvirs.map((dvir) =>
+        [
+          new Date(dvir.created_at).toLocaleDateString(),
+          new Date(dvir.created_at).toLocaleTimeString(),
+          `"${dvir.driver_name}"`,
+          dvir.truck_number,
+          dvir.inspection_type.replace("_", "-").toUpperCase(),
+          dvir.overall_status.replace(/_/g, " ").toUpperCase(),
+          dvir.odometer_reading,
+          `"${dvir.location || ""}"`,
+          dvir.defects_corrected ? "Yes" : "No",
+        ].join(","),
+      ),
+    ].join("\n");
 
     // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `dvir-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `dvir-report-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
   if (selectedDVIR) {
-    const defectiveItems = selectedDVIR.inspection_items.filter(item => 
-      item.status === 'defective'
+    const defectiveItems = selectedDVIR.inspection_items.filter(
+      (item) => item.status === "defective",
     );
 
     return (
@@ -235,10 +257,7 @@ export default function DVIRAdminDashboard() {
                 <ClipboardCheck className="h-6 w-6" />
                 DVIR Details - {selectedDVIR.truck_number}
               </CardTitle>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedDVIR(null)}
-              >
+              <Button variant="outline" onClick={() => setSelectedDVIR(null)}>
                 Back to Dashboard
               </Button>
             </div>
@@ -247,21 +266,29 @@ export default function DVIRAdminDashboard() {
             {/* Basic Info */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Driver</label>
+                <label className="text-sm font-medium text-gray-600">
+                  Driver
+                </label>
                 <p className="font-semibold">{selectedDVIR.driver_name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Truck</label>
+                <label className="text-sm font-medium text-gray-600">
+                  Truck
+                </label>
                 <p className="font-semibold">{selectedDVIR.truck_number}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Type</label>
+                <label className="text-sm font-medium text-gray-600">
+                  Type
+                </label>
                 <p className="font-semibold">
-                  {selectedDVIR.inspection_type.replace('_', '-').toUpperCase()}
+                  {selectedDVIR.inspection_type.replace("_", "-").toUpperCase()}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Date</label>
+                <label className="text-sm font-medium text-gray-600">
+                  Date
+                </label>
                 <p className="font-semibold">
                   {new Date(selectedDVIR.created_at).toLocaleString()}
                 </p>
@@ -271,22 +298,27 @@ export default function DVIRAdminDashboard() {
             {/* Status and Actions */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedDVIR.overall_status)}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedDVIR.overall_status)}`}
+                >
                   {getStatusIcon(selectedDVIR.overall_status)}
                   <span className="ml-2">
-                    {selectedDVIR.overall_status.replace(/_/g, ' ').toUpperCase()}
+                    {selectedDVIR.overall_status
+                      .replace(/_/g, " ")
+                      .toUpperCase()}
                   </span>
                 </span>
               </div>
-              {selectedDVIR.overall_status === 'defects_need_correction' && !selectedDVIR.defects_corrected && (
-                <Button
-                  onClick={() => markDefectsCorrected(selectedDVIR.id)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Wrench className="h-4 w-4 mr-2" />
-                  Mark Defects Corrected
-                </Button>
-              )}
+              {selectedDVIR.overall_status === "defects_need_correction" &&
+                !selectedDVIR.defects_corrected && (
+                  <Button
+                    onClick={() => markDefectsCorrected(selectedDVIR.id)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    Mark Defects Corrected
+                  </Button>
+                )}
             </div>
 
             {/* Defects List */}
@@ -303,7 +335,9 @@ export default function DVIRAdminDashboard() {
                         {item.category} - {item.item}
                       </p>
                       {item.notes && (
-                        <p className="text-sm text-gray-600 mt-1">{item.notes}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {item.notes}
+                        </p>
                       )}
                     </div>
                   ))}
@@ -316,14 +350,19 @@ export default function DVIRAdminDashboard() {
               <h3 className="font-semibold mb-3">Inspection Summary</h3>
               <div className="space-y-3">
                 {Object.entries(
-                  selectedDVIR.inspection_items.reduce((acc: any, item: any) => {
-                    if (!acc[item.category]) acc[item.category] = [];
-                    acc[item.category].push(item);
-                    return acc;
-                  }, {})
+                  selectedDVIR.inspection_items.reduce(
+                    (acc: any, item: any) => {
+                      if (!acc[item.category]) acc[item.category] = [];
+                      acc[item.category].push(item);
+                      return acc;
+                    },
+                    {},
+                  ),
                 ).map(([category, items]) => {
                   const categoryItems = items as any[];
-                  const defects = categoryItems.filter((item: any) => item.status === 'defective').length;
+                  const defects = categoryItems.filter(
+                    (item: any) => item.status === "defective",
+                  ).length;
                   return (
                     <div key={category} className="border rounded p-3">
                       <div className="flex items-center justify-between">
@@ -334,7 +373,7 @@ export default function DVIRAdminDashboard() {
                           </span>
                           {defects > 0 && (
                             <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm font-medium">
-                              {defects} defect{defects > 1 ? 's' : ''}
+                              {defects} defect{defects > 1 ? "s" : ""}
                             </span>
                           )}
                         </div>
@@ -368,7 +407,9 @@ export default function DVIRAdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Inspections</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalInspections}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalInspections}
+                </p>
               </div>
               <ClipboardCheck className="h-8 w-8 text-blue-500" />
             </div>
@@ -380,7 +421,9 @@ export default function DVIRAdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Compliance Rate</p>
-                <p className="text-2xl font-bold text-green-600">{stats.complianceRate}%</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.complianceRate}%
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-500" />
             </div>
@@ -392,7 +435,9 @@ export default function DVIRAdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pending Corrections</p>
-                <p className="text-2xl font-bold text-red-600">{stats.pendingCorrections}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats.pendingCorrections}
+                </p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
@@ -404,7 +449,9 @@ export default function DVIRAdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Trucks Inspected Today</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.trucksInspectedToday}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {stats.trucksInspectedToday}
+                </p>
               </div>
               <Truck className="h-8 w-8 text-blue-500" />
             </div>
@@ -425,7 +472,9 @@ export default function DVIRAdminDashboard() {
               >
                 <option value="all">All Statuses</option>
                 <option value="satisfactory">Satisfactory</option>
-                <option value="defects_need_correction">Needs Correction</option>
+                <option value="defects_need_correction">
+                  Needs Correction
+                </option>
                 <option value="defects_corrected">Defects Corrected</option>
               </select>
             </div>
@@ -496,7 +545,7 @@ export default function DVIRAdminDashboard() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">
-                        {dvir.inspection_type.replace('_', '-').toUpperCase()}
+                        {dvir.inspection_type.replace("_", "-").toUpperCase()}
                       </span>
                       <span className="text-sm text-gray-500">
                         {new Date(dvir.created_at).toLocaleString()}
@@ -510,9 +559,11 @@ export default function DVIRAdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getStatusColor(dvir.overall_status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getStatusColor(dvir.overall_status)}`}
+                    >
                       {getStatusIcon(dvir.overall_status)}
-                      {dvir.overall_status.replace(/_/g, ' ').toUpperCase()}
+                      {dvir.overall_status.replace(/_/g, " ").toUpperCase()}
                     </span>
                     <Button size="sm" variant="outline">
                       <Eye className="h-4 w-4" />

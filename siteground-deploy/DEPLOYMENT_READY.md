@@ -5,6 +5,7 @@
 Your **Ronyx Fleet Management Portal** is now ready for SiteGround deployment with a complete professional static site structure.
 
 ### 📁 Directory Structure (Ready to Upload)
+
 ```
 siteground-deploy/ronyx/
 ├── index.html          ← Dashboard (main page)
@@ -27,6 +28,7 @@ siteground-deploy/ronyx/
 ## 🌐 SITEGROUND DEPLOYMENT STEPS
 
 ### Step 1: Upload Files
+
 1. **Login to SiteGround cPanel**
 2. **Open File Manager**
 3. **Navigate to:** `public_html/`
@@ -34,36 +36,42 @@ siteground-deploy/ronyx/
 5. **Upload entire contents** of `siteground-deploy/ronyx/` to `public_html/ronyx/`
 
 ### Step 2: Subdomain Configuration
+
 1. **In SiteGround cPanel → Subdomains**
 2. **Create subdomain:** `ronyx`
 3. **Point to:** `public_html/ronyx/`
 4. **Domain will be:** `ronyx.movearoundtms.app`
 
 ### Step 3: DNS Configuration
+
 - **Nameservers:** `ns1.siteground.net`, `ns2.siteground.net`
 - **Propagation:** 24-48 hours for full DNS propagation
 
 ## 🎨 FEATURES INCLUDED
 
 ### Professional Design
+
 - ✅ **ROnyx Branding** - Dark theme with #F7931E orange accent
 - ✅ **Responsive Design** - Mobile, tablet, desktop optimized
 - ✅ **Premium UI** - Gradient backgrounds, modern typography
 - ✅ **Professional Logo** - Custom ROnyx SVG logo included
 
 ### Authentication System
+
 - ✅ **Supabase Integration** - Complete authentication system
 - ✅ **Role-based Access** - Partner, manager, admin roles
 - ✅ **Security Headers** - XSS, CSRF, clickjacking protection
 - ✅ **Session Management** - Secure login/logout functionality
 
 ### Performance Optimization
+
 - ✅ **Service Worker** - Offline support, caching strategy
 - ✅ **PWA Support** - Installable web app with manifest
 - ✅ **Compression** - Gzip compression for faster loading
 - ✅ **Caching** - Optimized cache headers for performance
 
 ### SEO & Security
+
 - ✅ **SEO Optimized** - Sitemap, robots.txt, meta tags
 - ✅ **Security Hardened** - .htaccess security rules
 - ✅ **SSL Ready** - HTTPS redirect configuration
@@ -72,18 +80,21 @@ siteground-deploy/ronyx/
 ## 🔧 TECHNICAL SPECIFICATIONS
 
 ### Frontend Stack
+
 - **HTML5** - Semantic, accessible markup
 - **CSS3** - Modern styling with CSS variables
 - **JavaScript ES6+** - Modern browser features
 - **Supabase SDK** - Authentication and database
 
 ### Browser Support
+
 - ✅ Chrome/Edge 90+
 - ✅ Firefox 88+
 - ✅ Safari 14+
 - ✅ Mobile browsers
 
 ### Performance Metrics
+
 - **First Load:** ~2-3 seconds
 - **Cached Load:** ~0.5 seconds
 - **Lighthouse Score:** 95+ expected
@@ -92,16 +103,19 @@ siteground-deploy/ronyx/
 ## 🎯 ACCESS URLS (After Deployment)
 
 ### Production URLs
+
 - **Main Portal:** `https://ronyx.movearoundtms.app/`
 - **Login Page:** `https://ronyx.movearoundtms.app/login.html`
 - **Dashboard:** `https://ronyx.movearoundtms.app/index.html`
 
 ### Test Credentials
+
 Use existing Supabase user accounts for testing the authentication system.
 
 ## 📋 POST-DEPLOYMENT CHECKLIST
 
 ### Immediate Testing
+
 - [ ] Upload files to SiteGround
 - [ ] Configure subdomain `ronyx.movearoundtms.app`
 - [ ] Test login functionality
@@ -110,6 +124,7 @@ Use existing Supabase user accounts for testing the authentication system.
 - [ ] Test PWA installation
 
 ### Optional Enhancements
+
 - [ ] Convert SVG logo to PNG if needed
 - [ ] Add SSL certificate (Let's Encrypt)
 - [ ] Configure email notifications
@@ -119,16 +134,19 @@ Use existing Supabase user accounts for testing the authentication system.
 ## 🚨 IMPORTANT NOTES
 
 ### Supabase Configuration
+
 - **Project ID:** `wqeidcatuwqtzwhvmqfr`
 - **URL:** Already configured in `main.js`
 - **Keys:** Environment variables handled securely
 
 ### File Permissions
+
 - Ensure `.htaccess` has proper permissions (644)
 - Set directory permissions to 755
 - Set file permissions to 644
 
 ### Maintenance
+
 - Static files require no server-side maintenance
 - Supabase handles backend automatically
 - Regular logo/style updates via file replacement
@@ -138,7 +156,7 @@ Use existing Supabase user accounts for testing the authentication system.
 Your **Ronyx Fleet Management Portal** is now a complete, professional static website ready for SiteGround hosting. This solution provides:
 
 - **Zero server dependencies**
-- **Lightning-fast performance** 
+- **Lightning-fast performance**
 - **Professional appearance**
 - **Complete functionality**
 - **Easy maintenance**

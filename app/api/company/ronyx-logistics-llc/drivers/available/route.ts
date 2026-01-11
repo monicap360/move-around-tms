@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', message: 'Available drivers for ronyx-logistics-llc.' });
+  return NextResponse.json({
+    status: "ok",
+    message: "Available drivers for ronyx-logistics-llc.",
+  });
 }

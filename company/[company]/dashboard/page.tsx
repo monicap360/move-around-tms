@@ -1,25 +1,23 @@
+"use client";
 
+import { useEffect, useState, useMemo } from "react";
+import { useParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 
-'use client';
-
-import { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import DashboardCard from '@/components/dashboard/DashboardCard';
-import SystemCard from '@/components/dashboard/SystemCard';
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import DashboardCard from "@/components/dashboard/DashboardCard";
+import SystemCard from "@/components/dashboard/SystemCard";
 
 // Create Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
 // Admin override badge
 function OverrideBadge({
   admin_override,
-  override_expires_at
+  override_expires_at,
 }: {
   admin_override: boolean;
   override_expires_at: string | null;
@@ -44,8 +42,8 @@ function OverrideBadge({
       return (
         <div className="mb-4">
           <span className="inline-block bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-            🟢 Override Active — {days} day{days !== 1 ? 's' : ''} remaining (expires{' '}
-            {expires.toLocaleDateString()})
+            🟢 Override Active — {days} day{days !== 1 ? "s" : ""} remaining
+            (expires {expires.toLocaleDateString()})
           </span>
         </div>
       );
@@ -87,13 +85,13 @@ export default function CompanyDashboard() {
   useEffect(() => {
     async function resolveOrg() {
       const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('organization_code', organization_code)
+        .from("organizations")
+        .select("*")
+        .eq("organization_code", organization_code)
         .single();
 
       if (error) {
-        console.error('Org lookup error:', error);
+        console.error("Org lookup error:", error);
         return;
       }
 
@@ -108,7 +106,7 @@ export default function CompanyDashboard() {
         if (found) {
           setOverrideStatus({
             admin_override: found.admin_override,
-            override_expires_at: found.override_expires_at
+            override_expires_at: found.override_expires_at,
           });
         }
       } catch {
@@ -125,26 +123,23 @@ export default function CompanyDashboard() {
     async function loadEverything() {
       setLoading(true);
 
-      const [
-        driversRes,
-        loadsRes,
-        ticketsRes,
-        fleetRes,
-        uploadsRes,
-        payRes
-      ] = await Promise.all([
-        supabase.from('drivers').select('*').eq('organization_id', orgId),
-        supabase.from('loads').select('*').eq('organization_id', orgId),
-        supabase.from('scale_tickets').select('*').eq('organization_id', orgId),
-        supabase.from('vehicles').select('*').eq('organization_id', orgId),
-        supabase
-          .from('uploads')
-          .select('*')
-          .eq('organization_id', orgId)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase.from('driver_pay').select('*').eq('organization_id', orgId)
-      ]);
+      const [driversRes, loadsRes, ticketsRes, fleetRes, uploadsRes, payRes] =
+        await Promise.all([
+          supabase.from("drivers").select("*").eq("organization_id", orgId),
+          supabase.from("loads").select("*").eq("organization_id", orgId),
+          supabase
+            .from("scale_tickets")
+            .select("*")
+            .eq("organization_id", orgId),
+          supabase.from("vehicles").select("*").eq("organization_id", orgId),
+          supabase
+            .from("uploads")
+            .select("*")
+            .eq("organization_id", orgId)
+            .order("created_at", { ascending: false })
+            .limit(10),
+          supabase.from("driver_pay").select("*").eq("organization_id", orgId),
+        ]);
 
       if (!driversRes.error) setDrivers(driversRes.data);
       if (!loadsRes.error) setLoads(loadsRes.data);
@@ -161,13 +156,13 @@ export default function CompanyDashboard() {
 
   // Derived KPIs
   const activeDrivers = useMemo(
-    () => drivers.filter((d) => d.status === 'active').length,
-    [drivers]
+    () => drivers.filter((d) => d.status === "active").length,
+    [drivers],
   );
 
   const activeLoads = useMemo(
-    () => loads.filter((l) => l.status !== 'Delivered').length,
-    [loads]
+    () => loads.filter((l) => l.status !== "Delivered").length,
+    [loads],
   );
 
   const totalFleet = fleet.length;
@@ -197,13 +192,32 @@ export default function CompanyDashboard() {
       )}
 
       <div className="max-w-7xl mx-auto px-6 mt-10 space-y-10">
-
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DashboardCard title="Active Drivers" value={activeDrivers} icon="🚚" color="from-blue-500 to-blue-600" />
-          <DashboardCard title="Open Loads" value={activeLoads} icon="📦" color="from-purple-500 to-purple-600" />
-          <DashboardCard title="Fleet Vehicles" value={totalFleet} icon="🚛" color="from-green-500 to-green-600" />
-          <DashboardCard title="Unpaid Tickets" value={unpaidTickets} icon="🎫" color="from-red-500 to-red-600" />
+          <DashboardCard
+            title="Active Drivers"
+            value={activeDrivers}
+            icon="🚚"
+            color="from-blue-500 to-blue-600"
+          />
+          <DashboardCard
+            title="Open Loads"
+            value={activeLoads}
+            icon="📦"
+            color="from-purple-500 to-purple-600"
+          />
+          <DashboardCard
+            title="Fleet Vehicles"
+            value={totalFleet}
+            icon="🚛"
+            color="from-green-500 to-green-600"
+          />
+          <DashboardCard
+            title="Unpaid Tickets"
+            value={unpaidTickets}
+            icon="🎫"
+            color="from-red-500 to-red-600"
+          />
         </div>
 
         {/* OCR Inbox + Fleet + Loads */}
@@ -215,8 +229,16 @@ export default function CompanyDashboard() {
 
         {/* Tickets + Driver Pay */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <SystemCard title="🎫 Recent Tickets" items={tickets.slice(0, 6)} type="tickets" />
-          <SystemCard title="💰 Driver Pay Summary" value={monthlyPay} type="pay" />
+          <SystemCard
+            title="🎫 Recent Tickets"
+            items={tickets.slice(0, 6)}
+            type="tickets"
+          />
+          <SystemCard
+            title="💰 Driver Pay Summary"
+            value={monthlyPay}
+            type="pay"
+          />
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ const roles = [
   { value: "admin", label: "Admin" },
   { value: "user", label: "User" },
   { value: "accountant", label: "Accountant" },
-  { value: "custom", label: "Custom" }
+  { value: "custom", label: "Custom" },
 ];
 
 interface User {
@@ -18,7 +18,7 @@ interface User {
 
 const initialUsers: User[] = [
   { id: "1", name: "John Smith", email: "john@company.com", role: "admin" },
-  { id: "2", name: "Jane Doe", email: "jane@company.com", role: "user" }
+  { id: "2", name: "Jane Doe", email: "jane@company.com", role: "user" },
 ];
 
 export default function RoleManager() {
@@ -31,7 +31,7 @@ export default function RoleManager() {
     setRole(currentRole);
   };
   const handleSave = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     setEditing(null);
   };
 
@@ -48,31 +48,52 @@ export default function RoleManager() {
           </tr>
         </thead>
         <tbody>
-          {users.map(u => (
+          {users.map((u) => (
             <tr key={u.id}>
               <td className="p-2">{u.name}</td>
               <td className="p-2">{u.email}</td>
               <td className="p-2">
                 {editing === u.id ? (
-                  <select value={role} onChange={e => setRole(e.target.value)} className="border rounded px-2 py-1">
-                    {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="border rounded px-2 py-1"
+                  >
+                    {roles.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
                   </select>
                 ) : (
-                  <span className="capitalize font-semibold">{roles.find(r => r.value === u.role)?.label || u.role}</span>
+                  <span className="capitalize font-semibold">
+                    {roles.find((r) => r.value === u.role)?.label || u.role}
+                  </span>
                 )}
               </td>
               <td className="p-2">
                 {editing === u.id ? (
-                  <Button size="sm" onClick={() => handleSave(u.id)}>Save</Button>
+                  <Button size="sm" onClick={() => handleSave(u.id)}>
+                    Save
+                  </Button>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(u.id, u.role)}>Edit</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEdit(u.id, u.role)}
+                  >
+                    Edit
+                  </Button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="text-xs text-gray-500 mt-4">Granular permissions and custom roles can be managed in the admin dashboard.</div>
+      <div className="text-xs text-gray-500 mt-4">
+        Granular permissions and custom roles can be managed in the admin
+        dashboard.
+      </div>
     </div>
   );
 }

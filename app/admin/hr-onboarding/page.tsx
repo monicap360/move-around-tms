@@ -2,15 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import { 
-  Users, 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Users,
+  FileText,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   Search,
   Filter,
@@ -21,7 +26,7 @@ import {
   CreditCard,
   User,
   DollarSign,
-  Truck
+  Truck,
 } from "lucide-react";
 
 interface OnboardingRecord {
@@ -57,13 +62,15 @@ interface OnboardingStats {
 }
 
 export default function HROnboardingDashboard() {
-  const [onboardingRecords, setOnboardingRecords] = useState<OnboardingRecord[]>([]);
+  const [onboardingRecords, setOnboardingRecords] = useState<
+    OnboardingRecord[]
+  >([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [stats, setStats] = useState<OnboardingStats>({
     totalInProgress: 0,
     completedThisMonth: 0,
     pendingDocuments: 0,
-    expiredDocuments: 0
+    expiredDocuments: 0,
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,7 +87,7 @@ export default function HROnboardingDashboard() {
       await Promise.all([
         loadOnboardingRecords(),
         loadDocuments(),
-        loadStats()
+        loadStats(),
       ]);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -113,28 +120,30 @@ export default function HROnboardingDashboard() {
 
   const loadStats = async () => {
     // Calculate stats from the loaded data
-    const inProgress = onboardingRecords.filter(r => r.status === 'in_progress').length;
-    
-    const thisMonth = new Date();
-    thisMonth.setMonth(thisMonth.getMonth() - 1);
-    const completedThisMonth = onboardingRecords.filter(r => 
-      r.status === 'completed' && 
-      r.completed_at && 
-      new Date(r.completed_at) > thisMonth
+    const inProgress = onboardingRecords.filter(
+      (r) => r.status === "in_progress",
     ).length;
 
-    const pendingDocs = documents.filter(d => d.status === 'uploaded').length;
+    const thisMonth = new Date();
+    thisMonth.setMonth(thisMonth.getMonth() - 1);
+    const completedThisMonth = onboardingRecords.filter(
+      (r) =>
+        r.status === "completed" &&
+        r.completed_at &&
+        new Date(r.completed_at) > thisMonth,
+    ).length;
 
-    const expiredDocs = documents.filter(d => 
-      d.expiration_date && 
-      new Date(d.expiration_date) < new Date()
+    const pendingDocs = documents.filter((d) => d.status === "uploaded").length;
+
+    const expiredDocs = documents.filter(
+      (d) => d.expiration_date && new Date(d.expiration_date) < new Date(),
     ).length;
 
     setStats({
       totalInProgress: inProgress,
       completedThisMonth,
       pendingDocuments: pendingDocs,
-      expiredDocuments: expiredDocs
+      expiredDocuments: expiredDocs,
     });
   };
 
@@ -143,9 +152,9 @@ export default function HROnboardingDashboard() {
       const { error } = await supabase
         .from("driver_onboarding_documents")
         .update({
-          status: 'approved',
+          status: "approved",
           approved_at: new Date().toISOString(),
-          approved_by: 'HR' // In real app, get from auth context
+          approved_by: "HR", // In real app, get from auth context
         })
         .eq("id", docId);
 
@@ -153,7 +162,6 @@ export default function HROnboardingDashboard() {
 
       await loadDocuments();
       await loadStats();
-      
     } catch (error) {
       console.error("Error approving document:", error);
       alert("Failed to approve document");
@@ -168,9 +176,9 @@ export default function HROnboardingDashboard() {
       const { error } = await supabase
         .from("driver_onboarding_documents")
         .update({
-          status: 'rejected',
+          status: "rejected",
           rejection_reason: reason,
-          approved_by: 'HR' // In real app, get from auth context
+          approved_by: "HR", // In real app, get from auth context
         })
         .eq("id", docId);
 
@@ -178,7 +186,6 @@ export default function HROnboardingDashboard() {
 
       await loadDocuments();
       await loadStats();
-      
     } catch (error) {
       console.error("Error rejecting document:", error);
       alert("Failed to reject document");
@@ -187,16 +194,16 @@ export default function HROnboardingDashboard() {
 
   const getDocumentIcon = (docType: string) => {
     switch (docType) {
-      case 'drivers_license':
+      case "drivers_license":
         return <CreditCard className="w-4 h-4" />;
-      case 'cdl_license':
+      case "cdl_license":
         return <Truck className="w-4 h-4" />;
-      case 'twic_card':
+      case "twic_card":
         return <Shield className="w-4 h-4" />;
-      case 'social_security_card':
+      case "social_security_card":
         return <User className="w-4 h-4" />;
-      case 'w2_form':
-      case 'form_1099':
+      case "w2_form":
+      case "form_1099":
         return <DollarSign className="w-4 h-4" />;
       default:
         return <FileText className="w-4 h-4" />;
@@ -205,16 +212,16 @@ export default function HROnboardingDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-      case 'approved':
+      case "completed":
+      case "approved":
         return "bg-green-100 text-green-800";
-      case 'in_progress':
-      case 'uploaded':
+      case "in_progress":
+      case "uploaded":
         return "bg-yellow-100 text-yellow-800";
-      case 'on_hold':
-      case 'rejected':
+      case "on_hold":
+      case "rejected":
         return "bg-red-100 text-red-800";
-      case 'expired':
+      case "expired":
         return "bg-gray-100 text-gray-800";
       default:
         return "bg-blue-100 text-blue-800";
@@ -227,20 +234,26 @@ export default function HROnboardingDashboard() {
 
   const formatDocumentType = (docType: string) => {
     return docType
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
-  const filteredOnboarding = onboardingRecords.filter(record => {
-    const matchesSearch = record.driver_email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || record.status === statusFilter;
+  const filteredOnboarding = onboardingRecords.filter((record) => {
+    const matchesSearch = record.driver_email
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || record.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.driver_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         formatDocumentType(doc.document_type).toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch =
+      doc.driver_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formatDocumentType(doc.document_type)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -260,8 +273,12 @@ export default function HROnboardingDashboard() {
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">HR Onboarding Dashboard</h1>
-          <p className="text-gray-600 mt-1">Manage driver onboarding and document verification</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            HR Onboarding Dashboard
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage driver onboarding and document verification
+          </p>
         </div>
         <Button onClick={loadData} disabled={loading}>
           Refresh Data
@@ -393,26 +410,36 @@ export default function HROnboardingDashboard() {
               ) : (
                 <div className="space-y-4">
                   {filteredOnboarding.map((record) => (
-                    <div key={record.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div
+                      key={record.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50"
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div>
-                            <h3 className="font-semibold">{record.driver_email}</h3>
+                            <h3 className="font-semibold">
+                              {record.driver_email}
+                            </h3>
                             <p className="text-sm text-gray-600">
-                              Started: {new Date(record.started_at).toLocaleDateString()}
+                              Started:{" "}
+                              {new Date(record.started_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge className={getStatusColor(record.status)}>
-                            {record.status.replace('_', ' ')}
+                            {record.status.replace("_", " ")}
                           </Badge>
                           <div className="text-right">
-                            <p className="text-sm font-medium">Step {record.current_step} of 4</p>
+                            <p className="text-sm font-medium">
+                              Step {record.current_step} of 4
+                            </p>
                             <div className="w-24 bg-gray-200 rounded-full h-2 mt-1">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{ width: `${getProgressPercentage(record.current_step)}%` }}
+                              <div
+                                className="bg-blue-600 h-2 rounded-full"
+                                style={{
+                                  width: `${getProgressPercentage(record.current_step)}%`,
+                                }}
                               ></div>
                             </div>
                           </div>
@@ -422,10 +449,12 @@ export default function HROnboardingDashboard() {
                       {record.personal_info && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium">Name:</span> {record.personal_info.fullName}
+                            <span className="font-medium">Name:</span>{" "}
+                            {record.personal_info.fullName}
                           </div>
                           <div>
-                            <span className="font-medium">Phone:</span> {record.personal_info.phone}
+                            <span className="font-medium">Phone:</span>{" "}
+                            {record.personal_info.phone}
                           </div>
                         </div>
                       )}
@@ -433,10 +462,12 @@ export default function HROnboardingDashboard() {
                       {record.employment_info && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-2">
                           <div>
-                            <span className="font-medium">Position:</span> {record.employment_info.position}
+                            <span className="font-medium">Position:</span>{" "}
+                            {record.employment_info.position}
                           </div>
                           <div>
-                            <span className="font-medium">Start Date:</span> {record.employment_info.startDate}
+                            <span className="font-medium">Start Date:</span>{" "}
+                            {record.employment_info.startDate}
                           </div>
                         </div>
                       )}
@@ -462,15 +493,23 @@ export default function HROnboardingDashboard() {
               ) : (
                 <div className="space-y-4">
                   {filteredDocuments.map((doc) => (
-                    <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div
+                      key={doc.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {getDocumentIcon(doc.document_type)}
                           <div>
-                            <h3 className="font-semibold">{formatDocumentType(doc.document_type)}</h3>
-                            <p className="text-sm text-gray-600">{doc.driver_email}</p>
+                            <h3 className="font-semibold">
+                              {formatDocumentType(doc.document_type)}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {doc.driver_email}
+                            </p>
                             <p className="text-xs text-gray-500">
-                              Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                              Uploaded:{" "}
+                              {new Date(doc.uploaded_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -484,7 +523,9 @@ export default function HROnboardingDashboard() {
                             <div className="text-right">
                               <p className="text-xs text-gray-500">Expires</p>
                               <p className="text-sm font-medium">
-                                {new Date(doc.expiration_date).toLocaleDateString()}
+                                {new Date(
+                                  doc.expiration_date,
+                                ).toLocaleDateString()}
                               </p>
                             </div>
                           )}
@@ -493,13 +534,15 @@ export default function HROnboardingDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => window.open(doc.file_url, '_blank')}
+                              onClick={() =>
+                                window.open(doc.file_url, "_blank")
+                              }
                             >
                               <Eye className="w-4 h-4 mr-1" />
                               View
                             </Button>
 
-                            {doc.status === 'uploaded' && (
+                            {doc.status === "uploaded" && (
                               <>
                                 <Button
                                   size="sm"
@@ -526,7 +569,10 @@ export default function HROnboardingDashboard() {
                       {doc.rejection_reason && (
                         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
                           <p className="text-sm text-red-700">
-                            <span className="font-medium">Rejection Reason:</span> {doc.rejection_reason}
+                            <span className="font-medium">
+                              Rejection Reason:
+                            </span>{" "}
+                            {doc.rejection_reason}
                           </p>
                         </div>
                       )}

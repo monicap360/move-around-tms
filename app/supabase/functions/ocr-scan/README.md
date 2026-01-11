@@ -33,6 +33,7 @@ curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/ocr-scan \
 ## Environment Variables
 
 Set in Supabase Functions settings:
+
 - `SUPABASE_URL` (auto-provided)
 - `SUPABASE_SERVICE_ROLE_KEY` (auto-provided)
 
@@ -41,33 +42,42 @@ Set in Supabase Functions settings:
 Replace the `performOcr` function with your preferred OCR service:
 
 ### Google Vision API
+
 ```typescript
-import { ImageAnnotatorClient } from '@google-cloud/vision'
+import { ImageAnnotatorClient } from "@google-cloud/vision";
 ```
 
 ### AWS Textract
+
 ```typescript
-import { TextractClient, AnalyzeDocumentCommand } from '@aws-sdk/client-textract'
+import {
+  TextractClient,
+  AnalyzeDocumentCommand,
+} from "@aws-sdk/client-textract";
 ```
 
 ### Azure Computer Vision
+
 ```typescript
-const endpoint = 'https://YOUR_RESOURCE.cognitiveservices.azure.com/'
+const endpoint = "https://YOUR_RESOURCE.cognitiveservices.azure.com/";
 ```
 
 ### Tesseract.js (open-source)
+
 ```typescript
-import Tesseract from 'tesseract.js'
+import Tesseract from "tesseract.js";
 ```
 
 ## Partner Configuration
 
 Partners are configured in the `aggregate_partners` table with:
+
 - `regex_patterns` - JSONB patterns for field extraction
 - `pay_rate` / `bill_rate` - Default rates
 - `material_codes` - Material-specific rate overrides
 
 Example regex patterns:
+
 ```json
 {
   "company_hint": "Martin Marietta|MM Aggregates",

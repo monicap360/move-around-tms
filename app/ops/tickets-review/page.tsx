@@ -11,7 +11,11 @@ const columns = [
   { header: "Driver", accessorKey: "driver_name", editable: false },
   { header: "Date", accessorKey: "ticket_date", editable: false },
   { header: "Quantity (OCR)", accessorKey: "quantity", editable: false },
-  { header: "Quantity (Reviewed)", accessorKey: "quantity_final", editable: true },
+  {
+    header: "Quantity (Reviewed)",
+    accessorKey: "quantity_final",
+    editable: true,
+  },
   { header: "Pay Method", accessorKey: "pay_method", editable: true },
   { header: "Pay Rate", accessorKey: "pay_rate", editable: true },
   { header: "% of Load", accessorKey: "pay_percentage", editable: true },
@@ -43,14 +47,19 @@ export default function TicketsReviewPage() {
           <thead className="bg-gray-100">
             <tr>
               {columns.map((col) => (
-                <th key={col.header} className="p-2 text-left">{col.header}</th>
+                <th key={col.header} className="p-2 text-left">
+                  {col.header}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {/* Placeholder: map tickets here */}
             <tr>
-              <td colSpan={columns.length} className="p-6 text-center text-gray-500">
+              <td
+                colSpan={columns.length}
+                className="p-6 text-center text-gray-500"
+              >
                 No tickets loaded yet
               </td>
             </tr>

@@ -11,7 +11,7 @@ export default function LiveTelemetry({ driver }) {
         speed: Math.floor(Math.random() * 80),
         fuel: Math.floor(Math.random() * 100),
         location: "Houston, TX",
-        engineTemp: 180 + Math.floor(Math.random() * 20)
+        engineTemp: 180 + Math.floor(Math.random() * 20),
       });
     }, 2000);
     return () => clearInterval(interval);
@@ -22,10 +22,18 @@ export default function LiveTelemetry({ driver }) {
   return (
     <div>
       <h2 className="text-xl font-bold mb-2">Live Telemetry</h2>
-      <div>Speed: <b>{telemetry.speed} mph</b></div>
-      <div>Fuel: <b>{telemetry.fuel}%</b></div>
-      <div>Location: <b>{telemetry.location}</b></div>
-      <div>Engine Temp: <b>{telemetry.engineTemp}°F</b></div>
+      <div>
+        Speed: <b>{telemetry.speed} mph</b>
+      </div>
+      <div>
+        Fuel: <b>{telemetry.fuel}%</b>
+      </div>
+      <div>
+        Location: <b>{telemetry.location}</b>
+      </div>
+      <div>
+        Engine Temp: <b>{telemetry.engineTemp}°F</b>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,9 @@
-'use client';
+"use client";
 
 export default function FleetLiveOps() {
   return (
     <div className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold text-white">
-        FleetPulse AI™
-      </h1>
+      <h1 className="text-3xl font-bold text-white">FleetPulse AI™</h1>
 
       <p className="text-gray-300 text-lg">
         Fleet Operations Intelligence Unit • Live Situational Awareness
@@ -23,10 +21,12 @@ export default function FleetLiveOps() {
 
 function DriverTile({ name, score, status }) {
   return (
-    <div className="
+    <div
+      className="
       backdrop-blur-md bg-white/5 border border-white/10 
       rounded-xl p-5 shadow-lg transition hover:bg-white/10
-    ">
+    "
+    >
       <h2 className="text-xl text-white font-semibold">{name}</h2>
       <p className="text-gray-300 text-sm">{status}</p>
       <div className="text-3xl font-bold text-blue-400 mt-2">{score}</div>

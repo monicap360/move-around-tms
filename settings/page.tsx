@@ -1,20 +1,25 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
 // Simple toast implementation
 const useToast = () => ({
   toast: ({ title, description, variant }: any) => {
-    const message = title + (description ? `: ${description}` : '');
+    const message = title + (description ? `: ${description}` : "");
     if (variant === "destructive") {
       alert(`❌ ${message}`);
     } else {
       alert(`✅ ${message}`);
     }
-  }
+  },
 });
 
 interface UserProfile {
@@ -42,8 +47,11 @@ export default function SettingsPage() {
   const loadProfile = async () => {
     try {
       // Using existing supabase client from lib
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError || !user) {
         toast({
           title: "Error",
@@ -55,9 +63,9 @@ export default function SettingsPage() {
 
       // Try to get profile from profiles table first
       const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
         .single();
 
       if (profileData) {
@@ -83,7 +91,7 @@ export default function SettingsPage() {
         setPhone(user.user_metadata.phone || "");
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error("Error loading profile:", error);
       toast({
         title: "Error",
         description: "Failed to load profile",
@@ -100,11 +108,11 @@ export default function SettingsPage() {
 
     try {
       const formData = new FormData();
-      formData.append('full_name', fullName);
-      formData.append('phone', phone);
+      formData.append("full_name", fullName);
+      formData.append("phone", phone);
 
-      const response = await fetch('/api/profile/update', {
-        method: 'POST',
+      const response = await fetch("/api/profile/update", {
+        method: "POST",
         body: formData,
       });
 
@@ -123,7 +131,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: "Failed to update profile",
@@ -136,7 +144,7 @@ export default function SettingsPage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newPassword !== confirmPassword) {
       toast({
         title: "Error",
@@ -156,12 +164,12 @@ export default function SettingsPage() {
     }
 
     setSaving(true);
-    
+
     try {
-      const response = await fetch('/api/profile/password', {
-        method: 'POST',
+      const response = await fetch("/api/profile/password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ new_password: newPassword }),
       });
@@ -182,7 +190,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Error updating password:', error);
+      console.error("Error updating password:", error);
       toast({
         title: "Error",
         description: "Failed to update password",
@@ -218,7 +226,9 @@ export default function SettingsPage() {
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email
+                </label>
                 <Input
                   id="email"
                   type="email"
@@ -226,11 +236,15 @@ export default function SettingsPage() {
                   disabled
                   className="bg-gray-50"
                 />
-                <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Email cannot be changed
+                </p>
               </div>
 
               <div>
-                <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
+                <label htmlFor="fullName" className="text-sm font-medium">
+                  Full Name
+                </label>
                 <Input
                   id="fullName"
                   type="text"
@@ -241,7 +255,9 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="text-sm font-medium">Phone</label>
+                <label htmlFor="phone" className="text-sm font-medium">
+                  Phone
+                </label>
                 <Input
                   id="phone"
                   type="tel"
@@ -252,7 +268,11 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <Button type="submit" disabled={saving} className="w-full md:w-auto">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="w-full md:w-auto"
+            >
               {saving ? "Updating..." : "Update Profile"}
             </Button>
           </form>
@@ -268,7 +288,9 @@ export default function SettingsPage() {
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="newPassword" className="text-sm font-medium">New Password</label>
+                <label htmlFor="newPassword" className="text-sm font-medium">
+                  New Password
+                </label>
                 <Input
                   id="newPassword"
                   type="password"
@@ -279,7 +301,12 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</label>
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-sm font-medium"
+                >
+                  Confirm Password
+                </label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -290,8 +317,8 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={saving || !newPassword || !confirmPassword}
               className="w-full md:w-auto bg-red-600 hover:bg-red-700"
             >
@@ -307,7 +334,10 @@ export default function SettingsPage() {
           <CardTitle>Company Information</CardTitle>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Configure company info, user accounts, roles, and notification preferences.</p>
+          <p>
+            Configure company info, user accounts, roles, and notification
+            preferences.
+          </p>
           <p>Brand: Move Around TMS™.</p>
         </CardContent>
       </Card>

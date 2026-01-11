@@ -6,7 +6,7 @@ export interface Scan {
   ticketId: string;
   documentId: string;
   createdAt: string;
-  status: 'pending' | 'processed' | 'failed';
+  status: "pending" | "processed" | "failed";
   resultId?: string;
 }
 
@@ -16,14 +16,14 @@ export interface Ticket {
   number: string;
   driverId: string;
   createdAt: string;
-  status: 'open' | 'closed' | 'exception';
+  status: "open" | "closed" | "exception";
 }
 
 export interface Document {
   id: string;
   organizationId: string;
   scanId: string;
-  type: 'image' | 'pdf' | 'other';
+  type: "image" | "pdf" | "other";
   url: string;
   uploadedAt: string;
 }
@@ -33,7 +33,7 @@ export interface ScanResult {
   scanId: string;
   organizationId: string;
   extractedText: string;
-  ocrStatus: 'pending' | 'success' | 'error';
+  ocrStatus: "pending" | "success" | "error";
   processedAt?: string;
   errorMessage?: string;
 }

@@ -1,9 +1,11 @@
-import React from 'react';
+import React from "react";
 
 export default function MoveAroundTMSDashboard() {
   return (
     <main className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Move Around TMS — Company Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-4">
+        Move Around TMS — Company Dashboard
+      </h1>
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded shadow p-4">Total Loads: 0</div>
         <div className="bg-white rounded shadow p-4">Active Drivers: 0</div>

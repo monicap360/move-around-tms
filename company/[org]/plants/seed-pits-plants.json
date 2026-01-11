@@ -1,12 +1,72 @@
 [
-  {"name": "Cemex Houston Plant", "material_type": "Aggregate", "city": "Houston", "state": "TX", "port_code": "HOU"},
-  {"name": "Martin Marietta DFW Pit", "material_type": "Sand", "city": "Dallas", "state": "TX", "port_code": "DFW"},
-  {"name": "Vulcan San Antonio Plant", "material_type": "Gravel", "city": "San Antonio", "state": "TX", "port_code": "SAT"},
-  {"name": "Ash Grove Baton Rouge Plant", "material_type": "Cement", "city": "Baton Rouge", "state": "LA", "port_code": "BR"},
-  {"name": "RiverBend Shreveport Pit", "material_type": "Aggregate", "city": "Shreveport", "state": "LA", "port_code": "SHV"},
-  {"name": "Cemex Galveston Plant", "material_type": "Aggregate", "city": "Galveston", "state": "TX", "port_code": "GAL"},
-  {"name": "Martin Marietta Austin Pit", "material_type": "Sand", "city": "Austin", "state": "TX", "port_code": "AUS"},
-  {"name": "Vulcan Lake Charles Plant", "material_type": "Gravel", "city": "Lake Charles", "state": "LA", "port_code": "LCH"},
-  {"name": "Ash Grove New Orleans Plant", "material_type": "Cement", "city": "New Orleans", "state": "LA", "port_code": "NOLA"},
-  {"name": "RiverBend Beaumont Pit", "material_type": "Aggregate", "city": "Beaumont", "state": "TX", "port_code": "BMT"}
+  {
+    "name": "Cemex Houston Plant",
+    "material_type": "Aggregate",
+    "city": "Houston",
+    "state": "TX",
+    "port_code": "HOU"
+  },
+  {
+    "name": "Martin Marietta DFW Pit",
+    "material_type": "Sand",
+    "city": "Dallas",
+    "state": "TX",
+    "port_code": "DFW"
+  },
+  {
+    "name": "Vulcan San Antonio Plant",
+    "material_type": "Gravel",
+    "city": "San Antonio",
+    "state": "TX",
+    "port_code": "SAT"
+  },
+  {
+    "name": "Ash Grove Baton Rouge Plant",
+    "material_type": "Cement",
+    "city": "Baton Rouge",
+    "state": "LA",
+    "port_code": "BR"
+  },
+  {
+    "name": "RiverBend Shreveport Pit",
+    "material_type": "Aggregate",
+    "city": "Shreveport",
+    "state": "LA",
+    "port_code": "SHV"
+  },
+  {
+    "name": "Cemex Galveston Plant",
+    "material_type": "Aggregate",
+    "city": "Galveston",
+    "state": "TX",
+    "port_code": "GAL"
+  },
+  {
+    "name": "Martin Marietta Austin Pit",
+    "material_type": "Sand",
+    "city": "Austin",
+    "state": "TX",
+    "port_code": "AUS"
+  },
+  {
+    "name": "Vulcan Lake Charles Plant",
+    "material_type": "Gravel",
+    "city": "Lake Charles",
+    "state": "LA",
+    "port_code": "LCH"
+  },
+  {
+    "name": "Ash Grove New Orleans Plant",
+    "material_type": "Cement",
+    "city": "New Orleans",
+    "state": "LA",
+    "port_code": "NOLA"
+  },
+  {
+    "name": "RiverBend Beaumont Pit",
+    "material_type": "Aggregate",
+    "city": "Beaumont",
+    "state": "TX",
+    "port_code": "BMT"
+  }
 ]

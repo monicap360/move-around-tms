@@ -8,13 +8,10 @@ export default function FastScanPage({ params }) {
   const org = params.organization_code;
 
   async function lookupDriver() {
-    const res = await fetch(
-      `/api/fastscan/${org}/lookup`,
-      {
-        method: "POST",
-        body: JSON.stringify({ driver_uuid: code })
-      }
-    );
+    const res = await fetch(`/api/fastscan/${org}/lookup`, {
+      method: "POST",
+      body: JSON.stringify({ driver_uuid: code }),
+    });
     const data = await res.json();
     setDriver(data.driver || null);
   }
@@ -31,7 +28,9 @@ export default function FastScanPage({ params }) {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <label className="text-sm uppercase opacity-60">Scan Driver QR / Enter UUID</label>
+        <label className="text-sm uppercase opacity-60">
+          Scan Driver QR / Enter UUID
+        </label>
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -67,7 +66,9 @@ export default function FastScanPage({ params }) {
           {/* Action */}
           <button
             className="mt-6 w-full p-3 bg-cyan-600 text-black rounded-xl font-bold"
-            onClick={() => window.location.href = `/fastscan/${org}/ticket/${driver.driver_uuid}`}
+            onClick={() =>
+              (window.location.href = `/fastscan/${org}/ticket/${driver.driver_uuid}`)
+            }
           >
             Create Fast Ticket
           </button>

@@ -2,16 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
 import { Progress } from "../../components/ui/progress";
-import { 
-  FileText, 
-  Upload, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  FileText,
+  Upload,
+  CheckCircle,
+  AlertCircle,
   Clock,
   CreditCard,
   Shield,
@@ -22,7 +27,7 @@ import {
   Mail,
   Camera,
   Download,
-  Truck
+  Truck,
 } from "lucide-react";
 
 interface DocumentRequirement {
@@ -32,7 +37,7 @@ interface DocumentRequirement {
   required: boolean;
   icon: any;
   acceptedFormats: string;
-  status: 'not_uploaded' | 'uploaded' | 'approved' | 'rejected';
+  status: "not_uploaded" | "uploaded" | "approved" | "rejected";
   file?: File | null;
   uploadUrl?: string;
   expirationDate?: string;
@@ -55,9 +60,9 @@ interface OnboardingData {
     startDate: string;
     position: string;
     payRate: string;
-    payType: 'hourly' | 'per_mile' | 'per_load' | 'salary';
-    taxStatus: 'W2' | '1099';
-    employmentType: 'full_time' | 'part_time' | 'contractor';
+    payType: "hourly" | "per_mile" | "per_load" | "salary";
+    taxStatus: "W2" | "1099";
+    employmentType: "full_time" | "part_time" | "contractor";
   };
   documents: DocumentRequirement[];
 }
@@ -76,99 +81,99 @@ export default function DriverOnboardingPage() {
       zipCode: "",
       emergencyContactName: "",
       emergencyContactPhone: "",
-      emergencyContactRelation: ""
+      emergencyContactRelation: "",
     },
     employmentInfo: {
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split("T")[0],
       position: "Commercial Driver",
       payRate: "",
       payType: "per_mile",
       taxStatus: "W2",
-      employmentType: "full_time"
+      employmentType: "full_time",
     },
     documents: [
       {
-        key: 'drivers_license',
+        key: "drivers_license",
         title: "Driver's License",
         description: "Front and back of valid driver's license",
         required: true,
         icon: CreditCard,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'cdl_license',
+        key: "cdl_license",
         title: "CDL License",
         description: "Commercial Driver's License (CDL)",
         required: true,
         icon: Truck,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'twic_card',
+        key: "twic_card",
         title: "TWIC Card",
         description: "Transportation Worker Identification Credential",
         required: true,
         icon: Shield,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'social_security_card',
+        key: "social_security_card",
         title: "Social Security Card",
         description: "Social Security Administration issued card",
         required: true,
         icon: User,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'medical_certificate',
+        key: "medical_certificate",
         title: "DOT Medical Certificate",
         description: "DOT Medical Examiner Certificate",
         required: true,
         icon: FileText,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'w2_form',
+        key: "w2_form",
         title: "W-2 Form",
         description: "Previous year's W-2 tax form (if applicable)",
         required: false,
         icon: DollarSign,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'form_1099',
+        key: "form_1099",
         title: "1099 Form",
         description: "Previous year's 1099 tax form (if applicable)",
         required: false,
         icon: DollarSign,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'birth_certificate',
+        key: "birth_certificate",
         title: "Birth Certificate",
         description: "Certified copy of birth certificate",
         required: false,
         icon: FileText,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
+        status: "not_uploaded",
       },
       {
-        key: 'passport',
+        key: "passport",
         title: "Passport",
         description: "Valid U.S. Passport (alternative to birth certificate)",
         required: false,
         icon: FileText,
         acceptedFormats: "image/*,.pdf",
-        status: 'not_uploaded'
-      }
-    ]
+        status: "not_uploaded",
+      },
+    ],
   });
 
   const [userEmail, setUserEmail] = useState("");
@@ -180,8 +185,10 @@ export default function DriverOnboardingPage() {
 
   const checkAuthAndProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         window.location.href = "/login";
         return;
@@ -201,29 +208,28 @@ export default function DriverOnboardingPage() {
         setCurrentStep(existingOnboarding.current_step || 1);
         // TODO: Load existing form data if needed
       }
-
     } catch (err) {
       console.error("Error checking profile:", err);
     }
   };
 
   const handlePersonalInfoChange = (field: string, value: string) => {
-    setOnboardingData(prev => ({
+    setOnboardingData((prev) => ({
       ...prev,
       personalInfo: {
         ...prev.personalInfo,
-        [field]: value
-      }
+        [field]: value,
+      },
     }));
   };
 
   const handleEmploymentInfoChange = (field: string, value: string) => {
-    setOnboardingData(prev => ({
+    setOnboardingData((prev) => ({
       ...prev,
       employmentInfo: {
         ...prev.employmentInfo,
-        [field]: value
-      }
+        [field]: value,
+      },
     }));
   };
 
@@ -233,7 +239,7 @@ export default function DriverOnboardingPage() {
 
       // Upload file to Supabase Storage
       const path = `onboarding-docs/${userEmail}/${documentKey}/${Date.now()}-${file.name}`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("hr_docs")
         .upload(path, file, { upsert: false });
@@ -243,32 +249,29 @@ export default function DriverOnboardingPage() {
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("hr_docs")
-        .getPublicUrl(uploadData.path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("hr_docs").getPublicUrl(uploadData.path);
 
       // Update document status
-      setOnboardingData(prev => ({
+      setOnboardingData((prev) => ({
         ...prev,
-        documents: prev.documents.map(doc => 
-          doc.key === documentKey 
-            ? { ...doc, status: 'uploaded', uploadUrl: publicUrl, file: file }
-            : doc
-        )
+        documents: prev.documents.map((doc) =>
+          doc.key === documentKey
+            ? { ...doc, status: "uploaded", uploadUrl: publicUrl, file: file }
+            : doc,
+        ),
       }));
 
       // Save to database
-      await supabase
-        .from("driver_onboarding_documents")
-        .upsert({
-          driver_email: userEmail,
-          document_type: documentKey,
-          file_url: publicUrl,
-          file_name: file.name,
-          status: 'uploaded',
-          uploaded_at: new Date().toISOString()
-        });
-
+      await supabase.from("driver_onboarding_documents").upsert({
+        driver_email: userEmail,
+        document_type: documentKey,
+        file_url: publicUrl,
+        file_name: file.name,
+        status: "uploaded",
+        uploaded_at: new Date().toISOString(),
+      });
     } catch (error: any) {
       console.error("Upload error:", error);
       alert("Upload failed: " + error.message);
@@ -281,16 +284,13 @@ export default function DriverOnboardingPage() {
     try {
       setLoading(true);
 
-      await supabase
-        .from("driver_onboarding")
-        .upsert({
-          driver_email: userEmail,
-          current_step: currentStep,
-          personal_info: JSON.stringify(onboardingData.personalInfo),
-          employment_info: JSON.stringify(onboardingData.employmentInfo),
-          updated_at: new Date().toISOString()
-        });
-
+      await supabase.from("driver_onboarding").upsert({
+        driver_email: userEmail,
+        current_step: currentStep,
+        personal_info: JSON.stringify(onboardingData.personalInfo),
+        employment_info: JSON.stringify(onboardingData.employmentInfo),
+        updated_at: new Date().toISOString(),
+      });
     } catch (error) {
       console.error("Error saving step:", error);
     } finally {
@@ -302,11 +302,17 @@ export default function DriverOnboardingPage() {
     try {
       setLoading(true);
 
-      const requiredDocs = onboardingData.documents.filter(doc => doc.required);
-      const uploadedRequiredDocs = requiredDocs.filter(doc => doc.status === 'uploaded');
+      const requiredDocs = onboardingData.documents.filter(
+        (doc) => doc.required,
+      );
+      const uploadedRequiredDocs = requiredDocs.filter(
+        (doc) => doc.status === "uploaded",
+      );
 
       if (uploadedRequiredDocs.length < requiredDocs.length) {
-        alert("Please upload all required documents before completing onboarding.");
+        alert(
+          "Please upload all required documents before completing onboarding.",
+        );
         return;
       }
 
@@ -318,15 +324,18 @@ export default function DriverOnboardingPage() {
           name: onboardingData.personalInfo.fullName,
           phone: onboardingData.personalInfo.phone,
           address: `${onboardingData.personalInfo.address}, ${onboardingData.personalInfo.city}, ${onboardingData.personalInfo.state} ${onboardingData.personalInfo.zipCode}`,
-          emergency_contact_name: onboardingData.personalInfo.emergencyContactName,
-          emergency_contact_phone: onboardingData.personalInfo.emergencyContactPhone,
-          emergency_contact_relation: onboardingData.personalInfo.emergencyContactRelation,
+          emergency_contact_name:
+            onboardingData.personalInfo.emergencyContactName,
+          emergency_contact_phone:
+            onboardingData.personalInfo.emergencyContactPhone,
+          emergency_contact_relation:
+            onboardingData.personalInfo.emergencyContactRelation,
           pay_type: onboardingData.employmentInfo.payType,
           tax_status: onboardingData.employmentInfo.taxStatus,
           employment_type: onboardingData.employmentInfo.employmentType,
           hire_date: onboardingData.employmentInfo.startDate,
-          onboarding_status: 'completed',
-          created_at: new Date().toISOString()
+          onboarding_status: "completed",
+          created_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -339,15 +348,14 @@ export default function DriverOnboardingPage() {
       await supabase
         .from("driver_onboarding")
         .update({
-          status: 'completed',
+          status: "completed",
           completed_at: new Date().toISOString(),
-          driver_id: driverData.id
+          driver_id: driverData.id,
         })
         .eq("driver_email", userEmail);
 
       alert("Onboarding completed successfully! Welcome to the team!");
       window.location.href = "/driver/profile";
-
     } catch (error: any) {
       console.error("Error completing onboarding:", error);
       alert("Error completing onboarding: " + error.message);
@@ -362,19 +370,33 @@ export default function DriverOnboardingPage() {
   };
 
   const getDocumentCompletionPercentage = () => {
-    const totalRequired = onboardingData.documents.filter(doc => doc.required).length;
-    const uploadedRequired = onboardingData.documents.filter(doc => doc.required && doc.status === 'uploaded').length;
-    return totalRequired > 0 ? Math.round((uploadedRequired / totalRequired) * 100) : 0;
+    const totalRequired = onboardingData.documents.filter(
+      (doc) => doc.required,
+    ).length;
+    const uploadedRequired = onboardingData.documents.filter(
+      (doc) => doc.required && doc.status === "uploaded",
+    ).length;
+    return totalRequired > 0
+      ? Math.round((uploadedRequired / totalRequired) * 100)
+      : 0;
   };
 
   const renderStepIndicator = () => (
     <div className="mb-8">
       <Progress value={getProgressPercentage()} className="mb-4" />
       <div className="flex justify-between text-sm text-gray-600">
-        <span className={currentStep >= 1 ? "text-blue-600 font-medium" : ""}>Personal Info</span>
-        <span className={currentStep >= 2 ? "text-blue-600 font-medium" : ""}>Employment</span>
-        <span className={currentStep >= 3 ? "text-blue-600 font-medium" : ""}>Documents</span>
-        <span className={currentStep >= 4 ? "text-blue-600 font-medium" : ""}>Review</span>
+        <span className={currentStep >= 1 ? "text-blue-600 font-medium" : ""}>
+          Personal Info
+        </span>
+        <span className={currentStep >= 2 ? "text-blue-600 font-medium" : ""}>
+          Employment
+        </span>
+        <span className={currentStep >= 3 ? "text-blue-600 font-medium" : ""}>
+          Documents
+        </span>
+        <span className={currentStep >= 4 ? "text-blue-600 font-medium" : ""}>
+          Review
+        </span>
       </div>
     </div>
   );
@@ -396,12 +418,14 @@ export default function DriverOnboardingPage() {
             <Input
               type="text"
               value={onboardingData.personalInfo.fullName}
-              onChange={(e) => handlePersonalInfoChange("fullName", e.target.value)}
+              onChange={(e) =>
+                handlePersonalInfoChange("fullName", e.target.value)
+              }
               placeholder="John Smith"
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number *
@@ -409,7 +433,9 @@ export default function DriverOnboardingPage() {
             <Input
               type="tel"
               value={onboardingData.personalInfo.phone}
-              onChange={(e) => handlePersonalInfoChange("phone", e.target.value)}
+              onChange={(e) =>
+                handlePersonalInfoChange("phone", e.target.value)
+              }
               placeholder="(555) 123-4567"
               required
             />
@@ -435,7 +461,9 @@ export default function DriverOnboardingPage() {
           <Input
             type="text"
             value={onboardingData.personalInfo.address}
-            onChange={(e) => handlePersonalInfoChange("address", e.target.value)}
+            onChange={(e) =>
+              handlePersonalInfoChange("address", e.target.value)
+            }
             placeholder="123 Main Street"
             required
           />
@@ -454,7 +482,7 @@ export default function DriverOnboardingPage() {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               State *
@@ -462,13 +490,15 @@ export default function DriverOnboardingPage() {
             <Input
               type="text"
               value={onboardingData.personalInfo.state}
-              onChange={(e) => handlePersonalInfoChange("state", e.target.value)}
+              onChange={(e) =>
+                handlePersonalInfoChange("state", e.target.value)
+              }
               placeholder="TX"
               maxLength={2}
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               ZIP Code *
@@ -476,7 +506,9 @@ export default function DriverOnboardingPage() {
             <Input
               type="text"
               value={onboardingData.personalInfo.zipCode}
-              onChange={(e) => handlePersonalInfoChange("zipCode", e.target.value)}
+              onChange={(e) =>
+                handlePersonalInfoChange("zipCode", e.target.value)
+              }
               placeholder="77001"
               maxLength={10}
               required
@@ -486,7 +518,7 @@ export default function DriverOnboardingPage() {
 
         <div className="border-t pt-4 mt-6">
           <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -495,12 +527,17 @@ export default function DriverOnboardingPage() {
               <Input
                 type="text"
                 value={onboardingData.personalInfo.emergencyContactName}
-                onChange={(e) => handlePersonalInfoChange("emergencyContactName", e.target.value)}
+                onChange={(e) =>
+                  handlePersonalInfoChange(
+                    "emergencyContactName",
+                    e.target.value,
+                  )
+                }
                 placeholder="Jane Smith"
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Contact Phone *
@@ -508,7 +545,12 @@ export default function DriverOnboardingPage() {
               <Input
                 type="tel"
                 value={onboardingData.personalInfo.emergencyContactPhone}
-                onChange={(e) => handlePersonalInfoChange("emergencyContactPhone", e.target.value)}
+                onChange={(e) =>
+                  handlePersonalInfoChange(
+                    "emergencyContactPhone",
+                    e.target.value,
+                  )
+                }
                 placeholder="(555) 987-6543"
                 required
               />
@@ -522,7 +564,12 @@ export default function DriverOnboardingPage() {
             <Input
               type="text"
               value={onboardingData.personalInfo.emergencyContactRelation}
-              onChange={(e) => handlePersonalInfoChange("emergencyContactRelation", e.target.value)}
+              onChange={(e) =>
+                handlePersonalInfoChange(
+                  "emergencyContactRelation",
+                  e.target.value,
+                )
+              }
               placeholder="Spouse, Parent, Sibling, etc."
               required
             />
@@ -549,18 +596,22 @@ export default function DriverOnboardingPage() {
             <Input
               type="date"
               value={onboardingData.employmentInfo.startDate}
-              onChange={(e) => handleEmploymentInfoChange("startDate", e.target.value)}
+              onChange={(e) =>
+                handleEmploymentInfoChange("startDate", e.target.value)
+              }
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Position *
             </label>
             <select
               value={onboardingData.employmentInfo.position}
-              onChange={(e) => handleEmploymentInfoChange("position", e.target.value)}
+              onChange={(e) =>
+                handleEmploymentInfoChange("position", e.target.value)
+              }
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -580,7 +631,9 @@ export default function DriverOnboardingPage() {
             </label>
             <select
               value={onboardingData.employmentInfo.payType}
-              onChange={(e) => handleEmploymentInfoChange("payType", e.target.value)}
+              onChange={(e) =>
+                handleEmploymentInfoChange("payType", e.target.value)
+              }
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -590,7 +643,7 @@ export default function DriverOnboardingPage() {
               <option value="salary">Salary</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Pay Rate *
@@ -600,15 +653,21 @@ export default function DriverOnboardingPage() {
               step="0.01"
               min="0"
               value={onboardingData.employmentInfo.payRate}
-              onChange={(e) => handleEmploymentInfoChange("payRate", e.target.value)}
+              onChange={(e) =>
+                handleEmploymentInfoChange("payRate", e.target.value)
+              }
               placeholder="0.55"
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              {onboardingData.employmentInfo.payType === 'per_mile' && "Rate per mile"}
-              {onboardingData.employmentInfo.payType === 'per_load' && "Rate per load"}
-              {onboardingData.employmentInfo.payType === 'hourly' && "Hourly rate"}
-              {onboardingData.employmentInfo.payType === 'salary' && "Annual salary"}
+              {onboardingData.employmentInfo.payType === "per_mile" &&
+                "Rate per mile"}
+              {onboardingData.employmentInfo.payType === "per_load" &&
+                "Rate per load"}
+              {onboardingData.employmentInfo.payType === "hourly" &&
+                "Hourly rate"}
+              {onboardingData.employmentInfo.payType === "salary" &&
+                "Annual salary"}
             </p>
           </div>
         </div>
@@ -620,7 +679,9 @@ export default function DriverOnboardingPage() {
             </label>
             <select
               value={onboardingData.employmentInfo.taxStatus}
-              onChange={(e) => handleEmploymentInfoChange("taxStatus", e.target.value)}
+              onChange={(e) =>
+                handleEmploymentInfoChange("taxStatus", e.target.value)
+              }
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -628,17 +689,20 @@ export default function DriverOnboardingPage() {
               <option value="1099">1099 Contractor</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              W-2 = Employee with tax withholding | 1099 = Independent contractor
+              W-2 = Employee with tax withholding | 1099 = Independent
+              contractor
             </p>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Employment Type *
             </label>
             <select
               value={onboardingData.employmentInfo.employmentType}
-              onChange={(e) => handleEmploymentInfoChange("employmentType", e.target.value)}
+              onChange={(e) =>
+                handleEmploymentInfoChange("employmentType", e.target.value)
+              }
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -663,14 +727,28 @@ export default function DriverOnboardingPage() {
                 Document Upload
               </CardTitle>
               <div className="mt-2">
-                <Progress value={getDocumentCompletionPercentage()} className="mb-2" />
+                <Progress
+                  value={getDocumentCompletionPercentage()}
+                  className="mb-2"
+                />
                 <p className="text-sm text-gray-600">
-                  Required documents: {onboardingData.documents.filter(doc => doc.required && doc.status === 'uploaded').length} of {onboardingData.documents.filter(doc => doc.required).length} completed
+                  Required documents:{" "}
+                  {
+                    onboardingData.documents.filter(
+                      (doc) => doc.required && doc.status === "uploaded",
+                    ).length
+                  }{" "}
+                  of{" "}
+                  {
+                    onboardingData.documents.filter((doc) => doc.required)
+                      .length
+                  }{" "}
+                  completed
                 </p>
               </div>
             </div>
-            <a 
-              href="/driver/templates" 
+            <a
+              href="/driver/templates"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -685,21 +763,32 @@ export default function DriverOnboardingPage() {
             {onboardingData.documents.map((doc) => {
               const IconComponent = doc.icon;
               return (
-                <div key={doc.key} className={`border rounded-lg p-4 ${doc.required ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                <div
+                  key={doc.key}
+                  className={`border rounded-lg p-4 ${doc.required ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-50"}`}
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <IconComponent className={`w-5 h-5 ${doc.required ? 'text-blue-600' : 'text-gray-500'}`} />
+                      <IconComponent
+                        className={`w-5 h-5 ${doc.required ? "text-blue-600" : "text-gray-500"}`}
+                      />
                       <div>
                         <h4 className="font-medium text-gray-900 flex items-center gap-2">
                           {doc.title}
-                          {doc.required && <Badge variant="destructive" className="text-xs">Required</Badge>}
+                          {doc.required && (
+                            <Badge variant="destructive" className="text-xs">
+                              Required
+                            </Badge>
+                          )}
                         </h4>
-                        <p className="text-sm text-gray-600">{doc.description}</p>
+                        <p className="text-sm text-gray-600">
+                          {doc.description}
+                        </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      {doc.status === 'uploaded' ? (
+                      {doc.status === "uploaded" ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />
                       ) : (
                         <Clock className="w-5 h-5 text-gray-400" />
@@ -708,16 +797,18 @@ export default function DriverOnboardingPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {doc.status === 'uploaded' && doc.uploadUrl ? (
+                    {doc.status === "uploaded" && doc.uploadUrl ? (
                       <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-700">Document uploaded successfully</span>
+                          <span className="text-sm text-green-700">
+                            Document uploaded successfully
+                          </span>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => window.open(doc.uploadUrl, '_blank')}
+                          onClick={() => window.open(doc.uploadUrl, "_blank")}
                           className="text-xs"
                         >
                           <Download className="w-3 h-3 mr-1" />
@@ -744,20 +835,22 @@ export default function DriverOnboardingPage() {
                       </div>
                     )}
 
-                    {doc.key === 'medical_certificate' && (
+                    {doc.key === "medical_certificate" && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Expiration Date
                         </label>
                         <Input
                           type="date"
-                          value={doc.expirationDate || ''}
+                          value={doc.expirationDate || ""}
                           onChange={(e) => {
-                            setOnboardingData(prev => ({
+                            setOnboardingData((prev) => ({
                               ...prev,
-                              documents: prev.documents.map(d => 
-                                d.key === doc.key ? { ...d, expirationDate: e.target.value } : d
-                              )
+                              documents: prev.documents.map((d) =>
+                                d.key === doc.key
+                                  ? { ...d, expirationDate: e.target.value }
+                                  : d,
+                              ),
                             }));
                           }}
                           className="w-full"
@@ -774,7 +867,9 @@ export default function DriverOnboardingPage() {
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-yellow-800">Document Upload Guidelines</h4>
+                <h4 className="font-medium text-yellow-800">
+                  Document Upload Guidelines
+                </h4>
                 <ul className="text-sm text-yellow-700 mt-1 space-y-1">
                   <li>• Ensure all documents are clear and legible</li>
                   <li>• Upload both front and back sides where applicable</li>
@@ -801,24 +896,63 @@ export default function DriverOnboardingPage() {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Personal Information</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Personal Information
+            </h3>
             <div className="space-y-2 text-sm">
-              <p><span className="font-medium">Name:</span> {onboardingData.personalInfo.fullName}</p>
-              <p><span className="font-medium">Phone:</span> {onboardingData.personalInfo.phone}</p>
-              <p><span className="font-medium">Email:</span> {userEmail}</p>
-              <p><span className="font-medium">Address:</span> {onboardingData.personalInfo.address}, {onboardingData.personalInfo.city}, {onboardingData.personalInfo.state} {onboardingData.personalInfo.zipCode}</p>
-              <p><span className="font-medium">Emergency Contact:</span> {onboardingData.personalInfo.emergencyContactName} ({onboardingData.personalInfo.emergencyContactRelation}) - {onboardingData.personalInfo.emergencyContactPhone}</p>
+              <p>
+                <span className="font-medium">Name:</span>{" "}
+                {onboardingData.personalInfo.fullName}
+              </p>
+              <p>
+                <span className="font-medium">Phone:</span>{" "}
+                {onboardingData.personalInfo.phone}
+              </p>
+              <p>
+                <span className="font-medium">Email:</span> {userEmail}
+              </p>
+              <p>
+                <span className="font-medium">Address:</span>{" "}
+                {onboardingData.personalInfo.address},{" "}
+                {onboardingData.personalInfo.city},{" "}
+                {onboardingData.personalInfo.state}{" "}
+                {onboardingData.personalInfo.zipCode}
+              </p>
+              <p>
+                <span className="font-medium">Emergency Contact:</span>{" "}
+                {onboardingData.personalInfo.emergencyContactName} (
+                {onboardingData.personalInfo.emergencyContactRelation}) -{" "}
+                {onboardingData.personalInfo.emergencyContactPhone}
+              </p>
             </div>
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Employment Information</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Employment Information
+            </h3>
             <div className="space-y-2 text-sm">
-              <p><span className="font-medium">Start Date:</span> {onboardingData.employmentInfo.startDate}</p>
-              <p><span className="font-medium">Position:</span> {onboardingData.employmentInfo.position}</p>
-              <p><span className="font-medium">Pay:</span> ${onboardingData.employmentInfo.payRate} {onboardingData.employmentInfo.payType}</p>
-              <p><span className="font-medium">Tax Status:</span> {onboardingData.employmentInfo.taxStatus}</p>
-              <p><span className="font-medium">Employment Type:</span> {onboardingData.employmentInfo.employmentType}</p>
+              <p>
+                <span className="font-medium">Start Date:</span>{" "}
+                {onboardingData.employmentInfo.startDate}
+              </p>
+              <p>
+                <span className="font-medium">Position:</span>{" "}
+                {onboardingData.employmentInfo.position}
+              </p>
+              <p>
+                <span className="font-medium">Pay:</span> $
+                {onboardingData.employmentInfo.payRate}{" "}
+                {onboardingData.employmentInfo.payType}
+              </p>
+              <p>
+                <span className="font-medium">Tax Status:</span>{" "}
+                {onboardingData.employmentInfo.taxStatus}
+              </p>
+              <p>
+                <span className="font-medium">Employment Type:</span>{" "}
+                {onboardingData.employmentInfo.employmentType}
+              </p>
             </div>
           </div>
         </div>
@@ -827,12 +961,24 @@ export default function DriverOnboardingPage() {
           <h3 className="font-semibold text-gray-900 mb-3">Document Status</h3>
           <div className="space-y-2">
             {onboardingData.documents.map((doc) => (
-              <div key={doc.key} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <div
+                key={doc.key}
+                className="flex items-center justify-between p-2 bg-gray-50 rounded"
+              >
                 <span className="text-sm">{doc.title}</span>
                 <div className="flex items-center gap-2">
-                  {doc.required && <Badge variant="destructive" className="text-xs">Required</Badge>}
-                  {doc.status === 'uploaded' ? (
-                    <Badge variant="default" className="bg-green-100 text-green-800">Uploaded</Badge>
+                  {doc.required && (
+                    <Badge variant="destructive" className="text-xs">
+                      Required
+                    </Badge>
+                  )}
+                  {doc.status === "uploaded" ? (
+                    <Badge
+                      variant="default"
+                      className="bg-green-100 text-green-800"
+                    >
+                      Uploaded
+                    </Badge>
                   ) : (
                     <Badge variant="outline">Not Uploaded</Badge>
                   )}
@@ -862,8 +1008,12 @@ export default function DriverOnboardingPage() {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Driver Onboarding</h1>
-          <p className="text-gray-600">Welcome to Move Around TMS! Complete your onboarding to get started.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Driver Onboarding
+          </h1>
+          <p className="text-gray-600">
+            Welcome to Move Around TMS! Complete your onboarding to get started.
+          </p>
         </div>
 
         {renderStepIndicator()}
@@ -878,7 +1028,7 @@ export default function DriverOnboardingPage() {
         <div className="flex justify-between items-center">
           <Button
             variant="outline"
-            onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
             disabled={currentStep === 1}
           >
             Previous
@@ -895,7 +1045,7 @@ export default function DriverOnboardingPage() {
 
             {currentStep < 4 ? (
               <Button
-                onClick={() => setCurrentStep(prev => Math.min(4, prev + 1))}
+                onClick={() => setCurrentStep((prev) => Math.min(4, prev + 1))}
                 disabled={loading}
               >
                 Next Step

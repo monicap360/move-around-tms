@@ -1,14 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { 
-  Package, 
-  MapPin, 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import {
+  Package,
+  MapPin,
   Calendar,
   DollarSign,
   Truck,
@@ -21,13 +31,19 @@ import {
   AlertCircle,
   CheckCircle,
   PlusCircle,
-  Search
+  Search,
 } from "lucide-react";
 // import LoadRequestForm from './components/LoadRequestForm';
 
 interface LoadRequest {
   id: string;
-  status: 'pending' | 'quoted' | 'booked' | 'in_transit' | 'delivered' | 'invoiced';
+  status:
+    | "pending"
+    | "quoted"
+    | "booked"
+    | "in_transit"
+    | "delivered"
+    | "invoiced";
   origin: {
     address: string;
     city: string;
@@ -44,7 +60,7 @@ interface LoadRequest {
   deliveryDate?: string;
   commodity: string;
   weight: number;
-  equipment: 'van' | 'flatbed' | 'reefer' | 'tanker';
+  equipment: "van" | "flatbed" | "reefer" | "tanker";
   specialRequirements?: string;
   estimatedRate?: number;
   finalRate?: number;
@@ -65,7 +81,7 @@ interface Invoice {
   id: string;
   loadRequestId: string;
   amount: number;
-  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  status: "draft" | "sent" | "paid" | "overdue";
   dueDate: string;
   paidDate?: string;
   downloadUrl?: string;
@@ -83,87 +99,87 @@ export default function CustomerPortal() {
     // Initialize with sample data
     const mockLoadRequests: LoadRequest[] = [
       {
-        id: 'LR-2024-001',
-        status: 'in_transit',
+        id: "LR-2024-001",
+        status: "in_transit",
         origin: {
-          address: '1234 Industrial Blvd',
-          city: 'Houston',
-          state: 'TX',
-          zipCode: '77001'
+          address: "1234 Industrial Blvd",
+          city: "Houston",
+          state: "TX",
+          zipCode: "77001",
         },
         destination: {
-          address: '5678 Commerce St',
-          city: 'Atlanta',
-          state: 'GA',
-          zipCode: '30301'
+          address: "5678 Commerce St",
+          city: "Atlanta",
+          state: "GA",
+          zipCode: "30301",
         },
-        pickupDate: '2025-11-01',
-        deliveryDate: '2025-11-03',
-        commodity: 'Electronics Equipment',
+        pickupDate: "2025-11-01",
+        deliveryDate: "2025-11-03",
+        commodity: "Electronics Equipment",
         weight: 45000,
-        equipment: 'van',
+        equipment: "van",
         estimatedRate: 2800,
         finalRate: 2850,
-        createdAt: '2025-10-28T10:00:00Z',
+        createdAt: "2025-10-28T10:00:00Z",
         tracking: {
-          currentLocation: 'Birmingham, AL',
-          estimatedDelivery: '2025-11-03T14:00:00Z',
+          currentLocation: "Birmingham, AL",
+          estimatedDelivery: "2025-11-03T14:00:00Z",
           updates: [
             {
-              timestamp: '2025-11-01T08:00:00Z',
-              status: 'Picked up',
-              location: 'Houston, TX',
-              notes: 'Loaded and secured, departed on schedule'
+              timestamp: "2025-11-01T08:00:00Z",
+              status: "Picked up",
+              location: "Houston, TX",
+              notes: "Loaded and secured, departed on schedule",
             },
             {
-              timestamp: '2025-11-01T18:30:00Z',
-              status: 'In transit',
-              location: 'Shreveport, LA',
-              notes: 'Completed required rest break'
+              timestamp: "2025-11-01T18:30:00Z",
+              status: "In transit",
+              location: "Shreveport, LA",
+              notes: "Completed required rest break",
             },
             {
-              timestamp: '2025-11-02T14:15:00Z',
-              status: 'In transit',
-              location: 'Birmingham, AL',
-              notes: 'On schedule for delivery tomorrow'
-            }
-          ]
-        }
+              timestamp: "2025-11-02T14:15:00Z",
+              status: "In transit",
+              location: "Birmingham, AL",
+              notes: "On schedule for delivery tomorrow",
+            },
+          ],
+        },
       },
       {
-        id: 'LR-2024-002',
-        status: 'quoted',
+        id: "LR-2024-002",
+        status: "quoted",
         origin: {
-          address: '9876 Manufacturing Way',
-          city: 'Dallas',
-          state: 'TX',
-          zipCode: '75201'
+          address: "9876 Manufacturing Way",
+          city: "Dallas",
+          state: "TX",
+          zipCode: "75201",
         },
         destination: {
-          address: '4321 Distribution Dr',
-          city: 'Phoenix',
-          state: 'AZ',
-          zipCode: '85001'
+          address: "4321 Distribution Dr",
+          city: "Phoenix",
+          state: "AZ",
+          zipCode: "85001",
         },
-        pickupDate: '2025-11-05',
-        commodity: 'Industrial Machinery',
+        pickupDate: "2025-11-05",
+        commodity: "Industrial Machinery",
         weight: 52000,
-        equipment: 'flatbed',
-        specialRequirements: 'Tarps required, oversize permits needed',
+        equipment: "flatbed",
+        specialRequirements: "Tarps required, oversize permits needed",
         estimatedRate: 3200,
-        createdAt: '2025-10-30T15:30:00Z'
-      }
+        createdAt: "2025-10-30T15:30:00Z",
+      },
     ];
 
     const mockInvoices: Invoice[] = [
       {
-        id: 'INV-2024-156',
-        loadRequestId: 'LR-2024-001',
+        id: "INV-2024-156",
+        loadRequestId: "LR-2024-001",
         amount: 2850,
-        status: 'sent',
-        dueDate: '2025-11-15',
-        downloadUrl: '#'
-      }
+        status: "sent",
+        dueDate: "2025-11-15",
+        downloadUrl: "#",
+      },
     ];
 
     setLoadRequests(mockLoadRequests);
@@ -174,27 +190,31 @@ export default function CustomerPortal() {
     try {
       setLoading(true);
       // Here you would make an API call to submit the load request
-      console.log('Submitting load request:', formData);
-      
+      console.log("Submitting load request:", formData);
+
       // For demo purposes, add to local state
       const newLoadRequest: LoadRequest = {
-        id: `LR-2024-${String(loadRequests.length + 1).padStart(3, '0')}`,
-        status: 'pending',
+        id: `LR-2024-${String(loadRequests.length + 1).padStart(3, "0")}`,
+        status: "pending",
         origin: formData.origin,
         destination: formData.destination,
         pickupDate: formData.pickupDate,
         deliveryDate: formData.deliveryDate,
         commodity: formData.commodity,
         weight: formData.weight,
-        equipment: formData.equipment as 'van' | 'flatbed' | 'reefer' | 'tanker',
+        equipment: formData.equipment as
+          | "van"
+          | "flatbed"
+          | "reefer"
+          | "tanker",
         specialRequirements: formData.specialRequirements,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
-      setLoadRequests(prev => [newLoadRequest, ...prev]);
+
+      setLoadRequests((prev) => [newLoadRequest, ...prev]);
       setShowLoadRequestForm(false);
     } catch (error) {
-      console.error('Error submitting load request:', error);
+      console.error("Error submitting load request:", error);
     } finally {
       setLoading(false);
     }
@@ -202,25 +222,39 @@ export default function CustomerPortal() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'quoted': return 'bg-blue-100 text-blue-800';
-      case 'booked': return 'bg-green-100 text-green-800';
-      case 'in_transit': return 'bg-orange-100 text-orange-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'invoiced': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-gray-100 text-gray-800";
+      case "quoted":
+        return "bg-blue-100 text-blue-800";
+      case "booked":
+        return "bg-green-100 text-green-800";
+      case "in_transit":
+        return "bg-orange-100 text-orange-800";
+      case "delivered":
+        return "bg-green-100 text-green-800";
+      case "invoiced":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'quoted': return <FileText className="w-4 h-4" />;
-      case 'booked': return <CheckCircle className="w-4 h-4" />;
-      case 'in_transit': return <Truck className="w-4 h-4" />;
-      case 'delivered': return <Package className="w-4 h-4" />;
-      case 'invoiced': return <DollarSign className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      case "pending":
+        return <Clock className="w-4 h-4" />;
+      case "quoted":
+        return <FileText className="w-4 h-4" />;
+      case "booked":
+        return <CheckCircle className="w-4 h-4" />;
+      case "in_transit":
+        return <Truck className="w-4 h-4" />;
+      case "delivered":
+        return <Package className="w-4 h-4" />;
+      case "invoiced":
+        return <DollarSign className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
     }
   };
 
@@ -230,8 +264,12 @@ export default function CustomerPortal() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Customer Portal</h1>
-              <p className="text-gray-600">Welcome back! Manage your shipments and account.</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Customer Portal
+              </h1>
+              <p className="text-gray-600">
+                Welcome back! Manage your shipments and account.
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right text-sm">
@@ -248,7 +286,11 @@ export default function CustomerPortal() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-4 lg:w-96">
             <TabsTrigger value="loads" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
@@ -277,13 +319,18 @@ export default function CustomerPortal() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input placeholder="Search loads..." className="pl-10 w-64" />
                 </div>
-                <Button onClick={() => setShowLoadRequestForm(true)}>Request New Load</Button>
+                <Button onClick={() => setShowLoadRequestForm(true)}>
+                  Request New Load
+                </Button>
               </div>
             </div>
 
             <div className="grid gap-4">
               {loadRequests.map((load) => (
-                <Card key={load.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={load.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
@@ -298,7 +345,7 @@ export default function CustomerPortal() {
                       <Badge className={getStatusColor(load.status)}>
                         <div className="flex items-center gap-1">
                           {getStatusIcon(load.status)}
-                          {load.status.replace('_', ' ').toUpperCase()}
+                          {load.status.replace("_", " ").toUpperCase()}
                         </div>
                       </Badge>
                     </div>
@@ -307,12 +354,16 @@ export default function CustomerPortal() {
                     <div className="flex items-center gap-4 mb-4 text-sm">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-green-500" />
-                        <span className="font-medium">{load.origin.city}, {load.origin.state}</span>
+                        <span className="font-medium">
+                          {load.origin.city}, {load.origin.state}
+                        </span>
                       </div>
                       <div className="flex-1 border-t border-dashed border-gray-300"></div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-red-500" />
-                        <span className="font-medium">{load.destination.city}, {load.destination.state}</span>
+                        <span className="font-medium">
+                          {load.destination.city}, {load.destination.state}
+                        </span>
                       </div>
                     </div>
 
@@ -320,20 +371,31 @@ export default function CustomerPortal() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
                       <div>
                         <p className="text-gray-500">Pickup Date</p>
-                        <p className="font-medium">{new Date(load.pickupDate).toLocaleDateString()}</p>
+                        <p className="font-medium">
+                          {new Date(load.pickupDate).toLocaleDateString()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-500">Weight</p>
-                        <p className="font-medium">{load.weight.toLocaleString()} lbs</p>
+                        <p className="font-medium">
+                          {load.weight.toLocaleString()} lbs
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-500">Equipment</p>
-                        <p className="font-medium capitalize">{load.equipment}</p>
+                        <p className="font-medium capitalize">
+                          {load.equipment}
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-500">Rate</p>
                         <p className="font-medium text-green-600">
-                          ${(load.finalRate || load.estimatedRate || 0).toLocaleString()}
+                          $
+                          {(
+                            load.finalRate ||
+                            load.estimatedRate ||
+                            0
+                          ).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -380,22 +442,30 @@ export default function CustomerPortal() {
                         </div>
                         <div>
                           <h3 className="font-semibold">{invoice.id}</h3>
-                          <p className="text-gray-600">Load: {invoice.loadRequestId}</p>
+                          <p className="text-gray-600">
+                            Load: {invoice.loadRequestId}
+                          </p>
                         </div>
                       </div>
-                      
+
                       <div className="text-right">
-                        <p className="text-2xl font-bold">${invoice.amount.toLocaleString()}</p>
-                        <Badge className={
-                          invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                          invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }>
+                        <p className="text-2xl font-bold">
+                          ${invoice.amount.toLocaleString()}
+                        </p>
+                        <Badge
+                          className={
+                            invoice.status === "paid"
+                              ? "bg-green-100 text-green-800"
+                              : invoice.status === "overdue"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                          }
+                        >
                           {invoice.status.toUpperCase()}
                         </Badge>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center mt-4 pt-4 border-t">
                       <p className="text-sm text-gray-600">
                         Due: {new Date(invoice.dueDate).toLocaleDateString()}
@@ -405,7 +475,7 @@ export default function CustomerPortal() {
                           <Download className="w-4 h-4 mr-1" />
                           Download PDF
                         </Button>
-                        {invoice.status !== 'paid' && (
+                        {invoice.status !== "paid" && (
                           <Button size="sm">Pay Now</Button>
                         )}
                       </div>
@@ -419,9 +489,9 @@ export default function CustomerPortal() {
           {/* Tracking Tab */}
           <TabsContent value="tracking" className="space-y-6">
             <h2 className="text-lg font-semibold">Live Tracking</h2>
-            
+
             {loadRequests
-              .filter(load => load.tracking && load.status === 'in_transit')
+              .filter((load) => load.tracking && load.status === "in_transit")
               .map((load) => (
                 <Card key={load.id}>
                   <CardHeader>
@@ -436,13 +506,19 @@ export default function CustomerPortal() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">Current Location</p>
-                          <p className="text-lg">{load.tracking?.currentLocation}</p>
+                          <p className="text-lg">
+                            {load.tracking?.currentLocation}
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">Estimated Delivery</p>
+                          <p className="text-sm text-gray-600">
+                            Estimated Delivery
+                          </p>
                           <p className="font-medium">
-                            {load.tracking?.estimatedDelivery && 
-                              new Date(load.tracking.estimatedDelivery).toLocaleString()}
+                            {load.tracking?.estimatedDelivery &&
+                              new Date(
+                                load.tracking.estimatedDelivery,
+                              ).toLocaleString()}
                           </p>
                         </div>
                       </div>
@@ -459,9 +535,13 @@ export default function CustomerPortal() {
                               <div className="flex justify-between items-start">
                                 <div>
                                   <p className="font-medium">{update.status}</p>
-                                  <p className="text-sm text-gray-600">{update.location}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {update.location}
+                                  </p>
                                   {update.notes && (
-                                    <p className="text-sm text-gray-500 mt-1">{update.notes}</p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {update.notes}
+                                    </p>
                                   )}
                                 </div>
                                 <p className="text-xs text-gray-500">
@@ -481,7 +561,7 @@ export default function CustomerPortal() {
           {/* Account Tab */}
           <TabsContent value="account" className="space-y-6">
             <h2 className="text-lg font-semibold">Account Information</h2>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -497,7 +577,9 @@ export default function CustomerPortal() {
                     <Input value="12345" readOnly />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Account Manager</label>
+                    <label className="text-sm font-medium">
+                      Account Manager
+                    </label>
                     <Input value="Sarah Johnson" readOnly />
                   </div>
                 </CardContent>
@@ -509,7 +591,9 @@ export default function CustomerPortal() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Primary Contact</label>
+                    <label className="text-sm font-medium">
+                      Primary Contact
+                    </label>
                     <Input value="John Smith" />
                   </div>
                   <div>
@@ -532,8 +616,13 @@ export default function CustomerPortal() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg max-w-md">
               <h2 className="text-lg font-bold mb-4">Load Request Form</h2>
-              <p className="mb-4">Load request form temporarily disabled during build optimization.</p>
-              <Button onClick={() => setShowLoadRequestForm(false)}>Close</Button>
+              <p className="mb-4">
+                Load request form temporarily disabled during build
+                optimization.
+              </p>
+              <Button onClick={() => setShowLoadRequestForm(false)}>
+                Close
+              </Button>
             </div>
           </div>
         )}

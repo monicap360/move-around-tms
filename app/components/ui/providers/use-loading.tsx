@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { LoadingOverlay } from '../loading-overlay';
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import { LoadingOverlay } from "../loading-overlay";
 
 interface LoadingContextType {
   showLoading: (message?: string) => void;
@@ -18,10 +18,10 @@ interface LoadingProviderProps {
 
 export function LoadingProvider({ children }: LoadingProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('Loading...');
+  const [message, setMessage] = useState("Loading...");
 
   const showLoading = (customMessage?: string) => {
-    setMessage(customMessage || 'Loading...');
+    setMessage(customMessage || "Loading...");
     setIsLoading(true);
   };
 
@@ -30,7 +30,9 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
   };
 
   return (
-    <LoadingContext.Provider value={{ showLoading, hideLoading, isLoading, message }}>
+    <LoadingContext.Provider
+      value={{ showLoading, hideLoading, isLoading, message }}
+    >
       {children}
       <LoadingOverlay show={isLoading} label={message} />
     </LoadingContext.Provider>
@@ -40,7 +42,7 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
 export function useLoading() {
   const context = useContext(LoadingContext);
   if (context === undefined) {
-    throw new Error('useLoading must be used within a LoadingProvider');
+    throw new Error("useLoading must be used within a LoadingProvider");
   }
   return context;
 }

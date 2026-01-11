@@ -12,11 +12,14 @@ export default function FastScanTicketPage({ params }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch(`/api/company/${organization_code}/tickets/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, amount: parseFloat(amount), status }),
-    });
+    const res = await fetch(
+      `/api/company/${organization_code}/tickets/create`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, amount: parseFloat(amount), status }),
+      },
+    );
     const data = await res.json();
     setResult(data);
     setLoading(false);
@@ -30,7 +33,7 @@ export default function FastScanTicketPage({ params }) {
           className="border p-2 w-full"
           placeholder="Title"
           value={title}
-          onChange={e => setTitle(e.target.value)}
+          onChange={(e) => setTitle(e.target.value)}
           required
         />
         <input
@@ -38,14 +41,14 @@ export default function FastScanTicketPage({ params }) {
           placeholder="Amount"
           type="number"
           value={amount}
-          onChange={e => setAmount(e.target.value)}
+          onChange={(e) => setAmount(e.target.value)}
           required
         />
         <input
           className="border p-2 w-full"
           placeholder="Status"
           value={status}
-          onChange={e => setStatus(e.target.value)}
+          onChange={(e) => setStatus(e.target.value)}
           required
         />
         <button
@@ -61,7 +64,9 @@ export default function FastScanTicketPage({ params }) {
           {result.ticket ? (
             <div>Ticket created: #{result.ticket.id}</div>
           ) : (
-            <div className="text-red-600">Error: {result.error?.message || "Unknown error"}</div>
+            <div className="text-red-600">
+              Error: {result.error?.message || "Unknown error"}
+            </div>
           )}
         </div>
       )}

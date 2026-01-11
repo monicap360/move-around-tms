@@ -1,38 +1,45 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useEffect, useState, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 // Shared UI Components
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import DashboardCard from '@/components/dashboard/DashboardCard';
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import DashboardCard from "@/components/dashboard/DashboardCard";
 
 // Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
 // Status colors
 function getStatusColor(status: string) {
   switch (status?.toLowerCase()) {
-    case 'hot': return '#ff7875';
-    case 'warm': return '#ffd666';
-    case 'cold': return '#bfbfbf';
-    case 'new': return '#bae7ff';
-    case 'sold': return '#52c41a';
-    case 'dead': return '#8c8c8c';
-    default: return '#d9d9d9';
+    case "hot":
+      return "#ff7875";
+    case "warm":
+      return "#ffd666";
+    case "cold":
+      return "#bfbfbf";
+    case "new":
+      return "#bae7ff";
+    case "sold":
+      return "#52c41a";
+    case "dead":
+      return "#8c8c8c";
+    default:
+      return "#d9d9d9";
   }
 }
 
 export default function SalesDashboard() {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [advisorId, setAdvisorId] = useState(''); // Used when you assign advisors
-  const [dateFilter, setDateFilter] = useState('7'); // Last 7 days by default
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [advisorId, setAdvisorId] = useState(""); // Used when you assign advisors
+  const [dateFilter, setDateFilter] = useState("7"); // Last 7 days by default
 
   // Fetch all ASSIGNED leads
   useEffect(() => {
@@ -43,9 +50,9 @@ export default function SalesDashboard() {
     setLoading(true);
 
     const { data, error } = await supabase
-      .from('agent_leads')
-      .select('*')
-      .order('assigned_at', { ascending: false });
+      .from("agent_leads")
+      .select("*")
+      .order("assigned_at", { ascending: false });
 
     if (!error) setLeads(data || []);
     setLoading(false);
@@ -63,11 +70,12 @@ export default function SalesDashboard() {
       const matchesStatus = !statusFilter || lead.status === statusFilter;
 
       let matchesDate = true;
-      if (dateFilter !== 'all') {
+      if (dateFilter !== "all") {
         const days = Number(dateFilter);
         const assignedAt = lead.assigned_at ? new Date(lead.assigned_at) : null;
         if (assignedAt) {
-          const diff = (Date.now() - assignedAt.getTime()) / (1000 * 60 * 60 * 24);
+          const diff =
+            (Date.now() - assignedAt.getTime()) / (1000 * 60 * 60 * 24);
           matchesDate = diff <= days;
         }
       }
@@ -77,10 +85,10 @@ export default function SalesDashboard() {
   }, [leads, search, statusFilter, dateFilter]);
 
   // Stats
-  const hotLeads = filteredLeads.filter((l) => l.status === 'hot').length;
-  const warmLeads = filteredLeads.filter((l) => l.status === 'warm').length;
-  const coldLeads = filteredLeads.filter((l) => l.status === 'cold').length;
-  const newLeads = filteredLeads.filter((l) => l.status === 'new').length;
+  const hotLeads = filteredLeads.filter((l) => l.status === "hot").length;
+  const warmLeads = filteredLeads.filter((l) => l.status === "warm").length;
+  const coldLeads = filteredLeads.filter((l) => l.status === "cold").length;
+  const newLeads = filteredLeads.filter((l) => l.status === "new").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -95,7 +103,6 @@ export default function SalesDashboard() {
       />
 
       <main className="max-w-7xl mx-auto px-6 py-10 space-y-10">
-        
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           <DashboardCard title="New Leads" value={newLeads} icon="🆕" />
@@ -167,24 +174,29 @@ export default function SalesDashboard() {
                       : null;
 
                     const age = assignedAt
-                      ? Math.floor((Date.now() - assignedAt.getTime()) / (1000 * 60 * 60 * 24))
-                      : '-';
+                      ? Math.floor(
+                          (Date.now() - assignedAt.getTime()) /
+                            (1000 * 60 * 60 * 24),
+                        )
+                      : "-";
 
                     return (
                       <tr key={lead.id} className="border-b">
-                        <td className="p-2">{lead.name || '-'}</td>
-                        <td className="p-2">{lead.phone || '-'}</td>
-                        <td className="p-2">{lead.email || '-'}</td>
+                        <td className="p-2">{lead.name || "-"}</td>
+                        <td className="p-2">{lead.phone || "-"}</td>
+                        <td className="p-2">{lead.email || "-"}</td>
                         <td className="p-2">
                           <span
                             className="px-3 py-1 rounded-lg text-xs font-medium"
-                            style={{ background: getStatusColor(lead.status || 'new') }}
+                            style={{
+                              background: getStatusColor(lead.status || "new"),
+                            }}
                           >
                             {lead.status}
                           </span>
                         </td>
                         <td className="p-2">
-                          {assignedAt ? assignedAt.toLocaleString() : '-'}
+                          {assignedAt ? assignedAt.toLocaleString() : "-"}
                         </td>
                         <td className="p-2">{age}</td>
                       </tr>
@@ -200,51 +212,69 @@ export default function SalesDashboard() {
         <div>
           <h3 className="text-2xl font-bold mb-4">Pipeline View</h3>
           <div className="flex gap-6 overflow-x-auto pb-4">
-
             {/* HOT COLUMN */}
             <div className="min-w-[250px] bg-red-50 p-4 rounded-xl shadow">
               <h4 className="font-bold mb-3">🔥 Hot</h4>
-              {filteredLeads.filter(l => l.status === 'hot').map(l => (
-                <div key={l.id} className="bg-white p-3 rounded-lg shadow mb-2">
-                  <div className="font-medium">{l.name}</div>
-                  <div className="text-xs text-gray-500">{l.phone}</div>
-                </div>
-              ))}
+              {filteredLeads
+                .filter((l) => l.status === "hot")
+                .map((l) => (
+                  <div
+                    key={l.id}
+                    className="bg-white p-3 rounded-lg shadow mb-2"
+                  >
+                    <div className="font-medium">{l.name}</div>
+                    <div className="text-xs text-gray-500">{l.phone}</div>
+                  </div>
+                ))}
             </div>
 
             {/* WARM COLUMN */}
             <div className="min-w-[250px] bg-yellow-50 p-4 rounded-xl shadow">
               <h4 className="font-bold mb-3">🌡️ Warm</h4>
-              {filteredLeads.filter(l => l.status === 'warm').map(l => (
-                <div key={l.id} className="bg-white p-3 rounded-lg shadow mb-2">
-                  <div className="font-medium">{l.name}</div>
-                  <div className="text-xs text-gray-500">{l.phone}</div>
-                </div>
-              ))}
+              {filteredLeads
+                .filter((l) => l.status === "warm")
+                .map((l) => (
+                  <div
+                    key={l.id}
+                    className="bg-white p-3 rounded-lg shadow mb-2"
+                  >
+                    <div className="font-medium">{l.name}</div>
+                    <div className="text-xs text-gray-500">{l.phone}</div>
+                  </div>
+                ))}
             </div>
 
             {/* NEW COLUMN */}
             <div className="min-w-[250px] bg-blue-50 p-4 rounded-xl shadow">
               <h4 className="font-bold mb-3">🆕 New</h4>
-              {filteredLeads.filter(l => l.status === 'new').map(l => (
-                <div key={l.id} className="bg-white p-3 rounded-lg shadow mb-2">
-                  <div className="font-medium">{l.name}</div>
-                  <div className="text-xs text-gray-500">{l.phone}</div>
-                </div>
-              ))}
+              {filteredLeads
+                .filter((l) => l.status === "new")
+                .map((l) => (
+                  <div
+                    key={l.id}
+                    className="bg-white p-3 rounded-lg shadow mb-2"
+                  >
+                    <div className="font-medium">{l.name}</div>
+                    <div className="text-xs text-gray-500">{l.phone}</div>
+                  </div>
+                ))}
             </div>
 
             {/* COLD COLUMN */}
             <div className="min-w-[250px] bg-gray-50 p-4 rounded-xl shadow">
               <h4 className="font-bold mb-3">❄️ Cold</h4>
-              {filteredLeads.filter(l => l.status === 'cold').map(l => (
-                <div key={l.id} className="bg-white p-3 rounded-lg shadow mb-2">
-                  <div className="font-medium">{l.name}</div>
-                  <div className="text-xs text-gray-500">{l.phone}</div>
-                </div>
-              ))}
+              {filteredLeads
+                .filter((l) => l.status === "cold")
+                .map((l) => (
+                  <div
+                    key={l.id}
+                    className="bg-white p-3 rounded-lg shadow mb-2"
+                  >
+                    <div className="font-medium">{l.name}</div>
+                    <div className="text-xs text-gray-500">{l.phone}</div>
+                  </div>
+                ))}
             </div>
-
           </div>
         </div>
       </main>

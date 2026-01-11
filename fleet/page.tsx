@@ -1,24 +1,35 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { supabase } from "../lib/supabaseClient";
-import { 
-  Truck, 
-  Wrench, 
-  Calendar, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Truck,
+  Wrench,
+  Calendar,
+  AlertTriangle,
+  CheckCircle,
   Clock,
   MapPin,
   Fuel,
   FileText,
   Plus,
   Search,
-  Filter
+  Filter,
 } from "lucide-react";
 
 type Vehicle = {
@@ -35,7 +46,7 @@ type Vehicle = {
   last_maintenance: string;
   next_maintenance_due: string;
   current_mileage: number;
-  status: 'active' | 'maintenance' | 'out_of_service';
+  status: "active" | "maintenance" | "out_of_service";
   driver_assigned?: string;
   location?: string;
 };
@@ -50,16 +61,20 @@ type MaintenanceRecord = {
   mileage_at_service: number;
   next_due_date?: string;
   next_due_mileage?: number;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'overdue';
+  status: "scheduled" | "in_progress" | "completed" | "overdue";
 };
 
 export default function FleetManagementPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<
+    MaintenanceRecord[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'vehicles' | 'maintenance' | 'inspections' | 'renewals'>('vehicles');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<
+    "vehicles" | "maintenance" | "inspections" | "renewals"
+  >("vehicles");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   // Statistics
   const [stats, setStats] = useState({
@@ -68,7 +83,7 @@ export default function FleetManagementPage() {
     maintenance_vehicles: 0,
     overdue_inspections: 0,
     expiring_registrations: 0,
-    maintenance_alerts: 0
+    maintenance_alerts: 0,
   });
 
   useEffect(() => {
@@ -82,63 +97,69 @@ export default function FleetManagementPage() {
       // Load vehicles - using sample data for now since tables may not exist
       const sampleVehicles: Vehicle[] = [
         {
-          id: '1',
-          unit_number: 'TRK-001',
-          make: 'Freightliner',
-          model: 'Cascadia',
+          id: "1",
+          unit_number: "TRK-001",
+          make: "Freightliner",
+          model: "Cascadia",
           year: 2021,
-          vin: '1FUJGHDV8MLAB1234',
-          license_plate: 'ABC-123',
-          registration_expiry: '2025-12-31',
-          insurance_expiry: '2025-06-30',
-          dot_inspection_due: '2025-11-15',
-          last_maintenance: '2024-10-01',
-          next_maintenance_due: '2025-01-01',
+          vin: "1FUJGHDV8MLAB1234",
+          license_plate: "ABC-123",
+          registration_expiry: "2025-12-31",
+          insurance_expiry: "2025-06-30",
+          dot_inspection_due: "2025-11-15",
+          last_maintenance: "2024-10-01",
+          next_maintenance_due: "2025-01-01",
           current_mileage: 125000,
-          status: 'active',
-          driver_assigned: 'John Smith',
-          location: 'Dallas, TX'
+          status: "active",
+          driver_assigned: "John Smith",
+          location: "Dallas, TX",
         },
         {
-          id: '2',
-          unit_number: 'TRK-002',
-          make: 'Peterbilt',
-          model: '579',
+          id: "2",
+          unit_number: "TRK-002",
+          make: "Peterbilt",
+          model: "579",
           year: 2020,
-          vin: '1XP5DB9X9LD123456',
-          license_plate: 'DEF-456',
-          registration_expiry: '2025-03-15',
-          insurance_expiry: '2025-06-30',
-          dot_inspection_due: '2024-10-20',
-          last_maintenance: '2024-09-15',
-          next_maintenance_due: '2024-12-15',
+          vin: "1XP5DB9X9LD123456",
+          license_plate: "DEF-456",
+          registration_expiry: "2025-03-15",
+          insurance_expiry: "2025-06-30",
+          dot_inspection_due: "2024-10-20",
+          last_maintenance: "2024-09-15",
+          next_maintenance_due: "2024-12-15",
           current_mileage: 198000,
-          status: 'maintenance',
-          driver_assigned: 'Mike Johnson',
-          location: 'Houston, TX'
-        }
+          status: "maintenance",
+          driver_assigned: "Mike Johnson",
+          location: "Houston, TX",
+        },
       ];
 
       setVehicles(sampleVehicles);
 
       // Calculate statistics
       const today = new Date();
-      const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const thirtyDaysFromNow = new Date(
+        today.getTime() + 30 * 24 * 60 * 60 * 1000,
+      );
 
       const totalVehicles = sampleVehicles.length;
-      const activeVehicles = sampleVehicles.filter(v => v.status === 'active').length;
-      const maintenanceVehicles = sampleVehicles.filter(v => v.status === 'maintenance').length;
-      
-      const overdueInspections = sampleVehicles.filter(v => 
-        new Date(v.dot_inspection_due) < today
+      const activeVehicles = sampleVehicles.filter(
+        (v) => v.status === "active",
+      ).length;
+      const maintenanceVehicles = sampleVehicles.filter(
+        (v) => v.status === "maintenance",
       ).length;
 
-      const expiringRegistrations = sampleVehicles.filter(v => 
-        new Date(v.registration_expiry) < thirtyDaysFromNow
+      const overdueInspections = sampleVehicles.filter(
+        (v) => new Date(v.dot_inspection_due) < today,
       ).length;
 
-      const maintenanceAlerts = sampleVehicles.filter(v => 
-        new Date(v.next_maintenance_due) < thirtyDaysFromNow
+      const expiringRegistrations = sampleVehicles.filter(
+        (v) => new Date(v.registration_expiry) < thirtyDaysFromNow,
+      ).length;
+
+      const maintenanceAlerts = sampleVehicles.filter(
+        (v) => new Date(v.next_maintenance_due) < thirtyDaysFromNow,
       ).length;
 
       setStats({
@@ -147,9 +168,8 @@ export default function FleetManagementPage() {
         maintenance_vehicles: maintenanceVehicles,
         overdue_inspections: overdueInspections,
         expiring_registrations: expiringRegistrations,
-        maintenance_alerts: maintenanceAlerts
+        maintenance_alerts: maintenanceAlerts,
       });
-
     } catch (error) {
       console.error("Error loading fleet data:", error);
     } finally {
@@ -159,12 +179,16 @@ export default function FleetManagementPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'maintenance':
-        return <Badge className="bg-yellow-100 text-yellow-800">Maintenance</Badge>;
-      case 'out_of_service':
-        return <Badge className="bg-red-100 text-red-800">Out of Service</Badge>;
+      case "maintenance":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">Maintenance</Badge>
+        );
+      case "out_of_service":
+        return (
+          <Badge className="bg-red-100 text-red-800">Out of Service</Badge>
+        );
       default:
         return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
     }
@@ -180,23 +204,27 @@ export default function FleetManagementPage() {
 
   const getExpiryBadge = (expiryDate: string) => {
     const daysUntil = getDaysUntilExpiry(expiryDate);
-    
+
     if (daysUntil < 0) {
       return <Badge className="bg-red-100 text-red-800">Expired</Badge>;
     } else if (daysUntil <= 30) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Expiring Soon</Badge>;
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800">Expiring Soon</Badge>
+      );
     } else {
       return <Badge className="bg-green-100 text-green-800">Current</Badge>;
     }
   };
 
-  const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = vehicle.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.model.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || vehicle.status === filterStatus;
-    
+  const filteredVehicles = vehicles.filter((vehicle) => {
+    const matchesSearch =
+      vehicle.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.model.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter =
+      filterStatus === "all" || vehicle.status === filterStatus;
+
     return matchesSearch && matchesFilter;
   });
 
@@ -239,7 +267,9 @@ export default function FleetManagementPage() {
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <div>
-                <div className="text-2xl font-bold">{stats.active_vehicles}</div>
+                <div className="text-2xl font-bold">
+                  {stats.active_vehicles}
+                </div>
                 <div className="text-sm text-gray-600">Active</div>
               </div>
             </div>
@@ -251,7 +281,9 @@ export default function FleetManagementPage() {
             <div className="flex items-center gap-2">
               <Wrench className="w-5 h-5 text-yellow-600" />
               <div>
-                <div className="text-2xl font-bold">{stats.maintenance_vehicles}</div>
+                <div className="text-2xl font-bold">
+                  {stats.maintenance_vehicles}
+                </div>
                 <div className="text-sm text-gray-600">In Maintenance</div>
               </div>
             </div>
@@ -263,7 +295,9 @@ export default function FleetManagementPage() {
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
               <div>
-                <div className="text-2xl font-bold">{stats.overdue_inspections}</div>
+                <div className="text-2xl font-bold">
+                  {stats.overdue_inspections}
+                </div>
                 <div className="text-sm text-gray-600">Overdue Inspections</div>
               </div>
             </div>
@@ -275,8 +309,12 @@ export default function FleetManagementPage() {
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-orange-600" />
               <div>
-                <div className="text-2xl font-bold">{stats.expiring_registrations}</div>
-                <div className="text-sm text-gray-600">Expiring Registrations</div>
+                <div className="text-2xl font-bold">
+                  {stats.expiring_registrations}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Expiring Registrations
+                </div>
               </div>
             </div>
           </CardContent>
@@ -287,7 +325,9 @@ export default function FleetManagementPage() {
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-purple-600" />
               <div>
-                <div className="text-2xl font-bold">{stats.maintenance_alerts}</div>
+                <div className="text-2xl font-bold">
+                  {stats.maintenance_alerts}
+                </div>
                 <div className="text-sm text-gray-600">Maintenance Due</div>
               </div>
             </div>
@@ -299,18 +339,18 @@ export default function FleetManagementPage() {
       <div className="border-b mb-6">
         <nav className="flex space-x-8">
           {[
-            { id: 'vehicles', label: 'Vehicles', icon: Truck },
-            { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-            { id: 'inspections', label: 'Inspections', icon: CheckCircle },
-            { id: 'renewals', label: 'Renewals', icon: Calendar },
+            { id: "vehicles", label: "Vehicles", icon: Truck },
+            { id: "maintenance", label: "Maintenance", icon: Wrench },
+            { id: "inspections", label: "Inspections", icon: CheckCircle },
+            { id: "renewals", label: "Renewals", icon: Calendar },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id as any)}
               className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -345,7 +385,7 @@ export default function FleetManagementPage() {
       </div>
 
       {/* Content based on active tab */}
-      {activeTab === 'vehicles' && (
+      {activeTab === "vehicles" && (
         <Card>
           <CardHeader>
             <CardTitle>Vehicle Fleet</CardTitle>
@@ -361,8 +401,12 @@ export default function FleetManagementPage() {
                     <th className="text-left p-3 font-semibold">Status</th>
                     <th className="text-left p-3 font-semibold">Driver</th>
                     <th className="text-left p-3 font-semibold">Mileage</th>
-                    <th className="text-left p-3 font-semibold">Registration</th>
-                    <th className="text-left p-3 font-semibold">DOT Inspection</th>
+                    <th className="text-left p-3 font-semibold">
+                      Registration
+                    </th>
+                    <th className="text-left p-3 font-semibold">
+                      DOT Inspection
+                    </th>
                     <th className="text-left p-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -370,16 +414,24 @@ export default function FleetManagementPage() {
                   {filteredVehicles.map((vehicle) => (
                     <tr key={vehicle.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 font-medium">{vehicle.unit_number}</td>
-                      <td className="p-3">{vehicle.make} {vehicle.model}</td>
+                      <td className="p-3">
+                        {vehicle.make} {vehicle.model}
+                      </td>
                       <td className="p-3">{vehicle.year}</td>
                       <td className="p-3">{getStatusBadge(vehicle.status)}</td>
-                      <td className="p-3">{vehicle.driver_assigned || 'Unassigned'}</td>
-                      <td className="p-3">{vehicle.current_mileage?.toLocaleString()}</td>
+                      <td className="p-3">
+                        {vehicle.driver_assigned || "Unassigned"}
+                      </td>
+                      <td className="p-3">
+                        {vehicle.current_mileage?.toLocaleString()}
+                      </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           {getExpiryBadge(vehicle.registration_expiry)}
                           <span className="text-sm text-gray-600">
-                            {new Date(vehicle.registration_expiry).toLocaleDateString()}
+                            {new Date(
+                              vehicle.registration_expiry,
+                            ).toLocaleDateString()}
                           </span>
                         </div>
                       </td>
@@ -387,7 +439,9 @@ export default function FleetManagementPage() {
                         <div className="flex items-center gap-2">
                           {getExpiryBadge(vehicle.dot_inspection_due)}
                           <span className="text-sm text-gray-600">
-                            {new Date(vehicle.dot_inspection_due).toLocaleDateString()}
+                            {new Date(
+                              vehicle.dot_inspection_due,
+                            ).toLocaleDateString()}
                           </span>
                         </div>
                       </td>
@@ -405,7 +459,7 @@ export default function FleetManagementPage() {
         </Card>
       )}
 
-      {activeTab === 'maintenance' && (
+      {activeTab === "maintenance" && (
         <Card>
           <CardHeader>
             <CardTitle>Maintenance Schedule</CardTitle>
@@ -419,7 +473,7 @@ export default function FleetManagementPage() {
         </Card>
       )}
 
-      {activeTab === 'inspections' && (
+      {activeTab === "inspections" && (
         <Card>
           <CardHeader>
             <CardTitle>DOT Inspections</CardTitle>
@@ -433,7 +487,7 @@ export default function FleetManagementPage() {
         </Card>
       )}
 
-      {activeTab === 'renewals' && (
+      {activeTab === "renewals" && (
         <Card>
           <CardHeader>
             <CardTitle>Registration Renewals</CardTitle>

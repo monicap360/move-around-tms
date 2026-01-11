@@ -1,7 +1,7 @@
 // Compliance Rule Engine Types
-import type { Scan, Document, ScanResult, Ticket } from '@/lib/fastscan/types';
+import type { Scan, Document, ScanResult, Ticket } from "@/lib/fastscan/types";
 
-export type ComplianceStatus = 'pass' | 'warn' | 'fail';
+export type ComplianceStatus = "pass" | "warn" | "fail";
 
 export interface ComplianceRule {
   id: string;

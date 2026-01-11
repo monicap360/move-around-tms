@@ -11,7 +11,10 @@ export function useSupabase() {
   const signInWithPassword = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     setLoading(false);
     if (error) setError(error);
     return { data, error };

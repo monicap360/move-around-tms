@@ -20,7 +20,7 @@ export async function GET() {
         status: "error",
         message: error.message || "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

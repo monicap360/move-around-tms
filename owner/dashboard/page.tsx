@@ -1,50 +1,50 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRoleBasedAuth } from '../../lib/role-auth'
-import Link from 'next/link'
+import { useState, useEffect } from "react";
+import { useRoleBasedAuth } from "../../lib/role-auth";
+import Link from "next/link";
 
 interface PartnerOverview {
-  id: string
-  name: string
-  email: string
-  companiesCount: number
-  monthlyCommission: number
+  id: string;
+  name: string;
+  email: string;
+  companiesCount: number;
+  monthlyCommission: number;
   theme: {
-    primary: string
-    brand: string
-  }
-  slug: string
+    primary: string;
+    brand: string;
+  };
+  slug: string;
 }
 
 interface OwnerStats {
-  totalPartners: number
-  totalCompanies: number
-  totalDrivers: number
-  monthlyRevenue: number
-  pendingApprovals: number
-  activeTickets: number
+  totalPartners: number;
+  totalCompanies: number;
+  totalDrivers: number;
+  monthlyRevenue: number;
+  pendingApprovals: number;
+  activeTickets: number;
 }
 
 export default function OwnerDashboard() {
-  const { user, profile, loading, hasPermission } = useRoleBasedAuth()
+  const { user, profile, loading, hasPermission } = useRoleBasedAuth();
   const [stats, setStats] = useState<OwnerStats>({
     totalPartners: 0,
     totalCompanies: 0,
     totalDrivers: 0,
     monthlyRevenue: 0,
     pendingApprovals: 0,
-    activeTickets: 0
-  })
-  
-  const [partners, setPartners] = useState<PartnerOverview[]>([])
-  const [selectedView, setSelectedView] = useState('global')
+    activeTickets: 0,
+  });
+
+  const [partners, setPartners] = useState<PartnerOverview[]>([]);
+  const [selectedView, setSelectedView] = useState("global");
 
   useEffect(() => {
-    if (profile?.role === 'owner') {
-      loadOwnerData()
+    if (profile?.role === "owner") {
+      loadOwnerData();
     }
-  }, [profile])
+  }, [profile]);
 
   async function loadOwnerData() {
     // Mock data - replace with real Supabase queries
@@ -52,71 +52,71 @@ export default function OwnerDashboard() {
       totalPartners: 4,
       totalCompanies: 23,
       totalDrivers: 156,
-      monthlyRevenue: 45750.00,
+      monthlyRevenue: 45750.0,
       pendingApprovals: 8,
-      activeTickets: 42
-    })
+      activeTickets: 42,
+    });
 
     setPartners([
       {
-        id: '1',
-        name: 'Veronica Butanda',
-        email: 'melidazvl@outlook.com',
+        id: "1",
+        name: "Veronica Butanda",
+        email: "melidazvl@outlook.com",
         companiesCount: 8,
-        monthlyCommission: 1850.00,
+        monthlyCommission: 1850.0,
         theme: {
-          primary: '#C9A348',
-          brand: 'RonYX Logistics LLC'
+          primary: "#C9A348",
+          brand: "RonYX Logistics LLC",
         },
-        slug: 'ronyx'
+        slug: "ronyx",
       },
       {
-        id: '2', 
-        name: 'Maria Elizondo',
-        email: 'melizondo@taxproms.com',
+        id: "2",
+        name: "Maria Elizondo",
+        email: "melizondo@taxproms.com",
         companiesCount: 6,
-        monthlyCommission: 1200.00,
+        monthlyCommission: 1200.0,
         theme: {
-          primary: '#2563eb',
-          brand: 'Elite Transport Solutions'
+          primary: "#2563eb",
+          brand: "Elite Transport Solutions",
         },
-        slug: 'elite'
+        slug: "elite",
       },
       {
-        id: '3',
-        name: 'Anil Meighoo',
-        email: 'anil.meighoo@gmail.com', 
+        id: "3",
+        name: "Anil Meighoo",
+        email: "anil.meighoo@gmail.com",
         companiesCount: 4,
-        monthlyCommission: 950.00,
+        monthlyCommission: 950.0,
         theme: {
-          primary: '#16a34a',
-          brand: 'Meighoo Logistics'
+          primary: "#16a34a",
+          brand: "Meighoo Logistics",
         },
-        slug: 'meighoo'
+        slug: "meighoo",
       },
       {
-        id: '4',
-        name: 'Miram Garza',
-        email: 'miram@pending.com',
+        id: "4",
+        name: "Miram Garza",
+        email: "miram@pending.com",
         companiesCount: 5,
-        monthlyCommission: 1100.00,
+        monthlyCommission: 1100.0,
         theme: {
-          primary: '#dc2626',
-          brand: 'Garza Transport Group'
+          primary: "#dc2626",
+          brand: "Garza Transport Group",
         },
-        slug: 'garza'
-      }
-    ])
+        slug: "garza",
+      },
+    ]);
   }
 
   function handleViewSwitch(view: string) {
-    setSelectedView(view)
-    if (view === 'global') {
+    setSelectedView(view);
+    if (view === "global") {
       // Stay on current page
-      return
+      return;
     } else {
       // Navigate to partner dashboard
-      window.location.href = `/partners/${view}/dashboard`
+      window.location.href = `/partners/${view}/dashboard`;
     }
   }
 
@@ -128,18 +128,20 @@ export default function OwnerDashboard() {
           <p className="mt-4 text-gray-600">Loading owner dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  if (!hasPermission('owner')) {
+  if (!hasPermission("owner")) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Access Denied
+          </h1>
           <p className="text-gray-600">Owner access required.</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -154,14 +156,18 @@ export default function OwnerDashboard() {
                 <span className="text-white font-bold text-xl">M</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">MoveAround TMS</h1>
-                <p className="text-sm text-emerald-600 font-medium">Owner Portal - Global Access</p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  MoveAround TMS
+                </h1>
+                <p className="text-sm text-emerald-600 font-medium">
+                  Owner Portal - Global Access
+                </p>
               </div>
             </div>
 
             {/* View Switcher */}
             <div className="flex items-center space-x-4">
-              <select 
+              <select
                 value={selectedView}
                 onChange={(e) => handleViewSwitch(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -172,13 +178,15 @@ export default function OwnerDashboard() {
                 <option value="meighoo">🟢 Meighoo Logistics (Anil)</option>
                 <option value="garza">🔴 Garza Transport (Miram)</option>
               </select>
-              
+
               <div className="text-right">
-                <p className="font-medium text-gray-900">{profile?.full_name}</p>
+                <p className="font-medium text-gray-900">
+                  {profile?.full_name}
+                </p>
                 <p className="text-sm text-gray-600">System Owner</p>
               </div>
               <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-medium">
-                {profile?.full_name?.[0].toUpperCase() || 'S'}
+                {profile?.full_name?.[0].toUpperCase() || "S"}
               </div>
             </div>
           </div>
@@ -187,7 +195,6 @@ export default function OwnerDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -240,7 +247,9 @@ export default function OwnerDashboard() {
 
         {/* Partner Portals Grid */}
         <div className="mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">Partner Portals</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">
+            Partner Portals
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {partners.map((partner) => (
               <PartnerPortalCard key={partner.id} partner={partner} />
@@ -277,14 +286,19 @@ export default function OwnerDashboard() {
         </div>
       </main>
     </div>
-  )
+  );
 }
 
-function OwnerStatCard({ title, value, icon, color }: {
-  title: string
-  value: string | number
-  icon: string
-  color: string
+function OwnerStatCard({
+  title,
+  value,
+  icon,
+  color,
+}: {
+  title: string;
+  value: string | number;
+  icon: string;
+  color: string;
 }) {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -293,12 +307,14 @@ function OwnerStatCard({ title, value, icon, color }: {
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
         </div>
-        <div className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-white text-xl`}>
+        <div
+          className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-white text-xl`}
+        >
           {icon}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function PartnerPortalCard({ partner }: { partner: PartnerOverview }) {
@@ -306,49 +322,68 @@ function PartnerPortalCard({ partner }: { partner: PartnerOverview }) {
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all hover:scale-105">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="text-lg font-bold text-gray-900">{partner.theme.brand}</h4>
+          <h4 className="text-lg font-bold text-gray-900">
+            {partner.theme.brand}
+          </h4>
           <p className="text-sm text-gray-600">{partner.name}</p>
         </div>
-        <div 
+        <div
           className="w-4 h-4 rounded-full"
           style={{ backgroundColor: partner.theme.primary }}
         ></div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-2xl font-bold text-gray-900">{partner.companiesCount}</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {partner.companiesCount}
+          </p>
           <p className="text-xs text-gray-600">Companies</p>
         </div>
         <div>
-          <p className="text-2xl font-bold" style={{ color: partner.theme.primary }}>
+          <p
+            className="text-2xl font-bold"
+            style={{ color: partner.theme.primary }}
+          >
             ${partner.monthlyCommission}
           </p>
           <p className="text-xs text-gray-600">Commission</p>
         </div>
       </div>
-      
+
       <button
-        onClick={() => window.location.href = `/partners/${partner.slug}/dashboard`}
+        onClick={() =>
+          (window.location.href = `/partners/${partner.slug}/dashboard`)
+        }
         className="w-full py-2 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
         style={{ backgroundColor: partner.theme.primary }}
       >
         Access {partner.theme.brand}
       </button>
     </div>
-  )
+  );
 }
 
-function QuickActionCard({ title, description, icon, link, color, textColor }: {
-  title: string
-  description: string
-  icon: string
-  link: string
-  color: string
-  textColor: string
+function QuickActionCard({
+  title,
+  description,
+  icon,
+  link,
+  color,
+  textColor,
+}: {
+  title: string;
+  description: string;
+  icon: string;
+  link: string;
+  color: string;
+  textColor: string;
 }) {
   return (
-    <Link href={link} className={`block p-6 rounded-lg border-2 ${color} hover:shadow-md transition-shadow`}>
+    <Link
+      href={link}
+      className={`block p-6 rounded-lg border-2 ${color} hover:shadow-md transition-shadow`}
+    >
       <div className="flex items-center space-x-4">
         <div className="text-3xl">{icon}</div>
         <div>
@@ -357,5 +392,5 @@ function QuickActionCard({ title, description, icon, link, color, textColor }: {
         </div>
       </div>
     </Link>
-  )
+  );
 }

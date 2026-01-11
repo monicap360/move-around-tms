@@ -42,18 +42,26 @@ export default function AIGPSGeofencing({ params }: any) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {locations.map((loc: any, i: number) => (
-            <Card key={i} className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-lg hover:bg-white/10 transition text-white">
+            <Card
+              key={i}
+              className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-lg hover:bg-white/10 transition text-white"
+            >
               <div className="flex items-center gap-3 mb-2">
                 <Truck className="w-6 h-6 text-green-300" />
-                <span className="font-bold text-lg">Truck #{loc.truck_number}</span>
+                <span className="font-bold text-lg">
+                  Truck #{loc.truck_number}
+                </span>
               </div>
               <div className="flex items-center gap-2 mb-1">
                 <MapPin className="w-5 h-5 text-blue-300" />
                 <span className="text-sm">Location:</span>
-                <span className="font-bold text-xl text-blue-200">{loc.location}</span>
+                <span className="font-bold text-xl text-blue-200">
+                  {loc.location}
+                </span>
               </div>
               <div className="text-gray-300 text-sm mt-2">
-                <span className="font-semibold">Geofence:</span> {loc.geofence_status}
+                <span className="font-semibold">Geofence:</span>{" "}
+                {loc.geofence_status}
               </div>
               <div className="text-gray-400 text-xs mt-1">
                 Last Update: {loc.last_update}

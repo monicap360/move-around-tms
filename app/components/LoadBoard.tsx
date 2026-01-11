@@ -48,89 +48,89 @@ const LoadBoard = () => {
       // Simulate API call with sample data
       const sampleLoads = [
         {
-          id: 'LD001',
-          origin: { city: 'Dallas', state: 'TX', zipCode: '75201' },
-          destination: { city: 'Houston', state: 'TX', zipCode: '77001' },
-          pickupDate: '2025-11-01',
-          deliveryDate: '2025-11-02',
-          equipment: 'van',
+          id: "LD001",
+          origin: { city: "Dallas", state: "TX", zipCode: "75201" },
+          destination: { city: "Houston", state: "TX", zipCode: "77001" },
+          pickupDate: "2025-11-01",
+          deliveryDate: "2025-11-02",
+          equipment: "van",
           weight: 42000,
           rate: 2800,
-          rateType: 'flat_rate',
+          rateType: "flat_rate",
           miles: 789,
           ratePerMile: 3.55,
-          commodity: 'Electronics',
+          commodity: "Electronics",
           broker: {
-    minRate: 0,
-            name: 'Prime Logistics',
-            mcNumber: 'MC-123456',
+            minRate: 0,
+            name: "Prime Logistics",
+            mcNumber: "MC-123456",
             rating: 4.5,
-            paymentTerms: 'Quick Pay 1-2 days'
+            paymentTerms: "Quick Pay 1-2 days",
           },
-          requirements: ['TWIC Card', 'No touch freight'],
+          requirements: ["TWIC Card", "No touch freight"],
           hazmat: false,
           teamDriver: false,
           expedite: false,
-          status: 'available',
-          createdAt: '2025-10-31T10:00:00Z',
-          expires: '2025-11-01T18:00:00Z'
+          status: "available",
+          createdAt: "2025-10-31T10:00:00Z",
+          expires: "2025-11-01T18:00:00Z",
         },
         {
-          id: 'LD002',
-          origin: { city: 'Los Angeles', state: 'CA', zipCode: '90001' },
-          destination: { city: 'Denver', state: 'CO', zipCode: '80201' },
-          pickupDate: '2025-11-03',
-          deliveryDate: '2025-11-05',
-          equipment: 'flatbed',
+          id: "LD002",
+          origin: { city: "Los Angeles", state: "CA", zipCode: "90001" },
+          destination: { city: "Denver", state: "CO", zipCode: "80201" },
+          pickupDate: "2025-11-03",
+          deliveryDate: "2025-11-05",
+          equipment: "flatbed",
           weight: 48000,
           rate: 2200,
-          rateType: 'flat_rate',
+          rateType: "flat_rate",
           miles: 1016,
           ratePerMile: 2.17,
-          commodity: 'Building Materials',
+          commodity: "Building Materials",
           broker: {
-            name: 'Western Freight Solutions',
-            mcNumber: 'MC-789012',
+            name: "Western Freight Solutions",
+            mcNumber: "MC-789012",
             rating: 4.2,
-            paymentTerms: 'NET 30'
+            paymentTerms: "NET 30",
           },
-          requirements: ['Tarps', 'Straps provided'],
+          requirements: ["Tarps", "Straps provided"],
           hazmat: false,
           teamDriver: false,
           expedite: true,
-          status: 'available',
-          createdAt: '2025-10-31T08:30:00Z',
-          expires: '2025-11-01T20:00:00Z'
+          status: "available",
+          createdAt: "2025-10-31T08:30:00Z",
+          expires: "2025-11-01T20:00:00Z",
         },
         {
-          id: 'LD003',
-          origin: { city: 'Chicago', state: 'IL', zipCode: '60601' },
-          destination: { city: 'Miami', state: 'FL', zipCode: '33101' },
-          pickupDate: '2025-11-04',
-          equipment: 'reefer',
+          id: "LD003",
+          origin: { city: "Chicago", state: "IL", zipCode: "60601" },
+          destination: { city: "Miami", state: "FL", zipCode: "33101" },
+          pickupDate: "2025-11-04",
+          equipment: "reefer",
           weight: 40000,
           rate: 3500,
-          rateType: 'flat_rate',
+          rateType: "flat_rate",
           miles: 1377,
           ratePerMile: 2.54,
-          commodity: 'Frozen Foods',
+          commodity: "Frozen Foods",
           broker: {
-            name: 'Cold Chain Logistics',
-            mcNumber: 'MC-345678',
+            name: "Cold Chain Logistics",
+            mcNumber: "MC-345678",
             rating: 4.8,
-            paymentTerms: 'Factor Friendly'
+            paymentTerms: "Factor Friendly",
           },
-          requirements: ['Temperature controlled', 'HACCP certified'],
+          requirements: ["Temperature controlled", "HACCP certified"],
           hazmat: false,
           teamDriver: true,
           expedite: false,
-          status: 'available',
-          createdAt: '2025-10-31T12:15:00Z'
-        }
+          status: "available",
+          createdAt: "2025-10-31T12:15:00Z",
+        },
       ];
       setLoads(sampleLoads);
     } catch (error) {
-      setError('Failed to load loads');
+      setError("Failed to load loads");
     } finally {
       setLoading(false);
     }
@@ -139,25 +139,30 @@ const LoadBoard = () => {
   const applyFilters = () => {
     let filtered = loads;
     if (searchTerm) {
-      filtered = filtered.filter(load => 
-        load.origin.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        load.destination.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        load.commodity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        load.broker.name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (load) =>
+          load.origin.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          load.destination.city
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          load.commodity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          load.broker.name.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
-    if (filters.equipmentType !== 'all') {
-      filtered = filtered.filter(load => load.equipment === filters.equipmentType);
+    if (filters.equipmentType !== "all") {
+      filtered = filtered.filter(
+        (load) => load.equipment === filters.equipmentType,
+      );
     }
     if (filters.minRate > 0) {
-      filtered = filtered.filter(load => load.ratePerMile >= filters.minRate);
+      filtered = filtered.filter((load) => load.ratePerMile >= filters.minRate);
     }
-    filtered = filtered.filter(load => load.weight <= filters.maxWeight);
+    filtered = filtered.filter((load) => load.weight <= filters.maxWeight);
     if (filters.excludeHazmat) {
-      filtered = filtered.filter(load => !load.hazmat);
+      filtered = filtered.filter((load) => !load.hazmat);
     }
     if (filters.teamDriverOnly) {
-      filtered = filtered.filter(load => load.teamDriver);
+      filtered = filtered.filter((load) => load.teamDriver);
     }
     setFilteredLoads(filtered);
   };
@@ -170,29 +175,36 @@ const LoadBoard = () => {
 
   const bookLoad = async (loadId: string) => {
     try {
-      setLoads(prev => prev.map(load => 
-        load.id === loadId ? { ...load, status: 'booked' as const } : load
-      ));
-      alert('Load booking request sent successfully!');
+      setLoads((prev) =>
+        prev.map((load) =>
+          load.id === loadId ? { ...load, status: "booked" as const } : load,
+        ),
+      );
+      alert("Load booking request sent successfully!");
     } catch (error) {
-      alert('Failed to book load. Please try again.');
+      alert("Failed to book load. Please try again.");
     }
   };
 
   const getEquipmentIcon = (equipment: string) => {
     switch (equipment) {
-      case 'van': return '🚚';
-      case 'flatbed': return '🚛';
-      case 'reefer': return '🧊';
-      case 'tanker': return '🛢️';
-      default: return '📦';
+      case "van":
+        return "🚚";
+      case "flatbed":
+        return "🚛";
+      case "reefer":
+        return "🧊";
+      case "tanker":
+        return "🛢️";
+      default:
+        return "📦";
     }
   };
 
   const getRateColor = (ratePerMile: number) => {
-    if (ratePerMile >= 3.0) return 'text-green-600';
-    if (ratePerMile >= 2.5) return 'text-yellow-600';
-    return 'text-red-600';
+    if (ratePerMile >= 3.0) return "text-green-600";
+    if (ratePerMile >= 2.5) return "text-yellow-600";
+    return "text-red-600";
   };
 
   return (
@@ -201,14 +213,18 @@ const LoadBoard = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Load Board</h1>
-          <p className="text-gray-600">Find available loads and manage bookings</p>
+          <p className="text-gray-600">
+            Find available loads and manage bookings
+          </p>
         </div>
         <Button
           onClick={handleRefresh}
           disabled={refreshing}
           className="flex items-center gap-2"
         >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+          />
           Refresh Loads
         </Button>
       </div>
@@ -237,10 +253,17 @@ const LoadBoard = () => {
           {showFilters && (
             <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Equipment Type</label>
+                <label className="block text-sm font-medium mb-1">
+                  Equipment Type
+                </label>
                 <select
                   value={filters.equipmentType}
-                  onChange={(e) => setFilters((prev: Filters) => ({ ...prev, equipmentType: e.target.value }))}
+                  onChange={(e) =>
+                    setFilters((prev: Filters) => ({
+                      ...prev,
+                      equipmentType: e.target.value,
+                    }))
+                  }
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="all">All Equipment</option>
@@ -251,12 +274,19 @@ const LoadBoard = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Min Rate/Mile</label>
+                <label className="block text-sm font-medium mb-1">
+                  Min Rate/Mile
+                </label>
                 <Input
                   type="number"
                   step="0.25"
-                    value={filters.minRate}
-                    onChange={(e) => setFilters((prev: Filters) => ({ ...prev, minRate: parseFloat(e.target.value) || 0 }))}
+                  value={filters.minRate}
+                  onChange={(e) =>
+                    setFilters((prev: Filters) => ({
+                      ...prev,
+                      minRate: parseFloat(e.target.value) || 0,
+                    }))
+                  }
                   placeholder="$0.00"
                 />
               </div>
@@ -265,7 +295,12 @@ const LoadBoard = () => {
                   <input
                     type="checkbox"
                     checked={filters.excludeHazmat}
-                      onChange={(e) => setFilters((prev: Filters) => ({ ...prev, excludeHazmat: e.target.checked }))}
+                    onChange={(e) =>
+                      setFilters((prev: Filters) => ({
+                        ...prev,
+                        excludeHazmat: e.target.checked,
+                      }))
+                    }
                   />
                   <span className="text-sm">No Hazmat</span>
                 </label>
@@ -273,7 +308,12 @@ const LoadBoard = () => {
                   <input
                     type="checkbox"
                     checked={filters.teamDriverOnly}
-                      onChange={(e) => setFilters((prev: Filters) => ({ ...prev, teamDriverOnly: e.target.checked }))}
+                    onChange={(e) =>
+                      setFilters((prev: Filters) => ({
+                        ...prev,
+                        teamDriverOnly: e.target.checked,
+                      }))
+                    }
                   />
                   <span className="text-sm">Team Only</span>
                 </label>
@@ -309,8 +349,12 @@ const LoadBoard = () => {
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">No loads found</h3>
-            <p className="text-gray-500">Try adjusting your search criteria or filters</p>
+            <h3 className="text-lg font-medium text-gray-600 mb-2">
+              No loads found
+            </h3>
+            <p className="text-gray-500">
+              Try adjusting your search criteria or filters
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -320,7 +364,9 @@ const LoadBoard = () => {
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getEquipmentIcon(load.equipment)}</span>
+                    <span className="text-2xl">
+                      {getEquipmentIcon(load.equipment)}
+                    </span>
                     <div>
                       <h3 className="font-semibold text-lg">Load {load.id}</h3>
                       <p className="text-gray-600">{load.commodity}</p>
@@ -339,13 +385,17 @@ const LoadBoard = () => {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-green-500" />
-                    <span className="font-medium">{load.origin.city}, {load.origin.state}</span>
+                    <span className="font-medium">
+                      {load.origin.city}, {load.origin.state}
+                    </span>
                   </div>
                   {/* Replace with a route icon if available */}
                   <span className="mx-2">→</span>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-red-500" />
-                    <span className="font-medium">{load.destination.city}, {load.destination.state}</span>
+                    <span className="font-medium">
+                      {load.destination.city}, {load.destination.state}
+                    </span>
                   </div>
                   <Badge variant="outline">{load.miles} miles</Badge>
                 </div>
@@ -353,11 +403,15 @@ const LoadBoard = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-gray-500">Pickup Date</p>
-                    <p className="font-medium">{new Date(load.pickupDate).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(load.pickupDate).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Weight</p>
-                    <p className="font-medium">{load.weight.toLocaleString()} lbs</p>
+                    <p className="font-medium">
+                      {load.weight.toLocaleString()} lbs
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Equipment</p>
@@ -372,9 +426,9 @@ const LoadBoard = () => {
                           <Star
                             key={i}
                             className={`w-3 h-3 ${
-                              i < Math.floor(load.broker.rating) 
-                                ? 'fill-yellow-400 text-yellow-400' 
-                                : 'text-gray-300'
+                              i < Math.floor(load.broker.rating)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
                             }`}
                           />
                         ))}
@@ -385,7 +439,9 @@ const LoadBoard = () => {
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {load.hazmat && <Badge variant="destructive">Hazmat</Badge>}
-                  {load.teamDriver && <Badge variant="secondary">Team Driver</Badge>}
+                  {load.teamDriver && (
+                    <Badge variant="secondary">Team Driver</Badge>
+                  )}
                   {load.expedite && <Badge variant="default">Expedite</Badge>}
                   <Badge variant="outline">{load.broker.paymentTerms}</Badge>
                 </div>
@@ -393,7 +449,7 @@ const LoadBoard = () => {
                 {load.requirements && load.requirements.length > 0 && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-1">Requirements:</p>
-                    <p className="text-sm">{load.requirements.join(', ')}</p>
+                    <p className="text-sm">{load.requirements.join(", ")}</p>
                   </div>
                 )}
                 {/* Actions */}
@@ -410,12 +466,12 @@ const LoadBoard = () => {
                     <Button variant="outline" size="sm">
                       View Details
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => bookLoad(load.id)}
-                      disabled={load.status !== 'available'}
+                      disabled={load.status !== "available"}
                       size="sm"
                     >
-                      {load.status === 'available' ? 'Book Load' : 'Booked'}
+                      {load.status === "available" ? "Book Load" : "Booked"}
                     </Button>
                   </div>
                 </div>

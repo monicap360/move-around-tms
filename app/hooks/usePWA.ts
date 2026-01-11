@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export function usePWA() {
   const [isOnline, setIsOnline] = useState(true);
@@ -9,21 +9,26 @@ export function usePWA() {
 
   useEffect(() => {
     // Register service worker
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker
-        .register('/sw.js')
+        .register("/sw.js")
         .then((registration) => {
-          console.log('Service Worker registered:', registration.scope);
-          
+          console.log("Service Worker registered:", registration.scope);
+
           // Handle service worker updates
-          registration.addEventListener('updatefound', () => {
+          registration.addEventListener("updatefound", () => {
             const newWorker = registration.installing;
             if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
                   // New content is available, prompt user to refresh
-                  if (confirm('New version available! Would you like to update?')) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  if (
+                    confirm("New version available! Would you like to update?")
+                  ) {
+                    newWorker.postMessage({ type: "SKIP_WAITING" });
                     window.location.reload();
                   }
                 }
@@ -32,18 +37,20 @@ export function usePWA() {
           });
         })
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+          console.error("Service Worker registration failed:", error);
         });
 
       // Listen for service worker messages
-      navigator.serviceWorker.addEventListener('message', (event) => {
+      navigator.serviceWorker.addEventListener("message", (event) => {
         if (event.data && event.data.type) {
           switch (event.data.type) {
-            case 'NOTIFICATIONS_UPDATED':
+            case "NOTIFICATIONS_UPDATED":
               // Handle notification updates
-              window.dispatchEvent(new CustomEvent('notificationsUpdated', {
-                detail: event.data.data
-              }));
+              window.dispatchEvent(
+                new CustomEvent("notificationsUpdated", {
+                  detail: event.data.data,
+                }),
+              );
               break;
           }
         }
@@ -55,8 +62,8 @@ export function usePWA() {
     const handleOffline = () => setIsOnline(false);
 
     setIsOnline(navigator.onLine);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Handle PWA install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -65,27 +72,30 @@ export function usePWA() {
       setIsInstallable(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     // Handle PWA installation
-    window.addEventListener('appinstalled', () => {
+    window.addEventListener("appinstalled", () => {
       setIsInstallable(false);
       setDeferredPrompt(null);
-      console.log('PWA was installed');
+      console.log("PWA was installed");
     });
 
     // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().then((permission) => {
-        console.log('Notification permission:', permission);
+        console.log("Notification permission:", permission);
       });
     }
 
     // Cleanup
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
     };
   }, []);
 
@@ -93,22 +103,26 @@ export function usePWA() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log('PWA install outcome:', outcome);
-      
-      if (outcome === 'accepted') {
+      console.log("PWA install outcome:", outcome);
+
+      if (outcome === "accepted") {
         setIsInstallable(false);
         setDeferredPrompt(null);
       }
     }
   };
 
-  const shareContent = async (data: { title: string; text: string; url: string }) => {
+  const shareContent = async (data: {
+    title: string;
+    text: string;
+    url: string;
+  }) => {
     if (navigator.share) {
       try {
         await navigator.share(data);
         return true;
       } catch (error) {
-        console.log('Share failed:', error);
+        console.log("Share failed:", error);
         return false;
       }
     }
@@ -116,17 +130,20 @@ export function usePWA() {
   };
 
   const requestBackgroundSync = async (tag: string) => {
-    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+    if (
+      "serviceWorker" in navigator &&
+      "sync" in window.ServiceWorkerRegistration.prototype
+    ) {
       const registration = await navigator.serviceWorker.ready;
       return (registration as any).sync.register(tag);
     }
   };
 
   const cacheTicketOffline = (ticket: any) => {
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker.controller?.postMessage({
-        type: 'CACHE_TICKET_OFFLINE',
-        ticket
+        type: "CACHE_TICKET_OFFLINE",
+        ticket,
       });
     }
   };
@@ -137,6 +154,6 @@ export function usePWA() {
     installPWA,
     shareContent,
     requestBackgroundSync,
-    cacheTicketOffline
+    cacheTicketOffline,
   };
 }

@@ -11,11 +11,23 @@ export default function AccountingDashboard() {
     <div className="p-8 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Accounting & Billing</h1>
       <div className="flex gap-4 mb-6">
-        <select value={company} onChange={e=>setCompany(e.target.value)} className="border rounded px-2 py-1">
-          {companies.map(c=>(<option key={c}>{c}</option>))}
+        <select
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          {companies.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
         </select>
-        <select value={currency} onChange={e=>setCurrency(e.target.value)} className="border rounded px-2 py-1">
-          {currencies.map(c=>(<option key={c}>{c}</option>))}
+        <select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          {currencies.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
         </select>
       </div>
       <div className="grid grid-cols-2 gap-6 mb-8">
@@ -33,7 +45,9 @@ export default function AccountingDashboard() {
       <div className="bg-white rounded shadow p-4 mb-8">
         <h2 className="font-semibold mb-2">Tax Compliance</h2>
         {/* TODO: Show tax status, filings, and reminders */}
-        <div className="text-gray-500">Tax compliance dashboard coming soon.</div>
+        <div className="text-gray-500">
+          Tax compliance dashboard coming soon.
+        </div>
       </div>
       <div className="bg-white rounded shadow p-4 mb-8">
         <h2 className="font-semibold mb-2">QuickBooks/Xero/Sage Integration</h2>
@@ -41,7 +55,8 @@ export default function AccountingDashboard() {
         <div className="text-gray-500">Integration setup coming soon.</div>
       </div>
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-        <strong>Automated Invoice & Payment Portals:</strong> Coming soon. Customers and vendors will be able to pay and download invoices online.
+        <strong>Automated Invoice & Payment Portals:</strong> Coming soon.
+        Customers and vendors will be able to pay and download invoices online.
       </div>
     </div>
   );

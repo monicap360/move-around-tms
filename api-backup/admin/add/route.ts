@@ -20,17 +20,14 @@ export async function POST(req: Request) {
             // Server routes don't need cookie management
           },
         },
-      }
+      },
     );
 
     // Parse request body
     const { email }: RequestBody = await req.json();
 
     if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // List users via Supabase Admin API
@@ -39,20 +36,17 @@ export async function POST(req: Request) {
     if (error) {
       return NextResponse.json(
         { error: `Failed to list users: ${error.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Find the target user by email (type-safe)
     const targetUser = data.users.find(
-      (u: { email?: string }) => u.email === email
+      (u: { email?: string }) => u.email === email,
     );
 
     if (!targetUser) {
-      return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
     // Example: perform an admin action (customize as needed)
@@ -68,7 +62,7 @@ export async function POST(req: Request) {
     console.error("Unhandled error in /api/admin/add:", err);
     return NextResponse.json(
       { error: err.message ?? "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

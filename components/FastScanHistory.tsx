@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 type TicketUpload = {
   id: string;
@@ -18,9 +18,9 @@ export default function FastScanHistory() {
       setLoading(true);
       setError(null);
       const { data, error } = await supabase
-        .from('ticket_uploads')
-        .select('id, filename, status, uploaded_at')
-        .order('uploaded_at', { ascending: false })
+        .from("ticket_uploads")
+        .select("id, filename, status, uploaded_at")
+        .order("uploaded_at", { ascending: false })
         .limit(10);
       if (error) {
         setError(error.message);
@@ -45,16 +45,18 @@ export default function FastScanHistory() {
           {tickets.length === 0 ? (
             <li>No ticket uploads found.</li>
           ) : (
-            tickets.map(ticket => (
+            tickets.map((ticket) => (
               <li key={ticket.id} className="flex justify-between items-center">
                 <span>{ticket.filename}</span>
-                <span className={
-                  ticket.status === 'OCR Complete'
-                    ? 'bg-green-100 text-green-700 px-2 py-1 rounded text-xs'
-                    : ticket.status === 'Processing'
-                    ? 'bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs'
-                    : 'bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs'
-                }>
+                <span
+                  className={
+                    ticket.status === "OCR Complete"
+                      ? "bg-green-100 text-green-700 px-2 py-1 rounded text-xs"
+                      : ticket.status === "Processing"
+                        ? "bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs"
+                        : "bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                  }
+                >
                   {ticket.status}
                 </span>
               </li>

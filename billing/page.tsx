@@ -6,7 +6,9 @@ export default function BillingPage() {
       <h1 className="text-2xl font-bold mb-4">Billing</h1>
       {/* TODO: Upload Zelle screenshot, show subscription status, payment form */}
       <div className="border rounded p-4 bg-white shadow">
-        <p>Upload your Zelle screenshot and view your subscription status here.</p>
+        <p>
+          Upload your Zelle screenshot and view your subscription status here.
+        </p>
       </div>
     </main>
   );

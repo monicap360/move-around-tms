@@ -9,7 +9,9 @@ interface AdminCheckResponse {
 }
 
 // Type-safe function handler
-export async function GET(request: Request): Promise<NextResponse<AdminCheckResponse>> {
+export async function GET(
+  request: Request,
+): Promise<NextResponse<AdminCheckResponse>> {
   try {
     // Initialize Supabase client (server-side)
     const supabase = createServerClient(
@@ -20,17 +22,17 @@ export async function GET(request: Request): Promise<NextResponse<AdminCheckResp
           getAll() {
             const cookieHeader = request.headers.get("cookie");
             if (!cookieHeader) return [];
-            
-            return cookieHeader.split(';').map(cookie => {
-              const [name, ...rest] = cookie.trim().split('=');
-              return { name, value: rest.join('=') };
+
+            return cookieHeader.split(";").map((cookie) => {
+              const [name, ...rest] = cookie.trim().split("=");
+              return { name, value: rest.join("=") };
             });
           },
           setAll(cookiesToSet) {
             // In server components, we can't set cookies, so we ignore this
           },
         },
-      }
+      },
     );
 
     // Get the current user session
@@ -43,7 +45,7 @@ export async function GET(request: Request): Promise<NextResponse<AdminCheckResp
       console.error("Supabase user error:", userError.message);
       return NextResponse.json(
         { isAdmin: false, email: null, error: userError.message },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -51,7 +53,7 @@ export async function GET(request: Request): Promise<NextResponse<AdminCheckResp
     if (!user) {
       return NextResponse.json(
         { isAdmin: false, email: null },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -64,19 +66,19 @@ export async function GET(request: Request): Promise<NextResponse<AdminCheckResp
       console.error("Error calling is_admin:", rpcError.message);
       return NextResponse.json(
         { isAdmin: false, email: user.email || null, error: rpcError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json(
       { isAdmin: !!isAdmin, email: user.email || null },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err: any) {
     console.error("Unhandled error in /api/admin/check:", err);
     return NextResponse.json(
       { isAdmin: false, email: null, error: err.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

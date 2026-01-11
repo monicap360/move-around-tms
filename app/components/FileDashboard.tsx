@@ -1,6 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import Link from "next/link";
@@ -51,16 +56,16 @@ export default function FileDashboard() {
         window.open(signedUrl, "_blank");
       }
     } catch (err) {
-      console.error('Error opening file:', err);
+      console.error("Error opening file:", err);
     }
   };
 
   const getFileIcon = (file: FileItem) => {
-    if (file.isImage) return '🖼️';
-    if (file.extension === 'pdf') return '📄';
-    if (['doc', 'docx'].includes(file.extension)) return '📝';
-    if (['xls', 'xlsx'].includes(file.extension)) return '📊';
-    return '📎';
+    if (file.isImage) return "🖼️";
+    if (file.extension === "pdf") return "📄";
+    if (["doc", "docx"].includes(file.extension)) return "📝";
+    if (["xls", "xlsx"].includes(file.extension)) return "📊";
+    return "📎";
   };
 
   if (loading) {
@@ -141,7 +146,8 @@ export default function FileDashboard() {
                   <div>
                     <div className="font-medium text-sm">{file.fileName}</div>
                     <div className="text-xs text-gray-500">
-                      {file.sizeFormatted} • {new Date(file.created_at).toLocaleDateString()}
+                      {file.sizeFormatted} •{" "}
+                      {new Date(file.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -154,7 +160,7 @@ export default function FileDashboard() {
                 </Button>
               </div>
             ))}
-            
+
             {files.length > 10 && (
               <div className="text-center pt-4 border-t">
                 <Link href="/file-manager">

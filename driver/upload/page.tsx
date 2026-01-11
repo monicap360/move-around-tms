@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Upload, FileText, Image as ImageIcon, AlertCircle, CheckCircle } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Image as ImageIcon,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 export default function DriverUploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -34,22 +45,24 @@ export default function DriverUploadPage() {
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
-      setCurrentWeekStart(weekStart.toISOString().split('T')[0]);
-      setCurrentWeekEnd(weekEnd.toISOString().split('T')[0]);
+      setCurrentWeekStart(weekStart.toISOString().split("T")[0]);
+      setCurrentWeekEnd(weekEnd.toISOString().split("T")[0]);
 
       // Check if today is within the pay week
       const isInPayWeek = today >= weekStart && today <= weekEnd;
       setCanUpload(isInPayWeek);
 
       // Get current driver ID
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data: driver } = await supabase
           .from("drivers")
           .select("id")
           .eq("email", user.email)
           .single();
-        
+
         if (driver) {
           setDriverId(driver.id);
         }
@@ -61,7 +74,9 @@ export default function DriverUploadPage() {
 
   async function handleUpload() {
     if (!canUpload) {
-      alert("❌ You can only upload tickets during the current pay week (Friday to Thursday).");
+      alert(
+        "❌ You can only upload tickets during the current pay week (Friday to Thursday).",
+      );
       return;
     }
 
@@ -80,7 +95,7 @@ export default function DriverUploadPage() {
 
       const { data: uploadRes, error: uploadErr } = await supabase.storage
         .from("hr_docs")
-        .upload(path, file, { upsert: false, cacheControl: '3600' });
+        .upload(path, file, { upsert: false, cacheControl: "3600" });
 
       if (uploadErr) {
         setStatus("❌ Upload failed: " + uploadErr.message);
@@ -108,14 +123,14 @@ export default function DriverUploadPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            kind: 'ticket',
+            kind: "ticket",
             file_url: signed.signedUrl,
             driverId: driverId || undefined,
           }),
-        }
+        },
       );
 
       const ocr = await res.json();
@@ -133,7 +148,9 @@ export default function DriverUploadPage() {
         const weekEnd = new Date(currentWeekEnd);
 
         if (ticketDate < weekStart || ticketDate > weekEnd) {
-          setStatus("⚠️ Warning: Ticket date is outside current pay week. Manager review required.");
+          setStatus(
+            "⚠️ Warning: Ticket date is outside current pay week. Manager review required.",
+          );
         } else {
           setStatus("✅ Ticket uploaded successfully!");
         }
@@ -143,7 +160,6 @@ export default function DriverUploadPage() {
 
       setResult(ocr);
       setLoading(false);
-
     } catch (e: any) {
       setStatus("❌ Error: " + (e?.message || "Unexpected error"));
       setLoading(false);
@@ -158,12 +174,16 @@ export default function DriverUploadPage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-red-600 mt-0.5" />
               <div>
-                <h2 className="text-xl font-bold text-red-900 mb-2">Upload Restricted</h2>
+                <h2 className="text-xl font-bold text-red-900 mb-2">
+                  Upload Restricted
+                </h2>
                 <p className="text-red-800 mb-2">
-                  You can only upload tickets during the current pay week (Friday to Thursday).
+                  You can only upload tickets during the current pay week
+                  (Friday to Thursday).
                 </p>
                 <p className="text-sm text-red-700">
-                  Current pay week: <strong>{currentWeekStart}</strong> to <strong>{currentWeekEnd}</strong>
+                  Current pay week: <strong>{currentWeekStart}</strong> to{" "}
+                  <strong>{currentWeekEnd}</strong>
                 </p>
                 <p className="text-sm text-red-700 mt-2">
                   Please wait until the next pay week starts to upload tickets.
@@ -181,7 +201,9 @@ export default function DriverUploadPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Upload Ticket</h1>
         <p className="text-gray-600">
-          Upload delivery tickets for the current pay week: <strong>{currentWeekStart}</strong> to <strong>{currentWeekEnd}</strong>
+          Upload delivery tickets for the current pay week:{" "}
+          <strong>{currentWeekStart}</strong> to{" "}
+          <strong>{currentWeekEnd}</strong>
         </p>
       </div>
 
@@ -206,7 +228,7 @@ export default function DriverUploadPage() {
               />
               {file && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  {file.type.startsWith('image/') ? (
+                  {file.type.startsWith("image/") ? (
                     <ImageIcon className="w-4 h-4" />
                   ) : (
                     <FileText className="w-4 h-4" />
@@ -229,12 +251,17 @@ export default function DriverUploadPage() {
           </Button>
 
           {status && (
-            <div className={`p-4 rounded-lg ${
-              status.includes('✅') ? 'bg-green-50 text-green-800' :
-              status.includes('❌') ? 'bg-red-50 text-red-800' :
-              status.includes('⚠️') ? 'bg-orange-50 text-orange-800' :
-              'bg-blue-50 text-blue-800'
-            }`}>
+            <div
+              className={`p-4 rounded-lg ${
+                status.includes("✅")
+                  ? "bg-green-50 text-green-800"
+                  : status.includes("❌")
+                    ? "bg-red-50 text-red-800"
+                    : status.includes("⚠️")
+                      ? "bg-orange-50 text-orange-800"
+                      : "bg-blue-50 text-blue-800"
+              }`}
+            >
               <p className="font-medium">{status}</p>
             </div>
           )}
@@ -266,15 +293,16 @@ export default function DriverUploadPage() {
                         </div>
                         <div>
                           <span className="font-semibold">Quantity:</span>{" "}
-                          {result.ticket.quantity || "N/A"} {result.ticket.unit_type || ""}
+                          {result.ticket.quantity || "N/A"}{" "}
+                          {result.ticket.unit_type || ""}
                         </div>
                         <div>
                           <span className="font-semibold">Date:</span>{" "}
                           {result.ticket.ticket_date || "N/A"}
                         </div>
                         <div>
-                          <span className="font-semibold">Pay:</span>{" "}
-                          ${result.ticket.total_pay || "0.00"}
+                          <span className="font-semibold">Pay:</span> $
+                          {result.ticket.total_pay || "0.00"}
                         </div>
                       </div>
 
@@ -286,7 +314,8 @@ export default function DriverUploadPage() {
                       </div>
 
                       <p className="text-xs text-gray-600 mt-3">
-                        Your ticket has been submitted and will appear in your profile once approved by a manager.
+                        Your ticket has been submitted and will appear in your
+                        profile once approved by a manager.
                       </p>
                     </>
                   )}
@@ -301,11 +330,18 @@ export default function DriverUploadPage() {
         <CardContent className="pt-6">
           <h3 className="font-semibold text-blue-900 mb-2">📱 Upload Tips:</h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-            <li>Only upload tickets from the current pay week (Friday-Thursday)</li>
+            <li>
+              Only upload tickets from the current pay week (Friday-Thursday)
+            </li>
             <li>Take clear photos with good lighting</li>
             <li>Ensure ticket number and material type are visible</li>
-            <li>Tickets go to "Pending Manager Review" before counting toward your pay</li>
-            <li>You can also text photos to: <strong>(555) 123-4567</strong></li>
+            <li>
+              Tickets go to "Pending Manager Review" before counting toward your
+              pay
+            </li>
+            <li>
+              You can also text photos to: <strong>(555) 123-4567</strong>
+            </li>
           </ul>
         </CardContent>
       </Card>

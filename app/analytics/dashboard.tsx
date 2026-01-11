@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { fetchAnalyticsEvents } from '../../analytics/supabase';
-import { AnalyticsEvent } from '../../analytics/analytics.types';
-import { PieChart } from '../../analytics/charts';
+import { useEffect, useState } from "react";
+import { fetchAnalyticsEvents } from "../../analytics/supabase";
+import { AnalyticsEvent } from "../../analytics/analytics.types";
+import { PieChart } from "../../analytics/charts";
 
 export default function AnalyticsDashboard() {
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
@@ -17,23 +17,35 @@ export default function AnalyticsDashboard() {
 
   // KPI calculations
   const kpi = {
-    logins: events.filter(e => e.type === 'login').length,
-    payments: events.filter(e => e.type === 'payment').length,
-    fleetUpdates: events.filter(e => e.type === 'fleet_update').length,
-    onboarding: events.filter(e => e.type === 'onboarding_step').length,
-    errors: events.filter(e => e.type === 'error').length,
+    logins: events.filter((e) => e.type === "login").length,
+    payments: events.filter((e) => e.type === "payment").length,
+    fleetUpdates: events.filter((e) => e.type === "fleet_update").length,
+    onboarding: events.filter((e) => e.type === "onboarding_step").length,
+    errors: events.filter((e) => e.type === "error").length,
   };
 
   // Chart data (example: events by type)
-  const eventTypeCounts = ['login','payment','fleet_update','onboarding_step','error'].map(type =>
-    events.filter(e => e.type === type).length
-  );
+  const eventTypeCounts = [
+    "login",
+    "payment",
+    "fleet_update",
+    "onboarding_step",
+    "error",
+  ].map((type) => events.filter((e) => e.type === type).length);
   const pieData = {
-    labels: ['Login','Payment','Fleet','Onboarding','Error'],
-    datasets: [{
-      data: eventTypeCounts,
-      backgroundColor: ['#2563eb','#059669','#f59e42','#fbbf24','#ef4444'],
-    }],
+    labels: ["Login", "Payment", "Fleet", "Onboarding", "Error"],
+    datasets: [
+      {
+        data: eventTypeCounts,
+        backgroundColor: [
+          "#2563eb",
+          "#059669",
+          "#f59e42",
+          "#fbbf24",
+          "#ef4444",
+        ],
+      },
+    ],
   };
 
   return (

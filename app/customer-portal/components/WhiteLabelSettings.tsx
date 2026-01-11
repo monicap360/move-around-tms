@@ -27,12 +27,22 @@ export default function WhiteLabelSettings() {
       <form className="space-y-6" onSubmit={handleSave}>
         <div>
           <label className="block text-sm font-medium mb-1">Logo</label>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleLogoUpload} className="border rounded px-3 py-2" />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            onChange={handleLogoUpload}
+            className="border rounded px-3 py-2"
+          />
           {logo && <img src={logo} alt="Logo preview" className="mt-2 h-12" />}
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Theme</label>
-          <select value={theme} onChange={e => setTheme(e.target.value)} className="border rounded px-3 py-2">
+          <select
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
             <option value="default">Default</option>
             <option value="blue">Blue</option>
             <option value="green">Green</option>
@@ -41,12 +51,23 @@ export default function WhiteLabelSettings() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Custom Domain</label>
-          <input value={domain} onChange={e => setDomain(e.target.value)} placeholder="portal.yourcompany.com" className="border rounded px-3 py-2 w-full" />
+          <label className="block text-sm font-medium mb-1">
+            Custom Domain
+          </label>
+          <input
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder="portal.yourcompany.com"
+            className="border rounded px-3 py-2 w-full"
+          />
         </div>
-        <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Settings"}</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Saving..." : "Save Settings"}
+        </Button>
       </form>
-      <div className="text-xs text-gray-500 mt-4">Branding and domain changes are visible to all users in your company.</div>
+      <div className="text-xs text-gray-500 mt-4">
+        Branding and domain changes are visible to all users in your company.
+      </div>
     </div>
   );
 }

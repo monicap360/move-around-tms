@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const client = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export default function TicketTable() {
@@ -51,8 +51,12 @@ export default function TicketTable() {
                 <td className="p-3">{t.material_id}</td>
                 <td className="p-3">{t.weight_out - t.weight_in} lbs</td>
                 <td className="p-3">${t.rate}</td>
-                <td className="p-3 font-bold text-green-400">${(t.weight_out - t.weight_in) * (t.rate / 2000)}</td>
-                <td className="p-3">{new Date(t.created_at).toLocaleString()}</td>
+                <td className="p-3 font-bold text-green-400">
+                  ${(t.weight_out - t.weight_in) * (t.rate / 2000)}
+                </td>
+                <td className="p-3">
+                  {new Date(t.created_at).toLocaleString()}
+                </td>
               </tr>
             ))}
           </tbody>

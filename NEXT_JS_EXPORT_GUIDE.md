@@ -5,18 +5,21 @@
 Your Next.js app has **dynamic routes and API endpoints** that prevent static export:
 
 ### Dynamic Routes Found:
-- `/hr/drivers/[id]` 
+
+- `/hr/drivers/[id]`
 - `/hr/onboarding/[id]`
 - `/hr/performance/[id]`
 - `/ticket-templates/create/[assetId]`
 - `/ticket-templates/fill/[templateId]`
 
 ### API Routes Found:
+
 - Multiple API endpoints in `/api/` directory (moved to backup)
 
 ## ✅ SOLUTION OPTIONS
 
 ### Option A: Use Professional Static Site (RECOMMENDED)
+
 **Status:** ✅ READY TO DEPLOY
 
 Use the complete professional static site structure already created:
@@ -24,7 +27,7 @@ Use the complete professional static site structure already created:
 ```
 siteground-deploy/ronyx/
 ├── index.html          ← Professional dashboard
-├── login.html          ← Enhanced login page  
+├── login.html          ← Enhanced login page
 ├── 404.html           ← Professional error page
 ├── manifest.json      ← PWA manifest
 ├── sw.js             ← Service worker with caching
@@ -38,6 +41,7 @@ siteground-deploy/ronyx/
 ```
 
 **Advantages:**
+
 - ✅ Zero server dependencies
 - ✅ Lightning-fast performance
 - ✅ Professional ROnyx branding
@@ -46,16 +50,19 @@ siteground-deploy/ronyx/
 - ✅ Ready to upload immediately
 
 **Deployment:**
+
 1. Upload `siteground-deploy/ronyx/` contents to `public_html/ronyx/`
 2. Configure subdomain `ronyx.movearoundtms.app`
 3. Access at `https://ronyx.movearoundtms.app/`
 
 ### Option B: Next.js Export (COMPLEX)
+
 **Status:** 🔧 REQUIRES EXTENSIVE MODIFICATIONS
 
 To make Next.js work with static export, you would need to:
 
 1. **Remove/Disable Dynamic Routes:**
+
    ```bash
    # Move dynamic route directories
    mv "hr/drivers/[id]" "../dynamic-routes-backup/"
@@ -67,9 +74,10 @@ To make Next.js work with static export, you would need to:
 
 2. **Modify Dynamic Routes (if needed):**
    Add `generateStaticParams()` to each dynamic route:
+
    ```typescript
    export async function generateStaticParams() {
-     return [] // Return empty for static export
+     return []; // Return empty for static export
    }
    ```
 
@@ -85,6 +93,7 @@ To make Next.js work with static export, you would need to:
    ```
 
 **Challenges:**
+
 - 🔴 Dynamic routes need major refactoring
 - 🔴 API calls need client-side conversion
 - 🔴 Complex debugging for each route
@@ -104,6 +113,7 @@ To make Next.js work with static export, you would need to:
 ## 🚀 QUICK DEPLOYMENT STEPS
 
 ### Step 1: Upload Static Site
+
 ```bash
 # Navigate to your SiteGround File Manager
 # Go to public_html/
@@ -112,6 +122,7 @@ To make Next.js work with static export, you would need to:
 ```
 
 ### Step 2: Configure Subdomain
+
 ```bash
 # In SiteGround cPanel → Subdomains
 # Subdomain: ronyx
@@ -119,6 +130,7 @@ To make Next.js work with static export, you would need to:
 ```
 
 ### Step 3: Access Portal
+
 Visit: `https://ronyx.movearoundtms.app/`
 
 ## 🔧 FUTURE NEXT.JS CONSIDERATIONS

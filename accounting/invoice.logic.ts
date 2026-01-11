@@ -1,6 +1,6 @@
 // Core logic for invoice creation, status updates, and linking to Zelle payments
-import { Invoice, InvoiceLineItem, InvoiceStatus } from './invoice.types';
-import { v4 as uuidv4 } from 'uuid';
+import { Invoice, InvoiceLineItem, InvoiceStatus } from "./invoice.types";
+import { v4 as uuidv4 } from "uuid";
 
 // Create a new invoice
 export function createInvoice(params: {
@@ -16,9 +16,9 @@ export function createInvoice(params: {
     id: uuidv4(),
     user_id: params.user_id,
     amount: params.amount,
-    currency: params.currency || 'USD',
+    currency: params.currency || "USD",
     description: params.description,
-    status: 'pending',
+    status: "pending",
     issued_at: new Date().toISOString(),
     due_at: params.due_at,
     line_items: params.line_items,
@@ -30,7 +30,7 @@ export function createInvoice(params: {
 export function markInvoicePaid(invoice: Invoice, paid_at?: string): Invoice {
   return {
     ...invoice,
-    status: 'paid',
+    status: "paid",
     paid_at: paid_at || new Date().toISOString(),
   };
 }
@@ -39,6 +39,6 @@ export function markInvoicePaid(invoice: Invoice, paid_at?: string): Invoice {
 export function markInvoiceOverdue(invoice: Invoice): Invoice {
   return {
     ...invoice,
-    status: 'overdue',
+    status: "overdue",
   };
 }

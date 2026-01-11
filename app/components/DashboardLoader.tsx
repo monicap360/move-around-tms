@@ -4,7 +4,9 @@ export default function DashboardLoader() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <Spinner size="lg" label="Loading dashboard..." />
-      <p className="mt-4 text-gray-600">Please wait while we prepare your data</p>
+      <p className="mt-4 text-gray-600">
+        Please wait while we prepare your data
+      </p>
     </div>
   );
 }

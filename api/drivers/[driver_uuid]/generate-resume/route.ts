@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const client = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function POST(_req, { params }) {
@@ -15,7 +15,8 @@ export async function POST(_req, { params }) {
     .eq("driver_uuid", driver_uuid)
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   const resume = {
     full_name: d.full_name,
@@ -29,16 +30,18 @@ export async function POST(_req, { params }) {
     certifications: [
       d.twic ? "TWIC Certified" : null,
       d.medical_card ? "Valid Medical Card" : null,
-      d.endorsements?.length ? "Endorsements: " + d.endorsements.join(", ") : null
+      d.endorsements?.length
+        ? "Endorsements: " + d.endorsements.join(", ")
+        : null,
     ].filter(Boolean),
-    updated: new Date().toISOString()
+    updated: new Date().toISOString(),
   };
 
   await client
     .from("drivers")
     .update({
       resume_json: resume,
-      resume_last_generated: new Date()
+      resume_last_generated: new Date(),
     })
     .eq("driver_uuid", driver_uuid);
 

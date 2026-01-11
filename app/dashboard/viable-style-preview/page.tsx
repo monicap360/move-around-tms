@@ -13,7 +13,7 @@ export default function ViableStylePreview() {
       <style jsx global>{`
         /* Button styles */
         .btn-primary {
-          background-color: #1E40AF;
+          background-color: #1e40af;
           color: #fff;
           font-weight: 600;
           border-radius: 8px;
@@ -22,8 +22,8 @@ export default function ViableStylePreview() {
           border: none;
           cursor: pointer;
         }
-        .btn-primary:hover { 
-          background-color: #0F172A; 
+        .btn-primary:hover {
+          background-color: #0f172a;
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
         }
@@ -38,13 +38,13 @@ export default function ViableStylePreview() {
           cursor: pointer;
           transition: all 0.3s ease;
         }
-        .btn-secondary:hover { 
-          background-color: #1E40AF;
+        .btn-secondary:hover {
+          background-color: #1e40af;
           transform: translateY(-1px);
         }
 
         .btn-warning {
-          background-color: #F97316;
+          background-color: #f97316;
           color: #fff;
           font-weight: 600;
           border-radius: 8px;
@@ -53,7 +53,7 @@ export default function ViableStylePreview() {
           cursor: pointer;
           transition: all 0.3s ease;
         }
-        .btn-warning:hover { 
+        .btn-warning:hover {
           opacity: 0.9;
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
@@ -61,35 +61,35 @@ export default function ViableStylePreview() {
 
         .btn-outline {
           background-color: transparent;
-          color: #1E40AF;
+          color: #1e40af;
           font-weight: 600;
-          border: 2px solid #1E40AF;
+          border: 2px solid #1e40af;
           border-radius: 8px;
           padding: 0.6rem 1.2rem;
           cursor: pointer;
           transition: all 0.3s ease;
         }
         .btn-outline:hover {
-          background-color: #1E40AF;
+          background-color: #1e40af;
           color: #fff;
         }
 
         /* Card styles */
         .card {
-          background-color: #F9FAFB;
-          border: 1px solid #E5E7EB;
+          background-color: #f9fafb;
+          border: 1px solid #e5e7eb;
           border-radius: 12px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
           padding: 1.5rem;
           transition: all 0.3s ease;
         }
         .card:hover {
-          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
           transform: translateY(-2px);
         }
         .card.dark {
-          background-color: #0F172A;
-          color: #F9FAFB;
+          background-color: #0f172a;
+          color: #f9fafb;
           border-color: #374151;
         }
         .card.dark:hover {
@@ -98,7 +98,7 @@ export default function ViableStylePreview() {
 
         /* Status indicators */
         .status-active {
-          background-color: #10B981;
+          background-color: #10b981;
           color: white;
           padding: 0.25rem 0.75rem;
           border-radius: 9999px;
@@ -106,7 +106,7 @@ export default function ViableStylePreview() {
           font-weight: 600;
         }
         .status-warning {
-          background-color: #F59E0B;
+          background-color: #f59e0b;
           color: white;
           padding: 0.25rem 0.75rem;
           border-radius: 9999px;
@@ -114,7 +114,7 @@ export default function ViableStylePreview() {
           font-weight: 600;
         }
         .status-danger {
-          background-color: #EF4444;
+          background-color: #ef4444;
           color: white;
           padding: 0.25rem 0.75rem;
           border-radius: 9999px;
@@ -124,7 +124,7 @@ export default function ViableStylePreview() {
 
         /* Metric cards */
         .metric-card {
-          background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
           color: white;
           border-radius: 12px;
           padding: 1.5rem;
@@ -137,31 +137,36 @@ export default function ViableStylePreview() {
           padding: 0.75rem 1.5rem;
           border-radius: 8px;
           background-color: transparent;
-          color: #6B7280;
+          color: #6b7280;
           border: none;
           cursor: pointer;
           font-weight: 500;
           transition: all 0.3s ease;
         }
         .nav-tab.active {
-          background-color: #1E40AF;
+          background-color: #1e40af;
           color: white;
         }
         .nav-tab:hover:not(.active) {
-          background-color: #F3F4F6;
-          color: #1E40AF;
+          background-color: #f3f4f6;
+          color: #1e40af;
         }
 
         /* Google Fonts Import */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap");
 
-        .font-heading { font-family: 'Poppins', sans-serif; }
-        .font-body { font-family: 'Roboto', sans-serif; }
-        .font-numeric { font-family: 'Rajdhani', sans-serif; }
+        .font-heading {
+          font-family: "Poppins", sans-serif;
+        }
+        .font-body {
+          font-family: "Roboto", sans-serif;
+        }
+        .font-numeric {
+          font-family: "Rajdhani", sans-serif;
+        }
       `}</style>
 
       <div className="min-h-screen bg-[#F9FAFB] text-[#374151] font-body">
-        
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -188,12 +193,12 @@ export default function ViableStylePreview() {
               { id: "fleet", label: "Fleet Management" },
               { id: "drivers", label: "Driver Portal" },
               { id: "shipments", label: "Shipments" },
-              { id: "design", label: "Design System" }
+              { id: "design", label: "Design System" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                className={`nav-tab ${activeTab === tab.id ? "active" : ""}`}
               >
                 {tab.label}
               </button>
@@ -202,26 +207,42 @@ export default function ViableStylePreview() {
         </nav>
 
         <div className="max-w-7xl mx-auto p-6">
-
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <div className="space-y-8">
-              
               {/* Metrics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="metric-card">
                   <div className="font-numeric text-3xl font-bold">247</div>
                   <div className="text-blue-100 mt-1">Active Trucks</div>
                 </div>
-                <div className="metric-card" style={{background: 'linear-gradient(135deg, #F97316 0%, #FB923C 100%)'}}>
+                <div
+                  className="metric-card"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #F97316 0%, #FB923C 100%)",
+                  }}
+                >
                   <div className="font-numeric text-3xl font-bold">1,847</div>
                   <div className="text-orange-100 mt-1">Miles Today</div>
                 </div>
-                <div className="metric-card" style={{background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'}}>
+                <div
+                  className="metric-card"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #10B981 0%, #34D399 100%)",
+                  }}
+                >
                   <div className="font-numeric text-3xl font-bold">$127K</div>
                   <div className="text-green-100 mt-1">Revenue MTD</div>
                 </div>
-                <div className="metric-card" style={{background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)'}}>
+                <div
+                  className="metric-card"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+                  }}
+                >
                   <div className="font-numeric text-3xl font-bold">98.2%</div>
                   <div className="text-purple-100 mt-1">On-Time Rate</div>
                 </div>
@@ -237,7 +258,8 @@ export default function ViableStylePreview() {
                     <span className="status-active">All Active</span>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Real-time driver metrics, route tracking, and performance logs.
+                    Real-time driver metrics, route tracking, and performance
+                    logs.
                   </p>
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -246,23 +268,30 @@ export default function ViableStylePreview() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Fuel Efficiency</span>
-                      <span className="font-numeric font-semibold">7.2 mpg</span>
+                      <span className="font-numeric font-semibold">
+                        7.2 mpg
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="card dark">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-heading font-semibold">Fleet Overview</h3>
+                    <h3 className="text-lg font-heading font-semibold">
+                      Fleet Overview
+                    </h3>
                     <span className="status-warning">2 Alerts</span>
                   </div>
                   <p className="text-gray-300 mb-4">
-                    Monitor fuel levels, maintenance schedules, and mileage reports.
+                    Monitor fuel levels, maintenance schedules, and mileage
+                    reports.
                   </p>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm">Maintenance Due</span>
-                      <span className="font-numeric font-semibold text-orange-400">3 Trucks</span>
+                      <span className="font-numeric font-semibold text-orange-400">
+                        3 Trucks
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Avg Fuel Level</span>
@@ -298,10 +327,14 @@ export default function ViableStylePreview() {
           {/* Fleet Tab */}
           {activeTab === "fleet" && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">Fleet Management</h2>
+              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">
+                Fleet Management
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="card">
-                  <h3 className="font-heading font-semibold mb-3">Truck Status</h3>
+                  <h3 className="font-heading font-semibold mb-3">
+                    Truck Status
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span>Truck #247 - Peterbilt 579</span>
@@ -318,9 +351,12 @@ export default function ViableStylePreview() {
                   </div>
                 </div>
                 <div className="card dark">
-                  <h3 className="font-heading font-semibold mb-3">Maintenance Schedule</h3>
+                  <h3 className="font-heading font-semibold mb-3">
+                    Maintenance Schedule
+                  </h3>
                   <p className="text-gray-300">
-                    Predictive maintenance alerts keep your fleet running efficiently.
+                    Predictive maintenance alerts keep your fleet running
+                    efficiently.
                   </p>
                 </div>
               </div>
@@ -330,32 +366,50 @@ export default function ViableStylePreview() {
           {/* Drivers Tab */}
           {activeTab === "drivers" && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">Driver Portal</h2>
+              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">
+                Driver Portal
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="card">
-                  <h3 className="font-heading font-semibold mb-3">Driver Rankings</h3>
+                  <h3 className="font-heading font-semibold mb-3">
+                    Driver Rankings
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>John Martinez</span>
-                      <span className="font-numeric text-green-600 font-bold">98.5%</span>
+                      <span className="font-numeric text-green-600 font-bold">
+                        98.5%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Sarah Chen</span>
-                      <span className="font-numeric text-green-600 font-bold">97.2%</span>
+                      <span className="font-numeric text-green-600 font-bold">
+                        97.2%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Mike Rodriguez</span>
-                      <span className="font-numeric text-blue-600 font-bold">95.8%</span>
+                      <span className="font-numeric text-blue-600 font-bold">
+                        95.8%
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div className="card">
-                  <h3 className="font-heading font-semibold mb-3">Hours of Service</h3>
-                  <p className="text-gray-600">DOT compliance tracking for all drivers.</p>
+                  <h3 className="font-heading font-semibold mb-3">
+                    Hours of Service
+                  </h3>
+                  <p className="text-gray-600">
+                    DOT compliance tracking for all drivers.
+                  </p>
                 </div>
                 <div className="card">
-                  <h3 className="font-heading font-semibold mb-3">Safety Alerts</h3>
-                  <p className="text-gray-600">Real-time safety monitoring and alerts.</p>
+                  <h3 className="font-heading font-semibold mb-3">
+                    Safety Alerts
+                  </h3>
+                  <p className="text-gray-600">
+                    Real-time safety monitoring and alerts.
+                  </p>
                 </div>
               </div>
             </div>
@@ -364,23 +418,31 @@ export default function ViableStylePreview() {
           {/* Shipments Tab */}
           {activeTab === "shipments" && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">Active Shipments</h2>
+              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">
+                Active Shipments
+              </h2>
               <div className="card">
-                <h3 className="font-heading font-semibold mb-4">Shipment Tracking</h3>
+                <h3 className="font-heading font-semibold mb-4">
+                  Shipment Tracking
+                </h3>
                 <div className="space-y-4">
                   <div className="border-l-4 border-green-500 pl-4">
                     <div className="flex justify-between">
                       <span className="font-medium">Load #TMS-2025-1147</span>
                       <span className="status-active">In Transit</span>
                     </div>
-                    <p className="text-gray-600 text-sm">Phoenix, AZ → Denver, CO</p>
+                    <p className="text-gray-600 text-sm">
+                      Phoenix, AZ → Denver, CO
+                    </p>
                   </div>
                   <div className="border-l-4 border-orange-500 pl-4">
                     <div className="flex justify-between">
                       <span className="font-medium">Load #TMS-2025-1148</span>
                       <span className="status-warning">Loading</span>
                     </div>
-                    <p className="text-gray-600 text-sm">Los Angeles, CA → Dallas, TX</p>
+                    <p className="text-gray-600 text-sm">
+                      Los Angeles, CA → Dallas, TX
+                    </p>
                   </div>
                 </div>
               </div>
@@ -390,43 +452,78 @@ export default function ViableStylePreview() {
           {/* Design System Tab */}
           {activeTab === "design" && (
             <div className="space-y-8">
-              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">Design System</h2>
-              
+              <h2 className="text-2xl font-heading font-bold text-[#1E40AF]">
+                Design System
+              </h2>
+
               {/* Typography */}
               <div className="card">
-                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">Typography</h3>
+                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">
+                  Typography
+                </h3>
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-3xl font-heading font-bold text-[#1E40AF]">
                       Heading Font — Poppins
                     </h4>
-                    <p className="text-gray-600">Used for titles, headings, and navigation</p>
+                    <p className="text-gray-600">
+                      Used for titles, headings, and navigation
+                    </p>
                   </div>
                   <div>
                     <p className="font-body text-[#374151] text-lg">
-                      Body Font — Roboto | Reliable, clear, and professional for dashboards.
+                      Body Font — Roboto | Reliable, clear, and professional for
+                      dashboards.
                     </p>
                   </div>
                   <div>
                     <p className="font-numeric text-[#F97316] tracking-widest text-2xl font-bold">
                       Numeric Font — Rajdhani 600
                     </p>
-                    <p className="text-gray-600">Used for metrics, numbers, and data displays</p>
+                    <p className="text-gray-600">
+                      Used for metrics, numbers, and data displays
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Color Palette */}
               <div className="card">
-                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">Color Palette</h3>
+                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">
+                  Color Palette
+                </h3>
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                   {[
-                    { name: "Viable Blue", color: "#1E40AF", usage: "Primary brand, CTAs" },
-                    { name: "Safety Orange", color: "#F97316", usage: "Alerts, warnings" },
-                    { name: "Asphalt Gray", color: "#374151", usage: "Text, secondary buttons" },
-                    { name: "Fleet Silver", color: "#9CA3AF", usage: "Subtle text, borders" },
-                    { name: "Highway White", color: "#F9FAFB", usage: "Backgrounds, cards" },
-                    { name: "Deep Black", color: "#0F172A", usage: "Dark mode, emphasis" },
+                    {
+                      name: "Viable Blue",
+                      color: "#1E40AF",
+                      usage: "Primary brand, CTAs",
+                    },
+                    {
+                      name: "Safety Orange",
+                      color: "#F97316",
+                      usage: "Alerts, warnings",
+                    },
+                    {
+                      name: "Asphalt Gray",
+                      color: "#374151",
+                      usage: "Text, secondary buttons",
+                    },
+                    {
+                      name: "Fleet Silver",
+                      color: "#9CA3AF",
+                      usage: "Subtle text, borders",
+                    },
+                    {
+                      name: "Highway White",
+                      color: "#F9FAFB",
+                      usage: "Backgrounds, cards",
+                    },
+                    {
+                      name: "Deep Black",
+                      color: "#0F172A",
+                      usage: "Dark mode, emphasis",
+                    },
                   ].map((swatch) => (
                     <div key={swatch.name} className="text-center">
                       <div
@@ -434,8 +531,12 @@ export default function ViableStylePreview() {
                         style={{ backgroundColor: swatch.color }}
                       />
                       <p className="text-sm font-medium">{swatch.name}</p>
-                      <p className="text-xs text-gray-500 font-mono">{swatch.color}</p>
-                      <p className="text-xs text-gray-600 mt-1">{swatch.usage}</p>
+                      <p className="text-xs text-gray-500 font-mono">
+                        {swatch.color}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {swatch.usage}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -443,7 +544,9 @@ export default function ViableStylePreview() {
 
               {/* Button Examples */}
               <div className="card">
-                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">Button Styles</h3>
+                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">
+                  Button Styles
+                </h3>
                 <div className="flex flex-wrap gap-4">
                   <button className="btn-primary">Primary Button</button>
                   <button className="btn-secondary">Secondary Button</button>
@@ -454,7 +557,9 @@ export default function ViableStylePreview() {
 
               {/* Status Indicators */}
               <div className="card">
-                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">Status Indicators</h3>
+                <h3 className="text-xl font-heading font-semibold text-[#1E40AF] mb-4">
+                  Status Indicators
+                </h3>
                 <div className="flex flex-wrap gap-4">
                   <span className="status-active">Active</span>
                   <span className="status-warning">Warning</span>
@@ -463,7 +568,6 @@ export default function ViableStylePreview() {
               </div>
             </div>
           )}
-
         </div>
       </div>
     </>

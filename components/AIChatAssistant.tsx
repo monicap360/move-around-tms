@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, Send, Settings, EyeOff, Eye, Clock } from "lucide-react";
+import {
+  MessageCircle,
+  Send,
+  Settings,
+  EyeOff,
+  Eye,
+  Clock,
+} from "lucide-react";
 
 // Peak quiet hours
 const QUIET_HOURS = [
-  { start: 5, end: 11 },  // Morning dispatch rush
+  { start: 5, end: 11 }, // Morning dispatch rush
   { start: 15, end: 18 }, // Afternoon congestion
 ];
 
@@ -179,12 +186,16 @@ export default function AIChatAssistant() {
             {chat.map((c, i) => (
               <p
                 key={i}
-                className={c.role === "user" ? "text-blue-300" : "text-green-300"}
+                className={
+                  c.role === "user" ? "text-blue-300" : "text-green-300"
+                }
               >
                 {c.content}
               </p>
             ))}
-            {loading && <p className="text-gray-400 animate-pulse">AI thinking…</p>}
+            {loading && (
+              <p className="text-gray-400 animate-pulse">AI thinking…</p>
+            )}
           </div>
           <div className="flex gap-2 mt-3">
             <input

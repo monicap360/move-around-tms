@@ -1,5 +1,10 @@
 "use client";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 
@@ -7,9 +12,9 @@ export default function SupabaseCommandsPage() {
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      alert('Commands copied to clipboard!');
+      alert("Commands copied to clipboard!");
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -109,12 +114,15 @@ ${step4SQL}`;
         <CardHeader>
           <CardTitle>Supabase SQL Commands - Monica's Action List</CardTitle>
           <p className="text-sm text-gray-600">
-            Run these commands in Supabase SQL Editor to optimize storage without fighting permissions
+            Run these commands in Supabase SQL Editor to optimize storage
+            without fighting permissions
           </p>
         </CardHeader>
         <CardContent>
           <div className="bg-green-50 border border-green-200 rounded p-4 mb-4">
-            <h3 className="font-semibold text-green-800 mb-2">✅ Why This Approach Works:</h3>
+            <h3 className="font-semibold text-green-800 mb-2">
+              ✅ Why This Approach Works:
+            </h3>
             <ul className="text-sm text-green-700 list-disc list-inside space-y-1">
               <li>No ALTER TABLE or CREATE INDEX on system tables</li>
               <li>Uses Supabase's existing optimized indexes</li>
@@ -123,8 +131,8 @@ ${step4SQL}`;
               <li>Gives same performance benefits</li>
             </ul>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={() => copyToClipboard(allCommands)}
             className="w-full mb-4"
           >
@@ -138,12 +146,15 @@ ${step4SQL}`;
           <CardHeader>
             <CardTitle className="text-blue-800 flex items-center gap-2">
               Step 1: Create Helper Function
-              <Badge variant="outline" className="bg-blue-100">Safe & Fast</Badge>
+              <Badge variant="outline" className="bg-blue-100">
+                Safe & Fast
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
-              Creates a reusable function to extract the first folder from file paths. This replaces complex string operations in queries.
+              Creates a reusable function to extract the first folder from file
+              paths. This replaces complex string operations in queries.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{step1SQL}</pre>
@@ -162,12 +173,15 @@ ${step4SQL}`;
           <CardHeader>
             <CardTitle className="text-purple-800 flex items-center gap-2">
               Step 2: Create Optimized View
-              <Badge variant="outline" className="bg-purple-100">Performance Boost</Badge>
+              <Badge variant="outline" className="bg-purple-100">
+                Performance Boost
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
-              Creates a view that pre-filters company_assets and adds the user_folder column. Uses Supabase's built-in indexes.
+              Creates a view that pre-filters company_assets and adds the
+              user_folder column. Uses Supabase's built-in indexes.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{step2SQL}</pre>
@@ -186,12 +200,15 @@ ${step4SQL}`;
           <CardHeader>
             <CardTitle className="text-green-800 flex items-center gap-2">
               Step 3: Update RLS Policies
-              <Badge variant="outline" className="bg-green-100">Security + Speed</Badge>
+              <Badge variant="outline" className="bg-green-100">
+                Security + Speed
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
-              Updates Row Level Security policies to use the helper function for faster, cleaner user-folder filtering.
+              Updates Row Level Security policies to use the helper function for
+              faster, cleaner user-folder filtering.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{step3SQL}</pre>
@@ -210,12 +227,15 @@ ${step4SQL}`;
           <CardHeader>
             <CardTitle className="text-yellow-800 flex items-center gap-2">
               Step 4: Test & Verify
-              <Badge variant="outline" className="bg-yellow-100">Validation</Badge>
+              <Badge variant="outline" className="bg-yellow-100">
+                Validation
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
-              Test commands to verify everything is working correctly and check Supabase's built-in indexes.
+              Test commands to verify everything is working correctly and check
+              Supabase's built-in indexes.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{step4SQL}</pre>
@@ -232,11 +252,14 @@ ${step4SQL}`;
 
         <Card className="border-indigo-200">
           <CardHeader>
-            <CardTitle className="text-indigo-800">Step 5: Update Your API Routes</CardTitle>
+            <CardTitle className="text-indigo-800">
+              Step 5: Update Your API Routes
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
-              After running the SQL commands, update your Next.js API routes to use the new optimized view.
+              After running the SQL commands, update your Next.js API routes to
+              use the new optimized view.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{apiUpdateSQL}</pre>
@@ -254,7 +277,9 @@ ${step4SQL}`;
 
       <Card className="mt-6 border-emerald-200 bg-emerald-50">
         <CardHeader>
-          <CardTitle className="text-emerald-800">Expected Results After Implementation</CardTitle>
+          <CardTitle className="text-emerald-800">
+            Expected Results After Implementation
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-emerald-700">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

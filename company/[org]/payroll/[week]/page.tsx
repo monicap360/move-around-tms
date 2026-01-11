@@ -27,9 +27,14 @@ export default function PayrollWeekDetail({ params }: any) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={`Payroll Week: ${week?.week_start} — ${week?.week_end}`}/>
+      <PageHeader
+        title={`Payroll Week: ${week?.week_start} — ${week?.week_end}`}
+      />
 
-      <Link href={`/company/${company}/payroll`} className="inline-flex items-center text-blue-600 mb-2">
+      <Link
+        href={`/company/${company}/payroll`}
+        className="inline-flex items-center text-blue-600 mb-2"
+      >
         <ChevronLeft className="w-4 h-4 mr-1" /> Back to Payroll Weeks
       </Link>
 
@@ -44,7 +49,9 @@ export default function PayrollWeekDetail({ params }: any) {
               <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
                 <DollarSign className="w-4 h-4 text-green-600" />
                 <span className="font-semibold">Total Pay:</span>
-                <span className="text-lg font-bold text-green-700">${week.total_pay?.toLocaleString() ?? '--'}</span>
+                <span className="text-lg font-bold text-green-700">
+                  ${week.total_pay?.toLocaleString() ?? "--"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-red-600 text-sm">
                 <AlertTriangle className="w-4 h-4" />
@@ -81,7 +88,12 @@ export default function PayrollWeekDetail({ params }: any) {
                 <tbody>
                   {entries.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="p-4 text-center text-gray-500">No payroll entries found.</td>
+                      <td
+                        colSpan={11}
+                        className="p-4 text-center text-gray-500"
+                      >
+                        No payroll entries found.
+                      </td>
                     </tr>
                   ) : (
                     entries.map((entry: any) => (
@@ -90,13 +102,27 @@ export default function PayrollWeekDetail({ params }: any) {
                         <td className="p-3">{entry.total_loads}</td>
                         <td className="p-3">{entry.total_tons}</td>
                         <td className="p-3">{entry.total_hours}</td>
-                        <td className="p-3">${entry.hourly_pay?.toLocaleString() ?? '--'}</td>
-                        <td className="p-3">${entry.load_pay?.toLocaleString() ?? '--'}</td>
-                        <td className="p-3">${entry.ton_pay?.toLocaleString() ?? '--'}</td>
-                        <td className="p-3">${entry.yard_pay?.toLocaleString() ?? '--'}</td>
-                        <td className="p-3">${entry.deductions?.toLocaleString() ?? '--'}</td>
-                        <td className="p-3 font-bold">${entry.total_pay?.toLocaleString() ?? '--'}</td>
-                        <td className="p-3 text-red-600 font-semibold">{entry.exception_count || 0}</td>
+                        <td className="p-3">
+                          ${entry.hourly_pay?.toLocaleString() ?? "--"}
+                        </td>
+                        <td className="p-3">
+                          ${entry.load_pay?.toLocaleString() ?? "--"}
+                        </td>
+                        <td className="p-3">
+                          ${entry.ton_pay?.toLocaleString() ?? "--"}
+                        </td>
+                        <td className="p-3">
+                          ${entry.yard_pay?.toLocaleString() ?? "--"}
+                        </td>
+                        <td className="p-3">
+                          ${entry.deductions?.toLocaleString() ?? "--"}
+                        </td>
+                        <td className="p-3 font-bold">
+                          ${entry.total_pay?.toLocaleString() ?? "--"}
+                        </td>
+                        <td className="p-3 text-red-600 font-semibold">
+                          {entry.exception_count || 0}
+                        </td>
                       </tr>
                     ))
                   )}

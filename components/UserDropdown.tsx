@@ -10,45 +10,57 @@ interface UserDropdownProps {
   onSignOut?: () => void;
 }
 
-export default function UserDropdown({ user, isAdmin, onSignOut }: UserDropdownProps) {
+export default function UserDropdown({
+  user,
+  isAdmin,
+  onSignOut,
+}: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Get user display name and initials - check profile first, then metadata
-  const displayName = user?.profile?.full_name || user?.user_metadata?.full_name || user?.email || "User";
-  const avatarUrl = user?.profile?.avatar_url || user?.user_metadata?.avatar_url;
-  
+  const displayName =
+    user?.profile?.full_name ||
+    user?.user_metadata?.full_name ||
+    user?.email ||
+    "User";
+  const avatarUrl =
+    user?.profile?.avatar_url || user?.user_metadata?.avatar_url;
+
   const getInitials = () => {
     const name = user?.profile?.full_name || user?.user_metadata?.full_name;
     if (name) {
       return name
-        .split(' ')
+        .split(" ")
         .map((n: string) => n[0])
-        .join('')
+        .join("")
         .toUpperCase()
         .slice(0, 2);
     }
     if (user?.email) {
       return user.email.slice(0, 2).toUpperCase();
     }
-    return 'U';
+    return "U";
   };
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleProfileClick = () => {
     setIsOpen(false);
-    window.location.href = '/profile';
+    window.location.href = "/profile";
   };
 
   const handleSignOut = () => {
@@ -65,28 +77,29 @@ export default function UserDropdown({ user, isAdmin, onSignOut }: UserDropdownP
         onClick={() => setIsOpen(!isOpen)}
       >
         <Avatar className="w-8 h-8">
-          <AvatarImage 
-            src={avatarUrl} 
-            alt={displayName}
-          />
+          <AvatarImage src={avatarUrl} alt={displayName} />
           <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
             {getInitials()}
           </AvatarFallback>
         </Avatar>
-        
+
         <div className="hidden sm:block text-left">
           <div className="text-sm font-medium text-gray-900">
-            {displayName.length > 20 ? `${displayName.slice(0, 20)}...` : displayName}
+            {displayName.length > 20
+              ? `${displayName.slice(0, 20)}...`
+              : displayName}
           </div>
           {isAdmin && (
-            <div className="text-xs text-yellow-600 font-medium">Administrator</div>
+            <div className="text-xs text-yellow-600 font-medium">
+              Administrator
+            </div>
           )}
         </div>
-        
-        <ChevronDown 
+
+        <ChevronDown
           className={`w-4 h-4 text-gray-500 transition-transform ${
-            isOpen ? 'rotate-180' : ''
-          }`} 
+            isOpen ? "rotate-180" : ""
+          }`}
         />
       </Button>
 
@@ -97,10 +110,7 @@ export default function UserDropdown({ user, isAdmin, onSignOut }: UserDropdownP
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <Avatar className="w-12 h-12">
-                <AvatarImage 
-                  src={avatarUrl} 
-                  alt={displayName}
-                />
+                <AvatarImage src={avatarUrl} alt={displayName} />
                 <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                   {getInitials()}
                 </AvatarFallback>
@@ -126,7 +136,7 @@ export default function UserDropdown({ user, isAdmin, onSignOut }: UserDropdownP
             <button
               onClick={() => {
                 setIsOpen(false);
-                window.location.href = '/settings';
+                window.location.href = "/settings";
               }}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
             >
@@ -138,7 +148,7 @@ export default function UserDropdown({ user, isAdmin, onSignOut }: UserDropdownP
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  window.location.href = '/dashboard#admin-management';
+                  window.location.href = "/dashboard#admin-management";
                 }}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >

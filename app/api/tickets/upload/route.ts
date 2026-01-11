@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
   const driver_uuid = formData.get("driver_uuid") as string;
 
   if (!file || !driver_uuid) {
-    return NextResponse.json({ error: "Missing file or driver_uuid" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing file or driver_uuid" },
+      { status: 400 },
+    );
   }
 
   // Generate a ticket_uuid and unique path
@@ -27,14 +30,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert ticket row
-  await supabase
-    .from("tickets")
-    .insert({
-      ticket_uuid,
-      driver_uuid,
-      file_url: objectPath,
-      created_at: new Date().toISOString(),
-    });
+  await supabase.from("tickets").insert({
+    ticket_uuid,
+    driver_uuid,
+    file_url: objectPath,
+    created_at: new Date().toISOString(),
+  });
 
   return NextResponse.json({ ticket_uuid, path: objectPath });
 }
@@ -43,6 +44,6 @@ function createServerAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 }

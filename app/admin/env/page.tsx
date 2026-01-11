@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 
 type EnvHealth = {
   ok: boolean;
@@ -39,8 +44,13 @@ export default function EnvHealthPage() {
           {data && (
             <div className="space-y-2">
               {Object.entries(data.env).map(([key, present]) => (
-                <div key={key} className="flex items-center justify-between border-b py-2">
-                  <span className="text-sm text-gray-700 font-medium">{key}</span>
+                <div
+                  key={key}
+                  className="flex items-center justify-between border-b py-2"
+                >
+                  <span className="text-sm text-gray-700 font-medium">
+                    {key}
+                  </span>
                   <span
                     className={
                       present
@@ -53,7 +63,8 @@ export default function EnvHealthPage() {
                 </div>
               ))}
               <p className="text-xs text-gray-500 mt-3">
-                This page only displays whether a variable is set. It does not reveal any secret values.
+                This page only displays whether a variable is set. It does not
+                reveal any secret values.
               </p>
             </div>
           )}

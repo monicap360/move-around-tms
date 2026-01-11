@@ -7,9 +7,7 @@ export default function PlantDetail({ params }: any) {
 
   return (
     <div className="p-10 flex flex-col gap-6">
-      <h1 className="text-3xl font-bold text-cyan-300">
-        Plant Details
-      </h1>
+      <h1 className="text-3xl font-bold text-cyan-300">Plant Details</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         <Tile href="upload-csv" title="Upload Tickets CSV" emoji="📄" />

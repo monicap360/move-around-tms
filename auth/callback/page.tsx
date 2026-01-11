@@ -9,7 +9,9 @@ export default function Callback() {
 
   useEffect(() => {
     const handle = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       // If the user is logged in, send them to the dashboard
       if (session) {
         router.replace("/dashboard");

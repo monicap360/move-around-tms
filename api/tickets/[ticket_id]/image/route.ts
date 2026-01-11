@@ -22,7 +22,10 @@ export async function GET(req: NextRequest, { params }: any) {
     .createSignedUrl(ticket.image_path, 60 * 60); // 1 hour
 
   if (urlError || !signed?.signedUrl) {
-    return NextResponse.json({ error: "Could not generate signed URL" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Could not generate signed URL" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ public_url: signed.signedUrl });
@@ -32,6 +35,6 @@ function createServerAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 }

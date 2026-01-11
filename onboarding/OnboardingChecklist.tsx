@@ -1,14 +1,14 @@
 // Reusable onboarding checklist UI
-import { useEffect, useState } from 'react';
-import { OnboardingStatus, OnboardingStep } from './onboarding.types';
-import { fetchOnboardingStatus, upsertOnboardingStatus } from './supabase';
+import { useEffect, useState } from "react";
+import { OnboardingStatus, OnboardingStep } from "./onboarding.types";
+import { fetchOnboardingStatus, upsertOnboardingStatus } from "./supabase";
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
-  profile: 'Complete Profile',
-  documents: 'Upload Documents',
-  training: 'Complete Training',
-  payment: 'Submit Payment',
-  compliance: 'Acknowledge Compliance',
+  profile: "Complete Profile",
+  documents: "Upload Documents",
+  training: "Complete Training",
+  payment: "Submit Payment",
+  compliance: "Acknowledge Compliance",
 };
 
 export default function OnboardingChecklist({ user_id }: { user_id: string }) {
@@ -16,7 +16,9 @@ export default function OnboardingChecklist({ user_id }: { user_id: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOnboardingStatus(user_id).then(setStatus).finally(() => setLoading(false));
+    fetchOnboardingStatus(user_id)
+      .then(setStatus)
+      .finally(() => setLoading(false));
   }, [user_id]);
 
   if (loading) return <div>Loading onboarding…</div>;
@@ -28,12 +30,18 @@ export default function OnboardingChecklist({ user_id }: { user_id: string }) {
       <ul className="space-y-2">
         {Object.entries(status.steps).map(([step, done]) => (
           <li key={step} className="flex items-center gap-2">
-            <span className={`w-4 h-4 rounded-full ${done ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+            <span
+              className={`w-4 h-4 rounded-full ${done ? "bg-green-500" : "bg-gray-300"}`}
+            ></span>
             <span>{STEP_LABELS[step as OnboardingStep]}</span>
           </li>
         ))}
       </ul>
-      {status.completed && <div className="mt-4 text-green-700 font-semibold">Onboarding Complete!</div>}
+      {status.completed && (
+        <div className="mt-4 text-green-700 font-semibold">
+          Onboarding Complete!
+        </div>
+      )}
     </div>
   );
 }

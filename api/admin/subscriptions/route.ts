@@ -4,13 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 export async function GET() {
   const supabase = createClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
+    process.env.SUPABASE_SERVICE_KEY!,
   );
 
   // Join organizations and subscriptions for admin view
-  const { data, error } = await supabase
-    .from("organizations")
-    .select(`
+  const { data, error } = await supabase.from("organizations").select(`
       id,
       name,
       plan_tier,
@@ -24,7 +22,8 @@ export async function GET() {
       )
     `);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Flatten subscriptions for easier UI
   const result = (data || []).map((org: any) => ({

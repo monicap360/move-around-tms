@@ -5,7 +5,7 @@
 ### Step 1: Update Supabase Dashboard (CRITICAL)
 
 1. **Go to**: https://supabase.com/dashboard/project/[your-project]/auth/url-configuration
-2. **Set Site URL to**: `https://app.movearoundtms.com` 
+2. **Set Site URL to**: `https://app.movearoundtms.com`
 3. **Add these Redirect URLs**:
    ```
    https://app.movearoundtms.com/auth/callback
@@ -38,6 +38,7 @@ npm run build:production
 ### Step 4: Test Production URLs
 
 After deployment, test these URLs:
+
 - https://app.movearoundtms.com/login
 - https://app.movearoundtms.com/auth-test
 - https://app.movearoundtms.com/
@@ -52,16 +53,19 @@ After deployment, test these URLs:
 ## 🔧 HOSTING PROVIDER SPECIFIC NOTES
 
 ### For SiteGround/cPanel:
+
 1. Upload files to `public_html` folder
 2. Set environment variables in cPanel → Node.js App
 3. Enable Node.js if not already enabled
 
 ### For Vercel:
+
 1. Connect GitHub repository
 2. Set environment variables in Vercel dashboard
 3. Deploy automatically on push
 
 ### For Netlify:
+
 1. Drag and drop build folder to Netlify
 2. Set environment variables in site settings
 3. Configure redirects for SPA

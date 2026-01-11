@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 
 type Ticket = {
   id: string;
@@ -20,8 +25,17 @@ type Ticket = {
   auto_matched: boolean;
   ocr_confidence: number | null;
   image_url: string | null;
-  drivers: { id: string; name: string; pay_type: string; tax_status: string } | null;
-  aggregate_partners: { id: string; name: string; logo_url: string | null } | null;
+  drivers: {
+    id: string;
+    name: string;
+    pay_type: string;
+    tax_status: string;
+  } | null;
+  aggregate_partners: {
+    id: string;
+    name: string;
+    logo_url: string | null;
+  } | null;
 };
 
 export default function ManagerReviewPage() {
@@ -74,7 +88,11 @@ export default function ManagerReviewPage() {
     }
   };
 
-  const handleAction = async (ticketId: string, action: string, extraData?: any) => {
+  const handleAction = async (
+    ticketId: string,
+    action: string,
+    extraData?: any,
+  ) => {
     setError("");
     setSuccess("");
     try {
@@ -168,10 +186,14 @@ export default function ManagerReviewPage() {
       )}
 
       {/* Tickets List */}
-      {loading && <p className="text-gray-500 text-center">Loading tickets...</p>}
+      {loading && (
+        <p className="text-gray-500 text-center">Loading tickets...</p>
+      )}
 
       {!loading && adminToken && tickets.length === 0 && (
-        <p className="text-gray-500 text-center py-8">No pending tickets to review</p>
+        <p className="text-gray-500 text-center py-8">
+          No pending tickets to review
+        </p>
       )}
 
       <div className="space-y-4">
@@ -186,7 +208,10 @@ export default function ManagerReviewPage() {
                   </h3>
                   {ticket.aggregate_partners && (
                     <p className="text-sm text-gray-600">
-                      Partner: <span className="font-semibold">{ticket.aggregate_partners.name}</span>
+                      Partner:{" "}
+                      <span className="font-semibold">
+                        {ticket.aggregate_partners.name}
+                      </span>
                     </p>
                   )}
                   <p className="text-sm text-gray-600">
@@ -197,53 +222,78 @@ export default function ManagerReviewPage() {
                       <input
                         type="text"
                         value={editForm.material}
-                        onChange={(e) => setEditForm({ ...editForm, material: e.target.value })}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, material: e.target.value })
+                        }
                         className="w-full px-2 py-1 border rounded text-sm"
                         placeholder="Material"
                       />
                       {/* Editable quantity field based on pay type */}
                       {(() => {
-                        const payType = ticket.drivers?.pay_type || ticket.unit_type;
-                        if (payType === 'per_yard') {
+                        const payType =
+                          ticket.drivers?.pay_type || ticket.unit_type;
+                        if (payType === "per_yard") {
                           return (
                             <input
                               type="number"
                               step="0.01"
-                              value={editForm.yards ?? editForm.quantity ?? ''}
-                              onChange={(e) => setEditForm({ ...editForm, yards: parseFloat(e.target.value) })}
+                              value={editForm.yards ?? editForm.quantity ?? ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  yards: parseFloat(e.target.value),
+                                })
+                              }
                               className="w-full px-2 py-1 border rounded text-sm"
                               placeholder="Yards"
                             />
                           );
-                        } else if (payType === 'per_ton') {
+                        } else if (payType === "per_ton") {
                           return (
                             <input
                               type="number"
                               step="0.01"
-                              value={editForm.net_tons ?? editForm.quantity ?? ''}
-                              onChange={(e) => setEditForm({ ...editForm, net_tons: parseFloat(e.target.value) })}
+                              value={
+                                editForm.net_tons ?? editForm.quantity ?? ""
+                              }
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  net_tons: parseFloat(e.target.value),
+                                })
+                              }
                               className="w-full px-2 py-1 border rounded text-sm"
                               placeholder="Net Tons"
                             />
                           );
-                        } else if (payType === 'per_load') {
+                        } else if (payType === "per_load") {
                           return (
                             <input
                               type="number"
                               step="1"
-                              value={editForm.loads ?? editForm.quantity ?? ''}
-                              onChange={(e) => setEditForm({ ...editForm, loads: parseInt(e.target.value) })}
+                              value={editForm.loads ?? editForm.quantity ?? ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  loads: parseInt(e.target.value),
+                                })
+                              }
                               className="w-full px-2 py-1 border rounded text-sm"
                               placeholder="Loads"
                             />
                           );
-                        } else if (payType === 'hourly') {
+                        } else if (payType === "hourly") {
                           return (
                             <input
                               type="number"
                               step="0.01"
-                              value={editForm.hours ?? editForm.quantity ?? ''}
-                              onChange={(e) => setEditForm({ ...editForm, hours: parseFloat(e.target.value) })}
+                              value={editForm.hours ?? editForm.quantity ?? ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  hours: parseFloat(e.target.value),
+                                })
+                              }
                               className="w-full px-2 py-1 border rounded text-sm"
                               placeholder="Hours"
                             />
@@ -253,8 +303,13 @@ export default function ManagerReviewPage() {
                             <input
                               type="number"
                               step="0.01"
-                              value={editForm.quantity ?? ''}
-                              onChange={(e) => setEditForm({ ...editForm, quantity: parseFloat(e.target.value) })}
+                              value={editForm.quantity ?? ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  quantity: parseFloat(e.target.value),
+                                })
+                              }
                               className="w-full px-2 py-1 border rounded text-sm"
                               placeholder="Quantity"
                             />
@@ -265,10 +320,14 @@ export default function ManagerReviewPage() {
                   ) : (
                     <>
                       <p className="text-sm text-gray-600">
-                        Material: <span className="font-semibold">{ticket.material}</span>
+                        Material:{" "}
+                        <span className="font-semibold">{ticket.material}</span>
                       </p>
                       <p className="text-sm text-gray-600">
-                        Quantity: <span className="font-semibold">{ticket.quantity} {ticket.unit_type}</span>
+                        Quantity:{" "}
+                        <span className="font-semibold">
+                          {ticket.quantity} {ticket.unit_type}
+                        </span>
                       </p>
                     </>
                   )}
@@ -282,10 +341,14 @@ export default function ManagerReviewPage() {
                 {/* Middle: Driver & Rates */}
                 <div className="space-y-2">
                   <div>
-                    <label className="text-xs font-semibold text-gray-700">Assigned Driver</label>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Assigned Driver
+                    </label>
                     {ticket.drivers ? (
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold">{ticket.drivers.name}</p>
+                        <p className="text-sm font-semibold">
+                          {ticket.drivers.name}
+                        </p>
                         {ticket.auto_matched && (
                           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
                             Auto-matched ({ticket.driver_matched_confidence}%)
@@ -306,30 +369,54 @@ export default function ManagerReviewPage() {
                     {editingTicket === ticket.id ? (
                       <>
                         <div>
-                          <label className="text-xs text-gray-600">Pay Rate</label>
+                          <label className="text-xs text-gray-600">
+                            Pay Rate
+                          </label>
                           <input
                             type="number"
                             step="0.01"
                             value={editForm.pay_rate}
-                            onChange={(e) => setEditForm({ ...editForm, pay_rate: parseFloat(e.target.value) })}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                pay_rate: parseFloat(e.target.value),
+                              })
+                            }
                             className="w-full px-2 py-1 border rounded text-sm"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600">Bill Rate</label>
+                          <label className="text-xs text-gray-600">
+                            Bill Rate
+                          </label>
                           <input
                             type="number"
                             step="0.01"
                             value={editForm.bill_rate}
-                            onChange={(e) => setEditForm({ ...editForm, bill_rate: parseFloat(e.target.value) })}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                bill_rate: parseFloat(e.target.value),
+                              })
+                            }
                             className="w-full px-2 py-1 border rounded text-sm"
                           />
                         </div>
                       </>
                     ) : (
                       <>
-                        <p>Pay Rate: <span className="font-semibold">${ticket.pay_rate}/unit</span></p>
-                        <p>Bill Rate: <span className="font-semibold">${ticket.bill_rate}/unit</span></p>
+                        <p>
+                          Pay Rate:{" "}
+                          <span className="font-semibold">
+                            ${ticket.pay_rate}/unit
+                          </span>
+                        </p>
+                        <p>
+                          Bill Rate:{" "}
+                          <span className="font-semibold">
+                            ${ticket.bill_rate}/unit
+                          </span>
+                        </p>
                       </>
                     )}
                   </div>
@@ -340,29 +427,94 @@ export default function ManagerReviewPage() {
                   <div className="text-sm space-y-1 bg-gray-50 p-3 rounded">
                     {/* Pay preview formula */}
                     {(() => {
-                      const payType = ticket.drivers?.pay_type || ticket.unit_type;
-                      if (payType === 'per_yard') {
-                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} yards × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
-                      } else if (payType === 'per_ton') {
-                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} tons × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
-                      } else if (payType === 'per_load') {
-                        return <p className="text-blue-700">Pay Preview: {ticket.pay_rate} per load = <b>${ticket.pay_rate.toFixed(2)}</b></p>;
-                      } else if (payType === 'hourly') {
-                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} hours × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
-                      } else if (payType === 'percentage') {
-                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} × {ticket.pay_rate}% = <b>${((ticket.quantity * ticket.pay_rate) / 100).toFixed(2)}</b></p>;
+                      const payType =
+                        ticket.drivers?.pay_type || ticket.unit_type;
+                      if (payType === "per_yard") {
+                        return (
+                          <p className="text-blue-700">
+                            Pay Preview: {ticket.quantity} yards × $
+                            {ticket.pay_rate} ={" "}
+                            <b>
+                              ${(ticket.quantity * ticket.pay_rate).toFixed(2)}
+                            </b>
+                          </p>
+                        );
+                      } else if (payType === "per_ton") {
+                        return (
+                          <p className="text-blue-700">
+                            Pay Preview: {ticket.quantity} tons × $
+                            {ticket.pay_rate} ={" "}
+                            <b>
+                              ${(ticket.quantity * ticket.pay_rate).toFixed(2)}
+                            </b>
+                          </p>
+                        );
+                      } else if (payType === "per_load") {
+                        return (
+                          <p className="text-blue-700">
+                            Pay Preview: {ticket.pay_rate} per load ={" "}
+                            <b>${ticket.pay_rate.toFixed(2)}</b>
+                          </p>
+                        );
+                      } else if (payType === "hourly") {
+                        return (
+                          <p className="text-blue-700">
+                            Pay Preview: {ticket.quantity} hours × $
+                            {ticket.pay_rate} ={" "}
+                            <b>
+                              ${(ticket.quantity * ticket.pay_rate).toFixed(2)}
+                            </b>
+                          </p>
+                        );
+                      } else if (payType === "percentage") {
+                        return (
+                          <p className="text-blue-700">
+                            Pay Preview: {ticket.quantity} × {ticket.pay_rate}%
+                            ={" "}
+                            <b>
+                              $
+                              {(
+                                (ticket.quantity * ticket.pay_rate) /
+                                100
+                              ).toFixed(2)}
+                            </b>
+                          </p>
+                        );
                       } else {
-                        return <p className="text-blue-700">Pay Preview: {ticket.quantity} × ${ticket.pay_rate} = <b>${(ticket.quantity * ticket.pay_rate).toFixed(2)}</b></p>;
+                        return (
+                          <p className="text-blue-700">
+                            Pay Preview: {ticket.quantity} × ${ticket.pay_rate}{" "}
+                            ={" "}
+                            <b>
+                              ${(ticket.quantity * ticket.pay_rate).toFixed(2)}
+                            </b>
+                          </p>
+                        );
                       }
                     })()}
-                    <p>Pay: <span className="font-semibold">${ticket.total_pay.toFixed(2)}</span></p>
-                    <p>Bill: <span className="font-semibold">${ticket.total_bill.toFixed(2)}</span></p>
+                    <p>
+                      Pay:{" "}
+                      <span className="font-semibold">
+                        ${ticket.total_pay.toFixed(2)}
+                      </span>
+                    </p>
+                    <p>
+                      Bill:{" "}
+                      <span className="font-semibold">
+                        ${ticket.total_bill.toFixed(2)}
+                      </span>
+                    </p>
                     <p className="text-green-700">
-                      Profit: <span className="font-bold">${ticket.total_profit.toFixed(2)}</span>
+                      Profit:{" "}
+                      <span className="font-bold">
+                        ${ticket.total_profit.toFixed(2)}
+                      </span>
                     </p>
                     {/* Needs review flag */}
                     {ticket.quantity === 0 && (
-                      <p className="text-red-600 font-bold">Needs Review: Quantity is zero</p>
+                      <p className="text-red-600 font-bold">
+                        Needs Review: Quantity is zero
+                      </p>
                     )}
                   </div>
 
@@ -397,8 +549,12 @@ export default function ManagerReviewPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Mark this ticket as VOID (excluded from payroll)?')) {
-                            handleAction(ticket.id, 'void')
+                          if (
+                            confirm(
+                              "Mark this ticket as VOID (excluded from payroll)?",
+                            )
+                          ) {
+                            handleAction(ticket.id, "void");
                           }
                         }}
                         className="w-full px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded transition"
@@ -409,7 +565,9 @@ export default function ManagerReviewPage() {
                         <select
                           onChange={(e) => {
                             if (e.target.value) {
-                              handleAction(ticket.id, "reassign", { driverId: e.target.value });
+                              handleAction(ticket.id, "reassign", {
+                                driverId: e.target.value,
+                              });
                             }
                           }}
                           className="flex-1 px-2 py-2 border rounded text-sm"
@@ -431,8 +589,12 @@ export default function ManagerReviewPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Permanently DELETE this ticket? This cannot be undone.')) {
-                            handleAction(ticket.id, 'delete')
+                          if (
+                            confirm(
+                              "Permanently DELETE this ticket? This cannot be undone.",
+                            )
+                          ) {
+                            handleAction(ticket.id, "delete");
                           }
                         }}
                         className="w-full px-3 py-2 bg-red-800 hover:bg-red-900 text-white text-sm rounded transition"

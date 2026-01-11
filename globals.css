@@ -1,22 +1,21 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* MoveAround Galaxy Theme (with customer customization) */
 :root {
-  --color-primary: #2D2A4A;
-  --color-secondary: #6C63FF;
-  --color-accent: #00FFD0;
+  --color-primary: #2d2a4a;
+  --color-secondary: #6c63ff;
+  --color-accent: #00ffd0;
   --color-background: #181828;
-  --color-surface: #23233A;
-  --color-text: #FFFFFF;
-  --color-muted: #A0A0C0;
-  --color-success: #00FFB0;
-  --color-warning: #FFD600;
-  --color-error: #FF4B6E;
-  --color-info: #6C63FF;
-  --color-border: #35355A;
+  --color-surface: #23233a;
+  --color-text: #ffffff;
+  --color-muted: #a0a0c0;
+  --color-success: #00ffb0;
+  --color-warning: #ffd600;
+  --color-error: #ff4b6e;
+  --color-info: #6c63ff;
+  --color-border: #35355a;
 }
 
 /* Customer overrides: add a .customer-theme class to <body> and override any variable */
@@ -157,12 +156,16 @@ body {
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
 }
 
 .card-professional:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .card-header-professional {

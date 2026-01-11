@@ -10,13 +10,13 @@ export async function POST(req: NextRequest) {
     if (!ticketId) {
       return NextResponse.json(
         { error: "ticketId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const supabase = createClient(
       process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!
+      process.env.SUPABASE_SERVICE_KEY!,
     );
 
     // Get the ticket details
@@ -27,10 +27,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (ticketErr || !ticket) {
-      return NextResponse.json(
-        { error: "Ticket not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
     // If CSV URL provided, fetch and parse it
@@ -38,12 +35,12 @@ export async function POST(req: NextRequest) {
     if (csvUrl) {
       const csvResponse = await fetch(csvUrl);
       const csvText = await csvResponse.text();
-      
+
       const parsed = Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
       });
-      
+
       csvData = parsed.data;
     }
 
@@ -62,7 +59,8 @@ export async function POST(req: NextRequest) {
             csv_quantity: match.quantity,
             csv_material: match.material,
             csv_date: match.date,
-            quantity_match: Math.abs(parseFloat(match.quantity) - ticket.quantity) < 0.1,
+            quantity_match:
+              Math.abs(parseFloat(match.quantity) - ticket.quantity) < 0.1,
             date_match: match.date === ticket.ticket_date,
             matched_at: new Date().toISOString(),
           },
@@ -103,7 +101,7 @@ export async function POST(req: NextRequest) {
     console.error("CSV reconciliation error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to reconcile" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -114,7 +112,7 @@ function findTicketInCsv(ticket: any, csvData: any[]): any | null {
     (row) =>
       row.ticket_number?.trim() === ticket.ticket_number?.trim() ||
       row.TicketNumber?.trim() === ticket.ticket_number?.trim() ||
-      row["Ticket #"]?.trim() === ticket.ticket_number?.trim()
+      row["Ticket #"]?.trim() === ticket.ticket_number?.trim(),
   );
 
   if (match) return match;
@@ -129,7 +127,7 @@ function findTicketInCsv(ticket: any, csvData: any[]): any | null {
     const quantityMatch =
       Math.abs(
         parseFloat(row.quantity || row.Quantity || row.tons || 0) -
-          ticket.quantity
+          ticket.quantity,
       ) < 0.1;
 
     const materialMatch =
@@ -148,7 +146,7 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = createClient(
       process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!
+      process.env.SUPABASE_SERVICE_KEY!,
     );
 
     // Get all unreconciled missing tickets
@@ -176,7 +174,7 @@ export async function GET(req: NextRequest) {
                 ticketId: ticket.id,
                 csvUrl: partner.csv_export_url,
               }),
-            })
+            }),
           );
           const result = await response.json();
           results.push({ ticketId: ticket.id, ...result });
@@ -195,7 +193,7 @@ export async function GET(req: NextRequest) {
     console.error("Batch reconciliation error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to batch reconcile" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

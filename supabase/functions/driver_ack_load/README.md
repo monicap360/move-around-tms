@@ -3,6 +3,7 @@
 Driver acknowledges a load assignment.
 
 ## Requirements
+
 - Must be authenticated via Supabase Auth
 - Driver must exist in `drivers` table with `auth_user_id`
 - Load must exist in `loads` table and be assigned to driver
@@ -19,12 +20,12 @@ const form = new FormData();
 form.append("load_id", "YOUR_LOAD_ID");
 
 await fetch(
-  "https://<project>.functions.supabase.co/driver_ack_load",
-  {
-    method: "POST",
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    body: form,
-  }
+"https://<project>.functions.supabase.co/driver_ack_load",
+{
+method: "POST",
+headers: { Authorization: `Bearer ${session.access_token}` },
+body: form,
+}
 );
 
 🚀 Ready for Deployment

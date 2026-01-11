@@ -42,7 +42,10 @@ export default function TruckBrandingPage({ params }) {
       const res = await fetch("/api/upload/logo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ driver_uuid: params.driver_uuid, file_name: fileName }),
+        body: JSON.stringify({
+          driver_uuid: params.driver_uuid,
+          file_name: fileName,
+        }),
       });
       const data = await res.json();
       if (!data.url) throw new Error("Failed to get upload URL");

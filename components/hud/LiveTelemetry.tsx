@@ -3,5 +3,5 @@ export default function LiveTelemetry() {
     <div className="text-sm text-muted-foreground">
       Live telemetry coming soon.
     </div>
-  )
+  );
 }

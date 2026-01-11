@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface InputProps {
   type?: string;
@@ -17,7 +17,7 @@ interface InputProps {
   readOnly?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ 
+export const Input: React.FC<InputProps> = ({
   type = "text",
   placeholder,
   value,
@@ -31,7 +31,7 @@ export const Input: React.FC<InputProps> = ({
   min,
   max,
   step,
-  readOnly
+  readOnly,
 }) => {
   return (
     <input

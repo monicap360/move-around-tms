@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -18,7 +17,9 @@ export default function BillingSubscriptionPage() {
   const [error, setError] = useState("");
 
   const handleSelect = (id: string) => {
-    setSelected(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id]);
+    setSelected((sel) =>
+      sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id],
+    );
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,10 +34,14 @@ export default function BillingSubscriptionPage() {
     setError("");
     setSuccess(false);
     try {
-      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
+      const user = supabase.auth.getUser
+        ? (await supabase.auth.getUser()).data.user
+        : null;
       const userId = user?.id || "anonymous";
       const path = `zelle-upgrades/${userId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("billing").upload(path, file);
+      const { error: uploadError } = await supabase.storage
+        .from("billing")
+        .upload(path, file);
       if (uploadError) throw uploadError;
       // Insert a record in a 'payments' table for admin review
       await supabase.from("payments").insert({
@@ -59,23 +64,50 @@ export default function BillingSubscriptionPage() {
 
   return (
     <main className="max-w-2xl mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-4">Manage Subscription & Upgrades</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        Manage Subscription & Upgrades
+      </h1>
       <div className="border rounded p-4 bg-white shadow mb-6">
         <h2 className="text-lg font-semibold mb-2">Upgrade/Add-Ons</h2>
         <ul className="mb-4">
-          {ADDONS.map(a => (
+          {ADDONS.map((a) => (
             <li key={a.id} className="flex items-center mb-2">
-              <input type="checkbox" id={a.id} checked={selected.includes(a.id)} onChange={() => handleSelect(a.id)} className="mr-2" />
-              <label htmlFor={a.id} className="flex-1 cursor-pointer">{a.label} <span className="text-gray-500">(${a.price} one-time)</span></label>
+              <input
+                type="checkbox"
+                id={a.id}
+                checked={selected.includes(a.id)}
+                onChange={() => handleSelect(a.id)}
+                className="mr-2"
+              />
+              <label htmlFor={a.id} className="flex-1 cursor-pointer">
+                {a.label}{" "}
+                <span className="text-gray-500">(${a.price} one-time)</span>
+              </label>
             </li>
           ))}
         </ul>
-        <div className="mb-2">Send the total amount for your selected upgrades to <span className="font-bold text-blue-700">Zelle 409-392-9626</span> and upload your payment screenshot below.</div>
-        <input type="file" className="mb-2" accept="image/*,application/pdf" onChange={handleFileChange} />
-        <Button onClick={handleUpgrade} disabled={!file || selected.length === 0 || uploading}>
+        <div className="mb-2">
+          Send the total amount for your selected upgrades to{" "}
+          <span className="font-bold text-blue-700">Zelle 409-392-9626</span>{" "}
+          and upload your payment screenshot below.
+        </div>
+        <input
+          type="file"
+          className="mb-2"
+          accept="image/*,application/pdf"
+          onChange={handleFileChange}
+        />
+        <Button
+          onClick={handleUpgrade}
+          disabled={!file || selected.length === 0 || uploading}
+        >
           {uploading ? "Uploading..." : "Submit Upgrade Request"}
         </Button>
-        {success && <div className="text-green-600 mt-2">Upgrade request submitted! Awaiting admin approval.</div>}
+        {success && (
+          <div className="text-green-600 mt-2">
+            Upgrade request submitted! Awaiting admin approval.
+          </div>
+        )}
         {error && <div className="text-red-600 mt-2">{error}</div>}
       </div>
     </main>

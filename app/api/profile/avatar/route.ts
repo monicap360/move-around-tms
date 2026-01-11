@@ -14,46 +14,52 @@ export async function POST(req: Request) {
 
   try {
     const formData = await req.formData();
-    const file = formData.get('avatar') as File;
+    const file = formData.get("avatar") as File;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: "File must be an image" }, { status: 400 });
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "File must be an image" },
+        { status: 400 },
+      );
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "File size must be less than 5MB" }, { status: 400 });
+      return NextResponse.json(
+        { error: "File size must be less than 5MB" },
+        { status: 400 },
+      );
     }
 
     // Create file path
-    const fileExtension = file.name.split('.').pop();
+    const fileExtension = file.name.split(".").pop();
     const fileName = `${user.id}.${fileExtension}`;
     const filePath = `avatars/${fileName}`;
 
     // Delete existing avatar if it exists
     const { data: existingFiles } = await supabase.storage
-      .from('company_assets')
-      .list('avatars', { search: user.id });
+      .from("company_assets")
+      .list("avatars", { search: user.id });
 
     if (existingFiles && existingFiles.length > 0) {
       for (const existingFile of existingFiles) {
         await supabase.storage
-          .from('company_assets')
+          .from("company_assets")
           .remove([`avatars/${existingFile.name}`]);
       }
     }
 
     // Upload new avatar
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('company_assets')
+      .from("company_assets")
       .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true
+        cacheControl: "3600",
+        upsert: true,
       });
 
     if (uploadError) {
@@ -61,9 +67,9 @@ export async function POST(req: Request) {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('company_assets')
-      .getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("company_assets").getPublicUrl(filePath);
 
     // Update user metadata with avatar URL
     const { error: updateError } = await supabase.auth.admin.updateUserById(
@@ -71,24 +77,23 @@ export async function POST(req: Request) {
       {
         user_metadata: {
           ...user.user_metadata,
-          avatar_url: publicUrl
-        }
-      }
+          avatar_url: publicUrl,
+        },
+      },
     );
 
     if (updateError) {
-      console.error('Failed to update user metadata:', updateError);
+      console.error("Failed to update user metadata:", updateError);
       // Don't fail the request if metadata update fails
     }
 
     return NextResponse.json({
       success: true,
       avatar_url: publicUrl,
-      path: filePath
+      path: filePath,
     });
-
   } catch (error) {
-    console.error('Avatar upload error:', error);
+    console.error("Avatar upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
@@ -107,18 +112,21 @@ export async function DELETE() {
   try {
     // Find and delete user's avatar files
     const { data: existingFiles } = await supabase.storage
-      .from('company_assets')
-      .list('avatars', { search: user.id });
+      .from("company_assets")
+      .list("avatars", { search: user.id });
 
     if (existingFiles && existingFiles.length > 0) {
-      const filesToRemove = existingFiles.map(file => `avatars/${file.name}`);
-      
+      const filesToRemove = existingFiles.map((file) => `avatars/${file.name}`);
+
       const { error: deleteError } = await supabase.storage
-        .from('company_assets')
+        .from("company_assets")
         .remove(filesToRemove);
 
       if (deleteError) {
-        return NextResponse.json({ error: deleteError.message }, { status: 500 });
+        return NextResponse.json(
+          { error: deleteError.message },
+          { status: 500 },
+        );
       }
     }
 
@@ -128,19 +136,18 @@ export async function DELETE() {
       {
         user_metadata: {
           ...user.user_metadata,
-          avatar_url: null
-        }
-      }
+          avatar_url: null,
+        },
+      },
     );
 
     if (updateError) {
-      console.error('Failed to update user metadata:', updateError);
+      console.error("Failed to update user metadata:", updateError);
     }
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
-    console.error('Avatar delete error:', error);
+    console.error("Avatar delete error:", error);
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }

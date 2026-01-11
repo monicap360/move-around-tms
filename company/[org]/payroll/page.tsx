@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import Card from "@/components/ui/Card";
-import { Calendar, DollarSign, AlertTriangle, ChevronRight } from "lucide-react";
+import {
+  Calendar,
+  DollarSign,
+  AlertTriangle,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function PayrollHome({ params }: any) {
@@ -47,11 +52,16 @@ export default function PayrollHome({ params }: any) {
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-green-600" />
-                    <span className="text-lg font-bold">${week.total_pay?.toLocaleString() ?? '--'}</span>
+                    <span className="text-lg font-bold">
+                      ${week.total_pay?.toLocaleString() ?? "--"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-500" />
-                    <span className="text-sm font-semibold text-red-600">{week.exception_count} Exception{week.exception_count === 1 ? '' : 's'}</span>
+                    <span className="text-sm font-semibold text-red-600">
+                      {week.exception_count} Exception
+                      {week.exception_count === 1 ? "" : "s"}
+                    </span>
                   </div>
                   <div className="flex justify-end">
                     <ChevronRight className="w-5 h-5 text-gray-400" />

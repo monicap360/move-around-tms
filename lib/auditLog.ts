@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -7,7 +7,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function logAuditAction({ userId, action, details }) {
   // details: { [key: string]: any }
-  const { error } = await supabase.from('audit_log').insert([
+  const { error } = await supabase.from("audit_log").insert([
     {
       user_id: userId || null,
       action,

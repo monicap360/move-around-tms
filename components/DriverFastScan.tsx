@@ -5,7 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 export default function DriverFastScan() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [ocrStatus, setOcrStatus] = useState<"idle"|"uploading"|"processing"|"complete">("idle");
+  const [ocrStatus, setOcrStatus] = useState<
+    "idle" | "uploading" | "processing" | "complete"
+  >("idle");
   const [ocrData, setOcrData] = useState<any>(null);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -21,7 +23,9 @@ export default function DriverFastScan() {
       // 1. Create ticket in DB
       const { data: ticket, error: ticketError } = await supabase
         .from("tickets")
-        .insert({ /* driver_id, organization_id, load_id: fill in from session/context */ })
+        .insert({
+          /* driver_id, organization_id, load_id: fill in from session/context */
+        })
         .select()
         .single();
       if (ticketError || !ticket) {
@@ -61,7 +65,9 @@ export default function DriverFastScan() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#F6F7F9]">
       <div className="w-full max-w-md bg-white rounded-lg shadow p-6 flex flex-col items-center">
-        <h1 className="text-2xl font-bold text-[#005BBB] mb-4">Ronyx FastScan™</h1>
+        <h1 className="text-2xl font-bold text-[#005BBB] mb-4">
+          Ronyx FastScan™
+        </h1>
         <p className="text-sm text-gray-500 mb-4">Powered by MoveAround TMS</p>
         <input
           type="file"
@@ -77,14 +83,21 @@ export default function DriverFastScan() {
           onClick={() => fileInput.current?.click()}
           disabled={uploading || ocrStatus === "processing"}
         >
-          {uploading ? "Uploading..." : ocrStatus === "processing" ? "Processing..." : "Scan Ticket (Camera)"}
+          {uploading
+            ? "Uploading..."
+            : ocrStatus === "processing"
+              ? "Processing..."
+              : "Scan Ticket (Camera)"}
         </button>
-        {message && <div className="text-green-700 text-center mb-2">{message}</div>}
+        {message && (
+          <div className="text-green-700 text-center mb-2">{message}</div>
+        )}
         {ocrStatus === "complete" && ocrData && (
           <div className="w-full mt-4">
             {/* Display extracted fields in large boxes */}
             <div className="bg-[#F6F7F9] rounded p-4 mb-2 text-lg">
-              <span className="font-bold">Material:</span> {ocrData.material_name}
+              <span className="font-bold">Material:</span>{" "}
+              {ocrData.material_name}
             </div>
             <div className="bg-[#F6F7F9] rounded p-4 mb-2 text-lg">
               <span className="font-bold">Tons:</span> {ocrData.tons}
@@ -93,7 +106,9 @@ export default function DriverFastScan() {
               <span className="font-bold">Total:</span> ${ocrData.total_amount}
             </div>
             <div className="flex items-center justify-center mt-4">
-              <span className="inline-block bg-green-500 text-white rounded-full px-4 py-2 text-lg font-bold">✔ OCR Complete</span>
+              <span className="inline-block bg-green-500 text-white rounded-full px-4 py-2 text-lg font-bold">
+                ✔ OCR Complete
+              </span>
             </div>
           </div>
         )}

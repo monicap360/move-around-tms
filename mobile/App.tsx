@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, Image, Alert } from 'react-native';
-import * as Network from 'expo-network';
-import * as Notifications from 'expo-notifications';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from "react";
+import { View, Text, Button, Image, Alert } from "react-native";
+import * as Network from "expo-network";
+import * as Notifications from "expo-notifications";
+import * as ImagePicker from "expo-image-picker";
 
 export default function App() {
   const [offline, setOffline] = useState(false);
@@ -24,7 +24,7 @@ export default function App() {
   useEffect(() => {
     async function registerForPush() {
       const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== "granted") return;
       const tokenData = await Notifications.getExpoPushTokenAsync();
       setPushToken(tokenData.data);
     }
@@ -39,22 +39,35 @@ export default function App() {
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setScannedImage(result.assets[0].uri);
-      Alert.alert('Document scanned!', 'Image saved locally.');
+      Alert.alert("Document scanned!", "Image saved locally.");
     }
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold' }}>MoveAround TMS Mobile</Text>
-      <Text style={{ marginTop: 16, color: offline ? 'red' : 'green' }}>
-        {offline ? 'Offline Mode: No Connection' : 'Online'}
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 24,
+      }}
+    >
+      <Text style={{ fontSize: 24, fontWeight: "bold" }}>
+        MoveAround TMS Mobile
+      </Text>
+      <Text style={{ marginTop: 16, color: offline ? "red" : "green" }}>
+        {offline ? "Offline Mode: No Connection" : "Online"}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 16 }}>
-        Push Token: {pushToken ? pushToken.slice(0, 16) + '...' : 'Registering...'}
+        Push Token:{" "}
+        {pushToken ? pushToken.slice(0, 16) + "..." : "Registering..."}
       </Text>
       <Button title="Scan Document" onPress={scanDocument} />
       {scannedImage && (
-        <Image source={{ uri: scannedImage }} style={{ width: 200, height: 200, marginTop: 16, borderRadius: 8 }} />
+        <Image
+          source={{ uri: scannedImage }}
+          style={{ width: 200, height: 200, marginTop: 16, borderRadius: 8 }}
+        />
       )}
     </View>
   );

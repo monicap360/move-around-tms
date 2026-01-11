@@ -10,7 +10,7 @@ export default function ComplianceCalendar({ data, onDayClick }) {
   // For now, render a simple grid by week (Mon-Sun)
   // Color: green (all compliant), yellow (mixed), red (all noncompliant)
   // This is a placeholder; can be replaced with a calendar/heatmap lib
-  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   // Group data by week
   const weeks = [];
   let week = [];
@@ -44,7 +44,11 @@ export default function ComplianceCalendar({ data, onDayClick }) {
       <table className="border text-xs">
         <thead>
           <tr>
-            {days.map(day => <th key={day} className="border px-2 py-1">{day}</th>)}
+            {days.map((day) => (
+              <th key={day} className="border px-2 py-1">
+                {day}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -55,7 +59,9 @@ export default function ComplianceCalendar({ data, onDayClick }) {
                   key={j}
                   className={`border w-12 h-12 text-center cursor-pointer ${getColor(d)}`}
                   onClick={() => d && onDayClick && onDayClick(d.date)}
-                  title={d ? `${d.date}: ${d.compliant}/${d.total} compliant` : ""}
+                  title={
+                    d ? `${d.date}: ${d.compliant}/${d.total} compliant` : ""
+                  }
                 >
                   {d ? new Date(d.date).getDate() : ""}
                 </td>

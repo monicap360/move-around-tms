@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { autoScheduleLoads } from "../lib/scheduler";
 
 export default function SchedulerPage() {
@@ -9,11 +14,13 @@ export default function SchedulerPage() {
   const runScheduler = async () => {
     // call server via API in a future step; for now call the helper directly (will fail in browser if supabase client is server-only)
     try {
-      const result = await fetch('/api/run-scheduler', { method: 'POST' }).then(r => r.json())
-      setLog(result.assignments || [])
+      const result = await fetch("/api/run-scheduler", { method: "POST" }).then(
+        (r) => r.json(),
+      );
+      setLog(result.assignments || []);
     } catch (err) {
-      console.error(err)
-      setLog([])
+      console.error(err);
+      setLog([]);
     }
   };
 
@@ -45,8 +52,12 @@ export default function SchedulerPage() {
                   <td className="border px-3 py-2">{a.driver}</td>
                   <td className="border px-3 py-2">{a.truck}</td>
                   <td className="border px-3 py-2 space-x-2">
-                    <button className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Reassign</button>
-                    <button className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Remove</button>
+                    <button className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">
+                      Reassign
+                    </button>
+                    <button className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                      Remove
+                    </button>
                   </td>
                 </tr>
               ))}

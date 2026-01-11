@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(req: Request) {
   const supabase = createClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY! // bypass RLS
+    process.env.SUPABASE_SERVICE_KEY!, // bypass RLS
   );
 
   const { organization_id, type, days } = await req.json();
@@ -40,16 +40,14 @@ export async function POST(req: Request) {
     .eq("organization_id", organization_id);
 
   // Log it
-  await supabase
-    .from("override_log")
-    .insert([
-      {
-        organization_id,
-        override_type: logType,
-        days: logDays,
-        expires_at: logExpires
-      }
-    ]);
+  await supabase.from("override_log").insert([
+    {
+      organization_id,
+      override_type: logType,
+      days: logDays,
+      expires_at: logExpires,
+    },
+  ]);
 
   return NextResponse.json({ success: true });
 }

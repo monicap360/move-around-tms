@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 type Doc = {
   id: string;
@@ -60,7 +65,10 @@ export default function ReviewDocsPage() {
     setSuccess("");
     const res = await fetch("/api/admin/hr/review-doc", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
       body: JSON.stringify({ documentId, action, ...payload }),
     });
     const data = await res.json();
@@ -76,7 +84,9 @@ export default function ReviewDocsPage() {
       {!adminToken && (
         <Card className="shadow-lg border bg-yellow-50 border-yellow-200">
           <CardContent className="pt-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Admin Token</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Admin Token
+            </label>
             <div className="flex gap-2">
               <input
                 type="password"
@@ -85,7 +95,12 @@ export default function ReviewDocsPage() {
                 className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your admin token"
               />
-              <button onClick={() => loadDocs()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Load</button>
+              <button
+                onClick={() => loadDocs()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Load
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -94,12 +109,22 @@ export default function ReviewDocsPage() {
       <Card className="shadow-lg border bg-white">
         <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
           <CardTitle>Manager Review - HR Documents</CardTitle>
-          <p className="text-sm text-blue-100">Approve, deny, edit, or reassign scanned HR docs</p>
+          <p className="text-sm text-blue-100">
+            Approve, deny, edit, or reassign scanned HR docs
+          </p>
         </CardHeader>
       </Card>
 
-      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
-      {success && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">{success}</div>}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          {success}
+        </div>
+      )}
 
       {adminToken && docs.length === 0 && (
         <p className="text-gray-500 text-center py-8">No pending documents</p>
@@ -112,16 +137,45 @@ export default function ReviewDocsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <h3 className="font-bold text-lg">{doc.doc_type}</h3>
-                  <p className="text-sm text-gray-700">Name: <span className="font-semibold">{doc.full_name || '—'}</span></p>
-                  <p className="text-sm text-gray-700">License #: <span className="font-semibold">{doc.license_number || '—'}</span></p>
-                  <p className="text-sm text-gray-700">State: <span className="font-semibold">{doc.state || '—'}</span></p>
-                  <p className="text-sm text-gray-700">Issue: <span className="font-semibold">{doc.issue_date || '—'}</span></p>
-                  <p className="text-sm text-gray-700">Expires: <span className="font-semibold">{doc.expiration_date || '—'}</span></p>
-                  {doc.ocr_confidence && <p className="text-xs text-gray-500">OCR: {doc.ocr_confidence}%</p>}
+                  <p className="text-sm text-gray-700">
+                    Name:{" "}
+                    <span className="font-semibold">
+                      {doc.full_name || "—"}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    License #:{" "}
+                    <span className="font-semibold">
+                      {doc.license_number || "—"}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    State:{" "}
+                    <span className="font-semibold">{doc.state || "—"}</span>
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    Issue:{" "}
+                    <span className="font-semibold">
+                      {doc.issue_date || "—"}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    Expires:{" "}
+                    <span className="font-semibold">
+                      {doc.expiration_date || "—"}
+                    </span>
+                  </p>
+                  {doc.ocr_confidence && (
+                    <p className="text-xs text-gray-500">
+                      OCR: {doc.ocr_confidence}%
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-gray-700">Assigned Driver</label>
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Assigned Driver
+                  </label>
                   {doc.drivers ? (
                     <p className="text-sm font-semibold">
                       {doc.drivers.name}
@@ -135,30 +189,49 @@ export default function ReviewDocsPage() {
                     <p className="text-sm text-red-600">Unassigned</p>
                   )}
                   <select
-                    onChange={(e) => e.target.value && action(doc.id, 'reassign', { driverId: e.target.value })}
+                    onChange={(e) =>
+                      e.target.value &&
+                      action(doc.id, "reassign", { driverId: e.target.value })
+                    }
                     className="w-full px-2 py-2 border rounded text-sm"
                     defaultValue=""
                   >
                     <option value="">Reassign Driver...</option>
                     {drivers.map((d) => (
-                      <option key={d.id} value={d.id}>{d.email}</option>
+                      <option key={d.id} value={d.id}>
+                        {d.email}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <button onClick={() => action(doc.id, 'approve')} className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded">✓ Approve</button>
-                  <button onClick={() => action(doc.id, 'deny')} className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded">✗ Deny</button>
+                  <button
+                    onClick={() => action(doc.id, "approve")}
+                    className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded"
+                  >
+                    ✓ Approve
+                  </button>
+                  <button
+                    onClick={() => action(doc.id, "deny")}
+                    className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded"
+                  >
+                    ✗ Deny
+                  </button>
                   {doc.image_url && (
                     <div className="space-y-2">
                       {(() => {
-                        const url = doc.image_url!
-                        const isPdf = url.toLowerCase().endsWith('.pdf')
-                        const isImage = /(jpg|jpeg|png|gif|webp)$/i.test(url)
+                        const url = doc.image_url!;
+                        const isPdf = url.toLowerCase().endsWith(".pdf");
+                        const isImage = /(jpg|jpeg|png|gif|webp)$/i.test(url);
                         return (
                           <>
                             {isImage && (
-                              <img src={url} alt="Document preview" className="w-full h-40 object-contain border rounded" />
+                              <img
+                                src={url}
+                                alt="Document preview"
+                                className="w-full h-40 object-contain border rounded"
+                              />
                             )}
                             <a
                               href={url}
@@ -166,10 +239,10 @@ export default function ReviewDocsPage() {
                               rel="noopener noreferrer"
                               className="w-full inline-block text-center px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded"
                             >
-                              {isPdf ? 'View PDF' : 'View Image'}
+                              {isPdf ? "View PDF" : "View Image"}
                             </a>
                           </>
-                        )
+                        );
                       })()}
                     </div>
                   )}
@@ -180,5 +253,5 @@ export default function ReviewDocsPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

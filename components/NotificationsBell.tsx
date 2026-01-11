@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 
 const NotificationsBell = () => {
-	return <span>🔔</span>;
+  return <span>🔔</span>;
 };
 
 export default NotificationsBell;

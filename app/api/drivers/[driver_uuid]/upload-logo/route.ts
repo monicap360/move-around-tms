@@ -6,16 +6,27 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const BUCKET = "driver-logos";
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
+const ALLOWED_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+  "image/webp",
+];
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-export async function POST(req: NextRequest, { params }: { params: { driver_uuid: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { driver_uuid: string } },
+) {
   try {
     // Validate driver_uuid
     const { driver_uuid } = params;
     if (!driver_uuid || typeof driver_uuid !== "string") {
-      return NextResponse.json({ error: "Invalid driver UUID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid driver UUID" },
+        { status: 400 },
+      );
     }
 
     // Parse form data
@@ -30,7 +41,10 @@ export async function POST(req: NextRequest, { params }: { params: { driver_uuid
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
+      return NextResponse.json(
+        { error: "File too large (max 5MB)" },
+        { status: 400 },
+      );
     }
 
     // Ensure bucket exists

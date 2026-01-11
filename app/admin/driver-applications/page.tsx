@@ -17,10 +17,11 @@ export default function AdminDriverApplicationsPage() {
     fetchApps();
   }, []);
 
-  const filtered = apps.filter((a) =>
-    a.name.toLowerCase().includes(search.toLowerCase()) ||
-    a.license_type?.toLowerCase().includes(search.toLowerCase()) ||
-    a.email.toLowerCase().includes(search.toLowerCase())
+  const filtered = apps.filter(
+    (a) =>
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.license_type?.toLowerCase().includes(search.toLowerCase()) ||
+      a.email.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -30,7 +31,7 @@ export default function AdminDriverApplicationsPage() {
         className="w-full border p-2 rounded mb-6"
         placeholder="Search by name, license, or email"
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
       />
       {loading ? (
         <div className="text-gray-500">Loading…</div>
@@ -39,21 +40,45 @@ export default function AdminDriverApplicationsPage() {
       ) : (
         <ul className="space-y-4">
           {filtered.map((a) => (
-            <li key={a.id} className="bg-white rounded shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <li
+              key={a.id}
+              className="bg-white rounded shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+            >
               <div>
                 <div className="font-bold text-lg">{a.name}</div>
-                <div className="text-gray-600 text-sm">{a.license_type} • {a.experience} yrs</div>
-                <div className="text-gray-500 text-xs">{a.email} • {a.phone}</div>
-                {a.notes && <div className="text-xs text-gray-400 mt-1">{a.notes}</div>}
-                <div className="text-xs text-gray-400 mt-1">Applied: {new Date(a.created_at).toLocaleString()}</div>
+                <div className="text-gray-600 text-sm">
+                  {a.license_type} • {a.experience} yrs
+                </div>
+                <div className="text-gray-500 text-xs">
+                  {a.email} • {a.phone}
+                </div>
+                {a.notes && (
+                  <div className="text-xs text-gray-400 mt-1">{a.notes}</div>
+                )}
+                <div className="text-xs text-gray-400 mt-1">
+                  Applied: {new Date(a.created_at).toLocaleString()}
+                </div>
               </div>
               <div className="flex gap-2 items-center">
                 {a.resume_url && (
-                  <a href={a.resume_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">Résumé</a>
+                  <a
+                    href={a.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline text-sm"
+                  >
+                    Résumé
+                  </a>
                 )}
-                <button className="bg-green-600 text-white px-4 py-2 rounded font-semibold">Approve</button>
-                <button className="bg-yellow-500 text-white px-4 py-2 rounded font-semibold">Screen</button>
-                <button className="bg-red-600 text-white px-4 py-2 rounded font-semibold">Reject</button>
+                <button className="bg-green-600 text-white px-4 py-2 rounded font-semibold">
+                  Approve
+                </button>
+                <button className="bg-yellow-500 text-white px-4 py-2 rounded font-semibold">
+                  Screen
+                </button>
+                <button className="bg-red-600 text-white px-4 py-2 rounded font-semibold">
+                  Reject
+                </button>
               </div>
             </li>
           ))}

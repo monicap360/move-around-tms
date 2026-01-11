@@ -2,7 +2,11 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { getDriverResume } from "@/lib/driver";
 
-export default async function DriverResumePage({ params }: { params: { driver_uuid: string } }) {
+export default async function DriverResumePage({
+  params,
+}: {
+  params: { driver_uuid: string };
+}) {
   const { driver_uuid } = params;
   const resume = await getDriverResume(driver_uuid);
   if (!resume) return notFound();
@@ -17,7 +21,9 @@ export default async function DriverResumePage({ params }: { params: { driver_uu
         />
         <div>
           <h1 className="text-3xl font-bold mb-1">{resume.name}</h1>
-          <p className="text-lg text-gray-600 mb-2">{resume.licenseType} • {resume.experienceYears} yrs experience</p>
+          <p className="text-lg text-gray-600 mb-2">
+            {resume.licenseType} • {resume.experienceYears} yrs experience
+          </p>
           <div className="text-sm text-gray-500">
             <span>{resume.email}</span>
             {resume.phone && <span className="ml-4">{resume.phone}</span>}
@@ -29,7 +35,10 @@ export default async function DriverResumePage({ params }: { params: { driver_uu
         <div className="flex flex-wrap gap-2">
           {resume.badges && resume.badges.length > 0 ? (
             resume.badges.map((badge: string) => (
-              <span key={badge} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+              <span
+                key={badge}
+                className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium"
+              >
                 {badge}
               </span>
             ))
@@ -40,7 +49,9 @@ export default async function DriverResumePage({ params }: { params: { driver_uu
       </section>
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Professional Info</h2>
-        <p className="text-gray-700 whitespace-pre-line">{resume.bio || "No bio provided."}</p>
+        <p className="text-gray-700 whitespace-pre-line">
+          {resume.bio || "No bio provided."}
+        </p>
       </section>
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Work History</h2>
@@ -49,7 +60,9 @@ export default async function DriverResumePage({ params }: { params: { driver_uu
             {resume.history.map((job: any, idx: number) => (
               <li key={idx} className="border rounded p-3">
                 <div className="font-bold">{job.company}</div>
-                <div className="text-sm text-gray-600">{job.role} • {job.years} yrs</div>
+                <div className="text-sm text-gray-600">
+                  {job.role} • {job.years} yrs
+                </div>
                 <div className="text-xs text-gray-500">{job.description}</div>
               </li>
             ))}
@@ -63,7 +76,10 @@ export default async function DriverResumePage({ params }: { params: { driver_uu
         {resume.certifications && resume.certifications.length > 0 ? (
           <ul className="flex flex-wrap gap-2">
             {resume.certifications.map((cert: string, idx: number) => (
-              <li key={idx} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+              <li
+                key={idx}
+                className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium"
+              >
                 {cert}
               </li>
             ))}

@@ -10,7 +10,9 @@ export default function LiveFleetMap() {
   const [hos, setHos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<any>(null);
-  const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3Z4b2J6b3gwM2JwMnZxczZ6b2J6b2JwIn0.abc123";
+  const MAPBOX_TOKEN =
+    process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+    "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3Z4b2J6b3gwM2JwMnZxczZ6b2J6b2JwIn0.abc123";
 
   useEffect(() => {
     async function fetchAll() {
@@ -18,9 +20,15 @@ export default function LiveFleetMap() {
       try {
         // Fetch from all providers (real)
         const [locs, trucks, hos] = await Promise.all([
-          Promise.all(eldProviders.map(p => p.fetchDriverLocations())).then(r => r.flat()),
-          Promise.all(eldProviders.map(p => p.fetchTruckStatus())).then(r => r.flat()),
-          Promise.all(eldProviders.map(p => p.fetchHOS())).then(r => r.flat()),
+          Promise.all(eldProviders.map((p) => p.fetchDriverLocations())).then(
+            (r) => r.flat(),
+          ),
+          Promise.all(eldProviders.map((p) => p.fetchTruckStatus())).then((r) =>
+            r.flat(),
+          ),
+          Promise.all(eldProviders.map((p) => p.fetchHOS())).then((r) =>
+            r.flat(),
+          ),
         ]);
         setLocations(locs);
         setTrucks(trucks);
@@ -39,11 +47,16 @@ export default function LiveFleetMap() {
   return (
     <div className="flex flex-col md:flex-row h-[80vh] p-4 gap-4">
       <div className="flex-1 relative min-h-[400px]">
-        <h1 className="text-2xl font-bold mb-2">Live Fleet Map (ELD/Telematics)</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          Live Fleet Map (ELD/Telematics)
+        </h1>
         {loading ? (
           <div>Loading driver locations…</div>
         ) : locations.length === 0 ? (
-          <div className="text-red-600">No ELD data found. Check your Samsara API key in your environment variables.</div>
+          <div className="text-red-600">
+            No ELD data found. Check your Samsara API key in your environment
+            variables.
+          </div>
         ) : (
           <Map
             initialViewState={{
@@ -56,19 +69,24 @@ export default function LiveFleetMap() {
             mapboxAccessToken={MAPBOX_TOKEN}
           >
             <NavigationControl position="top-left" />
-            {locations.map((d, i) => (
-              d.lat && d.lon && (
-                <Marker
-                  key={d.id || i}
-                  longitude={d.lon}
-                  latitude={d.lat}
-                  anchor="bottom"
-                  onClick={() => setSelected(d)}
-                >
-                  <div className="bg-blue-600 rounded-full w-4 h-4 border-2 border-white shadow cursor-pointer" title={d.name}></div>
-                </Marker>
-              )
-            ))}
+            {locations.map(
+              (d, i) =>
+                d.lat &&
+                d.lon && (
+                  <Marker
+                    key={d.id || i}
+                    longitude={d.lon}
+                    latitude={d.lat}
+                    anchor="bottom"
+                    onClick={() => setSelected(d)}
+                  >
+                    <div
+                      className="bg-blue-600 rounded-full w-4 h-4 border-2 border-white shadow cursor-pointer"
+                      title={d.name}
+                    ></div>
+                  </Marker>
+                ),
+            )}
           </Map>
         )}
       </div>
@@ -78,15 +96,34 @@ export default function LiveFleetMap() {
           <div className="mb-4">
             <div className="font-bold">{selected.name}</div>
             <div>Status: {selected.status}</div>
-            <div>Last updated: {selected.updatedAt ? new Date(selected.updatedAt).toLocaleString() : "-"}</div>
-            <button className="mt-2 px-2 py-1 bg-gray-200 rounded" onClick={() => setSelected(null)}>Clear</button>
+            <div>
+              Last updated:{" "}
+              {selected.updatedAt
+                ? new Date(selected.updatedAt).toLocaleString()
+                : "-"}
+            </div>
+            <button
+              className="mt-2 px-2 py-1 bg-gray-200 rounded"
+              onClick={() => setSelected(null)}
+            >
+              Clear
+            </button>
           </div>
         ) : (
           <ul className="space-y-2">
             {locations.map((d, i) => (
-              <li key={d.id || i} className="border-b pb-1 cursor-pointer hover:bg-gray-50" onClick={() => setSelected(d)}>
+              <li
+                key={d.id || i}
+                className="border-b pb-1 cursor-pointer hover:bg-gray-50"
+                onClick={() => setSelected(d)}
+              >
                 <div className="font-bold">{d.name}</div>
-                <div className="text-xs text-gray-500">{d.status} • {d.lat && d.lon ? `${d.lat.toFixed(3)}, ${d.lon.toFixed(3)}` : "No location"}</div>
+                <div className="text-xs text-gray-500">
+                  {d.status} •{" "}
+                  {d.lat && d.lon
+                    ? `${d.lat.toFixed(3)}, ${d.lon.toFixed(3)}`
+                    : "No location"}
+                </div>
               </li>
             ))}
           </ul>
@@ -96,7 +133,12 @@ export default function LiveFleetMap() {
           {trucks.map((t, i) => (
             <li key={t.id || i} className="border-b pb-1">
               <div className="font-bold">{t.name}</div>
-              <div className="text-xs text-gray-500">{t.status} • {t.lat && t.lon ? `${t.lat.toFixed(3)}, ${t.lon.toFixed(3)}` : "No location"}</div>
+              <div className="text-xs text-gray-500">
+                {t.status} •{" "}
+                {t.lat && t.lon
+                  ? `${t.lat.toFixed(3)}, ${t.lon.toFixed(3)}`
+                  : "No location"}
+              </div>
             </li>
           ))}
         </ul>
@@ -105,7 +147,10 @@ export default function LiveFleetMap() {
           {hos.map((h, i) => (
             <li key={h.id || i} className="border-b pb-1">
               <div className="font-bold">{h.name}</div>
-              <div className="text-xs text-gray-500">{h.hosStatus} • {h.updatedAt ? new Date(h.updatedAt).toLocaleString() : "-"}</div>
+              <div className="text-xs text-gray-500">
+                {h.hosStatus} •{" "}
+                {h.updatedAt ? new Date(h.updatedAt).toLocaleString() : "-"}
+              </div>
             </li>
           ))}
         </ul>

@@ -1,12 +1,17 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { 
+import {
   User,
   FileText,
   Upload,
@@ -26,7 +31,7 @@ import {
   Mail,
   MapPin,
   Car,
-  Fuel
+  Fuel,
 } from "lucide-react";
 
 type DriverProfile = {
@@ -111,7 +116,7 @@ export default function DriverPortalPage() {
         hire_date: "2023-01-15",
         employment_status: "active",
         current_safety_score: 92,
-        profile_image_url: null
+        profile_image_url: null,
       });
 
       // Load mock documents
@@ -122,7 +127,7 @@ export default function DriverPortalPage() {
           status: "current",
           expiration_date: "2026-03-15",
           file_url: "/docs/cdl-john-smith.pdf",
-          created_at: "2023-01-15T10:00:00Z"
+          created_at: "2023-01-15T10:00:00Z",
         },
         {
           id: "2",
@@ -130,7 +135,7 @@ export default function DriverPortalPage() {
           status: "expires_soon",
           expiration_date: "2024-12-15",
           file_url: "/docs/medical-john-smith.pdf",
-          created_at: "2023-06-15T10:00:00Z"
+          created_at: "2023-06-15T10:00:00Z",
         },
         {
           id: "3",
@@ -138,8 +143,8 @@ export default function DriverPortalPage() {
           status: "current",
           expiration_date: "2025-06-15",
           file_url: "/docs/safety-training-john-smith.pdf",
-          created_at: "2024-06-15T10:00:00Z"
-        }
+          created_at: "2024-06-15T10:00:00Z",
+        },
       ]);
 
       // Load mock trainings
@@ -150,7 +155,7 @@ export default function DriverPortalPage() {
           completion_status: "completed",
           training_date: "2024-06-15",
           score: 95,
-          certificate_url: "/certs/defensive-driving-john-smith.pdf"
+          certificate_url: "/certs/defensive-driving-john-smith.pdf",
         },
         {
           id: "2",
@@ -158,7 +163,7 @@ export default function DriverPortalPage() {
           completion_status: "in_progress",
           training_date: "2024-10-01",
           score: null,
-          certificate_url: null
+          certificate_url: null,
         },
         {
           id: "3",
@@ -166,8 +171,8 @@ export default function DriverPortalPage() {
           completion_status: "completed",
           training_date: "2024-08-20",
           score: 88,
-          certificate_url: "/certs/fuel-efficiency-john-smith.pdf"
-        }
+          certificate_url: "/certs/fuel-efficiency-john-smith.pdf",
+        },
       ]);
 
       // Load mock goals
@@ -179,7 +184,7 @@ export default function DriverPortalPage() {
           target_value: 90,
           current_value: 92,
           target_date: "2024-12-31",
-          status: "on_track"
+          status: "on_track",
         },
         {
           id: "2",
@@ -188,10 +193,9 @@ export default function DriverPortalPage() {
           target_value: 7.0,
           current_value: 6.8,
           target_date: "2024-12-31",
-          status: "in_progress"
-        }
+          status: "in_progress",
+        },
       ]);
-
     } catch (err) {
       console.error("Error loading driver data:", err);
     } finally {
@@ -202,7 +206,7 @@ export default function DriverPortalPage() {
   async function handleSaveProfile() {
     try {
       // In production, save to Supabase
-      setDriver(prev => prev ? { ...prev, ...formData } : null);
+      setDriver((prev) => (prev ? { ...prev, ...formData } : null));
       setEditing(false);
       alert("Profile updated successfully!");
     } catch (err) {
@@ -223,21 +227,28 @@ export default function DriverPortalPage() {
 
   function getStatusColor(status: string) {
     switch (status) {
-      case 'current': return 'bg-green-100 text-green-800';
-      case 'expires_soon': return 'bg-yellow-100 text-yellow-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'on_track': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "current":
+        return "bg-green-100 text-green-800";
+      case "expires_soon":
+        return "bg-yellow-100 text-yellow-800";
+      case "expired":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800";
+      case "on_track":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   }
 
   function getSafetyScoreColor(score: number) {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    if (score >= 70) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-yellow-600";
+    if (score >= 70) return "text-orange-600";
+    return "text-red-600";
   }
 
   function getGoalProgress(goal: PerformanceGoal): number {
@@ -261,7 +272,6 @@ export default function DriverPortalPage() {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-text)] pb-20">
       {/* Header */}
@@ -270,20 +280,33 @@ export default function DriverPortalPage() {
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-[color:var(--color-primary)] rounded-full flex items-center justify-center text-[color:var(--color-text)] text-xl font-bold">
-                {driver.name.split(' ').map(n => n[0]).join('')}
+                {driver.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-[color:var(--color-text)]">Welcome, {driver.name}</h1>
-                <p className="text-[color:var(--color-muted)]">Employee ID: {driver.employee_id}</p>
+                <h1 className="text-2xl font-bold text-[color:var(--color-text)]">
+                  Welcome, {driver.name}
+                </h1>
+                <p className="text-[color:var(--color-muted)]">
+                  Employee ID: {driver.employee_id}
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                   <Shield className="w-4 h-4 text-[color:var(--color-accent)]" />
-                  <span className={`font-medium ${getSafetyScoreColor(driver.current_safety_score)}`}>
+                  <span
+                    className={`font-medium ${getSafetyScoreColor(driver.current_safety_score)}`}
+                  >
                     Safety Score: {driver.current_safety_score}
                   </span>
                 </div>
               </div>
             </div>
-            <Button onClick={handleEdit} disabled={editing} className="bg-[color:var(--color-accent)] text-[color:var(--color-background)] hover:bg-[color:var(--color-primary)] w-full md:w-auto mt-4 md:mt-0">
+            <Button
+              onClick={handleEdit}
+              disabled={editing}
+              className="bg-[color:var(--color-accent)] text-[color:var(--color-background)] hover:bg-[color:var(--color-primary)] w-full md:w-auto mt-4 md:mt-0"
+            >
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
@@ -294,20 +317,20 @@ export default function DriverPortalPage() {
         <div className="border-b border-[color:var(--color-border)] hidden md:block">
           <nav className="flex space-x-8 px-6 overflow-x-auto">
             {[
-              { id: 'profile', label: 'My Profile', icon: User },
-              { id: 'documents', label: 'Documents', icon: FileText },
-              { id: 'training', label: 'Training', icon: Award },
-              { id: 'goals', label: 'Goals', icon: Target },
-              { id: 'live', label: 'Live Trucks', icon: Car },
-              { id: 'theme', label: 'Theme', icon: Edit }
+              { id: "profile", label: "My Profile", icon: User },
+              { id: "documents", label: "Documents", icon: FileText },
+              { id: "training", label: "Training", icon: Award },
+              { id: "goals", label: "Goals", icon: Target },
+              { id: "live", label: "Live Trucks", icon: Car },
+              { id: "theme", label: "Theme", icon: Edit },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm ${
                   activeTab === id
-                    ? 'border-[color:var(--color-accent)] text-[color:var(--color-accent)]'
-                    : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
+                    ? "border-[color:var(--color-accent)] text-[color:var(--color-accent)]"
+                    : "border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -321,16 +344,16 @@ export default function DriverPortalPage() {
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex md:hidden justify-around py-2 shadow-lg">
         {[
-          { id: 'profile', label: 'Profile', icon: User },
-          { id: 'documents', label: 'Docs', icon: FileText },
-          { id: 'training', label: 'Train', icon: Award },
-          { id: 'goals', label: 'Goals', icon: Target },
-          { id: 'live', label: 'Fleet', icon: Car },
+          { id: "profile", label: "Profile", icon: User },
+          { id: "documents", label: "Docs", icon: FileText },
+          { id: "training", label: "Train", icon: Award },
+          { id: "goals", label: "Goals", icon: Target },
+          { id: "live", label: "Fleet", icon: Car },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex flex-col items-center text-xs ${activeTab === id ? 'text-blue-600' : 'text-gray-400'}`}
+            className={`flex flex-col items-center text-xs ${activeTab === id ? "text-blue-600" : "text-gray-400"}`}
             style={{ minWidth: 48 }}
           >
             <Icon className="w-6 h-6 mb-1" />
@@ -341,7 +364,7 @@ export default function DriverPortalPage() {
 
       {/* Content */}
       <div className="p-3 md:p-6">
-        {activeTab === 'profile' && (
+        {activeTab === "profile" && (
           <div className="max-w-4xl space-y-6">
             {/* Driver HUD Card (Uber-style) */}
             <div className="mb-6">
@@ -367,7 +390,11 @@ export default function DriverPortalPage() {
                         <Save className="w-4 h-4 mr-2" />
                         Save
                       </Button>
-                      <Button onClick={handleCancelEdit} variant="outline" size="sm">
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outline"
+                        size="sm"
+                      >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
@@ -378,11 +405,18 @@ export default function DriverPortalPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name
+                    </label>
                     {editing ? (
                       <Input
                         value={formData.name || driver.name}
-                        onChange={(e: any) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        onChange={(e: any) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
                       />
                     ) : (
                       <p className="text-gray-900">{driver.name}</p>
@@ -390,16 +424,25 @@ export default function DriverPortalPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Employee ID
+                    </label>
                     <p className="text-gray-900">{driver.employee_id}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
                     {editing ? (
                       <Input
                         value={formData.phone || driver.phone}
-                        onChange={(e: any) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        onChange={(e: any) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
                       />
                     ) : (
                       <div className="flex items-center gap-2">
@@ -410,11 +453,18 @@ export default function DriverPortalPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
                     {editing ? (
                       <Input
                         value={formData.email || driver.email}
-                        onChange={(e: any) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e: any) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
                       />
                     ) : (
                       <div className="flex items-center gap-2">
@@ -425,11 +475,18 @@ export default function DriverPortalPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address
+                    </label>
                     {editing ? (
                       <Input
                         value={formData.address || driver.address}
-                        onChange={(e: any) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                        onChange={(e: any) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            address: e.target.value,
+                          }))
+                        }
                       />
                     ) : (
                       <div className="flex items-center gap-2">
@@ -453,18 +510,26 @@ export default function DriverPortalPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">CDL Number</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CDL Number
+                    </label>
                     <p className="text-gray-900">{driver.cdl_number}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">CDL Class</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CDL Class
+                    </label>
                     <p className="text-gray-900">{driver.cdl_class}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
-                    <p className="text-gray-900">{new Date(driver.cdl_expiration).toLocaleDateString()}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Expiration Date
+                    </label>
+                    <p className="text-gray-900">
+                      {new Date(driver.cdl_expiration).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -481,12 +546,18 @@ export default function DriverPortalPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
-                    <p className="text-gray-900">{new Date(driver.hire_date).toLocaleDateString()}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hire Date
+                    </label>
+                    <p className="text-gray-900">
+                      {new Date(driver.hire_date).toLocaleDateString()}
+                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Employment Status</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Employment Status
+                    </label>
                     <Badge className="bg-green-100 text-green-800 capitalize">
                       {driver.employment_status}
                     </Badge>
@@ -497,7 +568,7 @@ export default function DriverPortalPage() {
           </div>
         )}
 
-        {activeTab === 'theme' && (
+        {activeTab === "theme" && (
           <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
@@ -510,7 +581,7 @@ export default function DriverPortalPage() {
           </div>
         )}
 
-        {activeTab === 'live' && (
+        {activeTab === "live" && (
           <div className="max-w-5xl mx-auto">
             <Card>
               <CardHeader>
@@ -519,16 +590,15 @@ export default function DriverPortalPage() {
               <CardContent>
                 <div className="h-[80vh] min-h-[400px]">
                   {/* Uber-style live truck/status view */}
-                  {typeof window !== 'undefined' && (
-                    require('./DriverLiveFleetTab').default()
-                  )}
+                  {typeof window !== "undefined" &&
+                    require("./DriverLiveFleetTab").default()}
                 </div>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {activeTab === 'documents' && (
+        {activeTab === "documents" && (
           <div className="max-w-4xl space-y-6">
             <Card>
               <CardHeader>
@@ -546,22 +616,29 @@ export default function DriverPortalPage() {
               <CardContent>
                 <div className="space-y-4">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div
+                      key={doc.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50"
+                    >
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="font-medium">{doc.doc_type}</h3>
                           <p className="text-sm text-gray-600">
-                            Uploaded: {new Date(doc.created_at).toLocaleDateString()}
+                            Uploaded:{" "}
+                            {new Date(doc.created_at).toLocaleDateString()}
                           </p>
                           {doc.expiration_date && (
                             <p className="text-sm text-gray-600">
-                              Expires: {new Date(doc.expiration_date).toLocaleDateString()}
+                              Expires:{" "}
+                              {new Date(
+                                doc.expiration_date,
+                              ).toLocaleDateString()}
                             </p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge className={getStatusColor(doc.status)}>
-                            {doc.status.replace('_', ' ')}
+                            {doc.status.replace("_", " ")}
                           </Badge>
                           {doc.file_url && (
                             <Button variant="outline" size="sm">
@@ -578,7 +655,7 @@ export default function DriverPortalPage() {
           </div>
         )}
 
-        {activeTab === 'training' && (
+        {activeTab === "training" && (
           <div className="max-w-4xl space-y-6">
             <Card>
               <CardHeader>
@@ -593,9 +670,14 @@ export default function DriverPortalPage() {
                     <div key={training.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h3 className="font-medium">{training.training_type}</h3>
+                          <h3 className="font-medium">
+                            {training.training_type}
+                          </h3>
                           <p className="text-sm text-gray-600">
-                            Date: {new Date(training.training_date).toLocaleDateString()}
+                            Date:{" "}
+                            {new Date(
+                              training.training_date,
+                            ).toLocaleDateString()}
                           </p>
                           {training.score && (
                             <p className="text-sm text-green-600 font-medium">
@@ -604,8 +686,12 @@ export default function DriverPortalPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={getStatusColor(training.completion_status)}>
-                            {training.completion_status.replace('_', ' ')}
+                          <Badge
+                            className={getStatusColor(
+                              training.completion_status,
+                            )}
+                          >
+                            {training.completion_status.replace("_", " ")}
                           </Badge>
                           {training.certificate_url && (
                             <Button variant="outline" size="sm">
@@ -615,7 +701,7 @@ export default function DriverPortalPage() {
                           )}
                         </div>
                       </div>
-                      {training.completion_status === 'in_progress' && (
+                      {training.completion_status === "in_progress" && (
                         <Button size="sm" className="mt-2">
                           Continue Training
                         </Button>
@@ -628,7 +714,7 @@ export default function DriverPortalPage() {
           </div>
         )}
 
-        {activeTab === 'goals' && (
+        {activeTab === "goals" && (
           <div className="max-w-4xl space-y-6">
             <Card>
               <CardHeader>
@@ -644,23 +730,29 @@ export default function DriverPortalPage() {
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h3 className="font-medium">{goal.goal_type}</h3>
-                          <p className="text-sm text-gray-600">{goal.description}</p>
+                          <p className="text-sm text-gray-600">
+                            {goal.description}
+                          </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            Target date: {new Date(goal.target_date).toLocaleDateString()}
+                            Target date:{" "}
+                            {new Date(goal.target_date).toLocaleDateString()}
                           </p>
                         </div>
                         <Badge className={getStatusColor(goal.status)}>
-                          {goal.status.replace('_', ' ')}
+                          {goal.status.replace("_", " ")}
                         </Badge>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>Progress: {goal.current_value || 0} / {goal.target_value}</span>
+                          <span>
+                            Progress: {goal.current_value || 0} /{" "}
+                            {goal.target_value}
+                          </span>
                           <span>{getGoalProgress(goal).toFixed(0)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${getGoalProgress(goal)}%` }}
                           />

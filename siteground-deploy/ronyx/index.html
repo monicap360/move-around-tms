@@ -1,257 +1,348 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ronyx Fleet Management Portal</title>
-    
+
     <!-- Meta Tags -->
-    <meta name="description" content="Ronyx Fleet Management Portal - Professional fleet operations and driver management">
-    <meta name="keywords" content="fleet management, transportation, logistics, Ronyx">
-    <meta name="author" content="Move Around TMS">
-    
+    <meta
+      name="description"
+      content="Ronyx Fleet Management Portal - Professional fleet operations and driver management"
+    />
+    <meta
+      name="keywords"
+      content="fleet management, transportation, logistics, Ronyx"
+    />
+    <meta name="author" content="Move Around TMS" />
+
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Ronyx Fleet Management Portal">
-    <meta property="og:description" content="Professional fleet management and operations dashboard">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://ronyx.movearoundtms.app">
-    
+    <meta property="og:title" content="Ronyx Fleet Management Portal" />
+    <meta
+      property="og:description"
+      content="Professional fleet management and operations dashboard"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ronyx.movearoundtms.app" />
+
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="./assets/images/favicon.png">
-    <link rel="apple-touch-icon" href="./assets/images/apple-touch-icon.png">
-    
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png" />
+    <link rel="apple-touch-icon" href="./assets/images/apple-touch-icon.png" />
+
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- CSS -->
-    <link rel="stylesheet" href="./assets/css/main.css">
-    
+    <link rel="stylesheet" href="./assets/css/main.css" />
+
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Header -->
     <header class="header">
-        <div class="header-content">
-            <div class="logo-section">
-                <img src="./ronyx_logo.png" alt="Ronyx Fleet Management Logo" class="logo">
-                <div class="brand-text">
-                    <h1>Ronyx Fleet Portal</h1>
-                    <p>Powered by Move Around TMS™</p>
-                </div>
-            </div>
-            <button id="signOutBtn" class="btn btn-small">Sign Out</button>
+      <div class="header-content">
+        <div class="logo-section">
+          <img
+            src="./ronyx_logo.png"
+            alt="Ronyx Fleet Management Logo"
+            class="logo"
+          />
+          <div class="brand-text">
+            <h1>Ronyx Fleet Portal</h1>
+            <p>Powered by Move Around TMS™</p>
+          </div>
         </div>
+        <button id="signOutBtn" class="btn btn-small">Sign Out</button>
+      </div>
     </header>
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="container">
-            <!-- Welcome Section -->
-            <section class="welcome-section fade-in">
-                <h2 class="welcome-title">Welcome to Ronyx Fleet Portal</h2>
-                <p class="welcome-text">
-                    Manage your fleet operations with professional tools and real-time insights.
-                </p>
-                <div id="userInfo" class="loading-placeholder">
-                    <!-- User info will be loaded here -->
-                </div>
-            </section>
+      <div class="container">
+        <!-- Welcome Section -->
+        <section class="welcome-section fade-in">
+          <h2 class="welcome-title">Welcome to Ronyx Fleet Portal</h2>
+          <p class="welcome-text">
+            Manage your fleet operations with professional tools and real-time
+            insights.
+          </p>
+          <div id="userInfo" class="loading-placeholder">
+            <!-- User info will be loaded here -->
+          </div>
+        </section>
 
-            <!-- Fleet Statistics -->
-            <section class="stats-section">
-                <h3 style="color: #F7931E; margin-bottom: 1.5rem; text-align: center;">Fleet Overview</h3>
-                <div class="stats-grid">
-                    <div class="stat-card fade-in">
-                        <div class="stat-number" id="activeVehicles">--</div>
-                        <div class="stat-label">Active Vehicles</div>
-                    </div>
-                    <div class="stat-card fade-in">
-                        <div class="stat-number" id="availableDrivers">--</div>
-                        <div class="stat-label">Available Drivers</div>
-                    </div>
-                    <div class="stat-card fade-in">
-                        <div class="stat-number" id="currentRoutes">--</div>
-                        <div class="stat-label">Current Routes</div>
-                    </div>
-                    <div class="stat-card fade-in">
-                        <div class="stat-number" id="maintenanceDue">--</div>
-                        <div class="stat-label">Maintenance Due</div>
-                    </div>
-                </div>
-            </section>
+        <!-- Fleet Statistics -->
+        <section class="stats-section">
+          <h3 style="color: #f7931e; margin-bottom: 1.5rem; text-align: center">
+            Fleet Overview
+          </h3>
+          <div class="stats-grid">
+            <div class="stat-card fade-in">
+              <div class="stat-number" id="activeVehicles">--</div>
+              <div class="stat-label">Active Vehicles</div>
+            </div>
+            <div class="stat-card fade-in">
+              <div class="stat-number" id="availableDrivers">--</div>
+              <div class="stat-label">Available Drivers</div>
+            </div>
+            <div class="stat-card fade-in">
+              <div class="stat-number" id="currentRoutes">--</div>
+              <div class="stat-label">Current Routes</div>
+            </div>
+            <div class="stat-card fade-in">
+              <div class="stat-number" id="maintenanceDue">--</div>
+              <div class="stat-label">Maintenance Due</div>
+            </div>
+          </div>
+        </section>
 
-            <!-- Dashboard Cards -->
-            <section class="dashboard-cards">
-                <div class="grid-3">
-                    <!-- Fleet Management Card -->
-                    <div class="card fade-in">
-                        <h3>🚛 Fleet Management</h3>
-                        <p>Monitor vehicle status, locations, and performance metrics in real-time.</p>
-                        <div style="margin-top: 1.5rem;">
-                            <button class="btn btn-small btn-block quick-action-btn" data-action="view-fleet">
-                                View Fleet Status
-                            </button>
-                        </div>
-                    </div>
+        <!-- Dashboard Cards -->
+        <section class="dashboard-cards">
+          <div class="grid-3">
+            <!-- Fleet Management Card -->
+            <div class="card fade-in">
+              <h3>🚛 Fleet Management</h3>
+              <p>
+                Monitor vehicle status, locations, and performance metrics in
+                real-time.
+              </p>
+              <div style="margin-top: 1.5rem">
+                <button
+                  class="btn btn-small btn-block quick-action-btn"
+                  data-action="view-fleet"
+                >
+                  View Fleet Status
+                </button>
+              </div>
+            </div>
 
-                    <!-- Driver Management Card -->
-                    <div class="card fade-in">
-                        <h3>👥 Driver Management</h3>
-                        <p>Manage driver schedules, certifications, and performance tracking.</p>
-                        <div style="margin-top: 1.5rem;">
-                            <button class="btn btn-small btn-block quick-action-btn" data-action="manage-drivers">
-                                Manage Drivers
-                            </button>
-                        </div>
-                    </div>
+            <!-- Driver Management Card -->
+            <div class="card fade-in">
+              <h3>👥 Driver Management</h3>
+              <p>
+                Manage driver schedules, certifications, and performance
+                tracking.
+              </p>
+              <div style="margin-top: 1.5rem">
+                <button
+                  class="btn btn-small btn-block quick-action-btn"
+                  data-action="manage-drivers"
+                >
+                  Manage Drivers
+                </button>
+              </div>
+            </div>
 
-                    <!-- Route Planning Card -->
-                    <div class="card fade-in">
-                        <h3>🗺️ Route Planning</h3>
-                        <p>Create optimized routes and track delivery progress.</p>
-                        <div style="margin-top: 1.5rem;">
-                            <button class="btn btn-small btn-block quick-action-btn" data-action="create-route">
-                                Create New Route
-                            </button>
-                        </div>
-                    </div>
+            <!-- Route Planning Card -->
+            <div class="card fade-in">
+              <h3>🗺️ Route Planning</h3>
+              <p>Create optimized routes and track delivery progress.</p>
+              <div style="margin-top: 1.5rem">
+                <button
+                  class="btn btn-small btn-block quick-action-btn"
+                  data-action="create-route"
+                >
+                  Create New Route
+                </button>
+              </div>
+            </div>
 
-                    <!-- Recent Activity Card -->
-                    <div class="card fade-in">
-                        <h3>📋 Recent Activity</h3>
-                        <div id="activityList" class="loading-placeholder">
-                            <!-- Activity list will be loaded here -->
-                        </div>
-                        <div style="margin-top: 1.5rem;">
-                            <button class="btn btn-small btn-outline btn-block quick-action-btn" data-action="view-all-activity">
-                                View All Activity
-                            </button>
-                        </div>
-                    </div>
+            <!-- Recent Activity Card -->
+            <div class="card fade-in">
+              <h3>📋 Recent Activity</h3>
+              <div id="activityList" class="loading-placeholder">
+                <!-- Activity list will be loaded here -->
+              </div>
+              <div style="margin-top: 1.5rem">
+                <button
+                  class="btn btn-small btn-outline btn-block quick-action-btn"
+                  data-action="view-all-activity"
+                >
+                  View All Activity
+                </button>
+              </div>
+            </div>
 
-                    <!-- Reports Card -->
-                    <div class="card fade-in">
-                        <h3>📊 Reports & Analytics</h3>
-                        <p>Generate comprehensive reports on fleet performance and efficiency.</p>
-                        <div style="margin-top: 1.5rem;">
-                            <button class="btn btn-small btn-outline btn-block quick-action-btn" data-action="view-reports">
-                                View Reports
-                            </button>
-                        </div>
-                    </div>
+            <!-- Reports Card -->
+            <div class="card fade-in">
+              <h3>📊 Reports & Analytics</h3>
+              <p>
+                Generate comprehensive reports on fleet performance and
+                efficiency.
+              </p>
+              <div style="margin-top: 1.5rem">
+                <button
+                  class="btn btn-small btn-outline btn-block quick-action-btn"
+                  data-action="view-reports"
+                >
+                  View Reports
+                </button>
+              </div>
+            </div>
 
-                    <!-- Maintenance Card -->
-                    <div class="card fade-in">
-                        <h3>🔧 Maintenance</h3>
-                        <p>Schedule and track vehicle maintenance to ensure optimal performance.</p>
-                        <div style="margin-top: 1.5rem;">
-                            <button class="btn btn-small btn-outline btn-block quick-action-btn" data-action="view-maintenance">
-                                Maintenance Schedule
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <!-- Maintenance Card -->
+            <div class="card fade-in">
+              <h3>🔧 Maintenance</h3>
+              <p>
+                Schedule and track vehicle maintenance to ensure optimal
+                performance.
+              </p>
+              <div style="margin-top: 1.5rem">
+                <button
+                  class="btn btn-small btn-outline btn-block quick-action-btn"
+                  data-action="view-maintenance"
+                >
+                  Maintenance Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <!-- Quick Actions Section -->
-            <section class="quick-actions-section" style="margin-top: 3rem;">
-                <h3 style="color: #F7931E; margin-bottom: 2rem; text-align: center;">Quick Actions</h3>
-                <div class="grid-2">
-                    <div class="card">
-                        <h4 style="color: #F7931E; margin-bottom: 1rem;">📱 Mobile Features</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Driver mobile app integration</li>
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Real-time GPS tracking</li>
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Digital vehicle inspections</li>
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Electronic logging device (ELD)</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="card">
-                        <h4 style="color: #F7931E; margin-bottom: 1rem;">📈 Performance Metrics</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Fuel efficiency tracking</li>
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Driver safety scores</li>
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Delivery performance analytics</li>
-                            <li style="margin: 0.5rem 0; color: #ccc;">• Cost per mile analysis</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
+        <!-- Quick Actions Section -->
+        <section class="quick-actions-section" style="margin-top: 3rem">
+          <h3 style="color: #f7931e; margin-bottom: 2rem; text-align: center">
+            Quick Actions
+          </h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4 style="color: #f7931e; margin-bottom: 1rem">
+                📱 Mobile Features
+              </h4>
+              <ul style="list-style: none; padding: 0">
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Driver mobile app integration
+                </li>
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Real-time GPS tracking
+                </li>
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Digital vehicle inspections
+                </li>
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Electronic logging device (ELD)
+                </li>
+              </ul>
+            </div>
 
-            <!-- Help Section -->
-            <section class="help-section" style="margin-top: 3rem; text-align: center;">
-                <div class="card">
-                    <h4 style="color: #F7931E; margin-bottom: 1rem;">Need Help?</h4>
-                    <p style="color: #ccc; margin-bottom: 1.5rem;">
-                        Contact our support team for assistance with your fleet management needs.
-                    </p>
-                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                        <button class="btn btn-outline quick-action-btn" data-action="contact-support">
-                            📞 Contact Support
-                        </button>
-                        <button class="btn btn-outline quick-action-btn" data-action="view-documentation">
-                            📚 View Documentation
-                        </button>
-                        <button class="btn btn-outline quick-action-btn" data-action="training">
-                            🎓 Training Resources
-                        </button>
-                    </div>
-                </div>
-            </section>
-        </div>
+            <div class="card">
+              <h4 style="color: #f7931e; margin-bottom: 1rem">
+                📈 Performance Metrics
+              </h4>
+              <ul style="list-style: none; padding: 0">
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Fuel efficiency tracking
+                </li>
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Driver safety scores
+                </li>
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Delivery performance analytics
+                </li>
+                <li style="margin: 0.5rem 0; color: #ccc">
+                  • Cost per mile analysis
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Help Section -->
+        <section
+          class="help-section"
+          style="margin-top: 3rem; text-align: center"
+        >
+          <div class="card">
+            <h4 style="color: #f7931e; margin-bottom: 1rem">Need Help?</h4>
+            <p style="color: #ccc; margin-bottom: 1.5rem">
+              Contact our support team for assistance with your fleet management
+              needs.
+            </p>
+            <div
+              style="
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+                flex-wrap: wrap;
+              "
+            >
+              <button
+                class="btn btn-outline quick-action-btn"
+                data-action="contact-support"
+              >
+                📞 Contact Support
+              </button>
+              <button
+                class="btn btn-outline quick-action-btn"
+                data-action="view-documentation"
+              >
+                📚 View Documentation
+              </button>
+              <button
+                class="btn btn-outline quick-action-btn"
+                data-action="training"
+              >
+                🎓 Training Resources
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="container">
-            <p class="footer-text">
-                © 2025 Ronyx Fleet Management Portal • Powered by Move Around TMS™
-            </p>
-        </div>
+      <div class="container">
+        <p class="footer-text">
+          © 2025 Ronyx Fleet Management Portal • Powered by Move Around TMS™
+        </p>
+      </div>
     </footer>
 
     <!-- Success Message Container (Hidden by default) -->
-    <div id="success" class="success-message" style="display: none;"></div>
+    <div id="success" class="success-message" style="display: none"></div>
 
     <!-- JavaScript -->
     <script src="./assets/js/main.js"></script>
-    
+
     <!-- Additional Dashboard JavaScript -->
     <script>
-        // Dashboard-specific enhancements
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add staggered animation delays to cards
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
+      // Dashboard-specific enhancements
+      document.addEventListener("DOMContentLoaded", function () {
+        // Add staggered animation delays to cards
+        const cards = document.querySelectorAll(".card");
+        cards.forEach((card, index) => {
+          card.style.animationDelay = `${index * 0.1}s`;
+        });
 
-            // Add hover effects for better interactivity
-            const statCards = document.querySelectorAll('.stat-card');
-            statCards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px) scale(1.02)';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0) scale(1)';
-                });
-            });
+        // Add hover effects for better interactivity
+        const statCards = document.querySelectorAll(".stat-card");
+        statCards.forEach((card) => {
+          card.addEventListener("mouseenter", function () {
+            this.style.transform = "translateY(-5px) scale(1.02)";
+          });
 
-            // Auto-refresh timestamp
-            function updateLastRefresh() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString();
-                
-                let refreshElement = document.getElementById('lastRefresh');
-                if (!refreshElement) {
-                    refreshElement = document.createElement('div');
-                    refreshElement.id = 'lastRefresh';
-                    refreshElement.style.cssText = `
+          card.addEventListener("mouseleave", function () {
+            this.style.transform = "translateY(0) scale(1)";
+          });
+        });
+
+        // Auto-refresh timestamp
+        function updateLastRefresh() {
+          const now = new Date();
+          const timeString = now.toLocaleTimeString();
+
+          let refreshElement = document.getElementById("lastRefresh");
+          if (!refreshElement) {
+            refreshElement = document.createElement("div");
+            refreshElement.id = "lastRefresh";
+            refreshElement.style.cssText = `
                         position: fixed;
                         bottom: 20px;
                         right: 20px;
@@ -263,34 +354,35 @@
                         border: 1px solid #333;
                         z-index: 1000;
                     `;
-                    document.body.appendChild(refreshElement);
-                }
-                
-                refreshElement.textContent = `Last updated: ${timeString}`;
-            }
+            document.body.appendChild(refreshElement);
+          }
 
-            // Update immediately and then every minute
-            updateLastRefresh();
-            setInterval(updateLastRefresh, 60000);
+          refreshElement.textContent = `Last updated: ${timeString}`;
+        }
 
-            console.log('📊 Dashboard enhancements loaded');
-        });
+        // Update immediately and then every minute
+        updateLastRefresh();
+        setInterval(updateLastRefresh, 60000);
+
+        console.log("📊 Dashboard enhancements loaded");
+      });
     </script>
 
     <!-- Service Worker Registration (Optional) -->
     <script>
-        // Register service worker for offline functionality (if available)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('✅ Service Worker registered');
-                    })
-                    .catch(error => {
-                        console.log('ℹ️ Service Worker registration failed (optional)');
-                    });
+      // Register service worker for offline functionality (if available)
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((registration) => {
+              console.log("✅ Service Worker registered");
+            })
+            .catch((error) => {
+              console.log("ℹ️ Service Worker registration failed (optional)");
             });
-        }
+        });
+      }
     </script>
-</body>
+  </body>
 </html>

@@ -1,6 +1,6 @@
 // Utility to join class names conditionally (Tailwind/React style)
 export function cn(...classes: (string | undefined)[]): string {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 // lib/utils.ts
 // Common helper utilities used throughout the app.

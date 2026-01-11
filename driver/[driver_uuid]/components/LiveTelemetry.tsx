@@ -22,9 +22,7 @@ export default function LiveTelemetry({ driver }: any) {
       .then((d) => setHosUsed(d.hours_used || 0));
 
     // Live OCR stream
-    const sse = new EventSource(
-      `/api/driver/${driver.uuid}/ocr-stream`
-    );
+    const sse = new EventSource(`/api/driver/${driver.uuid}/ocr-stream`);
     sse.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setOcrAlerts((prev) => [data, ...prev]);
@@ -36,7 +34,7 @@ export default function LiveTelemetry({ driver }: any) {
         const { latitude, longitude } = pos.coords;
 
         fetch(
-          `/api/yard/detect?lat=${latitude}&lng=${longitude}&driver=${driver.uuid}`
+          `/api/yard/detect?lat=${latitude}&lng=${longitude}&driver=${driver.uuid}`,
         )
           .then((r) => r.json())
           .then((d) => setInYard(d.inYard || false));
@@ -46,19 +44,14 @@ export default function LiveTelemetry({ driver }: any) {
     return () => sse.close();
   }, [driver]);
 
-  const earningsPercent = Math.min(
-    (earningsToday / maxEarnings) * 100,
-    100
-  );
+  const earningsPercent = Math.min((earningsToday / maxEarnings) * 100, 100);
   const hosPercent = Math.min((hosUsed / hosMax) * 100, 100);
 
   return (
     <section className="glass-panel p-5 rounded-2xl flex flex-col gap-6">
       {/* EARNINGS BATTERY */}
       <div>
-        <p className="text-sm opacity-70 mb-1">
-          Today’s Earnings
-        </p>
+        <p className="text-sm opacity-70 mb-1">Today’s Earnings</p>
         <div className="w-full h-5 bg-black/20 rounded-lg overflow-hidden">
           <div
             style={{
@@ -78,9 +71,7 @@ export default function LiveTelemetry({ driver }: any) {
 
       {/* HOS METER */}
       <div>
-        <p className="text-sm opacity-70 mb-1">
-          Hours Of Service Used
-        </p>
+        <p className="text-sm opacity-70 mb-1">Hours Of Service Used</p>
         <div className="w-full h-5 bg-black/20 rounded-lg overflow-hidden">
           <div
             className="h-full transition-all duration-700"
@@ -126,9 +117,7 @@ export default function LiveTelemetry({ driver }: any) {
             key={i}
             className="glass-card p-3 rounded-lg border border-cyan-400/20"
           >
-            <p className="text-sm font-semibold">
-              Ticket #{a.ticket_id}
-            </p>
+            <p className="text-sm font-semibold">Ticket #{a.ticket_id}</p>
             <p className="text-sm opacity-70">
               {a.message || "OCR update received"}
             </p>

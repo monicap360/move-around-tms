@@ -114,8 +114,7 @@ export default function LoadBoardPage({ params }: any) {
                       {load.weight} tons
                     </span>
                     <span className="flex items-center gap-1">
-                      <Activity className="w-4 h-4" />
-                      P{load.priority}
+                      <Activity className="w-4 h-4" />P{load.priority}
                     </span>
                   </div>
                 </div>

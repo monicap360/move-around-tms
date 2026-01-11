@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 type TimelineEvent = {
   id: string;
@@ -19,9 +19,9 @@ export default function Timeline() {
       setLoading(true);
       setError(null);
       const { data, error } = await supabase
-        .from('load_status_history')
-        .select('id, timestamp, driver_name, load_id, event')
-        .order('timestamp', { ascending: false })
+        .from("load_status_history")
+        .select("id, timestamp, driver_name, load_id, event")
+        .order("timestamp", { ascending: false })
         .limit(10);
       if (error) {
         setError(error.message);
@@ -46,9 +46,14 @@ export default function Timeline() {
           {events.length === 0 ? (
             <li>No timeline events found.</li>
           ) : (
-            events.map(ev => (
+            events.map((ev) => (
               <li key={ev.id}>
-                <span className="text-xs text-gray-500">{new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>{' '}
+                <span className="text-xs text-gray-500">
+                  {new Date(ev.timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>{" "}
                 {ev.driver_name} {ev.event} Load {ev.load_id}
               </li>
             ))

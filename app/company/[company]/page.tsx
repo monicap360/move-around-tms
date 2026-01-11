@@ -1,5 +1,9 @@
 // Company Dashboard Entry Point
-export default function CompanyPage({ params }: { params: { company: string } }) {
+export default function CompanyPage({
+  params,
+}: {
+  params: { company: string };
+}) {
   return (
     <div style={{ padding: 40 }}>
       <h1>Company Dashboard: {params.company}</h1>

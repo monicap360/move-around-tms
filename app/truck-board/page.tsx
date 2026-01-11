@@ -1,27 +1,50 @@
 "use client";
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 
 export default function TruckBoard() {
   const [trucks, setTrucks] = useState([
-    { id: "1", unit: "T-101", driver: "Robert M.", status: "Ready", type: "EndDump" },
-    { id: "2", unit: "T-102", driver: "Lilia G.", status: "Down", type: "EndDump" },
-    { id: "3", unit: "T-103", driver: "Santiago P.", status: "Ready", type: "Flatbed" },
+    {
+      id: "1",
+      unit: "T-101",
+      driver: "Robert M.",
+      status: "Ready",
+      type: "EndDump",
+    },
+    {
+      id: "2",
+      unit: "T-102",
+      driver: "Lilia G.",
+      status: "Down",
+      type: "EndDump",
+    },
+    {
+      id: "3",
+      unit: "T-103",
+      driver: "Santiago P.",
+      status: "Ready",
+      type: "Flatbed",
+    },
   ]);
 
   const handleAutoAssign = async (driverId: string) => {
     try {
-      const res = await fetch('/api/auto-assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auto-assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ driverId }),
-      })
-      const data = await res.json()
-      alert(data.message || 'No response')
+      });
+      const data = await res.json();
+      alert(data.message || "No response");
     } catch (err) {
-      alert('Error: ' + String(err))
+      alert("Error: " + String(err));
     }
-  }
+  };
 
   return (
     <div className="p-8">
@@ -51,8 +74,8 @@ export default function TruckBoard() {
                       t.status === "Ready"
                         ? "text-green-600"
                         : t.status === "Down"
-                        ? "text-red-600"
-                        : "text-blue-600"
+                          ? "text-red-600"
+                          : "text-blue-600"
                     }`}
                   >
                     {t.status}

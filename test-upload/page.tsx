@@ -1,7 +1,12 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 
 export default function TestUploadPage() {
@@ -9,7 +14,10 @@ export default function TestUploadPage() {
   const [testing, setTesting] = useState(false);
 
   const addResult = (message: string) => {
-    setResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    setResults((prev) => [
+      ...prev,
+      `${new Date().toLocaleTimeString()}: ${message}`,
+    ]);
   };
 
   const runTests = async () => {
@@ -25,7 +33,9 @@ export default function TestUploadPage() {
       if (error) {
         addResult(`❌ List buckets error: ${error.message}`);
       } else {
-        addResult(`✅ Available buckets: ${buckets?.map(b => b.name).join(', ') || 'none'}`);
+        addResult(
+          `✅ Available buckets: ${buckets?.map((b) => b.name).join(", ") || "none"}`,
+        );
       }
     } catch (err) {
       addResult(`❌ List buckets exception: ${err}`);
@@ -33,11 +43,15 @@ export default function TestUploadPage() {
 
     // Test 3: Check company_assets bucket
     try {
-      const { data, error } = await supabase.storage.from('company_assets').list('', { limit: 1 });
+      const { data, error } = await supabase.storage
+        .from("company_assets")
+        .list("", { limit: 1 });
       if (error) {
         addResult(`❌ company_assets bucket error: ${error.message}`);
       } else {
-        addResult(`✅ company_assets bucket accessible, contains ${data?.length || 0} items`);
+        addResult(
+          `✅ company_assets bucket accessible, contains ${data?.length || 0} items`,
+        );
       }
     } catch (err) {
       addResult(`❌ company_assets bucket exception: ${err}`);
@@ -45,12 +59,16 @@ export default function TestUploadPage() {
 
     // Test 4: Test API
     try {
-      const response = await fetch('/api/company-assets');
+      const response = await fetch("/api/company-assets");
       if (response.ok) {
         const data = await response.json();
-        addResult(`✅ API endpoint working, returned ${data.data?.length || 0} assets`);
+        addResult(
+          `✅ API endpoint working, returned ${data.data?.length || 0} assets`,
+        );
       } else {
-        addResult(`❌ API endpoint error: ${response.status} ${response.statusText}`);
+        addResult(
+          `❌ API endpoint error: ${response.status} ${response.statusText}`,
+        );
       }
     } catch (err) {
       addResult(`❌ API endpoint exception: ${err}`);
@@ -58,11 +76,11 @@ export default function TestUploadPage() {
 
     // Test 5: Simple upload test
     try {
-      const testBlob = new Blob(['test'], { type: 'text/plain' });
-      const testFile = new File([testBlob], 'test.txt', { type: 'text/plain' });
-      
+      const testBlob = new Blob(["test"], { type: "text/plain" });
+      const testFile = new File([testBlob], "test.txt", { type: "text/plain" });
+
       const { data, error } = await supabase.storage
-        .from('company_assets')
+        .from("company_assets")
         .upload(`test/${Date.now()}.txt`, testFile);
 
       if (error) {

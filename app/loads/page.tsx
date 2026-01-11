@@ -59,12 +59,29 @@ function ActiveLoads() {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Active Loads</h2>
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : loads.length === 0 ? <div className="text-gray-500">No active loads.</div> : (
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className="text-red-600">{error}</div>
+      ) : loads.length === 0 ? (
+        <div className="text-gray-500">No active loads.</div>
+      ) : (
         <ul className="divide-y">
           {loads.map((load) => (
-            <li key={load.id} className="py-2 flex flex-col md:flex-row md:items-center md:gap-4">
-              <Link href={`/loads/${load.id}/details`} className="text-blue-600 underline">Load #{load.load_number}</Link>
-              <span className="ml-2">Driver: {load.driver_name || "Unassigned"} | Truck: {load.truck_number || "-"} | Status: {load.status}</span>
+            <li
+              key={load.id}
+              className="py-2 flex flex-col md:flex-row md:items-center md:gap-4"
+            >
+              <Link
+                href={`/loads/${load.id}/details`}
+                className="text-blue-600 underline"
+              >
+                Load #{load.load_number}
+              </Link>
+              <span className="ml-2">
+                Driver: {load.driver_name || "Unassigned"} | Truck:{" "}
+                {load.truck_number || "-"} | Status: {load.status}
+              </span>
             </li>
           ))}
         </ul>
@@ -92,12 +109,29 @@ function AvailableLoads() {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Available Loads</h2>
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : loads.length === 0 ? <div className="text-gray-500">No available loads.</div> : (
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className="text-red-600">{error}</div>
+      ) : loads.length === 0 ? (
+        <div className="text-gray-500">No available loads.</div>
+      ) : (
         <ul className="divide-y">
           {loads.map((load) => (
-            <li key={load.id} className="py-2 flex flex-col md:flex-row md:items-center md:gap-4">
-              <Link href={`/loads/${load.id}/details`} className="text-blue-600 underline">Load #{load.load_number}</Link>
-              <span className="ml-2">Driver: {load.driver_name || "Unassigned"} | Truck: {load.truck_number || "-"} | Status: {load.status}</span>
+            <li
+              key={load.id}
+              className="py-2 flex flex-col md:flex-row md:items-center md:gap-4"
+            >
+              <Link
+                href={`/loads/${load.id}/details`}
+                className="text-blue-600 underline"
+              >
+                Load #{load.load_number}
+              </Link>
+              <span className="ml-2">
+                Driver: {load.driver_name || "Unassigned"} | Truck:{" "}
+                {load.truck_number || "-"} | Status: {load.status}
+              </span>
             </li>
           ))}
         </ul>
@@ -125,12 +159,29 @@ function CompletedLoads() {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Completed Loads</h2>
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : loads.length === 0 ? <div className="text-gray-500">No completed loads.</div> : (
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className="text-red-600">{error}</div>
+      ) : loads.length === 0 ? (
+        <div className="text-gray-500">No completed loads.</div>
+      ) : (
         <ul className="divide-y">
           {loads.map((load) => (
-            <li key={load.id} className="py-2 flex flex-col md:flex-row md:items-center md:gap-4">
-              <Link href={`/loads/${load.id}/details`} className="text-blue-600 underline">Load #{load.load_number}</Link>
-              <span className="ml-2">Driver: {load.driver_name || "Unassigned"} | Truck: {load.truck_number || "-"} | Status: {load.status}</span>
+            <li
+              key={load.id}
+              className="py-2 flex flex-col md:flex-row md:items-center md:gap-4"
+            >
+              <Link
+                href={`/loads/${load.id}/details`}
+                className="text-blue-600 underline"
+              >
+                Load #{load.load_number}
+              </Link>
+              <span className="ml-2">
+                Driver: {load.driver_name || "Unassigned"} | Truck:{" "}
+                {load.truck_number || "-"} | Status: {load.status}
+              </span>
             </li>
           ))}
         </ul>
@@ -158,12 +209,29 @@ function CancelledLoads() {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Cancelled Loads</h2>
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : loads.length === 0 ? <div className="text-gray-500">No cancelled loads.</div> : (
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className="text-red-600">{error}</div>
+      ) : loads.length === 0 ? (
+        <div className="text-gray-500">No cancelled loads.</div>
+      ) : (
         <ul className="divide-y">
           {loads.map((load) => (
-            <li key={load.id} className="py-2 flex flex-col md:flex-row md:items-center md:gap-4">
-              <Link href={`/loads/${load.id}/details`} className="text-blue-600 underline">Load #{load.load_number}</Link>
-              <span className="ml-2">Driver: {load.driver_name || "Unassigned"} | Truck: {load.truck_number || "-"} | Status: {load.status}</span>
+            <li
+              key={load.id}
+              className="py-2 flex flex-col md:flex-row md:items-center md:gap-4"
+            >
+              <Link
+                href={`/loads/${load.id}/details`}
+                className="text-blue-600 underline"
+              >
+                Load #{load.load_number}
+              </Link>
+              <span className="ml-2">
+                Driver: {load.driver_name || "Unassigned"} | Truck:{" "}
+                {load.truck_number || "-"} | Status: {load.status}
+              </span>
             </li>
           ))}
         </ul>
@@ -176,7 +244,9 @@ function LoadBoardSearch() {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Load Board Search</h2>
-      <div className="text-gray-500">External load board integration coming soon.</div>
+      <div className="text-gray-500">
+        External load board integration coming soon.
+      </div>
     </div>
   );
 }

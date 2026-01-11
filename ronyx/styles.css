@@ -1,12 +1,12 @@
 /* === Ronyx Login Page === */
 .ronyx-login {
-  background: linear-gradient(135deg, #000000 70%, #F7931E 100%);
+  background: linear-gradient(135deg, #000000 70%, #f7931e 100%);
   color: white;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .login-box {
@@ -22,7 +22,7 @@
 .ronyx-logo {
   max-height: 80px;
   margin-bottom: 1rem;
-  filter: drop-shadow(0 0 8px #F7931E);
+  filter: drop-shadow(0 0 8px #f7931e);
 }
 
 .login-tagline {
@@ -43,7 +43,7 @@
 }
 
 .login-box button {
-  background-color: #F7931E;
+  background-color: #f7931e;
   color: black;
   font-weight: bold;
   border: none;

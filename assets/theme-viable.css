@@ -1,15 +1,15 @@
 :root {
-  --primary: #071E34;     /* Header & Sidebar */
-  --secondary: #00A3FF;   /* Links, highlights */
-  --accent: #FF6B35;      /* CTA buttons */
-  --neutral: #F0F3F6;     /* Background */
-  --text: #333333;        /* Text color */
-  --white: #FFFFFF;
+  --primary: #071e34; /* Header & Sidebar */
+  --secondary: #00a3ff; /* Links, highlights */
+  --accent: #ff6b35; /* CTA buttons */
+  --neutral: #f0f3f6; /* Background */
+  --text: #333333; /* Text color */
+  --white: #ffffff;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background: var(--neutral);
   color: var(--text);
 }
@@ -21,7 +21,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 3px 6px rgba(0,0,0,.3);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .topbar h1 {
@@ -29,17 +29,19 @@ body {
   letter-spacing: 0.4px;
 }
 
-button, .btn {
+button,
+.btn {
   background: var(--accent);
   border: none;
   color: var(--white);
-  padding: .5rem 1rem;
+  padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all .3s ease;
+  transition: all 0.3s ease;
 }
-button:hover, .btn:hover {
+button:hover,
+.btn:hover {
   background: var(--secondary);
 }
 
@@ -53,9 +55,9 @@ main {
 .card {
   background: var(--white);
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   padding: 1.25rem;
-  transition: transform .2s;
+  transition: transform 0.2s;
 }
 .card:hover {
   transform: translateY(-3px);
@@ -74,11 +76,11 @@ th {
   background: var(--primary);
   color: var(--white);
   text-align: left;
-  padding: .5rem;
+  padding: 0.5rem;
 }
 td {
   border-bottom: 1px solid #ddd;
-  padding: .5rem;
+  padding: 0.5rem;
 }
 a {
   color: var(--accent);

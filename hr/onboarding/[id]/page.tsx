@@ -1,6 +1,6 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { 
+import {
   ArrowLeft,
   CheckCircle,
   Clock,
@@ -29,7 +29,7 @@ import {
   Save,
   Play,
   Pause,
-  RotateCcw
+  RotateCcw,
 } from "lucide-react";
 
 type OnboardingDetails = {
@@ -71,7 +71,7 @@ type OnboardingStep = {
 export default function OnboardingDetailsPage() {
   const params = useParams();
   const onboardingId = params?.id as string;
-  
+
   const [onboarding, setOnboarding] = useState<OnboardingDetails | null>(null);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,8 @@ export default function OnboardingDetailsPage() {
       // Load detailed steps
       const { data: stepsData, error: stepsError } = await supabase
         .from("onboarding_step_completion")
-        .select(`
+        .select(
+          `
           step_id,
           status as completion_status,
           completed_by,
@@ -120,7 +121,8 @@ export default function OnboardingDetailsPage() {
             assigned_department,
             instructions
           )
-        `)
+        `,
+        )
         .eq("onboarding_id", onboardingId)
         .order("onboarding_steps(step_order)");
 
@@ -130,26 +132,29 @@ export default function OnboardingDetailsPage() {
       }
 
       // Transform the data
-      const transformedSteps = (stepsData || []).map((item: any) => ({
-        step_id: item.step_id,
-        completion_status: item.completion_status,
-        completed_by: item.completed_by,
-        completed_at: item.completed_at,
-        completion_notes: item.completion_notes,
-        required_documents: item.required_documents || [],
-        uploaded_documents: item.uploaded_documents || [],
-        step_order: item.onboarding_steps.step_order,
-        title: item.onboarding_steps.title,
-        description: item.onboarding_steps.description,
-        category: item.onboarding_steps.category,
-        required_for_activation: item.onboarding_steps.required_for_activation,
-        estimated_duration_minutes: item.onboarding_steps.estimated_duration_minutes,
-        assigned_department: item.onboarding_steps.assigned_department,
-        instructions: item.onboarding_steps.instructions
-      })).sort((a: any, b: any) => a.step_order - b.step_order);
+      const transformedSteps = (stepsData || [])
+        .map((item: any) => ({
+          step_id: item.step_id,
+          completion_status: item.completion_status,
+          completed_by: item.completed_by,
+          completed_at: item.completed_at,
+          completion_notes: item.completion_notes,
+          required_documents: item.required_documents || [],
+          uploaded_documents: item.uploaded_documents || [],
+          step_order: item.onboarding_steps.step_order,
+          title: item.onboarding_steps.title,
+          description: item.onboarding_steps.description,
+          category: item.onboarding_steps.category,
+          required_for_activation:
+            item.onboarding_steps.required_for_activation,
+          estimated_duration_minutes:
+            item.onboarding_steps.estimated_duration_minutes,
+          assigned_department: item.onboarding_steps.assigned_department,
+          instructions: item.onboarding_steps.instructions,
+        }))
+        .sort((a: any, b: any) => a.step_order - b.step_order);
 
       setSteps(transformedSteps);
-
     } catch (err) {
       console.error("Error loading onboarding details:", err);
     } finally {
@@ -157,17 +162,21 @@ export default function OnboardingDetailsPage() {
     }
   }
 
-  async function updateStepStatus(stepId: string, newStatus: string, notes?: string) {
+  async function updateStepStatus(
+    stepId: string,
+    newStatus: string,
+    notes?: string,
+  ) {
     setUpdating(stepId);
     try {
       const updateData: any = {
         status: newStatus,
-        notes: notes || null
+        notes: notes || null,
       };
 
-      if (newStatus === 'Completed') {
+      if (newStatus === "Completed") {
         updateData.completed_at = new Date().toISOString();
-        updateData.completed_by = 'Current User'; // Replace with actual user
+        updateData.completed_by = "Current User"; // Replace with actual user
       }
 
       const { error } = await supabase
@@ -184,7 +193,6 @@ export default function OnboardingDetailsPage() {
 
       // Reload data to get updated progress
       await loadOnboardingDetails();
-
     } catch (err) {
       console.error("Error updating step:", err);
       alert("Unexpected error updating step");
@@ -195,38 +203,52 @@ export default function OnboardingDetailsPage() {
 
   function getStatusIcon(status: string) {
     switch (status.toLowerCase()) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'in progress':
+      case "in progress":
         return <Clock className="w-5 h-5 text-blue-500" />;
-      case 'failed':
+      case "failed":
         return <XCircle className="w-5 h-5 text-red-500" />;
-      case 'skipped':
+      case "skipped":
         return <div className="w-5 h-5 rounded-full bg-gray-300" />;
       default:
-        return <div className="w-5 h-5 rounded-full border-2 border-gray-300" />;
+        return (
+          <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+        );
     }
   }
 
   function getStatusColor(status: string) {
     switch (status.toLowerCase()) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in progress': return 'bg-blue-100 text-blue-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      case 'skipped': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-yellow-100 text-yellow-800';
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in progress":
+        return "bg-blue-100 text-blue-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "skipped":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-yellow-100 text-yellow-800";
     }
   }
 
   function getCategoryIcon(category: string) {
     switch (category.toLowerCase()) {
-      case 'hr': return <User className="w-4 h-4" />;
-      case 'safety': return <Shield className="w-4 h-4" />;
-      case 'training': return <GraduationCap className="w-4 h-4" />;
-      case 'operations': return <Truck className="w-4 h-4" />;
-      case 'documentation': return <FileText className="w-4 h-4" />;
-      case 'equipment': return <Briefcase className="w-4 h-4" />;
-      default: return <Users className="w-4 h-4" />;
+      case "hr":
+        return <User className="w-4 h-4" />;
+      case "safety":
+        return <Shield className="w-4 h-4" />;
+      case "training":
+        return <GraduationCap className="w-4 h-4" />;
+      case "operations":
+        return <Truck className="w-4 h-4" />;
+      case "documentation":
+        return <FileText className="w-4 h-4" />;
+      case "equipment":
+        return <Briefcase className="w-4 h-4" />;
+      default:
+        return <Users className="w-4 h-4" />;
     }
   }
 
@@ -234,7 +256,9 @@ export default function OnboardingDetailsPage() {
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+    return remainingMinutes > 0
+      ? `${hours}h ${remainingMinutes}m`
+      : `${hours}h`;
   }
 
   if (loading) {
@@ -270,7 +294,9 @@ export default function OnboardingDetailsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">{onboarding.driver_name}</h1>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {onboarding.driver_name}
+            </h1>
             <p className="text-gray-600">
               Employee ID: {onboarding.employee_id} • {onboarding.template_name}
             </p>
@@ -279,7 +305,9 @@ export default function OnboardingDetailsPage() {
                 {onboarding.onboarding_status}
               </Badge>
               {onboarding.assigned_hr_rep && (
-                <Badge variant="outline">HR Rep: {onboarding.assigned_hr_rep}</Badge>
+                <Badge variant="outline">
+                  HR Rep: {onboarding.assigned_hr_rep}
+                </Badge>
               )}
             </div>
           </div>
@@ -302,34 +330,51 @@ export default function OnboardingDetailsPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{onboarding.completion_percentage}%</div>
+              <div className="text-3xl font-bold text-blue-600">
+                {onboarding.completion_percentage}%
+              </div>
               <div className="text-sm text-gray-600">Complete</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{onboarding.completed_steps}</div>
+              <div className="text-3xl font-bold text-green-600">
+                {onboarding.completed_steps}
+              </div>
               <div className="text-sm text-gray-600">Completed Steps</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-600">{onboarding.total_steps - onboarding.completed_steps}</div>
+              <div className="text-3xl font-bold text-gray-600">
+                {onboarding.total_steps - onboarding.completed_steps}
+              </div>
               <div className="text-sm text-gray-600">Remaining Steps</div>
             </div>
             <div className="text-center">
-              <div className={`text-3xl font-bold ${onboarding.blocking_steps > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              <div
+                className={`text-3xl font-bold ${onboarding.blocking_steps > 0 ? "text-red-600" : "text-gray-600"}`}
+              >
                 {onboarding.blocking_steps}
               </div>
               <div className="text-sm text-gray-600">Blocking Steps</div>
             </div>
           </div>
-          
-          <Progress value={onboarding.completion_percentage} className="h-3 mb-4" />
-          
+
+          <Progress
+            value={onboarding.completion_percentage}
+            className="h-3 mb-4"
+          />
+
           <div className="flex justify-between text-sm text-gray-600">
-            <span>Started: {new Date(onboarding.started_date).toLocaleDateString()}</span>
             <span>
-              Target: {new Date(onboarding.target_completion_date).toLocaleDateString()}
+              Started: {new Date(onboarding.started_date).toLocaleDateString()}
+            </span>
+            <span>
+              Target:{" "}
+              {new Date(onboarding.target_completion_date).toLocaleDateString()}
               {onboarding.actual_completion_date && (
                 <span className="ml-4 text-green-600">
-                  Completed: {new Date(onboarding.actual_completion_date).toLocaleDateString()}
+                  Completed:{" "}
+                  {new Date(
+                    onboarding.actual_completion_date,
+                  ).toLocaleDateString()}
                 </span>
               )}
             </span>
@@ -345,12 +390,18 @@ export default function OnboardingDetailsPage() {
         <CardContent>
           <div className="space-y-6">
             {steps.map((step) => (
-              <div key={step.step_id} className={`border rounded-lg p-6 ${
-                step.completion_status === 'Completed' ? 'bg-green-50 border-green-200' :
-                step.completion_status === 'Failed' ? 'bg-red-50 border-red-200' :
-                step.completion_status === 'In Progress' ? 'bg-blue-50 border-blue-200' :
-                'bg-white'
-              }`}>
+              <div
+                key={step.step_id}
+                className={`border rounded-lg p-6 ${
+                  step.completion_status === "Completed"
+                    ? "bg-green-50 border-green-200"
+                    : step.completion_status === "Failed"
+                      ? "bg-red-50 border-red-200"
+                      : step.completion_status === "In Progress"
+                        ? "bg-blue-50 border-blue-200"
+                        : "bg-white"
+                }`}
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="flex items-center gap-2 mt-1">
@@ -359,28 +410,37 @@ export default function OnboardingDetailsPage() {
                       </span>
                       {getStatusIcon(step.completion_status)}
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold">{step.title}</h3>
                         {step.required_for_activation && (
-                          <Badge variant="destructive" className="text-xs">Required</Badge>
+                          <Badge variant="destructive" className="text-xs">
+                            Required
+                          </Badge>
                         )}
-                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        <Badge
+                          variant="outline"
+                          className="text-xs flex items-center gap-1"
+                        >
                           {getCategoryIcon(step.category)}
                           {step.category}
                         </Badge>
                       </div>
-                      
+
                       <p className="text-gray-600 mb-3">{step.description}</p>
-                      
+
                       {step.instructions && (
                         <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
-                          <h4 className="text-sm font-medium text-blue-800 mb-1">Instructions:</h4>
-                          <p className="text-sm text-blue-700">{step.instructions}</p>
+                          <h4 className="text-sm font-medium text-blue-800 mb-1">
+                            Instructions:
+                          </h4>
+                          <p className="text-sm text-blue-700">
+                            {step.instructions}
+                          </p>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -393,7 +453,8 @@ export default function OnboardingDetailsPage() {
                         {step.completed_by && step.completed_at && (
                           <span className="flex items-center gap-1 text-green-600">
                             <CheckCircle className="w-3 h-3" />
-                            Completed by {step.completed_by} on {new Date(step.completed_at).toLocaleDateString()}
+                            Completed by {step.completed_by} on{" "}
+                            {new Date(step.completed_at).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -401,10 +462,16 @@ export default function OnboardingDetailsPage() {
                       {/* Documents Section */}
                       {step.required_documents.length > 0 && (
                         <div className="mb-3">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Required Documents:</h4>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Required Documents:
+                          </h4>
                           <div className="flex flex-wrap gap-2">
                             {step.required_documents.map((doc, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
+                              <Badge
+                                key={idx}
+                                variant="outline"
+                                className="text-xs"
+                              >
                                 <FileText className="w-3 h-3 mr-1" />
                                 {doc}
                               </Badge>
@@ -416,8 +483,12 @@ export default function OnboardingDetailsPage() {
                       {/* Notes */}
                       {step.completion_notes && (
                         <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-3">
-                          <h4 className="text-sm font-medium text-gray-700 mb-1">Notes:</h4>
-                          <p className="text-sm text-gray-600">{step.completion_notes}</p>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">
+                            Notes:
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {step.completion_notes}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -428,35 +499,41 @@ export default function OnboardingDetailsPage() {
                     <Badge className={getStatusColor(step.completion_status)}>
                       {step.completion_status}
                     </Badge>
-                    
-                    {step.completion_status !== 'Completed' && (
+
+                    {step.completion_status !== "Completed" && (
                       <div className="flex flex-col gap-1">
-                        {step.completion_status === 'Pending' && (
-                          <Button 
-                            size="sm" 
+                        {step.completion_status === "Pending" && (
+                          <Button
+                            size="sm"
                             variant="outline"
-                            onClick={() => updateStepStatus(step.step_id, 'In Progress')}
+                            onClick={() =>
+                              updateStepStatus(step.step_id, "In Progress")
+                            }
                             disabled={updating === step.step_id}
                           >
                             <Play className="w-3 h-3 mr-1" />
                             Start
                           </Button>
                         )}
-                        
-                        {step.completion_status === 'In Progress' && (
+
+                        {step.completion_status === "In Progress" && (
                           <>
-                            <Button 
+                            <Button
                               size="sm"
-                              onClick={() => updateStepStatus(step.step_id, 'Completed')}
+                              onClick={() =>
+                                updateStepStatus(step.step_id, "Completed")
+                              }
                               disabled={updating === step.step_id}
                             >
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Complete
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
-                              onClick={() => updateStepStatus(step.step_id, 'Failed')}
+                              onClick={() =>
+                                updateStepStatus(step.step_id, "Failed")
+                              }
                               disabled={updating === step.step_id}
                             >
                               <XCircle className="w-3 h-3 mr-1" />
@@ -464,12 +541,14 @@ export default function OnboardingDetailsPage() {
                             </Button>
                           </>
                         )}
-                        
-                        {step.completion_status === 'Failed' && (
-                          <Button 
-                            size="sm" 
+
+                        {step.completion_status === "Failed" && (
+                          <Button
+                            size="sm"
                             variant="outline"
-                            onClick={() => updateStepStatus(step.step_id, 'In Progress')}
+                            onClick={() =>
+                              updateStepStatus(step.step_id, "In Progress")
+                            }
                             disabled={updating === step.step_id}
                           >
                             <RotateCcw className="w-3 h-3 mr-1" />

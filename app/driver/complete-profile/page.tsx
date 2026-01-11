@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { User, Truck, Phone, Mail, DollarSign, FileText } from "lucide-react";
 
@@ -30,8 +35,10 @@ export default function CompleteProfilePage() {
 
   async function checkProfile() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         window.location.href = "/login";
         return;
@@ -62,8 +69,10 @@ export default function CompleteProfilePage() {
     setError("");
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         setError("Not authenticated");
         setLoading(false);
@@ -124,11 +133,13 @@ export default function CompleteProfilePage() {
         <Card className="max-w-md border-green-200 bg-green-50">
           <CardContent className="pt-6 text-center">
             <div className="text-green-600 text-5xl mb-4">✓</div>
-            <h2 className="text-xl font-bold text-green-800 mb-2">Profile Already Complete</h2>
+            <h2 className="text-xl font-bold text-green-800 mb-2">
+              Profile Already Complete
+            </h2>
             <p className="text-gray-700 mb-4">
               You already have a driver profile set up.
             </p>
-            <Button onClick={() => window.location.href = "/driver/profile"}>
+            <Button onClick={() => (window.location.href = "/driver/profile")}>
               Go to My Profile
             </Button>
           </CardContent>
@@ -143,11 +154,15 @@ export default function CompleteProfilePage() {
         <Card className="max-w-md border-green-200 bg-green-50">
           <CardContent className="pt-6 text-center">
             <div className="text-green-600 text-5xl mb-4">✓</div>
-            <h2 className="text-xl font-bold text-green-800 mb-2">Profile Created!</h2>
+            <h2 className="text-xl font-bold text-green-800 mb-2">
+              Profile Created!
+            </h2>
             <p className="text-gray-700 mb-2">
               Your driver profile has been created successfully.
             </p>
-            <p className="text-sm text-gray-600">Redirecting to your profile...</p>
+            <p className="text-sm text-gray-600">
+              Redirecting to your profile...
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -157,9 +172,12 @@ export default function CompleteProfilePage() {
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Complete Your Driver Profile</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Complete Your Driver Profile
+        </h1>
         <p className="text-gray-600">
-          Welcome! Please fill in your information to complete your driver profile.
+          Welcome! Please fill in your information to complete your driver
+          profile.
         </p>
         {userEmail && (
           <p className="text-sm text-blue-600 mt-2">
@@ -207,7 +225,8 @@ export default function CompleteProfilePage() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                E.164 format recommended (e.g., +15551234567) for SMS ticket uploads
+                E.164 format recommended (e.g., +15551234567) for SMS ticket
+                uploads
               </p>
             </div>
 
@@ -268,7 +287,8 @@ export default function CompleteProfilePage() {
                 <option value="1099">1099 Contractor</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                W2 = Employee with tax withholding | 1099 = Independent contractor
+                W2 = Employee with tax withholding | 1099 = Independent
+                contractor
               </p>
             </div>
           </CardContent>
@@ -340,8 +360,9 @@ export default function CompleteProfilePage() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> If you're unsure about your pay rate, you can leave it blank 
-                and your manager will set it up for you. Contact your manager if you have questions.
+                <strong>Note:</strong> If you're unsure about your pay rate, you
+                can leave it blank and your manager will set it up for you.
+                Contact your manager if you have questions.
               </p>
             </div>
           </CardContent>
@@ -365,7 +386,7 @@ export default function CompleteProfilePage() {
           </Button>
           <Button
             type="button"
-            onClick={() => window.location.href = "/"}
+            onClick={() => (window.location.href = "/")}
             variant="outline"
             className="px-6"
           >
@@ -374,7 +395,7 @@ export default function CompleteProfilePage() {
         </div>
 
         <p className="text-xs text-center text-gray-500">
-          By creating your profile, you agree to provide accurate information. 
+          By creating your profile, you agree to provide accurate information.
           Your manager may review and update these details as needed.
         </p>
       </form>

@@ -11,7 +11,7 @@ export default function DriverDashboard() {
     experience: "",
     licenseType: "",
     resume: null as File | null,
-    notes: ""
+    notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -31,7 +31,7 @@ export default function DriverDashboard() {
           experience: data.experience || "",
           licenseType: data.license_type || "",
           resume: null,
-          notes: data.notes || ""
+          notes: data.notes || "",
         });
       }
       setLoading(false);
@@ -50,7 +50,7 @@ export default function DriverDashboard() {
       });
       const res = await fetch("/api/driver/profile", {
         method: "POST",
-        body: data
+        body: data,
       });
       if (!res.ok) throw new Error("Failed to update profile");
       setSuccess(true);
@@ -65,37 +65,91 @@ export default function DriverDashboard() {
 
   return (
     <main className="max-w-lg mx-auto py-10 px-4">
-      <h1 className="text-2xl font-bold mb-6 text-blue-700">Driver Profile & Onboarding</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow">
+      <h1 className="text-2xl font-bold mb-6 text-blue-700">
+        Driver Profile & Onboarding
+      </h1>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-white p-6 rounded shadow"
+      >
         <div>
           <label className="block font-semibold mb-1">Full Name</label>
-          <input className="w-full border p-2 rounded" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <input
+            className="w-full border p-2 rounded"
+            required
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
         </div>
         <div>
           <label className="block font-semibold mb-1">Email</label>
-          <input type="email" className="w-full border p-2 rounded" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+          <input
+            type="email"
+            className="w-full border p-2 rounded"
+            required
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+          />
         </div>
         <div>
           <label className="block font-semibold mb-1">Phone</label>
-          <input className="w-full border p-2 rounded" required value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+          <input
+            className="w-full border p-2 rounded"
+            required
+            value={form.phone}
+            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+          />
         </div>
         <div>
           <label className="block font-semibold mb-1">Experience (years)</label>
-          <input type="number" min="0" className="w-full border p-2 rounded" required value={form.experience} onChange={e => setForm(f => ({ ...f, experience: e.target.value }))} />
+          <input
+            type="number"
+            min="0"
+            className="w-full border p-2 rounded"
+            required
+            value={form.experience}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, experience: e.target.value }))
+            }
+          />
         </div>
         <div>
           <label className="block font-semibold mb-1">License Type</label>
-          <input className="w-full border p-2 rounded" required value={form.licenseType} onChange={e => setForm(f => ({ ...f, licenseType: e.target.value }))} />
+          <input
+            className="w-full border p-2 rounded"
+            required
+            value={form.licenseType}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, licenseType: e.target.value }))
+            }
+          />
         </div>
         <div>
-          <label className="block font-semibold mb-1">Résumé (PDF, optional)</label>
-          <input type="file" accept="application/pdf" className="w-full" onChange={e => setForm(f => ({ ...f, resume: e.target.files?.[0] || null }))} />
+          <label className="block font-semibold mb-1">
+            Résumé (PDF, optional)
+          </label>
+          <input
+            type="file"
+            accept="application/pdf"
+            className="w-full"
+            onChange={(e) =>
+              setForm((f) => ({ ...f, resume: e.target.files?.[0] || null }))
+            }
+          />
         </div>
         <div>
           <label className="block font-semibold mb-1">Notes (optional)</label>
-          <textarea className="w-full border p-2 rounded" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          <textarea
+            className="w-full border p-2 rounded"
+            value={form.notes}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          />
         </div>
-        <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded font-semibold w-full" disabled={submitting}>
+        <button
+          type="submit"
+          className="bg-blue-700 text-white px-6 py-2 rounded font-semibold w-full"
+          disabled={submitting}
+        >
           {submitting ? "Saving..." : "Save Profile"}
         </button>
         {error && <div className="text-red-600 mt-2">{error}</div>}

@@ -1,10 +1,23 @@
 "use client";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import Link from "next/link";
-import { FileText, Upload, AlertCircle, Users, Calendar, Building, CheckCircle } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  AlertCircle,
+  Users,
+  Calendar,
+  Building,
+  CheckCircle,
+} from "lucide-react";
 
 type DocumentStats = {
   totalDocuments: number;
@@ -57,14 +70,16 @@ export default function HRPage() {
       // Get recent documents
       const { data: recent } = await supabase
         .from("driver_documents")
-        .select(`
+        .select(
+          `
           id,
           doc_type,
           created_at,
           expiration_date,
           status,
           drivers (name)
-        `)
+        `,
+        )
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -83,7 +98,7 @@ export default function HRPage() {
           expiration_date: doc.expiration_date,
           status: doc.status,
           driver_name: doc.drivers?.name || "Unknown",
-        }))
+        })),
       );
     } catch (err) {
       console.error("Error loading HR data:", err);
@@ -105,7 +120,9 @@ export default function HRPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Human Resources</h1>
-          <p className="text-gray-600 mt-1">Ronyx Logistics LLC - 3741 Graves Ave, Groves, Texas 77619</p>
+          <p className="text-gray-600 mt-1">
+            Ronyx Logistics LLC - 3741 Graves Ave, Groves, Texas 77619
+          </p>
         </div>
         <Link href="/hr/upload">
           <Button className="flex items-center gap-2">
@@ -134,7 +151,9 @@ export default function HRPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Documents</p>
-                <p className="text-2xl font-bold">{stats?.totalDocuments || 0}</p>
+                <p className="text-2xl font-bold">
+                  {stats?.totalDocuments || 0}
+                </p>
               </div>
               <FileText className="w-8 h-8 text-green-500" />
             </div>
@@ -146,7 +165,9 @@ export default function HRPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Expiring Soon</p>
-                <p className="text-2xl font-bold text-orange-600">{stats?.expiringCount || 0}</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {stats?.expiringCount || 0}
+                </p>
               </div>
               <Calendar className="w-8 h-8 text-orange-500" />
             </div>
@@ -158,7 +179,9 @@ export default function HRPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Pending Review</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats?.pendingReview || 0}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {stats?.pendingReview || 0}
+                </p>
               </div>
               <AlertCircle className="w-8 h-8 text-yellow-500" />
             </div>
@@ -255,7 +278,11 @@ export default function HRPage() {
         <CardContent>
           {recentDocs.length === 0 ? (
             <p className="text-gray-500 text-center py-4">
-              No documents yet. <Link href="/hr/upload" className="text-blue-600 underline">Upload your first document</Link>.
+              No documents yet.{" "}
+              <Link href="/hr/upload" className="text-blue-600 underline">
+                Upload your first document
+              </Link>
+              .
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -274,7 +301,9 @@ export default function HRPage() {
                     <tr key={doc.id} className="border-b hover:bg-gray-50">
                       <td className="p-3">{doc.driver_name}</td>
                       <td className="p-3">{doc.doc_type}</td>
-                      <td className="p-3">{new Date(doc.created_at).toLocaleDateString()}</td>
+                      <td className="p-3">
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </td>
                       <td className="p-3">
                         {doc.expiration_date
                           ? new Date(doc.expiration_date).toLocaleDateString()
@@ -286,8 +315,8 @@ export default function HRPage() {
                             doc.status === "Approved"
                               ? "bg-green-100 text-green-800"
                               : doc.status === "Denied"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
                           {doc.status}

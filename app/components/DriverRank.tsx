@@ -6,11 +6,13 @@ export function DriverRank({ status }: { status: string }) {
     "Fleet-Level": "bg-purple-600",
     "Master Operator": "bg-yellow-600",
     "Elite Certified": "bg-red-600",
-    "Titan Driver": "bg-black text-yellow-400 border-2 border-yellow-400"
+    "Titan Driver": "bg-black text-yellow-400 border-2 border-yellow-400",
   };
 
   return (
-    <span className={`px-3 py-1 rounded-full text-white text-sm ${colors[status]}`}>
+    <span
+      className={`px-3 py-1 rounded-full text-white text-sm ${colors[status]}`}
+    >
       {status}
     </span>
   );

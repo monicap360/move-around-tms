@@ -1,66 +1,77 @@
-'use client'
+"use client";
 
-import { createClient } from '@supabase/supabase-js'
-import { useEffect, useState } from 'react'
+import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
 
 interface UserProfile {
-  id: string
-  role: 'super_admin' | 'partner' | 'manager' | 'owner' | 'company_admin' | 'staff' | 'user'
-  full_name: string
-  company_id?: string
+  id: string;
+  role:
+    | "super_admin"
+    | "partner"
+    | "manager"
+    | "owner"
+    | "company_admin"
+    | "staff"
+    | "user";
+  full_name: string;
+  company_id?: string;
 }
 
 interface PartnerInfo {
-  id: string
-  full_name: string
+  id: string;
+  full_name: string;
   theme: {
-    primary_color?: string
-    secondary_color?: string
-    company_name?: string
-    logo_url?: string
-  }
+    primary_color?: string;
+    secondary_color?: string;
+    company_name?: string;
+    logo_url?: string;
+  };
 }
 
 export function useRoleBasedAuth() {
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [partnerInfo, setPartnerInfo] = useState<PartnerInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [partnerInfo, setPartnerInfo] = useState<PartnerInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkUser()
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        loadUserProfile(session.user.id)
-      } else {
-        setUser(null)
-        setProfile(null)
-        setPartnerInfo(null)
-        setLoading(false)
-      }
-    })
+    checkUser();
 
-    return () => subscription.unsubscribe()
-  }, [])
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setPartnerInfo(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function checkUser() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        setUser(user)
-        await loadUserProfile(user.id)
+        setUser(user);
+        await loadUserProfile(user.id);
       }
     } catch (error) {
-      console.error('Error checking user:', error)
+      console.error("Error checking user:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -68,75 +79,77 @@ export function useRoleBasedAuth() {
     try {
       // Load user profile
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-      if (profileError) throw profileError
-      setProfile(profileData)
+      if (profileError) throw profileError;
+      setProfile(profileData);
 
       // If user is a partner, load partner info
-      if (profileData.role === 'partner') {
+      if (profileData.role === "partner") {
         const { data: partnerData, error: partnerError } = await supabase
-          .from('partners')
-          .select('*')
-          .eq('user_id', userId)
-          .single()
+          .from("partners")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
 
-        if (partnerError) throw partnerError
-        setPartnerInfo(partnerData)
+        if (partnerError) throw partnerError;
+        setPartnerInfo(partnerData);
       }
     } catch (error) {
-      console.error('Error loading profile:', error)
+      console.error("Error loading profile:", error);
     }
   }
 
   function getRedirectPath(): string {
-    if (!profile) return '/auth'
+    if (!profile) return "/auth";
 
     // Special case for RonYX partner - Veronica Butanda
-    if (user?.email === 'melidazvl@outlook.com') {
-      return '/veronica' // Veronica's detailed Next.js dashboard
+    if (user?.email === "melidazvl@outlook.com") {
+      return "/veronica"; // Veronica's detailed Next.js dashboard
     }
 
     switch (profile.role) {
-      case 'super_admin':
+      case "super_admin":
         // Monica, Breanna, Shamsa, Sylvia - unified admin access
-        return '/admin' // Full admin dashboard
-      case 'partner':
-      case 'manager':
-        return '/partners/dashboard' // Generic partner dashboard
-      case 'company_admin':
-      case 'staff':
-        return '/company/dashboard' // Company dashboard
+        return "/admin"; // Full admin dashboard
+      case "partner":
+      case "manager":
+        return "/partners/dashboard"; // Generic partner dashboard
+      case "company_admin":
+      case "staff":
+        return "/company/dashboard"; // Company dashboard
       default:
-        return '/dashboard' // Regular user dashboard
+        return "/dashboard"; // Regular user dashboard
     }
   }
 
   function hasPermission(requiredRole: string): boolean {
-    if (!profile) return false
-    
+    if (!profile) return false;
+
     const roleHierarchy = {
-      'super_admin': 5,
-      'partner': 4,
-      'manager': 4,
-      'owner': 3,
-      'company_admin': 3,
-      'staff': 2,
-      'user': 1
-    }
+      super_admin: 5,
+      partner: 4,
+      manager: 4,
+      owner: 3,
+      company_admin: 3,
+      staff: 2,
+      user: 1,
+    };
 
-    const userLevel = roleHierarchy[profile.role as keyof typeof roleHierarchy] || 0
-    const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
+    const userLevel =
+      roleHierarchy[profile.role as keyof typeof roleHierarchy] || 0;
+    const requiredLevel =
+      roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0;
 
-    return userLevel >= requiredLevel
+    return userLevel >= requiredLevel;
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   }
 
   return {
@@ -147,21 +160,21 @@ export function useRoleBasedAuth() {
     getRedirectPath,
     hasPermission,
     signOut,
-    supabase
-  }
+    supabase,
+  };
 }
 
 export function RoleBasedRedirect() {
-  const { profile, loading, getRedirectPath } = useRoleBasedAuth()
+  const { profile, loading, getRedirectPath } = useRoleBasedAuth();
 
   useEffect(() => {
     if (!loading && profile) {
-      const redirectPath = getRedirectPath()
+      const redirectPath = getRedirectPath();
       if (window.location.pathname !== redirectPath) {
-        window.location.href = redirectPath
+        window.location.href = redirectPath;
       }
     }
-  }, [profile, loading])
+  }, [profile, loading]);
 
   if (loading) {
     return (
@@ -171,8 +184,8 @@ export function RoleBasedRedirect() {
           <p className="mt-4 text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }

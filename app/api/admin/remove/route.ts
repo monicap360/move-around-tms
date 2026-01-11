@@ -11,15 +11,22 @@ export async function POST(req: Request) {
   // Auth check
   const { data: userData } = await supabase.auth.getUser();
   const user = userData?.user;
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const { data: isAdmin } = await supabase.rpc("is_admin");
   if (!isAdmin)
-    return NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Forbidden: Admins only" },
+      { status: 403 },
+    );
 
   // Prevent removing yourself as admin
   if (user.id === user_id) {
-    return NextResponse.json({ error: "Cannot remove yourself as admin" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Cannot remove yourself as admin" },
+      { status: 400 },
+    );
   }
 
   // Delete from admin_users

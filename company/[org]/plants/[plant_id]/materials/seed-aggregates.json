@@ -1,12 +1,27 @@
 [
-  {"name": "#57 Limestone", "type": "Aggregate", "price": 18.50, "unit": "ton"},
-  {"name": "Pea Gravel", "type": "Aggregate", "price": 22.00, "unit": "ton"},
-  {"name": "Masonry Sand", "type": "Sand", "price": 19.75, "unit": "ton"},
-  {"name": "Washed Gravel", "type": "Gravel", "price": 21.00, "unit": "ton"},
-  {"name": "Cement Type I/II", "type": "Cement", "price": 110.00, "unit": "ton"},
-  {"name": "Rip Rap", "type": "Aggregate", "price": 25.00, "unit": "ton"},
-  {"name": "Stabilized Sand", "type": "Sand", "price": 23.50, "unit": "ton"},
-  {"name": "Portland Cement", "type": "Cement", "price": 105.00, "unit": "ton"},
-  {"name": "Flex Base", "type": "Aggregate", "price": 17.00, "unit": "ton"},
-  {"name": "Concrete Mix", "type": "Aggregate", "price": 30.00, "unit": "ton"}
+  {
+    "name": "#57 Limestone",
+    "type": "Aggregate",
+    "price": 18.5,
+    "unit": "ton"
+  },
+  { "name": "Pea Gravel", "type": "Aggregate", "price": 22.0, "unit": "ton" },
+  { "name": "Masonry Sand", "type": "Sand", "price": 19.75, "unit": "ton" },
+  { "name": "Washed Gravel", "type": "Gravel", "price": 21.0, "unit": "ton" },
+  {
+    "name": "Cement Type I/II",
+    "type": "Cement",
+    "price": 110.0,
+    "unit": "ton"
+  },
+  { "name": "Rip Rap", "type": "Aggregate", "price": 25.0, "unit": "ton" },
+  { "name": "Stabilized Sand", "type": "Sand", "price": 23.5, "unit": "ton" },
+  {
+    "name": "Portland Cement",
+    "type": "Cement",
+    "price": 105.0,
+    "unit": "ton"
+  },
+  { "name": "Flex Base", "type": "Aggregate", "price": 17.0, "unit": "ton" },
+  { "name": "Concrete Mix", "type": "Aggregate", "price": 30.0, "unit": "ton" }
 ]

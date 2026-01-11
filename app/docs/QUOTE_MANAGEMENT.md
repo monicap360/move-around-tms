@@ -5,6 +5,7 @@ Complete implementation of quote management with email workflow, material rates 
 ## ✅ Features Implemented
 
 ### 1. Material Rates Management (`/admin/material-rates`)
+
 - **CRUD Operations:** Create, Read, Update, Delete material types
 - **Default Pricing:** Set default bill rates and pay rates per material
 - **Unit Types:** Support for Load, Yard, Ton, Hour billing
@@ -13,12 +14,14 @@ Complete implementation of quote management with email workflow, material rates 
 - **Quick Codes:** Optional material codes for faster entry
 
 **API:** `/api/admin/material-rates`
+
 - GET: List all rates (optional `?active=true` filter)
 - POST: Create new material rate
 - PATCH: Update existing rate
 - DELETE: Remove rate
 
 ### 2. Quote Management (`/aggregates/quotes`)
+
 - **Quote Creation:** Full form with company, contact, material, pricing
 - **Material Quick-Select:** Auto-fill rates from material master list
 - **Status Workflow:** Draft → Pending Review → Approved → Sent → Accepted/Rejected
@@ -27,15 +30,18 @@ Complete implementation of quote management with email workflow, material rates 
 - **Signature Tracking:** URL field for signed documents
 
 **API:** `/api/admin/quotes`
+
 - GET: List quotes (optional `?status=Draft` filter)
 - POST: Create new quote
 - PATCH: Update quote fields or status
 - DELETE: Remove quote
 
 ### 3. Email Quote Drafts (`/api/admin/quotes/email-draft`)
+
 Generate formatted email content for two scenarios:
 
 #### Management Review Email
+
 - **Purpose:** Internal review before sending to customer
 - **Includes:**
   - Company and contact details
@@ -45,6 +51,7 @@ Generate formatted email content for two scenarios:
 - **Template:** Professional HTML format with tables
 
 #### Customer Quote Email
+
 - **Purpose:** Send quote to customer
 - **Includes:**
   - Company branding (Solis Trucking)
@@ -54,6 +61,7 @@ Generate formatted email content for two scenarios:
 - **Template:** Customer-facing HTML with branding
 
 **Usage:**
+
 ```json
 POST /api/admin/quotes/email-draft
 {
@@ -63,6 +71,7 @@ POST /api/admin/quotes/email-draft
 ```
 
 **Response:**
+
 ```json
 {
   "quote_id": "uuid",
@@ -75,9 +84,11 @@ POST /api/admin/quotes/email-draft
 ```
 
 ### 4. Email Sending (`/api/admin/quotes/send-email`)
+
 Send emails via SMTP (Gmail, Outlook, custom) or integrate with SendGrid/AWS SES.
 
 **Configuration:** Set these environment variables:
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -87,6 +98,7 @@ EMAIL_FROM=quotes@solistrucking.com
 ```
 
 **Usage:**
+
 ```json
 POST /api/admin/quotes/send-email
 {
@@ -100,7 +112,9 @@ POST /api/admin/quotes/send-email
 **Draft Mode:** If SMTP not configured, API returns `draft_mode: true` with preview only.
 
 ### 5. Approval Workflow
+
 Built into quote status management:
+
 - **Draft:** Initial creation
 - **Pending Review:** Submitted for management approval
 - **Approved:** Management approved
@@ -111,6 +125,7 @@ Built into quote status management:
 Status changes tracked in UI with dropdown selects.
 
 ### 6. Signature Integration
+
 - **Current:** Manual URL field for signed documents
 - **Future:** Can integrate DocuSign, HelloSign, or Adobe Sign APIs
 - Quote view shows "Signed" badge when `signature_url` is populated
@@ -142,13 +157,16 @@ app/aggregates/
 ## 🚀 Getting Started
 
 ### 1. Run Migration
+
 Apply the material rates schema:
+
 ```sql
 -- Run in Supabase SQL editor or migration tool
 \i db/migrations/033_create_material_rates.sql
 ```
 
 ### 2. Seed Materials (Optional)
+
 ```sql
 INSERT INTO material_rates (material_name, material_code, default_bill_rate, default_pay_rate, unit_type, description) VALUES
   ('Limestone', 'LIME', 150.00, 100.00, 'Load', 'Crushed limestone aggregate'),
@@ -158,7 +176,9 @@ INSERT INTO material_rates (material_name, material_code, default_bill_rate, def
 ```
 
 ### 3. Configure Email (Optional)
+
 Add to `.env.local`:
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -168,12 +188,14 @@ EMAIL_FROM=quotes@solistrucking.com
 ```
 
 **Gmail Users:** Generate an App Password:
+
 1. Go to Google Account → Security
 2. Enable 2-Step Verification
 3. Generate App Password for "Mail"
 4. Use that password in `SMTP_PASS`
 
 ### 4. Access Features
+
 - **Material Rates:** `/admin/material-rates`
 - **Quotes:** `/aggregates/quotes`
 - **Aggregates Hub:** `/aggregates` (updated with new cards)
@@ -183,6 +205,7 @@ EMAIL_FROM=quotes@solistrucking.com
 ## 💡 Workflow Examples
 
 ### Create a Quote
+
 1. Go to `/aggregates/quotes`
 2. Click **+ Create Quote**
 3. Fill in customer details
@@ -192,6 +215,7 @@ EMAIL_FROM=quotes@solistrucking.com
 7. Save as "Draft"
 
 ### Send Quote to Customer
+
 1. Find quote in table
 2. Click **📧 Cust** button
 3. Review generated email in preview modal
@@ -199,6 +223,7 @@ EMAIL_FROM=quotes@solistrucking.com
 5. Update status to "Sent"
 
 ### Management Review
+
 1. Create quote with status "Pending Review"
 2. Click **📧 Mgmt** button
 3. Review internal email with profit margins
@@ -206,6 +231,7 @@ EMAIL_FROM=quotes@solistrucking.com
 5. Update status to "Approved" or "Rejected"
 
 ### Track Signature
+
 1. After customer signs (via DocuSign, PDF, etc.)
 2. Edit quote
 3. Paste signed document URL in `signature_url` field
@@ -225,6 +251,7 @@ EMAIL_FROM=quotes@solistrucking.com
 ## 📊 Database Schema
 
 ### `material_rates`
+
 ```sql
 id              uuid PRIMARY KEY
 material_name   text UNIQUE NOT NULL
@@ -239,6 +266,7 @@ updated_at      timestamp
 ```
 
 ### `aggregate_quotes` (existing, enhanced)
+
 ```sql
 id              uuid PRIMARY KEY
 company         text
@@ -260,12 +288,14 @@ created_at      timestamp
 ## 🎨 UI Features
 
 ### Material Rates Page
+
 - Sortable table with margin calculations
 - Inline edit/delete actions
 - Active/inactive badges
 - Form validation
 
 ### Quotes Page
+
 - Status dropdown in table for quick updates
 - Email buttons (Management + Customer)
 - Profit margin display in table
@@ -277,9 +307,11 @@ created_at      timestamp
 ## 🔧 Customization
 
 ### Add SendGrid Integration
+
 Replace nodemailer in `send-email/route.ts`:
+
 ```typescript
-import sgMail from '@sendgrid/mail';
+import sgMail from "@sendgrid/mail";
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
 await sgMail.send({
@@ -292,7 +324,9 @@ await sgMail.send({
 ```
 
 ### Add DocuSign Integration
+
 Create new endpoint `/api/admin/quotes/send-for-signature`:
+
 ```typescript
 // Use DocuSign eSignature API
 // Generate envelope, add signer, send
@@ -301,6 +335,7 @@ Create new endpoint `/api/admin/quotes/send-for-signature`:
 ```
 
 ### Custom Email Templates
+
 Edit `email-draft/route.ts` to customize HTML/text content.
 
 ---

@@ -1,32 +1,37 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
 import { safeAlert } from "../../../lib/utils/alert";
-import { 
-  Save, 
-  Plus, 
-  Trash2, 
-  Move, 
-  Type, 
-  Hash, 
+import {
+  Save,
+  Plus,
+  Trash2,
+  Move,
+  Type,
+  Hash,
   Calendar,
   List,
   ArrowLeft,
   Eye,
   Download,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 interface TemplateField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: "text" | "number" | "date" | "select";
   label: string;
   required: boolean;
   x_position: number;
@@ -44,15 +49,24 @@ interface TemplateAsset {
   description?: string;
 }
 
-export default function TemplateEditorPage({ params }: { params: { assetId?: string } }) {
+export default function TemplateEditorPage({
+  params,
+}: {
+  params: { assetId?: string };
+}) {
   const [asset, setAsset] = useState<TemplateAsset | null>(null);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [partnerName, setPartnerName] = useState("");
   const [fields, setFields] = useState<TemplateField[]>([]);
-  const [selectedField, setSelectedField] = useState<TemplateField | null>(null);
+  const [selectedField, setSelectedField] = useState<TemplateField | null>(
+    null,
+  );
   const [isCreatingField, setIsCreatingField] = useState(false);
-  const [newFieldStart, setNewFieldStart] = useState<{x: number, y: number} | null>(null);
+  const [newFieldStart, setNewFieldStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [imageScale, setImageScale] = useState(1);
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -70,18 +84,21 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
 
   const loadAsset = async (id: string) => {
     try {
-      const response = await fetch('/api/company-assets');
+      const response = await fetch("/api/company-assets");
       if (response.ok) {
         const data = await response.json();
         const foundAsset = data.assets?.find((a: TemplateAsset) => a.id === id);
         if (foundAsset) {
           setAsset(foundAsset);
-          setTemplateName(`${foundAsset.file_name.split('.')[0]} Template`);
-          setTemplateDescription(foundAsset.description || `Digital form for ${foundAsset.file_name}`);
+          setTemplateName(`${foundAsset.file_name.split(".")[0]} Template`);
+          setTemplateDescription(
+            foundAsset.description ||
+              `Digital form for ${foundAsset.file_name}`,
+          );
         }
       }
     } catch (error) {
-      console.error('Error loading asset:', error);
+      console.error("Error loading asset:", error);
     }
   };
 
@@ -93,7 +110,7 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
         const scale = Math.min(
           (container.clientWidth - 32) / img.naturalWidth,
           (container.clientHeight - 100) / img.naturalHeight,
-          1
+          1,
         );
         setImageScale(scale);
       }
@@ -115,12 +132,12 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
         id: `field_${Date.now()}`,
         name: `field_${fields.length + 1}`,
         label: `Field ${fields.length + 1}`,
-        type: 'text',
+        type: "text",
         required: false,
         x_position: Math.min(newFieldStart.x, x),
         y_position: Math.min(newFieldStart.y, y),
         width: Math.abs(x - newFieldStart.x),
-        height: Math.abs(y - newFieldStart.y)
+        height: Math.abs(y - newFieldStart.y),
       };
 
       setFields([...fields, field]);
@@ -131,14 +148,14 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
   };
 
   const updateField = (fieldId: string, updates: Partial<TemplateField>) => {
-    setFields(fields.map(f => f.id === fieldId ? { ...f, ...updates } : f));
+    setFields(fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)));
     if (selectedField?.id === fieldId) {
       setSelectedField({ ...selectedField, ...updates });
     }
   };
 
   const deleteField = (fieldId: string) => {
-    setFields(fields.filter(f => f.id !== fieldId));
+    setFields(fields.filter((f) => f.id !== fieldId));
     if (selectedField?.id === fieldId) {
       setSelectedField(null);
     }
@@ -146,21 +163,21 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
 
   const handleSave = async () => {
     if (!templateName.trim() || !templateDescription.trim()) {
-      safeAlert('Please provide a name and description for the template');
+      safeAlert("Please provide a name and description for the template");
       return;
     }
 
     setSaving(true);
     try {
-      const response = await fetch('/api/ticket-templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ticket-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: templateName,
           description: templateDescription,
           partner_name: partnerName || null,
           base_image_url: asset?.file_url,
-          template_fields: fields.map(f => ({
+          template_fields: fields.map((f) => ({
             name: f.name,
             label: f.label,
             type: f.type,
@@ -170,22 +187,22 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
             width: f.width,
             height: f.height,
             options: f.options,
-            default_value: f.default_value
-          }))
-        })
+            default_value: f.default_value,
+          })),
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        safeAlert('Template created successfully!');
-        window.location.href = '/ticket-templates';
+        safeAlert("Template created successfully!");
+        window.location.href = "/ticket-templates";
       } else {
         const error = await response.json();
-        safeAlert(`Error: ${error.error || 'Failed to save template'}`);
+        safeAlert(`Error: ${error.error || "Failed to save template"}`);
       }
     } catch (error) {
-      console.error('Save error:', error);
-      safeAlert('Error saving template');
+      console.error("Save error:", error);
+      safeAlert("Error saving template");
     } finally {
       setSaving(false);
     }
@@ -193,14 +210,17 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
 
   const handleTestFill = () => {
     // Store template in session storage for testing
-    sessionStorage.setItem('temp_template', JSON.stringify({
-      name: templateName,
-      description: templateDescription,
-      partner_name: partnerName,
-      base_image_url: asset?.file_url,
-      template_fields: fields
-    }));
-    window.open('/ticket-templates/test-fill', '_blank');
+    sessionStorage.setItem(
+      "temp_template",
+      JSON.stringify({
+        name: templateName,
+        description: templateDescription,
+        partner_name: partnerName,
+        base_image_url: asset?.file_url,
+        template_fields: fields,
+      }),
+    );
+    window.open("/ticket-templates/test-fill", "_blank");
   };
 
   if (!asset) {
@@ -209,9 +229,15 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-700">Asset Not Found</h3>
-            <p className="text-gray-500 mb-4">The template asset could not be loaded.</p>
-            <Button onClick={() => window.location.href = '/ticket-templates'}>
+            <h3 className="text-lg font-medium text-gray-700">
+              Asset Not Found
+            </h3>
+            <p className="text-gray-500 mb-4">
+              The template asset could not be loaded.
+            </p>
+            <Button
+              onClick={() => (window.location.href = "/ticket-templates")}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Templates
             </Button>
@@ -227,15 +253,17 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
       <div className="bg-white border-b border-gray-200 px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => window.location.href = '/ticket-templates'}
+            <Button
+              variant="ghost"
+              onClick={() => (window.location.href = "/ticket-templates")}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Template Editor</h1>
+              <h1 className="text-2xl font-bold text-gray-800">
+                Template Editor
+              </h1>
               <p className="text-gray-600">{asset.file_name}</p>
             </div>
           </div>
@@ -246,7 +274,7 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
               onClick={() => setPreviewMode(!previewMode)}
             >
               <Eye className="w-4 h-4 mr-2" />
-              {previewMode ? 'Edit Mode' : 'Preview'}
+              {previewMode ? "Edit Mode" : "Preview"}
             </Button>
             <Button
               variant="outline"
@@ -256,12 +284,9 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
               <Type className="w-4 h-4 mr-2" />
               Test Fill
             </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-            >
+            <Button onClick={handleSave} disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Template'}
+              {saving ? "Saving..." : "Save Template"}
             </Button>
           </div>
         </div>
@@ -272,7 +297,9 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
         <div className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto max-h-screen">
           {/* Template Info */}
           <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-4">Template Information</h3>
+            <h3 className="font-semibold text-gray-800 mb-4">
+              Template Information
+            </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -335,7 +362,7 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                   Clear All
                 </Button>
               </div>
-              
+
               {isCreatingField && (
                 <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
                   {!newFieldStart ? (
@@ -371,9 +398,11 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                     className="cursor-pointer transition-colors"
                     onClick={() => setSelectedField(field)}
                   >
-                    <Card 
+                    <Card
                       className={`${
-                        selectedField?.id === field.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                        selectedField?.id === field.id
+                          ? "ring-2 ring-blue-500 bg-blue-50"
+                          : "hover:bg-gray-50"
                       }`}
                     >
                       <CardContent className="p-3">
@@ -388,18 +417,22 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                               }}
                               className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                             >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Badge variant="secondary" className="text-xs">
-                          {field.type}
-                        </Badge>
-                        {field.required && <Badge variant="outline" className="text-xs">Required</Badge>}
-                      </div>
-                    </CardContent>
-                  </Card>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <Badge variant="secondary" className="text-xs">
+                            {field.type}
+                          </Badge>
+                          {field.required && (
+                            <Badge variant="outline" className="text-xs">
+                              Required
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 ))}
               </div>
@@ -410,8 +443,10 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
         {/* Right Panel - Field Properties */}
         {selectedField && !previewMode && (
           <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto max-h-screen">
-            <h3 className="font-semibold text-gray-800 mb-4">Field Properties</h3>
-            
+            <h3 className="font-semibold text-gray-800 mb-4">
+              Field Properties
+            </h3>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -419,7 +454,9 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                 </label>
                 <Input
                   value={selectedField.name}
-                  onChange={(e) => updateField(selectedField.id, { name: e.target.value })}
+                  onChange={(e) =>
+                    updateField(selectedField.id, { name: e.target.value })
+                  }
                   placeholder="field_name"
                 />
               </div>
@@ -430,7 +467,9 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                 </label>
                 <Input
                   value={selectedField.label}
-                  onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
+                  onChange={(e) =>
+                    updateField(selectedField.id, { label: e.target.value })
+                  }
                   placeholder="Display Label"
                 />
               </div>
@@ -441,9 +480,11 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                 </label>
                 <select
                   value={selectedField.type}
-                  onChange={(e) => updateField(selectedField.id, { 
-                    type: e.target.value as TemplateField['type'] 
-                  })}
+                  onChange={(e) =>
+                    updateField(selectedField.id, {
+                      type: e.target.value as TemplateField["type"],
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
                   <option value="text">Text</option>
@@ -453,16 +494,20 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                 </select>
               </div>
 
-              {selectedField.type === 'select' && (
+              {selectedField.type === "select" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Options (one per line)
                   </label>
                   <textarea
-                    value={(selectedField.options || []).join('\n')}
-                    onChange={(e) => updateField(selectedField.id, { 
-                      options: e.target.value.split('\n').filter(opt => opt.trim()) 
-                    })}
+                    value={(selectedField.options || []).join("\n")}
+                    onChange={(e) =>
+                      updateField(selectedField.id, {
+                        options: e.target.value
+                          .split("\n")
+                          .filter((opt) => opt.trim()),
+                      })
+                    }
                     placeholder="Option 1&#10;Option 2&#10;Option 3"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     rows={4}
@@ -475,8 +520,12 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                   Default Value (Optional)
                 </label>
                 <Input
-                  value={selectedField.default_value || ''}
-                  onChange={(e) => updateField(selectedField.id, { default_value: e.target.value })}
+                  value={selectedField.default_value || ""}
+                  onChange={(e) =>
+                    updateField(selectedField.id, {
+                      default_value: e.target.value,
+                    })
+                  }
                   placeholder="Default value..."
                 />
               </div>
@@ -485,7 +534,11 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                 <input
                   type="checkbox"
                   checked={selectedField.required}
-                  onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                  onChange={(e) =>
+                    updateField(selectedField.id, {
+                      required: e.target.checked,
+                    })
+                  }
                   className="rounded"
                 />
                 <label className="text-sm font-medium text-gray-700">
@@ -494,7 +547,9 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
               </div>
 
               <div className="pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Position & Size</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Position & Size
+                </h4>
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                   <div>X: {Math.round(selectedField.x_position)}</div>
                   <div>Y: {Math.round(selectedField.y_position)}</div>
@@ -518,11 +573,11 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                   className="max-w-full h-auto"
                   style={{
                     transform: `scale(${imageScale})`,
-                    transformOrigin: 'top left'
+                    transformOrigin: "top left",
                   }}
                   onLoad={handleImageLoad}
                 />
-                
+
                 {/* Field Overlay */}
                 <div
                   ref={overlayRef}
@@ -530,7 +585,7 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                   onClick={handleOverlayClick}
                   style={{
                     transform: `scale(${imageScale})`,
-                    transformOrigin: 'top left'
+                    transformOrigin: "top left",
                   }}
                 >
                   {/* Render existing fields */}
@@ -538,15 +593,15 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                     <div
                       key={field.id}
                       className={`absolute border-2 bg-black bg-opacity-10 flex items-center justify-center text-xs font-medium text-white transition-colors ${
-                        selectedField?.id === field.id 
-                          ? 'border-blue-500 bg-blue-500 bg-opacity-30' 
-                          : 'border-yellow-500 hover:border-yellow-400'
+                        selectedField?.id === field.id
+                          ? "border-blue-500 bg-blue-500 bg-opacity-30"
+                          : "border-yellow-500 hover:border-yellow-400"
                       }`}
                       style={{
                         left: field.x_position,
                         top: field.y_position,
                         width: field.width,
-                        height: field.height
+                        height: field.height,
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -565,7 +620,7 @@ export default function TemplateEditorPage({ params }: { params: { assetId?: str
                         left: newFieldStart.x,
                         top: newFieldStart.y,
                         width: 100,
-                        height: 30
+                        height: 30,
                       }}
                     />
                   )}

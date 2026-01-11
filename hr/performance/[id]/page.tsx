@@ -1,6 +1,6 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Progress } from "../../../components/ui/progress";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { 
+import {
   ArrowLeft,
   Shield,
   AlertTriangle,
@@ -25,7 +25,7 @@ import {
   BookOpen,
   FileText,
   Eye,
-  Plus
+  Plus,
 } from "lucide-react";
 
 type DriverPerformance = {
@@ -75,8 +75,14 @@ type PerformanceGoal = {
   description: string;
 };
 
-export default function DriverPerformancePage({ params }: { params: { id: string } }) {
-  const [performance, setPerformance] = useState<DriverPerformance | null>(null);
+export default function DriverPerformancePage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const [performance, setPerformance] = useState<DriverPerformance | null>(
+    null,
+  );
   const [incidents, setIncidents] = useState<RecentIncident[]>([]);
   const [trainings, setTrainings] = useState<TrainingRecord[]>([]);
   const [goals, setGoals] = useState<PerformanceGoal[]>([]);
@@ -138,7 +144,6 @@ export default function DriverPerformancePage({ params }: { params: { id: string
       if (!goalError && goalData) {
         setGoals(goalData);
       }
-
     } catch (err) {
       console.error("Error loading driver performance:", err);
     } finally {
@@ -147,34 +152,42 @@ export default function DriverPerformancePage({ params }: { params: { id: string
   }
 
   function getSafetyScoreColor(score: number) {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    if (score >= 70) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-yellow-600";
+    if (score >= 70) return "text-orange-600";
+    return "text-red-600";
   }
 
   function getSafetyScoreBadge(score: number) {
-    if (score >= 90) return 'bg-green-100 text-green-800';
-    if (score >= 80) return 'bg-yellow-100 text-yellow-800';
-    if (score >= 70) return 'bg-orange-100 text-orange-800';
-    return 'bg-red-100 text-red-800';
+    if (score >= 90) return "bg-green-100 text-green-800";
+    if (score >= 80) return "bg-yellow-100 text-yellow-800";
+    if (score >= 70) return "bg-orange-100 text-orange-800";
+    return "bg-red-100 text-red-800";
   }
 
   function getSeverityColor(severity: string) {
     switch (severity.toLowerCase()) {
-      case 'critical': return 'bg-red-100 text-red-800';
-      case 'major': return 'bg-orange-100 text-orange-800';
-      case 'minor': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "critical":
+        return "bg-red-100 text-red-800";
+      case "major":
+        return "bg-orange-100 text-orange-800";
+      case "minor":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   }
 
   function getStatusColor(status: string) {
     switch (status.toLowerCase()) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800";
+      case "overdue":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   }
 
@@ -210,8 +223,12 @@ export default function DriverPerformancePage({ params }: { params: { id: string
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">{performance.driver_name}</h1>
-            <p className="text-gray-600 mt-1">Employee ID: {performance.employee_id}</p>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {performance.driver_name}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Employee ID: {performance.employee_id}
+            </p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -231,7 +248,9 @@ export default function DriverPerformancePage({ params }: { params: { id: string
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Safety Score</p>
-                <p className={`text-3xl font-bold ${getSafetyScoreColor(performance.current_safety_score)}`}>
+                <p
+                  className={`text-3xl font-bold ${getSafetyScoreColor(performance.current_safety_score)}`}
+                >
                   {performance.current_safety_score}
                 </p>
                 {performance.current_safety_score >= 90 && (
@@ -267,7 +286,7 @@ export default function DriverPerformancePage({ params }: { params: { id: string
               <div>
                 <p className="text-sm text-gray-500">Fuel Efficiency</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {performance.recent_mpg?.toFixed(1) || 'N/A'}
+                  {performance.recent_mpg?.toFixed(1) || "N/A"}
                 </p>
                 <p className="text-xs text-gray-500">MPG Average</p>
               </div>
@@ -282,7 +301,7 @@ export default function DriverPerformancePage({ params }: { params: { id: string
               <div>
                 <p className="text-sm text-gray-500">On-Time Rate</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {performance.recent_on_time_pct?.toFixed(0) || 'N/A'}%
+                  {performance.recent_on_time_pct?.toFixed(0) || "N/A"}%
                 </p>
                 <p className="text-xs text-gray-500">Delivery performance</p>
               </div>
@@ -313,7 +332,9 @@ export default function DriverPerformancePage({ params }: { params: { id: string
               {goals.length === 0 ? (
                 <div className="text-center py-4">
                   <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No performance goals set</p>
+                  <p className="text-sm text-gray-500">
+                    No performance goals set
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -322,7 +343,9 @@ export default function DriverPerformancePage({ params }: { params: { id: string
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="font-medium">{goal.goal_type}</h4>
-                          <p className="text-sm text-gray-600">{goal.description}</p>
+                          <p className="text-sm text-gray-600">
+                            {goal.description}
+                          </p>
                         </div>
                         <Badge className={getStatusColor(goal.status)}>
                           {goal.status}
@@ -330,12 +353,19 @@ export default function DriverPerformancePage({ params }: { params: { id: string
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>Progress: {goal.current_value || 0} / {goal.target_value}</span>
+                          <span>
+                            Progress: {goal.current_value || 0} /{" "}
+                            {goal.target_value}
+                          </span>
                           <span>{getGoalProgress(goal).toFixed(0)}%</span>
                         </div>
-                        <Progress value={getGoalProgress(goal)} className="h-2" />
+                        <Progress
+                          value={getGoalProgress(goal)}
+                          className="h-2"
+                        />
                         <div className="text-xs text-gray-500">
-                          Target date: {new Date(goal.target_date).toLocaleDateString()}
+                          Target date:{" "}
+                          {new Date(goal.target_date).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -365,7 +395,9 @@ export default function DriverPerformancePage({ params }: { params: { id: string
               {incidents.length === 0 ? (
                 <div className="text-center py-4">
                   <Shield className="w-8 h-8 text-green-300 mx-auto mb-2" />
-                  <p className="text-sm text-green-600">No recent incidents - Great job!</p>
+                  <p className="text-sm text-green-600">
+                    No recent incidents - Great job!
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -373,16 +405,26 @@ export default function DriverPerformancePage({ params }: { params: { id: string
                     <div key={incident.id} className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h4 className="font-medium text-sm">{incident.incident_type}</h4>
-                          <p className="text-xs text-gray-600 line-clamp-2">{incident.description}</p>
+                          <h4 className="font-medium text-sm">
+                            {incident.incident_type}
+                          </h4>
+                          <p className="text-xs text-gray-600 line-clamp-2">
+                            {incident.description}
+                          </p>
                         </div>
                         <Badge className={getSeverityColor(incident.severity)}>
                           {incident.severity}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>{new Date(incident.incident_date).toLocaleDateString()}</span>
-                        <span className="capitalize">{incident.investigation_status.replace('_', ' ')}</span>
+                        <span>
+                          {new Date(
+                            incident.incident_date,
+                          ).toLocaleDateString()}
+                        </span>
+                        <span className="capitalize">
+                          {incident.investigation_status.replace("_", " ")}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -418,22 +460,37 @@ export default function DriverPerformancePage({ params }: { params: { id: string
               {trainings.length === 0 ? (
                 <div className="text-center py-4">
                   <BookOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No training records found</p>
+                  <p className="text-sm text-gray-500">
+                    No training records found
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {trainings.slice(0, 5).map((training) => (
-                    <div key={training.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div
+                      key={training.id}
+                      className="flex justify-between items-center p-3 border rounded-lg"
+                    >
                       <div>
-                        <h4 className="font-medium text-sm">{training.training_type}</h4>
-                        <p className="text-xs text-gray-500">{new Date(training.training_date).toLocaleDateString()}</p>
+                        <h4 className="font-medium text-sm">
+                          {training.training_type}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {new Date(
+                            training.training_date,
+                          ).toLocaleDateString()}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <Badge className={getStatusColor(training.completion_status)}>
+                        <Badge
+                          className={getStatusColor(training.completion_status)}
+                        >
                           {training.completion_status}
                         </Badge>
                         {training.score && (
-                          <p className="text-xs text-gray-600 mt-1">Score: {training.score}%</p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Score: {training.score}%
+                          </p>
                         )}
                       </div>
                     </div>
@@ -454,19 +511,25 @@ export default function DriverPerformancePage({ params }: { params: { id: string
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Incidents</span>
-                <span className={`font-medium ${performance.incidents_12mo > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <span
+                  className={`font-medium ${performance.incidents_12mo > 0 ? "text-red-600" : "text-green-600"}`}
+                >
                   {performance.incidents_12mo}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Accidents</span>
-                <span className={`font-medium ${performance.accidents_12mo > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <span
+                  className={`font-medium ${performance.accidents_12mo > 0 ? "text-red-600" : "text-green-600"}`}
+                >
                   {performance.accidents_12mo}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Violations</span>
-                <span className={`font-medium ${performance.violations_12mo > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                <span
+                  className={`font-medium ${performance.violations_12mo > 0 ? "text-orange-600" : "text-green-600"}`}
+                >
                   {performance.violations_12mo}
                 </span>
               </div>
@@ -487,12 +550,18 @@ export default function DriverPerformancePage({ params }: { params: { id: string
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Last Review</span>
-                    <span className="text-sm">{new Date(performance.last_review_date).toLocaleDateString()}</span>
+                    <span className="text-sm">
+                      {new Date(
+                        performance.last_review_date,
+                      ).toLocaleDateString()}
+                    </span>
                   </div>
                   {performance.last_review_rating && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Rating</span>
-                      <span className="font-medium">{performance.last_review_rating}/5</span>
+                      <span className="font-medium">
+                        {performance.last_review_rating}/5
+                      </span>
                     </div>
                   )}
                 </div>
@@ -514,19 +583,35 @@ export default function DriverPerformancePage({ params }: { params: { id: string
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Performance Goal
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+              >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Schedule Training
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+              >
                 <Calendar className="w-4 h-4 mr-2" />
                 Schedule Review
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+              >
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 Report Incident
               </Button>

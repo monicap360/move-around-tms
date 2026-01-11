@@ -19,9 +19,7 @@ export default function RiskAI() {
         {risks.map((r, i) => (
           <div key={i} className="glass-card p-3 rounded-lg">
             <p className="font-semibold">{r.driver_name}</p>
-            <p className="text-sm opacity-70">
-              {r.ai_reason}
-            </p>
+            <p className="text-sm opacity-70">{r.ai_reason}</p>
           </div>
         ))}
       </div>

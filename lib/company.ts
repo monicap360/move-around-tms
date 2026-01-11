@@ -3,7 +3,7 @@ import { Database } from "@/types/supabase";
 
 const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
 export async function getCompanyDashboardData(org_code: string) {
@@ -14,7 +14,10 @@ export async function getCompanyDashboardData(org_code: string) {
     loadsThisWeek: 124,
     fleetUtilization: 92,
     recentActivity: [
-      { description: "Driver John Smith completed Load #1234", timeAgo: "2h ago" },
+      {
+        description: "Driver John Smith completed Load #1234",
+        timeAgo: "2h ago",
+      },
       { description: "New ticket uploaded by dispatcher", timeAgo: "4h ago" },
       { description: "Truck #22 maintenance scheduled", timeAgo: "1d ago" },
     ],

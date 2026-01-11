@@ -20,8 +20,8 @@ export default function AISettingsPage({ params }: any) {
   useEffect(() => {
     setLoading(true);
     fetch(`/api/company/${company}/settings/ai`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setSettings({ ...DEFAULT_SETTINGS, ...data });
         setLoading(false);
       });
@@ -50,7 +50,7 @@ export default function AISettingsPage({ params }: any) {
         <div className="text-blue-500">Loading…</div>
       ) : (
         <form
-          onSubmit={e => {
+          onSubmit={(e) => {
             e.preventDefault();
             saveSettings();
           }}
@@ -61,7 +61,7 @@ export default function AISettingsPage({ params }: any) {
             <input
               type="checkbox"
               checked={settings.enabled}
-              onChange={e => updateField("enabled", e.target.checked)}
+              onChange={(e) => updateField("enabled", e.target.checked)}
               className="ml-3"
             />
           </div>
@@ -71,7 +71,9 @@ export default function AISettingsPage({ params }: any) {
             <input
               type="text"
               value={settings.silent_hours_start}
-              onChange={e => updateField("silent_hours_start", e.target.value)}
+              onChange={(e) =>
+                updateField("silent_hours_start", e.target.value)
+              }
               className="w-full mt-1 p-2 border rounded"
               placeholder="21:00"
             />
@@ -82,7 +84,7 @@ export default function AISettingsPage({ params }: any) {
             <input
               type="text"
               value={settings.silent_hours_end}
-              onChange={e => updateField("silent_hours_end", e.target.value)}
+              onChange={(e) => updateField("silent_hours_end", e.target.value)}
               className="w-full mt-1 p-2 border rounded"
               placeholder="06:00"
             />
@@ -93,7 +95,9 @@ export default function AISettingsPage({ params }: any) {
             <input
               type="checkbox"
               checked={settings.hide_when_not_used}
-              onChange={e => updateField("hide_when_not_used", e.target.checked)}
+              onChange={(e) =>
+                updateField("hide_when_not_used", e.target.checked)
+              }
               className="ml-3"
             />
           </div>
@@ -102,7 +106,7 @@ export default function AISettingsPage({ params }: any) {
             <label className="font-semibold">Assistant Style</label>
             <select
               value={settings.assistant_style}
-              onChange={e => updateField("assistant_style", e.target.value)}
+              onChange={(e) => updateField("assistant_style", e.target.value)}
               className="w-full mt-1 p-2 border rounded"
             >
               <option value="tesla">Tesla</option>

@@ -33,14 +33,48 @@ export default function TicketDetailsPage() {
       {error && <div className="text-red-600">{error}</div>}
       {ticket && (
         <div className="space-y-2">
-          <div>Ticket ID: <span className="font-mono">{ticket.ticket_id}</span></div>
-          <div>Driver: {ticket.driver_name || <span className="text-muted-foreground">(missing)</span>}</div>
-          <div>Truck: {ticket.truck_number || <span className="text-muted-foreground">(missing)</span>}</div>
-          <div>Material: {ticket.material || <span className="text-muted-foreground">(missing)</span>}</div>
-          <div>Net Weight: {ticket.net_weight ?? <span className="text-muted-foreground">(missing)</span>}</div>
-          <div>Load Date: {ticket.load_date || <span className="text-muted-foreground">(missing)</span>}</div>
-          <div>Source: {ticket.source || <span className="text-muted-foreground">(missing)</span>}</div>
-          <div>Status: <span className="font-semibold">{ticket.status}</span></div>
+          <div>
+            Ticket ID: <span className="font-mono">{ticket.ticket_id}</span>
+          </div>
+          <div>
+            Driver:{" "}
+            {ticket.driver_name || (
+              <span className="text-muted-foreground">(missing)</span>
+            )}
+          </div>
+          <div>
+            Truck:{" "}
+            {ticket.truck_number || (
+              <span className="text-muted-foreground">(missing)</span>
+            )}
+          </div>
+          <div>
+            Material:{" "}
+            {ticket.material || (
+              <span className="text-muted-foreground">(missing)</span>
+            )}
+          </div>
+          <div>
+            Net Weight:{" "}
+            {ticket.net_weight ?? (
+              <span className="text-muted-foreground">(missing)</span>
+            )}
+          </div>
+          <div>
+            Load Date:{" "}
+            {ticket.load_date || (
+              <span className="text-muted-foreground">(missing)</span>
+            )}
+          </div>
+          <div>
+            Source:{" "}
+            {ticket.source || (
+              <span className="text-muted-foreground">(missing)</span>
+            )}
+          </div>
+          <div>
+            Status: <span className="font-semibold">{ticket.status}</span>
+          </div>
         </div>
       )}
     </div>

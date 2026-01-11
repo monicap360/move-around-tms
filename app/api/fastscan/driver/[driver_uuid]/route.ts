@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const client = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function GET(req, { params }) {
@@ -13,6 +13,7 @@ export async function GET(req, { params }) {
     .select("*, trucks(*)")
     .eq("driver_uuid", driver_uuid)
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 404 });
   return NextResponse.json(data);
 }

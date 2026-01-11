@@ -20,9 +20,7 @@ export default function PlantReconciliation({ params }: any) {
       </h1>
 
       <section className="glass-panel p-6 rounded-2xl">
-        <h2 className="text-xl font-semibold mb-4">
-          Summary
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">Summary</h2>
 
         <p>Plant Tickets: {results.plant_count}</p>
         <p>Driver Tickets: {results.driver_count}</p>

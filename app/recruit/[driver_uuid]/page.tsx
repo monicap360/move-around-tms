@@ -13,7 +13,7 @@ export default function RecruiterDriverView({ params }) {
     async function fetchDriver() {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
       const { data } = await supabase
         .from("drivers")
@@ -24,7 +24,8 @@ export default function RecruiterDriverView({ params }) {
     }
     fetchDriver();
   }, [params.driver_uuid]);
-  if (!driver) return <div className="p-8 text-white bg-black min-h-screen">Loading…</div>;
+  if (!driver)
+    return <div className="p-8 text-white bg-black min-h-screen">Loading…</div>;
   return (
     <div className="p-8 bg-black text-white min-h-screen">
       <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -39,7 +40,10 @@ export default function RecruiterDriverView({ params }) {
           <RecruiterActionBar driver_uuid={driver.driver_uuid} />
         </div>
         <div className="flex-1">
-          <TruckPreview truck_skin={driver.truck_skin} custom_logo_url={driver.custom_logo_url} />
+          <TruckPreview
+            truck_skin={driver.truck_skin}
+            custom_logo_url={driver.custom_logo_url}
+          />
         </div>
       </div>
       <div className="mt-8">

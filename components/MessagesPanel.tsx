@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 type DriverMessage = {
   id: string;
@@ -18,9 +18,9 @@ export default function MessagesPanel() {
       setLoading(true);
       setError(null);
       const { data, error } = await supabase
-        .from('driver_messages')
-        .select('id, driver_name, message, sent_at')
-        .order('sent_at', { ascending: false })
+        .from("driver_messages")
+        .select("id, driver_name, message, sent_at")
+        .order("sent_at", { ascending: false })
         .limit(10);
       if (error) {
         setError(error.message);
@@ -45,9 +45,10 @@ export default function MessagesPanel() {
           {messages.length === 0 ? (
             <li>No messages found.</li>
           ) : (
-            messages.map(msg => (
+            messages.map((msg) => (
               <li key={msg.id}>
-                <span className="font-bold">{msg.driver_name}:</span> {msg.message}
+                <span className="font-bold">{msg.driver_name}:</span>{" "}
+                {msg.message}
               </li>
             ))
           )}

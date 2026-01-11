@@ -4,21 +4,21 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardContent } from "../../components/ui/card";
-import { 
-  X, 
-  FileText, 
-  Image as ImageIcon, 
-  Building, 
-  Truck, 
+import {
+  X,
+  FileText,
+  Image as ImageIcon,
+  Building,
+  Truck,
   Eye,
   Download,
-  Info
+  Info,
 } from "lucide-react";
 
 interface FilePreviewData {
   file: File;
   preview?: string;
-  type: 'company_logo' | 'ticket_template';
+  type: "company_logo" | "ticket_template";
   description: string;
   id: string;
 }
@@ -26,7 +26,7 @@ interface FilePreviewData {
 interface FilePreviewCardProps {
   fileData: FilePreviewData;
   onRemove: (id: string) => void;
-  onTypeChange: (id: string, type: 'company_logo' | 'ticket_template') => void;
+  onTypeChange: (id: string, type: "company_logo" | "ticket_template") => void;
   onDescriptionChange: (id: string, description: string) => void;
   uploading?: boolean;
 }
@@ -36,22 +36,22 @@ export default function FilePreviewCard({
   onRemove,
   onTypeChange,
   onDescriptionChange,
-  uploading = false
+  uploading = false,
 }: FilePreviewCardProps) {
   const [showFullPreview, setShowFullPreview] = useState(false);
   const { file, preview, type, description, id } = fileData;
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
   const getFileIcon = () => {
-    if (file.type.startsWith('image/')) return ImageIcon;
-    if (file.type === 'application/pdf') return FileText;
+    if (file.type.startsWith("image/")) return ImageIcon;
+    if (file.type === "application/pdf") return FileText;
     return FileText;
   };
 
@@ -59,7 +59,9 @@ export default function FilePreviewCard({
 
   return (
     <>
-      <Card className={`transition-all duration-200 ${uploading ? 'opacity-60' : 'hover:shadow-md'}`}>
+      <Card
+        className={`transition-all duration-200 ${uploading ? "opacity-60" : "hover:shadow-md"}`}
+      >
         <CardContent className="p-4">
           <div className="flex items-start gap-4">
             {/* File Preview/Icon */}
@@ -92,17 +94,24 @@ export default function FilePreviewCard({
             <div className="flex-1 min-w-0 space-y-3">
               {/* File Name & Size */}
               <div>
-                <h4 className="font-medium text-gray-800 truncate pr-8" title={file.name}>
+                <h4
+                  className="font-medium text-gray-800 truncate pr-8"
+                  title={file.name}
+                >
                   {file.name}
                 </h4>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline" className="text-xs">
-                    {file.type.split('/')[1].toUpperCase()}
+                    {file.type.split("/")[1].toUpperCase()}
                   </Badge>
-                  <span className="text-sm text-gray-500">{formatFileSize(file.size)}</span>
+                  <span className="text-sm text-gray-500">
+                    {formatFileSize(file.size)}
+                  </span>
                   <div className="flex items-center gap-1 text-xs text-gray-400">
                     <Info className="w-3 h-3" />
-                    <span>{new Date(file.lastModified).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(file.lastModified).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -111,8 +120,8 @@ export default function FilePreviewCard({
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant={type === 'company_logo' ? 'default' : 'outline'}
-                  onClick={() => onTypeChange(id, 'company_logo')}
+                  variant={type === "company_logo" ? "default" : "outline"}
+                  onClick={() => onTypeChange(id, "company_logo")}
                   className="text-xs h-8"
                   disabled={uploading}
                 >
@@ -121,8 +130,8 @@ export default function FilePreviewCard({
                 </Button>
                 <Button
                   size="sm"
-                  variant={type === 'ticket_template' ? 'default' : 'outline'}
-                  onClick={() => onTypeChange(id, 'ticket_template')}
+                  variant={type === "ticket_template" ? "default" : "outline"}
+                  onClick={() => onTypeChange(id, "ticket_template")}
                   className="text-xs h-8"
                   disabled={uploading}
                 >
@@ -133,9 +142,11 @@ export default function FilePreviewCard({
 
               {/* Description Input */}
               <Input
-                placeholder={`Add description for this ${type.replace('_', ' ')}...`}
+                placeholder={`Add description for this ${type.replace("_", " ")}...`}
                 value={description}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onDescriptionChange(id, e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onDescriptionChange(id, e.target.value)
+                }
                 className="text-sm"
                 disabled={uploading}
               />
@@ -158,7 +169,7 @@ export default function FilePreviewCard({
                   variant="ghost"
                   onClick={() => {
                     const url = URL.createObjectURL(file);
-                    const a = document.createElement('a');
+                    const a = document.createElement("a");
                     a.href = url;
                     a.download = file.name;
                     a.click();
@@ -192,7 +203,10 @@ export default function FilePreviewCard({
                 <span>Uploading...</span>
               </div>
               <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-                <div className="bg-blue-600 h-1.5 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                <div
+                  className="bg-blue-600 h-1.5 rounded-full animate-pulse"
+                  style={{ width: "60%" }}
+                ></div>
               </div>
             </div>
           )}
@@ -201,7 +215,7 @@ export default function FilePreviewCard({
 
       {/* Full Preview Modal */}
       {showFullPreview && preview && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
           onClick={() => setShowFullPreview(false)}
         >

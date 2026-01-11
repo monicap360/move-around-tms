@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 type Driver = {
   driver_uuid: string;
@@ -17,8 +17,8 @@ export default function DriverPanel() {
       setLoading(true);
       setError(null);
       const { data, error } = await supabase
-        .from('drivers')
-        .select('driver_uuid, name, status');
+        .from("drivers")
+        .select("driver_uuid, name, status");
       if (error) {
         setError(error.message);
         setDrivers([]);
@@ -42,14 +42,19 @@ export default function DriverPanel() {
           {drivers.length === 0 ? (
             <li>No drivers found.</li>
           ) : (
-            drivers.map(driver => (
-              <li key={driver.driver_uuid} className="flex items-center justify-between">
+            drivers.map((driver) => (
+              <li
+                key={driver.driver_uuid}
+                className="flex items-center justify-between"
+              >
                 <span>{driver.name}</span>
-                <span className={
-                  driver.status === 'Active'
-                    ? 'bg-blue-100 text-blue-700 px-2 py-1 rounded'
-                    : 'bg-gray-100 text-gray-700 px-2 py-1 rounded'
-                }>
+                <span
+                  className={
+                    driver.status === "Active"
+                      ? "bg-blue-100 text-blue-700 px-2 py-1 rounded"
+                      : "bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                  }
+                >
                   {driver.status}
                 </span>
               </li>

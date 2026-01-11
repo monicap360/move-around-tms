@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 
 type Role = "owner" | "admin" | "manager" | "hr" | "office" | "driver";
 
@@ -86,7 +91,7 @@ export default function AddUserPage() {
           data.confirmationRequired
             ? "Email confirmation required."
             : "User can sign in immediately."
-        }`
+        }`,
       );
       setEmail("");
       setPassword("");
@@ -341,8 +346,8 @@ export default function AddUserPage() {
       <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <p className="text-xs text-gray-600">
           <strong>Note:</strong> All operations require admin authentication.
-          Users created here are auto-confirmed and can sign in immediately.
-          The admin token is stored in your session for convenience.
+          Users created here are auto-confirmed and can sign in immediately. The
+          admin token is stored in your session for convenience.
         </p>
       </div>
     </div>

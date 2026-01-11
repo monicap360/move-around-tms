@@ -10,12 +10,18 @@ export default function PayrollTicketsPage({ params }) {
   async function handlePayrollCalc(e) {
     e.preventDefault();
     setLoading(true);
-    const ids = ticketIds.split(",").map(id => id.trim()).filter(Boolean);
-    const res = await fetch(`/api/company/${organization_code}/tickets/payroll-calc`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticket_ids: ids }),
-    });
+    const ids = ticketIds
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const res = await fetch(
+      `/api/company/${organization_code}/tickets/payroll-calc`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket_ids: ids }),
+      },
+    );
     const data = await res.json();
     setResult(data);
     setLoading(false);
@@ -29,7 +35,7 @@ export default function PayrollTicketsPage({ params }) {
           className="border p-2 w-full"
           placeholder="Comma-separated Ticket IDs"
           value={ticketIds}
-          onChange={e => setTicketIds(e.target.value)}
+          onChange={(e) => setTicketIds(e.target.value)}
           required
         />
         <button
@@ -44,16 +50,22 @@ export default function PayrollTicketsPage({ params }) {
         <div className="mt-4 p-4 bg-gray-100 rounded">
           {result.totalPayroll !== undefined ? (
             <div>
-              <div className="font-semibold">Total Payroll: ${result.totalPayroll}</div>
+              <div className="font-semibold">
+                Total Payroll: ${result.totalPayroll}
+              </div>
               <div className="mt-2">Tickets:</div>
               <ul className="list-disc ml-6">
-                {result.tickets?.map(t => (
-                  <li key={t.id}>#{t.id} - {t.title || "Untitled"} - ${t.amount}</li>
+                {result.tickets?.map((t) => (
+                  <li key={t.id}>
+                    #{t.id} - {t.title || "Untitled"} - ${t.amount}
+                  </li>
                 ))}
               </ul>
             </div>
           ) : (
-            <div className="text-red-600">Error: {result.error?.message || "Unknown error"}</div>
+            <div className="text-red-600">
+              Error: {result.error?.message || "Unknown error"}
+            </div>
           )}
         </div>
       )}

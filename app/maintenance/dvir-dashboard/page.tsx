@@ -7,20 +7,23 @@ import { exportNodeAsPng } from "./exportAsImage";
 import ComplianceDrilldownModal from "./ComplianceDrilldownModal";
 import { logAuditAction } from "../../../lib/auditLog";
 
-import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+} from "../../components/ui/card";
 import DVIRAnalytics from "./DVIRAnalytics";
 import PredictiveAnalytics from "./PredictiveAnalytics";
 import DVIRAlerts from "./DVIRAlerts";
 
-
-
 export default function DVIRDashboard() {
   const [dvirs, setDvirs] = useState([]);
-    // Optionally get user info for audit log (stub, replace with real auth if available)
-    // If using next-auth, uncomment:
-    // const { data: session } = useSession();
-    // const userId = session?.user?.id || null;
-    const userId = null; // Replace with real user id if available
+  // Optionally get user info for audit log (stub, replace with real auth if available)
+  // If using next-auth, uncomment:
+  // const { data: session } = useSession();
+  // const userId = session?.user?.id || null;
+  const userId = null; // Replace with real user id if available
   const [filtered, setFiltered] = useState([]);
   const [complianceMap, setComplianceMap] = useState({});
   const [calendarData, setCalendarData] = useState([]);
@@ -41,7 +44,7 @@ export default function DVIRDashboard() {
     truck: "",
     driver: "",
     status: "all",
-    compliance: "all"
+    compliance: "all",
   });
 
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function DVIRDashboard() {
   useEffect(() => {
     const map = {};
     const calMap = {};
-    dvirs.forEach(dvir => {
+    dvirs.forEach((dvir) => {
       const state = dvir.state || "federal";
       const compliance = validateDVIR(
         {
@@ -85,26 +88,41 @@ export default function DVIRDashboard() {
           odometer: dvir.odometer_reading,
           driverName: dvir.driver_name,
           driverSignature: dvir.driver_signature,
-          inspection: dvir.inspection_items?.reduce((acc, item) => {
-            acc[item.item] = item.status;
-            return acc;
-          }, {}) || {},
-          lastInspectionDate: dvir.lastInspectionDate
+          inspection:
+            dvir.inspection_items?.reduce((acc, item) => {
+              acc[item.item] = item.status;
+              return acc;
+            }, {}) || {},
+          lastInspectionDate: dvir.lastInspectionDate,
         },
-        state
+        state,
       );
       map[dvir.id] = compliance;
       // Calendar aggregation by date
-      const dateKey = (dvir.date || dvir.created_at).slice(0,10);
-      if (!calMap[dateKey]) calMap[dateKey] = { date: dateKey, compliant: 0, noncompliant: 0, total: 0 };
-      const isCompliant = compliance.missingFields.length === 0 && compliance.invalidDefects.length === 0 && compliance.intervalOk;
+      const dateKey = (dvir.date || dvir.created_at).slice(0, 10);
+      if (!calMap[dateKey])
+        calMap[dateKey] = {
+          date: dateKey,
+          compliant: 0,
+          noncompliant: 0,
+          total: 0,
+        };
+      const isCompliant =
+        compliance.missingFields.length === 0 &&
+        compliance.invalidDefects.length === 0 &&
+        compliance.intervalOk;
       if (isCompliant) calMap[dateKey].compliant++;
       else calMap[dateKey].noncompliant++;
       calMap[dateKey].total++;
     });
     setComplianceMap(map);
     // Convert calMap to sorted array for calendar
-    const arr = Object.values(calMap) as { date: string, compliant: number, noncompliant: number, total: number }[];
+    const arr = Object.values(calMap) as {
+      date: string;
+      compliant: number;
+      noncompliant: number;
+      total: number;
+    }[];
     arr.sort((a, b) => a.date.localeCompare(b.date));
     setCalendarData(arr);
   }, [dvirs]);
@@ -116,37 +134,58 @@ export default function DVIRDashboard() {
       const now = new Date();
       let startDate;
       if (filters.dateRange === "today") {
-        startDate = new Date(now); startDate.setHours(0,0,0,0);
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
       } else if (filters.dateRange === "week") {
-        startDate = new Date(now); startDate.setDate(now.getDate()-7);
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
       } else if (filters.dateRange === "month") {
-        startDate = new Date(now); startDate.setMonth(now.getMonth()-1);
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 1);
       }
       if (startDate) {
-        result = result.filter(d => new Date(d.date || d.created_at) >= startDate);
+        result = result.filter(
+          (d) => new Date(d.date || d.created_at) >= startDate,
+        );
       }
     }
     // Truck filter
     if (filters.truck) {
-      result = result.filter(d => (d.truck_number||"").toLowerCase().includes(filters.truck.toLowerCase()));
+      result = result.filter((d) =>
+        (d.truck_number || "")
+          .toLowerCase()
+          .includes(filters.truck.toLowerCase()),
+      );
     }
     // Driver filter
     if (filters.driver) {
-      result = result.filter(d => (d.driver_name||"").toLowerCase().includes(filters.driver.toLowerCase()));
+      result = result.filter((d) =>
+        (d.driver_name || "")
+          .toLowerCase()
+          .includes(filters.driver.toLowerCase()),
+      );
     }
     // Status filter
     if (filters.status !== "all") {
-      result = result.filter(d => d.overall_status === filters.status);
+      result = result.filter((d) => d.overall_status === filters.status);
     }
     // Compliance filter (optional, for future UI)
     if (filters.compliance && filters.compliance !== "all") {
-      result = result.filter(d => {
+      result = result.filter((d) => {
         const c = complianceMap[d.id];
         if (!c) return false;
         if (filters.compliance === "compliant") {
-          return c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk;
+          return (
+            c.missingFields.length === 0 &&
+            c.invalidDefects.length === 0 &&
+            c.intervalOk
+          );
         } else if (filters.compliance === "noncompliant") {
-          return c.missingFields.length > 0 || c.invalidDefects.length > 0 || !c.intervalOk;
+          return (
+            c.missingFields.length > 0 ||
+            c.invalidDefects.length > 0 ||
+            !c.intervalOk
+          );
         }
         return true;
       });
@@ -161,30 +200,55 @@ export default function DVIRDashboard() {
       details: { count: dvirs.length, timestamp: new Date().toISOString() },
     });
     const headers = [
-      "Date","Driver Name","Truck #","Odometer","Status","Defects","Remarks","Compliance Status","Missing Fields","Invalid Defects","Interval OK"
+      "Date",
+      "Driver Name",
+      "Truck #",
+      "Odometer",
+      "Status",
+      "Defects",
+      "Remarks",
+      "Compliance Status",
+      "Missing Fields",
+      "Invalid Defects",
+      "Interval OK",
     ];
-    const rows = dvirs.map(d => {
-      const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
+    const rows = dvirs.map((d) => {
+      const c = complianceMap[d.id] || {
+        missingFields: [],
+        invalidDefects: [],
+        intervalOk: true,
+      };
       return [
         d.date || d.created_at,
         d.driver_name,
         d.truck_number,
         d.odometer_reading,
         d.overall_status,
-        (d.inspection_items||[]).filter(i=>i.status==="defective").map(i=>i.item).join("; "),
+        (d.inspection_items || [])
+          .filter((i) => i.status === "defective")
+          .map((i) => i.item)
+          .join("; "),
         d.remarks || "",
-        (c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk) ? "Compliant" : "Noncompliant",
+        c.missingFields.length === 0 &&
+        c.invalidDefects.length === 0 &&
+        c.intervalOk
+          ? "Compliant"
+          : "Noncompliant",
         c.missingFields.join("; "),
         c.invalidDefects.join("; "),
-        c.intervalOk ? "Yes" : "No"
+        c.intervalOk ? "Yes" : "No",
       ];
     });
-    const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+    const csv = [headers, ...rows]
+      .map((r) =>
+        r.map((x) => `"${(x || "").toString().replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `dvir_export_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `dvir_export_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -194,14 +258,27 @@ export default function DVIRDashboard() {
       <Card className="shadow-lg border border-gray-200 bg-white">
         <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg flex flex-row items-center justify-between">
           <CardTitle>DVIR Dashboard</CardTitle>
-          <button onClick={exportCSV} className="ml-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Export CSV</button>
+          <button
+            onClick={exportCSV}
+            className="ml-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Export CSV
+          </button>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4">
           {/* Filter UI */}
           <div className="mb-6 flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-xs font-semibold mb-1">Date Range</label>
-              <select value={filters.dateRange} onChange={e=>setFilters(f=>({...f,dateRange:e.target.value}))} className="input">
+              <label className="block text-xs font-semibold mb-1">
+                Date Range
+              </label>
+              <select
+                value={filters.dateRange}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, dateRange: e.target.value }))
+                }
+                className="input"
+              >
                 <option value="all">All</option>
                 <option value="today">Today</option>
                 <option value="week">Last 7 Days</option>
@@ -209,16 +286,40 @@ export default function DVIRDashboard() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1">Truck #</label>
-              <input value={filters.truck} onChange={e=>setFilters(f=>({...f,truck:e.target.value}))} className="input" placeholder="Search truck..." />
+              <label className="block text-xs font-semibold mb-1">
+                Truck #
+              </label>
+              <input
+                value={filters.truck}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, truck: e.target.value }))
+                }
+                className="input"
+                placeholder="Search truck..."
+              />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1">Driver Name</label>
-              <input value={filters.driver} onChange={e=>setFilters(f=>({...f,driver:e.target.value}))} className="input" placeholder="Search driver..." />
+              <label className="block text-xs font-semibold mb-1">
+                Driver Name
+              </label>
+              <input
+                value={filters.driver}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, driver: e.target.value }))
+                }
+                className="input"
+                placeholder="Search driver..."
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1">Status</label>
-              <select value={filters.status} onChange={e=>setFilters(f=>({...f,status:e.target.value}))} className="input">
+              <select
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, status: e.target.value }))
+                }
+                className="input"
+              >
                 <option value="all">All</option>
                 <option value="satisfactory">Satisfactory</option>
                 <option value="defective">Defective</option>
@@ -226,8 +327,16 @@ export default function DVIRDashboard() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1">Compliance Status</label>
-              <select value={filters.compliance} onChange={e=>setFilters(f=>({...f,compliance:e.target.value}))} className="input">
+              <label className="block text-xs font-semibold mb-1">
+                Compliance Status
+              </label>
+              <select
+                value={filters.compliance}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, compliance: e.target.value }))
+                }
+                className="input"
+              >
                 <option value="all">All</option>
                 <option value="compliant">Compliant</option>
                 <option value="noncompliant">Noncompliant</option>
@@ -250,33 +359,57 @@ export default function DVIRDashboard() {
                     <button
                       className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
                       onClick={() => {
-                        const headers = ["Date","Compliant","Noncompliant","Total"];
-                        const rows = calendarData.map(d => [d.date, d.compliant, d.noncompliant, d.total]);
-                        const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+                        const headers = [
+                          "Date",
+                          "Compliant",
+                          "Noncompliant",
+                          "Total",
+                        ];
+                        const rows = calendarData.map((d) => [
+                          d.date,
+                          d.compliant,
+                          d.noncompliant,
+                          d.total,
+                        ]);
+                        const csv = [headers, ...rows]
+                          .map((r) => r.join(","))
+                          .join("\n");
                         const blob = new Blob([csv], { type: "text/csv" });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
-                        a.download = `compliance_calendar_${new Date().toISOString().slice(0,10)}.csv`;
+                        a.download = `compliance_calendar_${new Date().toISOString().slice(0, 10)}.csv`;
                         a.click();
                         URL.revokeObjectURL(url);
                       }}
-                    >Export CSV</button>
+                    >
+                      Export CSV
+                    </button>
                     <button
                       className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
                       onClick={() => {
                         const node = document.getElementById("calendar-root");
-                        if (node) exportNodeAsPng(node, `compliance_calendar_${new Date().toISOString().slice(0,10)}.png`);
+                        if (node)
+                          exportNodeAsPng(
+                            node,
+                            `compliance_calendar_${new Date().toISOString().slice(0, 10)}.png`,
+                          );
                       }}
-                    >Export as Image</button>
+                    >
+                      Export as Image
+                    </button>
                   </div>
                 </div>
                 <div id="calendar-root">
                   <ComplianceCalendar
                     data={calendarData}
-                    onDayClick={date => {
+                    onDayClick={(date) => {
                       setDrilldownDate(date);
-                      setDrilldownDVIRs(dvirs.filter(d => (d.date || d.created_at).slice(0,10) === date));
+                      setDrilldownDVIRs(
+                        dvirs.filter(
+                          (d) => (d.date || d.created_at).slice(0, 10) === date,
+                        ),
+                      );
                       setDrilldownOpen(true);
                     }}
                   />
@@ -296,41 +429,79 @@ export default function DVIRDashboard() {
                       className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
                       onClick={() => {
                         const headers = [
-                          "Date","Driver Name","Truck #","Odometer","Status","Defects","Remarks","Compliance Status","Missing Fields","Invalid Defects","Interval OK"
+                          "Date",
+                          "Driver Name",
+                          "Truck #",
+                          "Odometer",
+                          "Status",
+                          "Defects",
+                          "Remarks",
+                          "Compliance Status",
+                          "Missing Fields",
+                          "Invalid Defects",
+                          "Interval OK",
                         ];
-                        const rows = filtered.map(d => {
-                          const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
+                        const rows = filtered.map((d) => {
+                          const c = complianceMap[d.id] || {
+                            missingFields: [],
+                            invalidDefects: [],
+                            intervalOk: true,
+                          };
                           return [
                             d.date || d.created_at,
                             d.driver_name,
                             d.truck_number,
                             d.odometer_reading,
                             d.overall_status,
-                            (d.inspection_items||[]).filter(i=>i.status==="defective").map(i=>i.item).join("; "),
+                            (d.inspection_items || [])
+                              .filter((i) => i.status === "defective")
+                              .map((i) => i.item)
+                              .join("; "),
                             d.remarks || "",
-                            (c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk) ? "Compliant" : "Noncompliant",
+                            c.missingFields.length === 0 &&
+                            c.invalidDefects.length === 0 &&
+                            c.intervalOk
+                              ? "Compliant"
+                              : "Noncompliant",
                             c.missingFields.join("; "),
                             c.invalidDefects.join("; "),
-                            c.intervalOk ? "Yes" : "No"
+                            c.intervalOk ? "Yes" : "No",
                           ];
                         });
-                        const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+                        const csv = [headers, ...rows]
+                          .map((r) =>
+                            r
+                              .map(
+                                (x) =>
+                                  `"${(x || "").toString().replace(/"/g, '""')}"`,
+                              )
+                              .join(","),
+                          )
+                          .join("\n");
                         const blob = new Blob([csv], { type: "text/csv" });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
-                        a.download = `dvir_table_${new Date().toISOString().slice(0,10)}.csv`;
+                        a.download = `dvir_table_${new Date().toISOString().slice(0, 10)}.csv`;
                         a.click();
                         URL.revokeObjectURL(url);
                       }}
-                    >Export CSV</button>
+                    >
+                      Export CSV
+                    </button>
                     <button
                       className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
                       onClick={() => {
                         const node = document.getElementById("dvir-table-root");
-                        if (node) exportNodeAsPng(node, `dvir_table_${new Date().toISOString().slice(0,10)}.png`);
+                        if (node)
+                          exportNodeAsPng(
+                            node,
+                            `dvir_table_${new Date().toISOString().slice(0, 10)}.png`,
+                          );
                       }}
-                    >Export as Image</button>
+                    >
+                      Export as Image
+                    </button>
                   </div>
                 </div>
                 <div id="dvir-table-root" className="overflow-x-auto">
@@ -352,30 +523,71 @@ export default function DVIRDashboard() {
                     </thead>
                     <tbody>
                       {filtered.map((d, i) => {
-                        const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
-                        const compliant = c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk;
+                        const c = complianceMap[d.id] || {
+                          missingFields: [],
+                          invalidDefects: [],
+                          intervalOk: true,
+                        };
+                        const compliant =
+                          c.missingFields.length === 0 &&
+                          c.invalidDefects.length === 0 &&
+                          c.intervalOk;
                         return (
-                          <tr key={d.id || i} className={compliant ? "bg-green-50" : "bg-red-50"}>
-                            <td className="border px-2 py-1">{d.date || d.created_at}</td>
-                            <td className="border px-2 py-1">{d.driver_name}</td>
-                            <td className="border px-2 py-1">{d.truck_number}</td>
-                            <td className="border px-2 py-1">{d.odometer_reading}</td>
-                            <td className="border px-2 py-1 font-semibold">{d.overall_status}</td>
-                            <td className="border px-2 py-1 text-xs">{(d.inspection_items || []).filter(i => i.status === "defective").map(i => i.item).join(", ")}</td>
-                            <td className="border px-2 py-1 text-xs">{d.remarks}</td>
-                            <td className={
-                              "border px-2 py-1 font-bold " +
-                              (compliant ? "text-green-700" : "text-red-700")
-                            }>{compliant ? "Compliant" : "Noncompliant"}</td>
-                            <td className="border px-2 py-1 text-xs">{c.missingFields.join(", ")}</td>
-                            <td className="border px-2 py-1 text-xs">{c.invalidDefects.join(", ")}</td>
-                            <td className="border px-2 py-1 text-xs">{c.intervalOk ? "Yes" : "No"}</td>
+                          <tr
+                            key={d.id || i}
+                            className={compliant ? "bg-green-50" : "bg-red-50"}
+                          >
+                            <td className="border px-2 py-1">
+                              {d.date || d.created_at}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {d.driver_name}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {d.truck_number}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {d.odometer_reading}
+                            </td>
+                            <td className="border px-2 py-1 font-semibold">
+                              {d.overall_status}
+                            </td>
+                            <td className="border px-2 py-1 text-xs">
+                              {(d.inspection_items || [])
+                                .filter((i) => i.status === "defective")
+                                .map((i) => i.item)
+                                .join(", ")}
+                            </td>
+                            <td className="border px-2 py-1 text-xs">
+                              {d.remarks}
+                            </td>
+                            <td
+                              className={
+                                "border px-2 py-1 font-bold " +
+                                (compliant ? "text-green-700" : "text-red-700")
+                              }
+                            >
+                              {compliant ? "Compliant" : "Noncompliant"}
+                            </td>
+                            <td className="border px-2 py-1 text-xs">
+                              {c.missingFields.join(", ")}
+                            </td>
+                            <td className="border px-2 py-1 text-xs">
+                              {c.invalidDefects.join(", ")}
+                            </td>
+                            <td className="border px-2 py-1 text-xs">
+                              {c.intervalOk ? "Yes" : "No"}
+                            </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
-                  {filtered.length === 0 && <div className="text-center py-8 text-gray-500">No DVIRs found.</div>}
+                  {filtered.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No DVIRs found.
+                    </div>
+                  )}
                 </div>
               </div>
             </>

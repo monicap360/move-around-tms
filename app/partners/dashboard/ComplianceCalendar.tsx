@@ -1,6 +1,6 @@
 // Simple ComplianceCalendar (reuse from DVIR dashboard, but inline for now)
 function ComplianceCalendar({ data, onDayClick }) {
-  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   // Group data by week
   const weeks = [];
   let week = [];
@@ -33,7 +33,11 @@ function ComplianceCalendar({ data, onDayClick }) {
       <table className="border text-xs">
         <thead>
           <tr>
-            {days.map(day => <th key={day} className="border px-2 py-1">{day}</th>)}
+            {days.map((day) => (
+              <th key={day} className="border px-2 py-1">
+                {day}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -44,7 +48,9 @@ function ComplianceCalendar({ data, onDayClick }) {
                   key={j}
                   className={`border w-12 h-12 text-center cursor-pointer ${getColor(d)}`}
                   onClick={() => d && onDayClick && onDayClick(d.date)}
-                  title={d ? `${d.date}: ${d.compliant}/${d.total} compliant` : ""}
+                  title={
+                    d ? `${d.date}: ${d.compliant}/${d.total} compliant` : ""
+                  }
                 >
                   {d ? new Date(d.date).getDate() : ""}
                 </td>

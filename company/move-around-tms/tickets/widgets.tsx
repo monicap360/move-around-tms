@@ -6,12 +6,15 @@ export default function TicketDashboardWidgets() {
 
   useEffect(() => {
     fetch("/api/company/move-around-tms/tickets/list")
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setStats({
           total: data.length,
-          earnings: data.reduce((sum, t) => sum + ((t.weight_out - t.weight_in) * (t.rate / 2000)), 0),
-          recent: data.slice(0, 5)
+          earnings: data.reduce(
+            (sum, t) => sum + (t.weight_out - t.weight_in) * (t.rate / 2000),
+            0,
+          ),
+          recent: data.slice(0, 5),
         });
       });
   }, []);
@@ -23,15 +26,18 @@ export default function TicketDashboardWidgets() {
         <div className="text-sm opacity-60">Total Tickets</div>
       </div>
       <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
-        <div className="text-2xl font-bold text-green-400">${stats.earnings.toFixed(2)}</div>
+        <div className="text-2xl font-bold text-green-400">
+          ${stats.earnings.toFixed(2)}
+        </div>
         <div className="text-sm opacity-60">Total Earnings</div>
       </div>
       <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
         <div className="text-sm font-bold mb-2">Recent Tickets</div>
         <ul className="space-y-1">
-          {stats.recent.map(t => (
+          {stats.recent.map((t) => (
             <li key={t.ticket_uuid} className="text-xs opacity-80">
-              #{t.ticket_uuid.slice(0, 8)} — {t.material_id} — ${(t.weight_out - t.weight_in) * (t.rate / 2000)}
+              #{t.ticket_uuid.slice(0, 8)} — {t.material_id} — $
+              {(t.weight_out - t.weight_in) * (t.rate / 2000)}
             </li>
           ))}
         </ul>

@@ -18,22 +18,24 @@ Files added:
 Wiring example (in `app/merch/page.tsx`):
 
 ```tsx
-import { createCheckout } from '@/lib/merchClient'
+import { createCheckout } from "@/lib/merchClient";
 
 async function handleBuy() {
-  const items = [{ id: 'shirt-s', quantity: 1 }]
-  const { checkoutUrl } = await createCheckout(items)
-  if (checkoutUrl) window.location.href = checkoutUrl
+  const items = [{ id: "shirt-s", quantity: 1 }];
+  const { checkoutUrl } = await createCheckout(items);
+  if (checkoutUrl) window.location.href = checkoutUrl;
 }
 ```
 
 Security:
+
 - Never expose provider secret keys to the browser. Call provider SDKs from
   the server route (`app/api/merch/create-checkout/route.ts`).
 - Use environment variables (`.env.local`) for keys and add them to your
   deployment environment (Vercel, Netlify, etc.).
 
 Next steps:
+
 - Implement real provider integration in the server route. For Stripe, use
   the official SDK and return `session.url`. For Shopify, create a checkout
   and return the checkout URL.

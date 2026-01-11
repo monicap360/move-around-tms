@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserCheck, AlertTriangle, TrendingUp, Clock, RefreshCcw } from "lucide-react";
+import {
+  UserCheck,
+  AlertTriangle,
+  TrendingUp,
+  Clock,
+  RefreshCcw,
+} from "lucide-react";
 import Card from "@/components/ui/Card";
 
 export default function AIDriverScorecards({ params }: any) {
@@ -42,7 +48,10 @@ export default function AIDriverScorecards({ params }: any) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {scorecards.map((driver: any, i: number) => (
-            <Card key={i} className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-lg hover:bg-white/10 transition text-white">
+            <Card
+              key={i}
+              className="bg-white/5 border border-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-lg hover:bg-white/10 transition text-white"
+            >
               <div className="flex items-center gap-3 mb-2">
                 <UserCheck className="w-6 h-6 text-blue-300" />
                 <span className="font-bold text-lg">{driver.name}</span>
@@ -50,20 +59,27 @@ export default function AIDriverScorecards({ params }: any) {
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp className="w-5 h-5 text-green-300" />
                 <span className="text-sm">On-Time %:</span>
-                <span className="font-bold text-xl text-green-200">{driver.on_time_pct}%</span>
+                <span className="font-bold text-xl text-green-200">
+                  {driver.on_time_pct}%
+                </span>
               </div>
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
                 <span className="text-sm">Exceptions:</span>
-                <span className="font-bold text-xl text-red-300">{driver.exceptions}</span>
+                <span className="font-bold text-xl text-red-300">
+                  {driver.exceptions}
+                </span>
               </div>
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-5 h-5 text-yellow-300" />
                 <span className="text-sm">Avg Cycle:</span>
-                <span className="font-bold text-xl text-yellow-200">{driver.avg_cycle} min</span>
+                <span className="font-bold text-xl text-yellow-200">
+                  {driver.avg_cycle} min
+                </span>
               </div>
               <div className="text-gray-300 text-sm mt-2">
-                <span className="font-semibold">Safety Flags:</span> {driver.safety_flags}
+                <span className="font-semibold">Safety Flags:</span>{" "}
+                {driver.safety_flags}
               </div>
             </Card>
           ))}

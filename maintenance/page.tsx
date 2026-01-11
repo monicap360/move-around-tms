@@ -1,5 +1,10 @@
 "use client";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+} from "../components/ui/card";
 
 export default function MaintenancePage() {
   return (
@@ -9,9 +14,18 @@ export default function MaintenancePage() {
           <CardTitle>Maintenance</CardTitle>
         </CardHeader>
         <CardContent className="text-gray-700 mt-4 space-y-2">
-          <p>Log repairs, part replacements, and service intervals for each truck.</p>
-          <p>Generate work orders and assign to mechanics; track costs and downtime.</p>
-          <p>Automatically schedule next inspection or oil change based on mileage.</p>
+          <p>
+            Log repairs, part replacements, and service intervals for each
+            truck.
+          </p>
+          <p>
+            Generate work orders and assign to mechanics; track costs and
+            downtime.
+          </p>
+          <p>
+            Automatically schedule next inspection or oil change based on
+            mileage.
+          </p>
         </CardContent>
       </Card>
     </div>

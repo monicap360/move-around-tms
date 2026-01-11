@@ -7,7 +7,12 @@ export interface DraggableHUDProps {
   style?: React.CSSProperties;
 }
 
-export const DraggableHUD: React.FC<DraggableHUDProps> = ({ children, id, onMove, style }) => {
+export const DraggableHUD: React.FC<DraggableHUDProps> = ({
+  children,
+  id,
+  onMove,
+  style,
+}) => {
   const ref = useRef<HTMLDivElement>(null);
   let offsetX = 0;
   let offsetY = 0;

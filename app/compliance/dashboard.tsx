@@ -20,8 +20,10 @@ export default function ComplianceDashboard() {
       <div className="bg-white rounded shadow p-4 mb-8">
         <h2 className="font-semibold mb-2">Upcoming Reminders</h2>
         <ul className="list-disc pl-6">
-          {reminders.map(r => (
-            <li key={r.type} className="mb-1">{r.type}: <span className="font-mono">{r.due}</span></li>
+          {reminders.map((r) => (
+            <li key={r.type} className="mb-1">
+              {r.type}: <span className="font-mono">{r.due}</span>
+            </li>
           ))}
         </ul>
       </div>
@@ -36,7 +38,7 @@ export default function ComplianceDashboard() {
             </tr>
           </thead>
           <tbody>
-            {drivers.map(d => (
+            {drivers.map((d) => (
               <tr key={d.name} className="border-b">
                 <td className="px-2 py-1 font-mono">{d.name}</td>
                 <td className="px-2 py-1">{d.qualification}</td>
@@ -49,17 +51,40 @@ export default function ComplianceDashboard() {
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 space-y-2">
         <strong>Automated Reminders:</strong>
         <ul className="list-disc pl-6">
-          {reminders.filter(r => new Date(r.due) < new Date(Date.now() + 1000*60*60*24*30)).map(r => (
-            <li key={r.type} className="text-red-600 font-semibold">{r.type} due soon: <span className="font-mono">{r.due}</span></li>
-          ))}
-          {reminders.filter(r => new Date(r.due) >= new Date(Date.now() + 1000*60*60*24*30)).length === 0 && (
-            <li className="text-green-700">All compliance items are up to date.</li>
+          {reminders
+            .filter(
+              (r) =>
+                new Date(r.due) <
+                new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+            )
+            .map((r) => (
+              <li key={r.type} className="text-red-600 font-semibold">
+                {r.type} due soon: <span className="font-mono">{r.due}</span>
+              </li>
+            ))}
+          {reminders.filter(
+            (r) =>
+              new Date(r.due) >=
+              new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+          ).length === 0 && (
+            <li className="text-green-700">
+              All compliance items are up to date.
+            </li>
           )}
         </ul>
         <strong>Safety Scorecards:</strong>
         <ul className="list-disc pl-6">
-          {drivers.map(d => (
-            <li key={d.name} className={d.qualification === 'Expiring Soon' ? 'text-amber-600 font-semibold' : d.safetyScore < 90 ? 'text-red-600 font-semibold' : 'text-green-700'}>
+          {drivers.map((d) => (
+            <li
+              key={d.name}
+              className={
+                d.qualification === "Expiring Soon"
+                  ? "text-amber-600 font-semibold"
+                  : d.safetyScore < 90
+                    ? "text-red-600 font-semibold"
+                    : "text-green-700"
+              }
+            >
               {d.name}: {d.qualification} (Safety Score: {d.safetyScore})
             </li>
           ))}

@@ -10,11 +10,18 @@ export default function PayrollSummary() {
 
   async function fetchPayroll() {
     setLoading(true);
-    const res = await fetch("/api/company/move-around-tms/tickets/payroll-calc", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ driver_id: driverId, start_date: start, end_date: end })
-    });
+    const res = await fetch(
+      "/api/company/move-around-tms/tickets/payroll-calc",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          driver_id: driverId,
+          start_date: start,
+          end_date: end,
+        }),
+      },
+    );
     const data = await res.json();
     setSummary({ total: data.total_pay, tickets: data.tickets });
     setLoading(false);
@@ -28,19 +35,19 @@ export default function PayrollSummary() {
           className="px-2 py-1 rounded bg-gray-800 border border-gray-700"
           placeholder="Driver ID"
           value={driverId}
-          onChange={e => setDriverId(e.target.value)}
+          onChange={(e) => setDriverId(e.target.value)}
         />
         <input
           className="px-2 py-1 rounded bg-gray-800 border border-gray-700"
           type="date"
           value={start}
-          onChange={e => setStart(e.target.value)}
+          onChange={(e) => setStart(e.target.value)}
         />
         <input
           className="px-2 py-1 rounded bg-gray-800 border border-gray-700"
           type="date"
           value={end}
-          onChange={e => setEnd(e.target.value)}
+          onChange={(e) => setEnd(e.target.value)}
         />
         <button
           className="px-4 py-1 bg-green-600 rounded"
@@ -53,15 +60,23 @@ export default function PayrollSummary() {
         <div>Enter info and click Calculate</div>
       ) : (
         <div>
-          <div className="text-xl font-bold mb-2">Total Pay: <span className="text-green-400">${summary.total?.toFixed(2)}</span></div>
+          <div className="text-xl font-bold mb-2">
+            Total Pay:{" "}
+            <span className="text-green-400">${summary.total?.toFixed(2)}</span>
+          </div>
           <div className="space-y-2">
-            {summary.tickets.map(t => (
-              <div key={t.ticket_uuid} className="p-3 bg-gray-900 rounded border border-gray-800">
+            {summary.tickets.map((t) => (
+              <div
+                key={t.ticket_uuid}
+                className="p-3 bg-gray-900 rounded border border-gray-800"
+              >
                 <div className="flex justify-between">
-                  <div>#{t.ticket_uuid.slice(0,8)}</div>
+                  <div>#{t.ticket_uuid.slice(0, 8)}</div>
                   <div>${t.pay}</div>
                 </div>
-                <div className="text-xs opacity-60">{new Date(t.created_at).toLocaleString()}</div>
+                <div className="text-xs opacity-60">
+                  {new Date(t.created_at).toLocaleString()}
+                </div>
               </div>
             ))}
           </div>

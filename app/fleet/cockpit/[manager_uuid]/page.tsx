@@ -15,7 +15,7 @@ import FleetAlerts from "@/components/fleet/FleetAlerts";
 const ResponsiveGridLayout = WidthProvider(GridLayout);
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export default function FleetCockpitPage(params: { manager_uuid: string }) {
@@ -46,12 +46,20 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
     { i: "maintenance", x: 6, y: 2, w: 3, h: 2 },
     { i: "kpis", x: 0, y: 4, w: 3, h: 2 },
     { i: "dispatch", x: 3, y: 4, w: 3, h: 2 },
-    { i: "alerts", x: 6, y: 4, w: 3, h: 2 }
+    { i: "alerts", x: 6, y: 4, w: 3, h: 2 },
   ];
 
   return (
     <div className="min-h-screen bg-black text-white p-4 relative">
-      {party && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={400} ref={confettiRef} />}
+      {party && (
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          recycle={false}
+          numberOfPieces={400}
+          ref={confettiRef}
+        />
+      )}
       <h1 className="text-3xl font-bold mb-4">
         Fleet Manager Cockpit — {manager?.full_name}
       </h1>
@@ -87,7 +95,9 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
           whileTap={{ scale: 1.05, rotate: 2 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
+          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">
+            ⇅ Move
+          </div>
           <FleetLiveMap manager={manager} />
         </motion.div>
         <motion.div
@@ -98,7 +108,9 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
           whileTap={{ scale: 1.05, rotate: -2 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
+          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">
+            ⇅ Move
+          </div>
           <FleetComms manager={manager} />
         </motion.div>
         <motion.div
@@ -109,7 +121,9 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
           whileTap={{ scale: 1.05, rotate: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
+          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">
+            ⇅ Move
+          </div>
           <FleetMaintenance manager={manager} />
         </motion.div>
         <motion.div
@@ -120,7 +134,9 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
           whileTap={{ scale: 1.05, rotate: -1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
+          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">
+            ⇅ Move
+          </div>
           <FleetKPIs manager={manager} />
         </motion.div>
         <motion.div
@@ -131,7 +147,9 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
           whileTap={{ scale: 1.05, rotate: 3 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
+          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">
+            ⇅ Move
+          </div>
           <FleetDispatchBoard manager={manager} />
         </motion.div>
         <motion.div
@@ -142,7 +160,9 @@ export default function FleetCockpitPage(params: { manager_uuid: string }) {
           whileTap={{ scale: 1.05, rotate: -3 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
+          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">
+            ⇅ Move
+          </div>
           <FleetAlerts manager={manager} />
         </motion.div>
       </ResponsiveGridLayout>

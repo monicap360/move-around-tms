@@ -5,10 +5,10 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    
+
     const from = formData.get("From") as string; // Driver's phone number
     const mediaUrl = formData.get("MediaUrl0") as string; // Photo URL
-    const numMedia = parseInt(formData.get("NumMedia") as string || "0");
+    const numMedia = parseInt((formData.get("NumMedia") as string) || "0");
 
     console.log("Received SMS from:", from, "with", numMedia, "media files");
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
         <Response>
           <Message>❌ Please attach a photo of your delivery ticket.</Message>
         </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -43,14 +43,14 @@ export async function POST(req: NextRequest) {
         <Response>
           <Message>❌ You can only upload tickets during the current pay week (Friday-Thursday).</Message>
         </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
     // Find driver by phone number
     const supabase = createClient(
       process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!
+      process.env.SUPABASE_SERVICE_KEY!,
     );
 
     const { data: driver, error: driverErr } = await supabase
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         <Response>
           <Message>❌ Phone number not registered. Contact your manager to add your number.</Message>
         </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     const mediaResponse = await fetch(mediaUrl, {
       headers: {
         Authorization: `Basic ${Buffer.from(
-          `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
+          `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`,
         ).toString("base64")}`,
       },
     });
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     const imageBuffer = await mediaResponse.arrayBuffer();
     const fileName = `sms-${driver.id}-${Date.now()}.jpg`;
-    const path = `tickets/${weekStart.toISOString().split('T')[0]}/${fileName}`;
+    const path = `tickets/${weekStart.toISOString().split("T")[0]}/${fileName}`;
 
     // Upload to Supabase Storage
     const { data: uploadRes, error: uploadErr } = await supabase.storage
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
         <Response>
           <Message>❌ Failed to upload image. Please try again.</Message>
         </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
           file_url: signed.signedUrl,
           driverId: driver.id,
         }),
-      }
+      },
     );
 
     const ocrResult = await ocrResponse.json();
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
         <Response>
           <Message>❌ Failed to scan ticket. Please make sure the image is clear.</Message>
         </Response>`,
-        { headers: { "Content-Type": "text/xml" } }
+        { headers: { "Content-Type": "text/xml" } },
       );
     }
 
@@ -154,9 +154,8 @@ export async function POST(req: NextRequest) {
       <Response>
         <Message>${message}</Message>
       </Response>`,
-      { headers: { "Content-Type": "text/xml" } }
+      { headers: { "Content-Type": "text/xml" } },
     );
-
   } catch (err: any) {
     console.error("SMS webhook error:", err);
     return new NextResponse(
@@ -164,7 +163,7 @@ export async function POST(req: NextRequest) {
       <Response>
         <Message>❌ System error. Please try uploading through the app.</Message>
       </Response>`,
-      { headers: { "Content-Type": "text/xml" } }
+      { headers: { "Content-Type": "text/xml" } },
     );
   }
 }

@@ -2,11 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { User, Truck, Building2, Shield, Users, Briefcase, Wrench } from "lucide-react";
+import {
+  User,
+  Truck,
+  Building2,
+  Shield,
+  Users,
+  Briefcase,
+  Wrench,
+} from "lucide-react";
 
-type UserRole = "driver" | "owner" | "office_staff" | "manager" | "hr" | "mechanic" | null;
+type UserRole =
+  | "driver"
+  | "owner"
+  | "office_staff"
+  | "manager"
+  | "hr"
+  | "mechanic"
+  | null;
 
 export default function CompleteProfilePage() {
   const [userEmail, setUserEmail] = useState("");
@@ -37,13 +57,15 @@ export default function CompleteProfilePage() {
 
   async function loadUser() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         window.location.href = "/login";
         return;
       }
       setUserEmail(user.email || "");
-      
+
       // Check if user already has a profile
       const { data: existingDriver } = await supabase
         .from("drivers")
@@ -66,7 +88,7 @@ export default function CompleteProfilePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!name || !phone || !role) {
       setError("Please fill in all required fields");
       return;
@@ -104,7 +126,6 @@ export default function CompleteProfilePage() {
         setTimeout(() => {
           window.location.href = "/driver/profile";
         }, 2000);
-
       } else {
         // For non-drivers, we'll create an employees record
         // First check if employees table exists, if not, just create a driver record with role info
@@ -151,10 +172,12 @@ export default function CompleteProfilePage() {
           }
         }, 2000);
       }
-
     } catch (err: any) {
       console.error("Error creating profile:", err);
-      setError(err.message || "Failed to create profile. Please contact your administrator.");
+      setError(
+        err.message ||
+          "Failed to create profile. Please contact your administrator.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -174,8 +197,12 @@ export default function CompleteProfilePage() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <div className="text-green-600 text-5xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold text-green-700 mb-2">Profile Created!</h2>
-            <p className="text-gray-600">Redirecting you to your dashboard...</p>
+            <h2 className="text-2xl font-bold text-green-700 mb-2">
+              Profile Created!
+            </h2>
+            <p className="text-gray-600">
+              Redirecting you to your dashboard...
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -183,12 +210,42 @@ export default function CompleteProfilePage() {
   }
 
   const roleOptions = [
-    { value: "driver", label: "Driver", icon: Truck, description: "I operate vehicles and make deliveries" },
-    { value: "owner", label: "Owner", icon: Building2, description: "I own the company" },
-    { value: "manager", label: "Manager", icon: Shield, description: "I manage operations and teams" },
-    { value: "office_staff", label: "Office Staff", icon: Briefcase, description: "I handle administrative tasks" },
-    { value: "hr", label: "HR", icon: Users, description: "I manage human resources" },
-    { value: "mechanic", label: "Mechanic", icon: Wrench, description: "I maintain and repair vehicles" },
+    {
+      value: "driver",
+      label: "Driver",
+      icon: Truck,
+      description: "I operate vehicles and make deliveries",
+    },
+    {
+      value: "owner",
+      label: "Owner",
+      icon: Building2,
+      description: "I own the company",
+    },
+    {
+      value: "manager",
+      label: "Manager",
+      icon: Shield,
+      description: "I manage operations and teams",
+    },
+    {
+      value: "office_staff",
+      label: "Office Staff",
+      icon: Briefcase,
+      description: "I handle administrative tasks",
+    },
+    {
+      value: "hr",
+      label: "HR",
+      icon: Users,
+      description: "I manage human resources",
+    },
+    {
+      value: "mechanic",
+      label: "Mechanic",
+      icon: Wrench,
+      description: "I maintain and repair vehicles",
+    },
   ];
 
   return (
@@ -225,8 +282,12 @@ export default function CompleteProfilePage() {
                           <div className="flex items-start gap-3">
                             <Icon className="w-6 h-6 text-blue-600 mt-1" />
                             <div>
-                              <div className="font-semibold text-gray-800">{option.label}</div>
-                              <div className="text-xs text-gray-600">{option.description}</div>
+                              <div className="font-semibold text-gray-800">
+                                {option.label}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {option.description}
+                              </div>
                             </div>
                           </div>
                         </button>
@@ -241,10 +302,10 @@ export default function CompleteProfilePage() {
                 <>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-blue-800">
-                      Selected role: <span className="font-semibold">
-                        {roleOptions.find(r => r.value === role)?.label}
-                      </span>
-                      {" "}
+                      Selected role:{" "}
+                      <span className="font-semibold">
+                        {roleOptions.find((r) => r.value === role)?.label}
+                      </span>{" "}
                       <button
                         type="button"
                         onClick={() => setRole(null)}
@@ -289,8 +350,10 @@ export default function CompleteProfilePage() {
                   {role === "driver" && (
                     <>
                       <div className="border-t pt-4">
-                        <h3 className="font-semibold text-gray-800 mb-3">Driver Information</h3>
-                        
+                        <h3 className="font-semibold text-gray-800 mb-3">
+                          Driver Information
+                        </h3>
+
                         <div className="space-y-4">
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -373,11 +436,16 @@ export default function CompleteProfilePage() {
                   )}
 
                   {/* Office staff/Manager/HR/Mechanic fields */}
-                  {(role === "office_staff" || role === "manager" || role === "hr" || role === "mechanic") && (
+                  {(role === "office_staff" ||
+                    role === "manager" ||
+                    role === "hr" ||
+                    role === "mechanic") && (
                     <>
                       <div className="border-t pt-4">
-                        <h3 className="font-semibold text-gray-800 mb-3">Position Information</h3>
-                        
+                        <h3 className="font-semibold text-gray-800 mb-3">
+                          Position Information
+                        </h3>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -427,7 +495,11 @@ export default function CompleteProfilePage() {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        if (confirm("Are you sure? You'll need to complete your profile to use the system.")) {
+                        if (
+                          confirm(
+                            "Are you sure? You'll need to complete your profile to use the system.",
+                          )
+                        ) {
                           window.location.href = "/login";
                         }
                       }}

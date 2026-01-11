@@ -1,11 +1,11 @@
 // Types for analytics events and summaries
 export type AnalyticsEventType =
-  | 'login'
-  | 'payment'
-  | 'fleet_update'
-  | 'document_upload'
-  | 'onboarding_step'
-  | 'error';
+  | "login"
+  | "payment"
+  | "fleet_update"
+  | "document_upload"
+  | "onboarding_step"
+  | "error";
 
 export interface AnalyticsEvent {
   id: string;

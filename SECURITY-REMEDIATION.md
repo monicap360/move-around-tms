@@ -39,6 +39,7 @@ ADMIN_TOKEN=<GENERATE_SECURE_ADMIN_TOKEN>
 Update these environment variables in your hosting platforms:
 
 **Vercel:**
+
 ```bash
 vercel env add NEXT_PUBLIC_SUPABASE_URL
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -46,10 +47,12 @@ vercel env add SUPABASE_SERVICE_KEY
 ```
 
 **Netlify:**
+
 - Go to Site Settings → Environment Variables
 - Update each variable with new values
 
 **SiteGround/cPanel:**
+
 - Add environment variables in your hosting control panel
 
 ### 4. Configure Supabase Auth URLs
@@ -62,12 +65,14 @@ In your Supabase Dashboard → Authentication → URL Configuration:
 ### 5. Security Best Practices Going Forward
 
 ✅ **DO:**
+
 - Store all secrets in environment variables
 - Use your hosting provider's secret management
 - Rotate credentials regularly (every 90 days)
 - Use `.env.local` for local development only
 
 ❌ **DON'T:**
+
 - Commit `.env.local` to git
 - Share credentials in code, comments, or documentation
 - Use placeholder/default values in production
@@ -99,5 +104,6 @@ npm run build
 ## Questions?
 
 If you need help with credential rotation or deployment updates, refer to:
+
 - Supabase docs: https://supabase.com/docs/guides/getting-started
 - Your hosting provider's environment variable documentation

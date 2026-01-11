@@ -1,9 +1,9 @@
 // Static params for esign dynamic route
 export async function generateStaticParams() {
   // Return empty array for static export
-  return []
+  return [];
 }
 
 // Export dynamic config
-export const dynamic = 'force-static'
-export const dynamicParams = true
+export const dynamic = "force-static";
+export const dynamicParams = true;

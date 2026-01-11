@@ -1,19 +1,19 @@
 // Email Send API
 // Send quote emails to customers or management
 
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 function authorize(req: NextRequest): boolean {
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers.get("authorization");
   return authHeader === `Bearer ${ADMIN_TOKEN}`;
 }
 
 export async function POST(request: NextRequest) {
   if (!authorize(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
 
   if (!to || !subject || (!body_text && !body_html)) {
     return NextResponse.json(
-      { error: 'Missing required fields: to, subject, body_text or body_html' },
-      { status: 400 }
+      { error: "Missing required fields: to, subject, body_text or body_html" },
+      { status: 400 },
     );
   }
 
@@ -32,19 +32,24 @@ export async function POST(request: NextRequest) {
   // Option 3: Use AWS SES, Mailgun, etc.
 
   const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+  const smtpPort = process.env.SMTP_PORT
+    ? parseInt(process.env.SMTP_PORT)
+    : 587;
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
-  const emailFrom = from || process.env.EMAIL_FROM || 'noreply@ronyxlogistics.com';
+  const emailFrom =
+    from || process.env.EMAIL_FROM || "noreply@ronyxlogistics.com";
 
   if (!smtpHost || !smtpUser || !smtpPass) {
     return NextResponse.json(
       {
-        error: 'Email not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in environment.',
+        error:
+          "Email not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in environment.",
         draft_mode: true,
-        message: 'Email draft generated but not sent. Configure SMTP to enable sending.',
+        message:
+          "Email draft generated but not sent. Configure SMTP to enable sending.",
       },
-      { status: 200 }
+      { status: 200 },
     );
   }
 
@@ -75,10 +80,10 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json(
       {
-        error: 'Failed to send email',
+        error: "Failed to send email",
         details: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

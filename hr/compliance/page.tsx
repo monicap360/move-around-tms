@@ -1,13 +1,18 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
-import { 
+import {
   ArrowLeft,
   Shield,
   AlertTriangle,
@@ -27,7 +32,7 @@ import {
   Plus,
   RefreshCw,
   Award,
-  Target
+  Target,
 } from "lucide-react";
 
 type ComplianceSummary = {
@@ -78,7 +83,9 @@ type AuditReadiness = {
 
 export default function CompliancePage() {
   const [summary, setSummary] = useState<ComplianceSummary | null>(null);
-  const [driverCompliance, setDriverCompliance] = useState<DriverCompliance[]>([]);
+  const [driverCompliance, setDriverCompliance] = useState<DriverCompliance[]>(
+    [],
+  );
   const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
   const [auditReadiness, setAuditReadiness] = useState<AuditReadiness[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,17 +106,33 @@ export default function CompliancePage() {
 
       if (!complianceError && complianceData) {
         setDriverCompliance(complianceData);
-        
+
         // Calculate summary metrics
         const total = complianceData.length;
-        const compliant = complianceData.filter((d: any) => d.compliance_rate >= 100).length;
-        const overdue = complianceData.filter((d: any) => d.overdue_requirements > 0).length;
-        const expiring = complianceData.filter((d: any) => d.expiring_soon > 0).length;
-        const avgCompliance = total > 0 
-          ? complianceData.reduce((sum: number, d: any) => sum + d.compliance_rate, 0) / total
-          : 0;
-        const totalViolations = complianceData.reduce((sum: number, d: any) => sum + (d.violations_12mo || 0), 0);
-        const criticalViolations = complianceData.reduce((sum: number, d: any) => sum + (d.serious_violations_12mo || 0), 0);
+        const compliant = complianceData.filter(
+          (d: any) => d.compliance_rate >= 100,
+        ).length;
+        const overdue = complianceData.filter(
+          (d: any) => d.overdue_requirements > 0,
+        ).length;
+        const expiring = complianceData.filter(
+          (d: any) => d.expiring_soon > 0,
+        ).length;
+        const avgCompliance =
+          total > 0
+            ? complianceData.reduce(
+                (sum: number, d: any) => sum + d.compliance_rate,
+                0,
+              ) / total
+            : 0;
+        const totalViolations = complianceData.reduce(
+          (sum: number, d: any) => sum + (d.violations_12mo || 0),
+          0,
+        );
+        const criticalViolations = complianceData.reduce(
+          (sum: number, d: any) => sum + (d.serious_violations_12mo || 0),
+          0,
+        );
 
         setSummary({
           totalDrivers: total,
@@ -119,7 +142,7 @@ export default function CompliancePage() {
           overallComplianceRate: avgCompliance,
           violations12Mo: totalViolations,
           criticalViolations,
-          averageCsaScore: 85.5 // Mock CSA score
+          averageCsaScore: 85.5, // Mock CSA score
         });
       }
 
@@ -135,7 +158,7 @@ export default function CompliancePage() {
           message: "DOT Medical Certificate expires in 5 days",
           due_date: "2024-11-05",
           alert_date: "2024-10-31",
-          acknowledged: false
+          acknowledged: false,
         },
         {
           id: "2",
@@ -147,7 +170,7 @@ export default function CompliancePage() {
           message: "Random drug test is 3 days overdue",
           due_date: "2024-10-28",
           alert_date: "2024-10-31",
-          acknowledged: false
+          acknowledged: false,
         },
         {
           id: "3",
@@ -159,8 +182,8 @@ export default function CompliancePage() {
           message: "Speeding violation reported - CSA impact assessment needed",
           due_date: null,
           alert_date: "2024-10-30",
-          acknowledged: true
-        }
+          acknowledged: true,
+        },
       ]);
 
       // Load audit readiness data
@@ -171,7 +194,6 @@ export default function CompliancePage() {
       if (!auditError && auditData) {
         setAuditReadiness(auditData);
       }
-
     } catch (err) {
       console.error("Error loading compliance data:", err);
     } finally {
@@ -181,11 +203,11 @@ export default function CompliancePage() {
 
   async function acknowledgeAlert(alertId: string) {
     // In production, update the alert in Supabase
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId 
-        ? { ...alert, acknowledged: true }
-        : alert
-    ));
+    setAlerts((prev) =>
+      prev.map((alert) =>
+        alert.id === alertId ? { ...alert, acknowledged: true } : alert,
+      ),
+    );
   }
 
   async function generateComplianceReport() {
@@ -194,75 +216,90 @@ export default function CompliancePage() {
       generatedAt: new Date().toISOString(),
       summary,
       driverCompliance: filteredDrivers,
-      alerts: alerts.filter(a => !a.acknowledged),
-      auditReadiness
+      alerts: alerts.filter((a) => !a.acknowledged),
+      auditReadiness,
     };
 
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { 
-      type: 'application/json' 
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+      type: "application/json",
     });
-    
+
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `compliance-report-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `compliance-report-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  const filteredDrivers = driverCompliance.filter(driver => {
-    const matchesSearch = driver.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         driver.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredDrivers = driverCompliance.filter((driver) => {
+    const matchesSearch =
+      driver.driver_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.employee_id.toLowerCase().includes(searchTerm.toLowerCase());
+
     let matchesFilter = true;
     if (filterBy === "compliant") matchesFilter = driver.compliance_rate >= 100;
-    else if (filterBy === "overdue") matchesFilter = driver.overdue_requirements > 0;
+    else if (filterBy === "overdue")
+      matchesFilter = driver.overdue_requirements > 0;
     else if (filterBy === "expiring") matchesFilter = driver.expiring_soon > 0;
-    else if (filterBy === "violations") matchesFilter = driver.violations_12mo > 0;
-    
+    else if (filterBy === "violations")
+      matchesFilter = driver.violations_12mo > 0;
+
     return matchesSearch && matchesFilter;
   });
 
   function getComplianceColor(rate: number) {
-    if (rate >= 100) return 'text-green-600';
-    if (rate >= 90) return 'text-yellow-600';
-    if (rate >= 80) return 'text-orange-600';
-    return 'text-red-600';
+    if (rate >= 100) return "text-green-600";
+    if (rate >= 90) return "text-yellow-600";
+    if (rate >= 80) return "text-orange-600";
+    return "text-red-600";
   }
 
   function getComplianceBadge(rate: number) {
-    if (rate >= 100) return 'bg-green-100 text-green-800';
-    if (rate >= 90) return 'bg-yellow-100 text-yellow-800';
-    if (rate >= 80) return 'bg-orange-100 text-orange-800';
-    return 'bg-red-100 text-red-800';
+    if (rate >= 100) return "bg-green-100 text-green-800";
+    if (rate >= 90) return "bg-yellow-100 text-yellow-800";
+    if (rate >= 80) return "bg-orange-100 text-orange-800";
+    return "bg-red-100 text-red-800";
   }
 
   function getAlertColor(priority: string) {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-blue-100 text-blue-800 border-blue-200';
+      case "critical":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "high":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      default:
+        return "bg-blue-100 text-blue-800 border-blue-200";
     }
   }
 
   function getStatusColor(status: string) {
     switch (status) {
-      case 'success': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'error': return 'text-red-600';
-      default: return 'text-blue-600';
+      case "success":
+        return "text-green-600";
+      case "warning":
+        return "text-yellow-600";
+      case "error":
+        return "text-red-600";
+      default:
+        return "text-blue-600";
     }
   }
 
   function getStatusIcon(status: string) {
     switch (status) {
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'error': return <XCircle className="w-4 h-4 text-red-500" />;
-      default: return <Shield className="w-4 h-4 text-blue-500" />;
+      case "success":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "warning":
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case "error":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <Shield className="w-4 h-4 text-blue-500" />;
     }
   }
 
@@ -288,8 +325,12 @@ export default function CompliancePage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">DOT Compliance Management</h1>
-            <p className="text-gray-600 mt-1">Regulatory compliance tracking and audit readiness</p>
+            <h1 className="text-3xl font-bold text-gray-800">
+              DOT Compliance Management
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Regulatory compliance tracking and audit readiness
+            </p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -308,33 +349,34 @@ export default function CompliancePage() {
       <div className="border-b">
         <nav className="flex space-x-8">
           {[
-            { id: 'dashboard', label: 'Dashboard', icon: Shield },
-            { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
-            { id: 'audit', label: 'Audit Readiness', icon: FileCheck },
-            { id: 'violations', label: 'Violations', icon: Gavel }
+            { id: "dashboard", label: "Dashboard", icon: Shield },
+            { id: "alerts", label: "Alerts", icon: AlertTriangle },
+            { id: "audit", label: "Audit Readiness", icon: FileCheck },
+            { id: "violations", label: "Violations", icon: Gavel },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm ${
                 activeTab === id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               <Icon className="w-4 h-4" />
               {label}
-              {id === 'alerts' && alerts.filter(a => !a.acknowledged).length > 0 && (
-                <Badge className="bg-red-500 text-white text-xs">
-                  {alerts.filter(a => !a.acknowledged).length}
-                </Badge>
-              )}
+              {id === "alerts" &&
+                alerts.filter((a) => !a.acknowledged).length > 0 && (
+                  <Badge className="bg-red-500 text-white text-xs">
+                    {alerts.filter((a) => !a.acknowledged).length}
+                  </Badge>
+                )}
             </button>
           ))}
         </nav>
       </div>
 
-      {activeTab === 'dashboard' && (
+      {activeTab === "dashboard" && (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -343,10 +385,14 @@ export default function CompliancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Overall Compliance</p>
-                    <p className={`text-2xl font-bold ${getComplianceColor(summary?.overallComplianceRate || 0)}`}>
+                    <p
+                      className={`text-2xl font-bold ${getComplianceColor(summary?.overallComplianceRate || 0)}`}
+                    >
                       {summary?.overallComplianceRate?.toFixed(1)}%
                     </p>
-                    <p className="text-xs text-gray-500">{summary?.totalDrivers} drivers</p>
+                    <p className="text-xs text-gray-500">
+                      {summary?.totalDrivers} drivers
+                    </p>
                   </div>
                   <Shield className="w-8 h-8 text-blue-500" />
                 </div>
@@ -358,9 +404,17 @@ export default function CompliancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Fully Compliant</p>
-                    <p className="text-2xl font-bold text-green-600">{summary?.compliantDrivers}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {summary?.compliantDrivers}
+                    </p>
                     <p className="text-xs text-gray-500">
-                      {summary?.totalDrivers ? ((summary.compliantDrivers / summary.totalDrivers) * 100).toFixed(0) : 0}% of fleet
+                      {summary?.totalDrivers
+                        ? (
+                            (summary.compliantDrivers / summary.totalDrivers) *
+                            100
+                          ).toFixed(0)
+                        : 0}
+                      % of fleet
                     </p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-500" />
@@ -373,8 +427,12 @@ export default function CompliancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Overdue Items</p>
-                    <p className="text-2xl font-bold text-red-600">{summary?.overdue}</p>
-                    <p className="text-xs text-gray-500">Requiring immediate attention</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {summary?.overdue}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Requiring immediate attention
+                    </p>
                   </div>
                   <XCircle className="w-8 h-8 text-red-500" />
                 </div>
@@ -386,7 +444,9 @@ export default function CompliancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Expiring Soon</p>
-                    <p className="text-2xl font-bold text-yellow-600">{summary?.expiringSoon}</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {summary?.expiringSoon}
+                    </p>
                     <p className="text-xs text-gray-500">Next 30 days</p>
                   </div>
                   <Clock className="w-8 h-8 text-yellow-500" />
@@ -455,22 +515,37 @@ export default function CompliancePage() {
                     </thead>
                     <tbody>
                       {filteredDrivers.map((driver) => (
-                        <tr key={driver.driver_id} className="border-b hover:bg-gray-50">
+                        <tr
+                          key={driver.driver_id}
+                          className="border-b hover:bg-gray-50"
+                        >
                           <td className="p-3">
                             <div>
-                              <div className="font-medium">{driver.driver_name}</div>
-                              <div className="text-gray-500 text-xs">ID: {driver.employee_id}</div>
+                              <div className="font-medium">
+                                {driver.driver_name}
+                              </div>
+                              <div className="text-gray-500 text-xs">
+                                ID: {driver.employee_id}
+                              </div>
                             </div>
                           </td>
                           <td className="p-3">
-                            <Badge className={getComplianceBadge(driver.compliance_rate)}>
+                            <Badge
+                              className={getComplianceBadge(
+                                driver.compliance_rate,
+                              )}
+                            >
                               {driver.compliance_rate?.toFixed(0)}%
                             </Badge>
                           </td>
                           <td className="p-3">
                             <div className="text-xs">
-                              <div className="text-green-600">{driver.compliant_requirements} compliant</div>
-                              <div className="text-gray-500">{driver.total_requirements} total</div>
+                              <div className="text-green-600">
+                                {driver.compliant_requirements} compliant
+                              </div>
+                              <div className="text-gray-500">
+                                {driver.total_requirements} total
+                              </div>
                             </div>
                           </td>
                           <td className="p-3">
@@ -498,10 +573,14 @@ export default function CompliancePage() {
                           <td className="p-3">
                             {driver.next_expiration_date ? (
                               <div className="text-xs">
-                                {new Date(driver.next_expiration_date).toLocaleDateString()}
+                                {new Date(
+                                  driver.next_expiration_date,
+                                ).toLocaleDateString()}
                               </div>
                             ) : (
-                              <span className="text-gray-400 text-xs">None</span>
+                              <span className="text-gray-400 text-xs">
+                                None
+                              </span>
                             )}
                           </td>
                           <td className="p-3">
@@ -520,21 +599,22 @@ export default function CompliancePage() {
         </>
       )}
 
-      {activeTab === 'alerts' && (
+      {activeTab === "alerts" && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
-                Compliance Alerts ({alerts.filter(a => !a.acknowledged).length} active)
+                Compliance Alerts (
+                {alerts.filter((a) => !a.acknowledged).length} active)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {alerts.map((alert) => (
-                  <div 
-                    key={alert.id} 
-                    className={`border rounded-lg p-4 ${alert.acknowledged ? 'opacity-50' : ''} ${getAlertColor(alert.priority)}`}
+                  <div
+                    key={alert.id}
+                    className={`border rounded-lg p-4 ${alert.acknowledged ? "opacity-50" : ""} ${getAlertColor(alert.priority)}`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -542,12 +622,15 @@ export default function CompliancePage() {
                         <p className="text-sm text-gray-600">{alert.message}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-xs ${alert.priority === 'critical' ? 'border-red-500' : ''}`}>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${alert.priority === "critical" ? "border-red-500" : ""}`}
+                        >
                           {alert.priority}
                         </Badge>
                         {!alert.acknowledged && (
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => acknowledgeAlert(alert.id)}
                           >
@@ -557,9 +640,12 @@ export default function CompliancePage() {
                       </div>
                     </div>
                     <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>{alert.driver_name} (ID: {alert.employee_id})</span>
                       <span>
-                        {alert.due_date && `Due: ${new Date(alert.due_date).toLocaleDateString()}`}
+                        {alert.driver_name} (ID: {alert.employee_id})
+                      </span>
+                      <span>
+                        {alert.due_date &&
+                          `Due: ${new Date(alert.due_date).toLocaleDateString()}`}
                       </span>
                     </div>
                   </div>
@@ -576,7 +662,7 @@ export default function CompliancePage() {
         </div>
       )}
 
-      {activeTab === 'audit' && (
+      {activeTab === "audit" && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -591,37 +677,43 @@ export default function CompliancePage() {
                   if (!acc[item.section]) acc[item.section] = [];
                   acc[item.section].push(item);
                   return acc;
-                }, {}) && Object.entries(
-                  auditReadiness.reduce((acc: any, item) => {
-                    if (!acc[item.section]) acc[item.section] = [];
-                    acc[item.section].push(item);
-                    return acc;
-                  }, {})
-                ).map(([section, items]: [string, any]) => (
-                  <div key={section}>
-                    <h3 className="font-medium text-lg mb-3">{section}</h3>
-                    <div className="space-y-2">
-                      {items.map((item: AuditReadiness, index: number) => (
-                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm">{item.metric}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`font-medium ${getStatusColor(item.status)}`}>
-                              {item.value}
-                            </span>
-                            {getStatusIcon(item.status)}
+                }, {}) &&
+                  Object.entries(
+                    auditReadiness.reduce((acc: any, item) => {
+                      if (!acc[item.section]) acc[item.section] = [];
+                      acc[item.section].push(item);
+                      return acc;
+                    }, {}),
+                  ).map(([section, items]: [string, any]) => (
+                    <div key={section}>
+                      <h3 className="font-medium text-lg mb-3">{section}</h3>
+                      <div className="space-y-2">
+                        {items.map((item: AuditReadiness, index: number) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                          >
+                            <span className="text-sm">{item.metric}</span>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`font-medium ${getStatusColor(item.status)}`}
+                              >
+                                {item.value}
+                              </span>
+                              {getStatusIcon(item.status)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {activeTab === 'violations' && (
+      {activeTab === "violations" && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -634,7 +726,9 @@ export default function CompliancePage() {
               <div className="text-center py-8">
                 <Gavel className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">Violations management system</p>
-                <p className="text-sm text-gray-400">Track DOT violations, fines, and CSA impact</p>
+                <p className="text-sm text-gray-400">
+                  Track DOT violations, fines, and CSA impact
+                </p>
                 <Button className="mt-4">
                   <Plus className="w-4 h-4 mr-2" />
                   Report Violation

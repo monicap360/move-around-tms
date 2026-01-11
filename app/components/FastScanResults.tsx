@@ -23,7 +23,10 @@ export default function FastScanResults() {
         <span className="font-bold">Customer:</span> ACME Construction
       </div>
       <div className="mb-2">
-        <span className="font-bold">Status:</span> <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Complete</span>
+        <span className="font-bold">Status:</span>{" "}
+        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+          Complete
+        </span>
       </div>
     </div>
   );

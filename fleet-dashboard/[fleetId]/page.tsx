@@ -7,10 +7,14 @@ import DashboardCard from "@/components/dashboard/DashboardCard";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export default function FleetManagerDashboard({ params }: { params: { fleetId: string } }) {
+export default function FleetManagerDashboard({
+  params,
+}: {
+  params: { fleetId: string };
+}) {
   const fleetId = params.fleetId;
   const [fleet, setFleet] = useState<any>(null);
   const [loads, setLoads] = useState<any[]>([]);
@@ -25,13 +29,14 @@ export default function FleetManagerDashboard({ params }: { params: { fleetId: s
 
   async function loadFleetDashboard() {
     setLoading(true);
-    const [fleetRes, loadsRes, driversRes, ticketsRes, mapRes] = await Promise.all([
-      supabase.from("fleets").select("*").eq("id", fleetId).single(),
-      supabase.from("loads").select("*").eq("fleet_id", fleetId),
-      supabase.from("drivers").select("*").eq("fleet_id", fleetId),
-      supabase.from("tickets").select("*").eq("fleet_id", fleetId),
-      supabase.from("fleet_map").select("*").eq("fleet_id", fleetId),
-    ]);
+    const [fleetRes, loadsRes, driversRes, ticketsRes, mapRes] =
+      await Promise.all([
+        supabase.from("fleets").select("*").eq("id", fleetId).single(),
+        supabase.from("loads").select("*").eq("fleet_id", fleetId),
+        supabase.from("drivers").select("*").eq("fleet_id", fleetId),
+        supabase.from("tickets").select("*").eq("fleet_id", fleetId),
+        supabase.from("fleet_map").select("*").eq("fleet_id", fleetId),
+      ]);
     setFleet(fleetRes.data || null);
     setLoads(loadsRes.data || []);
     setDrivers(driversRes.data || []);
@@ -150,8 +155,14 @@ export default function FleetManagerDashboard({ params }: { params: { fleetId: s
                     <tr key={ticket.id} className="border-b">
                       <td className="p-2">{ticket.ticket_number}</td>
                       <td className="p-2">{ticket.driver_name}</td>
-                      <td className="p-2">{ticket.date ? new Date(ticket.date).toLocaleDateString() : '-'}</td>
-                      <td className="p-2">${ticket.amount?.toLocaleString() || '-'}</td>
+                      <td className="p-2">
+                        {ticket.date
+                          ? new Date(ticket.date).toLocaleDateString()
+                          : "-"}
+                      </td>
+                      <td className="p-2">
+                        ${ticket.amount?.toLocaleString() || "-"}
+                      </td>
                       <td className="p-2">{ticket.status}</td>
                     </tr>
                   ))}
@@ -180,7 +191,11 @@ export default function FleetManagerDashboard({ params }: { params: { fleetId: s
                     <tr key={point.id} className="border-b">
                       <td className="p-2">{point.location}</td>
                       <td className="p-2">{point.type}</td>
-                      <td className="p-2">{point.timestamp ? new Date(point.timestamp).toLocaleString() : '-'}</td>
+                      <td className="p-2">
+                        {point.timestamp
+                          ? new Date(point.timestamp).toLocaleString()
+                          : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

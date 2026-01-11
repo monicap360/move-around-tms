@@ -1,9 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 
-
-
-
 export default function AnalyticsDashboard() {
   const [stats, setStats] = useState({
     loads: 0,
@@ -12,7 +9,7 @@ export default function AnalyticsDashboard() {
     spend: 0,
     onTime: 0,
     avgRate: 0,
-    exceptions: 0
+    exceptions: 0,
   });
   const [trends, setTrends] = useState([]);
 
@@ -54,7 +51,7 @@ export default function AnalyticsDashboard() {
             </tr>
           </thead>
           <tbody>
-            {trends.map(t => (
+            {trends.map((t) => (
               <tr key={t.month}>
                 <td className="p-2">{t.month}</td>
                 <td className="p-2">{t.loads}</td>
@@ -72,7 +69,9 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="bg-gray-50 rounded p-4 text-center shadow-sm">
       <div className="text-2xl font-bold mb-1">{value}</div>
-      <div className="text-xs text-gray-500 uppercase tracking-wider">{label}</div>
+      <div className="text-xs text-gray-500 uppercase tracking-wider">
+        {label}
+      </div>
     </div>
   );
 }

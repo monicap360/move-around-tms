@@ -9,15 +9,17 @@ If you're using the HTML login file (`public/login.html`), you need to configure
 Create a configuration endpoint that serves environment variables:
 
 **Create `public/env.js`:**
+
 ```javascript
 // This file should be generated server-side with your environment variables
 window.ENV = {
   SUPABASE_URL: "https://wqeidcatuwqtzwhvmqfr.supabase.co", // Replace with your URL
-  SUPABASE_ANON_KEY: "your-anon-key-here" // Replace with rotated key
+  SUPABASE_ANON_KEY: "your-anon-key-here", // Replace with rotated key
 };
 ```
 
 **Include in HTML:**
+
 ```html
 <script src="/env.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -26,6 +28,7 @@ window.ENV = {
 ### Option 2: Use Next.js Login Page (Recommended)
 
 Instead of the HTML file, use the secure Next.js login page:
+
 - Visit: `/login` (uses environment variables automatically)
 - Handles authentication flow properly
 - Includes security measures
@@ -35,11 +38,13 @@ Instead of the HTML file, use the secure Next.js login page:
 ⚠️ **Never commit `env.js` with real credentials to git**
 
 Add to `.gitignore`:
+
 ```
 public/env.js
 ```
 
 ✅ **Production Setup:**
+
 1. Generate `env.js` server-side during deployment
 2. Use rotated Supabase credentials
 3. Ensure HTTPS is enabled

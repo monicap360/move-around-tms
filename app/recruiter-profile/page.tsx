@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { getRecruiterProfile, getActiveJobPostings } from "@/lib/recruiter";
 
 // This page is public and SEO-friendly
-export default async function RecruiterProfilePage({ searchParams }: { searchParams: { id?: string } }) {
+export default async function RecruiterProfilePage({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}) {
   const recruiterId = searchParams?.id;
   if (!recruiterId) return notFound();
 
@@ -31,7 +35,9 @@ export default async function RecruiterProfilePage({ searchParams }: { searchPar
       </section>
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-2">About</h2>
-        <p className="text-gray-700 whitespace-pre-line">{profile.bio || "No bio provided."}</p>
+        <p className="text-gray-700 whitespace-pre-line">
+          {profile.bio || "No bio provided."}
+        </p>
       </section>
       <section>
         <h2 className="text-xl font-semibold mb-4">Active Job Postings</h2>
@@ -40,10 +46,15 @@ export default async function RecruiterProfilePage({ searchParams }: { searchPar
         ) : (
           <ul className="space-y-4">
             {jobs.map((job: any) => (
-              <li key={job.id} className="border rounded p-4 hover:shadow transition">
+              <li
+                key={job.id}
+                className="border rounded p-4 hover:shadow transition"
+              >
                 <h3 className="text-lg font-bold">{job.title}</h3>
                 <p className="text-gray-600 mb-1">{job.location}</p>
-                <p className="text-gray-700 mb-2 line-clamp-2">{job.description}</p>
+                <p className="text-gray-700 mb-2 line-clamp-2">
+                  {job.description}
+                </p>
                 <a
                   href={`/jobs/${job.id}`}
                   className="inline-block text-blue-600 hover:underline text-sm"

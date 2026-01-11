@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 type OcrResult = {
   id: string;
@@ -24,9 +24,9 @@ export default function FastScanResults() {
       setError(null);
       // For demo: fetch the most recent OCR result
       const { data, error } = await supabase
-        .from('ticket_ocr_results')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from("ticket_ocr_results")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(1)
         .single();
       if (error) {
@@ -58,7 +58,8 @@ export default function FastScanResults() {
             <span className="font-bold">Tons:</span> {ocr.tons}
           </div>
           <div className="mb-2">
-            <span className="font-bold">Price/Ton:</span> ${ocr.price_per_ton?.toFixed(2)}
+            <span className="font-bold">Price/Ton:</span> $
+            {ocr.price_per_ton?.toFixed(2)}
           </div>
           <div className="mb-2">
             <span className="font-bold">Total:</span> ${ocr.total?.toFixed(2)}
@@ -70,13 +71,18 @@ export default function FastScanResults() {
             <span className="font-bold">Customer:</span> {ocr.customer}
           </div>
           <div className="mb-2">
-            <span className="font-bold">Status:</span> <span className={
-              ocr.status === 'Complete'
-                ? 'bg-green-100 text-green-700 px-2 py-1 rounded text-xs'
-                : ocr.status === 'Processing'
-                ? 'bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs'
-                : 'bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs'
-            }>{ocr.status}</span>
+            <span className="font-bold">Status:</span>{" "}
+            <span
+              className={
+                ocr.status === "Complete"
+                  ? "bg-green-100 text-green-700 px-2 py-1 rounded text-xs"
+                  : ocr.status === "Processing"
+                    ? "bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs"
+                    : "bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+              }
+            >
+              {ocr.status}
+            </span>
           </div>
         </>
       )}

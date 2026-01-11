@@ -2,7 +2,7 @@
 export interface CompanyAsset {
   id: string;
   user_id: string | null;
-  asset_type: 'company_logo' | 'ticket_template';
+  asset_type: "company_logo" | "ticket_template";
   file_path: string;
   original_filename: string;
   description?: string | null;
@@ -14,7 +14,7 @@ export interface CompanyAsset {
 }
 
 export interface CreateCompanyAssetInput {
-  asset_type: 'company_logo' | 'ticket_template';
+  asset_type: "company_logo" | "ticket_template";
   file_path: string;
   original_filename: string;
   description?: string;

@@ -25,7 +25,7 @@ serve(async (req) => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SERVICE_ROLE_KEY")!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
     );
 
     const {
@@ -50,7 +50,7 @@ serve(async (req) => {
     if (!load_id || !new_status) {
       return new Response(
         JSON.stringify({ error: "load_id and status are required" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -117,10 +117,9 @@ serve(async (req) => {
       .eq("id", load_id);
 
     if (updateErr) {
-      return new Response(
-        JSON.stringify({ error: updateErr.message }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: updateErr.message }), {
+        status: 400,
+      });
     }
 
     // ------------------------------
@@ -139,10 +138,9 @@ serve(async (req) => {
       });
 
     if (insertErr) {
-      return new Response(
-        JSON.stringify({ error: insertErr.message }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: insertErr.message }), {
+        status: 400,
+      });
     }
 
     return new Response(
@@ -151,12 +149,11 @@ serve(async (req) => {
         load_id,
         new_status,
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
 });

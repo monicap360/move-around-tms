@@ -3,8 +3,11 @@ import { createSupabaseServerClient } from "../../_supabase";
 
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
   if (userError || !user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
@@ -12,7 +15,10 @@ export async function POST(req: Request) {
   // Accept multipart form-data: full_name (string), avatar (File optional)
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("multipart/form-data")) {
-    return NextResponse.json({ error: "Expected multipart/form-data" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Expected multipart/form-data" },
+      { status: 400 },
+    );
   }
 
   const form = await req.formData();
@@ -23,13 +29,19 @@ export async function POST(req: Request) {
 
   if (avatar) {
     // Validate file type
-    if (!avatar.type.startsWith('image/')) {
-      return NextResponse.json({ error: "File must be an image" }, { status: 400 });
+    if (!avatar.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "File must be an image" },
+        { status: 400 },
+      );
     }
 
     // Validate file size (max 5MB)
     if (avatar.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "File size must be less than 5MB" }, { status: 400 });
+      return NextResponse.json(
+        { error: "File size must be less than 5MB" },
+        { status: 400 },
+      );
     }
 
     // Safe filename
@@ -42,20 +54,23 @@ export async function POST(req: Request) {
       .list(user.id);
 
     if (existingFiles && existingFiles.length > 0) {
-      const filesToRemove = existingFiles.map(file => `${user.id}/${file.name}`);
-      await supabase.storage
-        .from("avatars")
-        .remove(filesToRemove);
+      const filesToRemove = existingFiles.map(
+        (file) => `${user.id}/${file.name}`,
+      );
+      await supabase.storage.from("avatars").remove(filesToRemove);
     }
 
     const { error: upErr } = await supabase.storage
       .from("avatars")
       .upload(filePath, avatar, { upsert: true });
 
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr)
+      return NextResponse.json({ error: upErr.message }, { status: 500 });
 
     // Get public URL
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(filePath);
+    const { data: pub } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
     avatar_url = pub.publicUrl;
   }
 
@@ -76,16 +91,19 @@ export async function POST(req: Request) {
 
   if (upsertErr) {
     // If profiles table doesn't exist, fall back to updating user metadata
-    console.error('Profiles table error, falling back to user metadata:', upsertErr);
-    
+    console.error(
+      "Profiles table error, falling back to user metadata:",
+      upsertErr,
+    );
+
     const { error: updateError } = await supabase.auth.admin.updateUserById(
       user.id,
       {
         user_metadata: {
           ...user.user_metadata,
-          ...patch
-        }
-      }
+          ...patch,
+        },
+      },
     );
 
     if (updateError) {

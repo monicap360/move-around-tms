@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Upload, AlertTriangle, Calendar } from "lucide-react";
 
@@ -30,14 +35,16 @@ export default function MissingTicketUpload() {
   async function loadDriverAndWeeks() {
     try {
       // Get current driver
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data: driver } = await supabase
           .from("drivers")
           .select("id")
           .eq("email", user.email)
           .single();
-        
+
         if (driver) {
           setDriverId(driver.id);
         }
@@ -49,8 +56,8 @@ export default function MissingTicketUpload() {
 
       for (let i = 0; i <= 1; i++) {
         const referenceDate = new Date(today);
-        referenceDate.setDate(today.getDate() - (i * 7));
-        
+        referenceDate.setDate(today.getDate() - i * 7);
+
         const dayOfWeek = referenceDate.getDay();
         const daysSinceFriday = (dayOfWeek + 2) % 7;
         const weekStart = new Date(referenceDate);
@@ -63,8 +70,8 @@ export default function MissingTicketUpload() {
 
         weeks.push({
           label: i === 0 ? "Current Week" : "Last Week",
-          start: weekStart.toISOString().split('T')[0],
-          end: weekEnd.toISOString().split('T')[0],
+          start: weekStart.toISOString().split("T")[0],
+          end: weekEnd.toISOString().split("T")[0],
           isCurrent: i === 0,
         });
       }
@@ -102,7 +109,7 @@ export default function MissingTicketUpload() {
 
       const { data: uploadRes, error: uploadErr } = await supabase.storage
         .from("hr_docs")
-        .upload(path, file, { upsert: false, cacheControl: '3600' });
+        .upload(path, file, { upsert: false, cacheControl: "3600" });
 
       if (uploadErr) {
         setStatus("❌ Upload failed: " + uploadErr.message);
@@ -130,17 +137,17 @@ export default function MissingTicketUpload() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            kind: 'ticket',
+            kind: "ticket",
             file_url: signed.signedUrl,
             driverId: driverId || undefined,
             missingTicket: true,
             targetWeek: selectedWeek,
             reason: reason,
           }),
-        }
+        },
       );
 
       const ocr = await res.json();
@@ -155,9 +162,10 @@ export default function MissingTicketUpload() {
       await notifyManager(ocr.ticket);
 
       setResult(ocr);
-      setStatus("✅ Missing ticket submitted! Manager has been notified for approval.");
+      setStatus(
+        "✅ Missing ticket submitted! Manager has been notified for approval.",
+      );
       setLoading(false);
-
     } catch (e: any) {
       setStatus("❌ Error: " + (e?.message || "Unexpected error"));
       setLoading(false);
@@ -192,7 +200,8 @@ export default function MissingTicketUpload() {
           Report Missing Ticket
         </h1>
         <p className="text-gray-600">
-          Submit a ticket you forgot to upload during the pay week. Manager approval required.
+          Submit a ticket you forgot to upload during the pay week. Manager
+          approval required.
         </p>
       </div>
 
@@ -203,10 +212,20 @@ export default function MissingTicketUpload() {
             <div className="text-sm text-orange-800">
               <p className="font-semibold mb-1">Missing Ticket Policy:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>You can report tickets from current or last pay week only</li>
-                <li>Must provide a valid reason (forgot to upload, system error, etc.)</li>
-                <li>Requires manager approval before counting toward payroll</li>
-                <li>AI will analyze ticket date and reconcile with material plant records</li>
+                <li>
+                  You can report tickets from current or last pay week only
+                </li>
+                <li>
+                  Must provide a valid reason (forgot to upload, system error,
+                  etc.)
+                </li>
+                <li>
+                  Requires manager approval before counting toward payroll
+                </li>
+                <li>
+                  AI will analyze ticket date and reconcile with material plant
+                  records
+                </li>
                 <li>Manager can approve, deny, or void the ticket</li>
               </ul>
             </div>
@@ -288,11 +307,15 @@ export default function MissingTicketUpload() {
           </Button>
 
           {status && (
-            <div className={`p-4 rounded-lg ${
-              status.includes('✅') ? 'bg-green-50 text-green-800' :
-              status.includes('❌') ? 'bg-red-50 text-red-800' :
-              'bg-blue-50 text-blue-800'
-            }`}>
+            <div
+              className={`p-4 rounded-lg ${
+                status.includes("✅")
+                  ? "bg-green-50 text-green-800"
+                  : status.includes("❌")
+                    ? "bg-red-50 text-red-800"
+                    : "bg-blue-50 text-blue-800"
+              }`}
+            >
               <p className="font-medium">{status}</p>
             </div>
           )}
@@ -321,7 +344,8 @@ export default function MissingTicketUpload() {
                         </div>
                         <div>
                           <span className="font-semibold">Quantity:</span>{" "}
-                          {result.ticket.quantity || "N/A"} {result.ticket.unit_type || ""}
+                          {result.ticket.quantity || "N/A"}{" "}
+                          {result.ticket.unit_type || ""}
                         </div>
                         <div>
                           <span className="font-semibold">Calculated Pay:</span>{" "}
@@ -341,7 +365,9 @@ export default function MissingTicketUpload() {
                       </div>
 
                       <p className="text-xs text-gray-600 mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
-                        ⚠️ This ticket is pending manager approval. It will not appear in your payroll until approved. Manager has been notified.
+                        ⚠️ This ticket is pending manager approval. It will not
+                        appear in your payroll until approved. Manager has been
+                        notified.
                       </p>
                     </>
                   )}
@@ -354,14 +380,21 @@ export default function MissingTicketUpload() {
 
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">📋 What Happens Next:</h3>
+          <h3 className="font-semibold text-blue-900 mb-2">
+            📋 What Happens Next:
+          </h3>
           <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
             <li>AI analyzes the ticket date from the image</li>
             <li>System reconciles with material plant CSV records</li>
             <li>Manager receives alert notification</li>
             <li>Manager reviews: ticket details, your reason, plant records</li>
-            <li>Manager can: <strong>Approve</strong>, <strong>Deny</strong>, or <strong>Void</strong></li>
-            <li>If approved: appears in your payroll for the correct pay week</li>
+            <li>
+              Manager can: <strong>Approve</strong>, <strong>Deny</strong>, or{" "}
+              <strong>Void</strong>
+            </li>
+            <li>
+              If approved: appears in your payroll for the correct pay week
+            </li>
             <li>If voided: ticket exists but you receive $0 pay</li>
           </ol>
         </CardContent>
