@@ -1,50 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { supabase } from "../../lib/supabaseClient";
-import { supabase } from "../../lib/supabaseClient";
-import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
+import ComplianceTab from "../../components/compliance/ComplianceTab";
 
 
-  const [profile, setProfile] = useState<any>({
-    name: "",
-    dob: "",
-    phone: "",
-    email: "",
-    address: "",
-    license_number: "",
-    cdl_expiry: "",
-    medical_expiry: "",
-    twic_expiry: "",
-  });
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [aiSuggested, setAiSuggested] = useState<any>({});
-  const fileInputRefs = {
-    cdl: useRef<HTMLInputElement>(null),
-    medical: useRef<HTMLInputElement>(null),
-    twic: useRef<HTMLInputElement>(null),
-  };
-
-  // Fetch driver profile and documents from Supabase
-  useEffect(() => {
-    const fetchData = async () => {
-      // Fetch profile
-      const { data: driver, error: profileError } = await supabase
-        .from('drivers')
-        .select('*')
-        .eq('id', params.driverId)
-        .single();
-      if (driver) setProfile(driver);
-
-      // Fetch documents
-      const { data: docs, error: docsError } = await supabase
-        .from('driver_documents')
-        .select('*')
-        .eq('driver_id', params.driverId);
-      if (docs) setDocuments(docs);
-    };
-    fetchData();
-  }, [params.driverId]);
+// ...existing code...
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -178,19 +135,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/ca
           </div>
         </CardContent>
       </Card>
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Compliance & Expirations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div><span className="font-semibold">CDL Expiry:</span> {profile.cdl_expiry}</div>
-            <div><span className="font-semibold">Medical Card Expiry:</span> {profile.medical_expiry}</div>
-            <div><span className="font-semibold">TWIC Expiry:</span> {profile.twic_expiry}</div>
-            {/* TODO: Add more compliance fields as needed */}
-          </div>
-        </CardContent>
-      </Card>
+      <ComplianceTab driverId={params.driverId} role="admin" />
     </div>
   );
 }
