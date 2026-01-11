@@ -232,9 +232,43 @@ export default function SettingsPage() {
             <CardTitle>Profile Settings</CardTitle>
           </CardHeader>
           <CardContent className="mt-6 space-y-6">
-            {/* Avatar Upload - Will be added back later */}
-            <div className="text-center text-gray-500">
-              Avatar upload functionality coming soon
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center gap-2 mb-4">
+              <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="object-cover w-full h-full" />
+                ) : (
+                  <span className="text-gray-400">No Avatar</span>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                className="mt-2"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  // Upload to Supabase Storage (demo: assumes supabase client is available)
+                  const fileExt = file.name.split('.').pop();
+                  const fileName = `${profile.id}-avatar.${fileExt}`;
+                  // @ts-ignore
+                  const { data, error } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
+                  if (!error) {
+                    // Get public URL
+                    // @ts-ignore
+                    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                    if (urlData?.publicUrl) {
+                      // @ts-ignore
+                      await supabase.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', profile.id);
+                      // Optionally update local state
+                      window.location.reload();
+                    }
+                  } else {
+                    alert('Upload failed: ' + error.message);
+                  }
+                }}
+              />
+              <span className="text-xs text-gray-500">Upload a square image for best results.</span>
             </div>
 
             {/* Profile Form */}

@@ -411,9 +411,61 @@ export default function FleetManagementPage() {
             <CardTitle>Maintenance Schedule</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <Wrench className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p>Maintenance scheduling feature coming soon...</p>
+            <div className="flex justify-between items-center mb-4">
+              <div className="font-semibold">All Maintenance Records</div>
+              <Button onClick={() => {
+                // Add a new sample record (in-memory)
+                setMaintenanceRecords(prev => [
+                  ...prev,
+                  {
+                    id: (prev.length + 1).toString(),
+                    vehicle_id: vehicles[0]?.id || '1',
+                    maintenance_type: 'Oil Change',
+                    description: 'Changed oil and filter',
+                    cost: 250,
+                    date_completed: new Date().toISOString().slice(0,10),
+                    mileage_at_service: vehicles[0]?.current_mileage || 0,
+                    next_due_date: '',
+                    next_due_mileage: (vehicles[0]?.current_mileage || 0) + 10000,
+                    status: 'completed',
+                  }
+                ]);
+              }}>
+                <Plus className="w-4 h-4 mr-1" /> Add Record
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-2 py-1 border">Vehicle</th>
+                    <th className="px-2 py-1 border">Type</th>
+                    <th className="px-2 py-1 border">Description</th>
+                    <th className="px-2 py-1 border">Date</th>
+                    <th className="px-2 py-1 border">Mileage</th>
+                    <th className="px-2 py-1 border">Cost</th>
+                    <th className="px-2 py-1 border">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maintenanceRecords.length === 0 ? (
+                    <tr><td colSpan={7} className="text-center py-4 text-gray-400">No maintenance records yet.</td></tr>
+                  ) : maintenanceRecords.map(rec => {
+                    const vehicle = vehicles.find(v => v.id === rec.vehicle_id);
+                    return (
+                      <tr key={rec.id} className="border-b">
+                        <td className="px-2 py-1">{vehicle?.unit_number || rec.vehicle_id}</td>
+                        <td className="px-2 py-1">{rec.maintenance_type}</td>
+                        <td className="px-2 py-1">{rec.description}</td>
+                        <td className="px-2 py-1">{rec.date_completed}</td>
+                        <td className="px-2 py-1">{rec.mileage_at_service}</td>
+                        <td className="px-2 py-1">${rec.cost}</td>
+                        <td className="px-2 py-1">{rec.status}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
@@ -425,9 +477,61 @@ export default function FleetManagementPage() {
             <CardTitle>DOT Inspections</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <CheckCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p>Inspection tracking feature coming soon...</p>
+            <div className="flex justify-between items-center mb-4">
+              <div className="font-semibold">All Inspections</div>
+              <Button onClick={() => {
+                // Add a new sample inspection (in-memory)
+                setMaintenanceRecords(prev => [
+                  ...prev,
+                  {
+                    id: (prev.length + 1001).toString(),
+                    vehicle_id: vehicles[0]?.id || '1',
+                    maintenance_type: 'DOT Inspection',
+                    description: 'Annual DOT inspection completed',
+                    cost: 150,
+                    date_completed: new Date().toISOString().slice(0,10),
+                    mileage_at_service: vehicles[0]?.current_mileage || 0,
+                    next_due_date: '',
+                    next_due_mileage: undefined,
+                    status: 'completed',
+                  }
+                ]);
+              }}>
+                <Plus className="w-4 h-4 mr-1" /> Add Inspection
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-2 py-1 border">Vehicle</th>
+                    <th className="px-2 py-1 border">Type</th>
+                    <th className="px-2 py-1 border">Description</th>
+                    <th className="px-2 py-1 border">Date</th>
+                    <th className="px-2 py-1 border">Mileage</th>
+                    <th className="px-2 py-1 border">Cost</th>
+                    <th className="px-2 py-1 border">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maintenanceRecords.filter(r => r.maintenance_type === 'DOT Inspection').length === 0 ? (
+                    <tr><td colSpan={7} className="text-center py-4 text-gray-400">No inspections yet.</td></tr>
+                  ) : maintenanceRecords.filter(r => r.maintenance_type === 'DOT Inspection').map(rec => {
+                    const vehicle = vehicles.find(v => v.id === rec.vehicle_id);
+                    return (
+                      <tr key={rec.id} className="border-b">
+                        <td className="px-2 py-1">{vehicle?.unit_number || rec.vehicle_id}</td>
+                        <td className="px-2 py-1">{rec.maintenance_type}</td>
+                        <td className="px-2 py-1">{rec.description}</td>
+                        <td className="px-2 py-1">{rec.date_completed}</td>
+                        <td className="px-2 py-1">{rec.mileage_at_service}</td>
+                        <td className="px-2 py-1">${rec.cost}</td>
+                        <td className="px-2 py-1">{rec.status}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
@@ -439,9 +543,61 @@ export default function FleetManagementPage() {
             <CardTitle>Registration Renewals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p>Registration renewal tracking feature coming soon...</p>
+            <div className="flex justify-between items-center mb-4">
+              <div className="font-semibold">All Renewals</div>
+              <Button onClick={() => {
+                // Add a new sample renewal (in-memory)
+                setMaintenanceRecords(prev => [
+                  ...prev,
+                  {
+                    id: (prev.length + 2001).toString(),
+                    vehicle_id: vehicles[0]?.id || '1',
+                    maintenance_type: 'Registration Renewal',
+                    description: 'Annual registration renewed',
+                    cost: 120,
+                    date_completed: new Date().toISOString().slice(0,10),
+                    mileage_at_service: vehicles[0]?.current_mileage || 0,
+                    next_due_date: '',
+                    next_due_mileage: undefined,
+                    status: 'completed',
+                  }
+                ]);
+              }}>
+                <Plus className="w-4 h-4 mr-1" /> Add Renewal
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-2 py-1 border">Vehicle</th>
+                    <th className="px-2 py-1 border">Type</th>
+                    <th className="px-2 py-1 border">Description</th>
+                    <th className="px-2 py-1 border">Date</th>
+                    <th className="px-2 py-1 border">Mileage</th>
+                    <th className="px-2 py-1 border">Cost</th>
+                    <th className="px-2 py-1 border">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maintenanceRecords.filter(r => r.maintenance_type === 'Registration Renewal').length === 0 ? (
+                    <tr><td colSpan={7} className="text-center py-4 text-gray-400">No renewals yet.</td></tr>
+                  ) : maintenanceRecords.filter(r => r.maintenance_type === 'Registration Renewal').map(rec => {
+                    const vehicle = vehicles.find(v => v.id === rec.vehicle_id);
+                    return (
+                      <tr key={rec.id} className="border-b">
+                        <td className="px-2 py-1">{vehicle?.unit_number || rec.vehicle_id}</td>
+                        <td className="px-2 py-1">{rec.maintenance_type}</td>
+                        <td className="px-2 py-1">{rec.description}</td>
+                        <td className="px-2 py-1">{rec.date_completed}</td>
+                        <td className="px-2 py-1">{rec.mileage_at_service}</td>
+                        <td className="px-2 py-1">${rec.cost}</td>
+                        <td className="px-2 py-1">{rec.status}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
