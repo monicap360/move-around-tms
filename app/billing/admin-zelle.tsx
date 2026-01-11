@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Button } from "../../components/ui/button";
+import { handleZellePaymentApproved } from '../../accounting/zelle-invoice';
 
 export default function AdminZellePayments() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -24,6 +25,18 @@ export default function AdminZellePayments() {
   const handleApprove = async (id: string) => {
     await supabase.from("payments").update({ status: "active" }).eq("id", id);
     setPayments(payments => payments.map(p => p.id === id ? { ...p, status: "active" } : p));
+    // Find payment details for invoice
+    const payment = payments.find(p => p.id === id);
+    if (payment && payment.amount) {
+      await handleZellePaymentApproved({
+        id: payment.id,
+        user_id: payment.user_id,
+        file_url: payment.file_url,
+        amount: payment.amount,
+        description: 'Zelle Payment',
+        created_at: payment.created_at,
+      });
+    }
   };
   const handleReject = async (id: string) => {
     await supabase.from("payments").update({ status: "rejected" }).eq("id", id);

@@ -15,16 +15,23 @@ export default function LiveFleetMap() {
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
-      // Fetch from all providers (real)
-      const [locs, trucks, hos] = await Promise.all([
-        Promise.all(eldProviders.map(p => p.fetchDriverLocations())).then(r => r.flat()),
-        Promise.all(eldProviders.map(p => p.fetchTruckStatus())).then(r => r.flat()),
-        Promise.all(eldProviders.map(p => p.fetchHOS())).then(r => r.flat()),
-      ]);
-      setLocations(locs);
-      setTrucks(trucks);
-      setHos(hos);
-      setLoading(false);
+      try {
+        // Fetch from all providers (real)
+        const [locs, trucks, hos] = await Promise.all([
+          Promise.all(eldProviders.map(p => p.fetchDriverLocations())).then(r => r.flat()),
+          Promise.all(eldProviders.map(p => p.fetchTruckStatus())).then(r => r.flat()),
+          Promise.all(eldProviders.map(p => p.fetchHOS())).then(r => r.flat()),
+        ]);
+        setLocations(locs);
+        setTrucks(trucks);
+        setHos(hos);
+      } catch (err) {
+        setLocations([]);
+        setTrucks([]);
+        setHos([]);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchAll();
   }, []);
@@ -35,6 +42,8 @@ export default function LiveFleetMap() {
         <h1 className="text-2xl font-bold mb-2">Live Fleet Map (ELD/Telematics)</h1>
         {loading ? (
           <div>Loading driver locations…</div>
+        ) : locations.length === 0 ? (
+          <div className="text-red-600">No ELD data found. Check your Samsara API key in your environment variables.</div>
         ) : (
           <Map
             initialViewState={{

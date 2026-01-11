@@ -1,6 +1,17 @@
 // ELD/Telematics Integration Layer
-// This module will provide integration points for Samsara, KeepTruckin, and Geotab ELD providers.
-// It will expose functions to fetch driver/truck location, HOS, and load status.
+// This module provides integration points for Samsara, KeepTruckin, and Geotab ELD providers.
+// It exposes functions to fetch driver/truck location, HOS, and load status.
+//
+// ---
+// **Production Setup: Samsara API Key**
+//
+// To enable live ELD/telematics data, set your Samsara API key as an environment variable:
+//   - For local/dev: add to your .env.local file:
+//       SAMSARA_API_KEY=your_actual_api_key_here
+//   - For Vercel/production: add SAMSARA_API_KEY in your project/environment settings.
+//
+// The integration will automatically use this key for all API calls.
+// ---
 
 export interface ELDProvider {
   name: string;
