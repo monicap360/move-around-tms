@@ -1,22 +1,51 @@
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "../../lib/supabaseClient";
 
 export default function DispatchMessenger() {
-  // Demo: in-memory chat between dispatcher and driver
-  const [messages, setMessages] = useState([
-    { sender: "dispatcher", text: "Welcome to Dispatch Chat!" },
-    { sender: "driver", text: "Ready for my next load." },
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [role, setRole] = useState("dispatcher");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Supabase realtime subscription
+  useEffect(() => {
+    let ignore = false;
+    async function fetchInitial() {
+      const { data } = await supabase
+        .from('dispatch_messages')
+        .select('*')
+        .order('timestamp', { ascending: true })
+        .limit(50);
+      if (!ignore && data) setMessages(data);
+    }
+    fetchInitial();
+    const sub = supabase
+      .channel('dispatch_messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_messages' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setMessages(prev => [...prev, payload.new]);
+        }
+      })
+      .subscribe();
+    return () => {
+      ignore = true;
+      supabase.removeChannel(sub);
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!input.trim()) return;
-    setMessages((prev) => [...prev, { sender: role, text: input }]);
+    await supabase.from('dispatch_messages').insert([
+      {
+        sender: role,
+        text: input,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
     setInput("");
   }
 
@@ -31,7 +60,7 @@ export default function DispatchMessenger() {
       </div>
       <div className="flex-1 overflow-y-auto space-y-2 mb-2 bg-gray-50 p-2 rounded">
         {messages.map((msg, i) => (
-          <div key={i} className={msg.sender === "dispatcher" ? "text-right" : "text-left"}>
+          <div key={msg.id || i} className={msg.sender === "dispatcher" ? "text-right" : "text-left"}>
             <span className={msg.sender === "dispatcher" ? "bg-blue-100 text-blue-800 px-2 py-1 rounded" : "bg-green-100 text-green-800 px-2 py-1 rounded"}>
               <b>{msg.sender === "dispatcher" ? "Dispatcher" : "Driver"}:</b> {msg.text}
             </span>
