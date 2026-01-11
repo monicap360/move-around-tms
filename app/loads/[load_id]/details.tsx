@@ -86,11 +86,45 @@ function InfoTab({ load }: { load: any }) {
   );
 }
 function DocumentsTab({ load }: { load: any }) {
-  // TODO: Wire up Supabase storage for BOLs, rate confirmations, receipts
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [docs, setDocs] = useState<any[]>(load.documents || []);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    setError(null);
+    setSuccess(null);
+    setUploading(true);
+    const file = e.target.files?.[0];
+    if (!file) return setUploading(false);
+    const filePath = `loads/${load.id}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from("documents").upload(filePath, file);
+    if (uploadError) {
+      setError(uploadError.message);
+      setUploading(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
+    const newDoc = { name: file.name, url: urlData?.publicUrl };
+    setDocs((prev) => [...prev, newDoc]);
+    await supabase.from("loads").update({ documents: [...docs, newDoc] }).eq("id", load.id);
+    setSuccess("Uploaded successfully.");
+    setUploading(false);
+  }
+
   return (
     <div>
       <h2 className="text-lg font-semibold mb-2">Documents</h2>
-      <div className="text-gray-500">No documents uploaded.</div>
+      <input type="file" accept="application/pdf,image/*" className="mb-2" onChange={handleUpload} disabled={uploading} />
+      {error && <div className="text-red-600 mb-2">{error}</div>}
+      {success && <div className="text-green-600 mb-2">{success}</div>}
+      <ul className="divide-y">
+        {docs.length === 0 ? <li className="text-gray-500">No documents uploaded.</li> : docs.map((doc, i) => (
+          <li key={i} className="py-1 flex items-center gap-2">
+            <a href={doc.url} target="_blank" rel="noopener" className="text-blue-600 underline">{doc.name}</a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
