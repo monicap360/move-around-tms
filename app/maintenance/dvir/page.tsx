@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { validateDVIR } from "lib/complianceRules";
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 
 const inspectionItems = [
@@ -79,6 +80,9 @@ export default function DVIRForm() {
   };
 
 
+  const [complianceError, setComplianceError] = useState("");
+  const [state, setState] = useState("CA"); // Default to CA, could be dynamic
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Prepare inspection_items array for API
@@ -86,6 +90,25 @@ export default function DVIRForm() {
       item: key,
       status: status === "ok" ? "satisfactory" : status === "defect" ? "defective" : "unknown"
     }));
+
+    // Compliance validation
+    const dvirForValidation = {
+      ...form,
+      inspection: form.inspection,
+      date: form.date
+    };
+    const compliance = validateDVIR(dvirForValidation, state);
+    if (compliance.missingFields.length > 0 || compliance.invalidDefects.length > 0 || !compliance.intervalOk) {
+      setComplianceError(
+        `Not compliant with ${state} rules. ` +
+        (compliance.missingFields.length > 0 ? `Missing: ${compliance.missingFields.join(", ")}. ` : "") +
+        (compliance.invalidDefects.length > 0 ? `Invalid defects: ${compliance.invalidDefects.join(", ")}. ` : "") +
+        (!compliance.intervalOk ? `Inspection interval exceeded.` : "")
+      );
+      return;
+    } else {
+      setComplianceError("");
+    }
 
     const payload = {
       driver_name: form.driverName,
@@ -150,6 +173,16 @@ export default function DVIRForm() {
         </CardHeader>
         <CardContent className="text-gray-700 mt-4">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label>State</label>
+              <select value={state} onChange={e=>setState(e.target.value)} className="input">
+                <option value="CA">California</option>
+                <option value="NY">New York</option>
+                <option value="federal">Federal</option>
+                {/* Add more states as needed */}
+              </select>
+            </div>
+            {complianceError && <div className="text-red-600 font-semibold">{complianceError}</div>}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label>Company Name</label>

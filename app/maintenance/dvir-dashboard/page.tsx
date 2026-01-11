@@ -1,20 +1,40 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import { validateDVIR } from "../../../lib/complianceRules";
+import { logAuditAction } from "../../../lib/auditLog";
 
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 import DVIRAnalytics from "./DVIRAnalytics";
+import PredictiveAnalytics from "./PredictiveAnalytics";
 import DVIRAlerts from "./DVIRAlerts";
+
+import { useSession } from "next-auth/react";
 
 export default function DVIRDashboard() {
   const [dvirs, setDvirs] = useState([]);
+    // Optionally get user info for audit log (stub, replace with real auth if available)
+    // If using next-auth, uncomment:
+    // const { data: session } = useSession();
+    // const userId = session?.user?.id || null;
+    const userId = null; // Replace with real user id if available
   const [filtered, setFiltered] = useState([]);
+  const [complianceMap, setComplianceMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filters, setFilters] = useState({
+  type Filters = {
+    dateRange: string;
+    truck: string;
+    driver: string;
+    status: string;
+    compliance: string;
+  };
+  const [filters, setFilters] = useState<Filters>({
     dateRange: "all",
     truck: "",
     driver: "",
-    status: "all"
+    status: "all",
+    compliance: "all"
   });
 
   useEffect(() => {
@@ -35,7 +55,40 @@ export default function DVIRDashboard() {
       setLoading(false);
     }
     fetchDVIRs();
+    // Log dashboard view action
+    logAuditAction({
+      userId,
+      action: "view_dashboard",
+      details: { page: "DVIRDashboard", timestamp: new Date().toISOString() },
+    });
   }, []);
+
+  // Compute compliance for each DVIR (assume dvir.state or fallback to 'federal')
+  useEffect(() => {
+    const map = {};
+    dvirs.forEach(dvir => {
+      const state = dvir.state || "federal";
+      const compliance = validateDVIR(
+        {
+          ...dvir,
+          company: dvir.company,
+          date: dvir.date || dvir.created_at,
+          truckNumber: dvir.truck_number,
+          odometer: dvir.odometer_reading,
+          driverName: dvir.driver_name,
+          driverSignature: dvir.driver_signature,
+          inspection: dvir.inspection_items?.reduce((acc, item) => {
+            acc[item.item] = item.status;
+            return acc;
+          }, {}) || {},
+          lastInspectionDate: dvir.lastInspectionDate
+        },
+        state
+      );
+      map[dvir.id] = compliance;
+    });
+    setComplianceMap(map);
+  }, [dvirs]);
 
   useEffect(() => {
     let result = dvirs;
@@ -66,22 +119,47 @@ export default function DVIRDashboard() {
     if (filters.status !== "all") {
       result = result.filter(d => d.overall_status === filters.status);
     }
+    // Compliance filter (optional, for future UI)
+    if (filters.compliance && filters.compliance !== "all") {
+      result = result.filter(d => {
+        const c = complianceMap[d.id];
+        if (!c) return false;
+        if (filters.compliance === "compliant") {
+          return c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk;
+        } else if (filters.compliance === "noncompliant") {
+          return c.missingFields.length > 0 || c.invalidDefects.length > 0 || !c.intervalOk;
+        }
+        return true;
+      });
+    }
     setFiltered(result);
-  }, [dvirs, filters]);
+  }, [dvirs, filters, complianceMap]);
 
   const exportCSV = () => {
+    logAuditAction({
+      userId,
+      action: "export_dvir_csv",
+      details: { count: dvirs.length, timestamp: new Date().toISOString() },
+    });
     const headers = [
-      "Date","Driver Name","Truck #","Odometer","Status","Defects","Remarks"
+      "Date","Driver Name","Truck #","Odometer","Status","Defects","Remarks","Compliance Status","Missing Fields","Invalid Defects","Interval OK"
     ];
-    const rows = dvirs.map(d => [
-      d.date || d.created_at,
-      d.driver_name,
-      d.truck_number,
-      d.odometer_reading,
-      d.overall_status,
-      (d.inspection_items||[]).filter(i=>i.status==="defective").map(i=>i.item).join("; "),
-      d.remarks || ""
-    ]);
+    const rows = dvirs.map(d => {
+      const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
+      return [
+        d.date || d.created_at,
+        d.driver_name,
+        d.truck_number,
+        d.odometer_reading,
+        d.overall_status,
+        (d.inspection_items||[]).filter(i=>i.status==="defective").map(i=>i.item).join("; "),
+        d.remarks || "",
+        (c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk) ? "Compliant" : "Noncompliant",
+        c.missingFields.join("; "),
+        c.invalidDefects.join("; "),
+        c.intervalOk ? "Yes" : "No"
+      ];
+    });
     const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -128,6 +206,14 @@ export default function DVIRDashboard() {
                 <option value="defects_corrected">Defects Corrected</option>
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1">Compliance Status</label>
+              <select value={filters.compliance} onChange={e=>setFilters(f=>({...f,compliance:e.target.value}))} className="input">
+                <option value="all">All</option>
+                <option value="compliant">Compliant</option>
+                <option value="noncompliant">Noncompliant</option>
+              </select>
+            </div>
           </div>
           {loading ? (
             <div>Loading...</div>
@@ -135,6 +221,7 @@ export default function DVIRDashboard() {
             <div className="text-red-600">{error}</div>
           ) : (
             <>
+              <PredictiveAnalytics dvirs={filtered} />
               <DVIRAlerts dvirs={filtered} />
               <DVIRAnalytics dvirs={filtered} />
               <div className="overflow-x-auto">
@@ -148,20 +235,35 @@ export default function DVIRDashboard() {
                       <th className="border px-2 py-1">Status</th>
                       <th className="border px-2 py-1">Defects</th>
                       <th className="border px-2 py-1">Remarks</th>
+                      <th className="border px-2 py-1">Compliance</th>
+                      <th className="border px-2 py-1">Missing Fields</th>
+                      <th className="border px-2 py-1">Invalid Defects</th>
+                      <th className="border px-2 py-1">Interval OK</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((d, i) => (
-                      <tr key={d.id || i} className={d.overall_status === "defective" ? "bg-red-50" : ""}>
-                        <td className="border px-2 py-1">{d.date || d.created_at}</td>
-                        <td className="border px-2 py-1">{d.driver_name}</td>
-                        <td className="border px-2 py-1">{d.truck_number}</td>
-                        <td className="border px-2 py-1">{d.odometer_reading}</td>
-                        <td className="border px-2 py-1 font-semibold">{d.overall_status}</td>
-                        <td className="border px-2 py-1 text-xs">{(d.inspection_items || []).filter(i => i.status === "defective").map(i => i.item).join(", ")}</td>
-                        <td className="border px-2 py-1 text-xs">{d.remarks}</td>
-                      </tr>
-                    ))}
+                    {filtered.map((d, i) => {
+                      const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
+                      const compliant = c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk;
+                      return (
+                        <tr key={d.id || i} className={compliant ? "bg-green-50" : "bg-red-50"}>
+                          <td className="border px-2 py-1">{d.date || d.created_at}</td>
+                          <td className="border px-2 py-1">{d.driver_name}</td>
+                          <td className="border px-2 py-1">{d.truck_number}</td>
+                          <td className="border px-2 py-1">{d.odometer_reading}</td>
+                          <td className="border px-2 py-1 font-semibold">{d.overall_status}</td>
+                          <td className="border px-2 py-1 text-xs">{(d.inspection_items || []).filter(i => i.status === "defective").map(i => i.item).join(", ")}</td>
+                          <td className="border px-2 py-1 text-xs">{d.remarks}</td>
+                          <td className={
+                            "border px-2 py-1 font-bold " +
+                            (compliant ? "text-green-700" : "text-red-700")
+                          }>{compliant ? "Compliant" : "Noncompliant"}</td>
+                          <td className="border px-2 py-1 text-xs">{c.missingFields.join(", ")}</td>
+                          <td className="border px-2 py-1 text-xs">{c.invalidDefects.join(", ")}</td>
+                          <td className="border px-2 py-1 text-xs">{c.intervalOk ? "Yes" : "No"}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 {filtered.length === 0 && <div className="text-center py-8 text-gray-500">No DVIRs found.</div>}
