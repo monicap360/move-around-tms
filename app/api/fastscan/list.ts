@@ -28,14 +28,14 @@ export async function GET(request: NextRequest) {
         filteredQuery = filteredQuery.eq("organization_id", organizationId);
       }
       const { data, error } = await filteredQuery;
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         scans = data;
         break;
       }
     }
 
-    // Filter by organization if provided (fallback if table doesn't have organization_id)
-    if (organizationId && scans.length > 0) {
+    // Filter by organization if provided (fallback if table doesn't have organization_id column)
+    if (organizationId && scans.length > 0 && scans[0]?.organization_id !== undefined) {
       scans = scans.filter((scan) => scan.organization_id === organizationId);
     }
 

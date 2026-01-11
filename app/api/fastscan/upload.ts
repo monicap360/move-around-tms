@@ -21,27 +21,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload file to Supabase Storage
+    // Try multiple bucket names for compatibility
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `fastscan/${organizationId || 'uploads'}/${fileName}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("company_assets")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const buckets = ["company_assets", "ronyx-files", "uploads"];
+    let uploadData: any = null;
+    let uploadError: any = null;
+    let bucketUsed = "";
 
-    if (uploadError) {
+    for (const bucket of buckets) {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      
+      if (!error && data) {
+        uploadData = data;
+        bucketUsed = bucket;
+        break;
+      }
+      uploadError = error;
+    }
+
+    if (!uploadData) {
       return NextResponse.json(
-        { error: uploadError.message || "File upload failed" },
+        { error: uploadError?.message || "File upload failed. Please check storage bucket configuration." },
         { status: 500 },
       );
     }
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from("company_assets")
+      .from(bucketUsed)
       .getPublicUrl(filePath);
 
     // Mock OCR result (in production, this would call OCR service)
@@ -65,32 +80,32 @@ export async function POST(request: NextRequest) {
         file_path: filePath,
         file_url: publicUrl,
         file_size: file.size,
-        ocr_result: mockOcrResult,
-        status: "processed",
+        ocr_result: ocrResultData,
+        status: "pending", // Will be updated by OCR webhook
         uploaded_at: new Date().toISOString(),
-      }),
+      }).select(),
       supabase.from("scans").insert({
         organization_id: organizationId,
         file_name: file.name,
         file_path: filePath,
         file_url: publicUrl,
         file_size: file.size,
-        ocr_data: mockOcrResult,
-        status: "processed",
+        ocr_data: ocrResultData,
+        status: "pending",
         created_at: new Date().toISOString(),
-      }),
+      }).select(),
     ];
 
     let scanRecord: any = null;
     for (const query of scanQueries) {
-      const { data, error } = await query.select().single();
+      const { data, error } = await query.single();
       if (!error && data) {
         scanRecord = data;
         break;
       }
     }
 
-    // If no table exists, return the record structure anyway
+    // If no table exists, return the record structure anyway (file is still uploaded)
     if (!scanRecord) {
       scanRecord = {
         id: `scan_${Date.now()}`,
@@ -100,8 +115,8 @@ export async function POST(request: NextRequest) {
         file_url: publicUrl,
         file_size: file.size,
         uploaded_at: new Date().toISOString(),
-        ocr_result: mockOcrResult,
-        status: "processed",
+        ocr_result: ocrResultData,
+        status: "pending",
       };
     }
 

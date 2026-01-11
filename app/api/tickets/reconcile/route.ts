@@ -22,12 +22,32 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the ticket
-    const { data: ticket, error: ticketError } = await supabase
+    // Get the ticket - try aggregate_tickets first, then tickets table
+    let ticket: any = null;
+    let ticketError: any = null;
+
+    const { data: aggregateTicket, error: aggregateError } = await supabase
       .from("aggregate_tickets")
       .select("*")
       .eq("id", ticketId)
       .single();
+
+    if (!aggregateError && aggregateTicket) {
+      ticket = aggregateTicket;
+    } else {
+      // Try tickets table as fallback
+      const { data: regularTicket, error: regularError } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("id", ticketId)
+        .single();
+
+      if (!regularError && regularTicket) {
+        ticket = regularTicket;
+      } else {
+        ticketError = regularError || aggregateError;
+      }
+    }
 
     if (ticketError || !ticket) {
       return NextResponse.json(
