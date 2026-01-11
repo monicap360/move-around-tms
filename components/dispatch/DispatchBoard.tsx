@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Plus, Truck, User, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 
@@ -16,6 +17,26 @@ export default function DispatchBoard() {
       setLoads(await res.json());
     }
     loadData();
+
+    // Supabase Realtime subscription
+    const supabase = createClient();
+    const channel = supabase.channel('realtime:loads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'loads' }, payload => {
+        setLoads(prev => {
+          if (payload.eventType === 'INSERT') {
+            return [...prev, payload.new];
+          } else if (payload.eventType === 'UPDATE') {
+            return prev.map(l => l.id === payload.new.id ? payload.new : l);
+          } else if (payload.eventType === 'DELETE') {
+            return prev.filter(l => l.id !== payload.old.id);
+          }
+          return prev;
+        });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const columns = [
@@ -45,26 +66,47 @@ export default function DispatchBoard() {
     setDraggedId(null);
   }
 
-  // Demo driver pool
-  const drivers = [
-    { id: "d1", name: "John D." },
-    { id: "d2", name: "Jane S." },
-    { id: "d3", name: "Alex P." },
-  ];
+  // Fetch real drivers from API (HR drivers table)
+  const [drivers, setDrivers] = useState<any[]>([]);
+  useEffect(() => {
+    async function fetchDrivers() {
+      const res = await fetch("/api/hr/drivers");
+      setDrivers(await res.json());
+    }
+    fetchDrivers();
+  }, []);
 
   function aiAssignLoads() {
     setLoads((prev) => {
+      // Only consider active drivers with highest safety and matching endorsements
+      const availableDrivers = drivers
+        .filter((d) => d.status === "Active")
+        .sort((a, b) => (b.safety_score || 0) - (a.safety_score || 0));
       let driverIdx = 0;
       return prev.map((l) => {
         if (l.status === "unassigned" || l.status === "pending") {
-          const assignedDriver = drivers[driverIdx % drivers.length];
-          driverIdx++;
-          return {
-            ...l,
-            status: "assigned",
-            driver_name: assignedDriver.name,
-            route: `Route-${Math.floor(Math.random() * 100 + 1)}`,
-          };
+          // Find best driver for this load (endorsement match, highest safety)
+          let assignedDriver = null;
+          for (let d of availableDrivers) {
+            if (!l.required_endorsement || (d.endorsements && d.endorsements.includes(l.required_endorsement))) {
+              assignedDriver = d;
+              break;
+            }
+          }
+          if (!assignedDriver && availableDrivers.length > 0) {
+            assignedDriver = availableDrivers[driverIdx % availableDrivers.length];
+            driverIdx++;
+          }
+          if (assignedDriver) {
+            return {
+              ...l,
+              status: "assigned",
+              driver_name: assignedDriver.name,
+              driver_id: assignedDriver.id,
+              route: l.route || `Route-${Math.floor(Math.random() * 100 + 1)}`,
+              ai_reason: `Best match: ${assignedDriver.name} (Safety: ${assignedDriver.safety_score})${l.required_endorsement ? ", Endorsement: " + l.required_endorsement : ""}`
+            };
+          }
         }
         return l;
       });

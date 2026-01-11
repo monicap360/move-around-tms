@@ -1,7 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRoleBasedAuth } from '../../lib/role-auth'
+import { exportNodeAsPng } from '../maintenance/dvir-dashboard/exportAsImage'
+// Compliance analytics mock data generator (replace with Supabase query)
+function generateComplianceTrends() {
+  // 30 days of mock data
+  const today = new Date();
+  return Array.from({ length: 30 }, (_, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (29 - i));
+    const compliant = Math.floor(Math.random() * 8 + 2);
+    const noncompliant = Math.floor(Math.random() * 3);
+    return {
+      date: date.toISOString().slice(0, 10),
+      compliant,
+      noncompliant,
+      total: compliant + noncompliant,
+    };
+  });
+}
 
 interface PartnerTheme {
   brand: string
@@ -55,13 +74,19 @@ export default function PartnerDashboard() {
     pendingApprovals: 0
   })
 
+  // Compliance analytics state
+  const [complianceTrends, setComplianceTrends] = useState([])
+  const complianceSectionRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (partnerInfo?.theme) {
       setTheme(partnerInfo.theme as PartnerTheme)
       loadPartnerStats()
+      setComplianceTrends(generateComplianceTrends())
     } else if (profile?.role === 'partner') {
       // Load default RonYX theme for Veronica
       loadRonYXTheme()
+      setComplianceTrends(generateComplianceTrends())
     }
   }, [partnerInfo, profile])
 
@@ -155,6 +180,36 @@ export default function PartnerDashboard() {
                   >
                     {theme.tagline}
                   </p>
+            {/* Compliance Analytics Section */}
+            <div className="mb-8" ref={complianceSectionRef}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-semibold text-lg" style={{ color: theme.text.primary }}>Compliance Analytics (30 days)</div>
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                    onClick={() => {
+                      const headers = ["Date","Compliant","Noncompliant","Total"];
+                      const rows = complianceTrends.map((d: any) => [d.date, d.compliant, d.noncompliant, d.total]);
+                      const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+                      const blob = new Blob([csv], { type: "text/csv" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `compliance_analytics_${new Date().toISOString().slice(0,10)}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >Export CSV</button>
+                  <button
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                    onClick={() => {
+                      if (complianceSectionRef.current) exportNodeAsPng(complianceSectionRef.current, `compliance_analytics_${new Date().toISOString().slice(0,10)}.png`);
+                    }}
+                  >Export as Image</button>
+                </div>
+              </div>
+              <ComplianceCalendar data={complianceTrends} />
+            </div>
                 </div>
               </div>
             </div>

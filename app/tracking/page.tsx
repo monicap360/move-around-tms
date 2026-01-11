@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { exportNodeAsPng } from "../maintenance/dvir-dashboard/exportAsImage";
 import {
   fetchMockTrackingData,
   fetchGeotabTrackingData,
@@ -38,6 +39,8 @@ export default function TrackingMapView() {
     (filter.status === "all" || r.status === filter.status)
   );
 
+  const mapRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6 flex flex-wrap gap-4 items-end">
@@ -58,8 +61,37 @@ export default function TrackingMapView() {
           <option value="critical">Critical/Issue</option>
         </select>
       </div>
+      <div className="flex gap-4 mb-4">
+        <button
+          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+          onClick={() => {
+            const headers = ["Driver","Truck","Trailer","Status","Last Location","Speed","Direction","Route","ETA","Load Status","Customer","Job Site"];
+            const rows = filtered.map(r => [r.driverName, r.truckNumber, r.trailerNumber, r.status.replace("_"," "), r.timestamp, r.speed+" mph", r.direction, r.route, new Date(r.eta).toLocaleTimeString(), r.loadStatus, r.customer, r.jobSite]);
+            const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `tracking_table_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >Export Table CSV</button>
+        <button
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+          onClick={() => {
+            if (tableRef.current) exportNodeAsPng(tableRef.current, `tracking_table_${new Date().toISOString().slice(0,10)}.png`);
+          }}
+        >Export Table Image</button>
+        <button
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+          onClick={() => {
+            if (mapRef.current) exportNodeAsPng(mapRef.current, `tracking_map_${new Date().toISOString().slice(0,10)}.png`);
+          }}
+        >Export Map Image</button>
+      </div>
       <div className="mb-4 font-bold text-lg">Live GPS Driver Tracking (Mock Map)</div>
-      <div className="relative w-full h-96 bg-blue-100 rounded-lg flex items-center justify-center">
+      <div ref={mapRef} className="relative w-full h-96 bg-blue-100 rounded-lg flex items-center justify-center">
         {/* Replace this with a real map component */}
         <div className="absolute top-2 left-2 bg-white p-2 rounded shadow text-xs">
           <div className="mb-1 font-semibold">Legend</div>
@@ -80,7 +112,7 @@ export default function TrackingMapView() {
           </div>
         ))}
       </div>
-      <div className="mt-8">
+      <div className="mt-8" ref={tableRef}>
         <div className="font-semibold mb-2">Driver / Truck Info</div>
         <table className="min-w-full border text-xs">
           <thead>

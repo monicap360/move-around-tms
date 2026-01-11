@@ -4,7 +4,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { exportNodeAsPng } from "../../maintenance/dvir-dashboard/exportAsImage";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
 import { 
@@ -85,6 +86,9 @@ export default function CompliancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBy, setFilterBy] = useState("all");
   const [activeTab, setActiveTab] = useState("dashboard");
+  const tableRef = useRef<HTMLDivElement>(null);
+  const alertsRef = useRef<HTMLDivElement>(null);
+  const auditRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadComplianceData();
@@ -403,6 +407,25 @@ export default function CompliancePage() {
                   <Users className="w-5 h-5" />
                   Driver Compliance Status ({filteredDrivers.length})
                 </CardTitle>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const headers = ["Driver","Employee ID","Compliance Rate","Compliant Req.","Total Req.","Overdue","Expiring Soon","Violations (12mo)","Serious Violations (12mo)","Next Expiration"];
+                    const rows = filteredDrivers.map(d => [d.driver_name, d.employee_id, d.compliance_rate+"%", d.compliant_requirements, d.total_requirements, d.overdue_requirements, d.expiring_soon, d.violations_12mo, d.serious_violations_12mo, d.next_expiration_date ? new Date(d.next_expiration_date).toLocaleDateString() : "None"]);
+                    const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+                    const blob = new Blob([csv], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `hr_compliance_drivers_${new Date().toISOString().slice(0,10)}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}>
+                    Export CSV
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { if (tableRef.current) exportNodeAsPng(tableRef.current, `hr_compliance_drivers_${new Date().toISOString().slice(0,10)}.png`); }}>
+                    Export Image
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -433,88 +456,89 @@ export default function CompliancePage() {
                   </select>
                 </div>
               </div>
-
               {/* Compliance Table */}
-              {filteredDrivers.length === 0 ? (
-                <div className="text-center py-8">
-                  <Shield className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg">No drivers found</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="text-left p-3">Driver</th>
-                        <th className="text-left p-3">Compliance Rate</th>
-                        <th className="text-left p-3">Requirements</th>
-                        <th className="text-left p-3">Issues</th>
-                        <th className="text-left p-3">Next Expiration</th>
-                        <th className="text-left p-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredDrivers.map((driver) => (
-                        <tr key={driver.driver_id} className="border-b hover:bg-gray-50">
-                          <td className="p-3">
-                            <div>
-                              <div className="font-medium">{driver.driver_name}</div>
-                              <div className="text-gray-500 text-xs">ID: {driver.employee_id}</div>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <Badge className={getComplianceBadge(driver.compliance_rate)}>
-                              {driver.compliance_rate?.toFixed(0)}%
-                            </Badge>
-                          </td>
-                          <td className="p-3">
-                            <div className="text-xs">
-                              <div className="text-green-600">{driver.compliant_requirements} compliant</div>
-                              <div className="text-gray-500">{driver.total_requirements} total</div>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <div className="space-y-1">
-                              {driver.overdue_requirements > 0 && (
-                                <div className="flex items-center gap-1 text-red-600 text-xs">
-                                  <XCircle className="w-3 h-3" />
-                                  {driver.overdue_requirements} overdue
-                                </div>
-                              )}
-                              {driver.expiring_soon > 0 && (
-                                <div className="flex items-center gap-1 text-yellow-600 text-xs">
-                                  <Clock className="w-3 h-3" />
-                                  {driver.expiring_soon} expiring
-                                </div>
-                              )}
-                              {driver.violations_12mo > 0 && (
-                                <div className="flex items-center gap-1 text-orange-600 text-xs">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  {driver.violations_12mo} violations
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            {driver.next_expiration_date ? (
-                              <div className="text-xs">
-                                {new Date(driver.next_expiration_date).toLocaleDateString()}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs">None</span>
-                            )}
-                          </td>
-                          <td className="p-3">
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-3 h-3" />
-                            </Button>
-                          </td>
+              <div ref={tableRef}>
+                {filteredDrivers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Shield className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">No drivers found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="text-left p-3">Driver</th>
+                          <th className="text-left p-3">Compliance Rate</th>
+                          <th className="text-left p-3">Requirements</th>
+                          <th className="text-left p-3">Issues</th>
+                          <th className="text-left p-3">Next Expiration</th>
+                          <th className="text-left p-3">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody>
+                        {filteredDrivers.map((driver) => (
+                          <tr key={driver.driver_id} className="border-b hover:bg-gray-50">
+                            <td className="p-3">
+                              <div>
+                                <div className="font-medium">{driver.driver_name}</div>
+                                <div className="text-gray-500 text-xs">ID: {driver.employee_id}</div>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Badge className={getComplianceBadge(driver.compliance_rate)}>
+                                {driver.compliance_rate?.toFixed(0)}%
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <div className="text-xs">
+                                <div className="text-green-600">{driver.compliant_requirements} compliant</div>
+                                <div className="text-gray-500">{driver.total_requirements} total</div>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <div className="space-y-1">
+                                {driver.overdue_requirements > 0 && (
+                                  <div className="flex items-center gap-1 text-red-600 text-xs">
+                                    <XCircle className="w-3 h-3" />
+                                    {driver.overdue_requirements} overdue
+                                  </div>
+                                )}
+                                {driver.expiring_soon > 0 && (
+                                  <div className="flex items-center gap-1 text-yellow-600 text-xs">
+                                    <Clock className="w-3 h-3" />
+                                    {driver.expiring_soon} expiring
+                                  </div>
+                                )}
+                                {driver.violations_12mo > 0 && (
+                                  <div className="flex items-center gap-1 text-orange-600 text-xs">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {driver.violations_12mo} violations
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              {driver.next_expiration_date ? (
+                                <div className="text-xs">
+                                  {new Date(driver.next_expiration_date).toLocaleDateString()}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-xs">None</span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-3 h-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </>
@@ -522,102 +546,144 @@ export default function CompliancePage() {
 
       {activeTab === 'alerts' && (
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Compliance Alerts ({alerts.filter(a => !a.acknowledged).length} active)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {alerts.map((alert) => (
-                  <div 
-                    key={alert.id} 
-                    className={`border rounded-lg p-4 ${alert.acknowledged ? 'opacity-50' : ''} ${getAlertColor(alert.priority)}`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-medium">{alert.title}</h3>
-                        <p className="text-sm text-gray-600">{alert.message}</p>
+          <div className="flex gap-2 mb-2">
+            <Button size="sm" variant="outline" onClick={() => {
+              const headers = ["Type","Priority","Driver","Employee ID","Title","Message","Due Date","Alert Date","Acknowledged"];
+              const rows = alerts.map(a => [a.alert_type, a.priority, a.driver_name, a.employee_id, a.title, a.message, a.due_date ? new Date(a.due_date).toLocaleDateString() : "", a.alert_date ? new Date(a.alert_date).toLocaleDateString() : "", a.acknowledged ? "Yes" : "No"]);
+              const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `hr_compliance_alerts_${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => { if (alertsRef.current) exportNodeAsPng(alertsRef.current, `hr_compliance_alerts_${new Date().toISOString().slice(0,10)}.png`); }}>
+              Export Image
+            </Button>
+          </div>
+          <div ref={alertsRef}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  Compliance Alerts ({alerts.filter(a => !a.acknowledged).length} active)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {alerts.map((alert) => (
+                    <div 
+                      key={alert.id} 
+                      className={`border rounded-lg p-4 ${alert.acknowledged ? 'opacity-50' : ''} ${getAlertColor(alert.priority)}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-medium">{alert.title}</h3>
+                          <p className="text-sm text-gray-600">{alert.message}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={`text-xs ${alert.priority === 'critical' ? 'border-red-500' : ''}`}>
+                            {alert.priority}
+                          </Badge>
+                          {!alert.acknowledged && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => acknowledgeAlert(alert.id)}
+                            >
+                              Acknowledge
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-xs ${alert.priority === 'critical' ? 'border-red-500' : ''}`}>
-                          {alert.priority}
-                        </Badge>
-                        {!alert.acknowledged && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => acknowledgeAlert(alert.id)}
-                          >
-                            Acknowledge
-                          </Button>
-                        )}
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span>{alert.driver_name} (ID: {alert.employee_id})</span>
+                        <span>
+                          {alert.due_date && `Due: ${new Date(alert.due_date).toLocaleDateString()}`}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>{alert.driver_name} (ID: {alert.employee_id})</span>
-                      <span>
-                        {alert.due_date && `Due: ${new Date(alert.due_date).toLocaleDateString()}`}
-                      </span>
+                  ))}
+                  {alerts.length === 0 && (
+                    <div className="text-center py-8">
+                      <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No active alerts</p>
                     </div>
-                  </div>
-                ))}
-                {alerts.length === 0 && (
-                  <div className="text-center py-8">
-                    <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No active alerts</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
       {activeTab === 'audit' && (
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileCheck className="w-5 h-5" />
-                DOT Audit Readiness Report
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {auditReadiness.reduce((acc: any, item) => {
-                  if (!acc[item.section]) acc[item.section] = [];
-                  acc[item.section].push(item);
-                  return acc;
-                }, {}) && Object.entries(
-                  auditReadiness.reduce((acc: any, item) => {
+          <div className="flex gap-2 mb-2">
+            <Button size="sm" variant="outline" onClick={() => {
+              const headers = ["Section","Metric","Value","Status"];
+              const rows = auditReadiness.map(a => [a.section, a.metric, a.value, a.status]);
+              const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `hr_audit_readiness_${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => { if (auditRef.current) exportNodeAsPng(auditRef.current, `hr_audit_readiness_${new Date().toISOString().slice(0,10)}.png`); }}>
+              Export Image
+            </Button>
+          </div>
+          <div ref={auditRef}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="w-5 h-5" />
+                  DOT Audit Readiness Report
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {auditReadiness.reduce((acc: any, item) => {
                     if (!acc[item.section]) acc[item.section] = [];
                     acc[item.section].push(item);
                     return acc;
-                  }, {})
-                ).map(([section, items]: [string, any]) => (
-                  <div key={section}>
-                    <h3 className="font-medium text-lg mb-3">{section}</h3>
-                    <div className="space-y-2">
-                      {items.map((item: AuditReadiness, index: number) => (
-                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm">{item.metric}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`font-medium ${getStatusColor(item.status)}`}>
-                              {item.value}
-                            </span>
-                            {getStatusIcon(item.status)}
+                  }, {}) && Object.entries(
+                    auditReadiness.reduce((acc: any, item) => {
+                      if (!acc[item.section]) acc[item.section] = [];
+                      acc[item.section].push(item);
+                      return acc;
+                    }, {})
+                  ).map(([section, items]: [string, any]) => (
+                    <div key={section}>
+                      <h3 className="font-medium text-lg mb-3">{section}</h3>
+                      <div className="space-y-2">
+                        {items.map((item: AuditReadiness, index: number) => (
+                          <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm">{item.metric}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`font-medium ${getStatusColor(item.status)}`}>
+                                {item.value}
+                              </span>
+                              {getStatusIcon(item.status)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
