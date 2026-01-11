@@ -125,9 +125,87 @@ export default function PartnerDashboard() {
 
   async function loadComplianceReminders() {
     setReminderLoading(true);
-    // TODO: Replace with Supabase query for real reminders
-    setComplianceReminders(generateComplianceReminders());
-    setReminderLoading(false);
+    try {
+      if (!user?.email) {
+        setComplianceReminders([]);
+        setReminderLoading(false);
+        return;
+      }
+
+      // Get partner's organizations
+      const { data: partnerData } = await supabase
+        .from("partners")
+        .select("id, slug")
+        .eq("email", user.email)
+        .limit(1)
+        .single();
+
+      if (!partnerData) {
+        setComplianceReminders([]);
+        setReminderLoading(false);
+        return;
+      }
+
+      const orgQueries = [
+        supabase.from("organizations").select("id, name").eq("partner_id", partnerData.id),
+        supabase.from("organizations").select("id, name").eq("partner_slug", partnerData.slug),
+      ];
+
+      let orgIds: string[] = [];
+      let orgNames: { [key: string]: string } = {};
+      for (const query of orgQueries) {
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          orgIds = data.map((org: any) => org.id);
+          data.forEach((org: any) => {
+            orgNames[org.id] = org.name;
+          });
+          break;
+        }
+      }
+
+      if (orgIds.length === 0) {
+        setComplianceReminders([]);
+        setReminderLoading(false);
+        return;
+      }
+
+      // Get driver documents with expiration dates
+      const { data: documents } = await supabase
+        .from("driver_documents")
+        .select("organization_id, doc_type, expiration_date, status")
+        .in("organization_id", orgIds)
+        .not("expiration_date", "is", null);
+
+      const reminders: any[] = [];
+      const today = new Date();
+      const sixtyDaysFromNow = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+      (documents || []).forEach((doc: any) => {
+        if (doc.expiration_date) {
+          const expDate = new Date(doc.expiration_date);
+          if (expDate <= sixtyDaysFromNow && expDate >= today) {
+            reminders.push({
+              id: doc.id || Math.random().toString(),
+              company: orgNames[doc.organization_id] || "Unknown",
+              type: doc.doc_type === "cdl" || doc.doc_type === "CDL License" ? "Document Expiry" : doc.doc_type || "Document Expiry",
+              due: expDate.toISOString().split('T')[0],
+              status: doc.status === "sent" ? "Sent" : "Pending",
+            });
+          }
+        }
+      });
+
+      // Sort by due date
+      reminders.sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+
+      setComplianceReminders(reminders.slice(0, 10)); // Limit to 10 most urgent
+    } catch (error) {
+      console.error("Error loading compliance reminders:", error);
+      setComplianceReminders([]);
+    } finally {
+      setReminderLoading(false);
+    }
   }
 
   async function loadRonYXTheme() {
