@@ -22,8 +22,26 @@ export default function MarketplacePartners() {
     return () => clearInterval(interval);
   }, []);
 
-  async function handleMessage(partnerId: string) {
+  async function handleMessage(partnerId: string, complianceStatus: string) {
+    if (complianceStatus !== 'Compliant') {
+      alert('Cannot message: Partner is not compliant.');
+      await supabase.from('compliance_violations').insert([
+        { action: 'message_partner', reason: 'Partner not compliant', partner_id: partnerId, timestamp: new Date().toISOString() }
+      ]);
+      return;
+    }
     alert('Messaging feature coming soon!');
+  }
+
+  async function handleView(partnerId: string, complianceStatus: string) {
+    if (complianceStatus !== 'Compliant') {
+      alert('Cannot view: Partner is not compliant.');
+      await supabase.from('compliance_violations').insert([
+        { action: 'view_partner', reason: 'Partner not compliant', partner_id: partnerId, timestamp: new Date().toISOString() }
+      ]);
+      return;
+    }
+    alert('View partner details coming soon!');
   }
 
   return (
@@ -50,8 +68,8 @@ export default function MarketplacePartners() {
                 <td className="border p-2">{partner.status}</td>
                 <td className="border p-2">{partner.compliance_status || 'Unknown'}</td>
                 <td className="border p-2 flex gap-2">
-                  <button className="bg-blue-600 text-white px-3 py-1 rounded">View</button>
-                  <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={() => handleMessage(partner.id)}>Message</button>
+                  <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={() => handleView(partner.id, partner.compliance_status || 'Unknown')}>View</button>
+                  <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={() => handleMessage(partner.id, partner.compliance_status || 'Unknown')}>Message</button>
                 </td>
               </tr>
             ))}
