@@ -27,6 +27,7 @@ export default function HomePage() {
         <NavButton href="/drivers" label="Drivers" color="#f59e42" />
         <NavButton href="/fleet" label="Fleet" color="#a21caf" />
         <NavButton href="/payroll" label="Payroll" color="#dc2626" />
+        <NavButton href="/finance" label="Finance" color="#0ea5e9" />
         <NavButton href="/dispatch" label="Dispatch" color="#0ea5e9" />
         <NavButton href="/reports/excel-tab" label="Reports & Excel" color="#0f766e" />
         <NavButton href="/settings" label="Settings" color="#64748b" />
