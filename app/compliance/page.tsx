@@ -23,7 +23,21 @@ export default function CompliancePage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* FMCSA Clearinghouse Tab */}
+                <Link href="/compliance/fmcsa-clearinghouse">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-green-600">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Shield className="w-8 h-8 text-green-600" />
+                        <div>
+                          <p className="font-semibold">FMCSA Clearinghouse</p>
+                          <p className="text-sm text-gray-500">Step-by-step driver registration</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
         <Link href="/admin/ifta">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="pt-6">
