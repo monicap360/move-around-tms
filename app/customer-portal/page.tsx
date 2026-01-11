@@ -89,6 +89,9 @@ export default function CustomerPortal() {
   const [loading, setLoading] = useState(false);
   const [showLoadRequestForm, setShowLoadRequestForm] = useState(false);
   const [features, setFeatures] = useState<{ [key: string]: boolean }>({});
+  const [selectedLoad, setSelectedLoad] = useState<LoadRequest | null>(null);
+  const [showLoadDetails, setShowLoadDetails] = useState(false);
+  const [accountInfo, setAccountInfo] = useState({ primaryContact: 'John Smith', phone: '(555) 123-4567', email: 'john.smith@abcmfg.com' });
 
   // Mock data
   useEffect(() => {
@@ -223,6 +226,117 @@ export default function CustomerPortal() {
       setShowLoadRequestForm(false);
     } catch (error) {
       console.error('Error submitting load request:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewLoadDetails = (load: LoadRequest) => {
+    setSelectedLoad(load);
+    setShowLoadDetails(true);
+  };
+
+  const handleTrackShipment = (load: LoadRequest) => {
+    setActiveTab('tracking');
+    // Scroll to the tracking section for this load if needed
+    setTimeout(() => {
+      const element = document.getElementById(`tracking-${load.id}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+    try {
+      if (invoice.downloadUrl && invoice.downloadUrl !== '#') {
+        window.open(invoice.downloadUrl, '_blank');
+      } else {
+        // Generate or fetch invoice PDF
+        const response = await fetch(`/api/invoices/${invoice.id}/download`);
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${invoice.id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } else {
+          alert('Invoice PDF not available yet. Please contact support.');
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
+
+  const handleDownloadAllInvoices = async () => {
+    try {
+      const response = await fetch('/api/invoices/download-all');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoices-${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Unable to download all invoices. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Error downloading all invoices:', error);
+      alert('Failed to download invoices. Please try again.');
+    }
+  };
+
+  const handlePayInvoice = async (invoice: Invoice) => {
+    try {
+      // Redirect to payment page or open payment modal
+      const confirmPay = confirm(`Pay invoice ${invoice.id} for $${invoice.amount.toLocaleString()}?`);
+      if (confirmPay) {
+        // Here you would integrate with payment gateway
+        // For now, update status locally
+        setInvoices(prev => prev.map(inv => 
+          inv.id === invoice.id 
+            ? { ...inv, status: 'paid' as const, paidDate: new Date().toISOString() }
+            : inv
+        ));
+        alert('Payment processed successfully! (This is a demo - no actual payment was processed)');
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert('Failed to process payment. Please try again.');
+    }
+  };
+
+  const handleUpdateAccountInfo = async () => {
+    try {
+      setLoading(true);
+      // Update account information
+      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
+      if (user) {
+        // Update user metadata or customer profile
+        const { error } = await supabase
+          .from('customer_profiles')
+          .upsert({
+            user_id: user.id,
+            primary_contact: accountInfo.primaryContact,
+            phone: accountInfo.phone,
+            email: accountInfo.email,
+            updated_at: new Date().toISOString()
+          });
+        
+        if (error) throw error;
+        alert('Account information updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating account info:', error);
+      alert('Failed to update account information. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -364,12 +478,12 @@ export default function CustomerPortal() {
                         Created {new Date(load.createdAt).toLocaleDateString()}
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewLoadDetails(load)}>
                           <Eye className="w-4 h-4 mr-1" />
                           View Details
                         </Button>
                         {load.tracking && (
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => handleTrackShipment(load)}>
                             <Truck className="w-4 h-4 mr-1" />
                             Track Shipment
                           </Button>
@@ -386,7 +500,7 @@ export default function CustomerPortal() {
           <TabsContent value="invoices" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Invoices</h2>
-              <Button variant="outline">Download All</Button>
+              <Button variant="outline" onClick={handleDownloadAllInvoices}>Download All</Button>
             </div>
 
             <div className="grid gap-4">
@@ -421,12 +535,12 @@ export default function CustomerPortal() {
                         Due: {new Date(invoice.dueDate).toLocaleDateString()}
                       </p>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(invoice)}>
                           <Download className="w-4 h-4 mr-1" />
                           Download PDF
                         </Button>
                         {invoice.status !== 'paid' && (
-                          <Button size="sm">Pay Now</Button>
+                          <Button size="sm" onClick={() => handlePayInvoice(invoice)}>Pay Now</Button>
                         )}
                       </div>
                     </div>
@@ -538,17 +652,28 @@ export default function CustomerPortal() {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Primary Contact</label>
-                    <Input value="John Smith" />
+                    <Input 
+                      value={accountInfo.primaryContact}
+                      onChange={(e) => setAccountInfo(prev => ({ ...prev, primaryContact: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Phone</label>
-                    <Input value="(555) 123-4567" />
+                    <Input 
+                      value={accountInfo.phone}
+                      onChange={(e) => setAccountInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Email</label>
-                    <Input value="john.smith@abcmfg.com" />
+                    <Input 
+                      value={accountInfo.email}
+                      onChange={(e) => setAccountInfo(prev => ({ ...prev, email: e.target.value }))}
+                    />
                   </div>
-                  <Button>Update Information</Button>
+                  <Button onClick={handleUpdateAccountInfo} disabled={loading}>
+                    {loading ? 'Updating...' : 'Update Information'}
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -562,6 +687,62 @@ export default function CustomerPortal() {
               <h2 className="text-lg font-bold mb-4">Load Request Form</h2>
               <p className="mb-4">Load request form temporarily disabled during build optimization.</p>
               <Button onClick={() => setShowLoadRequestForm(false)}>Close</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Load Details Modal */}
+        {showLoadDetails && selectedLoad && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowLoadDetails(false)}>
+            <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Load Details: {selectedLoad.id}</h2>
+                <Button variant="outline" onClick={() => setShowLoadDetails(false)}>Close</Button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600">Status</h3>
+                  <p className="text-lg">{selectedLoad.status.replace('_', ' ').toUpperCase()}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Origin</h3>
+                    <p>{selectedLoad.origin.address}</p>
+                    <p>{selectedLoad.origin.city}, {selectedLoad.origin.state} {selectedLoad.origin.zipCode}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Destination</h3>
+                    <p>{selectedLoad.destination.address}</p>
+                    <p>{selectedLoad.destination.city}, {selectedLoad.destination.state} {selectedLoad.destination.zipCode}</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-600">Commodity</h3>
+                  <p>{selectedLoad.commodity}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Weight</h3>
+                    <p>{selectedLoad.weight.toLocaleString()} lbs</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Equipment</h3>
+                    <p>{selectedLoad.equipment}</p>
+                  </div>
+                </div>
+                {selectedLoad.finalRate && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Final Rate</h3>
+                    <p className="text-lg font-bold">${selectedLoad.finalRate.toLocaleString()}</p>
+                  </div>
+                )}
+                {selectedLoad.specialRequirements && (
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-600">Special Requirements</h3>
+                    <p>{selectedLoad.specialRequirements}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

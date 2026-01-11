@@ -166,8 +166,55 @@ function IFTAReportsTab() {
     setFuelUploading(true);
     setFuelError('');
     try {
-      // Upload logic here
-      console.log('Uploading fuel receipt:', fuelForm);
+      if (!fuelForm.file) {
+        setFuelError('Please select a file to upload');
+        return;
+      }
+
+      // Upload file to Supabase Storage
+      const timestamp = Date.now();
+      const filePath = `ifta/fuel-receipts/${timestamp}_${fuelForm.file.name}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('company_assets')
+        .upload(filePath, fuelForm.file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: fuelForm.file.type,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('company_assets')
+        .getPublicUrl(filePath);
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('fuel_receipts')
+        .insert({
+          upload_date: fuelForm.upload_date || new Date().toISOString().split('T')[0],
+          driver_truck_number: fuelForm.driver_truck_number,
+          fuel_type: fuelForm.fuel_type,
+          gallons: parseFloat(fuelForm.gallons) || 0,
+          cost_per_gallon: parseFloat(fuelForm.cost_per_gallon) || 0,
+          total_cost: parseFloat(fuelForm.total_cost) || 0,
+          location: fuelForm.location,
+          vendor: fuelForm.vendor,
+          file_url: urlData.publicUrl
+        });
+
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
+
+      // Reload data
+      const { data: fuelData } = await supabase.from('fuel_receipts').select('*').order('upload_date', { ascending: false });
+      if (fuelData) setFuelReceipts(fuelData as FuelReceipt[]);
+
       // Reset form
       setFuelForm({
         file: null,
@@ -192,8 +239,54 @@ function IFTAReportsTab() {
     setMileageUploading(true);
     setMileageError('');
     try {
-      // Upload logic here
-      console.log('Uploading mileage log:', mileageForm);
+      if (!mileageForm.file) {
+        setMileageError('Please select a file to upload');
+        return;
+      }
+
+      // Upload file to Supabase Storage
+      const timestamp = Date.now();
+      const filePath = `ifta/mileage-logs/${timestamp}_${mileageForm.file.name}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('company_assets')
+        .upload(filePath, mileageForm.file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: mileageForm.file.type,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('company_assets')
+        .getPublicUrl(filePath);
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('mileage_logs')
+        .insert({
+          upload_date: mileageForm.upload_date || new Date().toISOString().split('T')[0],
+          truck_number: mileageForm.truck_number,
+          driver_name: mileageForm.driver_name,
+          start_odometer: parseFloat(mileageForm.start_odometer) || 0,
+          end_odometer: parseFloat(mileageForm.end_odometer) || 0,
+          total_miles: parseFloat(mileageForm.total_miles) || 0,
+          jurisdiction_miles: mileageForm.jurisdiction_miles,
+          file_url: urlData.publicUrl
+        });
+
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
+
+      // Reload data
+      const { data: mileageData } = await supabase.from('mileage_logs').select('*').order('upload_date', { ascending: false });
+      if (mileageData) setMileageLogs(mileageData as MileageLog[]);
+
       // Reset form
       setMileageForm({
         file: null,
