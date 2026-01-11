@@ -13,16 +13,76 @@ export interface ELDProvider {
 export const samsara: ELDProvider = {
   name: 'Samsara',
   async fetchDriverLocations() {
-    // TODO: Call Samsara API
-    return [];
+    // Example: Fetch driver locations from Samsara API
+    try {
+      const apiKey = process.env.SAMSARA_API_KEY || "YOUR_SAMSARA_API_KEY";
+      const res = await fetch("https://api.samsara.com/v1/fleet/drivers/locations", {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+      if (!res.ok) throw new Error("Samsara API error: " + res.status);
+      const data = await res.json();
+      // Map to standard format
+      return (data.drivers || []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        lat: d.location?.latitude,
+        lon: d.location?.longitude,
+        status: d.status,
+        updatedAt: d.location?.time
+      }));
+    } catch (err) {
+      console.error("Samsara fetchDriverLocations error", err);
+      return [];
+    }
   },
   async fetchTruckStatus() {
-    // TODO: Call Samsara API
-    return [];
+    try {
+      const apiKey = process.env.SAMSARA_API_KEY || "YOUR_SAMSARA_API_KEY";
+      const res = await fetch("https://api.samsara.com/v1/fleet/vehicles", {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+      if (!res.ok) throw new Error("Samsara API error: " + res.status);
+      const data = await res.json();
+      return (data.vehicles || []).map((v: any) => ({
+        id: v.id,
+        name: v.name,
+        status: v.status,
+        lat: v.location?.latitude,
+        lon: v.location?.longitude,
+        updatedAt: v.location?.time
+      }));
+    } catch (err) {
+      console.error("Samsara fetchTruckStatus error", err);
+      return [];
+    }
   },
   async fetchHOS() {
-    // TODO: Call Samsara API
-    return [];
+    try {
+      const apiKey = process.env.SAMSARA_API_KEY || "YOUR_SAMSARA_API_KEY";
+      const res = await fetch("https://api.samsara.com/v1/fleet/hos/duty_status", {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+      if (!res.ok) throw new Error("Samsara API error: " + res.status);
+      const data = await res.json();
+      return (data.drivers || []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        hosStatus: d.hosStatus,
+        updatedAt: d.hosStatusUpdatedAt
+      }));
+    } catch (err) {
+      console.error("Samsara fetchHOS error", err);
+      return [];
+    }
   },
 };
 
