@@ -82,6 +82,7 @@ const PartnerAPI = dynamic(() => import("./components/PartnerAPI"), { ssr: false
 const AnalyticsDashboard = dynamic(() => import("./components/AnalyticsDashboard"), { ssr: false });
 const AIInsights = dynamic(() => import("./components/AIInsights"), { ssr: false });
 
+export default function CustomerPortal() {
   const [activeTab, setActiveTab] = useState("loads");
   const [loadRequests, setLoadRequests] = useState<LoadRequest[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -269,46 +270,25 @@ const AIInsights = dynamic(() => import("./components/AIInsights"), { ssr: false
                 <PlusCircle className="w-4 h-4 mr-2" />
                 New Load Request
               </Button>
-              {typeof window !== 'undefined' && (
-                require('next/dynamic')(() => import('./components/NotificationBell'), { ssr: false })().default && <div className="ml-2"><require('next/dynamic')(() => import('./components/NotificationBell'), { ssr: false }) /></div>
-              return (
-                <div>
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="mb-4">
-                      <TabsTrigger value="loads">Loads</TabsTrigger>
-                      <TabsTrigger value="invoices">Invoices</TabsTrigger>
-                      <TabsTrigger value="documents">Documents</TabsTrigger>
-                      <TabsTrigger value="analytics" disabled={!features["advanced_reports"]}>Analytics</TabsTrigger>
-                      <TabsTrigger value="ai" disabled={!features["ai"]}>AI Insights</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="loads">
-                      {/* ...existing code... */}
-                    </TabsContent>
-                    <TabsContent value="invoices">
-                      {/* ...existing code... */}
-                    </TabsContent>
-                    <TabsContent value="documents">
-                      <DocumentCenter />
-                    </TabsContent>
-                    <TabsContent value="analytics">
-                      {features["advanced_reports"] ? <AnalyticsDashboard /> : <div className="text-red-600">Upgrade required for Analytics.</div>}
-                    </TabsContent>
-                    <TabsContent value="ai">
-                      {features["ai"] ? <AIInsights /> : <div className="text-red-600">Upgrade required for AI Insights.</div>}
-                    </TabsContent>
-                  </Tabs>
-                  <ChatWidget />
-                </div>
-              );
-                          <AnalyticsDashboard />
-                          <AIInsights />
-                        </TabsContent>
-              <FileText className="w-4 h-4" />
-              Account
-            </TabsTrigger>
-          </TabsList>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="loads">Loads</TabsTrigger>
+              <TabsTrigger value="invoices">Invoices</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="analytics" disabled={!features["advanced_reports"]}>Analytics</TabsTrigger>
+              <TabsTrigger value="ai" disabled={!features["ai"]}>AI Insights</TabsTrigger>
+              <TabsTrigger value="account">
+                <FileText className="w-4 h-4" />
+                Account
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Load Requests Tab */}
+            {/* Load Requests Tab */}
           <TabsContent value="loads" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Load Requests</h2>

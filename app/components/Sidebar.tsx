@@ -3,7 +3,7 @@ import Link from "next/link";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { useState } from "react";
 
-
+export default function Sidebar() {
   // Main Sidebar Sections (now stateful for drag-drop)
   const [intelligenceCore, setIntelligenceCore] = useState([
     { name: "Central Intelligence System", path: "/intelligence" },

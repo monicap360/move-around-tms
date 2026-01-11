@@ -133,29 +133,33 @@ export default function DriverHUD() {
         {activeTab === "compliance" && (
           <ComplianceTab driverId={driver?.driver_uuid || driver?.uuid || ""} role="driver" />
         )}
+      </div>
+    </div>
+  );
+}
 
-            function SummaryTile({ label, value }: any) {
-              return (
-                <div className="glass-card p-4 text-center" style={{ borderRadius: 12, fontSize: 18 }}>
-                  <p style={{ opacity: 0.6 }}>{label}</p>
-                  <h3 style={{ fontSize: 22, fontWeight: 600 }}>{value}</h3>
-                </div>
-              );
-            }
+function SummaryTile({ label, value }: any) {
+  return (
+    <div className="glass-card p-4 text-center" style={{ borderRadius: 12, fontSize: 18 }}>
+      <p style={{ opacity: 0.6 }}>{label}</p>
+      <h3 style={{ fontSize: 22, fontWeight: 600 }}>{value}</h3>
+    </div>
+  );
+}
 
-            function TicketTile({ id, plant, weight, status }: { id: string; plant: string; weight: string; status: string; }) {
-              return (
-                <div className="glass-card lift p-4 flex justify-between items-center" style={{ borderRadius: 12 }}>
-                  <div>
-                    <h4 className="font-semibold">{id}</h4>
-                    <p style={{ opacity: 0.7 }}>{plant}</p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p>{weight}</p>
-                    <p style={{ fontSize: 14, opacity: 0.7 }}>{status}</p>
-                  </div>
-                </div>
-              );
-            }
+function TicketTile({ id, plant, weight, status }: { id: string; plant: string; weight: string; status: string; }) {
+  return (
+    <div className="glass-card lift p-4 flex justify-between items-center" style={{ borderRadius: 12 }}>
+      <div>
+        <h4 className="font-semibold">{id}</h4>
+        <p style={{ opacity: 0.7 }}>{plant}</p>
+      </div>
+      <div style={{ textAlign: "right" }}>
+        <p>{weight}</p>
+        <p style={{ fontSize: 14, opacity: 0.7 }}>{status}</p>
+      </div>
+    </div>
+  );
+}
 
 
