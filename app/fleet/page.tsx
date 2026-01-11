@@ -54,6 +54,7 @@ type MaintenanceRecord = {
   status: 'scheduled' | 'in_progress' | 'completed' | 'overdue';
 };
 
+export default function FleetPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);

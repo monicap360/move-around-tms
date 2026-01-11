@@ -24,6 +24,7 @@ interface Scan {
 }
 
 export default function FastScanAnalyticsDashboard() {
+
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,27 +43,51 @@ export default function FastScanAnalyticsDashboard() {
     fetchScans();
   }, []);
 
-  // Analytics calculations (guarded)
-  const totalTickets = scans.length;
-  const customerStats = scans.length
+  // --- Analytics variables for dashboard (now after scans is defined) ---
+  // Risk heatmap: driverId -> week -> violation (boolean)
+  const riskHeatmap: Record<string, Record<string, boolean>> = {};
+  scans.forEach((s) => {
+    if (!s.driverId) return;
+    const week = new Date(s.createdAt).toISOString().slice(0, 10);
+    if (!riskHeatmap[s.driverId]) riskHeatmap[s.driverId] = {};
+    if (s.status === "violation" || s.status === "failed") {
+      riskHeatmap[s.driverId][week] = true;
+    }
+  });
+
+  // Weeks and drivers for heatmap
+  const heatmapWeeks = Array.from(new Set(scans.map((s) => new Date(s.createdAt).toISOString().slice(0, 10)))).sort();
+  const heatmapDrivers = Array.from(new Set(scans.map((s) => s.driverId))).filter(Boolean);
+
+  // Top drivers (by tickets)
+  const driverStats = heatmapDrivers.map((driverId) => {
+    const driverScans = scans.filter((s) => s.driverId === driverId);
+    return {
+      driverId,
+      tickets: driverScans.length,
+      violations: driverScans.filter((s) => s.status === "violation" || s.status === "failed").length,
+    };
+  }).sort((a, b) => b.tickets - a.tickets);
+  const topDrivers = driverStats.slice(0, 3);
+
+  // Top customers (by tickets)
+  const customerStatsArr = scans.length
     ? Array.from(new Set(scans.map((s) => s.customer || "Unknown")))
         .map((customer) => {
-          const custTickets = scans.filter(
-            (s) => (s.customer || "Unknown") === customer,
-          );
+          const custTickets = scans.filter((s) => (s.customer || "Unknown") === customer);
           return {
             customer,
             tickets: custTickets.length,
             revenue: custTickets.length * 250,
-            violations: custTickets.filter(
-              (s) => s.status === "violation" || s.status === "failed",
-            ).length,
+            violations: custTickets.filter((s) => s.status === "violation" || s.status === "failed").length,
           };
         })
         .sort((a, b) => b.tickets - a.tickets)
     : [];
+  const topCustomers = customerStatsArr.slice(0, 3);
 
-  const jobStats = scans.length
+  // Top jobs (by tickets)
+  const jobStatsArr = scans.length
     ? Array.from(new Set(scans.map((s) => s.job || "Unknown")))
         .map((job) => {
           const jobTickets = scans.filter((s) => (s.job || "Unknown") === job);
@@ -70,13 +95,17 @@ export default function FastScanAnalyticsDashboard() {
             job,
             tickets: jobTickets.length,
             revenue: jobTickets.length * 250,
-            violations: jobTickets.filter(
-              (s) => s.status === "violation" || s.status === "failed",
-            ).length,
+            violations: jobTickets.filter((s) => s.status === "violation" || s.status === "failed").length,
           };
         })
         .sort((a, b) => b.tickets - a.tickets)
     : [];
+  const topJobs = jobStatsArr.slice(0, 3);
+
+  // Analytics calculations (guarded)
+  const totalTickets = scans.length;
+
+  // (customerStats and jobStats replaced by customerStatsArr and jobStatsArr above)
 
   // Top/bottom drivers, customers, jobs (from real data)
   // (Optional: implement if needed for dashboard UI)
@@ -115,8 +144,7 @@ export default function FastScanAnalyticsDashboard() {
       weekMap.get(week).violations++;
   });
   const weekLabels = Array.from(weekMap.keys()).sort();
-  heatmapWeeks = weekLabels;
-  heatmapDrivers = Object.keys(riskHeatmap);
+  // (removed assignments to heatmapWeeks and heatmapDrivers)
   const weekTotals = weekLabels.map((w) => weekMap.get(w).total);
   const weekViolations = weekLabels.map((w) => weekMap.get(w).violations);
 
@@ -214,7 +242,7 @@ export default function FastScanAnalyticsDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {customerStats.map((c) => (
+                {customerStatsArr.map((c) => (
                   <tr key={c.customer} className="border-b">
                     <td className="px-2 py-1 font-mono">{c.customer}</td>
                     <td className="px-2 py-1">{c.tickets}</td>
@@ -239,7 +267,7 @@ export default function FastScanAnalyticsDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {jobStats.map((j) => (
+                {jobStatsArr.map((j) => (
                   <tr key={j.job} className="border-b">
                     <td className="px-2 py-1 font-mono">{j.job}</td>
                     <td className="px-2 py-1">{j.tickets}</td>
@@ -322,12 +350,11 @@ export default function FastScanAnalyticsDashboard() {
             <button
               className="bg-green-700 hover:bg-green-800 text-white font-semibold px-4 py-2 rounded shadow"
               onClick={() => {
-                const headers = ["Driver", "Tickets", "Violations", "Revenue"];
+                const headers = ["Driver", "Tickets", "Violations"];
                 const rows = driverStats.map((d) => [
                   d.driverId,
                   d.tickets,
                   d.violations,
-                  d.revenue,
                 ]);
                 const csvContent = [headers, ...rows]
                   .map((r) =>
@@ -398,7 +425,6 @@ export default function FastScanAnalyticsDashboard() {
                     <td className="px-2 py-1 font-mono">{d.driverId}</td>
                     <td className="px-2 py-1">{d.tickets}</td>
                     <td className="px-2 py-1 text-red-600">{d.violations}</td>
-                    <td className="px-2 py-1">${d.revenue.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -410,12 +436,11 @@ export default function FastScanAnalyticsDashboard() {
             <button
               className="bg-green-700 hover:bg-green-800 text-white font-semibold px-4 py-2 rounded shadow"
               onClick={() => {
-                const headers = ["Driver", "Tickets", "Violations", "Revenue"];
+                const headers = ["Driver", "Tickets", "Violations"];
                 const rows = driverStats.map((d) => [
                   d.driverId,
                   d.tickets,
                   d.violations,
-                  d.revenue,
                 ]);
                 const csvContent = [headers, ...rows]
                   .map((r) =>

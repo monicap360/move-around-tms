@@ -1,4 +1,4 @@
-import FastScanSupportChat from "@/app/components/FastScanSupportChat";
+import FastScanSupportChat from "../../../components/FastScanSupportChat";
 ("use client");
 import Link from "next/link";
 import { useRouter } from "next/navigation";
