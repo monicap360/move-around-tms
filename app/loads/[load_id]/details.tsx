@@ -119,14 +119,40 @@ function TrackingTab({ load }: { load: any }) {
   );
 }
 function StatusTab({ load }: { load: any }) {
+  const [status, setStatus] = useState(load.status);
+  const [saving, setSaving] = useState(false);
+  const [podReceived, setPodReceived] = useState(!!load.pod_received);
+  const [paid, setPaid] = useState(!!load.paid);
+
+  async function updateField(field: string, value: any) {
+    setSaving(true);
+    const { error } = await supabase
+      .from("loads")
+      .update({ [field]: value })
+      .eq("id", load.id);
+    setSaving(false);
+    if (!error) {
+      if (field === "status") setStatus(value);
+      if (field === "pod_received") setPodReceived(value);
+      if (field === "paid") setPaid(value);
+    }
+  }
+
   return (
     <div>
       <h2 className="text-lg font-semibold mb-2">Load Status Updates</h2>
-      <ul className="list-disc ml-6">
-        <li>Status: {load.status || "--"}</li>
-        <li>POD received: {load.pod_received ? "Yes" : "No"}</li>
-        <li>Paid: {load.paid ? "Yes" : "No"}</li>
+      <ul className="list-disc ml-6 mb-4">
+        <li>Status: {status || "--"}</li>
+        <li>POD received: {podReceived ? "Yes" : "No"}</li>
+        <li>Paid: {paid ? "Yes" : "No"}</li>
       </ul>
+      <div className="flex gap-2">
+        <button className="px-3 py-1 rounded bg-blue-600 text-white" disabled={saving || status === "assigned"} onClick={() => updateField("status", "assigned")}>Mark Assigned</button>
+        <button className="px-3 py-1 rounded bg-blue-600 text-white" disabled={saving || status === "in_progress"} onClick={() => updateField("status", "in_progress")}>Mark In Progress</button>
+        <button className="px-3 py-1 rounded bg-green-600 text-white" disabled={saving || status === "completed"} onClick={() => updateField("status", "completed")}>Mark Completed</button>
+        <button className="px-3 py-1 rounded bg-gray-600 text-white" disabled={saving || podReceived} onClick={() => updateField("pod_received", true)}>Mark POD Received</button>
+        <button className="px-3 py-1 rounded bg-yellow-600 text-white" disabled={saving || paid} onClick={() => updateField("paid", true)}>Mark Paid</button>
+      </div>
     </div>
   );
 }
