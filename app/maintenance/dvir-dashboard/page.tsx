@@ -288,49 +288,95 @@ export default function DVIRDashboard() {
                   complianceMap={complianceMap}
                 />
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full border text-sm">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border px-2 py-1">Date</th>
-                      <th className="border px-2 py-1">Driver Name</th>
-                      <th className="border px-2 py-1">Truck #</th>
-                      <th className="border px-2 py-1">Odometer</th>
-                      <th className="border px-2 py-1">Status</th>
-                      <th className="border px-2 py-1">Defects</th>
-                      <th className="border px-2 py-1">Remarks</th>
-                      <th className="border px-2 py-1">Compliance</th>
-                      <th className="border px-2 py-1">Missing Fields</th>
-                      <th className="border px-2 py-1">Invalid Defects</th>
-                      <th className="border px-2 py-1">Interval OK</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((d, i) => {
-                      const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
-                      const compliant = c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk;
-                      return (
-                        <tr key={d.id || i} className={compliant ? "bg-green-50" : "bg-red-50"}>
-                          <td className="border px-2 py-1">{d.date || d.created_at}</td>
-                          <td className="border px-2 py-1">{d.driver_name}</td>
-                          <td className="border px-2 py-1">{d.truck_number}</td>
-                          <td className="border px-2 py-1">{d.odometer_reading}</td>
-                          <td className="border px-2 py-1 font-semibold">{d.overall_status}</td>
-                          <td className="border px-2 py-1 text-xs">{(d.inspection_items || []).filter(i => i.status === "defective").map(i => i.item).join(", ")}</td>
-                          <td className="border px-2 py-1 text-xs">{d.remarks}</td>
-                          <td className={
-                            "border px-2 py-1 font-bold " +
-                            (compliant ? "text-green-700" : "text-red-700")
-                          }>{compliant ? "Compliant" : "Noncompliant"}</td>
-                          <td className="border px-2 py-1 text-xs">{c.missingFields.join(", ")}</td>
-                          <td className="border px-2 py-1 text-xs">{c.invalidDefects.join(", ")}</td>
-                          <td className="border px-2 py-1 text-xs">{c.intervalOk ? "Yes" : "No"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {filtered.length === 0 && <div className="text-center py-8 text-gray-500">No DVIRs found.</div>}
+              <div className="my-8">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold">DVIR Table</div>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                      onClick={() => {
+                        const headers = [
+                          "Date","Driver Name","Truck #","Odometer","Status","Defects","Remarks","Compliance Status","Missing Fields","Invalid Defects","Interval OK"
+                        ];
+                        const rows = filtered.map(d => {
+                          const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
+                          return [
+                            d.date || d.created_at,
+                            d.driver_name,
+                            d.truck_number,
+                            d.odometer_reading,
+                            d.overall_status,
+                            (d.inspection_items||[]).filter(i=>i.status==="defective").map(i=>i.item).join("; "),
+                            d.remarks || "",
+                            (c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk) ? "Compliant" : "Noncompliant",
+                            c.missingFields.join("; "),
+                            c.invalidDefects.join("; "),
+                            c.intervalOk ? "Yes" : "No"
+                          ];
+                        });
+                        const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+                        const blob = new Blob([csv], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `dvir_table_${new Date().toISOString().slice(0,10)}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >Export CSV</button>
+                    <button
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                      onClick={() => {
+                        const node = document.getElementById("dvir-table-root");
+                        if (node) exportNodeAsPng(node, `dvir_table_${new Date().toISOString().slice(0,10)}.png`);
+                      }}
+                    >Export as Image</button>
+                  </div>
+                </div>
+                <div id="dvir-table-root" className="overflow-x-auto">
+                  <table className="min-w-full border text-sm">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border px-2 py-1">Date</th>
+                        <th className="border px-2 py-1">Driver Name</th>
+                        <th className="border px-2 py-1">Truck #</th>
+                        <th className="border px-2 py-1">Odometer</th>
+                        <th className="border px-2 py-1">Status</th>
+                        <th className="border px-2 py-1">Defects</th>
+                        <th className="border px-2 py-1">Remarks</th>
+                        <th className="border px-2 py-1">Compliance</th>
+                        <th className="border px-2 py-1">Missing Fields</th>
+                        <th className="border px-2 py-1">Invalid Defects</th>
+                        <th className="border px-2 py-1">Interval OK</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((d, i) => {
+                        const c = complianceMap[d.id] || {missingFields:[],invalidDefects:[],intervalOk:true};
+                        const compliant = c.missingFields.length === 0 && c.invalidDefects.length === 0 && c.intervalOk;
+                        return (
+                          <tr key={d.id || i} className={compliant ? "bg-green-50" : "bg-red-50"}>
+                            <td className="border px-2 py-1">{d.date || d.created_at}</td>
+                            <td className="border px-2 py-1">{d.driver_name}</td>
+                            <td className="border px-2 py-1">{d.truck_number}</td>
+                            <td className="border px-2 py-1">{d.odometer_reading}</td>
+                            <td className="border px-2 py-1 font-semibold">{d.overall_status}</td>
+                            <td className="border px-2 py-1 text-xs">{(d.inspection_items || []).filter(i => i.status === "defective").map(i => i.item).join(", ")}</td>
+                            <td className="border px-2 py-1 text-xs">{d.remarks}</td>
+                            <td className={
+                              "border px-2 py-1 font-bold " +
+                              (compliant ? "text-green-700" : "text-red-700")
+                            }>{compliant ? "Compliant" : "Noncompliant"}</td>
+                            <td className="border px-2 py-1 text-xs">{c.missingFields.join(", ")}</td>
+                            <td className="border px-2 py-1 text-xs">{c.invalidDefects.join(", ")}</td>
+                            <td className="border px-2 py-1 text-xs">{c.intervalOk ? "Yes" : "No"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {filtered.length === 0 && <div className="text-center py-8 text-gray-500">No DVIRs found.</div>}
+                </div>
               </div>
             </>
           )}
