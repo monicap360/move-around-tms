@@ -1,0 +1,31 @@
+
+> move-around-tms@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Linting ...
+ ⨯ ESLint: Invalid Options: - Unknown options: useEslintrc, extensions - 'extensions' has been removed.
+   Collecting page data ...
+Error: supabaseKey is required.
+    at new rg (/var/www/move-around-tms/.next/server/chunks/5674.js:37:44796)
+    at rw (/var/www/move-around-tms/.next/server/chunks/5674.js:37:48638)
+    at 17929 (/var/www/move-around-tms/.next/server/app/api/aggregates/invoices/route.js:1:560)
+    at t (/var/www/move-around-tms/.next/server/webpack-runtime.js:1:128)
+    at s (/var/www/move-around-tms/.next/server/app/api/aggregates/invoices/route.js:1:1622)
+    at /var/www/move-around-tms/.next/server/app/api/aggregates/invoices/route.js:1:1660
+    at t.X (/var/www/move-around-tms/.next/server/webpack-runtime.js:1:1206)
+    at /var/www/move-around-tms/.next/server/app/api/aggregates/invoices/route.js:1:1635
+    at Object.<anonymous> (/var/www/move-around-tms/.next/server/app/api/aggregates/invoices/route.js:1:1688)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+
+> Build error occurred
+Error: Failed to collect page data for /api/aggregates/invoices
+    at /var/www/move-around-tms/node_modules/next/dist/build/utils.js:1269:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'Error'
+}

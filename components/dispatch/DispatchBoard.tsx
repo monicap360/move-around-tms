@@ -23,6 +23,7 @@ export default function DispatchBoard() {
 
     // Supabase Realtime subscription
     const supabase = createClient();
+<<<<<<< Updated upstream
     const channel = supabase
       .channel("realtime:loads")
       .on(
@@ -43,7 +44,30 @@ export default function DispatchBoard() {
           });
         },
       )
+=======
+    const channel = supabase.channel('realtime:loads')
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "loads" },
+        payload => {
+          setLoads(prev => {
+            if (payload.eventType === "INSERT") {
+              return [...prev, payload.new];
+            } else if (payload.eventType === "UPDATE") {
+              return prev.map(l =>
+                l.id === payload.new.id ? payload.new : l
+              );
+            } else if (payload.eventType === "DELETE") {
+              return prev.filter(l => l.id !== payload.old.id);
+            }
+            return prev;
+          });
+        }
+      )
+
+>>>>>>> Stashed changes
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
