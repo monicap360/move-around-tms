@@ -15,7 +15,6 @@ export default function MarketplaceMyLoads() {
     async function fetchMyLoads() {
       setLoading(true);
       setError('');
-      // Fetch loads where user is shipper (posted) or hauler (assigned)
       let query = supabase.from('loads').select('*').order('created_at', { ascending: false });
       if (mockUser.role === 'shipper') {
         query = query.eq('created_by', mockUser.id);
@@ -28,8 +27,13 @@ export default function MarketplaceMyLoads() {
       setLoading(false);
     }
     fetchMyLoads();
-    const interval = setInterval(fetchMyLoads, 15000);
-    return () => clearInterval(interval);
+    // Supabase Realtime subscription for instant updates
+    const channel = supabase.channel('realtime:loads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'loads' }, fetchMyLoads)
+      .subscribe();
+    return () => {
+      channel.unsubscribe();
+    };
   }, []);
 
   async function handleCancel(loadId: string) {

@@ -22,8 +22,13 @@ export default function MarketplaceBrowse() {
       setLoading(false);
     }
     fetchLoads();
-    const interval = setInterval(fetchLoads, 15000); // refresh every 15s
-    return () => clearInterval(interval);
+    // Supabase Realtime subscription for instant updates
+    const channel = supabase.channel('realtime:loads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'loads' }, fetchLoads)
+      .subscribe();
+    return () => {
+      channel.unsubscribe();
+    };
   }, []);
 
   return (
