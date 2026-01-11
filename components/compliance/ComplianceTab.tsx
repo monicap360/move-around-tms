@@ -1,7 +1,59 @@
+  // AI-powered compliance assistant logic
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [persistedReminders, setPersistedReminders] = useState<any[]>([]);
+
+  useEffect(() => {
+    const suggestions: string[] = [];
+    filteredChecklist.forEach(item => {
+      if (!item.uploaded) {
+        suggestions.push(`Upload ${item.label}`);
+      } else if (item.expiry) {
+        const expDate = new Date(item.expiry);
+        if (expDate < new Date()) {
+          suggestions.push(`${item.label} expired, upload new document`);
+        } else if (expDate < new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)) {
+          suggestions.push(`${item.label} expiring soon, renew now`);
+        }
+      }
+    });
+    if (!profile?.safety_training_completed) suggestions.push("Complete safety training");
+    if (!profile?.hos_training_date) suggestions.push("Complete HOS training");
+    if (!profile?.hazmat_training_date) suggestions.push("Upload Hazmat certificate");
+    setAiSuggestions(suggestions);
+
+    // Persist reminders to Supabase (demo: store as reminders table)
+    async function persistReminders() {
+      if (driverId && suggestions.length > 0) {
+        await supabase.from("compliance_reminders").upsert({
+          driver_id: driverId,
+          reminders: suggestions,
+          updated_at: new Date().toISOString()
+        }, { onConflict: ["driver_id"] });
+        setPersistedReminders(suggestions);
+      }
+    }
+    persistReminders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredChecklist, profile, driverId]);
+      {aiSuggestions.length > 0 && (
+        <Card className="rounded-2xl shadow-lg mb-6 border-blue-400">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-blue-700">AI Compliance Assistant</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc ml-6">
+              {aiSuggestions.map((s, i) => (
+                <li key={i} className="text-blue-700">{s}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 import { CheckCircle, AlertTriangle, XCircle, PenLine, Download, BarChart2, Bell, Search, FileText, FileSpreadsheet, StickyNote } from "lucide-react";
+import Tesseract from "tesseract.js";
 import { useRef as useReactRef } from "react";
 import { utils as XLSXUtils, writeFile as XLSXWriteFile } from "xlsx";
   // Search/filter state
@@ -131,12 +183,45 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
       return;
     }
     const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
+
+    // OCR extraction for CDL/medical
+    let extracted = {};
+    if (["cdl", "medical"].includes(type)) {
+      try {
+        const image = await file.arrayBuffer();
+        const { data: ocr } = await Tesseract.recognize(new Blob([image]), "eng");
+        const text = ocr.text;
+        // Simple regex extraction for demo
+        if (type === "cdl") {
+          const expMatch = text.match(/exp.*?(\d{2,4}[\/-]\d{2}[\/-]\d{2,4})/i);
+          const numMatch = text.match(/(\d{6,})/);
+          extracted = {
+            license_expiration: expMatch ? expMatch[1] : null,
+            license_number: numMatch ? numMatch[1] : null
+          };
+        } else if (type === "medical") {
+          const expMatch = text.match(/exp.*?(\d{2,4}[\/-]\d{2}[\/-]\d{2,4})/i);
+          extracted = {
+            medical_expiry: expMatch ? expMatch[1] : null
+          };
+        }
+      } catch (ocrErr) {
+        // Ignore OCR errors for now
+      }
+    }
+
     await supabase.from("driver_documents").insert({
       driver_id: driverId,
       doc_type: type,
       image_url: urlData?.publicUrl,
       status: "pending"
     });
+
+    // Persist extracted fields to driver profile
+    if (Object.keys(extracted).length > 0) {
+      await supabase.from("drivers").update(extracted).eq("id", driverId);
+    }
+
     setUploading(false);
     // Refresh
     const { data: docs } = await supabase
@@ -144,6 +229,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
       .select('*')
       .eq('driver_id', driverId);
     if (docs) setDocuments(docs);
+    // Optionally, refresh profile fields here as well
   }
 
   // Compliance status bar logic
