@@ -77,7 +77,9 @@ const ChatWidget = dynamic(() => import("./components/ChatWidget"), { ssr: false
 const DocumentCenter = dynamic(() => import("./components/DocumentCenter"), { ssr: false });
 const RoleManager = dynamic(() => import("./components/RoleManager"), { ssr: false });
 const WhiteLabelSettings = dynamic(() => import("./components/WhiteLabelSettings"), { ssr: false });
+const PartnerAPI = dynamic(() => import("./components/PartnerAPI"), { ssr: false });
 const AnalyticsDashboard = dynamic(() => import("./components/AnalyticsDashboard"), { ssr: false });
+const AIInsights = dynamic(() => import("./components/AIInsights"), { ssr: false });
 
 export default function CustomerPortal() {
   const [activeTab, setActiveTab] = useState("loads");
@@ -287,6 +289,7 @@ export default function CustomerPortal() {
                         {/* Analytics Tab */}
                         <TabsContent value="analytics" className="space-y-6">
                           <AnalyticsDashboard />
+                          <AIInsights />
                         </TabsContent>
               <FileText className="w-4 h-4" />
               Account
@@ -512,6 +515,7 @@ export default function CustomerPortal() {
           <TabsContent value="account" className="space-y-6">
             <RoleManager />
             <WhiteLabelSettings />
+            <PartnerAPI />
             <h2 className="text-lg font-semibold">Account Information</h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -76,6 +76,10 @@ type PerformanceGoal = {
 // Mock driver ID - in production, this would come from authentication
 const DRIVER_ID = "mock-driver-123";
 
+import TruckBranding from "../components/cockpit/TruckBranding";
+import { DriverHUDCard } from "../components/driver-hud/DriverHUDCard";
+import { useEffect, useState } from "react";
+
 export default function DriverPortalPage() {
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
@@ -257,28 +261,29 @@ export default function DriverPortalPage() {
     );
   }
 
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-text)]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-[color:var(--color-surface)] shadow-sm border-b border-[color:var(--color-border)]">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+              <div className="w-16 h-16 bg-[color:var(--color-primary)] rounded-full flex items-center justify-center text-[color:var(--color-text)] text-xl font-bold">
                 {driver.name.split(' ').map(n => n[0]).join('')}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Welcome, {driver.name}</h1>
-                <p className="text-gray-600">Employee ID: {driver.employee_id}</p>
+                <h1 className="text-2xl font-bold text-[color:var(--color-text)]">Welcome, {driver.name}</h1>
+                <p className="text-[color:var(--color-muted)]">Employee ID: {driver.employee_id}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Shield className="w-4 h-4" />
+                  <Shield className="w-4 h-4 text-[color:var(--color-accent)]" />
                   <span className={`font-medium ${getSafetyScoreColor(driver.current_safety_score)}`}>
                     Safety Score: {driver.current_safety_score}
                   </span>
                 </div>
               </div>
             </div>
-            <Button onClick={handleEdit} disabled={editing}>
+            <Button onClick={handleEdit} disabled={editing} className="bg-[color:var(--color-accent)] text-[color:var(--color-background)] hover:bg-[color:var(--color-primary)]">
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
@@ -286,21 +291,23 @@ export default function DriverPortalPage() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="border-b">
+        <div className="border-b border-[color:var(--color-border)]">
           <nav className="flex space-x-8 px-6">
             {[
               { id: 'profile', label: 'My Profile', icon: User },
               { id: 'documents', label: 'Documents', icon: FileText },
               { id: 'training', label: 'Training', icon: Award },
-              { id: 'goals', label: 'Goals', icon: Target }
+              { id: 'goals', label: 'Goals', icon: Target },
+              { id: 'live', label: 'Live Trucks', icon: Car },
+              { id: 'theme', label: 'Theme', icon: Edit }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm ${
                   activeTab === id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-[color:var(--color-accent)] text-[color:var(--color-accent)]'
+                    : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -315,6 +322,16 @@ export default function DriverPortalPage() {
       <div className="p-6">
         {activeTab === 'profile' && (
           <div className="max-w-4xl space-y-6">
+            {/* Driver HUD Card (Uber-style) */}
+            <div className="mb-6">
+              <DriverHUDCard
+                name={driver.name}
+                photoUrl={driver.profile_image_url || undefined}
+                truckNumber={driver.employee_id}
+                aiRiskScore={driver.current_safety_score}
+                editable={editing}
+              />
+            </div>
             {/* Personal Information */}
             <Card>
               <CardHeader>
@@ -453,6 +470,37 @@ export default function DriverPortalPage() {
                       {driver.employment_status}
                     </Badge>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'theme' && (
+          <div className="max-w-2xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>Theme Customization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TruckBranding driver={driver} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'live' && (
+          <div className="max-w-5xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>Live Trucks & Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[80vh] min-h-[400px]">
+                  {/* Uber-style live truck/status view */}
+                  {typeof window !== 'undefined' && (
+                    require('./DriverLiveFleetTab').default()
+                  )}
                 </div>
               </CardContent>
             </Card>
