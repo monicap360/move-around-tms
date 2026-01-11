@@ -36,7 +36,26 @@ export default function ChatWidget() {
         { event: "*", schema: "public", table: "customer_support_messages" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setMessages((prev) => [...prev, payload.new]);
+            const newMsg = payload.new;
+            // Ensure the new message matches the Message interface
+            if (
+              newMsg &&
+              typeof newMsg.id === "string" &&
+              typeof newMsg.sender === "string" &&
+              typeof newMsg.text === "string" &&
+              typeof newMsg.timestamp === "string"
+            ) {
+              setMessages((prev) =>
+                [...prev, newMsg].filter(
+                  (msg): msg is Message =>
+                    msg &&
+                    typeof msg.id === "string" &&
+                    typeof msg.sender === "string" &&
+                    typeof msg.text === "string" &&
+                    typeof msg.timestamp === "string"
+                )
+              );
+            }
           }
         },
       )

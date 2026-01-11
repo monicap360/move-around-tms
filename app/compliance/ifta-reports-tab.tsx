@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
@@ -12,291 +11,6 @@ type FuelReceipt = {
   cost_per_gallon: number;
   total_cost: number;
   location: string;
-  vendor: string;
-  file_url: string;
-};
-type MileageLog = {
-  id: string;
-  upload_date: string;
-  truck_number: string;
-  driver_name: string;
-  start_odometer: number;
-  end_odometer: number;
-  total_miles: number;
-  jurisdiction_miles: string;
-  file_url: string;
-};
-type ComplianceRecord = {
-  id: string;
-  period: string;
-  submission_date: string;
-  filed_by: string;
-  notes: string;
-  return_copy_url: string;
-  audit_log: string;
-};
-
-const IFTAReportsTab = () => {
-  const [fuelReceipts, setFuelReceipts] = useState<FuelReceipt[]>([]);
-  const [fuelForm, setFuelForm] = useState({
-    file: null as File | null,
-    upload_date: '',
-    driver_truck_number: '',
-    fuel_type: 'Diesel',
-    gallons: '',
-    cost_per_gallon: '',
-    total_cost: '',
-    location: '',
-    vendor: '',
-  });
-  const [fuelUploading, setFuelUploading] = useState(false);
-  const [fuelError, setFuelError] = useState('');
-  const [mileageLogs, setMileageLogs] = useState<MileageLog[]>([]);
-  const [complianceRecords, setComplianceRecords] = useState<ComplianceRecord[]>([]);
-  const [mileageForm, setMileageForm] = useState({
-    file: null as File | null,
-    upload_date: '',
-    truck_number: '',
-    driver_name: '',
-    start_odometer: '',
-    end_odometer: '',
-    total_miles: '',
-    jurisdiction_miles: '',
-  });
-  const [mileageUploading, setMileageUploading] = useState(false);
-  const [mileageError, setMileageError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [quarter, setQuarter] = useState<string>('');
-  const [quarterlySummary, setQuarterlySummary] = useState<any>(null);
-  const [taxRates] = useState<any>({
-    TX: 0.20, OK: 0.19, LA: 0.20, NM: 0.21, AR: 0.245
-  });
-
-  function getQuarter(dateStr: string) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    const year = d.getFullYear();
-    const q = Math.floor(d.getMonth() / 3) + 1;
-    return `${year}-Q${q}`;
-  }
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const { data: fuelData } = await supabase
-        .from('ifta_fuel_receipts')
-        .select('*')
-        .order('upload_date', { ascending: false });
-      setFuelReceipts(fuelData || []);
-      const { data: mileageData } = await supabase
-        .from('ifta_mileage_logs')
-        .select('*')
-        .order('upload_date', { ascending: false });
-      setMileageLogs(mileageData || []);
-      const { data: complianceData } = await supabase
-        .from('ifta_compliance_records')
-        .select('*')
-        .order('period', { ascending: false });
-      setComplianceRecords(complianceData || []);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (loading) return;
-    const allQuarters = Array.from(new Set([
-      ...fuelReceipts.map(f => getQuarter(f.upload_date)),
-      ...mileageLogs.map(m => getQuarter(m.upload_date)),
-    ].filter(Boolean)));
-    const latestQuarter = allQuarters.sort().reverse()[0] || '';
-    const q = quarter || latestQuarter;
-    const fuelQ = fuelReceipts.filter(f => getQuarter(f.upload_date) === q);
-    const milesQ = mileageLogs.filter(m => getQuarter(m.upload_date) === q);
-    const totalMiles = milesQ.reduce((sum, m) => sum + (m.total_miles || 0), 0);
-    const totalGallons = fuelQ.reduce((sum, f) => sum + (f.gallons || 0), 0);
-    const avgMPG = totalGallons > 0 ? (totalMiles / totalGallons) : 0;
-    const stateMiles: Record<string, number> = {};
-    const stateGallons: Record<string, number> = {};
-    milesQ.forEach(m => {
-      if (m.jurisdiction_miles) {
-        m.jurisdiction_miles.split(',').forEach(pair => {
-          const [state, miles] = pair.split(':').map(s => s.trim());
-          if (state && miles && !isNaN(Number(miles))) {
-            stateMiles[state] = (stateMiles[state] || 0) + Number(miles);
-          }
-        });
-      }
-    });
-    Object.keys(stateMiles).forEach(state => {
-      stateGallons[state] = totalMiles > 0 ? (stateMiles[state] / totalMiles) * totalGallons : 0;
-    });
-    const stateTax: Record<string, number> = {};
-    Object.keys(stateMiles).forEach(state => {
-      const gallons = stateGallons[state] || 0;
-      const rate = taxRates[state] || 0;
-      stateTax[state] = gallons * rate;
-    });
-    setQuarterlySummary({
-      quarter: q,
-      totalMiles,
-      totalGallons,
-      avgMPG,
-      stateMiles,
-      stateGallons,
-      stateTax,
-    });
-    setQuarter(q);
-  }, [fuelReceipts, mileageLogs, loading, quarter, taxRates]);
-
-  const handleFuelReceiptUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFuelError('');
-    setFuelUploading(true);
-    try {
-      if (!fuelForm.file) throw new Error('File required');
-      const filePath = `fuel-receipts/${Date.now()}-${fuelForm.file.name}`;
-      const { error: uploadError } = await supabase.storage.from('ifta').upload(filePath, fuelForm.file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('ifta').getPublicUrl(filePath);
-      const { error: insertError } = await supabase.from('ifta_fuel_receipts').insert([
-        {
-          upload_date: fuelForm.upload_date,
-          driver_truck_number: fuelForm.driver_truck_number,
-          fuel_type: fuelForm.fuel_type,
-          gallons: parseFloat(fuelForm.gallons),
-          cost_per_gallon: parseFloat(fuelForm.cost_per_gallon),
-          total_cost: parseFloat(fuelForm.total_cost),
-          location: fuelForm.location,
-          vendor: fuelForm.vendor,
-          file_url: urlData?.publicUrl || '',
-        },
-      ]);
-      if (insertError) throw insertError;
-      const { data: fuelData } = await supabase
-        .from('ifta_fuel_receipts')
-        .select('*')
-        .order('upload_date', { ascending: false });
-      setFuelReceipts(fuelData || []);
-      setFuelForm({
-        file: null,
-        upload_date: '',
-        driver_truck_number: '',
-        fuel_type: 'Diesel',
-        gallons: '',
-        cost_per_gallon: '',
-        total_cost: '',
-        location: '',
-        vendor: '',
-      });
-    } catch (err: any) {
-      setFuelError(err.message || 'Upload failed');
-    } finally {
-      setFuelUploading(false);
-    }
-  };
-  const handleMileageLogUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMileageError('');
-    setMileageUploading(true);
-    try {
-      if (!mileageForm.file) throw new Error('File required');
-      const filePath = `mileage-logs/${Date.now()}-${mileageForm.file.name}`;
-      const { error: uploadError } = await supabase.storage.from('ifta').upload(filePath, mileageForm.file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('ifta').getPublicUrl(filePath);
-      const { error: insertError } = await supabase.from('ifta_mileage_logs').insert([
-        {
-          upload_date: mileageForm.upload_date,
-          truck_number: mileageForm.truck_number,
-          driver_name: mileageForm.driver_name,
-          start_odometer: parseFloat(mileageForm.start_odometer),
-          end_odometer: parseFloat(mileageForm.end_odometer),
-          total_miles: parseFloat(mileageForm.total_miles),
-          jurisdiction_miles: mileageForm.jurisdiction_miles,
-          file_url: urlData?.publicUrl || '',
-        },
-      ]);
-      if (insertError) throw insertError;
-      const { data: mileageData } = await supabase
-        .from('ifta_mileage_logs')
-        .select('*')
-        .order('upload_date', { ascending: false });
-      setMileageLogs(mileageData || []);
-      setMileageForm({
-        file: null,
-        upload_date: '',
-        truck_number: '',
-        driver_name: '',
-        start_odometer: '',
-        end_odometer: '',
-        total_miles: '',
-        jurisdiction_miles: '',
-      });
-    } catch (err: any) {
-      setMileageError(err.message || 'Upload failed');
-    } finally {
-      setMileageUploading(false);
-    }
-  };
-
-  return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Compliance / IFTA Reports</h1>
-      {/* 1. Overview Dashboard */}
-      <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-2">Quarterly Summary</h2>
-        {loading || !quarterlySummary ? (
-          <div>Loading...</div>
-        ) : (
-          <>
-            <div className="mb-2">
-              <label className="mr-2">Quarter:</label>
-              <select value={quarter} onChange={e => setQuarter(e.target.value)} className="border rounded px-2 py-1">
-                {Array.from(new Set([
-                  ...fuelReceipts.map(f => getQuarter(f.upload_date)),
-                  ...mileageLogs.map(m => getQuarter(m.upload_date)),
-                ].filter(Boolean))).sort().reverse().map(q => (
-                  <option key={q} value={q}>{q}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-              <div className="bg-white rounded shadow p-4">Total Miles Driven<br /><span className="font-bold text-lg">{quarterlySummary.totalMiles}</span></div>
-              <div className="bg-white rounded shadow p-4">Total Fuel Purchased (Gallons)<br /><span className="font-bold text-lg">{quarterlySummary.totalGallons}</span></div>
-              <div className="bg-white rounded shadow p-4">Average MPG<br /><span className="font-bold text-lg">{quarterlySummary.avgMPG ? quarterlySummary.avgMPG.toFixed(2) : '--'}</span></div>
-              <div className="bg-white rounded shadow p-4">IFTA Taxable Miles<br /><span className="font-bold text-lg">{quarterlySummary.totalMiles}</span></div>
-              <div className="bg-white rounded shadow p-4">Fuel Tax Owed / Credit<br /><span className="font-bold text-lg">${Object.values(quarterlySummary.stateTax).reduce((sum, v) => (sum as number) + (v as number), 0).toFixed(2)}</span></div>
-              <div className="bg-white rounded shadow p-4">Report Status<br /><span className="font-bold text-lg">Draft</span></div>
-            </div>
-          </>
-        )}
-        <a href="https://comptroller.texas.gov/taxes/ifta/" target="_blank" rel="noopener" className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">File Online → Texas IFTA Portal</a>
-      </section>
-
-      {/* 2. Upload Sections */}
-      <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-2">Upload Fuel Receipts</h2>
-        <form className="bg-white rounded shadow p-4 mb-6" onSubmit={handleFuelReceiptUpload}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1">Upload Fuel Receipt (PDF/Image)</label>
-              <input type="file" accept="application/pdf,image/*" className="mb-2" onChange={e => setFuelForm(f => ({ ...f, file: e.target.files?.[0] || null }))} />
-            </div>
-            <div>
-              <label className="block mb-1">Upload Date</label>
-              <input type="date" className="w-full border rounded px-2 py-1" value={fuelForm.upload_date} onChange={e => setFuelForm(f => ({ ...f, upload_date: e.target.value }))} />
-            </div>
-            <div>
-              <label className="block mb-1">Driver / Truck Number</label>
-              <input type="text" className="w-full border rounded px-2 py-1" value={fuelForm.driver_truck_number} onChange={e => setFuelForm(f => ({ ...f, driver_truck_number: e.target.value }))} />
-            </div>
-            <div>
-              <label className="block mb-1">Fuel Type</label>
-              <select className="w-full border rounded px-2 py-1" value={fuelForm.fuel_type} onChange={e => setFuelForm(f => ({ ...f, fuel_type: e.target.value }))}>
-                <option>Diesel</option>
-                <option>Gasoline</option>
-                <option>DEF</option>
               </select>
             </div>
             <div>
@@ -323,6 +37,7 @@ const IFTAReportsTab = () => {
           {fuelError && <div className="text-red-600 mt-2">{fuelError}</div>}
           <button type="submit" className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={fuelUploading}>{fuelUploading ? 'Uploading...' : 'Upload Fuel Receipts'}</button>
         </form>
+        {/* List uploaded fuel receipts */}
         <div className="mt-6">
           <h3 className="font-semibold mb-2">Uploaded Fuel Receipts</h3>
           {fuelReceipts.length === 0 ? <div className="text-gray-500">No receipts uploaded.</div> : (
@@ -338,6 +53,7 @@ const IFTAReportsTab = () => {
         </div>
       </section>
 
+      {/* Mileage Logs Upload */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-2">Upload Mileage Logs</h2>
         <form className="bg-white rounded shadow p-4 mb-6" onSubmit={handleMileageLogUpload}>
@@ -378,6 +94,7 @@ const IFTAReportsTab = () => {
           {mileageError && <div className="text-red-600 mt-2">{mileageError}</div>}
           <button type="submit" className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" disabled={mileageUploading}>{mileageUploading ? 'Uploading...' : 'Upload Mileage Logs File'}</button>
         </form>
+        {/* List uploaded mileage logs */}
         <div className="mt-6">
           <h3 className="font-semibold mb-2">Uploaded Mileage Logs</h3>
           {mileageLogs.length === 0 ? <div className="text-gray-500">No logs uploaded.</div> : (
@@ -393,6 +110,7 @@ const IFTAReportsTab = () => {
         </div>
       </section>
 
+      {/* 3. Calculations & Summaries */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-2">Calculations & Summaries</h2>
         <div className="mb-4">MPG (Miles per Gallon) = <span className="font-bold">Total Miles ÷ Total Gallons</span></div>
@@ -430,6 +148,7 @@ const IFTAReportsTab = () => {
         <div className="mt-2">IFTA Total Owed / Refund Amount: <span className="font-bold">${quarterlySummary ? Object.values(quarterlySummary.stateTax).reduce((sum, v) => (sum as number) + (v as number), 0).toFixed(2) : '--'}</span></div>
       </section>
 
+      {/* 4. Compliance Records */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-2">Compliance Records</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -460,6 +179,7 @@ const IFTAReportsTab = () => {
         </div>
       </section>
 
+      {/* 5. Optional / Advanced Features */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-2">Advanced Features</h2>
         <ul className="list-disc ml-6 space-y-1">
@@ -475,128 +195,7 @@ const IFTAReportsTab = () => {
   );
 };
 
-// End of file cleanup: removed trailing code
-      const [mileageError, setMileageError] = useState('');
-      const [loading, setLoading] = useState(true);
-
-      // Quarterly and state-by-state summary state
-      const [quarter, setQuarter] = useState<string>('');
-      const [quarterlySummary, setQuarterlySummary] = useState<any>(null);
-      const [taxRates, setTaxRates] = useState<any>({
-        TX: 0.20, OK: 0.19, LA: 0.20, NM: 0.21, AR: 0.245,
-      });
-
-      // Helper: get quarter string from date
-      function getQuarter(dateStr: string) {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        const year = d.getFullYear();
-        const q = Math.floor(d.getMonth() / 3) + 1;
-        return `${year}-Q${q}`;
-      }
-
-      // Fetch data from Supabase
-      useEffect(() => {
-        const fetchData = async () => {
-          setLoading(true);
-          const { data: fuelData } = await supabase
-            .from('ifta_fuel_receipts')
-            .select('*')
-            .order('upload_date', { ascending: false });
-          setFuelReceipts(fuelData || []);
-          const { data: mileageData } = await supabase
-            .from('ifta_mileage_logs')
-            .select('*')
-            .order('upload_date', { ascending: false });
-          setMileageLogs(mileageData || []);
-          const { data: complianceData } = await supabase
-            .from('ifta_compliance_records')
-            .select('*')
-            .order('period', { ascending: false });
-          setComplianceRecords(complianceData || []);
-          setLoading(false);
-        };
-        fetchData();
-      }, []);
-
-      // Calculate quarterly and state-by-state summaries
-      useEffect(() => {
-        if (loading) return;
-        const allQuarters = Array.from(new Set([
-          ...fuelReceipts.map(f => getQuarter(f.upload_date)),
-          ...mileageLogs.map(m => getQuarter(m.upload_date)),
-        ].filter(Boolean)));
-        const latestQuarter = allQuarters.sort().reverse()[0] || '';
-        const q = quarter || latestQuarter;
-        const fuelQ = fuelReceipts.filter(f => getQuarter(f.upload_date) === q);
-        const milesQ = mileageLogs.filter(m => getQuarter(m.upload_date) === q);
-        const totalMiles = milesQ.reduce((sum, m) => sum + (m.total_miles || 0), 0);
-        const totalGallons = fuelQ.reduce((sum, f) => sum + (f.gallons || 0), 0);
-        const avgMPG = totalGallons > 0 ? (totalMiles / totalGallons) : 0;
-        const stateMiles: Record<string, number> = {};
-        const stateGallons: Record<string, number> = {};
-        milesQ.forEach(m => {
-          if (m.jurisdiction_miles) {
-            m.jurisdiction_miles.split(',').forEach(pair => {
-              const [state, miles] = pair.split(':').map(s => s.trim());
-              if (state && miles && !isNaN(Number(miles))) {
-                stateMiles[state] = (stateMiles[state] || 0) + Number(miles);
-              }
-            });
-          }
-        });
-        Object.keys(stateMiles).forEach(state => {
-          stateGallons[state] = totalMiles > 0 ? (stateMiles[state] / totalMiles) * totalGallons : 0;
-        });
-        const stateTax: Record<string, number> = {};
-        Object.keys(stateMiles).forEach(state => {
-          const gallons = stateGallons[state] || 0;
-          const rate = taxRates[state] || 0;
-          stateTax[state] = gallons * rate;
-        });
-        setQuarterlySummary({
-          quarter: q,
-          totalMiles,
-          totalGallons,
-          avgMPG,
-          stateMiles,
-          stateGallons,
-          stateTax,
-        });
-        setQuarter(q);
-      }, [fuelReceipts, mileageLogs, loading, quarter, taxRates]);
-
-      // Handlers for uploads (omitted for brevity, but should match previous logic)
-      const handleFuelReceiptUpload = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setFuelError('');
-        setFuelUploading(true);
-        try {
-          if (!fuelForm.file) throw new Error('File required');
-          const filePath = `fuel-receipts/${Date.now()}-${fuelForm.file.name}`;
-          const { error: uploadError } = await supabase.storage.from('ifta').upload(filePath, fuelForm.file);
-          if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage.from('ifta').getPublicUrl(filePath);
-          const { error: insertError } = await supabase.from('ifta_fuel_receipts').insert([
-            {
-              upload_date: fuelForm.upload_date,
-              driver_truck_number: fuelForm.driver_truck_number,
-              fuel_type: fuelForm.fuel_type,
-              gallons: parseFloat(fuelForm.gallons),
-              cost_per_gallon: parseFloat(fuelForm.cost_per_gallon),
-              total_cost: parseFloat(fuelForm.total_cost),
-              location: fuelForm.location,
-              vendor: fuelForm.vendor,
-              file_url: urlData?.publicUrl || '',
-            },
-          ]);
-          if (insertError) throw insertError;
-          const { data: fuelData } = await supabase
-            .from('ifta_fuel_receipts')
-            .select('*')
-            .order('upload_date', { ascending: false });
-          setFuelReceipts(fuelData || []);
-          setFuelForm({
+export default IFTAReportsTab;
             file: null,
             upload_date: '',
 
@@ -914,9 +513,4 @@ const IFTAReportsTab = () => {
 
 
 
-    </div>
-  );
-}
-
-export default IFTAReportsTab;
 
