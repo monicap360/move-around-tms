@@ -1,3 +1,4 @@
+import FastScanSupportChat from "@/app/components/FastScanSupportChat";
 "use client";
 // (Removed duplicate import at end of file)
 import Link from "next/link";
@@ -11,6 +12,16 @@ interface Scan {
   createdAt: string;
   status: string;
   resultId?: string;
+  driverId?: string;
+  truckId?: string;
+  material?: string;
+  netWeight?: string;
+  customer?: string;
+  job?: string;
+  timestamp?: string;
+  pitName?: string;
+  notes?: string;
+  referenceNumber?: string;
 }
 
 const ROLE_OPTIONS = [

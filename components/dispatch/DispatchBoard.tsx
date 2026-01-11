@@ -28,13 +28,21 @@ export default function DispatchBoard() {
   function onDragStart(id: string) {
     setDraggedId(id);
   }
-  function onDrop(status: string) {
+  async function onDrop(status: string) {
     if (!draggedId) return;
     setLoads((prev) =>
       prev.map((l) => (l.id === draggedId ? { ...l, status } : l))
     );
+    try {
+      await fetch("/api/loads/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: draggedId, status }),
+      });
+    } catch (e) {
+      // Optionally show error
+    }
     setDraggedId(null);
-    // TODO: call API to persist
   }
 
   return (
@@ -81,7 +89,12 @@ export default function DispatchBoard() {
         </div>
       ))}
       {assignModal?.open && (
-        <AssignModal load={assignModal.load} onClose={() => setAssignModal(null)} />
+        <AssignModal load={assignModal.load} onClose={async () => {
+          setAssignModal(null);
+          // Refresh loads after closing modal
+          const res = await fetch("/api/dispatch/loads");
+          setLoads(await res.json());
+        }} />
       )}
     </div>
   );
