@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabaseClient";
 export default function FastScanSupportChat() {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      sender: "ai",
-      text: "Welcome to Fast Scan Support! How can we help you with ticket uploads, CSV reconciliation, or payroll?",
-    },
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
 
   useEffect(() => {
@@ -15,19 +11,41 @@ export default function FastScanSupportChat() {
     return () => clearTimeout(timer);
   }, []);
 
-  function handleSend() {
+  // Supabase realtime subscription
+  useEffect(() => {
+    let ignore = false;
+    async function fetchInitial() {
+      const { data } = await supabase
+        .from('fastscan_support_messages')
+        .select('*')
+        .order('timestamp', { ascending: true })
+        .limit(50);
+      if (!ignore && data) setMessages(data);
+    }
+    fetchInitial();
+    const sub = supabase
+      .channel('fastscan_support_messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fastscan_support_messages' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setMessages(prev => [...prev, payload.new]);
+        }
+      })
+      .subscribe();
+    return () => {
+      ignore = true;
+      supabase.removeChannel(sub);
+    };
+  }, []);
+
+  async function handleSend() {
     if (!input.trim()) return;
-    setMessages([...messages, { sender: "user", text: input }]);
-    setTimeout(() => {
-      setMessages((msgs) => [
-        ...msgs,
-        {
-          sender: "ai",
-          text:
-            "Thanks for your question! Our AI support will answer soon. For urgent help, see FAQ or contact support.",
-        },
-      ]);
-    }, 800);
+    await supabase.from('fastscan_support_messages').insert([
+      {
+        sender: 'user',
+        text: input,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
     setInput("");
   }
 
@@ -54,7 +72,7 @@ export default function FastScanSupportChat() {
           </div>
           <div className="flex-1 px-3 py-2 overflow-y-auto" style={{ maxHeight: 220 }}>
             {messages.map((msg, i) => (
-              <div key={i} className={`mb-2 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={msg.id || i} className={`mb-2 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`px-2 py-1 rounded-lg text-sm max-w-[70%] ${
                     msg.sender === "ai"

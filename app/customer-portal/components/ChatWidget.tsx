@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "../../../lib/supabaseClient";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 
@@ -16,12 +17,31 @@ export default function ChatWidget() {
   const [loading, setLoading] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
-  // Simulate real-time chat with Supabase or fallback
+
+  // Subscribe to Supabase realtime messages
   useEffect(() => {
-    // TODO: Replace with Supabase realtime subscription
-    setMessages([
-      { id: "1", sender: "Support", text: "Welcome to support! How can we help?", timestamp: new Date().toISOString() }
-    ]);
+    let ignore = false;
+    async function fetchInitial() {
+      const { data, error } = await supabase
+        .from('customer_support_messages')
+        .select('*')
+        .order('timestamp', { ascending: true })
+        .limit(50);
+      if (!ignore && data) setMessages(data);
+    }
+    fetchInitial();
+    const sub = supabase
+      .channel('customer_support_messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_support_messages' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setMessages(prev => [...prev, payload.new]);
+        }
+      })
+      .subscribe();
+    return () => {
+      ignore = true;
+      supabase.removeChannel(sub);
+    };
   }, []);
 
   useEffect(() => {
@@ -31,23 +51,15 @@ export default function ChatWidget() {
   const sendMessage = async () => {
     if (!input.trim()) return;
     setLoading(true);
-    const msg: Message = {
-      id: Date.now().toString(),
-      sender: "You",
-      text: input,
-      timestamp: new Date().toISOString()
-    };
-    setMessages(prev => [...prev, msg]);
+    const { error } = await supabase.from('customer_support_messages').insert([
+      {
+        sender: 'You',
+        text: input,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
     setInput("");
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now() + "-r",
-        sender: "Support",
-        text: "Thanks for your message! We'll reply soon.",
-        timestamp: new Date().toISOString()
-      }]);
-      setLoading(false);
-    }, 1200);
+    setLoading(false);
   };
 
   return (
