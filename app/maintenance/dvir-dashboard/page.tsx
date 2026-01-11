@@ -103,12 +103,9 @@ export default function DVIRDashboard() {
     });
     setComplianceMap(map);
     // Convert calMap to sorted array for calendar
-    const arr = Object.values(calMap);
-    arr.sort((a, b) => (a && b && typeof a === 'object' && typeof b === 'object' && 'date' in a && 'date' in b)
-      ? (a.date).localeCompare(b.date)
-      : 0
-    );
-    setCalendarData(arr as { date: string, compliant: number, noncompliant: number, total: number }[]);
+    const arr = Object.values(calMap) as { date: string, compliant: number, noncompliant: number, total: number }[];
+    arr.sort((a, b) => a.date.localeCompare(b.date));
+    setCalendarData(arr);
   }, [dvirs]);
 
   useEffect(() => {
@@ -246,6 +243,24 @@ export default function DVIRDashboard() {
               <DVIRAlerts dvirs={filtered} />
               <DVIRAnalytics dvirs={filtered} />
               <div className="my-8">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold">Compliance Calendar</div>
+                  <button
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                    onClick={() => {
+                      const headers = ["Date","Compliant","Noncompliant","Total"];
+                      const rows = calendarData.map(d => [d.date, d.compliant, d.noncompliant, d.total]);
+                      const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+                      const blob = new Blob([csv], { type: "text/csv" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `compliance_calendar_${new Date().toISOString().slice(0,10)}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >Export CSV</button>
+                </div>
                 <ComplianceCalendar
                   data={calendarData}
                   onDayClick={date => {
