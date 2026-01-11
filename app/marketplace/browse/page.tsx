@@ -88,6 +88,31 @@ export default function MarketplaceBrowse() {
                     <button
                       className="bg-yellow-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
+                        // Compliance check: block if broker, hauler, or load not compliant (stub)
+                        const brokerCompliant = true; // TODO: Replace with real compliance check
+                        const haulerCompliant = true; // TODO: Replace with real compliance check
+                        const loadCompliant = true; // TODO: Replace with real compliance check
+                        if (!brokerCompliant) {
+                          alert('Broker is not compliant to match this load.');
+                          await supabase.from('compliance_violations').insert([
+                            { action: 'match_load', reason: 'Broker not compliant', timestamp: new Date().toISOString() }
+                          ]);
+                          return;
+                        }
+                        if (!haulerCompliant) {
+                          alert('Selected hauler is not compliant.');
+                          await supabase.from('compliance_violations').insert([
+                            { action: 'match_load', reason: 'Hauler not compliant', timestamp: new Date().toISOString() }
+                          ]);
+                          return;
+                        }
+                        if (!loadCompliant) {
+                          alert('Load is not compliant for matching.');
+                          await supabase.from('compliance_violations').insert([
+                            { action: 'match_load', reason: 'Load not compliant', timestamp: new Date().toISOString() }
+                          ]);
+                          return;
+                        }
                         await supabase.from('loads').update({ status: 'matched' }).eq('id', load.id);
                         // TODO: Assign hauler, notify both parties
                       }}
