@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -81,12 +82,12 @@ const PartnerAPI = dynamic(() => import("./components/PartnerAPI"), { ssr: false
 const AnalyticsDashboard = dynamic(() => import("./components/AnalyticsDashboard"), { ssr: false });
 const AIInsights = dynamic(() => import("./components/AIInsights"), { ssr: false });
 
-export default function CustomerPortal() {
   const [activeTab, setActiveTab] = useState("loads");
   const [loadRequests, setLoadRequests] = useState<LoadRequest[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [showLoadRequestForm, setShowLoadRequestForm] = useState(false);
+  const [features, setFeatures] = useState<{ [key: string]: boolean }>({});
 
   // Mock data
   useEffect(() => {
@@ -95,6 +96,17 @@ export default function CustomerPortal() {
       window.location.href = '/onboarding';
       return;
     }
+    // Feature gating: check user's approved payments for upgrades
+    (async () => {
+      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
+      if (!user) return;
+      const { data } = await supabase.from("payments").select("addons, status").eq("user_id", user.id).eq("status", "active");
+      const unlocked: { [key: string]: boolean } = {};
+      (data || []).forEach((p: any) => {
+        (p.addons || []).forEach((a: string) => { unlocked[a] = true; });
+      });
+      setFeatures(unlocked);
+    })();
     // Initialize with sample data
     const mockLoadRequests: LoadRequest[] = [
       {
@@ -259,35 +271,35 @@ export default function CustomerPortal() {
               </Button>
               {typeof window !== 'undefined' && (
                 require('next/dynamic')(() => import('./components/NotificationBell'), { ssr: false })().default && <div className="ml-2"><require('next/dynamic')(() => import('./components/NotificationBell'), { ssr: false }) /></div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      <ChatWidget />
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-[480px]">
-            <TabsTrigger value="loads" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              My Loads
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Invoices
-            </TabsTrigger>
-            <TabsTrigger value="tracking" className="flex items-center gap-2">
-              <Truck className="w-4 h-4" />
-              Tracking
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <span className="w-4 h-4 inline-block bg-gradient-to-tr from-blue-500 to-green-400 rounded-full mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="account" className="flex items-center gap-2">
-                        {/* Analytics Tab */}
-                        <TabsContent value="analytics" className="space-y-6">
+              return (
+                <div>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="loads">Loads</TabsTrigger>
+                      <TabsTrigger value="invoices">Invoices</TabsTrigger>
+                      <TabsTrigger value="documents">Documents</TabsTrigger>
+                      <TabsTrigger value="analytics" disabled={!features["advanced_reports"]}>Analytics</TabsTrigger>
+                      <TabsTrigger value="ai" disabled={!features["ai"]}>AI Insights</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="loads">
+                      {/* ...existing code... */}
+                    </TabsContent>
+                    <TabsContent value="invoices">
+                      {/* ...existing code... */}
+                    </TabsContent>
+                    <TabsContent value="documents">
+                      <DocumentCenter />
+                    </TabsContent>
+                    <TabsContent value="analytics">
+                      {features["advanced_reports"] ? <AnalyticsDashboard /> : <div className="text-red-600">Upgrade required for Analytics.</div>}
+                    </TabsContent>
+                    <TabsContent value="ai">
+                      {features["ai"] ? <AIInsights /> : <div className="text-red-600">Upgrade required for AI Insights.</div>}
+                    </TabsContent>
+                  </Tabs>
+                  <ChatWidget />
+                </div>
+              );
                           <AnalyticsDashboard />
                           <AIInsights />
                         </TabsContent>
