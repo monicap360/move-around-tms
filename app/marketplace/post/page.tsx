@@ -1,18 +1,39 @@
-// Marketplace Post Load Page
-// For shippers to post new loads
-
 import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
 
 export default function MarketplacePost() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [weight, setWeight] = useState('');
-  // TODO: Wire to Supabase
+  const [status, setStatus] = useState('open');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  function handlePost(e: any) {
+  async function handlePost(e: any) {
     e.preventDefault();
-    // TODO: Post to Supabase
-    alert('Load posted!');
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+    const { error } = await supabase.from('loads').insert([
+      {
+        origin,
+        destination,
+        weight,
+        status,
+      },
+    ]);
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess(true);
+      setOrigin('');
+      setDestination('');
+      setWeight('');
+    }
   }
 
   return (
@@ -31,7 +52,11 @@ export default function MarketplacePost() {
           <label className="block font-semibold mb-1">Weight</label>
           <input value={weight} onChange={e => setWeight(e.target.value)} className="border rounded p-2 w-full" required />
         </div>
-        <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded">Post Load</button>
+        <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded" disabled={loading}>
+          {loading ? 'Posting…' : 'Post Load'}
+        </button>
+        {success && <div className="text-green-600 mt-2">Load posted successfully!</div>}
+        {error && <div className="text-red-600 mt-2">{error}</div>}
       </form>
     </main>
   );

@@ -1,15 +1,30 @@
 // Marketplace Browse Loads Page
 // Unified board for shippers, haulers, brokers
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
 
 export default function MarketplaceBrowse() {
-  // TODO: Fetch from Supabase
   const [role, setRole] = useState('broker');
-  const loads = [
-    { id: '1', origin: 'Dallas, TX', destination: 'Chicago, IL', weight: '20 tons', status: 'Open' },
-    { id: '2', origin: 'Houston, TX', destination: 'Atlanta, GA', weight: '15 tons', status: 'Bid' },
-  ];
+  const [loads, setLoads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLoads() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('loads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setLoads(data || []);
+      setLoading(false);
+    }
+    fetchLoads();
+    const interval = setInterval(fetchLoads, 15000); // refresh every 15s
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <main className="max-w-7xl mx-auto p-8">
@@ -22,32 +37,36 @@ export default function MarketplaceBrowse() {
           <option value="broker">Broker</option>
         </select>
       </div>
-      <table className="min-w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">Origin</th>
-            <th className="border p-2">Destination</th>
-            <th className="border p-2">Weight</th>
-            <th className="border p-2">Status</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loads.map(load => (
-            <tr key={load.id}>
-              <td className="border p-2">{load.origin}</td>
-              <td className="border p-2">{load.destination}</td>
-              <td className="border p-2">{load.weight}</td>
-              <td className="border p-2">{load.status}</td>
-              <td className="border p-2">
-                {role === 'hauler' && <button className="bg-green-600 text-white px-3 py-1 rounded">Bid</button>}
-                {role === 'broker' && <button className="bg-yellow-600 text-white px-3 py-1 rounded">Match</button>}
-                {role === 'shipper' && <button className="bg-blue-600 text-white px-3 py-1 rounded">Edit</button>}
-              </td>
+      {loading ? (
+        <div className="py-10 text-center text-gray-400">Loading loads…</div>
+      ) : (
+        <table className="min-w-full border text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border p-2">Origin</th>
+              <th className="border p-2">Destination</th>
+              <th className="border p-2">Weight</th>
+              <th className="border p-2">Status</th>
+              <th className="border p-2">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loads.map((load: any) => (
+              <tr key={load.id}>
+                <td className="border p-2">{load.origin}</td>
+                <td className="border p-2">{load.destination}</td>
+                <td className="border p-2">{load.weight}</td>
+                <td className="border p-2">{load.status}</td>
+                <td className="border p-2">
+                  {role === 'hauler' && <button className="bg-green-600 text-white px-3 py-1 rounded">Bid</button>}
+                  {role === 'broker' && <button className="bg-yellow-600 text-white px-3 py-1 rounded">Match</button>}
+                  {role === 'shipper' && <button className="bg-blue-600 text-white px-3 py-1 rounded">Edit</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </main>
   );
 }
