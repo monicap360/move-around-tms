@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { validateDVIR } from "../../../lib/complianceRules";
 import ComplianceCalendar from "./ComplianceCalendar";
+import ComplianceDrilldownModal from "./ComplianceDrilldownModal";
 import { logAuditAction } from "../../../lib/auditLog";
 
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
@@ -10,7 +11,7 @@ import DVIRAnalytics from "./DVIRAnalytics";
 import PredictiveAnalytics from "./PredictiveAnalytics";
 import DVIRAlerts from "./DVIRAlerts";
 
-import { useSession } from "next-auth/react";
+
 
 export default function DVIRDashboard() {
   const [dvirs, setDvirs] = useState([]);
@@ -22,6 +23,9 @@ export default function DVIRDashboard() {
   const [filtered, setFiltered] = useState([]);
   const [complianceMap, setComplianceMap] = useState({});
   const [calendarData, setCalendarData] = useState([]);
+  const [drilldownOpen, setDrilldownOpen] = useState(false);
+  const [drilldownDate, setDrilldownDate] = useState("");
+  const [drilldownDVIRs, setDrilldownDVIRs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   type Filters = {
@@ -99,8 +103,12 @@ export default function DVIRDashboard() {
     });
     setComplianceMap(map);
     // Convert calMap to sorted array for calendar
-    const arr = Object.values(calMap).sort((a,b)=>a.date.localeCompare(b.date));
-    setCalendarData(arr);
+    const arr = Object.values(calMap);
+    arr.sort((a, b) => (a && b && typeof a === 'object' && typeof b === 'object' && 'date' in a && 'date' in b)
+      ? (a.date).localeCompare(b.date)
+      : 0
+    );
+    setCalendarData(arr as { date: string, compliant: number, noncompliant: number, total: number }[]);
   }, [dvirs]);
 
   useEffect(() => {
@@ -238,11 +246,20 @@ export default function DVIRDashboard() {
               <DVIRAlerts dvirs={filtered} />
               <DVIRAnalytics dvirs={filtered} />
               <div className="my-8">
-                <ComplianceCalendar data={calendarData} onDayClick={date => {
-                  // Optionally filter table to that date
-                  setFilters(f => ({ ...f, dateRange: "all" }));
-                  setFiltered(dvirs.filter(d => (d.date || d.created_at).slice(0,10) === date));
-                }} />
+                <ComplianceCalendar
+                  data={calendarData}
+                  onDayClick={date => {
+                    setDrilldownDate(date);
+                    setDrilldownDVIRs(dvirs.filter(d => (d.date || d.created_at).slice(0,10) === date));
+                    setDrilldownOpen(true);
+                  }}
+                />
+                <ComplianceDrilldownModal
+                  open={drilldownOpen}
+                  onClose={() => setDrilldownOpen(false)}
+                  dvirs={drilldownDVIRs}
+                  complianceMap={complianceMap}
+                />
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full border text-sm">
