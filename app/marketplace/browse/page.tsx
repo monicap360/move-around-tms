@@ -58,9 +58,39 @@ export default function MarketplaceBrowse() {
                 <td className="border p-2">{load.weight}</td>
                 <td className="border p-2">{load.status}</td>
                 <td className="border p-2">
-                  {role === 'hauler' && <button className="bg-green-600 text-white px-3 py-1 rounded">Bid</button>}
-                  {role === 'broker' && <button className="bg-yellow-600 text-white px-3 py-1 rounded">Match</button>}
-                  {role === 'shipper' && <button className="bg-blue-600 text-white px-3 py-1 rounded">Edit</button>}
+                  {role === 'hauler' && (
+                    <button
+                      className="bg-green-600 text-white px-3 py-1 rounded"
+                      onClick={async () => {
+                        await supabase.from('loads').update({ status: 'bid' }).eq('id', load.id);
+                        // TODO: Insert bid record, notify shipper
+                      }}
+                    >
+                      Bid
+                    </button>
+                  )}
+                  {role === 'broker' && (
+                    <button
+                      className="bg-yellow-600 text-white px-3 py-1 rounded"
+                      onClick={async () => {
+                        await supabase.from('loads').update({ status: 'matched' }).eq('id', load.id);
+                        // TODO: Assign hauler, notify both parties
+                      }}
+                    >
+                      Match
+                    </button>
+                  )}
+                  {role === 'shipper' && (
+                    <button
+                      className="bg-blue-600 text-white px-3 py-1 rounded"
+                      onClick={async () => {
+                        // TODO: Open edit modal or page
+                        alert('Edit load feature coming soon!');
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
