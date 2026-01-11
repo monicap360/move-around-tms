@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getComplianceRules } from '@/lib/complianceRules';
 
 const supabase = createClient();
 
@@ -67,6 +68,15 @@ export default function MarketplaceBrowse() {
                     <button
                       className="bg-green-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
+                        // Compliance check: block if hauler not compliant (stub)
+                        const haulerCompliant = true; // TODO: Replace with real compliance check
+                        if (!haulerCompliant) {
+                          alert('You are not compliant to bid on this load.');
+                          await supabase.from('compliance_violations').insert([
+                            { action: 'bid_load', reason: 'Hauler not compliant', timestamp: new Date().toISOString() }
+                          ]);
+                          return;
+                        }
                         await supabase.from('loads').update({ status: 'bid' }).eq('id', load.id);
                         // TODO: Insert bid record, notify shipper
                       }}

@@ -1,5 +1,7 @@
+
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getComplianceRules } from '@/lib/complianceRules';
 
 const supabase = createClient();
 
@@ -17,6 +19,34 @@ export default function MarketplacePost() {
     setLoading(true);
     setError('');
     setSuccess(false);
+
+    // Compliance check: require all fields, weight > 0, and (mock) org compliance
+    const missingFields = [];
+    if (!origin) missingFields.push('Origin');
+    if (!destination) missingFields.push('Destination');
+    if (!weight || isNaN(Number(weight)) || Number(weight) <= 0) missingFields.push('Weight');
+    // Example: block if not compliant (expand with real rules as needed)
+    if (missingFields.length > 0) {
+      setError('Missing or invalid: ' + missingFields.join(', '));
+      setLoading(false);
+      // Log violation
+      await supabase.from('compliance_violations').insert([
+        { action: 'post_load', reason: 'Missing fields: ' + missingFields.join(', '), timestamp: new Date().toISOString() }
+      ]);
+      return;
+    }
+
+    // Example: check org compliance (stub, always pass)
+    const orgCompliant = true; // TODO: Replace with real compliance check
+    if (!orgCompliant) {
+      setError('Organization is not compliant for posting loads.');
+      setLoading(false);
+      await supabase.from('compliance_violations').insert([
+        { action: 'post_load', reason: 'Organization not compliant', timestamp: new Date().toISOString() }
+      ]);
+      return;
+    }
+
     const { error } = await supabase.from('loads').insert([
       {
         origin,
