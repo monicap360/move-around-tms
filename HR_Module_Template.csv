@@ -1,0 +1,60 @@
+Section,Field,Type,Example/Options
+Driver Profile,Driver Name,Text,John Doe
+Driver Profile,Employee/Contractor ID,Text,12345
+Driver Profile,Status,Dropdown,Active|Inactive|Pending Hire
+Driver Profile,Hire Date,Date,2024-01-01
+Driver Profile,Termination Date,Date,2025-01-01
+Driver Profile,Position/Role,Dropdown,Driver|Dispatcher|Mechanic|Other
+Driver Profile,License Number,Text,CDL123456
+Driver Profile,License Class,Dropdown,CDL|Non-CDL
+Driver Profile,License Expiration Date,Date,2026-01-01
+Driver Profile,State of Issuance,Text,TX
+Driver Profile,Endorsements/Restrictions,Text,Tanker|Hazmat
+Driver Profile,Phone,Text,555-123-4567
+Driver Profile,Email,Text,john@example.com
+Compliance,CDL Copy Uploaded,Checkbox,✅/❌
+Compliance,Medical Examiner's Certificate Uploaded,Checkbox,✅/❌
+Compliance,Drug/Alcohol Test Results,Text,Pre-employment|Random|Post-accident
+Compliance,Safety Training Completed,Checkbox,Yes/No
+Compliance,Safety Training Date,Date,2025-01-01
+Compliance,HOS Training Date,Date,2025-01-01
+Compliance,Hazmat Training Certificate Date,Date,2025-01-01
+Compliance,FMCSA Clearinghouse Consent,Checkbox,✅/❌
+Equipment,Assigned Vehicle VIN,Text,1FTSW21P07EA00001
+Equipment,Trailer Number,Text,TR1234
+Equipment,Inspection Log Date,Date,2025-01-01
+Equipment,Inspection Result,Text,Pass|Fail
+Equipment,Mileage Report,Number,123456
+Equipment,Accident/Incident Report,Text,See Safety Section
+Payroll,Pay Rate,Text,0.55/mile|25%/load|$25/hr
+Payroll,Deductions,Text,Insurance|Advances|Fuel Card
+Payroll,Tax Info,Dropdown,W-4|1099
+Payroll,Overtime Tracking,Number,10
+Payroll,Benefits,Text,Medical|Dental|401k
+Payroll,Paid Time Off,Number,10
+Safety,Accident Report Details,Text,Date/Location/Fault/Damage/Injuries
+Safety,Tickets/Violations,Text,Type/Date/Points
+Safety,Meeting Attendance,Checkbox,Yes/No
+Safety,Corrective Actions,Text,Warning|Suspension|Termination
+Legal,Signed Employment Contract,Checkbox,✅/❌
+Legal,Non-compete/Confidentiality,Checkbox,✅/❌
+Legal,Background Check Complete,Checkbox,✅/❌
+Legal,Drug/Alcohol Policy Acknowledgment,Checkbox,✅/❌
+Legal,Driver Handbook Acknowledgment,Checkbox,✅/❌
+Performance,Review Date,Date,2025-01-01
+Performance,Reviewer,Text,Jane Manager
+Performance,Scorecard,Text,On-time %|Fuel Efficiency|Safety Points
+Performance,Training/Improvement Plan,Text,Details
+Performance,Disciplinary Actions,Text,Warning|Suspension|Termination
+Recruiting,Application Date,Date,2024-12-01
+Recruiting,Referral Source,Text,Job Board|Referral|Other
+Recruiting,Pre-hire Checklist Complete,Checkbox,✅/❌
+Recruiting,Orientation Date,Date,2024-12-10
+Recruiting,Trainer Name,Text,Trainer Smith
+Recruiting,Road Test Result,Text,Pass|Fail
+Recruiting,Road Test Date,Date,2024-12-11
+Offboarding,Termination Date,Date,2025-01-01
+Offboarding,Termination Reason,Text,Resigned|Terminated|Retired
+Offboarding,Equipment Returned,Checkbox,✅/❌
+Offboarding,Exit Interview Notes,Text,Details
+Offboarding,Final Paycheck Issued,Checkbox,✅/❌
