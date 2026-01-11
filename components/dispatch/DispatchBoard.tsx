@@ -195,17 +195,18 @@ export default function DispatchBoard() {
             </div>
           </div>
         ))}
-        {assignModal?.open && (
-          <AssignModal
-            load={assignModal.load}
-            onClose={async () => {
-              setAssignModal(null);
-              // Refresh loads after closing modal
-              const res = await fetch("/api/dispatch/loads");
-              setLoads(await res.json());
-            }}
-          />
-        )}
+      {assignModal?.open && (
+        <AssignModal
+          load={assignModal.load}
+          drivers={drivers}
+          onClose={async () => {
+            setAssignModal(null);
+            // Refresh loads after closing modal
+            const res = await fetch("/api/dispatch/loads");
+            setLoads(await res.json());
+          }}
+        />
+      )}
       </div>
     </>
   );
