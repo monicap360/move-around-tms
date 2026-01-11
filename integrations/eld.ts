@@ -97,50 +97,37 @@ export const samsara: ELDProvider = {
   },
 };
 
-// Example: KeepTruckin integration (demo/mock)
+// Production-ready KeepTruckin integration stub
 export const keepTruckin: ELDProvider = {
   name: 'KeepTruckin',
   async fetchDriverLocations() {
-    // Demo/mock data
-    return [
-      { id: 'kt-1', name: 'KT Driver 1', lat: 36.1627, lon: -86.7816, status: 'on_duty', updatedAt: new Date().toISOString() },
-      { id: 'kt-2', name: 'KT Driver 2', lat: 39.7392, lon: -104.9903, status: 'off_duty', updatedAt: new Date().toISOString() },
-    ];
+    // TODO: Integrate with KeepTruckin API
+    throw new Error('KeepTruckin integration not configured. Please add API credentials and implement fetchDriverLocations.');
   },
   async fetchTruckStatus() {
-    return [
-      { id: 'kt-t1', name: 'KT Truck 1', status: 'active', lat: 36.1627, lon: -86.7816, updatedAt: new Date().toISOString() },
-      { id: 'kt-t2', name: 'KT Truck 2', status: 'inactive', lat: 39.7392, lon: -104.9903, updatedAt: new Date().toISOString() },
-    ];
+    // TODO: Integrate with KeepTruckin API
+    throw new Error('KeepTruckin integration not configured. Please add API credentials and implement fetchTruckStatus.');
   },
   async fetchHOS() {
-    return [
-      { id: 'kt-1', name: 'KT Driver 1', hosStatus: 'ON_DUTY', updatedAt: new Date().toISOString() },
-      { id: 'kt-2', name: 'KT Driver 2', hosStatus: 'OFF_DUTY', updatedAt: new Date().toISOString() },
-    ];
+    // TODO: Integrate with KeepTruckin API
+    throw new Error('KeepTruckin integration not configured. Please add API credentials and implement fetchHOS.');
   },
 };
 
-// Example: Geotab integration (demo/mock)
+// Production-ready Geotab integration stub
 export const geotab: ELDProvider = {
   name: 'Geotab',
   async fetchDriverLocations() {
-    return [
-      { id: 'gt-1', name: 'Geotab Driver 1', lat: 32.7767, lon: -96.7970, status: 'on_duty', updatedAt: new Date().toISOString() },
-      { id: 'gt-2', name: 'Geotab Driver 2', lat: 29.7604, lon: -95.3698, status: 'off_duty', updatedAt: new Date().toISOString() },
-    ];
+    // TODO: Integrate with Geotab API
+    throw new Error('Geotab integration not configured. Please add API credentials and implement fetchDriverLocations.');
   },
   async fetchTruckStatus() {
-    return [
-      { id: 'gt-t1', name: 'Geotab Truck 1', status: 'active', lat: 32.7767, lon: -96.7970, updatedAt: new Date().toISOString() },
-      { id: 'gt-t2', name: 'Geotab Truck 2', status: 'inactive', lat: 29.7604, lon: -95.3698, updatedAt: new Date().toISOString() },
-    ];
+    // TODO: Integrate with Geotab API
+    throw new Error('Geotab integration not configured. Please add API credentials and implement fetchTruckStatus.');
   },
   async fetchHOS() {
-    return [
-      { id: 'gt-1', name: 'Geotab Driver 1', hosStatus: 'ON_DUTY', updatedAt: new Date().toISOString() },
-      { id: 'gt-2', name: 'Geotab Driver 2', hosStatus: 'OFF_DUTY', updatedAt: new Date().toISOString() },
-    ];
+    // TODO: Integrate with Geotab API
+    throw new Error('Geotab integration not configured. Please add API credentials and implement fetchHOS.');
   },
 };
 

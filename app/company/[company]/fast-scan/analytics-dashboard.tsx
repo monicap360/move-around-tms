@@ -23,20 +23,7 @@ interface Scan {
   referenceNumber?: string;
 }
 
-// Analytics helpers (stubbed for build)
-const driverStats: any[] = [];
-const weekLabels: string[] = [];
 
-// Customer/job breakdowns (stubbed)
-const customerStats: any[] = [];
-const jobStats: any[] = [];
-const topDrivers: any[] = [];
-const bottomDrivers: any[] = [];
-const topCustomers: any[] = [];
-const topJobs: any[] = [];
-const riskHeatmap: { [driver: string]: { [week: string]: number } } = {};
-const heatmapDrivers: string[] = [];
-const heatmapWeeks: string[] = [];
 
 export default function FastScanAnalyticsDashboard() {
   const [scans, setScans] = useState<Scan[]>([]);
@@ -80,18 +67,8 @@ export default function FastScanAnalyticsDashboard() {
   }).sort((a, b) => b.tickets - a.tickets) : [];
 
 
-  // (Removed duplicate driverStats and weekLabels declarations above)
-
-  const topDrivers = driverStats.slice(0, 3);
-  const bottomDrivers = driverStats.slice(-3).reverse();
-  const topCustomers = customerStats.slice(0, 3);
-  const topJobs = jobStats.slice(0, 3);
-
-  // Risk heatmap (by driver/week)
-  // Risk heatmap (by driver/week)
-  const riskHeatmap: { [driver: string]: { [week: string]: number } } = {};
-  let heatmapDrivers: string[] = [];
-  let heatmapWeeks: string[] = [];
+  // Top/bottom drivers, customers, jobs (from real data)
+  // (Optional: implement if needed for dashboard UI)
   const totalDrivers = new Set(scans.map(s => s.driverId)).size;
   const totalNetWeight = scans.reduce((sum, s) => sum + (parseFloat(s.netWeight || "0") || 0), 0);
   const violations = scans.filter(s => s.status === "violation" || s.status === "failed").length;
