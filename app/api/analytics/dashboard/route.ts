@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,29 +31,29 @@ export async function GET(req: NextRequest) {
       { auth: { persistSession: false } },
     );
 
-    const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get("organization_id");
 
     // Calculate previous period for comparison
-    const previousStartDate = new Date(startDate);
-    previousStartDate.setDate(previousStartDate.getDate() - (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const periodLength = now.getTime() - startDate.getTime();
+    const previousStartDate = new Date(startDate.getTime() - periodLength);
+    const previousEndDate = startDate;
 
     // Build queries with optional organization filter
     let ticketsQuery = supabase
       .from("aggregate_tickets")
-      .select("total_pay, total_bill, status, ticket_date")
+      .select("total_pay, total_bill, total_profit, status, ticket_date")
       .gte("ticket_date", startDate.toISOString().split('T')[0])
       .lte("ticket_date", now.toISOString().split('T')[0]);
 
     let previousTicketsQuery = supabase
       .from("aggregate_tickets")
-      .select("total_pay, total_bill, status, ticket_date")
+      .select("total_pay, total_bill, total_profit, status, ticket_date")
       .gte("ticket_date", previousStartDate.toISOString().split('T')[0])
-      .lt("ticket_date", startDate.toISOString().split('T')[0]);
+      .lt("ticket_date", previousEndDate.toISOString().split('T')[0]);
 
     let driversQuery = supabase
       .from("drivers")
-      .select("id, status, created_at")
+      .select("id, status, created_at, active")
       .eq("status", "Active")
       .eq("active", true);
 
@@ -88,12 +89,12 @@ export async function GET(req: NextRequest) {
 
     // Calculate current period metrics
     const currentRevenue = tickets.reduce((sum: number, t: any) => sum + (Number(t.total_bill) || 0), 0);
-    const currentProfit = tickets.reduce((sum: number, t: any) => sum + (Number(t.total_profit) || Number(t.total_bill) - Number(t.total_pay) || 0), 0);
+    const currentProfit = tickets.reduce((sum: number, t: any) => sum + (Number(t.total_profit) || (Number(t.total_bill) || 0) - (Number(t.total_pay) || 0)), 0);
     const currentDrivers = drivers.length;
 
     // Calculate previous period metrics
     const previousRevenue = previousTickets.reduce((sum: number, t: any) => sum + (Number(t.total_bill) || 0), 0);
-    const previousProfit = previousTickets.reduce((sum: number, t: any) => sum + (Number(t.total_profit) || Number(t.total_bill) - Number(t.total_pay) || 0), 0);
+    const previousProfit = previousTickets.reduce((sum: number, t: any) => sum + (Number(t.total_profit) || (Number(t.total_bill) || 0) - (Number(t.total_pay) || 0)), 0);
     const previousDrivers = drivers.filter((d: any) => new Date(d.created_at) < startDate).length;
 
     // Calculate trends
