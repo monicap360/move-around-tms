@@ -71,6 +71,14 @@ interface Invoice {
   downloadUrl?: string;
 }
 
+
+import dynamic from "next/dynamic";
+const ChatWidget = dynamic(() => import("./components/ChatWidget"), { ssr: false });
+const DocumentCenter = dynamic(() => import("./components/DocumentCenter"), { ssr: false });
+const RoleManager = dynamic(() => import("./components/RoleManager"), { ssr: false });
+const WhiteLabelSettings = dynamic(() => import("./components/WhiteLabelSettings"), { ssr: false });
+const AnalyticsDashboard = dynamic(() => import("./components/AnalyticsDashboard"), { ssr: false });
+
 export default function CustomerPortal() {
   const [activeTab, setActiveTab] = useState("loads");
   const [loadRequests, setLoadRequests] = useState<LoadRequest[]>([]);
@@ -80,6 +88,11 @@ export default function CustomerPortal() {
 
   // Mock data
   useEffect(() => {
+    // If not onboarded, redirect to onboarding
+    if (typeof window !== 'undefined' && !localStorage.getItem('onboarded')) {
+      window.location.href = '/onboarding';
+      return;
+    }
     // Initialize with sample data
     const mockLoadRequests: LoadRequest[] = [
       {
@@ -242,14 +255,18 @@ export default function CustomerPortal() {
                 <PlusCircle className="w-4 h-4 mr-2" />
                 New Load Request
               </Button>
+              {typeof window !== 'undefined' && (
+                require('next/dynamic')(() => import('./components/NotificationBell'), { ssr: false })().default && <div className="ml-2"><require('next/dynamic')(() => import('./components/NotificationBell'), { ssr: false }) /></div>
+              )}
             </div>
           </div>
         </div>
       </div>
+      <ChatWidget />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-96">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[480px]">
             <TabsTrigger value="loads" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
               My Loads
@@ -262,7 +279,15 @@ export default function CustomerPortal() {
               <Truck className="w-4 h-4" />
               Tracking
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <span className="w-4 h-4 inline-block bg-gradient-to-tr from-blue-500 to-green-400 rounded-full mr-2" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-2">
+                        {/* Analytics Tab */}
+                        <TabsContent value="analytics" className="space-y-6">
+                          <AnalyticsDashboard />
+                        </TabsContent>
               <FileText className="w-4 h-4" />
               Account
             </TabsTrigger>
@@ -478,8 +503,15 @@ export default function CustomerPortal() {
               ))}
           </TabsContent>
 
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="space-y-6">
+            <DocumentCenter />
+          </TabsContent>
+
           {/* Account Tab */}
           <TabsContent value="account" className="space-y-6">
+            <RoleManager />
+            <WhiteLabelSettings />
             <h2 className="text-lg font-semibold">Account Information</h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -3,16 +3,20 @@ import "./globals.css";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/600.css";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { ClientLayoutWrapper } from "./components";
 import SupabaseProvider from "./lib/supabase-provider";
 import { LoadingProvider } from "./components/ui/providers/use-loading";
 
-export default function RootLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js");
+    }
+  }, []);
   return (
     <html lang="en">
       <head>
