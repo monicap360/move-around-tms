@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { validateDVIR } from "../../../lib/complianceRules";
 import ComplianceCalendar from "./ComplianceCalendar";
+import { exportNodeAsPng } from "./exportAsImage";
 import ComplianceDrilldownModal from "./ComplianceDrilldownModal";
 import { logAuditAction } from "../../../lib/auditLog";
 
@@ -245,30 +246,41 @@ export default function DVIRDashboard() {
               <div className="my-8">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-semibold">Compliance Calendar</div>
-                  <button
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
-                    onClick={() => {
-                      const headers = ["Date","Compliant","Noncompliant","Total"];
-                      const rows = calendarData.map(d => [d.date, d.compliant, d.noncompliant, d.total]);
-                      const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
-                      const blob = new Blob([csv], { type: "text/csv" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `compliance_calendar_${new Date().toISOString().slice(0,10)}.csv`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >Export CSV</button>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                      onClick={() => {
+                        const headers = ["Date","Compliant","Noncompliant","Total"];
+                        const rows = calendarData.map(d => [d.date, d.compliant, d.noncompliant, d.total]);
+                        const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+                        const blob = new Blob([csv], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `compliance_calendar_${new Date().toISOString().slice(0,10)}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >Export CSV</button>
+                    <button
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                      onClick={() => {
+                        const node = document.getElementById("calendar-root");
+                        if (node) exportNodeAsPng(node, `compliance_calendar_${new Date().toISOString().slice(0,10)}.png`);
+                      }}
+                    >Export as Image</button>
+                  </div>
                 </div>
-                <ComplianceCalendar
-                  data={calendarData}
-                  onDayClick={date => {
-                    setDrilldownDate(date);
-                    setDrilldownDVIRs(dvirs.filter(d => (d.date || d.created_at).slice(0,10) === date));
-                    setDrilldownOpen(true);
-                  }}
-                />
+                <div id="calendar-root">
+                  <ComplianceCalendar
+                    data={calendarData}
+                    onDayClick={date => {
+                      setDrilldownDate(date);
+                      setDrilldownDVIRs(dvirs.filter(d => (d.date || d.created_at).slice(0,10) === date));
+                      setDrilldownOpen(true);
+                    }}
+                  />
+                </div>
                 <ComplianceDrilldownModal
                   open={drilldownOpen}
                   onClose={() => setDrilldownOpen(false)}
