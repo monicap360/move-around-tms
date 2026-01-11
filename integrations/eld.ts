@@ -97,37 +97,50 @@ export const samsara: ELDProvider = {
   },
 };
 
-// Example: KeepTruckin integration stub
+// Example: KeepTruckin integration (demo/mock)
 export const keepTruckin: ELDProvider = {
   name: 'KeepTruckin',
   async fetchDriverLocations() {
-    // TODO: Call KeepTruckin API
-    return [];
+    // Demo/mock data
+    return [
+      { id: 'kt-1', name: 'KT Driver 1', lat: 36.1627, lon: -86.7816, status: 'on_duty', updatedAt: new Date().toISOString() },
+      { id: 'kt-2', name: 'KT Driver 2', lat: 39.7392, lon: -104.9903, status: 'off_duty', updatedAt: new Date().toISOString() },
+    ];
   },
   async fetchTruckStatus() {
-    // TODO: Call KeepTruckin API
-    return [];
+    return [
+      { id: 'kt-t1', name: 'KT Truck 1', status: 'active', lat: 36.1627, lon: -86.7816, updatedAt: new Date().toISOString() },
+      { id: 'kt-t2', name: 'KT Truck 2', status: 'inactive', lat: 39.7392, lon: -104.9903, updatedAt: new Date().toISOString() },
+    ];
   },
   async fetchHOS() {
-    // TODO: Call KeepTruckin API
-    return [];
+    return [
+      { id: 'kt-1', name: 'KT Driver 1', hosStatus: 'ON_DUTY', updatedAt: new Date().toISOString() },
+      { id: 'kt-2', name: 'KT Driver 2', hosStatus: 'OFF_DUTY', updatedAt: new Date().toISOString() },
+    ];
   },
 };
 
-// Example: Geotab integration stub
+// Example: Geotab integration (demo/mock)
 export const geotab: ELDProvider = {
   name: 'Geotab',
   async fetchDriverLocations() {
-    // TODO: Call Geotab API
-    return [];
+    return [
+      { id: 'gt-1', name: 'Geotab Driver 1', lat: 32.7767, lon: -96.7970, status: 'on_duty', updatedAt: new Date().toISOString() },
+      { id: 'gt-2', name: 'Geotab Driver 2', lat: 29.7604, lon: -95.3698, status: 'off_duty', updatedAt: new Date().toISOString() },
+    ];
   },
   async fetchTruckStatus() {
-    // TODO: Call Geotab API
-    return [];
+    return [
+      { id: 'gt-t1', name: 'Geotab Truck 1', status: 'active', lat: 32.7767, lon: -96.7970, updatedAt: new Date().toISOString() },
+      { id: 'gt-t2', name: 'Geotab Truck 2', status: 'inactive', lat: 29.7604, lon: -95.3698, updatedAt: new Date().toISOString() },
+    ];
   },
   async fetchHOS() {
-    // TODO: Call Geotab API
-    return [];
+    return [
+      { id: 'gt-1', name: 'Geotab Driver 1', hosStatus: 'ON_DUTY', updatedAt: new Date().toISOString() },
+      { id: 'gt-2', name: 'Geotab Driver 2', hosStatus: 'OFF_DUTY', updatedAt: new Date().toISOString() },
+    ];
   },
 };
 

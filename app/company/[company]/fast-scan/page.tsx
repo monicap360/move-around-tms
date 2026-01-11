@@ -1,6 +1,6 @@
+
 import FastScanSupportChat from "@/app/components/FastScanSupportChat";
 "use client";
-// (Removed duplicate import at end of file)
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -45,13 +45,13 @@ const ROLE_PITCH = {
   },
 };
 
+
 export default function FastScanPage() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState<Scan | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [demoMode, setDemoMode] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [role, setRole] = useState<'owner' | 'accounting' | 'ops'>('owner');
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -92,16 +92,10 @@ export default function FastScanPage() {
     setUploading(false);
   }
 
-  // Demo data (5–10 realistic scans)
-  const demoScans: Scan[] = [
-    { id: 'D-1001', ticketId: 'T-2001', status: 'violation', createdAt: new Date().toISOString(), documentId: 'DOC-1', resultId: 'R-1', organizationId: 'ORG-1' },
-    { id: 'D-1002', ticketId: 'T-2002', status: 'needs_review', createdAt: new Date().toISOString(), documentId: 'DOC-2', resultId: 'R-2', organizationId: 'ORG-1' },
-    { id: 'D-1003', ticketId: 'T-2003', status: 'clear', createdAt: new Date().toISOString(), documentId: 'DOC-3', resultId: 'R-3', organizationId: 'ORG-1' },
-    { id: 'D-1004', ticketId: 'T-2004', status: 'rejected', createdAt: new Date().toISOString(), documentId: 'DOC-4', resultId: 'R-4', organizationId: 'ORG-1' },
-    { id: 'D-1005', ticketId: 'T-2005', status: 'violation', createdAt: new Date().toISOString(), documentId: 'DOC-5', resultId: 'R-5', organizationId: 'ORG-1' },
-  ];
 
-  // Only fetch scans if not using CSV upload (for demo mode)
+
+
+  // Fetch scans from production API
   useEffect(() => {
     if (scans.length > 0) return;
     async function fetchScans() {
@@ -111,10 +105,10 @@ export default function FastScanPage() {
       setScans(data.scans || []);
       setLoading(false);
     }
-    if (!demoMode) fetchScans();
-  }, [demoMode, scans.length]);
+    fetchScans();
+  }, [scans.length]);
 
-  const scansToShow = scans.length > 0 ? scans : (demoMode ? demoScans : scans);
+  const scansToShow = scans;
   const riskExposure = (scansToShow.filter(s => s.status === 'violation' || s.status === 'failed').length * 100).toLocaleString();
 
   // ...existing StatCard, StatusBadge, and other helpers...
@@ -122,11 +116,9 @@ export default function FastScanPage() {
   // Top-line money metric (Estimated Revenue Protected)
   const estimatedRevenueProtected = (scansToShow.filter(s => s.status === 'violation' || s.status === 'failed').length * 250).toLocaleString();
 
-  // Helper: Ticket Source (for demo, alternate Internal/Pit)
+  // Helper: Ticket Source (use real data if available)
   function getTicketSource(scan: Scan) {
-    // For demo, alternate by even/odd id
-    if (scan.id.startsWith('D-')) return parseInt(scan.id.replace('D-', '')) % 2 === 0 ? 'Pit' : 'Internal';
-    return 'Internal';
+    return scan.pitName ? 'Pit' : 'Internal';
   }
 
   // Helper: Risk Summary (basic rules)
@@ -283,13 +275,7 @@ export default function FastScanPage() {
         <span className="ml-2 text-xs text-gray-500">Financial control & risk reduction</span>
       </div>
 
-      {/* Demo Mode toggle */}
-      <div className="flex items-center gap-4 mt-2">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={demoMode} onChange={e => setDemoMode(e.target.checked)} />
-          <span className="text-xs">Demo Mode</span>
-        </label>
-      </div>
+
 
       {/* Analytics Dashboard Link and Payroll Export Button */}
       <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
@@ -425,18 +411,20 @@ export default function FastScanPage() {
                   {role === 'ops' && selected.status === 'needs_review' && <span className="ml-2 text-xs">Pending payroll review</span>}
                 </button>
               </div>
-              {/* Pit Ticket (for demo, show same as internal but with source 'pit') */}
-              <div className="bg-gray-50 rounded p-4">
-                <h3 className="font-bold text-gray-700 mb-2">Pit Ticket</h3>
-                <div className="mb-1"><span className="font-semibold">Ticket ID:</span> {selected.referenceNumber || selected.ticketId}</div>
-                <div className="mb-1"><span className="font-semibold">Truck:</span> {selected.truckId || '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Driver:</span> {selected.driverId || '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Material:</span> {selected.material || '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Net Weight:</span> {selected.netWeight || '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Timestamp:</span> {selected.timestamp ? new Date(selected.timestamp).toLocaleString() : '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Pit:</span> {selected.pitName || '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Notes:</span> {selected.notes || '-'}</div>
-              </div>
+              {/* Pit Ticket (show if available) */}
+              {selected.pitName && (
+                <div className="bg-gray-50 rounded p-4">
+                  <h3 className="font-bold text-gray-700 mb-2">Pit Ticket</h3>
+                  <div className="mb-1"><span className="font-semibold">Ticket ID:</span> {selected.referenceNumber || selected.ticketId}</div>
+                  <div className="mb-1"><span className="font-semibold">Truck:</span> {selected.truckId || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Driver:</span> {selected.driverId || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Material:</span> {selected.material || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Net Weight:</span> {selected.netWeight || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Timestamp:</span> {selected.timestamp ? new Date(selected.timestamp).toLocaleString() : '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Pit:</span> {selected.pitName || '-'}</div>
+                  <div className="mb-1"><span className="font-semibold">Notes:</span> {selected.notes || '-'}</div>
+                </div>
+              )}
             </div>
           </div>
         </div>

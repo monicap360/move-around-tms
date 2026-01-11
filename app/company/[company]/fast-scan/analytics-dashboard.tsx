@@ -98,9 +98,10 @@ export default function FastScanAnalyticsDashboard() {
   const needsReview = scans.filter(s => s.status === "needs_review" || s.status === "pending").length;
   const clear = scans.filter(s => s.status === "clear" || s.status === "processed").length;
 
-  // Revenue/profit summary (assume $250 per ticket for demo)
-  const totalRevenue = scans.reduce((sum, s) => sum + 250, 0);
-  const totalProfit = totalRevenue - (totalTickets * 50); // Example: $50 cost per ticket
+  // Revenue/profit summary (calculated from real tickets)
+  // TODO: Replace with actual revenue/cost fields if available in Scan
+  const totalRevenue = scans.reduce((sum, s) => sum + (parseFloat(s.netWeight || "0") * 1.0 || 250), 0); // fallback $250 if no netWeight
+  const totalProfit = totalRevenue - (totalTickets * 50); // Placeholder: $50 cost per ticket, update if real cost data available
 
   // Driver performance
 

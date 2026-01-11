@@ -9,20 +9,23 @@ interface Notification {
   read: boolean;
 }
 
-const mockNotifications: Notification[] = [
-  { id: "1", type: "status", message: "Load LR-2024-001 delivered.", timestamp: new Date().toISOString(), read: false },
-  { id: "2", type: "invoice", message: "Invoice INV-2024-156 is due soon.", timestamp: new Date().toISOString(), read: false },
-  { id: "3", type: "chat", message: "Support replied to your message.", timestamp: new Date().toISOString(), read: false },
-  { id: "4", type: "exception", message: "Exception: Late pickup for LR-2024-002.", timestamp: new Date().toISOString(), read: false }
-];
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    // In production, subscribe to Supabase or backend for real-time notifications
-    setNotifications(mockNotifications);
+    // In production, fetch notifications from backend or Supabase
+    async function fetchNotifications() {
+      try {
+        const res = await fetch("/api/notifications/customer");
+        const data = await res.json();
+        setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+      } catch {
+        setNotifications([]);
+      }
+    }
+    fetchNotifications();
   }, []);
 
   const unread = notifications.filter(n => !n.read).length;

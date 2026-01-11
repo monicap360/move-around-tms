@@ -1,39 +1,34 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const mockStats = {
-  loads: 128,
-  delivered: 120,
-  inTransit: 6,
-  spend: 245000,
-  onTime: 97,
-  avgRate: 2100,
-  exceptions: 2
-};
 
-const mockTrends = [
-  { month: "Jan", loads: 10, spend: 18000 },
-  { month: "Feb", loads: 12, spend: 20000 },
-  { month: "Mar", loads: 14, spend: 22000 },
-  { month: "Apr", loads: 13, spend: 21000 },
-  { month: "May", loads: 15, spend: 25000 },
-  { month: "Jun", loads: 16, spend: 26000 },
-  { month: "Jul", loads: 18, spend: 28000 },
-  { month: "Aug", loads: 20, spend: 30000 },
-  { month: "Sep", loads: 12, spend: 19000 },
-  { month: "Oct", loads: 10, spend: 17000 },
-  { month: "Nov", loads: 8, spend: 14000 },
-  { month: "Dec", loads: 10, spend: 16000 }
-];
+
 
 export default function AnalyticsDashboard() {
-  const [stats, setStats] = useState(mockStats);
-  const [trends, setTrends] = useState(mockTrends);
+  const [stats, setStats] = useState({
+    loads: 0,
+    delivered: 0,
+    inTransit: 0,
+    spend: 0,
+    onTime: 0,
+    avgRate: 0,
+    exceptions: 0
+  });
+  const [trends, setTrends] = useState([]);
 
-  // In production, fetch stats/trends from backend or Supabase
+  // Fetch stats/trends from production API or Supabase
   useEffect(() => {
-    // setStats(...)
-    // setTrends(...)
+    async function fetchAnalytics() {
+      try {
+        const res = await fetch("/api/analytics/customer-dashboard");
+        const data = await res.json();
+        setStats(data.stats || {});
+        setTrends(data.trends || []);
+      } catch {
+        // fallback: keep zeros
+      }
+    }
+    fetchAnalytics();
   }, []);
 
   return (

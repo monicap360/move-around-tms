@@ -1,18 +1,29 @@
 "use client";
 import { useState } from "react";
 
-const mockPartners = [
-  { name: "DAT Load Board", type: "Load Board", status: "Connected" },
-  { name: "Comdata Fuel", type: "Fuel Card", status: "Connected" },
-  { name: "Great West Insurance", type: "Insurance", status: "Available" },
-  { name: "QuickPay Fintech", type: "Fintech", status: "Available" }
-];
 
-const mockApiKey = "sk_live_1234abcd5678efgh";
+
 
 export default function PartnerAPI() {
-  const [apiKey, setApiKey] = useState(mockApiKey);
+  const [apiKey, setApiKey] = useState("");
+  const [partners, setPartners] = useState([]);
   const [show, setShow] = useState(false);
+
+  // Fetch API key and partner integrations from backend or Supabase
+  useEffect(() => {
+    async function fetchPartnerData() {
+      try {
+        const res = await fetch("/api/partners/customer-integrations");
+        const data = await res.json();
+        setApiKey(data.apiKey || "");
+        setPartners(Array.isArray(data.partners) ? data.partners : []);
+      } catch {
+        setApiKey("");
+        setPartners([]);
+      }
+    }
+    fetchPartnerData();
+  }, []);
 
   return (
     <div className="bg-white rounded shadow p-6">
@@ -36,7 +47,7 @@ export default function PartnerAPI() {
           </tr>
         </thead>
         <tbody>
-          {mockPartners.map(p => (
+          {partners.map((p: any) => (
             <tr key={p.name}>
               <td className="p-2">{p.name}</td>
               <td className="p-2">{p.type}</td>
