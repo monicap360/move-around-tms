@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { supabase } from "../lib/supabaseClient";
+import { samsara } from "../../integrations/eld";
 import { 
   Truck, 
   Wrench, 
@@ -53,13 +54,17 @@ type MaintenanceRecord = {
   status: 'scheduled' | 'in_progress' | 'completed' | 'overdue';
 };
 
-export default function FleetManagementPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'vehicles' | 'maintenance' | 'inspections' | 'renewals'>('vehicles');
+  const [activeTab, setActiveTab] = useState<'vehicles' | 'maintenance' | 'inspections' | 'renewals' | 'telematics'>('vehicles');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  // ELD/Telematics state
+  const [driverLocations, setDriverLocations] = useState<any[]>([]);
+  const [truckStatus, setTruckStatus] = useState<any[]>([]);
+  const [hos, setHos] = useState<any[]>([]);
+  const [eldLoading, setEldLoading] = useState(false);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -74,6 +79,22 @@ export default function FleetManagementPage() {
   useEffect(() => {
     loadFleetData();
   }, []);
+
+  // Load ELD/telematics data when tab is selected
+  useEffect(() => {
+    if (activeTab === 'telematics') {
+      setEldLoading(true);
+      Promise.all([
+        samsara.fetchDriverLocations(),
+        samsara.fetchTruckStatus(),
+        samsara.fetchHOS()
+      ]).then(([drivers, trucks, hosData]) => {
+        setDriverLocations(drivers);
+        setTruckStatus(trucks);
+        setHos(hosData);
+      }).finally(() => setEldLoading(false));
+    }
+  }, [activeTab]);
 
   const loadFleetData = async () => {
     try {
@@ -259,6 +280,7 @@ export default function FleetManagementPage() {
             { id: 'maintenance', label: 'Maintenance', icon: Wrench },
             { id: 'inspections', label: 'Inspections', icon: CheckCircle },
             { id: 'renewals', label: 'Renewals', icon: Calendar },
+            { id: 'telematics', label: 'Telematics', icon: MapPin },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -275,6 +297,67 @@ export default function FleetManagementPage() {
           ))}
         </nav>
       </div>
+
+      {/* Telematics Tab Content */}
+      {activeTab === 'telematics' && (
+        <div className="mt-4">
+          <h2 className="text-xl font-semibold mb-2">Live ELD/Telematics Data (Samsara)</h2>
+          {eldLoading ? (
+            <div>Loading telematics data...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Driver Locations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {driverLocations.length === 0 ? <div className="text-gray-500">No data</div> : (
+                      <ul className="text-sm">
+                        {driverLocations.map((d) => (
+                          <li key={d.id} className="mb-1">{d.name} <span className="text-xs text-gray-500">({d.status})</span><br /><span className="text-xs">{d.lat}, {d.lon}</span></li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Truck Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {truckStatus.length === 0 ? <div className="text-gray-500">No data</div> : (
+                      <ul className="text-sm">
+                        {truckStatus.map((t) => (
+                          <li key={t.id} className="mb-1">{t.name} <span className="text-xs text-gray-500">({t.status})</span><br /><span className="text-xs">{t.lat}, {t.lon}</span></li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>HOS (Hours of Service)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {hos.length === 0 ? <div className="text-gray-500">No data</div> : (
+                      <ul className="text-sm">
+                        {hos.map((h) => (
+                          <li key={h.id} className="mb-1">{h.name} <span className="text-xs text-gray-500">({h.hosStatus})</span></li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="flex gap-4 mb-6">
@@ -558,6 +641,7 @@ export default function FleetManagementPage() {
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }
