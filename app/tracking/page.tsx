@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchMockTrackingData, TrackingRecord } from "./trackingDataProvider";
+import {
+  fetchMockTrackingData,
+  fetchGeotabTrackingData,
+  fetchMotiveTrackingData,
+  fetchVerizonTrackingData,
+  fetchOmnitracsTrackingData,
+  fetchFleetCompleteTrackingData,
+  TrackingRecord
+} from "./trackingDataProvider";
 
 // For map rendering, use a placeholder div (replace with react-leaflet or Google Maps later)
 const statusColors = {
@@ -12,10 +20,17 @@ const statusColors = {
 export default function TrackingMapView() {
   const [records, setRecords] = useState<TrackingRecord[]>([]);
   const [filter, setFilter] = useState({ driver: "", truck: "", status: "all" });
+  const [provider, setProvider] = useState("mock");
 
   useEffect(() => {
-    fetchMockTrackingData().then(setRecords);
-  }, []);
+    let fetcher = fetchMockTrackingData;
+    if (provider === "geotab") fetcher = fetchGeotabTrackingData;
+    if (provider === "motive") fetcher = fetchMotiveTrackingData;
+    if (provider === "verizon") fetcher = fetchVerizonTrackingData;
+    if (provider === "omnitracs") fetcher = fetchOmnitracsTrackingData;
+    if (provider === "fleetcomplete") fetcher = fetchFleetCompleteTrackingData;
+    fetcher().then(setRecords);
+  }, [provider]);
 
   const filtered = records.filter(r =>
     (!filter.driver || r.driverName.toLowerCase().includes(filter.driver.toLowerCase())) &&
@@ -26,6 +41,14 @@ export default function TrackingMapView() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6 flex flex-wrap gap-4 items-end">
+        <select className="input" value={provider} onChange={e => setProvider(e.target.value)}>
+          <option value="mock">Mock Data</option>
+          <option value="geotab">Geotab</option>
+          <option value="motive">Motive (KeepTruckin)</option>
+          <option value="verizon">Verizon Connect</option>
+          <option value="omnitracs">Omnitracs</option>
+          <option value="fleetcomplete">Fleet Complete</option>
+        </select>
         <input className="input" placeholder="Filter by driver..." value={filter.driver} onChange={e => setFilter(f => ({ ...f, driver: e.target.value }))} />
         <input className="input" placeholder="Filter by truck..." value={filter.truck} onChange={e => setFilter(f => ({ ...f, truck: e.target.value }))} />
         <select className="input" value={filter.status} onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}>

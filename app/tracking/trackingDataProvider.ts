@@ -88,3 +88,40 @@ export async function fetchMockTrackingData(): Promise<TrackingRecord[]> {
 
 // To integrate with a real provider, implement a function with the same signature as fetchMockTrackingData
 // and swap it in the Tracking page/component.
+
+// --- Provider Integration Skeletons ---
+
+// 1. Geotab
+export async function fetchGeotabTrackingData(): Promise<TrackingRecord[]> {
+  // TODO: Implement Geotab API call and map to TrackingRecord
+  // See https://my.geotab.com/sdk/
+  return [];
+}
+
+// 2. Motive (KeepTruckin)
+export async function fetchMotiveTrackingData(): Promise<TrackingRecord[]> {
+  // TODO: Implement Motive API call and map to TrackingRecord
+  // See https://developer.gomotive.com/docs
+  return [];
+}
+
+// 3. Verizon Connect
+export async function fetchVerizonTrackingData(): Promise<TrackingRecord[]> {
+  // TODO: Implement Verizon Connect API call and map to TrackingRecord
+  // See https://developer.verizonconnect.com/
+  return [];
+}
+
+// 4. Omnitracs
+export async function fetchOmnitracsTrackingData(): Promise<TrackingRecord[]> {
+  // TODO: Implement Omnitracs API call and map to TrackingRecord
+  // See https://developer.omnitracs.com/
+  return [];
+}
+
+// 5. Fleet Complete
+export async function fetchFleetCompleteTrackingData(): Promise<TrackingRecord[]> {
+  // TODO: Implement Fleet Complete API call and map to TrackingRecord
+  // See https://developer.fleetcomplete.com/
+  return [];
+}
