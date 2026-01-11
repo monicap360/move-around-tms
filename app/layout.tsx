@@ -16,6 +16,18 @@ import { LoadingProvider } from "./components/ui/providers/use-loading";
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/service-worker.js");
     }
+    // Add to Home Screen prompt
+    let deferredPrompt = null;
+    function handleBeforeInstallPrompt(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('a2hs-btn');
+      if (btn) btn.style.display = 'block';
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
   return (
     <html lang="en">
@@ -31,6 +43,22 @@ import { LoadingProvider } from "./components/ui/providers/use-loading";
         <meta name="apple-mobile-web-app-title" content="Ronyx TMS" />
       </head>
       <body className="h-screen bg-gray-100 text-gray-800">
+        <button
+          id="a2hs-btn"
+          style={{display:'none',position:'fixed',bottom:24,right:24,zIndex:1000}}
+          className="bg-blue-600 text-white px-4 py-2 rounded shadow-lg"
+          onClick={async () => {
+            if (window.deferredPrompt) {
+              window.deferredPrompt.prompt();
+              const { outcome } = await window.deferredPrompt.userChoice;
+              if (outcome === 'accepted') {
+                document.getElementById('a2hs-btn').style.display = 'none';
+              }
+            }
+          }}
+        >
+          Add to Home Screen
+        </button>
         <SupabaseProvider>
           <LoadingProvider>
             <ClientLayoutWrapper>

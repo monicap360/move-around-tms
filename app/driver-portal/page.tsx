@@ -263,11 +263,11 @@ export default function DriverPortalPage() {
 
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-text)]">
+    <div className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-text)] pb-20">
       {/* Header */}
       <div className="bg-[color:var(--color-surface)] shadow-sm border-b border-[color:var(--color-border)]">
-        <div className="p-6">
-          <div className="flex items-center justify-between">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-[color:var(--color-primary)] rounded-full flex items-center justify-center text-[color:var(--color-text)] text-xl font-bold">
                 {driver.name.split(' ').map(n => n[0]).join('')}
@@ -283,7 +283,7 @@ export default function DriverPortalPage() {
                 </div>
               </div>
             </div>
-            <Button onClick={handleEdit} disabled={editing} className="bg-[color:var(--color-accent)] text-[color:var(--color-background)] hover:bg-[color:var(--color-primary)]">
+            <Button onClick={handleEdit} disabled={editing} className="bg-[color:var(--color-accent)] text-[color:var(--color-background)] hover:bg-[color:var(--color-primary)] w-full md:w-auto mt-4 md:mt-0">
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
@@ -291,8 +291,8 @@ export default function DriverPortalPage() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="border-b border-[color:var(--color-border)]">
-          <nav className="flex space-x-8 px-6">
+        <div className="border-b border-[color:var(--color-border)] hidden md:block">
+          <nav className="flex space-x-8 px-6 overflow-x-auto">
             {[
               { id: 'profile', label: 'My Profile', icon: User },
               { id: 'documents', label: 'Documents', icon: FileText },
@@ -318,8 +318,29 @@ export default function DriverPortalPage() {
         </div>
       </div>
 
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex md:hidden justify-around py-2 shadow-lg">
+        {[
+          { id: 'profile', label: 'Profile', icon: User },
+          { id: 'documents', label: 'Docs', icon: FileText },
+          { id: 'training', label: 'Train', icon: Award },
+          { id: 'goals', label: 'Goals', icon: Target },
+          { id: 'live', label: 'Fleet', icon: Car },
+        ].map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex flex-col items-center text-xs ${activeTab === id ? 'text-blue-600' : 'text-gray-400'}`}
+            style={{ minWidth: 48 }}
+          >
+            <Icon className="w-6 h-6 mb-1" />
+            {label}
+          </button>
+        ))}
+      </nav>
+
       {/* Content */}
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         {activeTab === 'profile' && (
           <div className="max-w-4xl space-y-6">
             {/* Driver HUD Card (Uber-style) */}

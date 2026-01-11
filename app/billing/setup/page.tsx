@@ -39,18 +39,20 @@ export default function BillingSetupPage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-4">Setup Fee Payment</h1>
+    <main className="max-w-xl mx-auto py-6 px-2 sm:px-4">
+      <h1 className="text-2xl font-bold mb-4 text-center">Setup Fee Payment</h1>
       <div className="border rounded p-4 bg-white shadow mb-6">
         <h2 className="text-xl font-semibold mb-2">How to Pay</h2>
         <ul className="list-disc pl-6 mb-4">
           <li><span className="font-bold">Zelle:</span> <span className="text-blue-700">409-392-9626</span></li>
         </ul>
         <p className="mb-2">Send your setup fee to the Zelle number above. After payment, upload your receipt or screenshot below. Your account will be unlocked once payment is verified by our team.</p>
-        <input type="file" className="mb-4" accept="image/*,application/pdf" onChange={handleFileChange} />
-        <Button onClick={handleUpload} disabled={!file || uploading}>
-          {uploading ? "Uploading..." : "Upload Receipt"}
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input type="file" className="mb-2 sm:mb-0 flex-1" accept="image/*,application/pdf" onChange={handleFileChange} />
+          <Button onClick={handleUpload} disabled={!file || uploading} className="w-full sm:w-auto">
+            {uploading ? "Uploading..." : "Upload Receipt"}
+          </Button>
+        </div>
         {success && <div className="text-green-600 mt-2">Receipt uploaded! Awaiting admin verification.</div>}
         {error && <div className="text-red-600 mt-2">{error}</div>}
       </div>
