@@ -5,8 +5,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "30d";
 
-    // Generate mock performance trend data
-    const generatePerformanceData = (days: number) => {
+    // Query real performance data from database
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } },
+    );
+
+    const { searchParams } = new URL(req.url);
+    const organizationId = searchParams.get("organization_id");
+
+    // Generate performance data from real database
+    const generatePerformanceData = async (days: number) => {
       const data = [];
       const now = new Date();
 
@@ -14,12 +24,31 @@ export async function GET(req: NextRequest) {
         const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
         const period = date.toISOString().split("T")[0];
 
+        // Query tickets for this day
+        let ticketsQuery = supabase
+          .from("aggregate_tickets")
+          .select("total_pay, total_bill, total_profit")
+          .eq("ticket_date", period);
+
+        if (organizationId) {
+          ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
+        }
+
+        const { data: dayTickets } = await ticketsQuery;
+
+        const dayRevenue = (dayTickets || []).reduce((sum: number, t: any) => sum + (Number(t.total_bill) || 0), 0);
+        const dayProfit = (dayTickets || []).reduce((sum: number, t: any) => sum + (Number(t.total_profit) || Number(t.total_bill) - Number(t.total_pay) || 0), 0);
+        const dayTicketsCount = dayTickets?.length || 0;
+
+        // MPG calculation (placeholder - would need fuel consumption data)
+        const mpg = 7.2; // Placeholder
+
         data.push({
           period,
-          revenue: Math.floor(Math.random() * 15000) + 8000, // $8k-$23k daily
-          profit: Math.floor(Math.random() * 5000) + 2000, // $2k-$7k daily
-          tickets: Math.floor(Math.random() * 30) + 15, // 15-45 tickets
-          mpg: parseFloat((Math.random() * 2 + 6.5).toFixed(1)), // 6.5-8.5 MPG
+          revenue: Math.round(dayRevenue),
+          profit: Math.round(dayProfit),
+          tickets: dayTicketsCount,
+          mpg: parseFloat(mpg.toFixed(1)),
         });
       }
 
@@ -41,7 +70,7 @@ export async function GET(req: NextRequest) {
         days = 30;
     }
 
-    const performanceData = generatePerformanceData(days);
+    const performanceData = await generatePerformanceData(days);
 
     return NextResponse.json({
       success: true,

@@ -1,38 +1,51 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getViolations } from "@/lib/compliance/engine";
-import type { ComplianceContext } from "@/lib/compliance/types";
-import type { Scan, Document, ScanResult, Ticket } from "@/lib/fastscan/types";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-// For demo: mock Fast Scan data
-const scans: Scan[] = [];
-const documents: Document[] = [];
-const results: ScanResult[] = [];
-const tickets: Ticket[] = [];
+function createServerAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createServerAdmin();
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get("organization_id");
+
+    // Build queries with optional organization filter
+    let scansQuery = supabase.from("scans").select("*").order("created_at", { ascending: false });
+    let documentsQuery = supabase.from("driver_documents").select("*").order("created_at", { ascending: false });
+    let resultsQuery = supabase.from("compliance_results").select("*").order("created_at", { ascending: false });
+    let ticketsQuery = supabase.from("aggregate_tickets").select("*").order("created_at", { ascending: false });
+
+    if (organizationId) {
+      scansQuery = scansQuery.eq("organization_id", organizationId);
+      documentsQuery = documentsQuery.eq("organization_id", organizationId);
+      resultsQuery = resultsQuery.eq("organization_id", organizationId);
+      ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
+    }
+
+    const [scansRes, documentsRes, resultsRes, ticketsRes] = await Promise.all([
+      scansQuery,
+      documentsQuery,
+      resultsQuery,
+      ticketsQuery,
+    ]);
+
+    return NextResponse.json({
+      scans: scansRes.data || [],
+      documents: documentsRes.data || [],
+      results: resultsRes.data || [],
+      tickets: ticketsRes.data || [],
+    });
+  } catch (error: any) {
+    console.error("Error fetching compliance data:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch compliance data" },
+      { status: 500 },
+    );
   }
-  const { organizationId } = req.query;
-  if (!organizationId || typeof organizationId !== "string") {
-    return res.status(400).json({ error: "Missing organizationId" });
-  }
-  // For each scan, evaluate violations
-  const violations = scans
-    .filter((s) => s.organizationId === organizationId)
-    .map((scan) => {
-      const document = documents.find((d) => d.scanId === scan.id);
-      const scanResult = results.find((r) => r.scanId === scan.id);
-      const ticket = tickets.find((t) => t.id === scan.ticketId);
-      const context: ComplianceContext = {
-        organizationId,
-        scan,
-        document,
-        scanResult,
-        ticket,
-      };
-      return getViolations(context);
-    })
-    .flat();
-  return res.status(200).json({ violations });
 }
