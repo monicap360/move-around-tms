@@ -37,6 +37,20 @@ export default function CompliancePage() {
             </CardContent>
           </Card>
         </Link>
+        {/* New: IFTA Reports Tab */}
+        <Link href="/compliance/ifta-reports-tab">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-500">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-8 h-8 text-blue-600" />
+                <div>
+                  <p className="font-semibold">IFTA Reports Tab</p>
+                  <p className="text-sm text-gray-500">Full IFTA compliance workflow</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Link href="/admin/compliance">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">

@@ -104,14 +104,14 @@ export default async function AggregatesPage() {
           </Card>
         </Link>
 
-        <Link href="/admin/material-rates">
+        <Link href="/aggregates/material-rate-management-tab">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <Settings className="w-8 h-8 text-gray-500" />
                 <div>
-                  <p className="font-semibold">Material Rates</p>
-                  <p className="text-sm text-gray-500">Manage pricing</p>
+                  <p className="font-semibold">Material & Rate Management</p>
+                  <p className="text-sm text-gray-500">All material, rate, and job info</p>
                 </div>
               </div>
             </CardContent>
