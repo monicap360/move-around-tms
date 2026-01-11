@@ -78,8 +78,7 @@ type PerformanceGoal = {
   status: string;
 };
 
-// Mock driver ID - in production, this would come from authentication
-const DRIVER_ID = "mock-driver-123";
+// Driver ID will be fetched from authenticated user
 
 import TruckBranding from "../components/cockpit/TruckBranding";
 import { DriverHUDCard } from "../components/driver-hud/DriverHUDCard";
@@ -101,103 +100,141 @@ export default function DriverPortalPage() {
 
   async function loadDriverData() {
     try {
-      // In production, get driver data based on authentication
-      // For now, we'll simulate with mock data
+      setLoading(true);
+
+      // Get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error("Authentication error:", authError);
+        // Redirect to login if not authenticated
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
+
+      // Get driver data from database
+      const { data: driverData, error: driverError } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("email", user.email)
+        .single();
+
+      if (driverError || !driverData) {
+        console.error("Driver not found:", driverError);
+        // Redirect to complete profile if driver record doesn't exist
+        if (typeof window !== 'undefined') {
+          window.location.href = '/complete-profile';
+        }
+        return;
+      }
+
+      // Map driver data to component format
       setDriver({
-        id: DRIVER_ID,
-        name: "John Smith",
-        employee_id: "DRV-001",
-        phone: "(555) 123-4567",
-        email: "john.smith@company.com",
-        address: "123 Main St, City, ST 12345",
-        cdl_number: "CDL123456789",
-        cdl_class: "Class A",
-        cdl_expiration: "2026-03-15",
-        hire_date: "2023-01-15",
-        employment_status: "active",
-        current_safety_score: 92,
-        profile_image_url: null,
+        id: driverData.id || driverData.driver_uuid,
+        name: driverData.name || driverData.full_name || `${driverData.first_name || ''} ${driverData.last_name || ''}`.trim(),
+        employee_id: driverData.employee_id || driverData.driver_uuid || driverData.id,
+        phone: driverData.phone || "",
+        email: driverData.email || user.email || "",
+        address: driverData.address || "",
+        cdl_number: driverData.cdl_number || driverData.license_number || "",
+        cdl_class: driverData.cdl_class || driverData.license_class || "",
+        cdl_expiration: driverData.cdl_expiration || driverData.license_expiration || "",
+        hire_date: driverData.hire_date || driverData.created_at?.split('T')[0] || "",
+        employment_status: driverData.status || driverData.employment_status || "active",
+        current_safety_score: driverData.safety_score || 0,
+        profile_image_url: driverData.photo_url || driverData.avatar_url || null,
       });
 
-      // Load mock documents
-      setDocuments([
-        {
-          id: "1",
-          doc_type: "CDL License",
-          status: "current",
-          expiration_date: "2026-03-15",
-          file_url: "/docs/cdl-john-smith.pdf",
-          created_at: "2023-01-15T10:00:00Z",
-        },
-        {
-          id: "2",
-          doc_type: "Medical Certificate",
-          status: "expires_soon",
-          expiration_date: "2024-12-15",
-          file_url: "/docs/medical-john-smith.pdf",
-          created_at: "2023-06-15T10:00:00Z",
-        },
-        {
-          id: "3",
-          doc_type: "Safety Training Certificate",
-          status: "current",
-          expiration_date: "2025-06-15",
-          file_url: "/docs/safety-training-john-smith.pdf",
-          created_at: "2024-06-15T10:00:00Z",
-        },
-      ]);
+      // Load documents from database (try multiple possible table names)
+      const documentQueries = [
+        supabase.from("driver_documents").select("*").eq("driver_id", driverData.id),
+        supabase.from("documents").select("*").eq("driver_id", driverData.id),
+        supabase.from("compliance_documents").select("*").eq("driver_id", driverData.id),
+      ];
 
-      // Load mock trainings
-      setTrainings([
-        {
-          id: "1",
-          training_type: "Defensive Driving",
-          completion_status: "completed",
-          training_date: "2024-06-15",
-          score: 95,
-          certificate_url: "/certs/defensive-driving-john-smith.pdf",
-        },
-        {
-          id: "2",
-          training_type: "DOT Regulations Update",
-          completion_status: "in_progress",
-          training_date: "2024-10-01",
-          score: null,
-          certificate_url: null,
-        },
-        {
-          id: "3",
-          training_type: "Fuel Efficiency Training",
-          completion_status: "completed",
-          training_date: "2024-08-20",
-          score: 88,
-          certificate_url: "/certs/fuel-efficiency-john-smith.pdf",
-        },
-      ]);
+      let documentsData: any[] = [];
+      for (const query of documentQueries) {
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          documentsData = data;
+          break;
+        }
+      }
 
-      // Load mock goals
-      setGoals([
-        {
-          id: "1",
-          goal_type: "Safety Score",
-          description: "Maintain safety score above 90",
-          target_value: 90,
-          current_value: 92,
-          target_date: "2024-12-31",
-          status: "on_track",
-        },
-        {
-          id: "2",
-          goal_type: "Fuel Efficiency",
-          description: "Achieve 7.0 MPG average",
-          target_value: 7.0,
-          current_value: 6.8,
-          target_date: "2024-12-31",
-          status: "in_progress",
-        },
-      ]);
+      // Map documents to component format
+      const mappedDocuments = documentsData.map((doc: any) => ({
+        id: doc.id,
+        doc_type: doc.doc_type || doc.type || doc.document_type || "Unknown",
+        status: doc.status || (doc.expiration_date && new Date(doc.expiration_date) > new Date() ? "current" : "expired"),
+        expiration_date: doc.expiration_date || doc.expires_at || "",
+        file_url: doc.file_url || doc.url || doc.document_url || "",
+        created_at: doc.created_at || doc.uploaded_at || new Date().toISOString(),
+      }));
+
+      setDocuments(mappedDocuments);
+
+      // Load trainings from database (try multiple possible table names)
+      const trainingQueries = [
+        supabase.from("driver_trainings").select("*").eq("driver_id", driverData.id),
+        supabase.from("trainings").select("*").eq("driver_id", driverData.id),
+        supabase.from("training_records").select("*").eq("driver_id", driverData.id),
+      ];
+
+      let trainingsData: any[] = [];
+      for (const query of trainingQueries) {
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          trainingsData = data;
+          break;
+        }
+      }
+
+      // Map trainings to component format
+      const mappedTrainings = trainingsData.map((training: any) => ({
+        id: training.id,
+        training_type: training.training_type || training.type || training.name || "Unknown",
+        completion_status: training.completion_status || training.status || (training.completed ? "completed" : "in_progress"),
+        training_date: training.training_date || training.date || training.completed_at?.split('T')[0] || "",
+        score: training.score || training.grade || null,
+        certificate_url: training.certificate_url || training.certificate || null,
+      }));
+
+      setTrainings(mappedTrainings);
+
+      // Load goals from database (try multiple possible table names)
+      const goalQueries = [
+        supabase.from("driver_goals").select("*").eq("driver_id", driverData.id),
+        supabase.from("performance_goals").select("*").eq("driver_id", driverData.id),
+        supabase.from("goals").select("*").eq("driver_id", driverData.id),
+      ];
+
+      let goalsData: any[] = [];
+      for (const query of goalQueries) {
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          goalsData = data;
+          break;
+        }
+      }
+
+      // Map goals to component format
+      const mappedGoals = goalsData.map((goal: any) => ({
+        id: goal.id,
+        goal_type: goal.goal_type || goal.type || goal.category || "General",
+        description: goal.description || goal.name || "",
+        target_value: goal.target_value || goal.target || 0,
+        current_value: goal.current_value || goal.progress || null,
+        target_date: goal.target_date || goal.due_date || goal.end_date || "",
+        status: goal.status || (goal.completed ? "completed" : goal.progress >= 100 ? "completed" : "in_progress"),
+      }));
+
+      setGoals(mappedGoals);
     } catch (err) {
       console.error("Error loading driver data:", err);
+      // Show error message to user
+      alert("Failed to load driver data. Please try refreshing the page.");
     } finally {
       setLoading(false);
     }
