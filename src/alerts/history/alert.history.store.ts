@@ -1,13 +1,12 @@
 // src/alerts/history/alert.history.store.ts
 import { AlertHistoryRecord } from './alert.history.types'
+import supabase from '../../../lib/supabase/server'
 
-// In-memory store for demo; replace with DB in production
-const alertHistory: AlertHistoryRecord[] = []
-
-export function recordAlert(
+// Record alert in Supabase
+export async function recordAlert(
   organizationId: string,
   alert: AlertHistoryRecord['details']
-): AlertHistoryRecord {
+): Promise<AlertHistoryRecord> {
   const now = new Date().toISOString()
   const id = `${organizationId}:${alert.id}:${now}`
   const record: AlertHistoryRecord = {
@@ -18,28 +17,36 @@ export function recordAlert(
     acknowledged: false,
     details: alert,
   }
-  alertHistory.push(record)
+  const { error } = await supabase
+    .from('alert_history')
+    .insert([record])
+  if (error) throw error
   return record
 }
 
-export function getAlertHistory(
+// Fetch alert history from Supabase
+export async function getAlertHistory(
   organizationId: string,
   limit = 50
-): AlertHistoryRecord[] {
-  return alertHistory
-    .filter(r => r.organizationId === organizationId)
-    .sort((a, b) => b.triggeredAt.localeCompare(a.triggeredAt))
-    .slice(0, limit)
+): Promise<AlertHistoryRecord[]> {
+  const { data, error } = await supabase
+    .from('alert_history')
+    .select('*')
+    .eq('organizationId', organizationId)
+    .order('triggeredAt', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data as AlertHistoryRecord[]
 }
 
-export function acknowledgeAlert(
+// Acknowledge alert in Supabase
+export async function acknowledgeAlert(
   recordId: string
-): boolean {
-  const rec = alertHistory.find(r => r.id === recordId)
-  if (rec && !rec.acknowledged) {
-    rec.acknowledged = true
-    rec.acknowledgedAt = new Date().toISOString()
-    return true
-  }
-  return false
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('alert_history')
+    .update({ acknowledged: true, acknowledgedAt: new Date().toISOString() })
+    .eq('id', recordId)
+  if (error) throw error
+  return true
 }

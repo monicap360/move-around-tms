@@ -79,67 +79,23 @@ export default function FleetManagementPage() {
     try {
       setLoading(true);
 
-      // Load vehicles - using sample data for now since tables may not exist
-      const sampleVehicles: Vehicle[] = [
-        {
-          id: '1',
-          unit_number: 'TRK-001',
-          make: 'Freightliner',
-          model: 'Cascadia',
-          year: 2021,
-          vin: '1FUJGHDV8MLAB1234',
-          license_plate: 'ABC-123',
-          registration_expiry: '2025-12-31',
-          insurance_expiry: '2025-06-30',
-          dot_inspection_due: '2025-11-15',
-          last_maintenance: '2024-10-01',
-          next_maintenance_due: '2025-01-01',
-          current_mileage: 125000,
-          status: 'active',
-          driver_assigned: 'John Smith',
-          location: 'Dallas, TX'
-        },
-        {
-          id: '2',
-          unit_number: 'TRK-002',
-          make: 'Peterbilt',
-          model: '579',
-          year: 2020,
-          vin: '1XP5DB9X9LD123456',
-          license_plate: 'DEF-456',
-          registration_expiry: '2025-03-15',
-          insurance_expiry: '2025-06-30',
-          dot_inspection_due: '2024-10-20',
-          last_maintenance: '2024-09-15',
-          next_maintenance_due: '2024-12-15',
-          current_mileage: 198000,
-          status: 'maintenance',
-          driver_assigned: 'Mike Johnson',
-          location: 'Houston, TX'
-        }
-      ];
-
-      setVehicles(sampleVehicles);
+      // Load vehicles from Supabase
+      const { data: vehiclesData, error } = await supabase
+        .from('vehicles')
+        .select('*');
+      if (error) throw error;
+      setVehicles(vehiclesData || []);
 
       // Calculate statistics
       const today = new Date();
       const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
 
-      const totalVehicles = sampleVehicles.length;
-      const activeVehicles = sampleVehicles.filter(v => v.status === 'active').length;
-      const maintenanceVehicles = sampleVehicles.filter(v => v.status === 'maintenance').length;
-      
-      const overdueInspections = sampleVehicles.filter(v => 
-        new Date(v.dot_inspection_due) < today
-      ).length;
-
-      const expiringRegistrations = sampleVehicles.filter(v => 
-        new Date(v.registration_expiry) < thirtyDaysFromNow
-      ).length;
-
-      const maintenanceAlerts = sampleVehicles.filter(v => 
-        new Date(v.next_maintenance_due) < thirtyDaysFromNow
-      ).length;
+      const totalVehicles = vehiclesData?.length || 0;
+      const activeVehicles = vehiclesData?.filter((v: Vehicle) => v.status === 'active').length || 0;
+      const maintenanceVehicles = vehiclesData?.filter((v: Vehicle) => v.status === 'maintenance').length || 0;
+      const overdueInspections = vehiclesData?.filter((v: Vehicle) => new Date(v.dot_inspection_due) < today).length || 0;
+      const expiringRegistrations = vehiclesData?.filter((v: Vehicle) => new Date(v.registration_expiry) < thirtyDaysFromNow).length || 0;
+      const maintenanceAlerts = vehiclesData?.filter((v: Vehicle) => new Date(v.next_maintenance_due) < thirtyDaysFromNow).length || 0;
 
       setStats({
         total_vehicles: totalVehicles,

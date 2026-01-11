@@ -1,27 +1,24 @@
 // src/notifications/preferences.store.ts
 import { NotificationPreference } from './preferences.types'
+import supabase from '../../lib/supabase/server'
 
-// In-memory store for demo; replace with DB in production
-const defaultPrefs: NotificationPreference[] = [
-  { organizationId: 'demo_org', channel: 'email', severity: 'critical', enabled: true },
-  { organizationId: 'demo_org', channel: 'email', severity: 'warn', enabled: true },
-  { organizationId: 'demo_org', channel: 'email', severity: 'info', enabled: false },
-]
-const prefs: NotificationPreference[] = [...defaultPrefs]
-
-export function getPreferences(organizationId: string): NotificationPreference[] {
-  return prefs.filter(p => p.organizationId === organizationId)
+// Fetch preferences from Supabase
+export async function getPreferences(organizationId: string): Promise<NotificationPreference[]> {
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .select('*')
+    .eq('organizationId', organizationId)
+  if (error) throw error
+  return data as NotificationPreference[]
 }
 
-export function setPreferences(organizationId: string, updates: NotificationPreference[]) {
-  // Remove old for org/channel/severity, add new
+// Upsert preferences in Supabase
+export async function setPreferences(organizationId: string, updates: NotificationPreference[]): Promise<void> {
+  // Upsert each preference
   for (const update of updates) {
-    const idx = prefs.findIndex(p =>
-      p.organizationId === organizationId &&
-      p.channel === update.channel &&
-      p.severity === update.severity
-    )
-    if (idx >= 0) prefs.splice(idx, 1)
-    prefs.push({ ...update, organizationId })
+    const { error } = await supabase
+      .from('notification_preferences')
+      .upsert([{ ...update, organizationId }], { onConflict: ['organizationId', 'channel', 'severity'] })
+    if (error) throw error
   }
 }

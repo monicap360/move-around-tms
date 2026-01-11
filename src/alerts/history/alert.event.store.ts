@@ -1,26 +1,33 @@
 // src/alerts/history/alert.event.store.ts
 import { AlertEvent } from './alert.event.types'
+import supabase from '../../../lib/supabase/server'
 
-// In-memory append-only store for demo; replace with DB in production
-const alertEvents: AlertEvent[] = []
-
-export function appendAlertEvent(event: AlertEvent) {
-  alertEvents.push(event)
+// Append alert event to Supabase
+export async function appendAlertEvent(event: AlertEvent): Promise<void> {
+  const { error } = await supabase
+    .from('alert_events')
+    .insert([event])
+  if (error) throw error
 }
 
-export function getAlertEvents(organizationId: string, limit = 50): AlertEvent[] {
-  return alertEvents
-    .filter(e => e.organizationId === organizationId)
-    .sort((a, b) => b.triggeredAt.localeCompare(a.triggeredAt))
-    .slice(0, limit)
+// Fetch alert events from Supabase
+export async function getAlertEvents(organizationId: string, limit = 50): Promise<AlertEvent[]> {
+  const { data, error } = await supabase
+    .from('alert_events')
+    .select('*')
+    .eq('organizationId', organizationId)
+    .order('triggeredAt', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data as AlertEvent[]
 }
 
-export function acknowledgeAlertEvent(id: string, user: string): boolean {
-  const event = alertEvents.find(e => e.id === id)
-  if (event && !event.acknowledgedAt) {
-    event.acknowledgedAt = new Date().toISOString()
-    event.acknowledgedBy = user
-    return true
-  }
-  return false
+// Acknowledge alert event in Supabase
+export async function acknowledgeAlertEvent(id: string, user: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('alert_events')
+    .update({ acknowledgedAt: new Date().toISOString(), acknowledgedBy: user })
+    .eq('id', id)
+  if (error) throw error
+  return true
 }
