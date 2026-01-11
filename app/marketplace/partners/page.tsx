@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import dynamic from 'next/dynamic';
 
 const supabase = createClient();
+const ContractModal = dynamic(() => import('../../contracts/ContractModal'), { ssr: false });
 
 export default function MarketplacePartners() {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [contractModal, setContractModal] = useState<{ open: boolean; contract: any } | null>(null);
 
   useEffect(() => {
     async function fetchPartners() {
@@ -44,6 +47,18 @@ export default function MarketplacePartners() {
     alert('View partner details coming soon!');
   }
 
+  async function handleSignContract(partnerId: string) {
+    // Mark contract as signed in Supabase and log
+    await supabase.from('partner_contracts').upsert([
+      { partner_id: partnerId, signed: true, signed_at: new Date().toISOString() }
+    ]);
+    await supabase.from('compliance_violations').insert([
+      { action: 'sign_contract', reason: 'Partner contract signed', partner_id: partnerId, timestamp: new Date().toISOString() }
+    ]);
+    setContractModal(null);
+    // Optionally refresh partners/contracts
+  }
+
   return (
     <main className="max-w-4xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Partner Network</h1>
@@ -70,12 +85,19 @@ export default function MarketplacePartners() {
                 <td className="border p-2 flex gap-2">
                   <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={() => handleView(partner.id, partner.compliance_status || 'Unknown')}>View</button>
                   <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={() => handleMessage(partner.id, partner.compliance_status || 'Unknown')}>Message</button>
+                  <button className="bg-yellow-600 text-white px-3 py-1 rounded" onClick={() => setContractModal({ open: true, contract: { id: partner.id, title: `Partner Agreement: ${partner.name}`, body: `This is a digital contract between your company and ${partner.name}.\nBy signing, you agree to all terms and compliance requirements.`, signed: partner.contract_signed } })}>Contract</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      <ContractModal
+        open={!!contractModal?.open}
+        onClose={() => setContractModal(null)}
+        contract={contractModal?.contract || null}
+        onSign={handleSignContract}
+      />
     </main>
   );
 }
