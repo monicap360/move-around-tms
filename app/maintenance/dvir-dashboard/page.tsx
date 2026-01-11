@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { validateDVIR } from "../../../lib/complianceRules";
+import ComplianceCalendar from "./ComplianceCalendar";
 import { logAuditAction } from "../../../lib/auditLog";
 
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
@@ -20,6 +21,7 @@ export default function DVIRDashboard() {
     const userId = null; // Replace with real user id if available
   const [filtered, setFiltered] = useState([]);
   const [complianceMap, setComplianceMap] = useState({});
+  const [calendarData, setCalendarData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   type Filters = {
@@ -66,6 +68,7 @@ export default function DVIRDashboard() {
   // Compute compliance for each DVIR (assume dvir.state or fallback to 'federal')
   useEffect(() => {
     const map = {};
+    const calMap = {};
     dvirs.forEach(dvir => {
       const state = dvir.state || "federal";
       const compliance = validateDVIR(
@@ -86,8 +89,18 @@ export default function DVIRDashboard() {
         state
       );
       map[dvir.id] = compliance;
+      // Calendar aggregation by date
+      const dateKey = (dvir.date || dvir.created_at).slice(0,10);
+      if (!calMap[dateKey]) calMap[dateKey] = { date: dateKey, compliant: 0, noncompliant: 0, total: 0 };
+      const isCompliant = compliance.missingFields.length === 0 && compliance.invalidDefects.length === 0 && compliance.intervalOk;
+      if (isCompliant) calMap[dateKey].compliant++;
+      else calMap[dateKey].noncompliant++;
+      calMap[dateKey].total++;
     });
     setComplianceMap(map);
+    // Convert calMap to sorted array for calendar
+    const arr = Object.values(calMap).sort((a,b)=>a.date.localeCompare(b.date));
+    setCalendarData(arr);
   }, [dvirs]);
 
   useEffect(() => {
@@ -224,6 +237,13 @@ export default function DVIRDashboard() {
               <PredictiveAnalytics dvirs={filtered} />
               <DVIRAlerts dvirs={filtered} />
               <DVIRAnalytics dvirs={filtered} />
+              <div className="my-8">
+                <ComplianceCalendar data={calendarData} onDayClick={date => {
+                  // Optionally filter table to that date
+                  setFilters(f => ({ ...f, dateRange: "all" }));
+                  setFiltered(dvirs.filter(d => (d.date || d.created_at).slice(0,10) === date));
+                }} />
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full border text-sm">
                   <thead>
