@@ -4,6 +4,17 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRoleBasedAuth } from '../../lib/role-auth'
 import { exportNodeAsPng } from '../maintenance/dvir-dashboard/exportAsImage'
+import { createClient } from '@/lib/supabase/client'
+// Supabase client for compliance reminders/notifications
+const supabase = createClient();
+// Mock compliance reminders (replace with Supabase query)
+function generateComplianceReminders() {
+  return [
+    { id: 1, company: 'ABC Transport Co.', type: 'Document Expiry', due: '2026-01-15', status: 'Pending' },
+    { id: 2, company: 'XYZ Logistics', type: 'Driver Medical', due: '2026-01-20', status: 'Pending' },
+    { id: 3, company: 'Elite Hauling', type: 'Insurance Renewal', due: '2026-01-25', status: 'Sent' },
+  ];
+}
 // Compliance analytics mock data generator (replace with Supabase query)
 function generateComplianceTrends() {
   // 30 days of mock data
@@ -77,18 +88,30 @@ export default function PartnerDashboard() {
   // Compliance analytics state
   const [complianceTrends, setComplianceTrends] = useState([])
   const complianceSectionRef = useRef<HTMLDivElement>(null)
+  // Compliance reminders/notifications state
+  const [complianceReminders, setComplianceReminders] = useState([])
+  const [reminderLoading, setReminderLoading] = useState(true)
 
   useEffect(() => {
     if (partnerInfo?.theme) {
       setTheme(partnerInfo.theme as PartnerTheme)
       loadPartnerStats()
       setComplianceTrends(generateComplianceTrends())
+      loadComplianceReminders()
     } else if (profile?.role === 'partner') {
       // Load default RonYX theme for Veronica
       loadRonYXTheme()
       setComplianceTrends(generateComplianceTrends())
+      loadComplianceReminders()
     }
   }, [partnerInfo, profile])
+
+  async function loadComplianceReminders() {
+    setReminderLoading(true)
+    // TODO: Replace with Supabase query for real reminders
+    setComplianceReminders(generateComplianceReminders())
+    setReminderLoading(false)
+  }
 
   async function loadRonYXTheme() {
     try {
@@ -246,7 +269,60 @@ export default function PartnerDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+        {/* Compliance Reminders/Notifications Section */}
+        <div className="mb-8 rounded-lg p-6 bg-yellow-50 border-l-4 border-yellow-400">
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-semibold text-lg text-yellow-800">Compliance Reminders & Notifications</div>
+            <button
+              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+              onClick={() => {
+                // Export reminders as CSV
+                const headers = ["Company","Type","Due","Status"];
+                const rows = complianceReminders.map((r: any) => [r.company, r.type, r.due, r.status]);
+                const csv = [headers, ...rows].map(r => r.map(x => `"${(x||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `compliance_reminders_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >Export CSV</button>
+          </div>
+          {reminderLoading ? (
+            <div className="py-4 text-gray-400">Loading reminders…</div>
+          ) : (
+            <table className="min-w-full border text-sm bg-white rounded">
+              <thead>
+                <tr className="bg-yellow-100">
+                  <th className="border p-2">Company</th>
+                  <th className="border p-2">Type</th>
+                  <th className="border p-2">Due</th>
+                  <th className="border p-2">Status</th>
+                  <th className="border p-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {complianceReminders.map((reminder: any) => (
+                  <tr key={reminder.id}>
+                    <td className="border p-2">{reminder.company}</td>
+                    <td className="border p-2">{reminder.type}</td>
+                    <td className="border p-2">{reminder.due}</td>
+                    <td className="border p-2">{reminder.status}</td>
+                    <td className="border p-2">
+                      {reminder.status === 'Pending' ? (
+                        <button className="bg-blue-600 text-white px-3 py-1 rounded text-xs" onClick={() => alert('Reminder sent!')}>Send Reminder</button>
+                      ) : (
+                        <span className="text-green-700 font-semibold">Sent</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2" style={{ color: theme.text.primary }}>
@@ -297,7 +373,7 @@ export default function PartnerDashboard() {
           />
         </div>
 
-        {/* Referral Tracker Section */}
+        {/* Referral Tracker Section with Compliance Status */}
         <div 
           className="rounded-lg p-6"
           style={{ 
@@ -307,13 +383,15 @@ export default function PartnerDashboard() {
           }}
         >
           <h3 className="text-xl font-bold mb-4" style={{ color: theme.text.primary }}>
-            Referral Tracker
+            Referral Tracker & Compliance Status
           </h3>
           <div className="space-y-4">
+            {/* Example companies with compliance status */}
             <div className="flex justify-between items-center p-4 rounded border-l-4" style={{ borderLeftColor: theme.primary }}>
               <div>
                 <h4 className="font-medium" style={{ color: theme.text.primary }}>ABC Transport Co.</h4>
                 <p className="text-sm" style={{ color: theme.text.secondary }}>Onboarded: Nov 1, 2025</p>
+                <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">Compliant</span>
               </div>
               <div className="text-right">
                 <p className="font-bold" style={{ color: theme.primary }}>$250.00</p>
@@ -324,6 +402,7 @@ export default function PartnerDashboard() {
               <div>
                 <h4 className="font-medium" style={{ color: theme.text.primary }}>XYZ Logistics</h4>
                 <p className="text-sm" style={{ color: theme.text.secondary }}>Onboarded: Oct 28, 2025</p>
+                <span className="text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded">Needs Attention</span>
               </div>
               <div className="text-right">
                 <p className="font-bold" style={{ color: theme.primary }}>$180.00</p>
