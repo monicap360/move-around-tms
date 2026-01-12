@@ -1,5 +1,7 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
 import FastScanSupportChat from "../../../components/FastScanSupportChat";
-("use client");
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -677,4 +679,3 @@ function StatCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
-import React, { useState, useEffect, useRef } from "react";

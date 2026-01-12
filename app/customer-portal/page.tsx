@@ -197,13 +197,12 @@ export default function CustomerPortal() {
       }
     ];
 
-      // Only set mock data if we don't have real data (fallback)
-      if (loadRequests.length === 0) {
-        setLoadRequests(mockLoadRequests);
-      }
-      if (invoices.length === 0) {
-        setInvoices(mockInvoices);
-      }
+    // Only set mock data if we don't have real data (fallback)
+    if (loadRequests.length === 0) {
+      setLoadRequests(mockLoadRequests);
+    }
+    if (invoices.length === 0) {
+      setInvoices(mockInvoices);
     }
   }, [loadRequests.length, invoices.length]);
 
