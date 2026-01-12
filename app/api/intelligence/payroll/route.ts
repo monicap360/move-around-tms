@@ -10,6 +10,7 @@ function getSupabaseClient() {
 
 // List all payroll analyses
 export async function GET() {
+  const supa = getSupabaseClient();
   const { data, error } = await supa
     .from("ai_payroll_analysis")
     .select("*")
@@ -19,7 +20,8 @@ export async function GET() {
 }
 
 // Create a new payroll analysis record
-export async function POST(req) {
+export async function POST(req: Request) {
+  const supa = getSupabaseClient();
   const body = await req.json();
   const { data, error } = await supa
     .from("ai_payroll_analysis")

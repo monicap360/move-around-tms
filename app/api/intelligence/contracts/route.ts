@@ -1,13 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-const supa = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+  );
+}
 
 // List all contract analyses
 export async function GET() {
+  const supa = getSupabaseClient();
   const { data, error } = await supa
     .from("ai_contract_analysis")
     .select("*")
@@ -17,7 +20,8 @@ export async function GET() {
 }
 
 // Create a new contract analysis record
-export async function POST(req) {
+export async function POST(req: Request) {
+  const supa = getSupabaseClient();
   const body = await req.json();
   const { data, error } = await supa
     .from("ai_contract_analysis")
