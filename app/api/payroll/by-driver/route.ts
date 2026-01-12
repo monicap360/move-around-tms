@@ -12,6 +12,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const driver_uuid = searchParams.get("driver_uuid");
   if (!driver_uuid) return NextResponse.json(null, { status: 200 });
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("payroll_entries")
     .select("*")

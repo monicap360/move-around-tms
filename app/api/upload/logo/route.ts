@@ -8,7 +8,8 @@ function getSupabaseClient() {
   );
 }
 
-export async function POST(req) {
+export async function POST(req: Request) {
+  const supabase = getSupabaseClient();
   const { driver_uuid, file_name } = await req.json();
   const { data, error } = await supabase.storage
     .from("driver-logos")
