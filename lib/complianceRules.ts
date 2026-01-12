@@ -87,3 +87,45 @@ export function checkTruckCompliance(truck: any): ComplianceResult {
     warnings,
   };
 }
+
+/**
+ * Validate DVIR (Driver Vehicle Inspection Report)
+ */
+export function validateDVIR(dvir: any, state: string = "federal"): {
+  missingFields: string[];
+  invalidDefects: string[];
+  intervalOk: boolean;
+} {
+  const missingFields: string[] = [];
+  const invalidDefects: string[] = [];
+  let intervalOk = true;
+
+  // Required fields
+  if (!dvir.company) missingFields.push("company");
+  if (!dvir.date) missingFields.push("date");
+  if (!dvir.truckNumber) missingFields.push("truckNumber");
+  if (!dvir.driverName) missingFields.push("driverName");
+  if (!dvir.driverSignature) missingFields.push("driverSignature");
+
+  // Check inspection items
+  if (!dvir.inspection || Object.keys(dvir.inspection).length === 0) {
+    missingFields.push("inspection");
+  }
+
+  // Validate defects (simplified - in production would check against state/federal rules)
+  if (dvir.inspection) {
+    const defects = Object.entries(dvir.inspection).filter(([_, status]) => status === "defect");
+    if (defects.length > 0 && !dvir.remarks) {
+      invalidDefects.push("remarks required for defects");
+    }
+  }
+
+  // Check inspection interval (simplified - would check against last inspection date)
+  // For now, always return true
+
+  return {
+    missingFields,
+    invalidDefects,
+    intervalOk,
+  };
+}
