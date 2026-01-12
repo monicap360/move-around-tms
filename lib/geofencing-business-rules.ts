@@ -303,7 +303,6 @@ export function checkGeofenceOverlap(geofence1: any, geofence2: any): boolean {
   // more complex geometric calculations
   
   if (geofence1.type === 'circle' && geofence2.type === 'circle') {
-    const { calculateDistance } = require('./geofencing');
     const dist = calculateDistance(
       geofence1.coordinates.center,
       geofence2.coordinates.center
