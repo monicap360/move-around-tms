@@ -1,6 +1,7 @@
 import { supabase } from "../../lib/supabaseClient";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import Papa from "papaparse";
+import { useState } from "react";
 
 export default function ExcelTab() {
   const [file, setFile] = useState<File | null>(null);
@@ -37,15 +38,39 @@ export default function ExcelTab() {
         });
       } else if (f.name.endsWith(".xlsx")) {
         const reader = new FileReader();
-        reader.onload = (evt) => {
-          const wb = XLSX.read(evt.target?.result, { type: "binary" });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
-          setData(json);
-          setPreview(json.slice(0, 10));
-          setStatus("Parsed Excel");
+        reader.onload = async (evt) => {
+          try {
+            const arrayBuffer = evt.target?.result as ArrayBuffer;
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(arrayBuffer);
+            const worksheet = workbook.worksheets[0];
+            const json: any[] = [];
+            
+            // Convert worksheet to JSON
+            worksheet.eachRow((row, rowNumber) => {
+              if (rowNumber === 1) {
+                // Skip header row or use it as keys
+                return;
+              }
+              const rowData: any = {};
+              row.eachCell((cell, colNumber) => {
+                const headerCell = worksheet.getRow(1).getCell(colNumber);
+                const header = headerCell.value?.toString() || `Column${colNumber}`;
+                rowData[header] = cell.value?.toString() || "";
+              });
+              if (Object.keys(rowData).length > 0) {
+                json.push(rowData);
+              }
+            });
+            
+            setData(json);
+            setPreview(json.slice(0, 10));
+            setStatus("Parsed Excel");
+          } catch (err: any) {
+            setError("Excel parse error: " + err.message);
+          }
         };
-        reader.readAsBinaryString(f);
+        reader.readAsArrayBuffer(f);
       } else {
         setError("Unsupported file type");
       }
@@ -385,7 +410,7 @@ export default function ExcelTab() {
               <li>
                 Payroll Summary:{" "}
                 {Object.entries(report.payroll || {})
-                  .map(([d, amt]) => `${d}: $${amt.toFixed(2)}`)
+                  .map(([d, amt]) => `${d}: $${typeof amt === 'number' ? amt.toFixed(2) : '0.00'}`)
                   .join(", ")}
               </li>
               <li>

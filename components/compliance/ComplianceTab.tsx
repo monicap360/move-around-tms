@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 import { CheckCircle, AlertTriangle, XCircle, PenLine, Download, BarChart2, Bell, Search, FileText, FileSpreadsheet, StickyNote } from "lucide-react";
 import Tesseract from "tesseract.js";
-import { utils as XLSXUtils, writeFile as XLSXWriteFile } from "xlsx";
+import ExcelJS from "exceljs";
 import JSZip from "jszip";
 
 export default function ComplianceTab({ driverId, role }: { driverId: string, role: "admin" | "driver" }) {
@@ -166,15 +166,35 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
   }
 
   // Export to PDF/Excel
-  function exportToExcel() {
-    const ws = XLSXUtils.json_to_sheet(checklist.map(item => ({
-      Document: item.label,
-      Status: item.status || "Missing",
-      Expiry: item.expiry || "-"
-    })));
-    const wb = XLSXUtils.book_new();
-    XLSXUtils.book_append_sheet(wb, ws, "Compliance");
-    XLSXWriteFile(wb, "compliance-checklist.xlsx");
+  async function exportToExcel() {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Compliance");
+    
+    // Add headers
+    worksheet.columns = [
+      { header: "Document", key: "document", width: 20 },
+      { header: "Status", key: "status", width: 15 },
+      { header: "Expiry", key: "expiry", width: 15 }
+    ];
+    
+    // Add data
+    checklist.forEach(item => {
+      worksheet.addRow({
+        document: item.label,
+        status: item.status || "Missing",
+        expiry: item.expiry || "-"
+      });
+    });
+    
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "compliance-checklist.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
   }
   // PDF export placeholder (real PDF export would use jsPDF or similar)
   function exportToPDF() {
