@@ -50,9 +50,14 @@ export default function AccountingDashboard() {
         </div>
       </div>
       <div className="bg-white rounded shadow p-4 mb-8">
-        <h2 className="font-semibold mb-2">QuickBooks/Xero/Sage Integration</h2>
-        {/* TODO: Connect and sync with accounting platforms */}
-        <div className="text-gray-500">Integration setup coming soon.</div>
+        <h2 className="font-semibold mb-2">QuickBooks/Xero Integration</h2>
+        <p className="text-gray-600 mb-4">Connect your accounting software to sync invoices, payments, and financial data automatically.</p>
+        <a 
+          href="/accounting/integrations"
+          className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+        >
+          Manage Integrations →
+        </a>
       </div>
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
         <strong>Automated Invoice & Payment Portals:</strong> Coming soon.
