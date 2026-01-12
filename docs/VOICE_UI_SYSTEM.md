@@ -1,53 +1,110 @@
-# Voice UI System
+# Hands-Free Voice Interface — Technical Specification
 
 ## Overview
 
-The Voice UI System provides a **hands-free, safety-focused interface** for drivers and staff. This is a **system-generated voice interface** designed for accessibility and safety when hands-free operation is required.
+The Hands-Free Voice Interface enables drivers to interact with MoveAround safely when texting is not possible (while driving or working). This is a **system-generated voice interface** designed for accessibility and safety.
 
-**Important Design Principles:**
+**One-Sentence Description:**
+"MoveAround includes a hands-free, system-generated voice interface that allows drivers to interact safely with routine workflows when texting is not possible."
+
+## Design Principles (Non-Negotiable)
+
 - ✅ **Safety First**: Enables hands-free operation for drivers
 - ✅ **Synthetic Voice Only**: Uses clearly system-generated voices (not human-like)
 - ✅ **Spoken UI Layer**: This is an interface tool, not a person replacement
 - ✅ **Human Oversight**: All actions require human review and approval
 - ✅ **Audit Logging**: Full logging of all voice interactions
 - ✅ **Manual Override**: Human staff can always override system suggestions
+- ✅ **No Conversational AI**: Command-based, deterministic interactions
+- ✅ **No Emotional Language**: Factual, neutral responses only
+- ✅ **No Autonomous Decisions**: System provides information, humans decide
 
-## Purpose
+## Supported Users
 
-- **Safety**: Drivers cannot safely text while driving - voice enables hands-free operation
-- **Accessibility**: Provides alternative interaction method for all users
-- **Efficiency**: Quick status checks and confirmations without manual interaction
-- **Routine Automation**: Handles simple, routine system interactions only
+### ✅ Allowed (v1)
+- Drivers (primary)
+- Optional: Yard workers / field operators
 
-## Voice Interface Design
+### ❌ Not Supported (v1)
+- Dispatch staff
+- Admin users
+- Management
 
-### Synthetic Voice Characteristics
+## Supported Environments
 
-The system uses **clearly synthetic voices** that are:
-- System-generated (not human-like)
-- Consistent and clear
-- Optimized for clarity over naturalness
-- Clearly identifiable as a computer/system voice
+- Mobile app (primary)
+- ELD / in-cab device (future)
+- Bluetooth headset compatible
+- Voice feature must not require screen interaction
 
-Available synthetic voices:
-- `system-male`: Synthetic male system voice
-- `system-female`: Synthetic female system voice
-- `system-neutral`: Neutral synthetic system voice
+## Activation Rules
 
-### Command Structure
+### Voice Activation
+- Push-to-talk button
+- Optional wake phrase (system-defined, not human name)
 
-Commands are **short, clear, and non-conversational**:
-- "Check status"
-- "Check schedule"
+### Safety Guardrails
+- Voice automatically limits response length while vehicle is moving
+- System limits response length while driving
+- Complex info deferred until parked
+- Long responses disabled automatically when vehicle moving
+
+## Approved Voice Command Whitelist (v1)
+
+### Status & Load Commands
+- "What is my current load?"
+- "What is my next load?"
+- "What is my status?"
+- "Any issues with my load?"
+
+### Workflow Actions
+- "I am arriving"
+- "I am loaded"
+- "I am finished"
+- "Mark load complete"
+
+### Ticket Handling
 - "Submit ticket"
-- "Get directions"
-- "Report issue"
-- "Cancel"
+- "Upload ticket now"
+- "Ticket submitted"
 
-Responses are **brief and factual**:
-- "Current status: assigned. Next pickup: 2:30 PM."
-- "Ticket submission started. Please follow prompts."
-- "Issue logged. Dispatch will contact you."
+### Compliance & Alerts
+- "Am I clear?"
+- "Any violations?"
+- "Any flags today?"
+
+### Help
+- "Repeat"
+- "Cancel"
+- "Help"
+
+**Any command outside this list is rejected politely.**
+
+## System Voice Responses (Rules)
+
+Responses must be:
+- ✅ Factual
+- ✅ Neutral
+- ✅ Short
+- ✅ Instructional
+
+### Example Response
+"Load 4832. Destination: Pit 7. Status: Clear."
+
+### Disallowed Response Types
+- ❌ Opinions
+- ❌ Suggestions beyond system rules
+- ❌ Emotional phrasing
+- ❌ Humor
+- ❌ Human-like conversation
+
+## Command Design Philosophy
+
+- **Short**: Brief, clear commands
+- **Deterministic**: Same command = same result
+- **Command-based**: Think voice buttons, not chat
+- **No open-ended dialogue**: No back-and-forth conversation
+- **No conversational AI**: Simple pattern matching only
 
 ## Usage
 
@@ -56,7 +113,7 @@ Responses are **brief and factual**:
 ```typescript
 import { voiceUIEngine, SYNTHETIC_VOICES } from '@/lib/voice-ui';
 
-// Initialize voice UI for user
+// Initialize voice UI for driver
 const config = voiceUIEngine.initializeVoiceUI('driver-123', {
   language: 'en-US',
   syntheticVoice: 'system-neutral', // Must be synthetic
@@ -69,17 +126,24 @@ const config = voiceUIEngine.initializeVoiceUI('driver-123', {
 ### Processing Voice Commands
 
 ```typescript
-// Process voice command (from speech-to-text)
+// Process voice command (ONLY accepts whitelisted commands)
 const command = await voiceUIEngine.processVoiceCommand(
-  'check status',
+  'what is my current load',
   'driver-123'
 );
 
 // Generate system response
-const response = voiceUIEngine.generateSystemResponse(command, {
-  status: 'assigned',
-  nextLoad: { id: 'L123', pickup: '123 Main St' }
-});
+const response = voiceUIEngine.generateSystemResponse(
+  command,
+  {
+    currentLoad: {
+      id: 'L4832',
+      destination: 'Pit 7',
+      status: 'assigned'
+    }
+  },
+  vehicleMoving = false // Safety guardrail
+);
 
 // Get synthetic voice audio URL
 const audioURL = voiceUIEngine.getSyntheticVoiceURL(response.text, config);
@@ -98,68 +162,66 @@ const logs = voiceUIEngine.getInteractionLogs('driver-123', 50);
 // - Confidence score
 // - Timestamp
 // - Success/failure
+// - Vehicle moving status
 ```
 
-## Supported Commands
+## Error Handling
 
-### Check Status
-- **Command**: "Check status", "What's my status"
-- **Response**: Current assignment status and next action
-- **Example**: "Current status: assigned. Next pickup: 2:30 PM."
+When uncertain:
+- Ask for confirmation
+- Or respond with: "I can't complete that request. Please check the app when safe."
+- **Never guess**
 
-### Check Schedule
-- **Command**: "Check schedule", "What's next"
-- **Response**: Upcoming loads and schedule
-- **Example**: "Next load: L123. Pickup: 123 Main St at 2:30 PM."
+Commands outside whitelist:
+- Response: "I can't complete that request. Please check the app when safe."
+- Logged as 'unknown' intent
 
-### Submit Ticket
-- **Command**: "Submit ticket", "Enter ticket"
-- **Response**: Instructions for ticket submission
-- **Example**: "Ticket submission started. Please follow prompts."
-- **Note**: Initiates ticket flow - requires confirmation
+## Permissions & Security
 
-### Get Directions
-- **Command**: "Get directions", "Navigate to pickup"
-- **Response**: Directs to navigation interface
-- **Example**: "Directions available on dashboard."
+- Driver can only access their own data
+- Voice actions respect role-based access control
+- Sensitive data (pay, disputes) summarized only
+- No personal data read aloud unless explicitly allowed
 
-### Report Issue
-- **Command**: "Report issue", "I have a problem"
-- **Response**: Confirmation that issue is logged
-- **Example**: "Issue logged. Dispatch will contact you."
-- **Note**: Creates log entry for human review
+## Dispatch & Staff Relationship
 
-### Confirm Action
-- **Command**: "Confirm", "Yes", "Okay"
-- **Response**: Confirmation acknowledgment
-- **Example**: "Action confirmed."
+Voice feature:
+- Handles routine interactions only
+- Surfaces exceptions to humans
+- Does not override dispatcher authority
 
-### Cancel
-- **Command**: "Cancel", "Stop"
-- **Response**: Cancellation confirmation
-- **Example**: "Cancelled."
+Dispatch remains:
+- Oversight
+- Escalation
+- Judgment
+- Relationship management
 
-## Integration with Automation Assistant
+## What Is Explicitly Out of Scope (v1)
 
-The Voice UI works with the Automation Assistant system:
+- ❌ Live avatars
+- ❌ Conversational AI
+- ❌ Negotiation
+- ❌ Emotional support
+- ❌ Multi-step dialogue trees
+- ❌ Replacing human roles
+- ❌ Visual assistants
 
-```typescript
-import { automationAssistantEngine } from '@/lib/automation-assistant';
+## Naming (Use Consistently)
 
-// Generate suggestions (requires human review)
-const result = await automationAssistantEngine.generateSuggestions(
-  loads,
-  drivers,
-  { requireHumanReview: true } // Always true
-);
+**Recommended:**
+- Hands-Free Voice Interface
+- Voice-Enabled Driver Workflow
+- System Voice Commands
 
-// All suggestions require human dispatcher approval
-// System only provides suggestions, never auto-assigns
-```
+**Do NOT use:**
+- AI Dispatcher
+- Virtual Dispatcher
+- Digital Employee
+- Virtual Assistant
 
-## Safety and Compliance
+## Safety & Compliance
 
-### Human Oversight
+### Human Control
 - ✅ All voice-initiated actions require human review
 - ✅ Suggestions are presented to dispatchers for approval
 - ✅ Manual override always available
@@ -167,7 +229,7 @@ const result = await automationAssistantEngine.generateSuggestions(
 
 ### Audit Requirements
 - ✅ All voice interactions are logged
-- ✅ Logs include command, intent, response, confidence
+- ✅ Logs include command, intent, response, confidence, vehicle status
 - ✅ Logs are retained for compliance review
 - ✅ Human review flags for low-confidence commands
 
@@ -181,7 +243,7 @@ const result = await automationAssistantEngine.generateSuggestions(
 
 ### Speech-to-Text
 - Use Web Speech API (browser) or cloud STT services (production)
-- Configure for hands-free operation (continuous listening)
+- Configure for hands-free operation (push-to-talk or wake phrase)
 - Handle noise cancellation for vehicle environments
 - Support multiple languages
 
@@ -190,9 +252,11 @@ const result = await automationAssistantEngine.generateSuggestions(
 - Google Cloud TTS: Use "Neural2" voices with synthetic characteristics
 - AWS Polly: Use "Neural" voices with system voice settings
 - Azure Speech: Use "Neural" voices with synthetic parameters
+- **Must be clearly synthetic, not human-like**
 
 ### Command Recognition
 - Pattern-based recognition (no conversational AI)
+- Only accepts commands from approved whitelist
 - Clear command patterns for safety
 - Confidence scoring for reliability
 - Error handling for unclear commands
@@ -200,11 +264,13 @@ const result = await automationAssistantEngine.generateSuggestions(
 ## Best Practices
 
 1. **Keep responses short**: Drivers need quick, clear information
-2. **Use confirmation**: Critical actions require explicit confirmation
-3. **Log everything**: Full audit trail is required
-4. **Human review**: Low-confidence commands flagged for review
-5. **Clear synthetic voice**: Must be obviously system-generated
-6. **Safety first**: Design for hands-free, distracted-free operation
+2. **Limit length while driving**: Automatically truncate long responses
+3. **Use confirmation**: Critical actions require explicit confirmation
+4. **Log everything**: Full audit trail is required
+5. **Human review**: Low-confidence commands flagged for review
+6. **Clear synthetic voice**: Must be obviously system-generated
+7. **Safety first**: Design for hands-free, distracted-free operation
+8. **Whitelist only**: Reject commands not in approved list
 
 ## Limitations
 
@@ -213,11 +279,4 @@ const result = await automationAssistantEngine.generateSuggestions(
 - **Requires confirmation**: Critical actions need explicit approval
 - **Human oversight**: All suggestions reviewed by human dispatchers
 - **Audit required**: All interactions logged for compliance
-
-## Future Enhancements
-
-- Noise cancellation for vehicle environments
-- Wake word detection ("Hey system" or similar)
-- Multi-language support expansion
-- Offline mode for areas with poor connectivity
-- Integration with vehicle systems (hands-free buttons)
+- **Whitelist only**: Only approved commands are accepted

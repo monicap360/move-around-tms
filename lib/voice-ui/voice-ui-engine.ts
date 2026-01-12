@@ -9,6 +9,7 @@ import type {
   VoiceInteractionLog,
   VoiceIntentType,
 } from './types';
+import { APPROVED_VOICE_COMMANDS } from './types';
 
 /**
  * Voice UI Engine
@@ -39,6 +40,7 @@ export class VoiceUIEngine {
   /**
    * Process voice command (from speech-to-text)
    * Returns structured command with intent
+   * ONLY accepts commands from approved whitelist
    */
   async processVoiceCommand(
     text: string,
@@ -46,7 +48,7 @@ export class VoiceUIEngine {
   ): Promise<VoiceCommand> {
     const lowerText = text.toLowerCase().trim();
     
-    // Extract intent (simple pattern matching - no conversational AI)
+    // Extract intent (ONLY from approved whitelist)
     const intent = this.extractIntent(lowerText);
     const parameters = this.extractParameters(lowerText, intent);
     const confidence = this.calculateConfidence(lowerText, intent);
@@ -69,54 +71,96 @@ export class VoiceUIEngine {
       response: '', // Will be set when response is generated
       timestamp: new Date(),
       confidence,
-      success: confidence > 0.7,
+      success: intent !== 'unknown' && confidence > 0.7,
     });
 
     return command;
   }
 
   /**
-   * Generate system response (short, non-conversational)
+   * Generate system response (short, factual, neutral)
+   * Responses are designed to be safe for driving
    */
   generateSystemResponse(
     command: VoiceCommand,
     systemData?: any,
+    vehicleMoving?: boolean,
   ): VoiceResponse {
     let responseText = '';
     let responseType: VoiceResponse['type'] = 'status';
     let requiresConfirmation = false;
+    let safeForDriving = true;
+
+    // Reject commands not in whitelist
+    if (command.intent === 'unknown') {
+      return {
+        text: "I can't complete that request. Please check the app when safe.",
+        type: 'error',
+        timestamp: new Date(),
+        safeForDriving: true,
+      };
+    }
+
+    // Limit response length if vehicle is moving
+    const maxResponseLength = vehicleMoving ? 50 : 200;
 
     switch (command.intent) {
+      case 'check_current_load':
+        responseText = this.generateLoadResponse(systemData?.currentLoad, maxResponseLength);
+        responseType = 'status';
+        break;
+
+      case 'check_next_load':
+        responseText = this.generateLoadResponse(systemData?.nextLoad, maxResponseLength, 'next');
+        responseType = 'status';
+        break;
+
       case 'check_status':
-        responseText = this.generateStatusResponse(systemData);
+        responseText = this.generateStatusResponse(systemData, maxResponseLength);
         responseType = 'status';
         break;
 
-      case 'check_schedule':
-        responseText = this.generateScheduleResponse(systemData);
+      case 'check_issues':
+        responseText = this.generateIssuesResponse(systemData?.issues, maxResponseLength);
         responseType = 'status';
         break;
 
-      case 'confirm_action':
+      case 'mark_arriving':
+      case 'mark_loaded':
+      case 'mark_finished':
+      case 'mark_complete':
         responseText = 'Action confirmed.';
         responseType = 'confirmation';
+        requiresConfirmation = true;
         break;
 
       case 'submit_ticket':
+      case 'upload_ticket':
         responseText = 'Ticket submission started. Please follow prompts.';
         responseType = 'instruction';
         requiresConfirmation = true;
+        safeForDriving = false; // Requires interaction
         break;
 
-      case 'get_directions':
-        responseText = 'Directions available on dashboard.';
-        responseType = 'instruction';
-        break;
-
-      case 'report_issue':
-        responseText = 'Issue logged. Dispatch will contact you.';
+      case 'ticket_submitted':
+        responseText = 'Ticket submitted.';
         responseType = 'confirmation';
-        requiresConfirmation = true;
+        break;
+
+      case 'check_compliance':
+      case 'check_violations':
+      case 'check_flags':
+        responseText = this.generateComplianceResponse(systemData?.compliance, maxResponseLength);
+        responseType = 'status';
+        break;
+
+      case 'repeat':
+        // Return last response if available
+        const lastLog = this.interactionLogs
+          .filter(log => log.userId === command.userId)
+          .slice(-1)[0];
+        responseText = lastLog?.response || 'No previous message.';
+        responseType = 'status';
         break;
 
       case 'cancel':
@@ -124,16 +168,28 @@ export class VoiceUIEngine {
         responseType = 'confirmation';
         break;
 
+      case 'help':
+        responseText = 'Available commands: status, current load, next load, submit ticket, mark complete.';
+        responseType = 'instruction';
+        safeForDriving = false; // Too long for driving
+        break;
+
       default:
-        responseText = 'Command not recognized. Please try again.';
+        responseText = "I can't complete that request. Please check the app when safe.";
         responseType = 'error';
+    }
+
+    // Truncate if too long (safety guardrail)
+    if (responseText.length > maxResponseLength) {
+      responseText = responseText.substring(0, maxResponseLength - 3) + '...';
     }
 
     // Update log with response
     const lastLog = this.interactionLogs[this.interactionLogs.length - 1];
     if (lastLog && lastLog.userId === command.userId) {
       lastLog.response = responseText;
-      lastLog.success = command.intent !== 'cancel' && command.confidence > 0.7;
+      lastLog.success = command.intent !== 'unknown' && command.confidence > 0.7;
+      lastLog.vehicleMoving = vehicleMoving;
     }
 
     return {
@@ -141,6 +197,7 @@ export class VoiceUIEngine {
       type: responseType,
       requiresConfirmation,
       timestamp: new Date(),
+      safeForDriving,
     };
   }
 
@@ -149,21 +206,16 @@ export class VoiceUIEngine {
    * IMPORTANT: Must use clearly synthetic voice, not human-like
    */
   getSyntheticVoiceURL(text: string, voiceConfig: VoiceUIConfig): string {
-    // Use Web Speech API or cloud TTS with synthetic voice settings
-    // Key: Voice must be clearly synthetic/system-generated
-    
     const params = new URLSearchParams({
       text: encodeURIComponent(text),
       voice: voiceConfig.syntheticVoice || 'system-neutral',
       speed: String(voiceConfig.speed || 1.0),
       volume: String(voiceConfig.volume || 1.0),
-      // Force synthetic voice characteristics
       pitch: 'medium',
       rate: 'normal',
       quality: 'synthetic', // Explicitly synthetic
     });
 
-    // API endpoint for synthetic TTS
     return `/api/voice/synthetic-tts?${params.toString()}`;
   }
 
@@ -185,86 +237,90 @@ export class VoiceUIEngine {
   // Private helper methods
 
   private extractIntent(text: string): VoiceIntentType {
-    // Simple pattern matching - no AI/ML, just clear command patterns
+    // Match against approved whitelist only
+    for (const [intent, patterns] of Object.entries(APPROVED_VOICE_COMMANDS)) {
+      for (const pattern of patterns) {
+        if (text.includes(pattern)) {
+          return intent as VoiceIntentType;
+        }
+      }
+    }
     
-    if (text.match(/\b(status|what.*status|current.*status)\b/)) {
-      return 'check_status';
-    }
-    if (text.match(/\b(schedule|next.*load|upcoming)\b/)) {
-      return 'check_schedule';
-    }
-    if (text.match(/\b(confirm|yes|okay|approved)\b/)) {
-      return 'confirm_action';
-    }
-    if (text.match(/\b(ticket|submit.*ticket|enter.*ticket)\b/)) {
-      return 'submit_ticket';
-    }
-    if (text.match(/\b(directions|route|navigate|how.*get)\b/)) {
-      return 'get_directions';
-    }
-    if (text.match(/\b(problem|issue|help|report)\b/)) {
-      return 'report_issue';
-    }
-    if (text.match(/\b(cancel|stop|abort)\b/)) {
-      return 'cancel';
-    }
-
-    return 'check_status'; // Default fallback
+    // Command not in whitelist
+    return 'unknown';
   }
 
   private extractParameters(text: string, intent: VoiceIntentType): Record<string, any> {
     const params: Record<string, any> = {};
-
+    
     // Extract load ID if mentioned
     const loadMatch = text.match(/\bload\s*([A-Z0-9-]+)/i);
     if (loadMatch) params.loadId = loadMatch[1];
-
-    // Extract ticket number if mentioned
-    const ticketMatch = text.match(/\bticket\s*([A-Z0-9-]+)/i);
-    if (ticketMatch) params.ticketNumber = ticketMatch[1];
 
     return params;
   }
 
   private calculateConfidence(text: string, intent: VoiceIntentType): number {
-    // Simple confidence based on pattern match strength
-    // No ML/AI - just pattern recognition
+    if (intent === 'unknown') return 0;
     
-    const intentPatterns: Record<VoiceIntentType, RegExp[]> = {
-      check_status: [/\bstatus\b/i, /\bcurrent\b/i],
-      check_schedule: [/\bschedule\b/i, /\bnext\b/i, /\bupcoming\b/i],
-      confirm_action: [/\bconfirm\b/i, /\byes\b/i, /\bokay\b/i],
-      submit_ticket: [/\bticket\b/i, /\bsubmit\b/i],
-      get_directions: [/\bdirections\b/i, /\broute\b/i, /\bnavigate\b/i],
-      report_issue: [/\bproblem\b/i, /\bissue\b/i, /\breport\b/i],
-      cancel: [/\bcancel\b/i, /\bstop\b/i],
-    };
-
-    const patterns = intentPatterns[intent] || [];
-    const matches = patterns.filter(pattern => pattern.test(text)).length;
+    const patterns = APPROVED_VOICE_COMMANDS[intent] || [];
+    const matches = patterns.filter(pattern => text.includes(pattern)).length;
     
-    return Math.min(0.95, 0.6 + (matches * 0.15)); // 0.6-0.95 range
+    return Math.min(0.95, 0.7 + (matches * 0.1)); // 0.7-0.95 range
   }
 
-  private generateStatusResponse(data?: any): string {
-    if (!data) return 'Status check unavailable.';
-    
-    // Short, factual response
-    return `Current status: ${data.status || 'unknown'}.`;
-  }
-
-  private generateScheduleResponse(data?: any): string {
-    if (!data || !data.nextLoad) {
-      return 'No upcoming loads scheduled.';
+  private generateLoadResponse(load: any, maxLength: number, type: 'current' | 'next' = 'current'): string {
+    if (!load) {
+      return type === 'next' ? 'No next load scheduled.' : 'No current load assigned.';
     }
     
-    return `Next load: ${data.nextLoad.id}. Pickup: ${data.nextLoad.pickup || 'TBD'}.`;
+    const loadNum = load.id || load.loadNumber || 'unknown';
+    const dest = load.destination || load.delivery?.address || 'TBD';
+    const status = load.status || 'assigned';
+    
+    return `${type === 'next' ? 'Next' : 'Current'} load ${loadNum}. Destination: ${dest}. Status: ${status}.`;
+  }
+
+  private generateStatusResponse(data: any, maxLength: number): string {
+    if (!data) return 'Status unavailable.';
+    
+    const status = data.status || 'unknown';
+    const nextAction = data.nextAction || '';
+    
+    return nextAction 
+      ? `Status: ${status}. ${nextAction}.`
+      : `Status: ${status}.`;
+  }
+
+  private generateIssuesResponse(issues: any, maxLength: number): string {
+    if (!issues || issues.length === 0) {
+      return 'No issues with current load.';
+    }
+    
+    return `Issues detected: ${issues.length}. Check app when safe.`;
+  }
+
+  private generateComplianceResponse(compliance: any, maxLength: number): string {
+    if (!compliance) return 'Compliance status unavailable.';
+    
+    const isClear = compliance.isClear || compliance.clear || false;
+    const violations = compliance.violations || 0;
+    const flags = compliance.flags || 0;
+    
+    if (isClear && violations === 0 && flags === 0) {
+      return 'Status: Clear.';
+    }
+    
+    if (violations > 0 || flags > 0) {
+      return `Violations: ${violations}. Flags: ${flags}. Check app when safe.`;
+    }
+    
+    return 'Compliance status: Review required.';
   }
 
   private logInteraction(log: VoiceInteractionLog): void {
     this.interactionLogs.push(log);
     
-    // Maintain log history limit
     if (this.interactionLogs.length > this.MAX_LOG_HISTORY) {
       this.interactionLogs = this.interactionLogs.slice(-this.MAX_LOG_HISTORY);
     }
