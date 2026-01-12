@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 import { CheckCircle, AlertTriangle, XCircle, PenLine, Download, BarChart2, Bell, Search, FileText, FileSpreadsheet, StickyNote } from "lucide-react";
@@ -297,7 +297,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             Compliance Status
-            <compliance.icon className={`w-5 h-5 text-${compliance.color}-500`} />
+            {React.createElement(compliance.icon, { className: `w-5 h-5 text-${compliance.color}-500` })}
             <span className={`text-${compliance.color}-600 font-semibold`}>{compliance.label}</span>
           </CardTitle>
         </CardHeader>

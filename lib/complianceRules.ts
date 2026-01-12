@@ -1,115 +1,89 @@
-// Example: State and federal compliance rules for DVIR, maintenance, and driver actions
-// This can be extended/updated as regulations change
+/**
+ * Compliance rules and validation functions
+ */
 
-export const COMPLIANCE_RULES = {
-  federal: {
-    dvir: {
-      inspectionIntervalDays: 1, // Daily
-      requiredFields: [
-        "company",
-        "date",
-        "truckNumber",
-        "odometer",
-        "driverName",
-        "driverSignature",
-      ],
-      defectCategories: [
-        "brakes",
-        "lights",
-        "steering",
-        "tires",
-        "suspension",
-        "fuel_system",
-        "exhaust_system",
-        "frame_body",
-      ],
-    },
-    maintenance: {
-      minIntervalMiles: 10000,
-      minIntervalDays: 90,
-    },
-  },
-  states: {
-    CA: {
-      dvir: {
-        inspectionIntervalDays: 1,
-        requiredFields: [
-          "company",
-          "date",
-          "truckNumber",
-          "odometer",
-          "driverName",
-          "driverSignature",
-          "trailerNumber",
-        ],
-        defectCategories: [
-          "brakes",
-          "lights",
-          "steering",
-          "tires",
-          "suspension",
-          "fuel_system",
-          "exhaust_system",
-          "frame_body",
-          "reflectors",
-        ],
-      },
-      maintenance: {
-        minIntervalMiles: 7500,
-        minIntervalDays: 60,
-      },
-    },
-    NY: {
-      dvir: {
-        inspectionIntervalDays: 1,
-        requiredFields: [
-          "company",
-          "date",
-          "truckNumber",
-          "odometer",
-          "driverName",
-          "driverSignature",
-        ],
-        defectCategories: [
-          "brakes",
-          "lights",
-          "steering",
-          "tires",
-          "suspension",
-        ],
-      },
-      maintenance: {
-        minIntervalMiles: 12000,
-        minIntervalDays: 120,
-      },
-    },
-    // Add more states as needed
-  },
-};
-
-export function getComplianceRules(state) {
-  return COMPLIANCE_RULES.states[state] || COMPLIANCE_RULES.federal;
+export interface ComplianceResult {
+  compliant: boolean;
+  violations: string[];
+  warnings: string[];
 }
 
-export function validateDVIR(dvir, state) {
-  const rules = getComplianceRules(state).dvir;
-  const missingFields = rules.requiredFields.filter((f) => !dvir[f]);
-  const invalidDefects = (
-    dvir.inspection ? Object.keys(dvir.inspection) : []
-  ).filter(
-    (k) => rules.defectCategories && !rules.defectCategories.includes(k),
-  );
-  // Check inspection interval (assume dvir.date is ISO string)
-  let intervalOk = true;
-  if (dvir.lastInspectionDate) {
-    const last = new Date(dvir.lastInspectionDate);
-    const curr = new Date(dvir.date);
-    const diffDays = Math.floor((curr - last) / (1000 * 60 * 60 * 24));
-    intervalOk = diffDays <= rules.inspectionIntervalDays;
+/**
+ * Check if driver is compliant
+ */
+export function checkDriverCompliance(driver: any): ComplianceResult {
+  const violations: string[] = [];
+  const warnings: string[] = [];
+
+  // Check CDL expiration
+  if (driver.cdl_expiration) {
+    const expDate = new Date(driver.cdl_expiration);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      violations.push("CDL expired");
+    } else if (daysUntilExpiry < 30) {
+      warnings.push(`CDL expires in ${daysUntilExpiry} days`);
+    }
   }
+
+  // Check medical certificate
+  if (driver.medical_expiration) {
+    const expDate = new Date(driver.medical_expiration);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      violations.push("Medical certificate expired");
+    } else if (daysUntilExpiry < 30) {
+      warnings.push(`Medical certificate expires in ${daysUntilExpiry} days`);
+    }
+  }
+
   return {
-    missingFields,
-    invalidDefects,
-    intervalOk,
+    compliant: violations.length === 0,
+    violations,
+    warnings,
+  };
+}
+
+/**
+ * Check if truck is compliant
+ */
+export function checkTruckCompliance(truck: any): ComplianceResult {
+  const violations: string[] = [];
+  const warnings: string[] = [];
+
+  // Check registration expiration
+  if (truck.registration_expiration) {
+    const expDate = new Date(truck.registration_expiration);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      violations.push("Registration expired");
+    } else if (daysUntilExpiry < 30) {
+      warnings.push(`Registration expires in ${daysUntilExpiry} days`);
+    }
+  }
+
+  // Check inspection expiration
+  if (truck.inspection_expiration) {
+    const expDate = new Date(truck.inspection_expiration);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      violations.push("Inspection expired");
+    } else if (daysUntilExpiry < 30) {
+      warnings.push(`Inspection expires in ${daysUntilExpiry} days`);
+    }
+  }
+
+  return {
+    compliant: violations.length === 0,
+    violations,
+    warnings,
   };
 }

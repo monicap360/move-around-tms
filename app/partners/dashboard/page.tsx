@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
-import { exportNodeAsPng } from "../../app/maintenance/dvir-dashboard/exportAsImage";
+import { exportNodeAsPng } from "../../maintenance/dvir-dashboard/exportAsImage";
 import { createClient } from "@/lib/supabase/client";
 // Supabase client for compliance reminders/notifications
 const supabase = createClient();
