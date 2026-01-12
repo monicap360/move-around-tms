@@ -141,6 +141,85 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
     },
   ];
 
+  // Search/filter state
+  const [search, setSearch] = useState("");
+  const filteredChecklist = checklist.filter(item => item.label.toLowerCase().includes(search.toLowerCase()));
+
+  // Compliance analytics
+  const compliantCount = checklist.filter(item => item.uploaded && item.status === "approved" && (!item.expiry || new Date(item.expiry) > new Date())).length;
+  const expiringSoonCount = checklist.filter(item => item.expiry && new Date(item.expiry) < new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) && new Date(item.expiry) > new Date()).length;
+  const expiredCount = checklist.filter(item => item.expiry && new Date(item.expiry) < new Date()).length;
+
+  // In-app reminders (simulate for now)
+  const reminders = checklist.filter(item => item.expiry && new Date(item.expiry) < new Date(Date.now() + 1000 * 60 * 60 * 24 * 90) && new Date(item.expiry) > new Date()).map(item => ({
+    label: item.label,
+    expiry: item.expiry
+  }));
+
+  // HR notes/logs (local for demo)
+  const [hrNotes, setHrNotes] = useState<string[]>([]);
+  const hrNoteRef = useReactRef<HTMLInputElement>(null);
+  function addHrNote() {
+    if (hrNoteRef.current && hrNoteRef.current.value.trim()) {
+      setHrNotes([...hrNotes, hrNoteRef.current.value.trim()]);
+      hrNoteRef.current.value = "";
+    }
+  }
+
+  // Export to PDF/Excel
+  function exportToExcel() {
+    const ws = XLSXUtils.json_to_sheet(checklist.map(item => ({
+      Document: item.label,
+      Status: item.status || "Missing",
+      Expiry: item.expiry || "-"
+    })));
+    const wb = XLSXUtils.book_new();
+    XLSXUtils.book_append_sheet(wb, ws, "Compliance");
+    XLSXWriteFile(wb, "compliance-checklist.xlsx");
+  }
+  // PDF export placeholder (real PDF export would use jsPDF or similar)
+  function exportToPDF() {
+    window.alert("PDF export coming soon. Use Excel export for now.");
+  }
+
+  // Digital signature state
+  const [signature, setSignature] = useState<string | null>(null);
+  const [signing, setSigning] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+
+  // Simulate digital signature (for demo: prompt for name)
+  async function handleSign(form: string) {
+    setSigning(true);
+    const name = window.prompt(`Type your name to sign the ${form}`);
+    if (name) {
+      setSignature(`${form} signed by ${name} on ${new Date().toLocaleDateString()}`);
+      // TODO: Persist signature to Supabase if needed
+    }
+    setSigning(false);
+  }
+
+  // Download all docs as ZIP
+  async function handleDownloadAll() {
+    setDownloadLoading(true);
+    const zip = new JSZip();
+    for (const doc of documents) {
+      if (doc.image_url) {
+        try {
+          const res = await fetch(doc.image_url);
+          const blob = await res.blob();
+          zip.file(`${doc.doc_type}-${doc.id}.${blob.type.split("/")[1] || "pdf"}`, blob);
+        } catch {}
+      }
+    }
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `driver-compliance-docs.zip`;
+    a.click();
+    setDownloadLoading(false);
+  }
+
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <Card className="rounded-2xl shadow-lg mb-6">
@@ -158,6 +237,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
           />
         </CardContent>
       </Card>
+      <Card className="rounded-2xl shadow-lg mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <BarChart2 className="w-5 h-5 text-blue-500" /> Compliance Analytics
@@ -185,6 +265,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
           </CardContent>
         </Card>
       )}
+      <Card className="rounded-2xl shadow-lg mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             Audit & Signatures
@@ -212,6 +293,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
           </div>
         </CardContent>
       </Card>
+      <Card className="rounded-2xl shadow-lg mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             Compliance Status
