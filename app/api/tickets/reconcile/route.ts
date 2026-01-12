@@ -60,30 +60,45 @@ export async function POST(req: Request) {
     const updateData: any = {
       reconciled: true,
       reconciled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
-    // Map reconciliation data fields
-    if (reconciliationData?.gross) updateData.recon_gross = reconciliationData.gross;
-    if (reconciliationData?.tare) updateData.recon_tare = reconciliationData.tare;
-    if (reconciliationData?.net) updateData.recon_net = reconciliationData.net;
+    // Map reconciliation data fields with type conversion
+    if (reconciliationData?.gross !== undefined) updateData.recon_gross = Number(reconciliationData.gross);
+    if (reconciliationData?.tare !== undefined) updateData.recon_tare = Number(reconciliationData.tare);
+    if (reconciliationData?.net !== undefined) updateData.recon_net = Number(reconciliationData.net);
     if (reconciliationData?.material) updateData.recon_material = reconciliationData.material;
     if (reconciliationData?.plant) updateData.recon_plant = reconciliationData.plant;
     if (reconciliationData?.matched_by) updateData.recon_matched_by = reconciliationData.matched_by;
     if (reconciliationData?.status) updateData.recon_status = reconciliationData.status;
 
     // Calculate net if not provided but gross and tare are
-    if (!updateData.recon_net && updateData.recon_gross && updateData.recon_tare) {
+    if (updateData.recon_net === undefined && updateData.recon_gross !== undefined && updateData.recon_tare !== undefined) {
       updateData.recon_net = Number(updateData.recon_gross) - Number(updateData.recon_tare);
     }
 
-    const { error: updateError } = await supabase
+    // Try to update in aggregate_tickets first, then tickets table
+    let updateError: any = null;
+    const { error: aggregateUpdateError } = await supabase
       .from("aggregate_tickets")
       .update(updateData)
       .eq("id", ticketId);
 
+    if (aggregateUpdateError) {
+      // Try tickets table as fallback
+      const { error: regularUpdateError } = await supabase
+        .from("tickets")
+        .update(updateData)
+        .eq("id", ticketId);
+
+      if (regularUpdateError) {
+        updateError = regularUpdateError;
+      }
+    }
+
     if (updateError) {
       return NextResponse.json(
-        { error: updateError.message },
+        { error: updateError.message || "Failed to update ticket" },
         { status: 500 },
       );
     }
