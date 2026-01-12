@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const supabase = createClient();
 
@@ -28,6 +29,7 @@ interface FleetStats {
 
 export default function RonYXDashboard() {
   const { user, profile, loading, hasPermission } = useRoleBasedAuth();
+  const router = useRouter();
   const [fleetStats, setFleetStats] = useState<FleetStats>({
     activeOperators: 8,
     monthlyRevenue: 12450,
@@ -434,7 +436,12 @@ export default function RonYXDashboard() {
           }}
         >
           {operators.map((operator) => (
-            <RonYXOperatorCard key={operator.id} operator={operator} />
+            <RonYXOperatorCard 
+              key={operator.id} 
+              operator={operator}
+              onViewDetails={(id) => router.push(`/partners/ronyx/operators/${id}`)}
+              onInvoice={(id) => router.push(`/partners/ronyx/operators/${id}/invoice`)}
+            />
           ))}
         </div>
 
@@ -473,24 +480,28 @@ export default function RonYXDashboard() {
             title="Add New Operator"
             description="Onboard a new owner-operator to your fleet"
             action="Add Operator"
+            onClick={() => router.push("/partners/ronyx/operators/new")}
           />
           <RonYXActionCard
             icon="📊"
             title="Monthly Reports"
             description="Generate and view financial reports"
             action="View Reports"
+            onClick={() => router.push("/partners/ronyx/reports")}
           />
           <RonYXActionCard
             icon="💳"
             title="Payment Management"
             description="Track payments and send invoices"
             action="Manage Payments"
+            onClick={() => router.push("/partners/ronyx/payments")}
           />
           <RonYXActionCard
             icon="⚙️"
             title="Fleet Settings"
             description="Configure your brand and preferences"
             action="Settings"
+            onClick={() => router.push("/partners/ronyx/settings")}
           />
         </div>
       </main>
@@ -549,7 +560,8 @@ function RonYXStatCard({
   );
 }
 
-function RonYXOperatorCard({ operator }: { operator: OperatorData }) {
+function RonYXOperatorCard({ operator, onViewDetails, onInvoice }: { operator: OperatorData; onViewDetails?: (id: string) => void; onInvoice?: (id: string) => void }) {
+  const router = useRouter();
   const getStatusStyle = (status: string) => {
     const baseStyle = {
       padding: "0.25rem 0.75rem",
@@ -661,6 +673,7 @@ function RonYXOperatorCard({ operator }: { operator: OperatorData }) {
 
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button
+          onClick={() => onViewDetails?.(operator.id) || router.push(`/partners/ronyx/operators/${operator.id}`)}
           style={{
             flex: 1,
             background: "#F7931E",
@@ -688,6 +701,7 @@ function RonYXOperatorCard({ operator }: { operator: OperatorData }) {
         </button>
 
         <button
+          onClick={() => onInvoice?.(operator.id) || router.push(`/partners/ronyx/operators/${operator.id}/invoice`)}
           style={{
             background: "#404040",
             color: "#FFFFFF",
@@ -719,12 +733,15 @@ function RonYXActionCard({
   title,
   description,
   action,
+  onClick,
 }: {
   icon: string;
   title: string;
   description: string;
   action: string;
+  onClick?: () => void;
 }) {
+  const router = useRouter();
   return (
     <div
       style={{
@@ -767,6 +784,7 @@ function RonYXActionCard({
         {description}
       </div>
       <button
+        onClick={onClick || (() => {})}
         style={{
           width: "100%",
           background: "#F7931E",

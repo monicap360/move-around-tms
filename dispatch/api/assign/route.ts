@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   try {
     const supabase = createServerAdmin();
     const body = await req.json();
-    const { load_id, driver_id, driver_uuid, truck_id, status } = body;
+    const { load_id, driver_id, driver_uuid, truck_id, status, organization_id } = body;
 
     if (!load_id) {
       return NextResponse.json(
@@ -32,6 +32,42 @@ export async function POST(req: Request) {
 
     const driverId = driver_uuid || driver_id;
 
+    // Verify load exists and get organization_id if not provided
+    const { data: load, error: loadFetchError } = await supabase
+      .from("loads")
+      .select("id, organization_id")
+      .eq("id", load_id)
+      .single();
+
+    if (loadFetchError || !load) {
+      return NextResponse.json(
+        { error: "Load not found" },
+        { status: 404 },
+      );
+    }
+
+    const orgId = organization_id || load.organization_id;
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "Organization ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // Verify driver belongs to same organization
+    const { data: driver, error: driverFetchError } = await supabase
+      .from("drivers")
+      .select("id, organization_id")
+      .eq("driver_uuid", driverId)
+      .single();
+
+    if (!driverFetchError && driver && driver.organization_id !== orgId) {
+      return NextResponse.json(
+        { error: "Driver does not belong to the same organization" },
+        { status: 403 },
+      );
+    }
+
     // Update load with driver and truck assignment
     const updateData: any = {
       driver_id: driverId,
@@ -48,7 +84,8 @@ export async function POST(req: Request) {
     const { error: loadError } = await supabase
       .from("loads")
       .update(updateData)
-      .eq("id", load_id);
+      .eq("id", load_id)
+      .eq("organization_id", orgId);
 
     if (loadError) {
       return NextResponse.json(

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   try {
     const supabase = createServerAdmin();
     const body = await req.json();
-    const { load_id, status, eta, location, notes } = body;
+    const { load_id, status, eta, location, notes, organization_id } = body;
 
     if (!load_id) {
       return NextResponse.json(
@@ -23,25 +23,61 @@ export async function POST(req: Request) {
       );
     }
 
+    // Verify load exists and get organization_id
+    const { data: load, error: loadFetchError } = await supabase
+      .from("loads")
+      .select("id, organization_id")
+      .eq("id", load_id)
+      .single();
+
+    if (loadFetchError || !load) {
+      return NextResponse.json(
+        { error: "Load not found" },
+        { status: 404 },
+      );
+    }
+
+    const orgId = organization_id || load.organization_id;
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "Organization ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // Validate input types
     const updateData: any = {
       updated_at: new Date().toISOString(),
     };
 
-    if (status) updateData.status = status;
-    if (eta) updateData.eta = eta;
-    if (location) {
-      updateData.current_location = location;
-      if (location.latitude && location.longitude) {
-        updateData.latitude = location.latitude;
-        updateData.longitude = location.longitude;
+    if (status && typeof status === 'string') updateData.status = status;
+    if (eta) {
+      // Validate ETA is a valid date string
+      const etaDate = new Date(eta);
+      if (!isNaN(etaDate.getTime())) {
+        updateData.eta = eta;
       }
     }
-    if (notes) updateData.notes = notes;
+    if (location) {
+      if (typeof location === 'object') {
+        updateData.current_location = location;
+        if (location.latitude && location.longitude) {
+          const lat = Number(location.latitude);
+          const lng = Number(location.longitude);
+          if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            updateData.latitude = lat;
+            updateData.longitude = lng;
+          }
+        }
+      }
+    }
+    if (notes && typeof notes === 'string') updateData.notes = notes.substring(0, 5000); // Limit length
 
     const { error: updateError } = await supabase
       .from("loads")
       .update(updateData)
-      .eq("id", load_id);
+      .eq("id", load_id)
+      .eq("organization_id", orgId);
 
     if (updateError) {
       return NextResponse.json(

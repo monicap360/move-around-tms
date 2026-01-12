@@ -10,13 +10,14 @@ function createServerAdmin() {
 }
 
 // POST /api/payroll/approve
-// Expects: { weekStart: string, driver_id?: string }
+// Expects: { weekStart: string, driver_id?: string, organization_id: string }
 export async function POST(req: Request) {
   try {
     const supabase = createServerAdmin();
     const body = await req.json();
     const weekStart = body.weekStart;
     const driver_id = body.driver_id;
+    const organization_id = body.organization_id;
 
     if (!weekStart) {
       return NextResponse.json(
@@ -25,11 +26,46 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!organization_id) {
+      return NextResponse.json(
+        { success: false, error: "organization_id is required" },
+        { status: 400 },
+      );
+    }
+
+    // Verify organization exists
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("id", organization_id)
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { success: false, error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
     // Update payroll summary status for the week (optionally for a driver)
+    // Filter by organization_id if column exists (graceful fallback if column doesn't exist)
     let updateQuery = supabase
       .from("driver_weekly_payroll_summary")
-      .update({ status: "approved" })
+      .update({ status: "approved", approved_at: new Date().toISOString() })
       .eq("week_start_friday", weekStart);
+    
+    // Try to add organization filter (will fail gracefully if column doesn't exist)
+    // First check if we can query with organization_id
+    const { error: testError } = await supabase
+      .from("driver_weekly_payroll_summary")
+      .select("organization_id")
+      .limit(1);
+    
+    // If no error, column exists, so add the filter
+    if (!testError) {
+      updateQuery = updateQuery.eq("organization_id", organization_id);
+    }
+    
     if (driver_id) updateQuery = updateQuery.eq("driver_id", driver_id);
     const { error: summaryError } = await updateQuery;
 
@@ -44,7 +80,8 @@ export async function POST(req: Request) {
     let ticketQuery = supabase
       .from("tickets")
       .update({ payroll_status: "approved" })
-      .eq("pay_day", weekStart);
+      .eq("pay_day", weekStart)
+      .eq("organization_id", organization_id);
     if (driver_id) ticketQuery = ticketQuery.eq("driver_id", driver_id);
     const { error: ticketError } = await ticketQuery;
 

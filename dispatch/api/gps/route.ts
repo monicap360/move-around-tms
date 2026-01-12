@@ -22,8 +22,10 @@ export async function POST(req: Request) {
       speed,
       heading,
       timestamp,
+      organization_id,
     } = body;
 
+    // Validate required fields
     if (!latitude || !longitude) {
       return NextResponse.json(
         { error: "latitude and longitude are required" },
@@ -31,9 +33,41 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validate coordinate ranges
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return NextResponse.json(
+        { error: "Invalid latitude or longitude values" },
+        { status: 400 },
+      );
+    }
+
+    // Validate speed if provided
+    if (speed !== undefined) {
+      const speedNum = Number(speed);
+      if (isNaN(speedNum) || speedNum < 0 || speedNum > 200) {
+        return NextResponse.json(
+          { error: "Invalid speed value (must be 0-200)" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate heading if provided
+    if (heading !== undefined) {
+      const headingNum = Number(heading);
+      if (isNaN(headingNum) || headingNum < 0 || headingNum >= 360) {
+        return NextResponse.json(
+          { error: "Invalid heading value (must be 0-359)" },
+          { status: 400 },
+        );
+      }
+    }
+
     const locationData: any = {
-      latitude: Number(latitude),
-      longitude: Number(longitude),
+      latitude: lat,
+      longitude: lng,
       updated_at: timestamp || new Date().toISOString(),
     };
 
@@ -42,25 +76,69 @@ export async function POST(req: Request) {
 
     // Update driver location if driver_uuid provided
     if (driver_uuid) {
-      const { error: driverError } = await supabase
+      // Verify driver exists and get organization_id if needed
+      const { data: driver, error: driverFetchError } = await supabase
         .from("drivers")
-        .update(locationData)
-        .eq("driver_uuid", driver_uuid);
+        .select("id, organization_id")
+        .eq("driver_uuid", driver_uuid)
+        .single();
 
-      if (driverError) {
-        console.error("Driver location update error:", driverError);
+      if (driverFetchError || !driver) {
+        return NextResponse.json(
+          { error: "Driver not found" },
+          { status: 404 },
+        );
+      }
+
+      const orgId = organization_id || driver.organization_id;
+      if (orgId) {
+        const { error: driverError } = await supabase
+          .from("drivers")
+          .update(locationData)
+          .eq("driver_uuid", driver_uuid)
+          .eq("organization_id", orgId);
+
+        if (driverError) {
+          console.error("Driver location update error:", driverError);
+          return NextResponse.json(
+            { error: "Failed to update driver location" },
+            { status: 500 },
+          );
+        }
       }
     }
 
     // Update truck location if truck_id provided
     if (truck_id) {
-      const { error: truckError } = await supabase
+      // Verify truck exists and get organization_id if needed
+      const { data: truck, error: truckFetchError } = await supabase
         .from("trucks")
-        .update(locationData)
-        .eq("id", truck_id);
+        .select("id, organization_id")
+        .eq("id", truck_id)
+        .single();
 
-      if (truckError) {
-        console.error("Truck location update error:", truckError);
+      if (truckFetchError || !truck) {
+        return NextResponse.json(
+          { error: "Truck not found" },
+          { status: 404 },
+        );
+      }
+
+      const orgId = organization_id || truck.organization_id;
+      if (orgId) {
+        const { error: truckError } = await supabase
+          .from("trucks")
+          .update(locationData)
+          .eq("id", truck_id)
+          .eq("organization_id", orgId);
+
+        if (truckError) {
+          console.error("Truck location update error:", truckError);
+          return NextResponse.json(
+            { error: "Failed to update truck location" },
+            { status: 500 },
+          );
+        }
       }
     }
 
