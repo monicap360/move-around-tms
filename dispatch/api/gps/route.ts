@@ -142,6 +142,73 @@ export async function POST(req: Request) {
       }
     }
 
+    // Get previous location for geofence event detection
+    let previousLocation = null;
+    if (driver_uuid) {
+      const { data: prevDriver } = await supabase
+        .from("drivers")
+        .select("latitude, longitude")
+        .eq("driver_uuid", driver_uuid)
+        .single();
+      if (prevDriver?.latitude && prevDriver?.longitude) {
+        previousLocation = {
+          lat: prevDriver.latitude,
+          lng: prevDriver.longitude,
+        };
+      }
+    } else if (truck_id) {
+      const { data: prevTruck } = await supabase
+        .from("trucks")
+        .select("latitude, longitude")
+        .eq("id", truck_id)
+        .single();
+      if (prevTruck?.latitude && prevTruck?.longitude) {
+        previousLocation = {
+          lat: prevTruck.latitude,
+          lng: prevTruck.longitude,
+        };
+      }
+    }
+
+    // Check geofences and detect events
+    const orgId = organization_id || (driver_uuid ? (await supabase
+      .from("drivers")
+      .select("organization_id")
+      .eq("driver_uuid", driver_uuid)
+      .single()).data?.organization_id : null) || (truck_id ? (await supabase
+      .from("trucks")
+      .select("organization_id")
+      .eq("id", truck_id)
+      .single()).data?.organization_id : null);
+
+    let geofenceResults = {
+      insideGeofences: [],
+      events: [],
+      violations: [],
+    };
+
+    if (orgId) {
+      try {
+        // Use internal geofencing check function
+        const { checkGeofencesInternal } = await import(
+          '@/app/api/geofencing/integration/route'
+        );
+        geofenceResults = await checkGeofencesInternal(
+          { lat, lng },
+          previousLocation,
+          orgId,
+          truck_id || undefined,
+          driver_uuid || undefined,
+          truck_id || undefined,
+          speed !== undefined ? Number(speed) : undefined,
+          heading !== undefined ? Number(heading) : undefined
+        );
+      } catch (geofenceError: any) {
+        // Log but don't fail GPS ping if geofence check fails
+        console.error("Geofence check error:", geofenceError);
+      }
+    }
+
     // Optionally, create a location tracking record
     // If you have a gps_tracking or location_updates table, insert here
     // For now, we'll just update the driver/truck records
@@ -151,6 +218,7 @@ export async function POST(req: Request) {
       driver_uuid: driver_uuid || null,
       truck_id: truck_id || null,
       location: { latitude, longitude },
+      geofences: geofenceResults,
     });
   } catch (err: any) {
     return NextResponse.json(

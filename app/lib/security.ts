@@ -25,6 +25,8 @@ const PERMISSIONS = {
     "write:compliance",
     "read:reports",
     "read:analytics",
+    "read:geofences",
+    "write:geofences",
   ],
   dispatcher: [
     "read:drivers",
@@ -33,6 +35,7 @@ const PERMISSIONS = {
     "read:loads",
     "write:loads",
     "read:routes",
+    "read:geofences",
   ],
   driver: [
     "read:profile",

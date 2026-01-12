@@ -9,6 +9,11 @@ export default function LiveTelemetry({ driver }: any) {
   const [hosMax, setHosMax] = useState(14); // 14 hr rule
   const [ocrAlerts, setOcrAlerts] = useState<any[]>([]);
   const [inYard, setInYard] = useState(false);
+  const [geofenceStatus, setGeofenceStatus] = useState<any>({
+    insideGeofences: [],
+    events: [],
+    violations: [],
+  });
 
   useEffect(() => {
     // Live earnings (simulated API)
@@ -28,16 +33,61 @@ export default function LiveTelemetry({ driver }: any) {
       setOcrAlerts((prev) => [data, ...prev]);
     };
 
-    // Yard detection (GPS)
+    // Yard detection and geofencing (GPS)
     if (navigator.geolocation) {
+      let previousLocation: { lat: number; lng: number } | null = null;
+
       navigator.geolocation.watchPosition((pos) => {
         const { latitude, longitude } = pos.coords;
+        const currentLocation = { lat: latitude, lng: longitude };
 
+        // Yard detection
         fetch(
           `/api/yard/detect?lat=${latitude}&lng=${longitude}&driver=${driver.uuid}`,
         )
           .then((r) => r.json())
           .then((d) => setInYard(d.inYard || false));
+
+        // Geofence checking
+        if (driver.organization_id) {
+          fetch("/api/geofencing/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude,
+              longitude,
+              driverId: driver.uuid,
+              organizationId: driver.organization_id,
+              previousLatitude: previousLocation?.lat || null,
+              previousLongitude: previousLocation?.lng || null,
+            }),
+          })
+            .then((r) => r.json())
+            .then((d) => {
+              setGeofenceStatus({
+                insideGeofences: d.insideGeofences || [],
+                events: d.events || [],
+                violations: d.violations || [],
+              });
+
+              // Show alerts for entry/exit events
+              d.events?.forEach((event: any) => {
+                if (event.eventType === "entry") {
+                  console.log(`Entered geofence: ${event.metadata?.geofenceName}`);
+                } else if (event.eventType === "exit") {
+                  console.log(`Exited geofence: ${event.metadata?.geofenceName}`);
+                }
+              });
+
+              // Show alerts for violations
+              d.violations?.forEach((violation: any) => {
+                console.warn(`Geofence violation: ${violation.message}`);
+              });
+            })
+            .catch((err) => console.error("Geofence check error:", err));
+        }
+
+        previousLocation = currentLocation;
       });
     }
 
@@ -104,6 +154,32 @@ export default function LiveTelemetry({ driver }: any) {
             : "No yard signal detected"}
         </p>
       </div>
+
+      {/* GEOFENCE STATUS */}
+      {geofenceStatus.insideGeofences.length > 0 && (
+        <div className="rounded-xl p-4 border border-blue-400 glass-card">
+          <p className="font-bold text-lg mb-2">Geofence Status</p>
+          <div className="space-y-1">
+            {geofenceStatus.insideGeofences.map((geofence: any, i: number) => (
+              <p key={i} className="text-sm opacity-70">
+                ✓ Inside: {geofence.name}
+              </p>
+            ))}
+          </div>
+          {geofenceStatus.violations.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-red-400/30">
+              <p className="text-sm font-semibold text-red-400 mb-1">
+                Violations:
+              </p>
+              {geofenceStatus.violations.map((v: any, i: number) => (
+                <p key={i} className="text-xs text-red-300">
+                  ⚠ {v.message}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* OCR ALERT STREAM */}
       <div className="flex flex-col gap-3">
