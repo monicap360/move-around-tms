@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 import Link from "next/link";
 
 interface PartnerOverview {
@@ -47,66 +50,118 @@ export default function OwnerDashboard() {
   }, [profile]);
 
   async function loadOwnerData() {
-    // Mock data - replace with real Supabase queries
-    setStats({
-      totalPartners: 4,
-      totalCompanies: 23,
-      totalDrivers: 156,
-      monthlyRevenue: 45750.0,
-      pendingApprovals: 8,
-      activeTickets: 42,
-    });
+    try {
+      // Get all partners
+      const { data: partnersData, error: partnersError } = await supabase
+        .from("partners")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    setPartners([
-      {
-        id: "1",
-        name: "Veronica Butanda",
-        email: "melidazvl@outlook.com",
-        companiesCount: 8,
-        monthlyCommission: 1850.0,
-        theme: {
-          primary: "#C9A348",
-          brand: "RonYX Logistics LLC",
-        },
-        slug: "ronyx",
-      },
-      {
-        id: "2",
-        name: "Maria Elizondo",
-        email: "melizondo@taxproms.com",
-        companiesCount: 6,
-        monthlyCommission: 1200.0,
-        theme: {
-          primary: "#2563eb",
-          brand: "Elite Transport Solutions",
-        },
-        slug: "elite",
-      },
-      {
-        id: "3",
-        name: "Anil Meighoo",
-        email: "anil.meighoo@gmail.com",
-        companiesCount: 4,
-        monthlyCommission: 950.0,
-        theme: {
-          primary: "#16a34a",
-          brand: "Meighoo Logistics",
-        },
-        slug: "meighoo",
-      },
-      {
-        id: "4",
-        name: "Miram Garza",
-        email: "miram@pending.com",
-        companiesCount: 5,
-        monthlyCommission: 1100.0,
-        theme: {
-          primary: "#dc2626",
-          brand: "Garza Transport Group",
-        },
-        slug: "garza",
-      },
-    ]);
+      if (partnersError) {
+        console.error("Error loading partners:", partnersError);
+        return;
+      }
+
+      // Get all organizations/companies
+      const { data: organizationsData } = await supabase
+        .from("organizations")
+        .select("*");
+
+      // Get all drivers
+      const { count: totalDriversCount } = await supabase
+        .from("drivers")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "Active");
+
+      // Get all tickets
+      const { count: activeTicketsCount } = await supabase
+        .from("aggregate_tickets")
+        .select("*", { count: "exact", head: true })
+        .in("status", ["pending", "active", "in_review"]);
+
+      // Calculate monthly revenue from organizations
+      const monthlyRevenue = (organizationsData || []).reduce((sum: number, org: any) => {
+        return sum + (org.monthly_fee || org.subscription_fee || 0);
+      }, 0);
+
+      // Count pending approvals
+      const { count: pendingApprovalsCount } = await supabase
+        .from("organizations")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      setStats({
+        totalPartners: partnersData?.length || 0,
+        totalCompanies: organizationsData?.length || 0,
+        totalDrivers: totalDriversCount || 0,
+        monthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
+        pendingApprovals: pendingApprovalsCount || 0,
+        activeTickets: activeTicketsCount || 0,
+      });
+
+      // Build partner overview with companies count and commission
+      const partnersWithStats = await Promise.all(
+        (partnersData || []).map(async (partner: any) => {
+          // Count companies for this partner
+          const orgQueries = [
+            supabase.from("organizations").select("id").eq("partner_id", partner.id),
+            supabase.from("organizations").select("id").eq("partner_slug", partner.slug),
+          ];
+
+          let orgIds: string[] = [];
+          for (const query of orgQueries) {
+            const { data, error } = await query;
+            if (!error && data && data.length > 0) {
+              orgIds = data.map((org: any) => org.id);
+              break;
+            }
+          }
+
+          // Calculate monthly commission
+          const { data: orgData } = await supabase
+            .from("organizations")
+            .select("monthly_fee, subscription_fee, commission_rate")
+            .in("id", orgIds);
+
+          const monthlyCommission = (orgData || []).reduce((sum: number, org: any) => {
+            if (org.commission_rate) {
+              return sum + ((org.monthly_fee || org.subscription_fee || 0) * (org.commission_rate / 100));
+            }
+            return sum + (org.monthly_fee || org.subscription_fee || 0);
+          }, 0);
+
+          // Get partner theme
+          const theme = partner.theme || {
+            primary: partner.primary_color || "#2563eb",
+            brand: partner.brand_name || partner.name || "Partner",
+          };
+
+          return {
+            id: partner.id,
+            name: partner.name || partner.full_name || "Unknown",
+            email: partner.email || "",
+            companiesCount: orgIds.length,
+            monthlyCommission: Math.round(monthlyCommission * 100) / 100,
+            theme: theme,
+            slug: partner.slug || partner.id,
+          };
+        })
+      );
+
+      setPartners(partnersWithStats);
+    } catch (error) {
+      console.error("Error loading owner data:", error);
+      // Fallback to zero stats if database query fails
+      setStats({
+        totalPartners: 0,
+        totalCompanies: 0,
+        totalDrivers: 0,
+        monthlyRevenue: 0,
+        pendingApprovals: 0,
+        activeTickets: 0,
+      });
+      setPartners([]);
+    }
   }
 
   function handleViewSwitch(view: string) {

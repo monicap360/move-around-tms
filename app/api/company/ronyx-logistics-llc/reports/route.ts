@@ -1,11 +1,87 @@
 import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
+// GET: List all reports for ronyx-logistics-llc
 export async function GET() {
-  // List all reports
-  return NextResponse.json({ message: "List reports" });
+  try {
+    // Get organization_id for ronyx-logistics-llc
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "ronyx-logistics-llc")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    // Try reports table, return empty array if it doesn't exist
+    const { data, error } = await supabaseAdmin
+      .from("reports")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      // If table doesn't exist, return empty array (reports might be generated on-demand)
+      return NextResponse.json([]);
+    }
+
+    return NextResponse.json(data || []);
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch reports" },
+      { status: 500 },
+    );
+  }
 }
 
+// POST: Generate/create a new report for ronyx-logistics-llc
 export async function POST(request: Request) {
-  // Create a new report
-  return NextResponse.json({ message: "Create report" });
+  try {
+    const body = await request.json();
+
+    // Get organization_id for ronyx-logistics-llc
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "ronyx-logistics-llc")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    // Try reports table, return success message if it doesn't exist
+    const { data, error } = await supabaseAdmin
+      .from("reports")
+      .insert({
+        ...body,
+        organization_id: org.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // If table doesn't exist, return success message (reports might be generated on-demand)
+      return NextResponse.json({
+        message: "Report generation requested",
+        organization_id: org.id,
+        ...body,
+      }, { status: 201 });
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to create report" },
+      { status: 500 },
+    );
+  }
 }

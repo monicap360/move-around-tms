@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,53 +24,160 @@ export async function GET(req: NextRequest) {
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    // Mock analytics data - in production, this would query your actual database
+    // Query real analytics data from database
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } },
+    );
+
+    const organizationId = searchParams.get("organization_id");
+
+    // Calculate previous period for comparison
+    const periodLength = now.getTime() - startDate.getTime();
+    const previousStartDate = new Date(startDate.getTime() - periodLength);
+    const previousEndDate = startDate;
+
+    // Build queries with optional organization filter
+    let ticketsQuery = supabase
+      .from("aggregate_tickets")
+      .select("total_pay, total_bill, total_profit, status, ticket_date")
+      .gte("ticket_date", startDate.toISOString().split('T')[0])
+      .lte("ticket_date", now.toISOString().split('T')[0]);
+
+    let previousTicketsQuery = supabase
+      .from("aggregate_tickets")
+      .select("total_pay, total_bill, total_profit, status, ticket_date")
+      .gte("ticket_date", previousStartDate.toISOString().split('T')[0])
+      .lt("ticket_date", previousEndDate.toISOString().split('T')[0]);
+
+    let driversQuery = supabase
+      .from("drivers")
+      .select("id, status, created_at, active")
+      .eq("status", "Active")
+      .eq("active", true);
+
+    let trucksQuery = supabase
+      .from("trucks")
+      .select("id, status");
+
+    let documentsQuery = supabase
+      .from("driver_documents")
+      .select("expiration_date, status");
+
+    if (organizationId) {
+      ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
+      previousTicketsQuery = previousTicketsQuery.eq("organization_id", organizationId);
+      driversQuery = driversQuery.eq("organization_id", organizationId);
+      trucksQuery = trucksQuery.eq("organization_id", organizationId);
+      documentsQuery = documentsQuery.eq("organization_id", organizationId);
+    }
+
+    const [ticketsRes, previousTicketsRes, driversRes, trucksRes, documentsRes] = await Promise.all([
+      ticketsQuery,
+      previousTicketsQuery,
+      driversQuery,
+      trucksQuery,
+      documentsQuery,
+    ]);
+
+    const tickets = ticketsRes.data || [];
+    const previousTickets = previousTicketsRes.data || [];
+    const drivers = driversRes.data || [];
+    const trucks = trucksRes.data || [];
+    const documents = documentsRes.data || [];
+
+    // Calculate current period metrics
+    const currentRevenue = tickets.reduce((sum: number, t: any) => sum + (Number(t.total_bill) || 0), 0);
+    const currentProfit = tickets.reduce((sum: number, t: any) => sum + (Number(t.total_profit) || (Number(t.total_bill) || 0) - (Number(t.total_pay) || 0)), 0);
+    const currentDrivers = drivers.length;
+
+    // Calculate previous period metrics
+    const previousRevenue = previousTickets.reduce((sum: number, t: any) => sum + (Number(t.total_bill) || 0), 0);
+    const previousProfit = previousTickets.reduce((sum: number, t: any) => sum + (Number(t.total_profit) || (Number(t.total_bill) || 0) - (Number(t.total_pay) || 0)), 0);
+    const previousDrivers = drivers.filter((d: any) => new Date(d.created_at) < startDate).length;
+
+    // Calculate trends
+    const revenueTrend = currentRevenue >= previousRevenue ? "up" : "down";
+    const revenuePercentage = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+    const profitTrend = currentProfit >= previousProfit ? "up" : "down";
+    const profitPercentage = previousProfit > 0 ? ((currentProfit - previousProfit) / previousProfit) * 100 : 0;
+    const driversTrend = currentDrivers >= previousDrivers ? "up" : "down";
+
+    // Calculate vehicle metrics
+    const activeVehicles = trucks.filter((t: any) => t.status === "active" || t.status === "in_use").length;
+    const maintenanceVehicles = trucks.filter((t: any) => t.status === "maintenance" || t.status === "repair").length;
+    const outOfServiceVehicles = trucks.filter((t: any) => t.status === "out_of_service" || t.status === "inactive").length;
+
+    // Calculate compliance metrics
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const compliantDocs = documents.filter((d: any) => {
+      if (!d.expiration_date) return false;
+      const expDate = new Date(d.expiration_date);
+      return expDate > thirtyDaysFromNow;
+    }).length;
+    const expiringSoonDocs = documents.filter((d: any) => {
+      if (!d.expiration_date) return false;
+      const expDate = new Date(d.expiration_date);
+      return expDate <= thirtyDaysFromNow && expDate >= today;
+    }).length;
+    const expiredDocs = documents.filter((d: any) => {
+      if (!d.expiration_date) return false;
+      const expDate = new Date(d.expiration_date);
+      return expDate < today;
+    }).length;
+
+    // Calculate ticket metrics
+    const processedTickets = tickets.filter((t: any) => t.status === "Approved" || t.status === "processed").length;
+    const pendingTickets = tickets.filter((t: any) => t.status === "Pending" || t.status === "pending").length;
+    const rejectedTickets = tickets.filter((t: any) => t.status === "Rejected" || t.status === "rejected").length;
+
+    // Calculate safety metrics (placeholder - would need DVIR data)
+    const dvirCompliance = 95; // Placeholder
+    const incidents = 0; // Placeholder - would need incidents table
+    const safetyScore = 92; // Placeholder - would need safety scores
+
     const mockMetrics = {
       revenue: {
-        current: Math.floor(Math.random() * 100000) + 200000, // $200k-$300k
-        previous: Math.floor(Math.random() * 100000) + 180000, // $180k-$280k
-        trend: Math.random() > 0.3 ? "up" : "down",
-        percentage: Math.random() * 20 - 10, // -10% to +10%
+        current: Math.round(currentRevenue),
+        previous: Math.round(previousRevenue),
+        trend: revenueTrend,
+        percentage: Math.round(revenuePercentage * 100) / 100,
       },
       profit: {
-        current: Math.floor(Math.random() * 50000) + 50000, // $50k-$100k
-        previous: Math.floor(Math.random() * 50000) + 45000, // $45k-$95k
-        trend: Math.random() > 0.4 ? "up" : "down",
-        percentage: Math.random() * 25 - 12.5, // -12.5% to +12.5%
+        current: Math.round(currentProfit),
+        previous: Math.round(previousProfit),
+        trend: profitTrend,
+        percentage: Math.round(profitPercentage * 100) / 100,
       },
       activeDrivers: {
-        current: Math.floor(Math.random() * 10) + 25, // 25-35 drivers
-        previous: Math.floor(Math.random() * 10) + 22, // 22-32 drivers
-        trend: Math.random() > 0.5 ? "up" : "down",
+        current: currentDrivers,
+        previous: previousDrivers,
+        trend: driversTrend,
       },
       activeVehicles: {
-        current: Math.floor(Math.random() * 5) + 18, // 18-23 vehicles
-        maintenance: Math.floor(Math.random() * 3) + 1, // 1-4 in maintenance
-        outOfService: Math.floor(Math.random() * 2), // 0-1 out of service
+        current: activeVehicles,
+        maintenance: maintenanceVehicles,
+        outOfService: outOfServiceVehicles,
       },
       compliance: {
-        compliant: Math.floor(Math.random() * 20) + 140, // 140-160 compliant items
-        expiringSoon: Math.floor(Math.random() * 10) + 5, // 5-15 expiring soon
-        expired: Math.floor(Math.random() * 5) + 1, // 1-6 expired
-        total: 0, // Will be calculated
+        compliant: compliantDocs,
+        expiringSoon: expiringSoonDocs,
+        expired: expiredDocs,
+        total: documents.length,
       },
       tickets: {
-        processed: Math.floor(Math.random() * 100) + 450, // 450-550 processed
-        pending: Math.floor(Math.random() * 20) + 10, // 10-30 pending
-        rejected: Math.floor(Math.random() * 10) + 2, // 2-12 rejected
+        processed: processedTickets,
+        pending: pendingTickets,
+        rejected: rejectedTickets,
       },
       safety: {
-        dvirCompliance: Math.floor(Math.random() * 15) + 85, // 85-100%
-        incidents: Math.floor(Math.random() * 3), // 0-3 incidents
-        safetyScore: Math.floor(Math.random() * 10) + 90, // 90-100
+        dvirCompliance,
+        incidents,
+        safetyScore,
       },
     };
-
-    // Calculate totals
-    mockMetrics.compliance.total =
-      mockMetrics.compliance.compliant +
-      mockMetrics.compliance.expiringSoon +
-      mockMetrics.compliance.expired;
 
     return NextResponse.json({
       success: true,

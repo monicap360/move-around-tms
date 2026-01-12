@@ -1,13 +1,50 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import type { Scan } from "@/lib/fastscan/types";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-// Use the same in-memory store as upload.ts for demo
-const scans: Scan[] = [];
+function createServerAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createServerAdmin();
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get("organization_id");
+
+    // Try multiple possible table names
+    const scanQueries = [
+      supabase.from("fastscan_uploads").select("*").order("uploaded_at", { ascending: false }),
+      supabase.from("scans").select("*").order("created_at", { ascending: false }),
+    ];
+
+    let scans: any[] = [];
+    for (const query of scanQueries) {
+      let filteredQuery = query;
+      if (organizationId) {
+        filteredQuery = filteredQuery.eq("organization_id", organizationId);
+      }
+      const { data, error } = await filteredQuery;
+      if (!error && data) {
+        scans = data;
+        break;
+      }
+    }
+
+    // Filter by organization if provided (fallback if table doesn't have organization_id column)
+    if (organizationId && scans.length > 0 && scans[0]?.organization_id !== undefined) {
+      scans = scans.filter((scan) => scan.organization_id === organizationId);
+    }
+
+    return NextResponse.json({ scans });
+  } catch (error: any) {
+    console.error("Error listing scans:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to list scans" },
+      { status: 500 },
+    );
   }
-  // Return all scans (would filter by organizationId in real app)
-  return res.status(200).json({ scans });
 }

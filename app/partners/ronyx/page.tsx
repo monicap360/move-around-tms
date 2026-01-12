@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+const supabase = createClient();
 
 interface OperatorData {
   id: string;
@@ -25,6 +29,7 @@ interface FleetStats {
 
 export default function RonYXDashboard() {
   const { user, profile, loading, hasPermission } = useRoleBasedAuth();
+  const router = useRouter();
   const [fleetStats, setFleetStats] = useState<FleetStats>({
     activeOperators: 8,
     monthlyRevenue: 12450,
@@ -44,42 +49,133 @@ export default function RonYXDashboard() {
   }, [profile]);
 
   async function loadRonYXData() {
-    // Mock data - replace with real Supabase queries
-    setOperators([
-      {
-        id: "1",
-        name: "Rodriguez Transport LLC",
-        owner: "Carlos Rodriguez",
-        monthlyFee: 850,
-        trucks: 2,
-        lastPayment: "Nov 1, 2024",
-        status: "active",
-        email: "carlos@rodrigueztransport.com",
-        phone: "(555) 123-4567",
-      },
-      {
-        id: "2",
-        name: "Elite Hauling Co",
-        owner: "Maria Santos",
-        monthlyFee: 1200,
-        trucks: 3,
-        lastPayment: "Oct 28, 2024",
-        status: "active",
-        email: "maria@elitehauling.com",
-        phone: "(555) 234-5678",
-      },
-      {
-        id: "3",
-        name: "Lone Star Freight",
-        owner: "James Wilson",
-        monthlyFee: 950,
-        trucks: 1,
-        lastPayment: "Sep 15, 2024",
-        status: "overdue",
-        email: "james@lonestarfreight.com",
-        phone: "(555) 345-6789",
-      },
-    ]);
+    try {
+      // Get partner info to identify which organizations belong to this partner
+      const partnerEmail = user?.email;
+      if (!partnerEmail) return;
+
+      // Find partner record
+      const { data: partnerData } = await supabase
+        .from("partners")
+        .select("id, slug, email")
+        .or(`email.eq.${partnerEmail},slug.eq.ronyx`)
+        .limit(1)
+        .single();
+
+      if (!partnerData) {
+        console.error("Partner not found");
+        return;
+      }
+
+      // Get organizations/companies for this partner
+      // Try multiple possible field names for partner association
+      const orgQueries = [
+        supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
+        supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
+        supabase.from("companies").select("*").eq("partner_id", partnerData.id),
+        supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
+      ];
+
+      let organizationsData: any[] = [];
+      for (const query of orgQueries) {
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          organizationsData = data;
+          break;
+        }
+      }
+
+      // Get truck counts for each organization
+      const operatorsWithTrucks = await Promise.all(
+        organizationsData.map(async (org: any) => {
+          const orgId = org.id || org.organization_id;
+          
+          // Get truck count
+          const { count: truckCount } = await supabase
+            .from("trucks")
+            .select("*", { count: "exact", head: true })
+            .eq("organization_id", orgId);
+
+          // Get last payment date (from invoices or payments table)
+          const { data: lastPaymentData } = await supabase
+            .from("invoices")
+            .select("paid_date, created_at")
+            .eq("organization_id", orgId)
+            .not("paid_date", "is", null)
+            .order("paid_date", { ascending: false })
+            .limit(1)
+            .single();
+
+          const lastPayment = lastPaymentData?.paid_date
+            ? new Date(lastPaymentData.paid_date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "No payments";
+
+          // Determine status based on payment date or organization status
+          let status: "active" | "pending" | "overdue" = "active";
+          if (org.status === "pending" || org.status === "inactive") {
+            status = "pending";
+          } else if (lastPaymentData?.paid_date) {
+            const paymentDate = new Date(lastPaymentData.paid_date);
+            const monthsSincePayment = (new Date().getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
+            if (monthsSincePayment > 1) {
+              status = "overdue";
+            }
+          }
+
+          // Get monthly fee (from subscription or organization settings)
+          const monthlyFee = org.monthly_fee || org.subscription_fee || 0;
+
+          return {
+            id: org.id,
+            name: org.name || org.company_name || "Unknown",
+            owner: org.contact_name || org.owner_name || org.owner || "N/A",
+            monthlyFee: monthlyFee,
+            trucks: truckCount || 0,
+            lastPayment: lastPayment,
+            status: status,
+            email: org.contact_email || org.email || "",
+            phone: org.contact_phone || org.phone || "",
+          };
+        })
+      );
+
+      setOperators(operatorsWithTrucks);
+
+      // Update fleet stats
+      const activeOperators = operatorsWithTrucks.filter((op: any) => op.status === "active").length;
+      const monthlyRevenue = operatorsWithTrucks.reduce((sum: number, op: any) => sum + (op.monthlyFee || 0), 0);
+      const pendingInvoices = operatorsWithTrucks.filter((op: any) => op.status === "overdue").length;
+      const totalTrucks = operatorsWithTrucks.reduce((sum: number, op: any) => sum + (op.trucks || 0), 0);
+      
+      // Calculate fleet rating based on operator status and payment history
+      // Base rating: 4.0, adjust based on active operators and overdue status
+      let fleetRating = 4.0;
+      if (operatorsWithTrucks.length > 0) {
+        const activeRatio = activeOperators / operatorsWithTrucks.length;
+        const overdueRatio = pendingInvoices / operatorsWithTrucks.length;
+        // Higher rating for more active operators, lower for overdue payments
+        fleetRating = 4.0 + (activeRatio * 0.8) - (overdueRatio * 0.5);
+        // Ensure rating stays between 3.5 and 5.0
+        fleetRating = Math.max(3.5, Math.min(5.0, fleetRating));
+      } else {
+        fleetRating = 0;
+      }
+
+      setFleetStats({
+        activeOperators,
+        monthlyRevenue,
+        pendingInvoices,
+        fleetRating: Math.round(fleetRating * 10) / 10,
+      });
+    } catch (error) {
+      console.error("Error loading RonYX data:", error);
+      // Fallback to empty array if database query fails
+      setOperators([]);
+    }
   }
 
   if (loading) {
@@ -353,7 +449,12 @@ export default function RonYXDashboard() {
           }}
         >
           {operators.map((operator) => (
-            <RonYXOperatorCard key={operator.id} operator={operator} />
+            <RonYXOperatorCard 
+              key={operator.id} 
+              operator={operator}
+              onViewDetails={(id) => router.push(`/partners/ronyx/operators/${id}`)}
+              onInvoice={(id) => router.push(`/partners/ronyx/operators/${id}/invoice`)}
+            />
           ))}
         </div>
 
@@ -392,24 +493,28 @@ export default function RonYXDashboard() {
             title="Add New Operator"
             description="Onboard a new owner-operator to your fleet"
             action="Add Operator"
+            onClick={() => router.push("/partners/ronyx/operators/new")}
           />
           <RonYXActionCard
             icon="📊"
             title="Monthly Reports"
             description="Generate and view financial reports"
             action="View Reports"
+            onClick={() => router.push("/partners/ronyx/reports")}
           />
           <RonYXActionCard
             icon="💳"
             title="Payment Management"
             description="Track payments and send invoices"
             action="Manage Payments"
+            onClick={() => router.push("/partners/ronyx/payments")}
           />
           <RonYXActionCard
             icon="⚙️"
             title="Fleet Settings"
             description="Configure your brand and preferences"
             action="Settings"
+            onClick={() => router.push("/partners/ronyx/settings")}
           />
         </div>
       </main>
@@ -468,7 +573,8 @@ function RonYXStatCard({
   );
 }
 
-function RonYXOperatorCard({ operator }: { operator: OperatorData }) {
+function RonYXOperatorCard({ operator, onViewDetails, onInvoice }: { operator: OperatorData; onViewDetails?: (id: string) => void; onInvoice?: (id: string) => void }) {
+  const router = useRouter();
   const getStatusStyle = (status: string) => {
     const baseStyle = {
       padding: "0.25rem 0.75rem",
@@ -580,6 +686,7 @@ function RonYXOperatorCard({ operator }: { operator: OperatorData }) {
 
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button
+          onClick={() => onViewDetails?.(operator.id) || router.push(`/partners/ronyx/operators/${operator.id}`)}
           style={{
             flex: 1,
             background: "#F7931E",
@@ -607,6 +714,7 @@ function RonYXOperatorCard({ operator }: { operator: OperatorData }) {
         </button>
 
         <button
+          onClick={() => onInvoice?.(operator.id) || router.push(`/partners/ronyx/operators/${operator.id}/invoice`)}
           style={{
             background: "#404040",
             color: "#FFFFFF",
@@ -638,12 +746,15 @@ function RonYXActionCard({
   title,
   description,
   action,
+  onClick,
 }: {
   icon: string;
   title: string;
   description: string;
   action: string;
+  onClick?: () => void;
 }) {
+  const router = useRouter();
   return (
     <div
       style={{
@@ -686,6 +797,7 @@ function RonYXActionCard({
         {description}
       </div>
       <button
+        onClick={onClick || (() => {})}
         style={{
           width: "100%",
           background: "#F7931E",

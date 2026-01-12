@@ -4,8 +4,7 @@ import { fetchMockTrackingData } from "@/app/tracking/trackingDataProvider";
 // IMPORTANT: Replace with your Mapbox access token
 const MAPBOX_TOKEN = "YOUR_MAPBOX_ACCESS_TOKEN";
 
-
-
+export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [trucks, setTrucks] = useState<any[]>([]);

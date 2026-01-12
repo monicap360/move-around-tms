@@ -1,8 +1,61 @@
 import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
-export async function POST() {
-  return NextResponse.json({
-    status: "ok",
-    message: "Dispatch assign for ronyx-logistics-llc.",
-  });
+// POST: Assign a driver and truck to a load for ronyx-logistics-llc
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { load_id, driver_id, truck_id } = body;
+    if (!load_id || !driver_id || !truck_id) {
+      return NextResponse.json(
+        { ok: false, error: "Missing load_id, driver_id, or truck_id" },
+        { status: 400 },
+      );
+    }
+
+    // Get organization_id for ronyx-logistics-llc
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "ronyx-logistics-llc")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { ok: false, error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    const organizationId = org.id;
+
+    // Update the load with driver and truck assignment
+    const { error: loadError } = await supabaseAdmin
+      .from("loads")
+      .update({ driver_id, truck_id, status: "Dispatched" })
+      .eq("id", load_id)
+      .eq("organization_id", organizationId);
+    
+    if (loadError) throw loadError;
+
+    // Optionally, create a driver assignment record
+    await supabaseAdmin.from("driver_assignments").insert({
+      driver_id,
+      truck_id,
+      load_id,
+      status: "Dispatched",
+    }).catch(() => {
+      // Non-fatal if table doesn't exist
+    });
+
+    return NextResponse.json({
+      ok: true,
+      message: "Driver and truck assigned to load.",
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err.message || "Dispatch assign failed" },
+      { status: 500 },
+    );
+  }
 }

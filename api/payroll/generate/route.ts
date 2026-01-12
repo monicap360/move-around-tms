@@ -26,13 +26,38 @@ export async function POST(req: Request) {
     const supabaseAdmin = createServerAdmin();
     const body = await req.json().catch(() => ({}));
     const weekStart = body.weekStart || computeCurrentFridayISODate();
+    const organization_id = body.organization_id;
+
+    if (!organization_id) {
+      return NextResponse.json(
+        { success: false, error: "organization_id is required" },
+        { status: 400 },
+      );
+    }
+
+    // Verify organization exists
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("id", organization_id)
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { success: false, error: "Organization not found" },
+        { status: 404 },
+      );
+    }
 
     // Aggregate ticket/driver data for the week
-    // Query tickets table for the pay period
-    const { data: tickets, error: ticketError } = await supabaseAdmin
+    // Query tickets table for the pay period with organization filter
+    let ticketsQuery = supabaseAdmin
       .from("tickets")
-      .select("driver_id, driver_name, amount, pay_day")
+      .select("driver_id, driver_name, amount, pay_day, organization_id")
       .eq("pay_day", weekStart);
+
+    // Filter by organization_id if available in tickets table
+    const { data: tickets, error: ticketError } = await ticketsQuery.eq("organization_id", organization_id);
 
     if (ticketError) {
       return NextResponse.json(

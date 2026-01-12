@@ -1,11 +1,85 @@
 import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
+// GET: List all plants for ronyx-logistics-llc
 export async function GET() {
-  // List all plants
-  return NextResponse.json({ message: "List plants" });
+  try {
+    // Get organization_id for ronyx-logistics-llc
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "ronyx-logistics-llc")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("plants")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("name", { ascending: true });
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(data || []);
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch plants" },
+      { status: 500 },
+    );
+  }
 }
 
+// POST: Create a new plant for ronyx-logistics-llc
 export async function POST(request: Request) {
-  // Create a new plant
-  return NextResponse.json({ message: "Create plant" });
+  try {
+    const body = await request.json();
+
+    // Get organization_id for ronyx-logistics-llc
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "ronyx-logistics-llc")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("plants")
+      .insert({
+        ...body,
+        organization_id: org.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to create plant" },
+      { status: 500 },
+    );
+  }
 }

@@ -193,6 +193,7 @@ export default function RonyxDashboard() {
                 }}
               >
                 <button
+                  onClick={() => router.push("/partners/ronyx/routes/new")}
                   style={{
                     background: "#F7931E",
                     color: "black",
@@ -206,6 +207,7 @@ export default function RonyxDashboard() {
                   Create New Route
                 </button>
                 <button
+                  onClick={() => router.push("/partners/ronyx/reports")}
                   style={{
                     background: "transparent",
                     color: "#F7931E",
@@ -218,6 +220,7 @@ export default function RonyxDashboard() {
                   View Reports
                 </button>
                 <button
+                  onClick={() => router.push("/partners/ronyx/drivers")}
                   style={{
                     background: "transparent",
                     color: "#F7931E",

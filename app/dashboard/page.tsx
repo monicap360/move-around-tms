@@ -1,344 +1,408 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSupabase } from "../lib/supabase-provider";
-import AdminManager from "../components/AdminManager";
-import UserDropdown from "../components/UserDropdown";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { 
+  Truck, Users, FileText, DollarSign, BarChart3, 
+  Plus, ArrowRight, Calendar, TrendingUp, AlertCircle,
+  CheckCircle2, Clock, Package, MapPin
+} from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+const supabase = createClient();
 
 export default function Dashboard() {
-  const { supabase } = useSupabase();
-  const [user, setUser] = useState<any>(null);
+  const [stats, setStats] = useState({
+    activeLoads: 0,
+    availableDrivers: 0,
+    activeTrucks: 0,
+    totalRevenue: 0,
+    pendingInvoices: 0,
+    upcomingDeliveries: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("� Dashboard: Login bypassed - direct access enabled");
+    loadDashboardData();
+  }, []);
 
-        // Skip authentication - set default user for demo
-        const mockUser = {
-          id: "demo-user-id",
-          email: "demo@movearoundtms.com",
-          user_metadata: {
-            full_name: "Demo User",
-          },
-        };
-
-        console.log("✅ Dashboard: Using demo user for direct access");
-        setUser(mockUser);
-        setIsAdmin(true); // Grant admin access for demo
-
-        // Optional: Still try to get real session if available, but don't require it
-        try {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session?.user) {
-            console.log(
-              "✅ Real session found, using actual user:",
-              session.user.email,
-            );
-            setUser(session.user);
-
-            // Check real admin status
-            const adminRes = await fetch("/api/admin/status");
-            const adminData = await adminRes.json();
-            if (adminRes.ok) {
-              setIsAdmin(adminData.isAdmin);
-            }
-          }
-        } catch (sessionError) {
-          console.log("Session check failed, using demo mode:", sessionError);
-        }
-      } catch (error) {
-        console.error("💥 Dashboard setup error:", error);
-        // Don't redirect on error - just use demo mode
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, [supabase]);
-
-  const handleSignOut = async () => {
-    // No sign out needed - just refresh the page since there's no authentication
+  async function loadDashboardData() {
     try {
-      console.log("� Refreshing dashboard...");
-      window.location.reload();
-    } catch (error) {
-      console.error("Refresh error:", error);
+      setLoading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+
+      // Get organization
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("id")
+        .limit(1)
+        .single();
+
+      if (orgData) {
+        setOrganizationId(orgData.id);
+
+        // Load stats
+        const [loadsRes, driversRes, trucksRes, invoicesRes] = await Promise.all([
+          supabase.from("loads").select("id", { count: "exact" }).eq("organization_id", orgData.id).in("status", ["assigned", "in_transit", "dispatched"]),
+          supabase.from("drivers").select("id", { count: "exact" }).eq("organization_id", orgData.id).is("active_load", null).in("status", ["available", "Active", "active"]),
+          supabase.from("trucks").select("id", { count: "exact" }).eq("organization_id", orgData.id).eq("status", "active"),
+          supabase.from("invoices").select("total, status").eq("organization_id", orgData.id),
+        ]);
+
+        const activeLoads = loadsRes.count || 0;
+        const availableDrivers = driversRes.count || 0;
+        const activeTrucks = trucksRes.count || 0;
+        const invoices = invoicesRes.data || [];
+        const totalRevenue = invoices.filter((inv: any) => inv.status === 'Paid').reduce((sum: number, inv: any) => sum + (Number(inv.total) || 0), 0);
+        const pendingInvoices = invoices.filter((inv: any) => inv.status === 'Draft' || inv.status === 'Sent').length;
+
+        setStats({
+          activeLoads,
+          availableDrivers,
+          activeTrucks,
+          totalRevenue,
+          pendingInvoices,
+          upcomingDeliveries: activeLoads,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  const statCards = [
+    {
+      title: "Active Loads",
+      value: stats.activeLoads,
+      icon: Package,
+      color: "#2563eb",
+      href: "/dispatch",
+      bgGradient: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+    },
+    {
+      title: "Available Drivers",
+      value: stats.availableDrivers,
+      icon: Users,
+      color: "#059669",
+      href: "/drivers",
+      bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+    },
+    {
+      title: "Active Trucks",
+      value: stats.activeTrucks,
+      icon: Truck,
+      color: "#f59e42",
+      href: "/fleet",
+      bgGradient: "linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)",
+    },
+    {
+      title: "Total Revenue",
+      value: `$${(stats.totalRevenue / 1000).toFixed(1)}K`,
+      icon: DollarSign,
+      color: "#a21caf",
+      href: "/accounting",
+      bgGradient: "linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)",
+    },
+    {
+      title: "Pending Invoices",
+      value: stats.pendingInvoices,
+      icon: FileText,
+      color: "#dc2626",
+      href: "/invoices",
+      bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)",
+    },
+    {
+      title: "Upcoming Deliveries",
+      value: stats.upcomingDeliveries,
+      icon: Calendar,
+      color: "#0ea5e9",
+      href: "/dispatch",
+      bgGradient: "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)",
+    },
+  ];
+
+  const quickActions = [
+    { label: "Create New Load", href: "/dispatch", icon: Plus, color: "#2563eb" },
+    { label: "Add Driver", href: "/drivers", icon: Users, color: "#059669" },
+    { label: "Add Truck", href: "/fleet", icon: Truck, color: "#f59e42" },
+    { label: "Create Invoice", href: "/invoices", icon: FileText, color: "#a21caf" },
+    { label: "View Reports", href: "/reports", icon: BarChart3, color: "#0ea5e9" },
+    { label: "Manage Fuel", href: "/fuel", icon: Truck, color: "#f59e42" },
+  ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+      <div style={{ 
+        minHeight: "100vh", 
+        background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "50px",
+            height: "50px",
+            border: "4px solid #e5e7eb",
+            borderTop: "4px solid #2563eb",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 1rem"
+          }}></div>
+          <p style={{ color: "#64748b", fontSize: "1.125rem" }}>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
-        padding: 0,
-      }}
-    >
-      <h1
-        style={{
-          fontSize: 48,
-          fontWeight: 700,
-          marginBottom: 16,
-          color: "#1e293b",
-        }}
-      >
-        Dashboard
-      </h1>
-      <p style={{ fontSize: 20, color: "#475569", marginBottom: 32 }}>
-        {user?.email
-          ? `Logged in as ${user.email}`
-          : "Transportation Management System"}
-        {isAdmin && (
-          <span style={{ marginLeft: 12, color: "#a21caf", fontWeight: 600 }}>
-            👑 Admin
-          </span>
-        )}
-      </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 32,
-          width: "100%",
-          maxWidth: 1000,
-          marginBottom: 40,
-        }}
-      >
-        <div
-          style={{
-            background: "#e0e7ef",
-            borderRadius: 16,
-            boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
-            padding: 24,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: 28,
-              fontWeight: 600,
-              color: "#2563eb",
-              marginBottom: 12,
-            }}
-          >
-            Fleet Overview
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "#dbeafe",
-                borderRadius: 8,
-                padding: 12,
-              }}
-            >
-              <span style={{ color: "#1e293b" }}>Active Trucks:</span>
-              <span style={{ color: "#2563eb", fontWeight: 700 }}>24</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "#dcfce7",
-                borderRadius: 8,
-                padding: 12,
-              }}
-            >
-              <span style={{ color: "#1e293b" }}>Available Drivers:</span>
-              <span style={{ color: "#059669", fontWeight: 700 }}>18</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "#fef9c3",
-                borderRadius: 8,
-                padding: 12,
-              }}
-            >
-              <span style={{ color: "#1e293b" }}>Active Routes:</span>
-              <span style={{ color: "#eab308", fontWeight: 700 }}>12</span>
-            </div>
-          </div>
+    <div style={{ 
+      minHeight: "100vh", 
+      background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
+      padding: "2rem"
+    }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "2rem" }}>
+          <h1 style={{ 
+            fontSize: "2.5rem", 
+            fontWeight: 700, 
+            color: "#1e293b", 
+            marginBottom: "0.5rem" 
+          }}>
+            Dashboard
+          </h1>
+          <p style={{ fontSize: "1.125rem", color: "#64748b" }}>
+            Overview of your transportation operations
+          </p>
         </div>
-        <div
-          style={{
-            background: "#e0e7ef",
-            borderRadius: 16,
-            boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
-            padding: 24,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: 28,
-              fontWeight: 600,
-              color: "#059669",
-              marginBottom: 12,
-            }}
-          >
-            Recent Activity
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-              style={{
-                background: "#dbeafe",
-                borderLeft: "4px solid #2563eb",
-                borderRadius: "0 8px 8px 0",
-                padding: 12,
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 500, color: "#2563eb" }}>
-                New delivery scheduled
-              </div>
-              <div style={{ fontSize: 13, color: "#2563eb" }}>
-                Route 101 - 2 minutes ago
-              </div>
-            </div>
-            <div
-              style={{
-                background: "#dcfce7",
-                borderLeft: "4px solid #059669",
-                borderRadius: "0 8px 8px 0",
-                padding: 12,
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 500, color: "#059669" }}>
-                Driver inspection complete
-              </div>
-              <div style={{ fontSize: 13, color: "#059669" }}>
-                John Doe - 15 minutes ago
-              </div>
-            </div>
-            <div
-              style={{
-                background: "#fef9c3",
-                borderLeft: "4px solid #eab308",
-                borderRadius: "0 8px 8px 0",
-                padding: 12,
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 500, color: "#eab308" }}>
-                Maintenance reminder
-              </div>
-              <div style={{ fontSize: 13, color: "#eab308" }}>
-                Truck #15 - 1 hour ago
-              </div>
-            </div>
-          </div>
+
+        {/* Stats Grid */}
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
+          gap: "1.5rem",
+          marginBottom: "2rem"
+        }}>
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Link key={stat.title} href={stat.href} style={{ textDecoration: "none" }}>
+                <Card style={{ 
+                  background: "white", 
+                  borderRadius: "16px", 
+                  boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
+                  cursor: "pointer",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  border: "none"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-4px)";
+                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(30,41,59,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(30,41,59,0.08)";
+                }}
+                >
+                  <CardContent style={{ padding: "1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                      <div style={{ 
+                        background: stat.bgGradient,
+                        borderRadius: "12px",
+                        padding: "0.75rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}>
+                        <Icon style={{ color: stat.color, width: "24px", height: "24px" }} />
+                      </div>
+                      <ArrowRight style={{ color: "#94a3b8", width: "20px", height: "20px" }} />
+                    </div>
+                    <div style={{ fontSize: "2rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.25rem" }}>
+                      {stat.value}
+                    </div>
+                    <div style={{ fontSize: "0.875rem", color: "#64748b", fontWeight: 500 }}>
+                      {stat.title}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
-        <div
-          style={{
-            background: "#e0e7ef",
-            borderRadius: 16,
-            boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
-            padding: 24,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: 28,
-              fontWeight: 600,
-              color: "#0ea5e9",
-              marginBottom: 12,
-            }}
-          >
-            Quick Actions
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <NavAction
-              href="/dispatch"
-              label="Schedule New Route"
-              color="#2563eb"
-            />
-            <NavAction href="/drivers" label="Add New Driver" color="#059669" />
-            <NavAction
-              href="/payroll"
-              label="Generate Report"
-              color="#64748b"
-            />
-            <NavAction
-              href="/file-manager"
-              label="📁 File Manager"
-              color="#0ea5e9"
-            />
-            {isAdmin && (
-              <NavAction
-                href="/admin"
-                label="🛡️ Admin Dashboard"
-                color="#dc2626"
-              />
-            )}
-          </div>
+
+        {/* Quick Actions */}
+        <Card style={{ 
+          background: "white", 
+          borderRadius: "16px", 
+          boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
+          marginBottom: "2rem"
+        }}>
+          <CardHeader>
+            <CardTitle style={{ fontSize: "1.5rem", color: "#1e293b" }}>Quick Actions</CardTitle>
+            <CardDescription style={{ color: "#64748b" }}>
+              Common tasks and navigation
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+              gap: "1rem" 
+            }}>
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Link key={action.label} href={action.href} style={{ textDecoration: "none" }}>
+                    <Button
+                      variant="outline"
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        padding: "1rem",
+                        borderColor: "#e5e7eb",
+                        color: "#1e293b",
+                        fontWeight: 600,
+                        borderRadius: "12px",
+                        background: "white",
+                        justifyContent: "flex-start"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = action.color;
+                        e.currentTarget.style.color = "white";
+                        e.currentTarget.style.borderColor = action.color;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "white";
+                        e.currentTarget.style.color = "#1e293b";
+                        e.currentTarget.style.borderColor = "#e5e7eb";
+                      }}
+                    >
+                      <Icon width={20} height={20} />
+                      {action.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Module Links */}
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
+          gap: "1.5rem"
+        }}>
+          <ModuleCard 
+            title="Dispatch & Loads"
+            description="Manage loads, assign drivers, track shipments"
+            href="/dispatch"
+            icon={Package}
+            color="#2563eb"
+          />
+          <ModuleCard 
+            title="Driver Management"
+            description="Driver profiles, schedules, and performance"
+            href="/drivers"
+            icon={Users}
+            color="#059669"
+          />
+          <ModuleCard 
+            title="Fleet Management"
+            description="Trucks, maintenance, and fleet operations"
+            href="/fleet"
+            icon={Truck}
+            color="#f59e42"
+          />
+          <ModuleCard 
+            title="Accounting & Billing"
+            description="Invoices, payments, and financial management"
+            href="/accounting"
+            icon={DollarSign}
+            color="#a21caf"
+          />
+          <ModuleCard 
+            title="Fuel Management"
+            description="Track fuel purchases and costs"
+            href="/fuel"
+            icon={Truck}
+            color="#f59e42"
+          />
+          <ModuleCard 
+            title="Reports & Analytics"
+            description="Business insights and performance metrics"
+            href="/reports"
+            icon={BarChart3}
+            color="#0ea5e9"
+          />
         </div>
       </div>
-      {/* Admin Management Section */}
-      {isAdmin && (
-        <div style={{ marginTop: 32, width: "100%", maxWidth: 1000 }}>
-          <AdminManager />
-        </div>
-      )}
-      <footer style={{ color: "#94a3b8", fontSize: 14, marginTop: 40 }}>
-        © {new Date().getFullYear()} Move Around TMS
-      </footer>
+
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
 
-// Navigation Action Button for Dashboard Quick Actions
-import Link from "next/link";
-function NavAction({
-  href,
-  label,
-  color,
-}: {
-  href: string;
-  label: string;
-  color: string;
-}) {
+function ModuleCard({ title, description, href, icon: Icon, color }: any) {
   return (
-    <Link
-      href={href}
-      style={{
-        background: color,
-        color: "white",
-        borderRadius: 8,
-        padding: 12,
-        fontWeight: 600,
-        fontSize: 18,
-        marginBottom: 6,
-        border: "none",
+    <Link href={href} style={{ textDecoration: "none" }}>
+      <Card style={{ 
+        background: "white", 
+        borderRadius: "16px", 
+        boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
         cursor: "pointer",
-        textAlign: "center",
-        textDecoration: "none",
-        display: "block",
-        transition: "background 0.2s",
+        transition: "transform 0.2s, box-shadow 0.2s",
+        border: "none",
+        height: "100%"
       }}
-    >
-      {label}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-4px)";
+        e.currentTarget.style.boxShadow = "0 8px 24px rgba(30,41,59,0.12)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(30,41,59,0.08)";
+      }}
+      >
+        <CardContent style={{ padding: "1.5rem" }}>
+          <div style={{ 
+            background: `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
+            borderRadius: "12px",
+            padding: "1rem",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: "1rem"
+          }}>
+            <Icon style={{ color, width: "28px", height: "28px" }} />
+          </div>
+          <CardTitle style={{ fontSize: "1.25rem", color: "#1e293b", marginBottom: "0.5rem" }}>
+            {title}
+          </CardTitle>
+          <CardDescription style={{ color: "#64748b", fontSize: "0.875rem" }}>
+            {description}
+          </CardDescription>
+        </CardContent>
+      </Card>
     </Link>
   );
 }

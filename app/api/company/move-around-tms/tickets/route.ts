@@ -1,11 +1,85 @@
 import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
+// GET: List all tickets for move-around-tms
 export async function GET() {
-  // List all tickets
-  return NextResponse.json({ message: "List tickets" });
+  try {
+    // Get organization_id for move-around-tms
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "move-around-tms")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("tickets")
+      .select("*")
+      .eq("organization_id", org.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(data || []);
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch tickets" },
+      { status: 500 },
+    );
+  }
 }
 
+// POST: Create a new ticket for move-around-tms
 export async function POST(request: Request) {
-  // Create a new ticket
-  return NextResponse.json({ message: "Create ticket" });
+  try {
+    const body = await request.json();
+
+    // Get organization_id for move-around-tms
+    const { data: org, error: orgError } = await supabaseAdmin
+      .from("organizations")
+      .select("id")
+      .eq("organization_code", "move-around-tms")
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("tickets")
+      .insert({
+        ...body,
+        organization_id: org.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to create ticket" },
+      { status: 500 },
+    );
+  }
 }

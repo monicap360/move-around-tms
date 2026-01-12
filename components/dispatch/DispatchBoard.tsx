@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 import { Plus, Truck, User, Loader2, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button } from "@/components/ui/button";
 
 // Simple drag-and-drop using HTML5 API for MVP
 export default function DispatchBoard() {
@@ -22,7 +22,10 @@ export default function DispatchBoard() {
     loadData();
 
     // Supabase Realtime subscription
-    const supabase = createClient();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
     const channel = supabase
       .channel("realtime:loads")
       .on(
@@ -192,31 +195,24 @@ export default function DispatchBoard() {
             </div>
           </div>
         ))}
-        {assignModal?.open && (
-          <AssignModal
-            load={assignModal.load}
-            onClose={async () => {
-              setAssignModal(null);
-              // Refresh loads after closing modal
-              const res = await fetch("/api/dispatch/loads");
-              setLoads(await res.json());
-            }}
-          />
-        )}
+      {assignModal?.open && (
+        <AssignModal
+          load={assignModal.load}
+          drivers={drivers}
+          onClose={async () => {
+            setAssignModal(null);
+            // Refresh loads after closing modal
+            const res = await fetch("/api/dispatch/loads");
+            setLoads(await res.json());
+          }}
+        />
+      )}
       </div>
     </>
   );
 }
 
-import { useState } from "react";
-
-function AssignModal({ load, onClose }: any) {
-  // Demo driver list
-  const drivers = [
-    { id: "d1", name: "John D." },
-    { id: "d2", name: "Jane S." },
-    { id: "d3", name: "Alex P." },
-  ];
+function AssignModal({ load, drivers = [], onClose }: any) {
   const [driver, setDriver] = useState(load?.driver_name || "");
   const [route, setRoute] = useState(load?.route || "");
   const [saving, setSaving] = useState(false);
@@ -250,8 +246,8 @@ function AssignModal({ load, onClose }: any) {
               onChange={(e) => setDriver(e.target.value)}
             >
               <option value="">Unassigned</option>
-              {drivers.map((d) => (
-                <option key={d.id} value={d.name}>
+              {drivers.map((d: any) => (
+                <option key={d.id || d.driver_uuid} value={d.name}>
                   {d.name}
                 </option>
               ))}
@@ -268,10 +264,10 @@ function AssignModal({ load, onClose }: any) {
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="secondary" onClick={onClose} disabled={saving}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>
