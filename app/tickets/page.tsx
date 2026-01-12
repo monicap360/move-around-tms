@@ -1,12 +1,25 @@
+"use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import dynamic from 'next/dynamic';
-const SignaturePad = dynamic(() => import('../components/tickets/SignaturePad'), { ssr: false });
-const QRCodeScan = dynamic(() => import('../components/tickets/QRCodeScan'), { ssr: false });
-const GPSCapture = dynamic(() => import('../components/tickets/GPSCapture'), { ssr: false });
-import { sendTicketEmail } from '../components/tickets/EmailNotification';
-import { generateInvoiceForTicket } from '../components/tickets/AutoInvoice';
+const SignaturePad = dynamic(() => import('../../components/tickets/SignaturePad'), { ssr: false });
+const QRCodeScan = dynamic(() => import('../../components/tickets/QRCodeScan'), { ssr: false });
+const GPSCapture = dynamic(() => import('../../components/tickets/GPSCapture'), { ssr: false });
+import { sendTicketEmail } from '../../components/tickets/EmailNotification';
+import { generateInvoiceForTicket } from '../../components/tickets/AutoInvoice';
+
+export default function TicketsPage() {
+  const inputStyle = {
+    border: '1px solid #cbd5e1',
+    borderRadius: 6,
+    padding: '8px 12px',
+    fontSize: 18,
+    color: '#334155',
+    background: '#fff',
+    width: '100%',
+    marginBottom: 0,
+  };
 
   const [activeTab, setActiveTab] = useState("create");
   const [form, setForm] = useState({
@@ -47,7 +60,7 @@ import { generateInvoiceForTicket } from '../components/tickets/AutoInvoice';
   const podRef = useRef(null);
 
   // Fetch tickets on mount
-  React.useEffect(() => {
+  useEffect(() => {
     fetchTickets();
   }, []);
 
@@ -158,12 +171,14 @@ import { generateInvoiceForTicket } from '../components/tickets/AutoInvoice';
     await fetchTickets();
   }
 
-  async function uploadFile(file, type) {
+  async function uploadFile(file: File, type: string) {
     const path = `tickets/${type}-${Date.now()}-${file.name}`;
     const { data, error } = await supabase.storage.from('ticket-uploads').upload(path, file);
     if (error) return null;
     return data.path;
   }
+
+  return (
     <div
       style={{
         minHeight: '100vh',

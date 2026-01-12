@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
-import ComplianceTab from "../../components/compliance/ComplianceTab";
+import ComplianceTab from "@/components/compliance/ComplianceTab";
 
 export default function DriverProfilePage({ params }: { params: { driverId: string } }) {
   const [profile, setProfile] = useState<any>({});

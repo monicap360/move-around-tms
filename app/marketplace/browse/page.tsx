@@ -1,3 +1,5 @@
+"use client";
+
 // Marketplace Browse Loads Page
 // Unified board for shippers, haulers, brokers
 

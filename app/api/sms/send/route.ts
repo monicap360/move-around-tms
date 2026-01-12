@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import twilio from "twilio";
+
+// Dynamic import for Twilio (optional dependency)
+let twilio: any = null;
+try {
+  twilio = require("twilio");
+} catch (e) {
+  // Twilio not installed - will return error if used
+}
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const fromNumber = process.env.TWILIO_FROM_NUMBER;
-const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
+const client = accountSid && authToken && twilio ? twilio(accountSid, authToken) : null;
 
 // POST: Send SMS for compliance notification
 export async function POST(request: NextRequest) {
