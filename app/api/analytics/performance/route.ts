@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "30d";
+    const organizationId = searchParams.get("organization_id");
 
     // Query real performance data from database
     const supabase = createClient(
@@ -12,9 +13,6 @@ export async function GET(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { persistSession: false } },
     );
-
-    const { searchParams } = new URL(req.url);
-    const organizationId = searchParams.get("organization_id");
 
     // Generate performance data from real database
     const generatePerformanceData = async (days: number) => {
