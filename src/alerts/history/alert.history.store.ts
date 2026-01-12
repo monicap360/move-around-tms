@@ -1,12 +1,13 @@
 // src/alerts/history/alert.history.store.ts
 import { AlertHistoryRecord } from "./alert.history.types";
-import supabase from "../../../lib/supabase/server";
+import { createSupabaseServerClient } from "../../../lib/supabase/server";
 
 // Record alert in Supabase
 export async function recordAlert(
   organizationId: string,
   alert: AlertHistoryRecord["details"],
 ): Promise<AlertHistoryRecord> {
+  const supabase = createSupabaseServerClient();
   const now = new Date().toISOString();
   const id = `${organizationId}:${alert.id}:${now}`;
   const record: AlertHistoryRecord = {
@@ -27,6 +28,7 @@ export async function getAlertHistory(
   organizationId: string,
   limit = 50,
 ): Promise<AlertHistoryRecord[]> {
+  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("alert_history")
     .select("*")
@@ -39,6 +41,7 @@ export async function getAlertHistory(
 
 // Acknowledge alert in Supabase
 export async function acknowledgeAlert(recordId: string): Promise<boolean> {
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("alert_history")
     .update({ acknowledged: true, acknowledgedAt: new Date().toISOString() })

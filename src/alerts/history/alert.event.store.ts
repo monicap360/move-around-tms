@@ -1,9 +1,10 @@
 // src/alerts/history/alert.event.store.ts
 import { AlertEvent } from "./alert.event.types";
-import supabase from "../../../lib/supabase/server";
+import { createSupabaseServerClient } from "../../../lib/supabase/server";
 
 // Append alert event to Supabase
 export async function appendAlertEvent(event: AlertEvent): Promise<void> {
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.from("alert_events").insert([event]);
   if (error) throw error;
 }
@@ -13,6 +14,7 @@ export async function getAlertEvents(
   organizationId: string,
   limit = 50,
 ): Promise<AlertEvent[]> {
+  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("alert_events")
     .select("*")
@@ -28,6 +30,7 @@ export async function acknowledgeAlertEvent(
   id: string,
   user: string,
 ): Promise<boolean> {
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase
     .from("alert_events")
     .update({ acknowledgedAt: new Date().toISOString(), acknowledgedBy: user })
