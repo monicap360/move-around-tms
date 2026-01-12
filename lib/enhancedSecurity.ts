@@ -98,10 +98,7 @@ export function validateEmail(email: string): boolean {
 }
 
 export function sanitizeInput(input: string): string {
-  return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/[<>]/g, "")
-    .trim();
+  return input.replace(/[<>]/g, "").trim();
 }
 
 export function validatePhoneNumber(phone: string): boolean {
