@@ -1,228 +1,159 @@
-# Droplet Deployment Steps - Fix 502 Bad Gateway
+# Droplet Deployment Steps
 
-## ✅ Changes Committed and Pushed
+## ✅ Changes Committed & Pushed
 
-**Commit**: `22e3e04`  
-**Branch**: `sidebar-syntax-0140d`  
-**Status**: ✅ Pushed to GitHub
+All changes have been committed and pushed to the repository:
+- Enterprise dashboard upgrade
+- 502/404 error fixes
+- Accounting integration UI
+- Fuel management UI
+- Finance page (404 fix)
+- Invoices page (full functionality)
+- All production-ready code
 
----
+## 📋 Deploy to Droplet
 
-## Steps to Fix 502 Bad Gateway on Your Droplet
+### Step 1: SSH into Your Droplet
 
-### 1. SSH into Your Droplet
 ```bash
 ssh root@your-droplet-ip
 # or
 ssh user@your-droplet-ip
 ```
 
-### 2. Navigate to Your Project Directory
+### Step 2: Navigate to Project Directory
+
 ```bash
-cd /var/www/move-around-tms
-# or wherever your project is located
+cd /path/to/move-around-tms
+# Common paths:
+# /var/www/move-around-tms
+# /home/user/move-around-tms
+# /root/move-around-tms
 ```
 
-### 3. Pull the Latest Changes
+### Step 3: Pull Latest Changes
+
 ```bash
-git pull origin sidebar-syntax-0140d
-# or if you're on a different branch:
-git fetch origin
-git checkout sidebar-syntax-0140d
-git pull origin sidebar-syntax-0140d
+git pull origin main
+# or
+git pull origin master
 ```
 
-### 4. Install Dependencies (if needed)
+### Step 4: Install Dependencies (if package.json changed)
+
 ```bash
 npm install
-# or
-npm ci
 ```
 
-### 5. Build the Application
+### Step 5: Build the Application (if needed)
+
 ```bash
 npm run build
-# or
-next build
 ```
 
-### 6. Restart the Server/Service
+### Step 6: Restart Your Server
 
-**Option A: If using PM2**
+**If using PM2:**
 ```bash
-pm2 restart all
-# or restart specific process:
 pm2 restart move-around-tms
-pm2 list  # Check status
-pm2 logs  # Check logs
-```
-
-**Option B: If using systemd**
-```bash
-systemctl restart nextjs
 # or
-systemctl restart move-around-tms
-systemctl status nextjs  # Check status
-journalctl -u nextjs -f  # Check logs
+pm2 restart all
 ```
 
-**Option C: If running manually**
+**If using systemd:**
 ```bash
-# Kill existing process
-pkill -f next
-# or find and kill:
-ps aux | grep next
-kill <PID>
+sudo systemctl restart move-around-tms
+# or
+sudo systemctl restart nginx
+sudo systemctl restart node
+```
 
-# Start new process (in background or screen/tmux)
+**If using direct Node:**
+```bash
+# Stop current process (Ctrl+C or kill)
+# Then restart:
 npm start
 # or
-next start
+node server.js
 ```
 
-**Option D: If using Nginx + Node**
+### Step 7: Check Status
+
+**PM2:**
 ```bash
-# Restart Nginx (if reverse proxy)
-systemctl restart nginx
-
-# Then restart Node service
-pm2 restart all
-# or
-systemctl restart nodejs
-```
-
-### 7. Check Logs for Errors
-```bash
-# PM2 logs
-pm2 logs
-
-# Systemd logs
-journalctl -u nextjs -f
-
-# Nginx logs (if using reverse proxy)
-tail -f /var/log/nginx/error.log
-
-# Application logs
-tail -f logs/error.log
-# or check your log directory
-```
-
-### 8. Verify the Build Worked
-```bash
-# Check if build directory exists and has content
-ls -la .next/
-ls -la out/  # if static export
-
-# Check if server is running
-curl http://localhost:3000
-# or whatever port your app uses
-```
-
----
-
-## Common 502 Bad Gateway Causes & Solutions
-
-### 1. Build Errors
-**Symptom**: Build fails during `npm run build`  
-**Solution**: 
-- Check build output for errors
-- Fix any TypeScript/compilation errors
-- Make sure all dependencies are installed
-
-### 2. Server Not Running
-**Symptom**: Process crashed or not started  
-**Solution**:
-- Restart the service (PM2/systemd)
-- Check if port is in use: `netstat -tulpn | grep 3000`
-- Check if process is running: `ps aux | grep next`
-
-### 3. Out of Memory
-**Symptom**: Process killed by OOM killer  
-**Solution**:
-- Check memory: `free -h`
-- Increase swap space if needed
-- Consider upgrading droplet memory
-- Check logs for OOM errors: `dmesg | grep -i oom`
-
-### 4. Port Not Available
-**Symptom**: Port already in use or firewall blocking  
-**Solution**:
-- Check port usage: `lsof -i :3000`
-- Kill conflicting process if needed
-- Check firewall: `ufw status`
-- Check Nginx config if using reverse proxy
-
-### 5. Nginx Configuration Issues
-**Symptom**: Nginx can't connect to Node.js backend  
-**Solution**:
-- Check Nginx config: `nginx -t`
-- Verify upstream server in Nginx config points to correct port
-- Check Nginx error logs: `tail -f /var/log/nginx/error.log`
-- Restart Nginx: `systemctl restart nginx`
-
-### 6. File Permissions
-**Symptom**: Can't read files or execute  
-**Solution**:
-```bash
-# Fix ownership
-chown -R www-data:www-data /var/www/move-around-tms
-# or
-chown -R $USER:$USER /var/www/move-around-tms
-
-# Fix permissions
-chmod -R 755 /var/www/move-around-tms
-```
-
----
-
-## Quick Diagnostic Commands
-
-```bash
-# Check if Node.js is running
-ps aux | grep node
-
-# Check port usage
-netstat -tulpn | grep 3000
-
-# Check system resources
-free -h
-df -h
-top
-
-# Check service status (if using systemd)
-systemctl status nextjs
-
-# Check PM2 status
 pm2 status
-pm2 logs
-
-# Test local connection
-curl http://localhost:3000
-curl http://127.0.0.1:3000
-
-# Check Nginx status (if using)
-systemctl status nginx
-nginx -t
+pm2 logs move-around-tms
 ```
 
+**Systemd:**
+```bash
+sudo systemctl status move-around-tms
+```
+
+**Check if site is running:**
+```bash
+curl http://localhost:3000
+# or check your domain
+curl https://your-domain.com
+```
+
+## 🔍 Quick Troubleshooting
+
+### If git pull fails:
+```bash
+git stash
+git pull
+git stash pop
+```
+
+### If build fails:
+```bash
+rm -rf node_modules
+rm -rf .next
+npm install
+npm run build
+```
+
+### If server won't start:
+```bash
+# Check logs
+pm2 logs
+# or
+journalctl -u move-around-tms -f
+
+# Check port
+lsof -i :3000
+netstat -tulpn | grep :3000
+```
+
+### If 502 errors persist:
+```bash
+# Check nginx error logs
+sudo tail -f /var/log/nginx/error.log
+
+# Check if Node is running
+pm2 status
+# or
+ps aux | grep node
+```
+
+## ✅ Verify Deployment
+
+1. Visit your domain: `https://your-domain.com`
+2. Check dashboard: `https://your-domain.com/dashboard`
+3. Check finance page: `https://your-domain.com/finance`
+4. Check invoices: `https://your-domain.com/invoices`
+5. Check accounting: `https://your-domain.com/accounting/integrations`
+6. Check fuel: `https://your-domain.com/fuel`
+
+## 📝 Notes
+
+- Make sure your environment variables are set on the droplet
+- Ensure database migrations are run if needed
+- Check that Supabase connection is working
+- Verify all API routes are accessible
+
 ---
 
-## After Fixing 502 Error
-
-1. **Verify the site loads**: Visit your domain in a browser
-2. **Check for runtime errors**: Look for console errors or API errors
-3. **Monitor logs**: Keep an eye on logs for a few minutes
-4. **Test key features**: Make sure critical features still work
-
----
-
-## Need More Help?
-
-If 502 persists after these steps:
-1. Check the specific error in logs
-2. Verify all environment variables are set
-3. Check database connections
-4. Verify Supabase connection is working
-5. Check if there are any missing dependencies
-
-The build errors have been fixed, so the application should compile successfully now.
+**Status**: ✅ Code committed and pushed  
+**Next**: Pull on droplet and restart server
