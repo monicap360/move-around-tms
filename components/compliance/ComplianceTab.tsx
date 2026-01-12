@@ -3,7 +3,6 @@ import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 import { CheckCircle, AlertTriangle, XCircle, PenLine, Download, BarChart2, Bell, Search, FileText, FileSpreadsheet, StickyNote } from "lucide-react";
 import Tesseract from "tesseract.js";
-import { useRef as useReactRef } from "react";
 import { utils as XLSXUtils, writeFile as XLSXWriteFile } from "xlsx";
 import JSZip from "jszip";
 
@@ -158,7 +157,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
 
   // HR notes/logs (local for demo)
   const [hrNotes, setHrNotes] = useState<string[]>([]);
-  const hrNoteRef = useReactRef<HTMLInputElement>(null);
+  const hrNoteRef = useRef<HTMLInputElement>(null);
   function addHrNote() {
     if (hrNoteRef.current && hrNoteRef.current.value.trim()) {
       setHrNotes([...hrNotes, hrNoteRef.current.value.trim()]);
@@ -297,8 +296,16 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             Compliance Status
-            {React.createElement(compliance.icon, { className: `w-5 h-5 text-${compliance.color}-500` })}
-            <span className={`text-${compliance.color}-600 font-semibold`}>{compliance.label}</span>
+            {compliance.color === "green" && <CheckCircle className="w-5 h-5 text-green-500" />}
+            {compliance.color === "yellow" && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
+            {compliance.color === "red" && <XCircle className="w-5 h-5 text-red-500" />}
+            {compliance.color === "gray" && <XCircle className="w-5 h-5 text-gray-500" />}
+            <span className={
+              compliance.color === "green" ? "text-green-600 font-semibold" :
+              compliance.color === "yellow" ? "text-yellow-600 font-semibold" :
+              compliance.color === "red" ? "text-red-600 font-semibold" :
+              "text-gray-600 font-semibold"
+            }>{compliance.label}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
