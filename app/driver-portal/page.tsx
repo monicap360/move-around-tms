@@ -82,7 +82,6 @@ type PerformanceGoal = {
 
 import TruckBranding from "../components/cockpit/TruckBranding";
 import { DriverHUDCard } from "../components/driver-hud/DriverHUDCard";
-import { useEffect, useState } from "react";
 
 export default function DriverPortalPage() {
   const [driver, setDriver] = useState<DriverProfile | null>(null);

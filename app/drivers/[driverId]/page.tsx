@@ -1,7 +1,39 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "../../lib/supabaseClient";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import ComplianceTab from "../../components/compliance/ComplianceTab";
 
+export default function DriverProfilePage({ params }: { params: { driverId: string } }) {
+  const [profile, setProfile] = useState<any>({});
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [aiSuggested, setAiSuggested] = useState<any>({});
+  const fileInputRefs = {
+    cdl: useRef<HTMLInputElement>(null),
+    medical: useRef<HTMLInputElement>(null),
+    twic: useRef<HTMLInputElement>(null),
+  };
 
-// ...existing code...
+  useEffect(() => {
+    async function loadData() {
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('id', params.driverId)
+        .single();
+      if (driver) setProfile(driver);
+
+      const { data: docs } = await supabase
+        .from('driver_documents')
+        .select('*')
+        .eq('driver_id', params.driverId);
+      if (docs) setDocuments(docs);
+    }
+    loadData();
+  }, [params.driverId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -137,7 +169,5 @@ import ComplianceTab from "../../components/compliance/ComplianceTab";
       </Card>
       <ComplianceTab driverId={params.driverId} role="admin" />
     </div>
-  );
-}
   );
 }
