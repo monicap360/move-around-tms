@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { eldProviders } from "../../integrations/eld";
-import Map, { Marker, NavigationControl } from "react-map-gl";
+import Map from "react-map-gl/mapbox";
+import { Marker, NavigationControl } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 export default function LiveFleetMap() {
