@@ -138,7 +138,7 @@ export default function RonyxOperatorInvoicePage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "1400px", margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
             <button onClick={() => router.push(`/partners/ronyx/operators/${operatorId}`)} style={{ background: "transparent", border: "1px solid #F7931E", color: "#F7931E", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}>← Back</button>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>Create Invoice</h1>
+            <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>{invoiceId ? "Edit Invoice" : "Create Invoice"}</h1>
           </div>
         </div>
       </header>

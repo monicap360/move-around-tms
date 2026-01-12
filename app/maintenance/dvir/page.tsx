@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { validateDVIR } from "lib/complianceRules";
+import { validateDVIR } from "@/lib/complianceRules";
 import {
   Card,
   CardHeader,

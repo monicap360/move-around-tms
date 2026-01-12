@@ -150,7 +150,20 @@ export default function RonYXDashboard() {
       const monthlyRevenue = operatorsWithTrucks.reduce((sum: number, op: any) => sum + (op.monthlyFee || 0), 0);
       const pendingInvoices = operatorsWithTrucks.filter((op: any) => op.status === "overdue").length;
       const totalTrucks = operatorsWithTrucks.reduce((sum: number, op: any) => sum + (op.trucks || 0), 0);
-      const fleetRating = totalTrucks > 0 ? 4.5 + Math.random() * 0.5 : 0; // Placeholder rating calculation
+      
+      // Calculate fleet rating based on operator status and payment history
+      // Base rating: 4.0, adjust based on active operators and overdue status
+      let fleetRating = 4.0;
+      if (operatorsWithTrucks.length > 0) {
+        const activeRatio = activeOperators / operatorsWithTrucks.length;
+        const overdueRatio = pendingInvoices / operatorsWithTrucks.length;
+        // Higher rating for more active operators, lower for overdue payments
+        fleetRating = 4.0 + (activeRatio * 0.8) - (overdueRatio * 0.5);
+        // Ensure rating stays between 3.5 and 5.0
+        fleetRating = Math.max(3.5, Math.min(5.0, fleetRating));
+      } else {
+        fleetRating = 0;
+      }
 
       setFleetStats({
         activeOperators,
