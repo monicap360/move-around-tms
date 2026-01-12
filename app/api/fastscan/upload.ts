@@ -59,16 +59,12 @@ export async function POST(request: NextRequest) {
       .from(bucketUsed)
       .getPublicUrl(filePath);
 
-    // Mock OCR result (in production, this would call OCR service)
-    const mockOcrResult = {
-      text: "OCR_TEXT_EXTRACTED",
-      confidence: 0.95,
-      fields: {
-        ticket_number: "12345",
-        gross: 45000,
-        tare: 12000,
-        net: 33000,
-      },
+    // OCR result structure (OCR processing should be handled by webhook/edge function)
+    // For now, store file info and let OCR process asynchronously
+    const ocrResultData = {
+      status: "pending",
+      file_url: publicUrl,
+      uploaded_at: new Date().toISOString(),
     };
 
     // Store scan record in database
