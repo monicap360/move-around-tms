@@ -16,6 +16,7 @@ import TicketSummary from "../../../components/tickets/TicketSummary";
 import SavedViewsDropdown from "../../../components/tickets/SavedViewsDropdown";
 import SaveViewModal from "../../../components/tickets/SaveViewModal";
 import BulkActionsToolbar from "../../../components/tickets/BulkActionsToolbar";
+import TicketComparison from "../../../components/tickets/TicketComparison";
 import TicketSummary from "../../../components/tickets/TicketSummary";
 import {
   FileText,
@@ -104,6 +105,7 @@ export default function AggregateTicketsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   const [newTicket, setNewTicket] = useState({
     ticket_number: "",
@@ -1010,7 +1012,27 @@ export default function AggregateTicketsPage() {
         selectedCount={selectedTicketIds.size}
         onBulkAction={handleBulkAction}
         onClearSelection={() => setSelectedTicketIds(new Set())}
+        onCompare={
+          selectedTicketIds.size >= 2
+            ? () => setShowComparison(true)
+            : undefined
+        }
       />
+
+      {/* Comparison Modal */}
+      {showComparison && selectedTicketIds.size >= 2 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-y-auto m-4">
+            <TicketComparison
+              ticketIds={Array.from(selectedTicketIds)}
+              onClose={() => {
+                setShowComparison(false);
+                setSelectedTicketIds(new Set());
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

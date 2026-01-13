@@ -8,6 +8,7 @@ import {
   Download,
   X,
   AlertCircle,
+  GitCompare,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -15,12 +16,14 @@ interface BulkActionsToolbarProps {
   selectedCount: number;
   onBulkAction: (action: string, params?: any) => void;
   onClearSelection: () => void;
+  onCompare?: () => void;
 }
 
 export default function BulkActionsToolbar({
   selectedCount,
   onBulkAction,
   onClearSelection,
+  onCompare,
 }: BulkActionsToolbarProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -78,6 +81,21 @@ export default function BulkActionsToolbar({
         </Button>
 
         <div className="border-l border-gray-300 h-6" />
+
+        {onCompare && selectedCount >= 2 && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCompare}
+              className="gap-2"
+            >
+              <GitCompare className="w-4 h-4" />
+              Compare ({selectedCount})
+            </Button>
+            <div className="border-l border-gray-300 h-6" />
+          </>
+        )}
 
         <Button
           size="sm"
