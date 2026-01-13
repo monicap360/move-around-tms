@@ -55,6 +55,12 @@ interface AggregateTicket {
   // Related data
   driver_name?: string;
   truck_number?: string;
+  // Confidence data
+  confidence?: {
+    quantity?: { score: number; reason: string };
+    pay_rate?: { score: number; reason: string };
+    bill_rate?: { score: number; reason: string };
+  };
 }
 
 interface Driver {
@@ -176,6 +182,16 @@ export default function AggregateTicketsPage() {
         .single();
 
       if (error) throw error;
+
+      // Score confidence for the new ticket (async, don't wait)
+      fetch('/api/tickets/score-confidence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticketId: data.id,
+          driverId: newTicket.driver_id,
+        }),
+      }).catch(err => console.error('Error scoring ticket confidence:', err));
 
       await loadTicketData();
       setShowCreateModal(false);
@@ -456,7 +472,16 @@ export default function AggregateTicketsPage() {
                       <td className="p-3">{ticket.customer_name}</td>
                       <td className="p-3">{ticket.material_type}</td>
                       <td className="p-3">
-                        {ticket.quantity} {ticket.unit}
+                        <div className="flex items-center gap-2">
+                          <span>{ticket.quantity} {ticket.unit}</span>
+                          {ticket.confidence?.quantity && (
+                            <ConfidenceBadge
+                              score={ticket.confidence.quantity.score}
+                              reason={ticket.confidence.quantity.reason}
+                              fieldName="Quantity"
+                            />
+                          )}
+                        </div>
                       </td>
                       <td className="p-3 font-semibold text-green-600">
                         ${ticket.total_amount?.toLocaleString()}

@@ -106,11 +106,12 @@ async function getDriverHistoricalAverage(
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
   try {
+    // Use ticket_date if available, otherwise created_at
     const { data, error } = await supabase
       .from('aggregate_tickets')
       .select(column)
       .eq('driver_id', driverId)
-      .gte('ticket_date', cutoffDate.toISOString().split('T')[0])
+      .or(`ticket_date.gte.${cutoffDate.toISOString().split('T')[0]},created_at.gte.${cutoffDate.toISOString()}`)
       .not(column, 'is', null);
     
     if (error || !data || data.length === 0) {
