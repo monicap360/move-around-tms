@@ -39,6 +39,18 @@ export async function POST(request: Request) {
       .select()
       .single();
     if (error) throw error;
+    
+    // Score confidence for the new ticket (async, don't wait)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/tickets/score-confidence`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticketId: data.id,
+        driverId: body.driver_id,
+        siteId: body.site_id,
+      }),
+    }).catch(err => console.error('Error scoring ticket confidence:', err));
+    
     return NextResponse.json({ ok: true, ticket: data });
   } catch (err: any) {
     return NextResponse.json(

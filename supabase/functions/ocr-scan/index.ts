@@ -243,6 +243,23 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
 
   if (insertError) throw insertError;
 
+  // Score confidence for the new ticket (async, non-blocking)
+  // Use Deno's fetch to call the API endpoint
+  const driver_id = matchedDriver?.id || body.driverId || ticket.driver_id;
+  if (ticket.id && (ticket.quantity || ticket.pay_rate || ticket.bill_rate)) {
+    const appUrl = Deno.env.get("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
+    fetch(`${appUrl}/api/tickets/score-confidence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticketId: ticket.id,
+        driverId: driver_id,
+      }),
+    }).catch((err) => 
+      console.error(`Error scoring confidence for ticket ${ticket.id}:`, err)
+    );
+  }
+
   return {
     success: true,
     kind: "ticket",

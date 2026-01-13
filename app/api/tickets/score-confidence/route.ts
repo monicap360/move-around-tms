@@ -15,13 +15,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get ticket data
+    // Get ticket data - try aggregate_tickets first, then tickets table
     const supabase = createSupabaseServerClient();
-    const { data: ticket, error: ticketError } = await supabase
+    let ticket: any = null;
+    let ticketError: any = null;
+    
+    // Try aggregate_tickets first
+    const { data: aggregateTicket, error: aggregateError } = await supabase
       .from("aggregate_tickets")
       .select("id, quantity, pay_rate, bill_rate, driver_id")
       .eq("id", ticketId)
       .single();
+
+    if (!aggregateError && aggregateTicket) {
+      ticket = aggregateTicket;
+    } else {
+      // Try tickets table as fallback (for FastScan, etc.)
+      const { data: regularTicket, error: regularError } = await supabase
+        .from("tickets")
+        .select("id, quantity, pay_rate, bill_rate, driver_id, weight_in, weight_out")
+        .eq("id", ticketId)
+        .single();
+
+      if (!regularError && regularTicket) {
+        // Calculate quantity from weight_out - weight_in if quantity not present
+        ticket = {
+          ...regularTicket,
+          quantity: regularTicket.quantity || (regularTicket.weight_out && regularTicket.weight_in 
+            ? regularTicket.weight_out - regularTicket.weight_in 
+            : null),
+        };
+      } else {
+        ticketError = regularError || aggregateError;
+      }
+    }
 
     if (ticketError || !ticket) {
       return NextResponse.json(
