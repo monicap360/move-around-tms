@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Server-side admin client
-function getAdminClient() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) {
-    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY");
-  }
-  return createClient(url, key, { auth: { persistSession: false } });
-}
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = getAdminClient();
+  const supabase = createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from("driver_documents_expiring")

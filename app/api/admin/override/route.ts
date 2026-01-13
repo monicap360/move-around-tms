@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!, // bypass RLS
-  );
+  const supabase = createSupabaseServerClient();
 
   const { organization_id, type, days } = await req.json();
 

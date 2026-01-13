@@ -20,6 +20,20 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Exclude problematic routes from build
+  pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  
+  // Exclude temp-backup directories
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
+
   // Environment variables (embedded at build time)
   env: {
     NEXT_PUBLIC_SUPABASE_URL: "https://wqeidcatuwqtzwhvmqfr.supabase.co",

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = 'force-dynamic';
 
 // Twilio sends SMS webhook data as form-encoded
 export async function POST(req: NextRequest) {
@@ -48,10 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find driver by phone number
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!,
-    );
+    const supabase = createSupabaseServerClient();
 
     const { data: driver, error: driverErr } = await supabase
       .from("drivers")

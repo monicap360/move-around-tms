@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Papa from "papaparse";
+
+export const dynamic = 'force-dynamic';
 
 // Admin-only endpoint to reconcile tickets against material plant CSV files
 export async function POST(req: NextRequest) {
   try {
+    const supabase = createSupabaseServerClient();
     const { ticketId, csvUrl } = await req.json();
 
     if (!ticketId) {
@@ -13,11 +16,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!,
-    );
 
     // Get the ticket details
     const { data: ticket, error: ticketErr } = await supabase
@@ -144,10 +142,7 @@ function findTicketInCsv(ticket: any, csvData: any[]): any | null {
 // GET endpoint to auto-reconcile all missing tickets
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!,
-    );
+    const supabase = createSupabaseServerClient();
 
     // Get all unreconciled missing tickets
     const { data: tickets, error } = await supabase

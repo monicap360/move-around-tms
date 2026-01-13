@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!,
-  );
+  const supabase = createSupabaseServerClient();
 
   // Join organizations and subscriptions for admin view
   const { data, error } = await supabase.from("organizations").select(`

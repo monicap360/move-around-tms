@@ -1,12 +1,11 @@
 // app/api/advisor/leads/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const supabase = createSupabaseServerClient();
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const status = searchParams.get("status") || "";
