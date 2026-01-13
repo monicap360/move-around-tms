@@ -17,6 +17,7 @@ import {
   DollarSign,
   TrendingUp,
 } from "lucide-react";
+import ExplainabilityCardIntegration from "./ExplainabilityCardIntegration";
 
 interface Exception {
   id: string;
