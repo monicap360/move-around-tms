@@ -1,12 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-const client = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(req) {
+  const client = createSupabaseServerClient();
   const body = await req.json();
   const { driver_uuid, load_id, weight_in, weight_out, plant_id, material_id } =
     body;
