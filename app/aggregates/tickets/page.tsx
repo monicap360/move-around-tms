@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
+import ConfidenceBadge from "../../components/data-confidence/ConfidenceBadge";
 import {
   FileText,
   Truck,
@@ -156,7 +157,52 @@ export default function AggregateTicketsPage() {
           "Unknown Truck",
       }));
 
-      setTickets(enrichedTickets);
+      // Fetch confidence scores for all tickets
+      const ticketsWithConfidence = await Promise.all(
+        enrichedTickets.map(async (ticket) => {
+          try {
+            const response = await fetch(
+              `/api/tickets/${ticket.id}/confidence`
+            );
+            if (response.ok) {
+              const { confidence } = await response.json();
+              return {
+                ...ticket,
+                confidence: confidence
+                  ? {
+                      quantity: confidence.quantity
+                        ? {
+                            score: confidence.quantity.confidence_score,
+                            reason: confidence.quantity.reason,
+                          }
+                        : undefined,
+                      pay_rate: confidence.pay_rate
+                        ? {
+                            score: confidence.pay_rate.confidence_score,
+                            reason: confidence.pay_rate.reason,
+                          }
+                        : undefined,
+                      bill_rate: confidence.bill_rate
+                        ? {
+                            score: confidence.bill_rate.confidence_score,
+                            reason: confidence.bill_rate.reason,
+                          }
+                        : undefined,
+                    }
+                  : undefined,
+              };
+            }
+          } catch (err) {
+            console.error(
+              `Error fetching confidence for ticket ${ticket.id}:`,
+              err
+            );
+          }
+          return ticket;
+        })
+      );
+
+      setTickets(ticketsWithConfidence);
       setDrivers(driverData || []);
       setTrucks(truckData || []);
     } catch (error) {
@@ -247,41 +293,86 @@ export default function AggregateTicketsPage() {
     );
   };
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch =
-      ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.material_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (ticket.driver_name &&
-        ticket.driver_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (ticket.truck_number &&
-        ticket.truck_number.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Helper function to get the lowest confidence score for a ticket
+  const getLowestConfidence = (ticket: AggregateTicket): number => {
+    if (!ticket.confidence) return 1.0; // Default to high confidence if no data
+    const scores = [
+      ticket.confidence.quantity?.score,
+      ticket.confidence.pay_rate?.score,
+      ticket.confidence.bill_rate?.score,
+    ].filter((s): s is number => s !== undefined);
+    return scores.length > 0 ? Math.min(...scores) : 1.0;
+  };
 
-    const matchesStatus =
-      statusFilter === "all" || ticket.status === statusFilter;
+  const filteredTickets = tickets
+    .filter((ticket) => {
+      const matchesSearch =
+        ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.material_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ticket.driver_name &&
+          ticket.driver_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (ticket.truck_number &&
+          ticket.truck_number.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    let matchesDate = true;
-    if (dateFilter !== "all") {
-      const ticketDate = new Date(ticket.created_at);
-      const today = new Date();
+      const matchesStatus =
+        statusFilter === "all" || ticket.status === statusFilter;
 
-      switch (dateFilter) {
-        case "today":
-          matchesDate = ticketDate.toDateString() === today.toDateString();
-          break;
-        case "week":
-          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-          matchesDate = ticketDate >= weekAgo;
-          break;
-        case "month":
-          const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-          matchesDate = ticketDate >= monthAgo;
-          break;
+      let matchesDate = true;
+      if (dateFilter !== "all") {
+        const ticketDate = new Date(ticket.created_at);
+        const today = new Date();
+
+        switch (dateFilter) {
+          case "today":
+            matchesDate = ticketDate.toDateString() === today.toDateString();
+            break;
+          case "week":
+            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            matchesDate = ticketDate >= weekAgo;
+            break;
+          case "month":
+            const monthAgo = new Date(
+              today.getTime() - 30 * 24 * 60 * 60 * 1000
+            );
+            matchesDate = ticketDate >= monthAgo;
+            break;
+        }
       }
-    }
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+      // Confidence filter
+      let matchesConfidence = true;
+      if (confidenceFilter !== "all") {
+        const lowestConfidence = getLowestConfidence(ticket);
+        switch (confidenceFilter) {
+          case "high":
+            matchesConfidence = lowestConfidence >= 0.7;
+            break;
+          case "medium":
+            matchesConfidence = lowestConfidence >= 0.5 && lowestConfidence < 0.7;
+            break;
+          case "low":
+            matchesConfidence = lowestConfidence < 0.5;
+            break;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesDate && matchesConfidence;
+    })
+    .sort((a, b) => {
+      if (sortBy === "confidence") {
+        const aConfidence = getLowestConfidence(a);
+        const bConfidence = getLowestConfidence(b);
+        return sortOrder === "asc"
+          ? aConfidence - bConfidence
+          : bConfidence - aConfidence;
+      } else {
+        // Sort by created date
+        const aDate = new Date(a.created_at).getTime();
+        const bDate = new Date(b.created_at).getTime();
+        return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
+      }
+    });
 
   if (loading) {
     return (
@@ -417,6 +508,32 @@ export default function AggregateTicketsPage() {
               <option value="today">Today</option>
               <option value="week">This Week</option>
               <option value="month">This Month</option>
+            </select>
+
+            <select
+              value={confidenceFilter}
+              onChange={(e) => setConfidenceFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="all">All Confidence</option>
+              <option value="high">High Confidence (≥70%)</option>
+              <option value="medium">Medium Confidence (50-69%)</option>
+              <option value="low">Low Confidence (&lt;50%)</option>
+            </select>
+
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [by, order] = e.target.value.split("-");
+                setSortBy(by as "created" | "confidence");
+                setSortOrder(order as "asc" | "desc");
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="created-desc">Sort: Newest First</option>
+              <option value="created-asc">Sort: Oldest First</option>
+              <option value="confidence-desc">Sort: High Confidence First</option>
+              <option value="confidence-asc">Sort: Low Confidence First</option>
             </select>
           </div>
         </CardContent>
