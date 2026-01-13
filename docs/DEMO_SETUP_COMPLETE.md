@@ -95,11 +95,14 @@
 
 ## 🚀 NEXT STEPS (To Complete Demo)
 
-1. **Run Migration 054:** Execute `054_demo_acme_aggregates_seed.sql` in Supabase
+1. **Run Migrations:**
+   - Execute `054_demo_acme_aggregates_seed.sql` in Supabase (Aggregates demo)
+   - Execute `055_demo_orgs_all_verticals.sql` in Supabase (All verticals)
 2. **Integrate WeightConfidenceBadge:** Add to ticket display in `/aggregates/tickets`
-3. **Take Screenshots:** Capture all required demo screenshots
+3. **Take Screenshots:** Capture all required demo screenshots for each vertical
 4. **Test Audit Packet:** Generate one audit packet to verify
-5. **Practice Demo:** Use demo script to practice 5-minute flow
+5. **Practice Demo Flows:** Use `sales/demo-flows.md` to practice each vertical flow
+6. **Verify All Pages:** Ensure all demo pages work for each vertical type
 
 ## 📝 QUICK START COMMANDS
 
@@ -117,6 +120,7 @@
 
 ## ✅ VERIFICATION CHECKLIST
 
+### Aggregates Demo (Acme Aggregates):
 - [ ] Migration 054 executed successfully
 - [ ] Acme Aggregates org exists with vertical_type = aggregates_quarry
 - [ ] 20 tickets visible in UI
@@ -124,5 +128,12 @@
 - [ ] Confidence badges display on tickets
 - [ ] Revenue Risk dashboard shows data
 - [ ] Audit packet generator works
-- [ ] Screenshots captured
-- [ ] Demo script reviewed
+
+### All Verticals:
+- [ ] Migration 055 executed successfully
+- [ ] ABC Construction org exists (construction_hauling)
+- [ ] Green Waste Solutions org exists (waste_recycling)
+- [ ] Concrete Express org exists (ready_mix)
+- [ ] Demo flows documented in sales/demo-flows.md
+- [ ] Screenshots captured for each vertical
+- [ ] Demo flows practiced out loud
