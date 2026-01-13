@@ -7,7 +7,4 @@ function createSupabaseServerClient() {
   );
 }
 
-const supabase = createSupabaseServerClient();
-
-export default supabase;
 export { createSupabaseServerClient };

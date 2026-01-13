@@ -1,11 +1,12 @@
 // src/notifications/preferences.store.ts
 import { NotificationPreference } from "./preferences.types";
-import supabase from "../../lib/supabase/server";
+import { createSupabaseServerClient } from "../../lib/supabase/server";
 
 // Fetch preferences from Supabase
 export async function getPreferences(
   organizationId: string,
 ): Promise<NotificationPreference[]> {
+  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("notification_preferences")
     .select("*")
@@ -19,6 +20,7 @@ export async function setPreferences(
   organizationId: string,
   updates: NotificationPreference[],
 ): Promise<void> {
+  const supabase = createSupabaseServerClient();
   // Upsert each preference
   for (const update of updates) {
     const { error } = await supabase

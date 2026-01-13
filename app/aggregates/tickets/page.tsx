@@ -12,6 +12,12 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
 import ConfidenceBadge from "../../../components/data-confidence/ConfidenceBadge";
+import TicketSummary from "../../../components/tickets/TicketSummary";
+import SavedViewsDropdown from "../../../components/tickets/SavedViewsDropdown";
+import SaveViewModal from "../../../components/tickets/SaveViewModal";
+import BulkActionsToolbar from "../../../components/tickets/BulkActionsToolbar";
+import TicketComparison from "../../../components/tickets/TicketComparison";
+import AdvancedSearch from "../../../components/tickets/AdvancedSearch";
 import {
   FileText,
   Truck,
@@ -94,6 +100,12 @@ export default function AggregateTicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<AggregateTicket | null>(
     null,
   );
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   const [newTicket, setNewTicket] = useState({
     ticket_number: "",
@@ -116,6 +128,10 @@ export default function AggregateTicketsPage() {
 
   useEffect(() => {
     loadTicketData();
+    // Get current user ID
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
   }, []);
 
   async function loadTicketData() {
@@ -209,6 +225,58 @@ export default function AggregateTicketsPage() {
       console.error("Error loading ticket data:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleBulkAction(action: string, params?: any) {
+    if (selectedTicketIds.size === 0) return;
+
+    const ticketIdsArray = Array.from(selectedTicketIds);
+
+    try {
+      if (action === "export") {
+        const res = await fetch("/api/tickets/bulk", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_ids: ticketIdsArray, format: "csv" }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // Download CSV
+          const blob = new Blob([data.content], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.filename;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } else {
+        const res = await fetch("/api/tickets/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            ticket_ids: ticketIdsArray,
+            ...params,
+          }),
+        });
+
+        if (res.ok) {
+          // Reload tickets to reflect changes
+          await loadTicketData();
+          // Clear selection
+          setSelectedTicketIds(new Set());
+          alert(`Successfully ${action}ed ${ticketIdsArray.length} ticket(s)`);
+        } else {
+          const error = await res.json();
+          alert(`Error: ${error.error || "Failed to perform bulk action"}`);
+        }
+      }
+    } catch (err) {
+      console.error("Error performing bulk action:", err);
+      alert("Failed to perform bulk action");
     }
   }
 
@@ -357,7 +425,69 @@ export default function AggregateTicketsPage() {
         }
       }
 
-      return matchesSearch && matchesStatus && matchesDate && matchesConfidence;
+      // Advanced search criteria filtering
+      let matchesAdvancedSearch = true;
+      if (advancedSearchCriteria && advancedSearchCriteria.length > 0) {
+        matchesAdvancedSearch = advancedSearchCriteria.every((criterion: any) => {
+          const field = criterion.field;
+          const operator = criterion.operator;
+          const value = criterion.value?.toString().toLowerCase() || "";
+          const value2 = criterion.value2?.toString().toLowerCase() || "";
+
+          let ticketValue: any;
+          switch (field) {
+            case "ticket_number":
+              ticketValue = ticket.ticket_number?.toLowerCase() || "";
+              break;
+            case "driver_name":
+              ticketValue = ticket.driver_name?.toLowerCase() || "";
+              break;
+            case "customer_name":
+              ticketValue = ticket.customer_name?.toLowerCase() || "";
+              break;
+            case "material_type":
+              ticketValue = ticket.material_type?.toLowerCase() || "";
+              break;
+            case "quantity":
+              ticketValue = Number(ticket.quantity) || 0;
+              break;
+            case "total_amount":
+              ticketValue = Number(ticket.total_amount) || 0;
+              break;
+            case "status":
+              ticketValue = ticket.status?.toLowerCase() || "";
+              break;
+            case "ticket_date":
+              ticketValue = ticket.ticket_date || ticket.created_at || "";
+              break;
+            default:
+              return true; // Unknown field, skip
+          }
+
+          switch (operator) {
+            case "equals":
+              if (typeof ticketValue === "number") {
+                return ticketValue === Number(value);
+              }
+              return ticketValue === value;
+            case "contains":
+              return ticketValue.toString().includes(value);
+            case "greater_than":
+              return Number(ticketValue) > Number(value);
+            case "less_than":
+              return Number(ticketValue) < Number(value);
+            case "between":
+              const numValue = Number(value);
+              const numValue2 = Number(value2);
+              const numTicketValue = Number(ticketValue);
+              return numTicketValue >= numValue && numTicketValue <= numValue2;
+            default:
+              return true;
+          }
+        });
+      }
+
+      return matchesSearch && matchesStatus && matchesDate && matchesConfidence && matchesAdvancedSearch;
     })
     .sort((a, b) => {
       if (sortBy === "confidence") {
@@ -475,7 +605,29 @@ export default function AggregateTicketsPage() {
           <CardTitle>Filter Tickets</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            {userId && (
+              <SavedViewsDropdown
+                currentFilters={{
+                  searchTerm,
+                  statusFilter,
+                  dateFilter,
+                  confidenceFilter,
+                  sortBy,
+                  sortOrder,
+                }}
+                onSelectView={(filters) => {
+                  setSearchTerm(filters.searchTerm || "");
+                  setStatusFilter(filters.status || "all");
+                  setDateFilter(filters.dateRange || "all");
+                  setConfidenceFilter(filters.confidence || "all");
+                  setSortBy(filters.sortBy || "created");
+                  setSortOrder(filters.sortOrder || "desc");
+                }}
+                onSaveView={() => setShowSaveViewModal(true)}
+                userId={userId}
+              />
+            )}
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-gray-500" />
               <Input
@@ -535,7 +687,29 @@ export default function AggregateTicketsPage() {
               <option value="confidence-desc">Sort: High Confidence First</option>
               <option value="confidence-asc">Sort: Low Confidence First</option>
             </select>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Advanced Search
+            </Button>
           </div>
+
+          {/* Advanced Search */}
+          {showAdvancedSearch && (
+            <div className="mt-4 pt-4 border-t">
+              <AdvancedSearch
+                onSearch={(criteria) => {
+                  setAdvancedSearchCriteria(criteria);
+                  // Advanced search logic would be applied here
+                  // For now, we'll use the basic filtering
+                }}
+                savedSearches={[]}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -558,6 +732,23 @@ export default function AggregateTicketsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-left p-3">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredTickets.length > 0 &&
+                          filteredTickets.every((t) => selectedTicketIds.has(t.id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTicketIds(new Set(filteredTickets.map((t) => t.id)));
+                          } else {
+                            setSelectedTicketIds(new Set());
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                    </th>
                     <th className="text-left p-3">Ticket #</th>
                     <th className="text-left p-3">Status</th>
                     <th className="text-left p-3">Driver</th>
@@ -573,6 +764,22 @@ export default function AggregateTicketsPage() {
                 <tbody>
                   {filteredTickets.map((ticket) => (
                     <tr key={ticket.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedTicketIds.has(ticket.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedTicketIds);
+                            if (e.target.checked) {
+                              newSet.add(ticket.id);
+                            } else {
+                              newSet.delete(ticket.id);
+                            }
+                            setSelectedTicketIds(newSet);
+                          }}
+                          className="w-4 h-4"
+                        />
+                      </td>
                       <td className="p-3 font-mono text-xs">
                         {ticket.ticket_number}
                       </td>
@@ -616,7 +823,10 @@ export default function AggregateTicketsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setSelectedTicket(ticket)}
+                            onClick={() => {
+                              setSelectedTicket(ticket);
+                              setShowSummaryModal(true);
+                            }}
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
@@ -843,6 +1053,68 @@ export default function AggregateTicketsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Ticket Summary Modal */}
+      {showSummaryModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-y-auto m-4">
+            <TicketSummary
+              ticketId={selectedTicket.id}
+              onClose={() => {
+                setShowSummaryModal(false);
+                setSelectedTicket(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Save View Modal */}
+      {showSaveViewModal && userId && (
+        <SaveViewModal
+          currentFilters={{
+            searchTerm,
+            statusFilter,
+            dateFilter,
+            confidenceFilter,
+            sortBy,
+            sortOrder,
+          }}
+          onClose={() => setShowSaveViewModal(false)}
+          onSave={() => {
+            setShowSaveViewModal(false);
+            // Optionally reload saved views or show success message
+          }}
+          userId={userId}
+        />
+      )}
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedTicketIds.size}
+        onBulkAction={handleBulkAction}
+        onClearSelection={() => setSelectedTicketIds(new Set())}
+        onCompare={
+          selectedTicketIds.size >= 2
+            ? () => setShowComparison(true)
+            : undefined
+        }
+      />
+
+      {/* Comparison Modal */}
+      {showComparison && selectedTicketIds.size >= 2 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-y-auto m-4">
+            <TicketComparison
+              ticketIds={Array.from(selectedTicketIds)}
+              onClose={() => {
+                setShowComparison(false);
+                setSelectedTicketIds(new Set());
+              }}
+            />
+          </div>
         </div>
       )}
     </div>
