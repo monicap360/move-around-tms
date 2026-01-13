@@ -1,12 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-const client = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(req, { params }) {
+  const client = createSupabaseServerClient();
   const { driver_uuid } = params;
   const body = await req.json();
   const { truck_skin, custom_logo_url } = body;

@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
+  const supabase = createSupabaseServerClient();
   const form = await req.formData();
   const driver_uuid = form.get("driver_uuid");
   const truck = form.get("truck");

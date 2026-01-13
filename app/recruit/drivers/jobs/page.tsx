@@ -1,10 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = 'force-dynamic';
 
 export default async function Jobs() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = createSupabaseServerClient();
   const { data: jobs } = await supabase.from("jobs").select("*");
   return (
     <div className="p-8 bg-black text-white min-h-screen">

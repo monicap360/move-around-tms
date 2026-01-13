@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const BUCKET = "driver-logos";
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = [
@@ -13,13 +11,12 @@ const ALLOWED_TYPES = [
   "image/webp",
 ];
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
 export async function POST(
   req: NextRequest,
   { params }: { params: { driver_uuid: string } },
 ) {
   try {
+    const supabase = createSupabaseServerClient();
     // Validate driver_uuid
     const { driver_uuid } = params;
     if (!driver_uuid || typeof driver_uuid !== "string") {

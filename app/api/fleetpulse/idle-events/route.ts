@@ -1,13 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-const supa = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // List all idle/delay events
 export async function GET() {
+  const supa = createSupabaseServerClient();
   const { data, error } = await supa
     .from("fleetpulse_idle_events")
     .select("*")
@@ -18,6 +14,7 @@ export async function GET() {
 
 // Create a new idle/delay event
 export async function POST(req) {
+  const supa = createSupabaseServerClient();
   const body = await req.json();
   const { data, error } = await supa
     .from("fleetpulse_idle_events")

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function GET(req: NextRequest, { params }: any) {
+export async function GET(req: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createServerAdmin();
-  const ticketId = params.ticket_id;
+  const ticketId = params.ticketId;
 
   // Fetch the ticket record to get the storage path
   const { data: ticket, error } = await supabase

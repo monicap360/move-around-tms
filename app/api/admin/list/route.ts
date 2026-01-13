@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "../../_supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
 
   // Ensure caller is an admin
   const { data: userData } = await supabase.auth.getUser();

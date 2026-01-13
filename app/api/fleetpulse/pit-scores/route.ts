@@ -1,13 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-const supa = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // List all pit scores
 export async function GET() {
+  const supa = createSupabaseServerClient();
   const { data, error } = await supa
     .from("fleetpulse_pit_scores")
     .select("*")
@@ -18,6 +14,7 @@ export async function GET() {
 
 // Create a new pit score
 export async function POST(req) {
+  const supa = createSupabaseServerClient();
   const body = await req.json();
   const { data, error } = await supa
     .from("fleetpulse_pit_scores")
