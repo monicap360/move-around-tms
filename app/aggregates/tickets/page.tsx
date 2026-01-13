@@ -15,6 +15,7 @@ import ConfidenceBadge from "../../../components/data-confidence/ConfidenceBadge
 import TicketSummary from "../../../components/tickets/TicketSummary";
 import SavedViewsDropdown from "../../../components/tickets/SavedViewsDropdown";
 import SaveViewModal from "../../../components/tickets/SaveViewModal";
+import BulkActionsToolbar from "../../../components/tickets/BulkActionsToolbar";
 import TicketSummary from "../../../components/tickets/TicketSummary";
 import {
   FileText,
@@ -101,6 +102,8 @@ export default function AggregateTicketsPage() {
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string | null>(null);
 
   const [newTicket, setNewTicket] = useState({
     ticket_number: "",
@@ -220,6 +223,58 @@ export default function AggregateTicketsPage() {
       console.error("Error loading ticket data:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleBulkAction(action: string, params?: any) {
+    if (selectedTicketIds.size === 0) return;
+
+    const ticketIdsArray = Array.from(selectedTicketIds);
+
+    try {
+      if (action === "export") {
+        const res = await fetch("/api/tickets/bulk", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticket_ids: ticketIdsArray, format: "csv" }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // Download CSV
+          const blob = new Blob([data.content], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.filename;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } else {
+        const res = await fetch("/api/tickets/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            ticket_ids: ticketIdsArray,
+            ...params,
+          }),
+        });
+
+        if (res.ok) {
+          // Reload tickets to reflect changes
+          await loadTicketData();
+          // Clear selection
+          setSelectedTicketIds(new Set());
+          alert(`Successfully ${action}ed ${ticketIdsArray.length} ticket(s)`);
+        } else {
+          const error = await res.json();
+          alert(`Error: ${error.error || "Failed to perform bulk action"}`);
+        }
+      }
+    } catch (err) {
+      console.error("Error performing bulk action:", err);
+      alert("Failed to perform bulk action");
     }
   }
 
@@ -591,6 +646,23 @@ export default function AggregateTicketsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-left p-3">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredTickets.length > 0 &&
+                          filteredTickets.every((t) => selectedTicketIds.has(t.id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTicketIds(new Set(filteredTickets.map((t) => t.id)));
+                          } else {
+                            setSelectedTicketIds(new Set());
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                    </th>
                     <th className="text-left p-3">Ticket #</th>
                     <th className="text-left p-3">Status</th>
                     <th className="text-left p-3">Driver</th>
@@ -606,6 +678,22 @@ export default function AggregateTicketsPage() {
                 <tbody>
                   {filteredTickets.map((ticket) => (
                     <tr key={ticket.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedTicketIds.has(ticket.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedTicketIds);
+                            if (e.target.checked) {
+                              newSet.add(ticket.id);
+                            } else {
+                              newSet.delete(ticket.id);
+                            }
+                            setSelectedTicketIds(newSet);
+                          }}
+                          className="w-4 h-4"
+                        />
+                      </td>
                       <td className="p-3 font-mono text-xs">
                         {ticket.ticket_number}
                       </td>
@@ -916,6 +1004,13 @@ export default function AggregateTicketsPage() {
           userId={userId}
         />
       )}
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedTicketIds.size}
+        onBulkAction={handleBulkAction}
+        onClearSelection={() => setSelectedTicketIds(new Set())}
+      />
     </div>
   );
 }
