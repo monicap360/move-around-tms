@@ -1,39 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
 export async function POST(req: NextRequest) {
   try {
+    // ✅ Create Supabase client at runtime ONLY
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const formData = await req.formData();
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const experience = formData.get("experience") as string;
-    const licenseType = formData.get("licenseType") as string;
-    const notes = formData.get("notes") as string;
+
+    const name = formData.get("name")?.toString() || "";
+    const email = formData.get("email")?.toString() || "";
+    const phone = formData.get("phone")?.toString() || "";
+    const experience = formData.get("experience")?.toString() || "";
+    const licenseType = formData.get("licenseType")?.toString() || "";
+    const notes = formData.get("notes")?.toString() || "";
     const resume = formData.get("resume") as File | null;
 
-    // Upload resume if provided
-    let resumeUrl = null;
+    let resumeUrl: string | null = null;
+
+    // ✅ Upload resume if present
     if (resume) {
+      const filePath = `resumes/${Date.now()}_${resume.name}`;
+
       const { data, error } = await supabase.storage
         .from("driver-applications")
-        .upload(`resumes/${Date.now()}_${resume.name}`, resume, {
+        .upload(filePath, resume, {
           cacheControl: "3600",
           upsert: false,
         });
-      if (error) throw new Error("Resume upload failed");
-      resumeUrl = data?.path
-        ? supabase.storage.from("driver-applications").getPublicUrl(data.path)
-            .publicUrl
-        : null;
+
+      if (error) {
+        return NextResponse.json(
+          { error: "Resume upload failed" },
+          { status: 500 }
+        );
+      }
+
+      resumeUrl = supabase.storage
+        .from("driver-applications")
+        .getPublicUrl(data.path).publicUrl;
     }
 
-    // Insert application record
+    // ✅ Insert application record
     const { error: insertError } = await supabase
       .from("driver_applications")
       .insert({
@@ -45,10 +56,19 @@ export async function POST(req: NextRequest) {
         notes,
         resume_url: resumeUrl,
       });
-    if (insertError) throw new Error("Failed to save application");
+
+    if (insertError) {
+      return NextResponse.json(
+        { error: "Failed to save application" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
