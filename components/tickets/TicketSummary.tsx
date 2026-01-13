@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ConfidenceBadge from "@/components/data-confidence/ConfidenceBadge";
+import RelatedDocumentsPreview from "./RelatedDocumentsPreview";
 import {
   FileText,
   Truck,
