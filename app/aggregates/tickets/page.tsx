@@ -12,6 +12,8 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
 import ConfidenceBadge from "../../../components/data-confidence/ConfidenceBadge";
+import TicketSummary from "../../../components/tickets/TicketSummary";
+import TicketSummary from "../../../components/tickets/TicketSummary";
 import {
   FileText,
   Truck,
@@ -94,6 +96,7 @@ export default function AggregateTicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<AggregateTicket | null>(
     null,
   );
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   const [newTicket, setNewTicket] = useState({
     ticket_number: "",
@@ -616,7 +619,10 @@ export default function AggregateTicketsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setSelectedTicket(ticket)}
+                            onClick={() => {
+                              setSelectedTicket(ticket);
+                              setShowSummaryModal(true);
+                            }}
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
@@ -843,6 +849,21 @@ export default function AggregateTicketsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Ticket Summary Modal */}
+      {showSummaryModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-y-auto m-4">
+            <TicketSummary
+              ticketId={selectedTicket.id}
+              onClose={() => {
+                setShowSummaryModal(false);
+                setSelectedTicket(null);
+              }}
+            />
+          </div>
         </div>
       )}
     </div>
