@@ -11,7 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
-import ConfidenceBadge from "../../components/data-confidence/ConfidenceBadge";
+import ConfidenceBadge from "../../../components/data-confidence/ConfidenceBadge";
 import {
   FileText,
   Truck,
