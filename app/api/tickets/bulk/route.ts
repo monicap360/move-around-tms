@@ -50,13 +50,61 @@ export async function POST(request: NextRequest) {
     }
 
     if (updatedStatus) {
+      // Validate: Get current ticket states to prevent invalid transitions
+      const { data: currentTickets, error: fetchError } = await supabase
+        .from("aggregate_tickets")
+        .select("id, status")
+        .in("id", ticket_ids);
+
+      if (fetchError) {
+        console.error("Error fetching tickets:", fetchError);
+        return NextResponse.json(
+          { error: "Failed to fetch tickets for validation" },
+          { status: 500 }
+        );
+      }
+
+      // Business logic: Prevent invalid state transitions
+      const invalidTransitions: string[] = [];
+      currentTickets?.forEach((ticket: any) => {
+        // Can't approve already-approved tickets
+        if (updatedStatus === "approved" && ticket.status === "approved") {
+          invalidTransitions.push(ticket.id);
+        }
+        // Can't cancel already-cancelled tickets
+        if (updatedStatus === "cancelled" && ticket.status === "cancelled") {
+          invalidTransitions.push(ticket.id);
+        }
+        // Can't invoice already-invoiced tickets (unless going to paid)
+        if (updatedStatus === "invoiced" && ticket.status === "invoiced" && updatedStatus !== "paid") {
+          invalidTransitions.push(ticket.id);
+        }
+        // Can't pay already-paid tickets
+        if (updatedStatus === "paid" && ticket.status === "paid") {
+          invalidTransitions.push(ticket.id);
+        }
+      });
+
+      // Filter out invalid transitions
+      const validTicketIds = ticket_ids.filter(
+        (id: string) => !invalidTransitions.includes(id)
+      );
+
+      if (validTicketIds.length === 0) {
+        return NextResponse.json(
+          { error: "No valid tickets to update. All tickets are already in the target state." },
+          { status: 400 }
+        );
+      }
+
+      // Update valid tickets
       const { data, error } = await supabase
         .from("aggregate_tickets")
         .update({ 
           status: updatedStatus,
           updated_at: new Date().toISOString(),
         })
-        .in("id", ticket_ids)
+        .in("id", validTicketIds)
         .select();
 
       if (error) {
@@ -67,7 +115,38 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      result = { updated_count: data?.length || 0, tickets: data };
+      // Log bulk operation to audit trail
+      if (data && data.length > 0) {
+        const auditLogs = data.map((ticket: any) => ({
+          ticket_id: ticket.id,
+          user_id: body.user_id || null,
+          action: `bulk_${action}`,
+          field_name: "status",
+          old_value: currentTickets?.find((t: any) => t.id === ticket.id)?.status || "",
+          new_value: updatedStatus,
+          description: `Bulk ${action} operation`,
+          metadata: {
+            bulk_operation: true,
+            total_tickets: ticket_ids.length,
+            valid_tickets: validTicketIds.length,
+            invalid_tickets: invalidTransitions.length,
+          },
+        }));
+
+        // Insert audit logs (non-blocking)
+        supabase.from("ticket_audit_log").insert(auditLogs).then(({ error: auditError }) => {
+          if (auditError) {
+            console.error("Error logging bulk operation:", auditError);
+          }
+        });
+      }
+
+      result = { 
+        updated_count: data?.length || 0, 
+        tickets: data,
+        skipped_count: invalidTransitions.length,
+        skipped_ids: invalidTransitions,
+      };
     } else {
       return NextResponse.json(
         { error: "Invalid action" },

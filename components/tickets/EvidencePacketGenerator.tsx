@@ -96,9 +96,25 @@ export default function EvidencePacketGenerator({
               <Button
                 variant="outline"
                 className="flex-1 gap-2"
-                onClick={() => {
-                  // Download PDF (would implement PDF generation)
-                  alert("PDF download - implement PDF generation service");
+                onClick={async () => {
+                  try {
+                    // Generate and download PDF
+                    const res = await fetch(`/api/tickets/${ticketId}/evidence-packet/pdf`);
+                    if (res.ok) {
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `evidence_packet_${ticketNumber || ticketId}_${Date.now()}.pdf`;
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                    } else {
+                      alert("Failed to generate PDF");
+                    }
+                  } catch (err) {
+                    console.error("Error downloading PDF:", err);
+                    alert("Failed to download PDF");
+                  }
                 }}
               >
                 <Download className="w-4 h-4" />
@@ -107,9 +123,25 @@ export default function EvidencePacketGenerator({
               <Button
                 variant="outline"
                 className="flex-1 gap-2"
-                onClick={() => {
-                  // Download ZIP (would implement ZIP generation)
-                  alert("ZIP download - implement ZIP generation service");
+                onClick={async () => {
+                  try {
+                    // Generate and download ZIP
+                    const res = await fetch(`/api/tickets/${ticketId}/evidence-packet/zip`);
+                    if (res.ok) {
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `evidence_packet_${ticketNumber || ticketId}_${Date.now()}.zip`;
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                    } else {
+                      alert("Failed to generate ZIP");
+                    }
+                  } catch (err) {
+                    console.error("Error downloading ZIP:", err);
+                    alert("Failed to download ZIP");
+                  }
                 }}
               >
                 <Package className="w-4 h-4" />

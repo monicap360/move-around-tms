@@ -425,7 +425,69 @@ export default function AggregateTicketsPage() {
         }
       }
 
-      return matchesSearch && matchesStatus && matchesDate && matchesConfidence;
+      // Advanced search criteria filtering
+      let matchesAdvancedSearch = true;
+      if (advancedSearchCriteria && advancedSearchCriteria.length > 0) {
+        matchesAdvancedSearch = advancedSearchCriteria.every((criterion: any) => {
+          const field = criterion.field;
+          const operator = criterion.operator;
+          const value = criterion.value?.toString().toLowerCase() || "";
+          const value2 = criterion.value2?.toString().toLowerCase() || "";
+
+          let ticketValue: any;
+          switch (field) {
+            case "ticket_number":
+              ticketValue = ticket.ticket_number?.toLowerCase() || "";
+              break;
+            case "driver_name":
+              ticketValue = ticket.driver_name?.toLowerCase() || "";
+              break;
+            case "customer_name":
+              ticketValue = ticket.customer_name?.toLowerCase() || "";
+              break;
+            case "material_type":
+              ticketValue = ticket.material_type?.toLowerCase() || "";
+              break;
+            case "quantity":
+              ticketValue = Number(ticket.quantity) || 0;
+              break;
+            case "total_amount":
+              ticketValue = Number(ticket.total_amount) || 0;
+              break;
+            case "status":
+              ticketValue = ticket.status?.toLowerCase() || "";
+              break;
+            case "ticket_date":
+              ticketValue = ticket.ticket_date || ticket.created_at || "";
+              break;
+            default:
+              return true; // Unknown field, skip
+          }
+
+          switch (operator) {
+            case "equals":
+              if (typeof ticketValue === "number") {
+                return ticketValue === Number(value);
+              }
+              return ticketValue === value;
+            case "contains":
+              return ticketValue.toString().includes(value);
+            case "greater_than":
+              return Number(ticketValue) > Number(value);
+            case "less_than":
+              return Number(ticketValue) < Number(value);
+            case "between":
+              const numValue = Number(value);
+              const numValue2 = Number(value2);
+              const numTicketValue = Number(ticketValue);
+              return numTicketValue >= numValue && numTicketValue <= numValue2;
+            default:
+              return true;
+          }
+        });
+      }
+
+      return matchesSearch && matchesStatus && matchesDate && matchesConfidence && matchesAdvancedSearch;
     })
     .sort((a, b) => {
       if (sortBy === "confidence") {

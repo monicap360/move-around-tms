@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -30,6 +31,28 @@ interface FinancialIntelligenceProps {
 export default function FinancialIntelligence({
   ticket,
 }: FinancialIntelligenceProps) {
+  const [costs, setCosts] = useState({ fuel_cost: 0, tolls_cost: 0, other_costs: 0, total_costs: 0 });
+  const [loadingCosts, setLoadingCosts] = useState(true);
+
+  useEffect(() => {
+    async function fetchCosts() {
+      try {
+        const res = await fetch(`/api/tickets/${ticket.id}/costs`);
+        if (res.ok) {
+          const data = await res.json();
+          setCosts(data);
+        }
+      } catch (err) {
+        console.error("Error fetching ticket costs:", err);
+      } finally {
+        setLoadingCosts(false);
+      }
+    }
+    if (ticket.id) {
+      fetchCosts();
+    }
+  }, [ticket.id]);
+
   const payRate = ticket.pay_rate || 0;
   const billRate = ticket.bill_rate || 0;
   const quantity = ticket.quantity || 0;
@@ -38,10 +61,10 @@ export default function FinancialIntelligence({
   const totalProfit = ticket.total_profit || totalBill - totalPay;
   const margin = totalBill > 0 ? (totalProfit / totalBill) * 100 : 0;
 
-  // Calculate cost allocation (simplified - would need fuel, tolls, etc. in real implementation)
-  const fuelCost = 0; // Would be calculated from fuel data
-  const tollsCost = 0; // Would be calculated from tolls data
-  const otherCosts = 0; // Other costs
+  // Use real cost data from API
+  const fuelCost = costs.fuel_cost || 0;
+  const tollsCost = costs.tolls_cost || 0;
+  const otherCosts = costs.other_costs || 0;
   const totalCosts = totalPay + fuelCost + tollsCost + otherCosts;
   const netProfit = totalBill - totalCosts;
   const netMargin = totalBill > 0 ? (netProfit / totalBill) * 100 : 0;
