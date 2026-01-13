@@ -13,6 +13,8 @@ import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
 import ConfidenceBadge from "../../../components/data-confidence/ConfidenceBadge";
 import TicketSummary from "../../../components/tickets/TicketSummary";
+import SavedViewsDropdown from "../../../components/tickets/SavedViewsDropdown";
+import SaveViewModal from "../../../components/tickets/SaveViewModal";
 import TicketSummary from "../../../components/tickets/TicketSummary";
 import {
   FileText,
@@ -97,6 +99,8 @@ export default function AggregateTicketsPage() {
     null,
   );
   const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [newTicket, setNewTicket] = useState({
     ticket_number: "",
@@ -119,6 +123,10 @@ export default function AggregateTicketsPage() {
 
   useEffect(() => {
     loadTicketData();
+    // Get current user ID
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
   }, []);
 
   async function loadTicketData() {
@@ -478,7 +486,29 @@ export default function AggregateTicketsPage() {
           <CardTitle>Filter Tickets</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            {userId && (
+              <SavedViewsDropdown
+                currentFilters={{
+                  searchTerm,
+                  statusFilter,
+                  dateFilter,
+                  confidenceFilter,
+                  sortBy,
+                  sortOrder,
+                }}
+                onSelectView={(filters) => {
+                  setSearchTerm(filters.searchTerm || "");
+                  setStatusFilter(filters.status || "all");
+                  setDateFilter(filters.dateRange || "all");
+                  setConfidenceFilter(filters.confidence || "all");
+                  setSortBy(filters.sortBy || "created");
+                  setSortOrder(filters.sortOrder || "desc");
+                }}
+                onSaveView={() => setShowSaveViewModal(true)}
+                userId={userId}
+              />
+            )}
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-gray-500" />
               <Input
@@ -865,6 +895,26 @@ export default function AggregateTicketsPage() {
             />
           </div>
         </div>
+      )}
+
+      {/* Save View Modal */}
+      {showSaveViewModal && userId && (
+        <SaveViewModal
+          currentFilters={{
+            searchTerm,
+            statusFilter,
+            dateFilter,
+            confidenceFilter,
+            sortBy,
+            sortOrder,
+          }}
+          onClose={() => setShowSaveViewModal(false)}
+          onSave={() => {
+            setShowSaveViewModal(false);
+            // Optionally reload saved views or show success message
+          }}
+          userId={userId}
+        />
       )}
     </div>
   );
