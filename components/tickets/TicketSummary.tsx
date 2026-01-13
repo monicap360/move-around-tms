@@ -401,6 +401,10 @@ export default function TicketSummary({ ticketId, onClose }: TicketSummaryProps)
             createdAt={ticket.created_at}
             updatedAt={ticket.updated_at}
           />
+          <EvidencePacketGenerator
+            ticketId={ticket.id}
+            ticketNumber={ticket.ticket_number}
+          />
         </div>
       </div>
     </div>
