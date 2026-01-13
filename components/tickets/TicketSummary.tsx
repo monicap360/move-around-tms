@@ -373,95 +373,33 @@ export default function TicketSummary({ ticketId, onClose }: TicketSummaryProps)
             </Card>
           )}
 
-          {/* Related Documents */}
-          {relatedDocuments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Related Documents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {relatedDocuments.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm">Document</span>
-                      </div>
-                      {doc.document_url && (
-                        <a
-                          href={doc.document_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          View <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Related Documents Preview */}
+          <RelatedDocumentsPreview
+            ticketId={ticket.id}
+            ticketNumber={ticket.ticket_number}
+          />
         </div>
 
-        {/* Right Column - Status Timeline */}
+        {/* Right Column - Financial Intelligence & Timeline */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Status Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {statusTimeline.map((event, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-3 h-3 rounded-full ${
-                        index === statusTimeline.length - 1 
-                          ? "bg-blue-600" 
-                          : "bg-gray-300"
-                      }`} />
-                      {index < statusTimeline.length - 1 && (
-                        <div className="w-0.5 h-full bg-gray-300 mt-1" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{event.description}</p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(event.timestamp).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full" variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Export PDF
-              </Button>
-              <Button className="w-full" variant="outline">
-                <FileText className="w-4 h-4 mr-2" />
-                View Documents
-              </Button>
-              {ticket.status === "pending" && (
-                <Button className="w-full" variant="default">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Approve Ticket
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <FinancialIntelligence
+            ticket={{
+              id: ticket.id,
+              total_pay: financial.totalPay,
+              total_bill: financial.totalBill,
+              total_profit: financial.totalProfit,
+              pay_rate: financial.payRate,
+              bill_rate: financial.billRate,
+              quantity: ticket.quantity,
+              status: ticket.status,
+            }}
+          />
+          <TicketTimeline
+            ticketId={ticket.id}
+            currentStatus={ticket.status}
+            createdAt={ticket.created_at}
+            updatedAt={ticket.updated_at}
+          />
         </div>
       </div>
     </div>
