@@ -86,6 +86,9 @@ export default function AggregateTicketsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [confidenceFilter, setConfidenceFilter] = useState("all"); // 'all', 'high', 'medium', 'low'
+  const [sortBy, setSortBy] = useState<"created" | "confidence">("created");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<AggregateTicket | null>(
     null,
