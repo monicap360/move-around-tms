@@ -196,6 +196,26 @@ You should **avoid promising** (or set clear expectations):
 
 ---
 
+## The Honesty Script (Use This Word-for-Word)
+
+If you're nervous, this script removes all scam energy:
+
+> "We're not claiming perfect automation.
+> What we do is show you which tickets are most likely to cause problems, why, and how much money is at risk.
+> Most operators already do this mentally — we just make it visible and auditable."
+
+**That is a very safe, very professional statement.**
+
+### Honest Limitation Statement
+
+You can say out loud:
+
+> "Some tickets need review — the system tells you which ones."
+
+This is honest, professional, and sets clear expectations.
+
+---
+
 ## Key Takeaways
 
 1. ✅ **Ticket ingestion never fails** — it either extracts with high confidence or flags risk
@@ -203,7 +223,8 @@ You should **avoid promising** (or set clear expectations):
 3. ✅ **Avoid promising** handwritten, low-quality, zero-touch automation
 4. ✅ **Set clear expectations** about confidence levels and review requirements
 5. ✅ **Always flag risk** — never hide low confidence extractions
+6. ✅ **Use honesty script** — removes scam energy, establishes credibility
 
 ---
 
-**Remember:** This rule protects you legally and operationally while setting clear expectations with customers.
+**Remember:** This rule protects you legally and operationally while setting clear expectations with customers. The honesty script is your safety net for professional communication.
