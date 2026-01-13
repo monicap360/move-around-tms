@@ -520,7 +520,7 @@ export default function AggregateTicketsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">
+          <h1 className="text-3xl font-bold text-green-600">
             Aggregate Tickets
           </h1>
           <p className="text-gray-600 mt-1">
@@ -528,11 +528,11 @@ export default function AggregateTicketsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
             <Upload className="w-4 h-4 mr-2" />
             Upload Ticket
           </Button>
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button onClick={() => setShowCreateModal(true)} className="bg-green-600 hover:bg-green-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
             Create Ticket
           </Button>
@@ -548,7 +548,7 @@ export default function AggregateTicketsPage() {
                 <p className="text-sm text-gray-500">Total Tickets</p>
                 <p className="text-2xl font-bold">{tickets.length}</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-500" />
+              <FileText className="w-8 h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
