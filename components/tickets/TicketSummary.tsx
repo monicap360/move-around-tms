@@ -13,6 +13,7 @@ import ConfidenceBadge from "@/components/data-confidence/ConfidenceBadge";
 import RelatedDocumentsPreview from "./RelatedDocumentsPreview";
 import FinancialIntelligence from "./FinancialIntelligence";
 import TicketTimeline from "./TicketTimeline";
+import EvidencePacketGenerator from "./EvidencePacketGenerator";
 import {
   FileText,
   Truck,

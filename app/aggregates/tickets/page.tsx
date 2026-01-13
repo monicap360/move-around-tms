@@ -17,7 +17,7 @@ import SavedViewsDropdown from "../../../components/tickets/SavedViewsDropdown";
 import SaveViewModal from "../../../components/tickets/SaveViewModal";
 import BulkActionsToolbar from "../../../components/tickets/BulkActionsToolbar";
 import TicketComparison from "../../../components/tickets/TicketComparison";
-import TicketSummary from "../../../components/tickets/TicketSummary";
+import AdvancedSearch from "../../../components/tickets/AdvancedSearch";
 import {
   FileText,
   Truck,
@@ -625,7 +625,29 @@ export default function AggregateTicketsPage() {
               <option value="confidence-desc">Sort: High Confidence First</option>
               <option value="confidence-asc">Sort: Low Confidence First</option>
             </select>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Advanced Search
+            </Button>
           </div>
+
+          {/* Advanced Search */}
+          {showAdvancedSearch && (
+            <div className="mt-4 pt-4 border-t">
+              <AdvancedSearch
+                onSearch={(criteria) => {
+                  setAdvancedSearchCriteria(criteria);
+                  // Advanced search logic would be applied here
+                  // For now, we'll use the basic filtering
+                }}
+                savedSearches={[]}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
