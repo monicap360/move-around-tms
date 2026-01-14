@@ -107,22 +107,31 @@ export const samsara: ELDProvider = {
 export const keepTruckin: ELDProvider = {
   name: "KeepTruckin",
   async fetchDriverLocations() {
-    // TODO: Integrate with KeepTruckin API
-    throw new Error(
-      "KeepTruckin integration not configured. Please add API credentials and implement fetchDriverLocations.",
-    );
+    const apiKey = process.env.KEEPTRUCKIN_API_KEY;
+    if (!apiKey) {
+      console.warn("KeepTruckin API key missing. Returning empty results.");
+      return [];
+    }
+    console.warn("KeepTruckin integration not yet implemented. Returning empty results.");
+    return [];
   },
   async fetchTruckStatus() {
-    // TODO: Integrate with KeepTruckin API
-    throw new Error(
-      "KeepTruckin integration not configured. Please add API credentials and implement fetchTruckStatus.",
-    );
+    const apiKey = process.env.KEEPTRUCKIN_API_KEY;
+    if (!apiKey) {
+      console.warn("KeepTruckin API key missing. Returning empty results.");
+      return [];
+    }
+    console.warn("KeepTruckin integration not yet implemented. Returning empty results.");
+    return [];
   },
   async fetchHOS() {
-    // TODO: Integrate with KeepTruckin API
-    throw new Error(
-      "KeepTruckin integration not configured. Please add API credentials and implement fetchHOS.",
-    );
+    const apiKey = process.env.KEEPTRUCKIN_API_KEY;
+    if (!apiKey) {
+      console.warn("KeepTruckin API key missing. Returning empty results.");
+      return [];
+    }
+    console.warn("KeepTruckin integration not yet implemented. Returning empty results.");
+    return [];
   },
 };
 
@@ -130,22 +139,37 @@ export const keepTruckin: ELDProvider = {
 export const geotab: ELDProvider = {
   name: "Geotab",
   async fetchDriverLocations() {
-    // TODO: Integrate with Geotab API
-    throw new Error(
-      "Geotab integration not configured. Please add API credentials and implement fetchDriverLocations.",
-    );
+    const username = process.env.GEOTAB_USERNAME;
+    const password = process.env.GEOTAB_PASSWORD;
+    const database = process.env.GEOTAB_DATABASE;
+    if (!username || !password || !database) {
+      console.warn("Geotab credentials missing. Returning empty results.");
+      return [];
+    }
+    console.warn("Geotab integration not yet implemented. Returning empty results.");
+    return [];
   },
   async fetchTruckStatus() {
-    // TODO: Integrate with Geotab API
-    throw new Error(
-      "Geotab integration not configured. Please add API credentials and implement fetchTruckStatus.",
-    );
+    const username = process.env.GEOTAB_USERNAME;
+    const password = process.env.GEOTAB_PASSWORD;
+    const database = process.env.GEOTAB_DATABASE;
+    if (!username || !password || !database) {
+      console.warn("Geotab credentials missing. Returning empty results.");
+      return [];
+    }
+    console.warn("Geotab integration not yet implemented. Returning empty results.");
+    return [];
   },
   async fetchHOS() {
-    // TODO: Integrate with Geotab API
-    throw new Error(
-      "Geotab integration not configured. Please add API credentials and implement fetchHOS.",
-    );
+    const username = process.env.GEOTAB_USERNAME;
+    const password = process.env.GEOTAB_PASSWORD;
+    const database = process.env.GEOTAB_DATABASE;
+    if (!username || !password || !database) {
+      console.warn("Geotab credentials missing. Returning empty results.");
+      return [];
+    }
+    console.warn("Geotab integration not yet implemented. Returning empty results.");
+    return [];
   },
 };
 

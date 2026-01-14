@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ClientLayoutWrapper } from "./components";
 import SupabaseProvider from "./lib/supabase-provider";
 import { LoadingProvider } from "./components/ui/providers/use-loading";
+import { I18nProvider } from "./lib/i18n/context";
 
 import { defaultBranding } from "../branding.config";
 import { getBrandingConfig } from "../lib/branding";
@@ -59,7 +60,9 @@ export default async function RootLayout(props: { children: ReactNode }) {
         </header>
         <SupabaseProvider>
           <LoadingProvider>
-            <ClientLayoutWrapper>{props.children}</ClientLayoutWrapper>
+            <I18nProvider>
+              <ClientLayoutWrapper>{props.children}</ClientLayoutWrapper>
+            </I18nProvider>
           </LoadingProvider>
         </SupabaseProvider>
       </body>

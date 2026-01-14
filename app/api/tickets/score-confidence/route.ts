@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { scoreFieldConfidence, isAnomaly, getAnomalySeverity } from "@/lib/data-confidence/confidence-scorer";
+import { 
+  scoreFieldConfidenceWithVertical, 
+  isAnomaly, 
+  getAnomalySeverity,
+  getOrganizationVerticalProfile 
+} from "@/lib/data-confidence/confidence-scorer";
 
 export const dynamic = 'force-dynamic';
 
 // POST: Score confidence for a ticket (called after ticket creation/update)
+// Now supports vertical-aware baseline windows based on organization's industry type
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ticketId, driverId, siteId } = body;
+    const { ticketId, driverId, siteId, organizationId } = body;
 
     if (!ticketId) {
       return NextResponse.json(
@@ -62,16 +68,16 @@ export async function POST(request: NextRequest) {
     const results: any = {};
     const driver_id = driverId || ticket.driver_id;
 
-    // Score quantity
+    // Score quantity using vertical-aware baseline windows
     if (ticket.quantity !== null && ticket.quantity !== undefined) {
-      const quantityScore = await scoreFieldConfidence(
+      const quantityScore = await scoreFieldConfidenceWithVertical(
         'ticket',
         ticketId,
         'quantity',
         parseFloat(ticket.quantity.toString()),
+        organizationId || undefined,
         driver_id || undefined,
-        siteId || undefined,
-        driver_id ? 30 : 90 // 30d for driver, 90d for site/global
+        siteId || undefined
       );
 
       // Record confidence event
@@ -109,16 +115,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Score pay_rate
+    // Score pay_rate using vertical-aware baseline windows
     if (ticket.pay_rate !== null && ticket.pay_rate !== undefined) {
-      const payRateScore = await scoreFieldConfidence(
+      const payRateScore = await scoreFieldConfidenceWithVertical(
         'ticket',
         ticketId,
         'pay_rate',
         parseFloat(ticket.pay_rate.toString()),
+        organizationId || undefined,
         driver_id || undefined,
-        siteId || undefined,
-        driver_id ? 30 : 90
+        siteId || undefined
       );
 
       await supabase.rpc("record_confidence_event", {
@@ -154,16 +160,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Score bill_rate
+    // Score bill_rate using vertical-aware baseline windows
     if (ticket.bill_rate !== null && ticket.bill_rate !== undefined) {
-      const billRateScore = await scoreFieldConfidence(
+      const billRateScore = await scoreFieldConfidenceWithVertical(
         'ticket',
         ticketId,
         'bill_rate',
         parseFloat(ticket.bill_rate.toString()),
+        organizationId || undefined,
         driver_id || undefined,
-        siteId || undefined,
-        driver_id ? 30 : 90
+        siteId || undefined
       );
 
       await supabase.rpc("record_confidence_event", {

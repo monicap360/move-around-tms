@@ -1,0 +1,2 @@
+ticket_number,date,quantity,driver_name,truck_number,material,plant,customer,pay_rate,bill_rate
+TCK-1001,2024-01-10,22.5,John Doe,TRK-101,Gravel,Site A,Acme Aggregates,45.00,75.00

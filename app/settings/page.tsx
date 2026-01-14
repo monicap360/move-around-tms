@@ -9,6 +9,8 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { VERTICAL_PROFILES, VerticalType, type VerticalTypeString } from "@/lib/verticals";
+import { LanguageSwitcher } from "../lib/i18n/context";
 
 // Simple toast implementation
 const useToast = () => ({
@@ -38,10 +40,14 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [verticalType, setVerticalType] = useState<VerticalTypeString>("construction_hauling");
+  const [savingVertical, setSavingVertical] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadProfile();
+    loadOrganization();
   }, []);
 
   const loadProfile = async () => {
@@ -99,6 +105,79 @@ export default function SettingsPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOrganization = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get user's organization
+      const { data: orgMember } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (orgMember?.organization_id) {
+        setOrganizationId(orgMember.organization_id);
+
+        // Get organization's vertical type
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("vertical_type")
+          .eq("id", orgMember.organization_id)
+          .single();
+
+        if (org?.vertical_type) {
+          setVerticalType(org.vertical_type as VerticalTypeString);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading organization:", error);
+    }
+  };
+
+  const handleVerticalChange = async (newVertical: VerticalTypeString) => {
+    if (!organizationId) {
+      toast({
+        title: "Error",
+        description: "No organization found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingVertical(true);
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ vertical_type: newVertical })
+        .eq("id", organizationId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update industry type",
+          variant: "destructive",
+        });
+      } else {
+        setVerticalType(newVertical);
+        toast({
+          title: "Success",
+          description: "Industry type updated successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating vertical:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update industry type",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingVertical(false);
     }
   };
 
@@ -234,6 +313,28 @@ export default function SettingsPage() {
       <p style={{ fontSize: 20, color: "#475569", marginBottom: 32 }}>
         Manage your profile, contact info, and password.
       </p>
+      <div
+        style={{
+          background: "white",
+          borderRadius: 12,
+          boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
+          padding: 16,
+          width: "100%",
+          maxWidth: 800,
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 600, color: "#1e293b" }}>Language</div>
+          <div style={{ fontSize: 14, color: "#64748b" }}>
+            Switch between English and Spanish
+          </div>
+        </div>
+        <LanguageSwitcher />
+      </div>
       <div
         style={{
           background: "#e0e7ef",
@@ -424,9 +525,95 @@ export default function SettingsPage() {
             <p>Brand: Move Around TMS™.</p>
           </CardContent>
         </Card>
+
+        {/* Industry Specialization */}
+        <Card className="border border-space-border bg-space-panel mt-6">
+          <CardHeader className="bg-space-surface border-b border-space-border">
+            <CardTitle className="text-text-primary text-sm uppercase tracking-wider">Industry Specialization</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-6 space-y-4">
+            <p className="text-text-secondary text-sm">
+              Select your industry vertical to optimize confidence scoring baselines, 
+              anomaly detection priorities, and dashboard metrics for your specific operations.
+            </p>
+            
+            <div className="space-y-3">
+              <label htmlFor="verticalType" className="text-sm font-medium text-text-primary">
+                Industry Type
+              </label>
+              <select
+                id="verticalType"
+                value={verticalType}
+                onChange={(e) => handleVerticalChange(e.target.value as VerticalTypeString)}
+                disabled={savingVertical || !organizationId}
+                className="w-full p-2 bg-space-surface border border-space-border rounded text-text-primary focus:border-gold-primary focus:outline-none"
+              >
+                {Object.values(VERTICAL_PROFILES).map((profile) => (
+                  <option key={profile.type} value={profile.type}>
+                    {profile.name}
+                  </option>
+                ))}
+              </select>
+              
+              {/* Show selected vertical details */}
+              {verticalType && VERTICAL_PROFILES[verticalType as VerticalType] && (
+                <div className="mt-4 p-4 bg-space-surface border border-space-border rounded">
+                  <p className="text-text-secondary text-sm mb-3">
+                    {VERTICAL_PROFILES[verticalType as VerticalType].description}
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-text-secondary">Driver Baseline:</span>
+                      <span className="text-gold-primary ml-2">
+                        {VERTICAL_PROFILES[verticalType as VerticalType].baselineWindowDays.driver} days
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-text-secondary">Site Baseline:</span>
+                      <span className="text-gold-primary ml-2">
+                        {VERTICAL_PROFILES[verticalType as VerticalType].baselineWindowDays.site} days
+                      </span>
+                    </div>
+                    {VERTICAL_PROFILES[verticalType as VerticalType].baselineWindowDays.route && (
+                      <div>
+                        <span className="text-text-secondary">Route Baseline:</span>
+                        <span className="text-gold-primary ml-2">
+                          {VERTICAL_PROFILES[verticalType as VerticalType].baselineWindowDays.route} days
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <span className="text-text-secondary text-sm">Key Focus Areas:</span>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {VERTICAL_PROFILES[verticalType as VerticalType].emphasis.exceptionFocus.map((focus) => (
+                        <span 
+                          key={focus} 
+                          className="px-2 py-1 bg-space-panel border border-space-border rounded text-xs text-text-secondary"
+                        >
+                          {focus.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {!organizationId && (
+                <p className="text-yellow-500 text-sm">
+                  No organization found. Please contact support to set up your organization.
+                </p>
+              )}
+              
+              {savingVertical && (
+                <p className="text-gold-primary text-sm">Saving...</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <footer style={{ color: "#94a3b8", fontSize: 14, marginTop: 40 }}>
-        © {new Date().getFullYear()} Move Around TMS
+      <footer style={{ color: "#6B7280", fontSize: 11, marginTop: 40, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+        Ronyx Logistics LLC
       </footer>
     </div>
   );
