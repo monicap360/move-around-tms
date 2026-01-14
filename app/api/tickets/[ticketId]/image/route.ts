@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = 'force-dynamic';
+
+function createServerAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
+
 export async function GET(req: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createServerAdmin();
   const ticketId = params.ticketId;
@@ -29,12 +39,4 @@ export async function GET(req: NextRequest, { params }: { params: { ticketId: st
   }
 
   return NextResponse.json({ public_url: signed.signedUrl });
-}
-
-function createServerAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
 }

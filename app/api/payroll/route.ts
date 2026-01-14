@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/payroll
 // Server-side endpoint that returns payroll summary rows using the admin
 // client (SUPABASE_SERVICE_KEY). This route includes a minimal auth guard

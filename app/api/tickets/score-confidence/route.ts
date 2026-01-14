@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { scoreFieldConfidence, isAnomaly, getAnomalySeverity } from "@/lib/data-confidence/confidence-scorer";
 
+export const dynamic = 'force-dynamic';
+
 // POST: Score confidence for a ticket (called after ticket creation/update)
 export async function POST(request: NextRequest) {
   try {

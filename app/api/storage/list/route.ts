@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "../../_supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServerClient();
 
     // Get the current user's session
     const {

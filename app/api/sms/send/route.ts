@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
+export const dynamic = 'force-dynamic';
+
 // Dynamic import for Twilio (optional dependency)
 let twilio: any = null;
 try {

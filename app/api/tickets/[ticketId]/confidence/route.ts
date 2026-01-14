@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = 'force-dynamic';
+
 // GET: Get confidence scores for a ticket
 export async function GET(
   request: NextRequest,

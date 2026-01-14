@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 // Uses the NEXT_PUBLIC keys from your environment. For server-side
 // privileged operations use a service role key from server-only code.
 
-const PUBLIC_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const PUBLIC_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const PUBLIC_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const PUBLIC_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 // Light runtime validation to surface misconfig early in the browser/devtools.
 // We avoid throwing on import in case some pages don't need Supabase.
@@ -24,4 +24,6 @@ if (typeof window !== "undefined") {
   }
 }
 
-export const supabase = createClient(PUBLIC_URL || "", PUBLIC_ANON_KEY || "");
+// Create client with fallback empty strings to prevent build errors
+// The client will fail gracefully at runtime if env vars are missing
+export const supabase = createClient(PUBLIC_URL, PUBLIC_ANON_KEY);
