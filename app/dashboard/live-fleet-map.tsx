@@ -11,46 +11,55 @@ export default function LiveFleetMap() {
   const [hos, setHos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const simpleMode = process.env.NEXT_PUBLIC_SIMPLE_MODE === "true";
   const MAPBOX_TOKEN =
     process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
     "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3Z4b2J6b3gwM2JwMnZxczZ6b2J6b2JwIn0.abc123";
 
-  useEffect(() => {
-    async function fetchAll() {
-      setLoading(true);
-      try {
-        // Fetch from all providers (real)
-        const [locs, trucks, hos] = await Promise.all([
-          Promise.all(eldProviders.map((p) => p.fetchDriverLocations())).then(
-            (r) => r.flat(),
-          ),
-          Promise.all(eldProviders.map((p) => p.fetchTruckStatus())).then((r) =>
-            r.flat(),
-          ),
-          Promise.all(eldProviders.map((p) => p.fetchHOS())).then((r) =>
-            r.flat(),
-          ),
-        ]);
-        setLocations(locs);
-        setTrucks(trucks);
-        setHos(hos);
-      } catch (err) {
-        setLocations([]);
-        setTrucks([]);
-        setHos([]);
-      } finally {
-        setLoading(false);
-      }
+  async function fetchAll() {
+    setLoading(true);
+    try {
+      const [locs, trucks, hos] = await Promise.all([
+        Promise.all(eldProviders.map((p) => p.fetchDriverLocations())).then(
+          (r) => r.flat(),
+        ),
+        Promise.all(eldProviders.map((p) => p.fetchTruckStatus())).then((r) =>
+          r.flat(),
+        ),
+        Promise.all(eldProviders.map((p) => p.fetchHOS())).then((r) =>
+          r.flat(),
+        ),
+      ]);
+      setLocations(locs);
+      setTrucks(trucks);
+      setHos(hos);
+    } catch (err) {
+      setLocations([]);
+      setTrucks([]);
+      setHos([]);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     fetchAll();
   }, []);
 
   return (
     <div className="flex flex-col md:flex-row h-[80vh] p-4 gap-4">
       <div className="flex-1 relative min-h-[400px]">
-        <h1 className="text-2xl font-bold mb-2">
-          Live Fleet Map (ELD/Telematics)
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold">
+            Fleet Snapshot (ELD/Telematics)
+          </h1>
+          <button
+            className="px-3 py-1 text-sm rounded border border-gray-300"
+            onClick={fetchAll}
+          >
+            Refresh Snapshot
+          </button>
+        </div>
         {loading ? (
           <div>Loading driver locations…</div>
         ) : locations.length === 0 ? (
@@ -59,36 +68,43 @@ export default function LiveFleetMap() {
             variables.
           </div>
         ) : (
-          <Map
-            initialViewState={{
-              longitude: locations[0]?.lon || -97,
-              latitude: locations[0]?.lat || 39,
-              zoom: 4,
-            }}
-            style={{ width: "100%", height: "100%", minHeight: 400 }}
-            mapStyle="mapbox://styles/mapbox/streets-v11"
-            mapboxAccessToken={MAPBOX_TOKEN}
-          >
-            <NavigationControl position="top-left" />
-            {locations.map(
-              (d, i) =>
-                d.lat &&
-                d.lon && (
-                  <Marker
-                    key={d.id || i}
-                    longitude={d.lon}
-                    latitude={d.lat}
-                    anchor="bottom"
-                    onClick={() => setSelected(d)}
-                  >
-                    <div
-                      className="bg-blue-600 rounded-full w-4 h-4 border-2 border-white shadow cursor-pointer"
-                      title={d.name}
-                    ></div>
-                  </Marker>
-                ),
-            )}
-          </Map>
+          simpleMode ? (
+            <div className="bg-white rounded p-4 text-sm text-gray-700">
+              Map view disabled in Simple Mode. Use the snapshot list to review
+              drivers and truck status.
+            </div>
+          ) : (
+            <Map
+              initialViewState={{
+                longitude: locations[0]?.lon || -97,
+                latitude: locations[0]?.lat || 39,
+                zoom: 4,
+              }}
+              style={{ width: "100%", height: "100%", minHeight: 400 }}
+              mapStyle="mapbox://styles/mapbox/streets-v11"
+              mapboxAccessToken={MAPBOX_TOKEN}
+            >
+              <NavigationControl position="top-left" />
+              {locations.map(
+                (d, i) =>
+                  d.lat &&
+                  d.lon && (
+                    <Marker
+                      key={d.id || i}
+                      longitude={d.lon}
+                      latitude={d.lat}
+                      anchor="bottom"
+                      onClick={() => setSelected(d)}
+                    >
+                      <div
+                        className="bg-blue-600 rounded-full w-4 h-4 border-2 border-white shadow cursor-pointer"
+                        title={d.name}
+                      ></div>
+                    </Marker>
+                  ),
+              )}
+            </Map>
+          )
         )}
       </div>
       <div className="w-full md:w-96 bg-white rounded shadow p-4 overflow-y-auto">

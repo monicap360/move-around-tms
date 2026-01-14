@@ -19,6 +19,7 @@ export default function TrackingPage() {
   const [status, setStatus] = useState("");
   const [location, setLocation] = useState("");
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const simpleMode = process.env.NEXT_PUBLIC_SIMPLE_MODE === "true";
 
   useEffect(() => {
     loadUpdates();
@@ -62,16 +63,21 @@ export default function TrackingPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-medium text-text-primary uppercase tracking-wider">
-            Real-Time Tracking
+            Tracking Updates
           </h1>
           <p className="text-text-secondary text-sm mt-1">
-            Live status updates across active loads.
+            Batch status updates across active loads.
           </p>
         </div>
 
         {demoMode && (
           <div className="p-4 rounded border border-orange-400 bg-orange-50 text-orange-700 text-sm">
             Demo mode is enabled. Updates are not saved.
+          </div>
+        )}
+        {simpleMode && (
+          <div className="p-4 rounded border border-blue-300 bg-blue-50 text-blue-700 text-sm">
+            Simple mode is enabled. Tracking is refresh-on-demand.
           </div>
         )}
 
@@ -96,6 +102,9 @@ export default function TrackingPage() {
             />
             <Button onClick={handleAddUpdate} disabled={demoMode}>
               Add Update
+            </Button>
+            <Button variant="outline" onClick={loadUpdates}>
+              Refresh
             </Button>
           </CardContent>
         </Card>

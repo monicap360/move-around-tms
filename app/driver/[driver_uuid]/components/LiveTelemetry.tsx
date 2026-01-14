@@ -14,26 +14,38 @@ export default function LiveTelemetry({ driver }: any) {
     events: [],
     violations: [],
   });
+  const simpleMode = process.env.NEXT_PUBLIC_SIMPLE_MODE === "true";
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
-    // Live earnings (simulated API)
+    const cleanup = refreshTelemetry();
+    return () => {
+      if (typeof cleanup === "function") {
+        cleanup();
+      }
+    };
+  }, [driver]);
+
+  async function refreshTelemetry() {
     fetch(`/api/driver/${driver.uuid}/earnings-today`)
       .then((r) => r.json())
       .then((d) => setEarningsToday(d.total || 0));
 
-    // HOS meter load
     fetch(`/api/driver/${driver.uuid}/hos`)
       .then((r) => r.json())
       .then((d) => setHosUsed(d.hours_used || 0));
 
-    // Live OCR stream
+    if (simpleMode) {
+      setLastUpdated(new Date().toLocaleString());
+      return;
+    }
+
     const sse = new EventSource(`/api/driver/${driver.uuid}/ocr-stream`);
     sse.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setOcrAlerts((prev) => [data, ...prev]);
     };
 
-    // Yard detection and geofencing (GPS)
     if (navigator.geolocation) {
       let previousLocation: { lat: number; lng: number } | null = null;
 
@@ -41,14 +53,12 @@ export default function LiveTelemetry({ driver }: any) {
         const { latitude, longitude } = pos.coords;
         const currentLocation = { lat: latitude, lng: longitude };
 
-        // Yard detection
         fetch(
           `/api/yard/detect?lat=${latitude}&lng=${longitude}&driver=${driver.uuid}`,
         )
           .then((r) => r.json())
           .then((d) => setInYard(d.inYard || false));
 
-        // Geofence checking
         if (driver.organization_id) {
           fetch("/api/geofencing/check", {
             method: "POST",
@@ -69,20 +79,6 @@ export default function LiveTelemetry({ driver }: any) {
                 events: d.events || [],
                 violations: d.violations || [],
               });
-
-              // Show alerts for entry/exit events
-              d.events?.forEach((event: any) => {
-                if (event.eventType === "entry") {
-                  console.log(`Entered geofence: ${event.metadata?.geofenceName}`);
-                } else if (event.eventType === "exit") {
-                  console.log(`Exited geofence: ${event.metadata?.geofenceName}`);
-                }
-              });
-
-              // Show alerts for violations
-              d.violations?.forEach((violation: any) => {
-                console.warn(`Geofence violation: ${violation.message}`);
-              });
             })
             .catch((err) => console.error("Geofence check error:", err));
         }
@@ -91,8 +87,9 @@ export default function LiveTelemetry({ driver }: any) {
       });
     }
 
+    setLastUpdated(new Date().toLocaleString());
     return () => sse.close();
-  }, [driver]);
+  }
 
   const earningsPercent = Math.min((earningsToday / maxEarnings) * 100, 100);
   const hosPercent = Math.min((hosUsed / hosMax) * 100, 100);
@@ -184,6 +181,9 @@ export default function LiveTelemetry({ driver }: any) {
       {/* OCR ALERT STREAM */}
       <div className="flex flex-col gap-3">
         <h3 className="font-semibold text-lg">OCR & Ticket Alerts</h3>
+        {simpleMode && lastUpdated && (
+          <p className="text-xs opacity-60">Last updated: {lastUpdated}</p>
+        )}
         {ocrAlerts.length === 0 && (
           <p className="opacity-60 text-sm">No new alerts</p>
         )}

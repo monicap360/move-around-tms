@@ -56,7 +56,7 @@ const navigationSections = [
       },
       { name: "Carrier Management", path: "/carriers", icon: Truck },
       { name: "Carrier Rates", path: "/carriers/rates", icon: FileText },
-      { name: "Real-Time Tracking", path: "/tracking", icon: Truck },
+      { name: "Tracking Updates", path: "/tracking", icon: Truck },
       { name: "Documents", path: "/documents", icon: FileText },
       { name: "Ticket Templates", path: "/ticket-templates", icon: FileText },
       { name: "Payroll", path: "/payroll", icon: DollarSign },
