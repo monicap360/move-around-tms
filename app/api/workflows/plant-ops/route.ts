@@ -40,6 +40,13 @@ export async function GET(req: NextRequest) {
             status: "open",
             created_at: new Date().toISOString(),
           },
+          {
+            id: "demo-ticket-2",
+            department: "supplier",
+            title: "Supplier response required",
+            status: "in_review",
+            created_at: new Date().toISOString(),
+          },
         ],
       });
     }

@@ -31,6 +31,7 @@ const navigationSections = [
       { name: "Mobile Quick Actions", path: "/mobile", icon: BarChart },
       { name: "My Profile", path: "/driver/profile", icon: Users },
       { name: "Customer Portal", path: "/customer-portal", icon: Users },
+      { name: "Supplier Portal", path: "/supplier-portal", icon: Users },
       { name: "Truck Board", path: "/truck-board", icon: Truck },
       {
         name: "Driver Schedule",
