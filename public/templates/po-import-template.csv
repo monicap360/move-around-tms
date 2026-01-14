@@ -1,0 +1,2 @@
+material_number,batch_lot,quantity,uom,po_date,unit_price,po_number,supplier
+STONE-57,B-100,1000,tons,2025-01-10,10.50,PO-1001,Acme Quarry

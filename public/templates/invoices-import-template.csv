@@ -1,0 +1,2 @@
+material_number,batch_lot,quantity,uom,invoice_date,unit_price,total_amount,invoice_number,po_number
+STONE-57,B-100,1000,tons,2025-01-11,11.25,11250,INV-7781,PO-1001

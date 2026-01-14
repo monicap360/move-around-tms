@@ -1,0 +1,2 @@
+material_number,batch_lot,quantity,uom,receipt_date,supplier,po_number,quality_notes,quality_hold,received_by
+STONE-57,B-100,950,tons,2025-01-12,Acme Quarry,PO-1001,"Moisture out of range",true,Jane Supervisor

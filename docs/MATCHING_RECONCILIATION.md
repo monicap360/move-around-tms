@@ -30,6 +30,8 @@ Match PIT data, material receipts, supplier invoices, and PO data to produce:
 - `quantity_variance`
 - `price_variance`
 - `date_window`
+- `invoice_before_receipt`
+- `quality_hold`
 
 ## Run API
 `POST /api/matching/run`

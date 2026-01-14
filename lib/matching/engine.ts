@@ -197,6 +197,23 @@ export async function runMatching(config: MatchingConfig) {
         explanation: `Delivery date variance ${dateVariance} days exceeds window.`,
       });
     }
+    if (receiptDate && invoiceDate && invoiceDate < receiptDate) {
+      exceptions.push({
+        type: "invoice_before_receipt",
+        severity: "medium",
+        explanation: "Invoice date is earlier than the delivery receipt date.",
+      });
+    }
+
+    if (receipt?.quality_hold || receipt?.quality_notes) {
+      exceptions.push({
+        type: "quality_hold",
+        severity: "high",
+        explanation: receipt?.quality_notes
+          ? `Quality hold: ${receipt.quality_notes}`
+          : "Quality hold flagged on receipt.",
+      });
+    }
 
     const status = exceptions.length > 0 ? "exception" : "matched";
 
@@ -249,6 +266,36 @@ export async function runMatching(config: MatchingConfig) {
           exception_type: ex.type,
           severity: ex.severity,
           explanation: ex.explanation,
+        });
+
+        const department =
+          ex.type === "price_variance" || ex.type === "missing_po"
+            ? "procurement"
+            : ex.type === "quality_hold"
+              ? "accounting"
+              : ex.type === "invoice_before_receipt" || ex.type === "date_window"
+                ? "accounting"
+                : "warehouse";
+
+        const titleMap: Record<string, string> = {
+          quantity_variance: "Short shipment investigation required",
+          price_variance: "Price increase requires approval",
+          quality_hold: "Quality hold - do not pay invoice",
+          invoice_before_receipt: "Invoice timing validation required",
+          missing_po: "Missing PO requires procurement review",
+          missing_receipt: "Missing receipt requires warehouse review",
+          uom_mismatch: "Unit of measure mismatch requires review",
+          date_window: "Delivery timing variance requires review",
+        };
+
+        await supabase.from("workflow_tickets").insert({
+          organization_id: config.organizationId,
+          source_type: "matching",
+          source_id: matched.id,
+          department,
+          title: titleMap[ex.type] || "Exception review required",
+          description: ex.explanation,
+          status: "open",
         });
       }
     } else {

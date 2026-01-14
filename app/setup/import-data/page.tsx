@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import ExcelJS from "exceljs";
 import { supabase } from "../../lib/supabaseClient";
 import {
   Card,
@@ -26,12 +27,31 @@ import {
   HelpCircle,
 } from "lucide-react";
 
-type ImportType = "drivers" | "trucks" | "tickets" | "customers";
+type ImportType =
+  | "drivers"
+  | "trucks"
+  | "tickets"
+  | "customers"
+  | "pit_data"
+  | "material_receipts"
+  | "supplier_invoices"
+  | "po_data";
 
 interface ImportResult {
   success: number;
   failed: number;
   errors: string[];
+}
+
+interface ImportDiagnostics {
+  warnings: string[];
+  errorCells: number;
+  duplicateRows: number;
+  mixedUom: boolean;
+  negativeQuantities: number;
+  outOfRangePrices: number;
+  futureDates: number;
+  formulaCells: number;
 }
 
 interface ColumnMapping {
@@ -95,6 +115,42 @@ const IMPORT_TYPES: {
     ],
     templateUrl: "/templates/customers-import-template.csv",
   },
+  {
+    id: "pit_data",
+    name: "PIT Data",
+    description: "Import production intake records",
+    icon: <FileSpreadsheet className="w-6 h-6" />,
+    requiredFields: ["material_number", "quantity", "uom"],
+    optionalFields: ["batch_lot", "received_date", "price", "source_reference"],
+    templateUrl: "/templates/pit-import-template.csv",
+  },
+  {
+    id: "material_receipts",
+    name: "Material Receipts",
+    description: "Import warehouse receiving data",
+    icon: <FileSpreadsheet className="w-6 h-6" />,
+    requiredFields: ["material_number", "quantity", "uom", "receipt_date"],
+    optionalFields: ["batch_lot", "supplier", "po_number", "quality_notes", "quality_hold", "received_by"],
+    templateUrl: "/templates/receipts-import-template.csv",
+  },
+  {
+    id: "supplier_invoices",
+    name: "Supplier Invoices",
+    description: "Import supplier invoice data",
+    icon: <FileSpreadsheet className="w-6 h-6" />,
+    requiredFields: ["material_number", "quantity", "uom", "invoice_date"],
+    optionalFields: ["batch_lot", "unit_price", "total_amount", "invoice_number", "po_number"],
+    templateUrl: "/templates/invoices-import-template.csv",
+  },
+  {
+    id: "po_data",
+    name: "PO Data",
+    description: "Import purchase order data",
+    icon: <FileSpreadsheet className="w-6 h-6" />,
+    requiredFields: ["material_number", "quantity", "uom", "po_date"],
+    optionalFields: ["batch_lot", "unit_price", "po_number", "supplier"],
+    templateUrl: "/templates/po-import-template.csv",
+  },
 ];
 
 export default function DataImportWizard() {
@@ -108,6 +164,7 @@ export default function DataImportWizard() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [previewRows, setPreviewRows] = useState<Record<string, string>[]>([]);
+  const [diagnostics, setDiagnostics] = useState<ImportDiagnostics | null>(null);
 
   const selectedTypeConfig = IMPORT_TYPES.find((t) => t.id === selectedType);
 
@@ -164,37 +221,192 @@ export default function DataImportWizard() {
     return rows;
   };
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const analyzeData = (
+    headerRow: string[],
+    rows: string[][],
+    formulaCells: number,
+  ): ImportDiagnostics => {
+    const warnings: string[] = [];
+    let errorCells = 0;
+    let duplicateRows = 0;
+    let negativeQuantities = 0;
+    let outOfRangePrices = 0;
+    let futureDates = 0;
+    let mixedUom = false;
+
+    const errorTokens = ["#N/A", "#VALUE!", "#REF!", "#DIV/0!", "#NAME?"];
+    const uomSet = new Set<string>();
+    const seenRows = new Set<string>();
+
+    const quantityIndex = headerRow.findIndex((h) =>
+      h.toLowerCase().includes("quantity"),
+    );
+    const priceIndex = headerRow.findIndex((h) =>
+      h.toLowerCase().includes("price"),
+    );
+    const uomIndex = headerRow.findIndex((h) => h.toLowerCase() === "uom");
+    const dateIndex = headerRow.findIndex((h) =>
+      h.toLowerCase().includes("date"),
+    );
+
+    rows.forEach((row) => {
+      row.forEach((cell) => {
+        if (typeof cell === "string" && errorTokens.includes(cell.trim())) {
+          errorCells += 1;
+        }
+      });
+
+      const rowKey = row.join("|");
+      if (seenRows.has(rowKey)) duplicateRows += 1;
+      seenRows.add(rowKey);
+
+      if (uomIndex >= 0) {
+        const uom = row[uomIndex]?.toLowerCase().trim();
+        if (uom) uomSet.add(uom);
+      }
+
+      if (quantityIndex >= 0) {
+        const qty = Number(row[quantityIndex]);
+        if (!Number.isNaN(qty) && qty < 0) negativeQuantities += 1;
+      }
+
+      if (priceIndex >= 0) {
+        const price = Number(row[priceIndex]);
+        if (!Number.isNaN(price) && (price <= 0 || price > 100000)) {
+          outOfRangePrices += 1;
+        }
+      }
+
+      if (dateIndex >= 0) {
+        const value = row[dateIndex];
+        const parsed = value ? new Date(value) : null;
+        if (parsed && !Number.isNaN(parsed.getTime())) {
+          const now = new Date();
+          const diffDays = (parsed.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          if (diffDays > 30) {
+            futureDates += 1;
+          }
+        }
+      }
+    });
+
+    if (uomSet.size > 1) mixedUom = true;
+    if (errorCells > 0) warnings.push("Excel error tokens found (#N/A, #REF!, etc).");
+    if (duplicateRows > 0) warnings.push("Duplicate rows detected.");
+    if (negativeQuantities > 0) warnings.push("Negative quantities detected.");
+    if (outOfRangePrices > 0) warnings.push("Unit prices outside expected range.");
+    if (futureDates > 0) warnings.push("Dates far in the future detected.");
+    if (mixedUom) warnings.push("Mixed units of measure detected.");
+    if (formulaCells > 0) warnings.push("Formula cells detected and preserved.");
+
+    return {
+      warnings,
+      errorCells,
+      duplicateRows,
+      mixedUom,
+      negativeQuantities,
+      outOfRangePrices,
+      futureDates,
+      formulaCells,
+    };
+  };
+
+  const parseExcel = async (buffer: ArrayBuffer) => {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    const worksheet = workbook.worksheets[0];
+    const rows: string[][] = [];
+    let formulaCells = 0;
+
+    worksheet.eachRow((row) => {
+      const values: string[] = [];
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        const cellValue: any = cell.value;
+        if (cellValue && typeof cellValue === "object" && "formula" in cellValue) {
+          formulaCells += 1;
+          values.push(String(cellValue.result ?? ""));
+        } else {
+          values.push(String(cellValue ?? ""));
+        }
+      });
+      rows.push(values.map((value) => value.trim()));
+    });
+
+    const headerRow = rows[0] || [];
+    const dataRows = rows.slice(1).filter((row) => row.some((cell) => cell));
+    const diagnostics = analyzeData(headerRow, dataRows, formulaCells);
+
+    return { headerRow, dataRows, diagnostics };
+  };
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
     if (!uploadedFile) return;
 
     setFile(uploadedFile);
 
+    if (uploadedFile.name.endsWith(".xlsx")) {
+      const buffer = await uploadedFile.arrayBuffer();
+      const { headerRow, dataRows, diagnostics } = await parseExcel(buffer);
+      setHeaders(headerRow);
+      setCsvData(dataRows);
+      setDiagnostics(diagnostics);
+      // Auto-map columns based on header names
+      const autoMappings: ColumnMapping[] = [];
+      const allFields = [
+        ...(selectedTypeConfig?.requiredFields || []),
+        ...(selectedTypeConfig?.optionalFields || []),
+      ];
+
+      headerRow.forEach((header) => {
+        const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        const matchedField = allFields.find(
+          (field) =>
+            field === normalizedHeader ||
+            field.includes(normalizedHeader) ||
+            normalizedHeader.includes(field),
+        );
+        if (matchedField) {
+          autoMappings.push({ sourceColumn: header, targetField: matchedField });
+        }
+      });
+
+      setColumnMappings(autoMappings);
+      setStep("map");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
       const rows = parseCsv(text);
-      
+
       if (rows.length > 0) {
         setHeaders(rows[0]);
-        setCsvData(rows.slice(1).filter((row) => row.some((cell) => cell)));
-        
+        const dataRows = rows.slice(1).filter((row) => row.some((cell) => cell));
+        setCsvData(dataRows);
+        setDiagnostics(analyzeData(rows[0], dataRows, 0));
+
         // Auto-map columns based on header names
         const autoMappings: ColumnMapping[] = [];
-        const allFields = [...(selectedTypeConfig?.requiredFields || []), ...(selectedTypeConfig?.optionalFields || [])];
-        
+        const allFields = [
+          ...(selectedTypeConfig?.requiredFields || []),
+          ...(selectedTypeConfig?.optionalFields || []),
+        ];
+
         rows[0].forEach((header) => {
           const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, "_");
-          const matchedField = allFields.find((field) => 
-            field === normalizedHeader || 
-            field.includes(normalizedHeader) || 
-            normalizedHeader.includes(field)
+          const matchedField = allFields.find(
+            (field) =>
+              field === normalizedHeader ||
+              field.includes(normalizedHeader) ||
+              normalizedHeader.includes(field),
           );
           if (matchedField) {
             autoMappings.push({ sourceColumn: header, targetField: matchedField });
           }
         });
-        
+
         setColumnMappings(autoMappings);
         setStep("map");
       }
@@ -273,7 +485,29 @@ export default function DataImportWizard() {
         columnMappings.forEach((mapping) => {
           const colIndex = headers.indexOf(mapping.sourceColumn);
           if (colIndex >= 0) {
-            mappedData[mapping.targetField] = row[colIndex] || null;
+            let value: string | number | null = row[colIndex] || null;
+
+            if (value !== null) {
+              const field = mapping.targetField.toLowerCase();
+              if (
+                field.includes("quantity") ||
+                field.includes("price") ||
+                field.includes("rate") ||
+                field.includes("total")
+              ) {
+                const num = Number(value);
+                value = Number.isNaN(num) ? null : num;
+              } else if (field.includes("date") || field.includes("expiration")) {
+                const parsed = new Date(value);
+                value = Number.isNaN(parsed.getTime())
+                  ? null
+                  : parsed.toISOString().split("T")[0];
+              } else if (field.includes("quality_hold")) {
+                value = value.toString().toLowerCase() === "true";
+              }
+            }
+
+            mappedData[mapping.targetField] = value;
           }
         });
 
@@ -296,6 +530,18 @@ export default function DataImportWizard() {
               break;
             case "customers":
               tableName = "vendors";
+              break;
+            case "pit_data":
+              tableName = "pit_data";
+              break;
+            case "material_receipts":
+              tableName = "material_receipts";
+              break;
+            case "supplier_invoices":
+              tableName = "supplier_invoices";
+              break;
+            case "po_data":
+              tableName = "po_data";
               break;
           }
 
@@ -335,6 +581,37 @@ export default function DataImportWizard() {
         }
       }
 
+      await supabase.from("import_audits").insert({
+        organization_id: organizationId,
+        import_type: selectedType,
+        file_name: file?.name || null,
+        rows_count: csvData.length,
+        success_count: result.success,
+        failure_count: result.failed,
+        error_count: result.errors.length,
+        warning_count: diagnostics?.warnings?.length || 0,
+        diagnostics: diagnostics || {},
+        created_by: user.id,
+      });
+
+      if (diagnostics) {
+        const criticalIssues =
+          diagnostics.errorCells > 0 ||
+          diagnostics.negativeQuantities > 0 ||
+          diagnostics.outOfRangePrices > 0;
+
+        if (criticalIssues) {
+          await supabase.from("workflow_tickets").insert({
+            organization_id: organizationId,
+            source_type: "excel_import",
+            department: "accounting",
+            title: "Excel import requires review",
+            description: `Detected ${diagnostics.warnings.length} warning(s) in ${file?.name || "spreadsheet"}.`,
+            status: "open",
+          });
+        }
+      }
+
       setImportResult(result);
       setStep("complete");
     } catch (err) {
@@ -356,6 +633,7 @@ export default function DataImportWizard() {
     setColumnMappings([]);
     setImportResult(null);
     setPreviewRows([]);
+    setDiagnostics(null);
   };
 
   const allRequiredFieldsMapped = selectedTypeConfig?.requiredFields.every((field) =>
@@ -423,7 +701,7 @@ export default function DataImportWizard() {
                   <span className="text-sm font-medium">Tips for Successful Import</span>
                 </div>
                 <ul className="text-text-secondary text-xs space-y-1 ml-6">
-                  <li>Use CSV format (comma-separated values)</li>
+                  <li>Use CSV or Excel (XLSX) format</li>
                   <li>Include column headers in the first row</li>
                   <li>Ensure dates are in YYYY-MM-DD format</li>
                   <li>Remove any special characters from phone numbers</li>
@@ -448,7 +726,7 @@ export default function DataImportWizard() {
                 <div className="border-2 border-dashed border-space-border rounded-lg p-8 text-center">
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx"
                     onChange={handleFileUpload}
                     className="hidden"
                     id="file-upload"
@@ -462,7 +740,7 @@ export default function DataImportWizard() {
                       Click to upload or drag and drop
                     </p>
                     <p className="text-text-secondary text-sm">
-                      CSV files only (max 10MB)
+                      CSV or Excel files (max 10MB)
                     </p>
                   </label>
                 </div>
@@ -501,14 +779,16 @@ export default function DataImportWizard() {
                       Download our pre-formatted CSV template
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-space-border text-text-secondary hover:text-text-primary"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Template
-                  </Button>
+                  <a href={selectedTypeConfig.templateUrl}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-space-border text-text-secondary hover:text-text-primary"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Template
+                    </Button>
+                  </a>
                 </div>
 
                 <div className="flex justify-between pt-4">
@@ -620,6 +900,34 @@ export default function DataImportWizard() {
               <p className="text-text-secondary text-sm mb-4">
                 Review the first 5 rows of your import. {csvData.length} total rows will be imported.
               </p>
+
+              {diagnostics && (
+                <div className="mb-6 p-4 bg-space-surface rounded border border-space-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-text-primary font-medium">Excel Diagnostics</p>
+                    <span className="text-xs text-text-secondary">
+                      {diagnostics.warnings.length} warnings
+                    </span>
+                  </div>
+                  {diagnostics.warnings.length === 0 ? (
+                    <p className="text-text-secondary text-sm">No issues detected.</p>
+                  ) : (
+                    <ul className="text-text-secondary text-xs space-y-1 list-disc ml-4">
+                      {diagnostics.warnings.map((warning, idx) => (
+                        <li key={idx}>{warning}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4 text-xs text-text-secondary">
+                    <div>Errors: {diagnostics.errorCells}</div>
+                    <div>Duplicates: {diagnostics.duplicateRows}</div>
+                    <div>Negative Qty: {diagnostics.negativeQuantities}</div>
+                    <div>Price Outliers: {diagnostics.outOfRangePrices}</div>
+                    <div>Future Dates: {diagnostics.futureDates}</div>
+                    <div>Formula Cells: {diagnostics.formulaCells}</div>
+                  </div>
+                </div>
+              )}
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
