@@ -32,22 +32,76 @@ function generateComplianceReminders() {
     },
   ];
 }
-// Compliance analytics mock data generator (replace with Supabase query)
-function generateComplianceTrends() {
-  // 30 days of mock data
+// Compliance analytics data loader
+async function loadComplianceTrends(supabaseClient: ReturnType<typeof createClient>, orgIds: string[]) {
   const today = new Date();
-  return Array.from({ length: 30 }, (_, i) => {
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+
+  // Initialize 30 days of data
+  const trendData: { [key: string]: { compliant: number; noncompliant: number } } = {};
+  for (let i = 0; i < 30; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() - (29 - i));
-    const compliant = Math.floor(Math.random() * 8 + 2);
-    const noncompliant = Math.floor(Math.random() * 3);
-    return {
-      date: date.toISOString().slice(0, 10),
-      compliant,
-      noncompliant,
-      total: compliant + noncompliant,
-    };
-  });
+    trendData[date.toISOString().slice(0, 10)] = { compliant: 0, noncompliant: 0 };
+  }
+
+  if (orgIds.length === 0) {
+    return Object.entries(trendData).map(([date, data]) => ({
+      date,
+      compliant: data.compliant,
+      noncompliant: data.noncompliant,
+      total: data.compliant + data.noncompliant,
+    }));
+  }
+
+  try {
+    // Get compliance notifications (issues/violations)
+    const { data: notifications } = await supabaseClient
+      .from("compliance_notifications")
+      .select("created_at, resolved")
+      .gte("created_at", thirtyDaysAgo.toISOString());
+
+    // Count notifications by date
+    (notifications || []).forEach((notification: { created_at: string; resolved: boolean }) => {
+      const date = notification.created_at.slice(0, 10);
+      if (trendData[date]) {
+        if (notification.resolved) {
+          trendData[date].compliant++;
+        } else {
+          trendData[date].noncompliant++;
+        }
+      }
+    });
+
+    // Get driver documents with expiration tracking
+    const { data: documents } = await supabaseClient
+      .from("driver_documents")
+      .select("created_at, status, expiration_date")
+      .in("organization_id", orgIds)
+      .gte("created_at", thirtyDaysAgo.toISOString());
+
+    // Count documents by date and status
+    (documents || []).forEach((doc: { created_at: string; status: string; expiration_date: string | null }) => {
+      const date = doc.created_at.slice(0, 10);
+      if (trendData[date]) {
+        if (doc.status === "approved" || doc.status === "valid") {
+          trendData[date].compliant++;
+        } else if (doc.status === "expired" || doc.status === "rejected") {
+          trendData[date].noncompliant++;
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error loading compliance trends:", error);
+  }
+
+  return Object.entries(trendData).map(([date, data]) => ({
+    date,
+    compliant: data.compliant,
+    noncompliant: data.noncompliant,
+    total: data.compliant + data.noncompliant,
+  }));
 }
 
 interface PartnerTheme {
@@ -110,18 +164,39 @@ export default function PartnerDashboard() {
   const [reminderLoading, setReminderLoading] = useState(true);
 
   useEffect(() => {
-    if (partnerInfo?.theme) {
-      setTheme(partnerInfo.theme as PartnerTheme);
-      loadPartnerStats();
-      setComplianceTrends(generateComplianceTrends());
-      loadComplianceReminders();
-    } else if (profile?.role === "partner") {
-      // Load default RonYX theme for Veronica
-      loadRonYXTheme();
-      setComplianceTrends(generateComplianceTrends());
-      loadComplianceReminders();
+    async function loadDashboardData() {
+      if (partnerInfo?.theme) {
+        setTheme(partnerInfo.theme as PartnerTheme);
+        loadPartnerStats();
+        loadComplianceReminders();
+        
+        // Load compliance trends with real data
+        const orgIds = await getPartnerOrgIds();
+        const trends = await loadComplianceTrends(supabase, orgIds);
+        setComplianceTrends(trends as any);
+      } else if (profile?.role === "partner") {
+        // Load default RonYX theme for Veronica
+        loadRonYXTheme();
+        loadComplianceReminders();
+        
+        // Load compliance trends with real data
+        const orgIds = await getPartnerOrgIds();
+        const trends = await loadComplianceTrends(supabase, orgIds);
+        setComplianceTrends(trends as any);
+      }
     }
-  }, [partnerInfo, profile]);
+    
+    async function getPartnerOrgIds(): Promise<string[]> {
+      if (!user?.id) return [];
+      const { data: orgs } = await supabase
+        .from("organizations")
+        .select("id")
+        .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
+      return orgs?.map((org) => org.id) || [];
+    }
+    
+    loadDashboardData();
+  }, [partnerInfo, profile, user]);
 
   async function loadComplianceReminders() {
     setReminderLoading(true);
@@ -219,15 +294,102 @@ export default function PartnerDashboard() {
   }
 
   async function loadPartnerStats() {
-    // Mock data for now - replace with real Supabase queries
-    setStats({
-      companiesOnboarded: 12,
-      activeDrivers: 48,
-      hrUploads: 156,
-      monthlyCommission: 2850.0,
-      totalReferrals: 15,
-      pendingApprovals: 3,
-    });
+    try {
+      if (!user?.id) {
+        setStats({
+          companiesOnboarded: 0,
+          activeDrivers: 0,
+          hrUploads: 0,
+          monthlyCommission: 0,
+          totalReferrals: 0,
+          pendingApprovals: 0,
+        });
+        return;
+      }
+
+      // Get organizations linked to this partner
+      const { data: orgs, error: orgsError } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
+
+      const orgIds = orgs?.map((org) => org.id) || [];
+      const companiesOnboarded = orgs?.length || 0;
+
+      // Get active drivers count across partner's organizations
+      let activeDrivers = 0;
+      if (orgIds.length > 0) {
+        const { count: driverCount } = await supabase
+          .from("drivers")
+          .select("id", { count: "exact", head: true })
+          .in("organization_id", orgIds)
+          .eq("status", "active");
+        activeDrivers = driverCount || 0;
+      }
+
+      // Get HR document uploads count
+      let hrUploads = 0;
+      if (orgIds.length > 0) {
+        const { count: docCount } = await supabase
+          .from("driver_documents")
+          .select("id", { count: "exact", head: true })
+          .in("organization_id", orgIds);
+        hrUploads = docCount || 0;
+      }
+
+      // Get commission data from agent_commissions or commission_events
+      let monthlyCommission = 0;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: commissions } = await supabase
+        .from("commission_events")
+        .select("amount")
+        .eq("agent_id", user.id)
+        .gte("created_at", thirtyDaysAgo.toISOString());
+      
+      if (commissions && commissions.length > 0) {
+        monthlyCommission = commissions.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+      }
+
+      // Get referral count from agent_leads
+      const { count: referralCount } = await supabase
+        .from("agent_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("agent_id", user.id);
+      const totalReferrals = referralCount || 0;
+
+      // Get pending approvals (organizations with pending status or pending payments)
+      let pendingApprovals = 0;
+      if (orgIds.length > 0) {
+        const { count: pendingCount } = await supabase
+          .from("billing_payments")
+          .select("id", { count: "exact", head: true })
+          .in("org_id", orgIds)
+          .eq("status", "pending");
+        pendingApprovals = pendingCount || 0;
+      }
+
+      setStats({
+        companiesOnboarded,
+        activeDrivers,
+        hrUploads,
+        monthlyCommission,
+        totalReferrals,
+        pendingApprovals,
+      });
+    } catch (error) {
+      console.error("Error loading partner stats:", error);
+      // Set default values on error
+      setStats({
+        companiesOnboarded: 0,
+        activeDrivers: 0,
+        hrUploads: 0,
+        monthlyCommission: 0,
+        totalReferrals: 0,
+        pendingApprovals: 0,
+      });
+    }
   }
 
   if (loading) {
