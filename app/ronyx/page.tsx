@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function RonyxDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     async function getProfile() {
@@ -14,21 +12,16 @@ export default function RonyxDashboard() {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!session) {
-        router.push("/ronyx/login");
-        return;
-      }
-
-      setUser(session.user);
+      setUser(session?.user ?? null);
       setLoading(false);
     }
 
     getProfile();
-  }, [router]);
+  }, []);
 
   async function signOut() {
     await supabase.auth.signOut();
-    router.push("/ronyx/login");
+    setUser(null);
   }
 
   if (loading) {

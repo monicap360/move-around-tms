@@ -1,35 +1,7 @@
 import Link from "next/link";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-
 export const dynamic = "force-dynamic";
 
 export default async function AggregatesPage() {
-  // Create Supabase client for server-side authentication
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    },
-  );
-
-  // Check authentication
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error || !session) {
-    redirect("/login");
-  }
-
   return (
     <div
       style={{
