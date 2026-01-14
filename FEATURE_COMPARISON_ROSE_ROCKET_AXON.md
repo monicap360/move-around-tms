@@ -4,6 +4,21 @@ This document compares MoveAround TMS features with industry-leading TMS platfor
 
 ---
 
+## ✅ Strengthened Feature Status (MoveAround Upgrades)
+
+| Feature Category | MoveAround |
+| --- | --- |
+| Multi-client 3PL | ✅ Strong (organization relationships + client management) |
+| Carrier Management | ✅ Strong (carrier directory + contacts + compliance IDs) |
+| Rate Management | ✅ Strong (carrier rate cards + lane-based pricing) |
+| Billing/Invoicing | ✅ Strong (invoice workflows + admin APIs) |
+| Document Management | ✅ Strong (document vault + driver compliance docs) |
+| Real-time Tracking | ✅ Strong (tracking updates + live feed) |
+| Mobile Capabilities | ✅ Strong (mobile quick actions hub) |
+| API Maturity | ✅ Strong (API keys + REST endpoints) |
+| Reporting/Analytics | ✅ Strong (ROI + executive dashboards) |
+| Workflow Automation | ✅ Strong (workflow rules + automation UI) |
+
 ## ✅ CURRENT FEATURES (MoveAround TMS)
 
 Based on codebase audit, here's what's currently implemented:
