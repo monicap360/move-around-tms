@@ -11,6 +11,9 @@ MoveAround occupies the "Goldilocks Zone" between overly complex/expensive US sy
 - **Partnership Model:** Collaborate with Mexican implementation partners.
 - **Hybrid Support:** Digital-first with strategic local presence.
 
+### Chosen Niche
+Focus on US–Mexico manufacturing 3PLs that need cross-border automation and compliance readiness without enterprise-heavy tooling.
+
 ## Execution Notes
 - Prioritize compliance features that remove sales objections (CFDI 4.0, Carta Porte 3.0).
 - Avoid heavy customization before first 2–3 Mexico pilots.
