@@ -1,53 +1,41 @@
 import Link from "next/link";
+import {
+  BarChart,
+  FileText,
+  Users,
+  Truck,
+  DollarSign,
+  Calculator,
+  Navigation,
+  ClipboardList,
+  Settings,
+} from "lucide-react";
 
 export default function HomePage() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
-        padding: 0,
-      }}
-    >
-      <h1
-        style={{
-          fontSize: 48,
-          fontWeight: 700,
-          marginBottom: 16,
-          color: "#1e293b",
-        }}
-      >
-        Move Around TMS
-      </h1>
-      <p style={{ fontSize: 20, color: "#475569", marginBottom: 40 }}>
-        Welcome! Choose a section to get started:
-      </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 24,
-          width: "100%",
-          maxWidth: 800,
-          marginBottom: 40,
-        }}
-      >
-        <NavButton href="/dashboard" label="Dashboard" color="#2563eb" />
-        <NavButton href="/tickets" label="Tickets" color="#059669" />
-        <NavButton href="/drivers" label="Drivers" color="#f59e42" />
-        <NavButton href="/fleet" label="Fleet" color="#a21caf" />
-        <NavButton href="/payroll" label="Payroll" color="#dc2626" />
-        <NavButton href="/finance" label="Finance" color="#0ea5e9" />
-        <NavButton href="/dispatch" label="Dispatch" color="#0ea5e9" />
-        <NavButton href="/reports" label="Reports" color="#0f766e" />
-        <NavButton href="/settings" label="Settings" color="#64748b" />
+    <div className="min-h-full flex flex-col items-center justify-center py-12 px-6">
+      <div className="text-center mb-12">
+        <h1 className="text-3xl font-medium text-text-primary tracking-wide mb-2">
+          OPERATIONS CENTER
+        </h1>
+        <div className="h-px bg-gold-primary w-24 mx-auto mb-4" />
+        <p className="text-sm text-text-secondary tracking-wider uppercase">
+          Ronyx Logistics LLC - Mission Control
+        </p>
       </div>
-      <footer style={{ color: "#94a3b8", fontSize: 14 }}>
-        © {new Date().getFullYear()} Move Around TMS
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl mb-12">
+        <NavButton href="/dashboard" label="Dashboard" icon={BarChart} />
+        <NavButton href="/tickets" label="Tickets" icon={FileText} />
+        <NavButton href="/drivers" label="Drivers" icon={Users} />
+        <NavButton href="/fleet" label="Fleet" icon={Truck} />
+        <NavButton href="/payroll" label="Payroll" icon={DollarSign} />
+        <NavButton href="/finance" label="Finance" icon={Calculator} />
+        <NavButton href="/dispatch" label="Dispatch" icon={Navigation} />
+        <NavButton href="/reports" label="Reports" icon={ClipboardList} />
+        <NavButton href="/settings" label="Settings" icon={Settings} />
+      </div>
+      <footer className="text-text-muted text-[10px] uppercase tracking-[0.15em]">
+        Ronyx Logistics LLC
       </footer>
     </div>
   );
@@ -56,31 +44,19 @@ export default function HomePage() {
 function NavButton({
   href,
   label,
-  color,
+  icon: Icon,
 }: {
   href: string;
   label: string;
-  color: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }) {
   return (
     <Link
       href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: 80,
-        background: color,
-        color: "white",
-        borderRadius: 14,
-        fontSize: 22,
-        fontWeight: 600,
-        textDecoration: "none",
-        boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
-        transition: "background 0.2s",
-      }}
+      className="group flex flex-col items-center justify-center h-28 bg-space-panel border border-space-border rounded-sm text-text-secondary hover:text-gold-primary hover:border-gold-border transition-all duration-150"
     >
-      {label}
+      <Icon className="w-6 h-6 mb-2 text-text-muted group-hover:text-gold-primary transition-colors" strokeWidth={1.5} />
+      <span className="text-sm font-medium tracking-wider uppercase">{label}</span>
     </Link>
   );
 }
