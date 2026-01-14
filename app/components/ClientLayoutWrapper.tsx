@@ -109,7 +109,8 @@ export default function ClientLayoutWrapper({
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup") ||
     pathname?.startsWith("/reset-password") ||
-    pathname?.startsWith("/auth/callback");
+    pathname?.startsWith("/auth/callback") ||
+    pathname?.startsWith("/demo");
 
   // Debug: Uncomment these lines to debug layout rendering
   // console.log('ClientLayoutWrapper - pathname:', pathname);
