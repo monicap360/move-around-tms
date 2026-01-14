@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:siteground": "node scripts/build-siteground.js",
+    "export:siteground": "npm run build:siteground",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

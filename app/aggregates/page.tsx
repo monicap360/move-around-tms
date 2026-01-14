@@ -1,23 +1,7 @@
+import Link from "next/link";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import Link from "next/link";
-import {
-  Upload,
-  FileText,
-  TrendingUp,
-  FileEdit,
-  Settings,
-  Receipt,
-  Mail,
-} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -45,147 +29,74 @@ export default async function AggregatesPage() {
   if (error || !session) {
     redirect("/login");
   }
+
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Aggregates</h1>
-          <p className="text-gray-600 mt-1">
-            Manage tickets, quotes, invoices, material rates, and profit reports
-          </p>
-        </div>
-        <Link href="/aggregates/upload">
-          <Button className="flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload Ticket
-          </Button>
-        </Link>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
+        padding: "2rem",
+      }}
+    >
+      <h1
+        style={{
+          fontSize: 48,
+          fontWeight: 700,
+          marginBottom: 16,
+          color: "#1e293b",
+        }}
+      >
+        Aggregates
+      </h1>
+      <p style={{ fontSize: 20, color: "#475569", marginBottom: 40 }}>
+        Manage tickets, quotes, invoices, material rates, and profit reports
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 24,
+          width: "100%",
+          maxWidth: 1000,
+          marginBottom: 40,
+        }}
+      >
+        <NavButton href="/aggregates/upload" label="Upload Ticket" color="#2563eb" />
+        <NavButton href="/admin/review-tickets" label="Review Tickets" color="#059669" />
+        <NavButton href="/aggregates/profit-reports" label="Profit Reports" color="#f59e42" />
+        <NavButton href="/aggregates/quotes" label="Quote Management" color="#a21caf" />
+        <NavButton href="/aggregates/material-rate-management-tab" label="Material & Rates" color="#dc2626" />
+        <NavButton href="/aggregates/quote-requests" label="Quote Requests" color="#0ea5e9" />
+        <NavButton href="/aggregates/invoices" label="Invoices" color="#0f766e" />
+        <NavButton href="/aggregates/tickets" label="Tickets" color="#64748b" />
       </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Link href="/aggregates/upload">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Upload className="w-8 h-8 text-blue-500" />
-                <div>
-                  <p className="font-semibold">Upload Ticket</p>
-                  <p className="text-sm text-gray-500">Scan with OCR</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/admin/review-tickets">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <FileText className="w-8 h-8 text-green-500" />
-                <div>
-                  <p className="font-semibold">Review Tickets</p>
-                  <p className="text-sm text-gray-500">Approve pending</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/aggregates/profit-reports">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-orange-500" />
-                <div>
-                  <p className="font-semibold">Profit Reports</p>
-                  <p className="text-sm text-gray-500">
-                    Revenue vs Pay, margins
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/aggregates/quotes">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <FileEdit className="w-8 h-8 text-indigo-500" />
-                <div>
-                  <p className="font-semibold">Quote Management</p>
-                  <p className="text-sm text-gray-500">Create & send quotes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/aggregates/material-rate-management-tab">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Settings className="w-8 h-8 text-gray-500" />
-                <div>
-                  <p className="font-semibold">Material & Rate Management</p>
-                  <p className="text-sm text-gray-500">
-                    All material, rate, and job info
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/aggregates/quote-requests">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Mail className="w-8 h-8 text-red-500" />
-                <div>
-                  <p className="font-semibold">Quote Requests</p>
-                  <p className="text-sm text-gray-500">
-                    Reply with email drafts
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/aggregates/invoices">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Receipt className="w-8 h-8 text-teal-600" />
-                <div>
-                  <p className="font-semibold">Invoices</p>
-                  <p className="text-sm text-gray-500">
-                    Create & download branded PDFs
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Automatic Ticket Processing</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-gray-700">
-          <p>
+      <div
+        style={{
+          maxWidth: 800,
+          width: "100%",
+          padding: "2rem",
+          background: "white",
+          borderRadius: 14,
+          boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
+        }}
+      >
+        <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16, color: "#1e293b" }}>
+          Automatic Ticket Processing
+        </h2>
+        <div style={{ color: "#475569", lineHeight: 1.8 }}>
+          <p style={{ marginBottom: 12 }}>
             📸 <strong>Upload any scanner output:</strong> Take photos with your
             phone or upload PDFs from document scanners
           </p>
-          <p>
+          <p style={{ marginBottom: 12 }}>
             🤖 <strong>AI-powered OCR:</strong> Automatically extracts partner,
             material, quantity, ticket number, and driver
           </p>
-          <p>
+          <p style={{ marginBottom: 12 }}>
             💰 <strong>Auto-calculation:</strong> System calculates pay based on
             partner rates and material types
           </p>
@@ -193,8 +104,49 @@ export default async function AggregatesPage() {
             ✅ <strong>Manager review:</strong> All tickets go to "Pending
             Manager Review" for approval before payroll
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      <footer style={{ color: "#94a3b8", fontSize: 14, marginTop: 40 }}>
+        © {new Date().getFullYear()} Move Around TMS
+      </footer>
     </div>
+  );
+}
+
+function NavButton({
+  href,
+  label,
+  color,
+}: {
+  href: string;
+  label: string;
+  color: string;
+}) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: 80,
+        background: color,
+        color: "white",
+        borderRadius: 14,
+        fontSize: 22,
+        fontWeight: 600,
+        textDecoration: "none",
+        boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
+        transition: "background 0.2s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.opacity = "0.9";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.opacity = "1";
+      }}
+    >
+      {label}
+    </Link>
   );
 }
