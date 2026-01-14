@@ -99,6 +99,7 @@ const navigationSections = [
       { name: "3PL Billing", path: "/3pl/billing", icon: DollarSign },
       { name: "Cross-Border", path: "/cross-border", icon: ShieldCheck },
       { name: "Integrations", path: "/integrations", icon: Database },
+      { name: "Matching", path: "/matching", icon: Database },
       { name: "Workflow Rules", path: "/workflows/ticket-rules", icon: ShieldCheck },
       { name: "API Keys", path: "/settings/api-keys", icon: Settings },
       { name: "Database Setup", path: "/setup-database", icon: Database },
