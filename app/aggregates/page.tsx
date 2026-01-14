@@ -69,7 +69,7 @@ export default async function AggregatesPage() {
         <NavButton href="/admin/review-tickets" label="Review Tickets" color="#059669" />
         <NavButton href="/aggregates/profit-reports" label="Profit Reports" color="#f59e42" />
         <NavButton href="/aggregates/quotes" label="Quote Management" color="#a21caf" />
-        <NavButton href="/aggregates/material-rate-management-tab" label="Material & Rates" color="#dc2626" />
+        <NavButton href="/admin/material-rates" label="Material & Rates" color="#dc2626" />
         <NavButton href="/aggregates/quote-requests" label="Quote Requests" color="#0ea5e9" />
         <NavButton href="/aggregates/invoices" label="Invoices" color="#0f766e" />
         <NavButton href="/aggregates/tickets" label="Tickets" color="#64748b" />

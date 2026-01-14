@@ -43,11 +43,7 @@ export default function HomePage() {
         <NavButton href="/payroll" label="Payroll" color="#dc2626" />
         <NavButton href="/finance" label="Finance" color="#0ea5e9" />
         <NavButton href="/dispatch" label="Dispatch" color="#0ea5e9" />
-        <NavButton
-          href="/reports/excel-tab"
-          label="Reports & Excel"
-          color="#0f766e"
-        />
+        <NavButton href="/reports" label="Reports" color="#0f766e" />
         <NavButton href="/settings" label="Settings" color="#64748b" />
       </div>
       <footer style={{ color: "#94a3b8", fontSize: 14 }}>
