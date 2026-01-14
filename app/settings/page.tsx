@@ -216,30 +216,32 @@ export default function SettingsPage() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)",
-        padding: 0,
+        justifyContent: "flex-start",
+        background: "#0E0F12",
+        padding: "2rem",
       }}
     >
       <h1
         style={{
-          fontSize: 48,
-          fontWeight: 700,
-          marginBottom: 16,
-          color: "#1e293b",
+          fontSize: 24,
+          fontWeight: 500,
+          marginBottom: 8,
+          color: "#E6E8EC",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
         }}
       >
         Settings
       </h1>
-      <p style={{ fontSize: 20, color: "#475569", marginBottom: 32 }}>
+      <p style={{ fontSize: 14, color: "#9AA0AA", marginBottom: 32 }}>
         Manage your profile, contact info, and password.
       </p>
       <div
         style={{
-          background: "#e0e7ef",
-          borderRadius: 16,
-          boxShadow: "0 2px 8px rgba(30,41,59,0.08)",
-          padding: 32,
+          background: "#14161B",
+          borderRadius: 4,
+          border: "1px solid #2A2E36",
+          padding: 24,
           minWidth: 340,
           minHeight: 180,
           width: "100%",
@@ -248,9 +250,9 @@ export default function SettingsPage() {
         }}
       >
         {/* Profile Information */}
-        <Card className="shadow-lg border border-gray-200 bg-white">
-          <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-lg">
-            <CardTitle>Profile Settings</CardTitle>
+        <Card className="border border-space-border bg-space-panel">
+          <CardHeader className="bg-space-surface border-b border-space-border">
+            <CardTitle className="text-text-primary text-sm uppercase tracking-wider">Profile Settings</CardTitle>
           </CardHeader>
           <CardContent className="mt-6 space-y-6">
             {/* Avatar Upload */}
@@ -363,9 +365,9 @@ export default function SettingsPage() {
         </Card>
 
         {/* Password Change */}
-        <Card className="shadow-lg border border-gray-200 bg-white">
-          <CardHeader className="bg-gradient-to-r from-red-500 to-red-700 text-white rounded-t-lg">
-            <CardTitle>Change Password</CardTitle>
+        <Card className="border border-space-border bg-space-panel mt-6">
+          <CardHeader className="bg-space-surface border-b border-space-border">
+            <CardTitle className="text-text-primary text-sm uppercase tracking-wider">Change Password</CardTitle>
           </CardHeader>
           <CardContent className="mt-6">
             <form onSubmit={handlePasswordChange} className="space-y-4">
@@ -412,21 +414,21 @@ export default function SettingsPage() {
         </Card>
 
         {/* Company Information */}
-        <Card className="shadow-lg border border-gray-200 bg-white">
-          <CardHeader className="bg-gradient-to-r from-green-500 to-green-700 text-white rounded-t-lg">
-            <CardTitle>Company Information</CardTitle>
+        <Card className="border border-space-border bg-space-panel mt-6">
+          <CardHeader className="bg-space-surface border-b border-space-border">
+            <CardTitle className="text-text-primary text-sm uppercase tracking-wider">Company Information</CardTitle>
           </CardHeader>
-          <CardContent className="text-gray-700 mt-4 space-y-2">
+          <CardContent className="text-text-secondary mt-4 space-y-2">
             <p>
               Configure company info, user accounts, roles, and notification
               preferences.
             </p>
-            <p>Brand: Move Around TMS™.</p>
+            <p className="text-gold-primary">Organization: Ronyx Logistics LLC</p>
           </CardContent>
         </Card>
       </div>
-      <footer style={{ color: "#94a3b8", fontSize: 14, marginTop: 40 }}>
-        © {new Date().getFullYear()} Move Around TMS
+      <footer style={{ color: "#6B7280", fontSize: 11, marginTop: 40, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+        Ronyx Logistics LLC
       </footer>
     </div>
   );

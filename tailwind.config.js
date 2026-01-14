@@ -8,6 +8,34 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Space/Graphite Base Palette
+        space: {
+          deep: "#0E0F12",
+          panel: "#14161B",
+          surface: "#1C1F26",
+          border: "#2A2E36",
+          "border-subtle": "#1E2128",
+        },
+        // Muted Champagne Gold Accent
+        gold: {
+          primary: "#C7A14A",
+          secondary: "#BFA15A",
+          tertiary: "#9E8A4E",
+          glow: "rgba(199, 161, 74, 0.15)",
+          border: "rgba(199, 161, 74, 0.3)",
+        },
+        // Text Colors
+        "text-primary": "#E6E8EC",
+        "text-secondary": "#9AA0AA",
+        "text-muted": "#6B7280",
+        // Status Colors (Muted)
+        status: {
+          success: "#4A9E6B",
+          warning: "#C7A14A",
+          error: "#B54A4A",
+          info: "#5A8EC7",
+        },
+        // Semantic mappings for Tailwind compatibility
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -50,9 +78,16 @@ module.exports = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius-lg)",
+        md: "var(--radius-md)",
+        sm: "var(--radius-sm)",
+      },
+      fontFamily: {
+        sans: ["Inter", "Roboto Condensed", "Helvetica Neue", "sans-serif"],
+      },
+      boxShadow: {
+        "gold-glow": "0 0 8px rgba(199, 161, 74, 0.15)",
+        "gold-glow-lg": "0 0 12px rgba(199, 161, 74, 0.2)",
       },
     },
   },

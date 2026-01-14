@@ -22,14 +22,12 @@ import {
   Database,
 } from "lucide-react";
 
-// Navigation structure with grouped items
+// Navigation structure with grouped items - Mission Critical Operations
 const navigationSections = [
   {
-    name: "Main",
+    name: "Operations",
     items: [
       { name: "Dashboard", path: "/", icon: BarChart },
-      { name: "My Profile", path: "/driver/profile", icon: Users },
-      { name: "Customer Portal", path: "/customer-portal", icon: Users },
       { name: "Truck Board", path: "/truck-board", icon: Truck },
       {
         name: "Driver Schedule",
@@ -45,7 +43,7 @@ const navigationSections = [
     ],
   },
   {
-    name: "Operations",
+    name: "Tickets & Payroll",
     items: [
       { name: "Aggregates", path: "/aggregates", icon: ClipboardList },
       {
@@ -58,7 +56,7 @@ const navigationSections = [
     ],
   },
   {
-    name: "Safety & HR",
+    name: "Safety & Compliance",
     items: [
       { name: "HR Dashboard", path: "/hr", icon: Users },
       { name: "DVIR Inspections", path: "/driver/dvir", icon: CheckCircle },
@@ -72,7 +70,7 @@ const navigationSections = [
     ],
   },
   {
-    name: "Administration",
+    name: "Fleet & Maintenance",
     items: [
       { name: "Maintenance", path: "/maintenance", icon: Wrench },
       { name: "Fleet Management", path: "/fleet", icon: Truck },
@@ -88,8 +86,6 @@ const navigationSections = [
     name: "System",
     items: [
       { name: "Reports", path: "/reports", icon: BarChart },
-      { name: "Merch Store", path: "/merch", icon: Store },
-      { name: "Database Setup", path: "/setup-database", icon: Database },
       { name: "Settings", path: "/settings", icon: Settings },
     ],
   },
@@ -127,56 +123,62 @@ export default function ClientLayoutWrapper({
     );
   }
 
-  // For authenticated routes, render with full layout
+  // For authenticated routes, render with full layout - Space-Grade Design
   return (
     <>
-      <div className="flex h-screen overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-72 bg-blue-900 text-white flex flex-col justify-between h-full">
+      <div className="flex h-screen overflow-hidden bg-space-deep">
+        {/* Sidebar - Mission Critical Operations */}
+        <aside className="w-64 bg-space-panel flex flex-col justify-between h-full border-r border-space-border">
           <div>
             {/* Brand Header */}
-            <header className="py-3 border-b border-blue-700">
-              <div className="px-3 flex items-center justify-between gap-2">
-                <div className="text-center flex-1">
-                  <h1 className="text-lg font-semibold tracking-wide text-blue-300">
-                    Move Around TMS™
+            <header className="py-4 border-b border-space-border">
+              <div className="px-4">
+                <div className="text-center">
+                  <h1 className="text-sm font-medium tracking-widest text-gold-primary uppercase">
+                    Move Around TMS
                   </h1>
-                  <p className="text-xs text-gray-400 italic">
-                    Built for those who move
-                  </p>
-                  <h2 className="text-xl font-bold text-white mt-1 tracking-wide uppercase">
+                  <div className="h-px bg-space-border my-2 mx-8" />
+                  <h2 className="text-base font-medium text-text-primary tracking-wide">
                     Ronyx Logistics LLC
                   </h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center mt-3">
                   <NotificationsBell />
-                  <div className="text-sm text-gray-300">Demo Mode</div>
                 </div>
               </div>
             </header>
 
-            {/* Nav */}
-            <nav className="mt-6 px-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+            {/* Nav - Restrained, Precise */}
+            <nav className="mt-4 px-2 max-h-[calc(100vh-180px)] overflow-y-auto">
               {navigationSections.map((section, sectionIndex) => (
                 <div
                   key={section.name}
-                  className={sectionIndex > 0 ? "mt-6" : ""}
+                  className={sectionIndex > 0 ? "mt-4" : ""}
                 >
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
+                  <h3 className="text-[10px] font-medium text-text-muted uppercase tracking-[0.15em] mb-1 px-3">
                     {section.name}
                   </h3>
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {section.items.map(({ name, path, icon: Icon }) => (
                       <Link key={name} href={path}>
                         <div
-                          className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer ${
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-sm cursor-pointer transition-all duration-150 ${
                             pathname === path
-                              ? "bg-blue-800 text-yellow-400"
-                              : "hover:bg-blue-800"
+                              ? "bg-space-surface text-gold-primary border-l-2 border-gold-primary"
+                              : "text-text-secondary hover:bg-space-surface hover:text-text-primary border-l-2 border-transparent"
                           }`}
                         >
-                          {Icon && <Icon className="h-4 w-4 text-yellow-400" />}
-                          <span className="text-sm font-semibold">{name}</span>
+                          {Icon && (
+                            <Icon
+                              className={`h-4 w-4 ${
+                                pathname === path
+                                  ? "text-gold-primary"
+                                  : "text-text-muted"
+                              }`}
+                              strokeWidth={1.5}
+                            />
+                          )}
+                          <span className="text-[13px] font-normal">{name}</span>
                         </div>
                       </Link>
                     ))}
@@ -185,13 +187,13 @@ export default function ClientLayoutWrapper({
               ))}
             </nav>
           </div>
-          <div className="text-center text-gray-400 text-xs py-3 border-t border-blue-700">
-            © 2025 Move Around TMS
+          <div className="text-center text-text-muted text-[10px] py-3 border-t border-space-border tracking-wider">
+            RONYX LOGISTICS LLC
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-space-deep p-6">{children}</main>
       </div>
       <PWAStatus />
     </>
