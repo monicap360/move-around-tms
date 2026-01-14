@@ -1,8 +1,10 @@
 // Data Confidence Scorer
 // Compares new data against historical averages (driver, site, global)
 // Scores confidence (0-1), not correctness
+// Integrates with vertical system for industry-specific baseline windows
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getVerticalProfile, getBaselineWindowDays, VerticalTypeString } from "@/lib/verticals";
 
 interface ConfidenceScore {
   score: number; // 0-1
@@ -230,4 +232,76 @@ export function getAnomalySeverity(confidenceScore: ConfidenceScore): 'low' | 'm
   if (confidenceScore.score >= 0.5) return 'medium';
   if (confidenceScore.score >= 0.3) return 'high';
   return 'critical';
+}
+
+/**
+ * Get organization's vertical type from database
+ */
+export async function getOrganizationVerticalType(organizationId: string): Promise<VerticalTypeString | null> {
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('vertical_type')
+      .eq('id', organizationId)
+      .single();
+    
+    if (error || !data) {
+      return null;
+    }
+    
+    return data.vertical_type as VerticalTypeString || null;
+  } catch (err) {
+    console.error('Error getting organization vertical type:', err);
+    return null;
+  }
+}
+
+/**
+ * Get vertical-aware baseline window days
+ * Uses organization's vertical type to determine appropriate baseline windows
+ */
+export function getVerticalBaselineDays(
+  verticalType: VerticalTypeString | null,
+  entityType: 'driver' | 'site' | 'route'
+): number {
+  return getBaselineWindowDays(verticalType, entityType);
+}
+
+/**
+ * Score confidence with vertical-aware baseline windows
+ * This is the recommended function for scoring with industry-specific settings
+ */
+export async function scoreFieldConfidenceWithVertical(
+  entityType: 'ticket' | 'load' | 'document',
+  entityId: string,
+  fieldName: string,
+  actualValue: number,
+  organizationId?: string,
+  driverId?: string,
+  siteId?: string
+): Promise<ConfidenceScore> {
+  // Get organization's vertical type
+  let verticalType: VerticalTypeString | null = null;
+  if (organizationId) {
+    verticalType = await getOrganizationVerticalType(organizationId);
+  }
+  
+  // Get vertical-specific baseline days
+  const driverDays = getVerticalBaselineDays(verticalType, 'driver');
+  const siteDays = getVerticalBaselineDays(verticalType, 'site');
+  
+  // Use driver baseline if driver is provided, otherwise site baseline
+  const days = driverId ? driverDays : siteDays;
+  
+  return scoreFieldConfidence(entityType, entityId, fieldName, actualValue, driverId, siteId, days);
+}
+
+/**
+ * Get vertical profile for an organization
+ * Useful for UI components to display vertical-specific settings
+ */
+export async function getOrganizationVerticalProfile(organizationId: string) {
+  const verticalType = await getOrganizationVerticalType(organizationId);
+  return getVerticalProfile(verticalType);
 }
