@@ -1,13 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSameOrigin } from "@/lib/security";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+async function resolveOrganizationId(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  userId: string,
+  requestedOrgId?: string | null,
+) {
+  if (!requestedOrgId) {
+    const { data: orgMember } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", userId)
+      .single();
+    return orgMember?.organization_id || null;
+  }
+
+  const { data: orgMember } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .eq("organization_id", requestedOrgId)
+    .single();
+
+  return orgMember?.organization_id || null;
+}
 
 export async function GET(req: NextRequest) {
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  if (demoMode) {
+    return NextResponse.json({
+      invoices: [
+        {
+          id: "demo-inv-1",
+          invoice_number: "INV-1001",
+          company: "Acme Aggregates",
+          total: 12500,
+          status: "Sent",
+          created_at: new Date().toISOString(),
+        },
+      ],
+    });
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const requestedOrgId = searchParams.get("organization_id");
+  const organizationId = await resolveOrganizationId(
+    supabase,
+    user.id,
+    requestedOrgId,
+  );
+
+  if (!organizationId) {
+    return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+  }
+
   let query = supabaseAdmin
     .from("invoices")
     .select("*")
+    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (status) query = query.eq("status", status);
   const { data, error } = await query;
@@ -19,7 +78,28 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!requireSameOrigin(req))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  if (demoMode) {
+    return NextResponse.json({ invoice: { id: "demo-inv", status: "Draft" } });
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
+  const organizationId = await resolveOrganizationId(
+    supabase,
+    user.id,
+    body.organization_id,
+  );
+  if (!organizationId) {
+    return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+  }
+
   const items = Array.isArray(body.line_items) ? body.line_items : [];
   const subtotal = items.reduce(
     (sum: number, it: any) =>
@@ -59,6 +139,12 @@ export async function POST(req: NextRequest) {
     factoring_company_id: body.factoring_company_id || null,
     movement_type: body.movement_type || null,
     primary_state: body.primary_state || null,
+    organization_id: organizationId,
+    client_organization_id: body.client_organization_id || null,
+    carrier_id: body.carrier_id || null,
+    billing_model: body.billing_model || "pass_through",
+    margin_rate: body.margin_rate || null,
+    fee_rate: body.fee_rate || null,
   };
 
   const { data, error } = await supabaseAdmin

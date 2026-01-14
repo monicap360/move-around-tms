@@ -34,6 +34,7 @@ export default function InvoicesPage() {
     due_date: "",
     notes: "",
   });
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
   useEffect(() => {
     loadInvoices();
@@ -42,30 +43,43 @@ export default function InvoicesPage() {
   async function loadInvoices() {
     try {
       setLoading(true);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        window.location.href = '/login';
+      if (demoMode) {
+        setInvoices([
+          {
+            id: "demo-inv-1",
+            invoice_number: "INV-1001",
+            company: "Acme Aggregates",
+            total: 12500,
+            status: "Sent",
+            due_date: "2025-01-20",
+            created_at: new Date().toISOString(),
+          },
+        ]);
         return;
       }
 
-      const { data: orgData } = await supabase
-        .from("organizations")
-        .select("id")
-        .limit(1)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { data: orgMember } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
         .single();
 
-      if (orgData) {
-        setOrganizationId(orgData.id);
-
-        const { data, error } = await supabase
-          .from("invoices")
-          .select("*")
-          .eq("organization_id", orgData.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setInvoices(data || []);
+      if (orgMember?.organization_id) {
+        setOrganizationId(orgMember.organization_id);
+        const response = await fetch(
+          `/api/invoices?organization_id=${orgMember.organization_id}`,
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load invoices");
+        }
+        setInvoices(data.invoices || []);
       }
     } catch (error: any) {
       console.error("Error loading invoices:", error);
@@ -77,6 +91,10 @@ export default function InvoicesPage() {
   async function handleCreateInvoice(e: React.FormEvent) {
     e.preventDefault();
     if (!organizationId) return;
+    if (demoMode) {
+      alert("Invoice creation is disabled in demo mode.");
+      return;
+    }
 
     try {
       const response = await fetch('/api/invoices', {

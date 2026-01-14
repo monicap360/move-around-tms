@@ -47,6 +47,12 @@ export default function ExecutiveReportsPage() {
             >
               Full Reports Hub
             </Link>
+            <Link
+              className="p-4 rounded border border-space-border bg-space-surface text-text-primary"
+              href="/3pl/billing"
+            >
+              3PL Billing Summary
+            </Link>
           </CardContent>
         </Card>
       </div>

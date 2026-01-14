@@ -96,6 +96,7 @@ const navigationSections = [
       { name: "Executive Reports", path: "/reports/executive", icon: BarChart },
       { name: "Merch Store", path: "/merch", icon: Store },
       { name: "3PL Clients", path: "/3pl/clients", icon: Users },
+      { name: "3PL Billing", path: "/3pl/billing", icon: DollarSign },
       { name: "Cross-Border", path: "/cross-border", icon: ShieldCheck },
       { name: "Integrations", path: "/integrations", icon: Database },
       { name: "Workflow Rules", path: "/workflows/ticket-rules", icon: ShieldCheck },
