@@ -15,7 +15,7 @@ export interface RateRule {
 export interface Accessorial {
   id: string;
   name: string;
-  type: "flat" | "percentage" | "per_unit";
+  type: "flat" | "percentage" | "per_unit" | "per_hour";
   value: number;
   condition?: (ticket: any) => boolean; // When to apply this accessorial
 }
@@ -95,6 +95,9 @@ export function calculateRate(
           break;
         case "per_unit":
           amount = accessorial.value * (ticket.quantity || 1);
+          break;
+        case "per_hour":
+          amount = accessorial.value * (ticket.detention_hours || 0);
           break;
       }
       accessorialAmounts.push({
