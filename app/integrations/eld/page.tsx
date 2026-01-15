@@ -93,6 +93,41 @@ export default function ELDIntegrationsPage() {
             })}
           </CardContent>
         </Card>
+
+        <Card className="bg-space-panel border-space-border">
+          <CardHeader className="border-b border-space-border">
+            <CardTitle className="text-text-primary text-sm uppercase tracking-wider">
+              Ingestion Endpoint
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-3 text-sm text-text-secondary">
+            <p>
+              Send ELD pings to <span className="text-text-primary">/api/integrations/eld/ping</span>{" "}
+              with an <span className="text-text-primary">x-api-key</span> header from API Keys.
+            </p>
+            <div className="rounded border border-space-border bg-space-surface p-3 text-xs text-text-primary">
+              {"{"}
+              <br />
+              &nbsp;&nbsp;"provider": "samsara",
+              <br />
+              &nbsp;&nbsp;"device_id": "device-123",
+              <br />
+              &nbsp;&nbsp;"driver_id": "uuid",
+              <br />
+              &nbsp;&nbsp;"truck_id": "uuid",
+              <br />
+              &nbsp;&nbsp;"latitude": 32.78,
+              <br />
+              &nbsp;&nbsp;"longitude": -96.8,
+              <br />
+              &nbsp;&nbsp;"status": "In Transit",
+              <br />
+              &nbsp;&nbsp;"timestamp": "2026-01-15T18:05:00Z"
+              <br />
+              {"}"}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
