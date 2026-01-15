@@ -1,0 +1,2 @@
+ticket_number,delivered_at,gps_lat,gps_lng,geofence_match,signature_url,photo_url,notes
+T-1001,2025-01-12T14:20:00Z,32.7767,-96.7970,true,https://example.com/signature.png,https://example.com/photo.jpg,"Delivered on time"

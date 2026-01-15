@@ -55,6 +55,7 @@ const navigationSections = [
         path: "/aggregates/tickets",
         icon: FileText,
       },
+      { name: "Aggregate Reconciliation", path: "/aggregates/reconciliation", icon: FileText },
       { name: "Carrier Management", path: "/carriers", icon: Truck },
       { name: "Carrier Rates", path: "/carriers/rates", icon: FileText },
       { name: "Tracking Updates", path: "/tracking", icon: Truck },

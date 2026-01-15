@@ -35,7 +35,9 @@ type ImportType =
   | "pit_data"
   | "material_receipts"
   | "supplier_invoices"
-  | "po_data";
+  | "po_data"
+  | "aggregate_lab_results"
+  | "aggregate_delivery_proofs";
 
 interface ImportResult {
   success: number;
@@ -150,6 +152,24 @@ const IMPORT_TYPES: {
     requiredFields: ["material_number", "quantity", "uom", "po_date"],
     optionalFields: ["batch_lot", "unit_price", "po_number", "supplier"],
     templateUrl: "/templates/po-import-template.csv",
+  },
+  {
+    id: "aggregate_lab_results",
+    name: "Aggregate Lab Results",
+    description: "Import LIMS lab test results",
+    icon: <FileSpreadsheet className="w-6 h-6" />,
+    requiredFields: ["ticket_number", "moisture_pct", "fines_pct", "test_date"],
+    optionalFields: ["batch_lot", "material", "gradation", "contamination_notes", "strength_mpa", "status"],
+    templateUrl: "/templates/lab-results-import-template.csv",
+  },
+  {
+    id: "aggregate_delivery_proofs",
+    name: "Delivery Proofs",
+    description: "Import delivery confirmation data",
+    icon: <FileSpreadsheet className="w-6 h-6" />,
+    requiredFields: ["ticket_number", "delivered_at"],
+    optionalFields: ["gps_lat", "gps_lng", "geofence_match", "signature_url", "photo_url", "notes"],
+    templateUrl: "/templates/delivery-proofs-import-template.csv",
   },
 ];
 
@@ -542,6 +562,12 @@ export default function DataImportWizard() {
               break;
             case "po_data":
               tableName = "po_data";
+              break;
+            case "aggregate_lab_results":
+              tableName = "aggregate_lab_results";
+              break;
+            case "aggregate_delivery_proofs":
+              tableName = "aggregate_delivery_proofs";
               break;
           }
 

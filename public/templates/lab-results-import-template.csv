@@ -1,0 +1,2 @@
+ticket_number,moisture_pct,fines_pct,test_date,batch_lot,material,gradation,contamination_notes,strength_mpa,status
+T-1001,3.5,0.8,2025-01-12,B-100,STONE-57,"{\"sieve_200\":0.8}","",45.2,pass
