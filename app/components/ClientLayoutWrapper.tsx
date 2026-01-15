@@ -166,7 +166,6 @@ export default function ClientLayoutWrapper({
                 </div>
                 <div className="flex items-center gap-2">
                   <NotificationsBell />
-                  <div className="text-sm text-gray-300">Demo Mode</div>
                 </div>
               </div>
             </header>
