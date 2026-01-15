@@ -1,5 +1,12 @@
 # Aggregate Reconciliation Workflow
 
+## Why This Is Specialized (Not Generic TMS)
+- Native scale ticket fields (gross/tare/net, moisture, scale type/source)
+- Lab-quality integration (fines, gradation, contamination, strength)
+- Delivery proofing (geofence match, GPS, signature/photo capture)
+- Industry tolerances (moisture, scale, quality, delivery window)
+- Exception routing by operations (warehouse, procurement, accounting)
+
 ## Data Sources
 - Scale House Tickets → `aggregate_tickets`
 - Lab Test Results → `aggregate_lab_results`
@@ -40,3 +47,35 @@ Stored in `aggregate_tolerance_settings` and passed into the reconciliation run.
 
 ## Results API
 `GET /api/aggregates/reconciliation/results`
+
+## Deployment
+Run the migration when the Postgres connection is available:
+
+```bash
+psql "<DATABASE_URL>" -f db/migrations/068_aggregate_reconciliation.sql
+```
+
+If using the Supabase SQL editor, paste the contents of
+`db/migrations/068_aggregate_reconciliation.sql` and run it as a single script.
+
+## Post-Deploy Verification
+Use these checks to confirm the schema and workflow are ready:
+
+```sql
+-- Core tables
+select to_regclass('public.aggregate_tickets') as aggregate_tickets;
+select to_regclass('public.aggregate_lab_results') as aggregate_lab_results;
+select to_regclass('public.aggregate_delivery_proofs') as aggregate_delivery_proofs;
+select to_regclass('public.aggregate_reconciliation_runs') as aggregate_reconciliation_runs;
+select to_regclass('public.aggregate_reconciliation_results') as aggregate_reconciliation_results;
+select to_regclass('public.aggregate_reconciliation_exceptions') as aggregate_reconciliation_exceptions;
+
+-- Optional: tolerance settings
+select to_regclass('public.aggregate_tolerance_settings') as aggregate_tolerance_settings;
+```
+
+## UI Entry Points
+- Reconciliation UI: `/aggregates/reconciliation`
+- Import templates:
+  - `public/templates/lab-results-import-template.csv`
+  - `public/templates/delivery-proofs-import-template.csv`
