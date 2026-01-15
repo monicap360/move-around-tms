@@ -50,6 +50,16 @@ serve(async (req) => {
     const rawText = result?.textAnnotations?.[0]?.description ?? "";
 
     // Dispatch by kind or inference
+    if (kind === "detention") {
+      const out = await handleDetention({
+        rawText,
+        fileUrl,
+        body,
+        result,
+      });
+      return json(out);
+    }
+
     if (kind === "hr" || (!kind && shouldTreatAsHr(rawText, body))) {
       const out = await handleHrDoc({
         rawText,
@@ -86,6 +96,26 @@ function shouldTreatAsHr(rawText: string, body: any) {
   if (body.kind === "hr") return true;
   // Heuristics: keywords that indicate license/medical context
   return /license|medical|exam|mvr/i.test(rawText);
+}
+
+function extractTimes(rawText: string) {
+  const matches = rawText.match(
+    /\b([01]?\d|2[0-3])[:.][0-5]\d(\s?[APMapm]{2})?\b/g,
+  );
+  return matches ? Array.from(new Set(matches.map((m) => m.trim()))) : [];
+}
+
+async function handleDetention({ rawText, fileUrl, body, result }: any) {
+  const detectedTimes = extractTimes(rawText);
+  return {
+    success: true,
+    kind: "detention",
+    raw_text: rawText,
+    detected_times: detectedTimes,
+    ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
+    file_url: fileUrl || null,
+    detention_event_id: body.detention_event_id || null,
+  };
 }
 
 async function handleHrDoc({ rawText, fileUrl, body, supabase, result }: any) {

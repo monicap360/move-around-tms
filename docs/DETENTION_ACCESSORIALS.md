@@ -24,5 +24,11 @@
 
 ## Next Enhancements
 - Link events to real ELD/telematics pings.
-- OCR ingestion for gate photos to auto-verify arrival times.
+- OCR ingestion for gate photos to auto-verify arrival times (wired).
 - Facility wait-time scoring and automated dispute workflows.
+
+## OCR Wiring
+- Upload detention photos to `detention/<detention_event_id>/filename.jpg`
+- Storage webhook calls OCR with `kind: "detention"` and stores results in:
+  - `detention_events.metadata.detention_ocr`
+  - `detention_claims.evidence.detention_ocr`

@@ -44,20 +44,97 @@ serve(async (req) => {
     const bucket = event.record.bucket ?? event.bucket ?? "ronyx-files";
     const objectPath = event.record.name;
 
-    // Only process ticket uploads
-    if (!objectPath.startsWith("tickets/")) {
-      return json({ skip: true, reason: "Not a ticket upload", objectPath });
+    const file_url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`;
+
+    if (objectPath.startsWith("detention/")) {
+      const match = objectPath.match(/^detention\/([^\/]+)\//);
+      if (!match) {
+        return json({ error: "Unable to extract detention_event_id", objectPath }, 400);
+      }
+
+      const detention_event_id = match[1];
+      const { data: detentionEvent, error: eventError } = await supabase
+        .from("detention_events")
+        .select("id, organization_id, metadata")
+        .eq("id", detention_event_id)
+        .single();
+
+      if (eventError || !detentionEvent) {
+        return json({ error: "Detention event not found", detention_event_id }, 404);
+      }
+
+      const ocrRes = await fetch(`${supabaseUrl}/functions/v1/ocr-scan`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          file_url,
+          kind: "detention",
+          detention_event_id,
+        }),
+      });
+
+      const ocrData = await ocrRes.json();
+      const metadata = detentionEvent.metadata || {};
+      const updatedMetadata = {
+        ...metadata,
+        detention_ocr: {
+          raw_text: ocrData.raw_text,
+          detected_times: ocrData.detected_times || [],
+          file_url,
+          processed_at: new Date().toISOString(),
+        },
+      };
+
+      await supabase
+        .from("detention_events")
+        .update({
+          metadata: updatedMetadata,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", detention_event_id);
+
+      const { data: claims } = await supabase
+        .from("detention_claims")
+        .select("id, evidence")
+        .eq("detention_event_id", detention_event_id);
+
+      if (claims?.length) {
+        for (const claim of claims) {
+          const evidence = claim.evidence || {};
+          await supabase
+            .from("detention_claims")
+            .update({
+              evidence: {
+                ...evidence,
+                detention_ocr: {
+                  raw_text: ocrData.raw_text,
+                  detected_times: ocrData.detected_times || [],
+                  file_url,
+                  processed_at: new Date().toISOString(),
+                },
+              },
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", claim.id);
+        }
+      }
+
+      return json({ success: true, detention_event_id, ocr: ocrData });
     }
 
-    // Match ticket_id from: tickets/<ticket_id>/filename.jpg
+    if (!objectPath.startsWith("tickets/")) {
+      return json({ skip: true, reason: "Not a ticket or detention upload", objectPath });
+    }
+
     const match = objectPath.match(/^tickets\/([^\/]+)\//);
     if (!match) {
       return json({ error: "Unable to extract ticket_id", objectPath }, 400);
     }
 
     const ticket_id = match[1];
-
-    // Retrieve ticket row
     const { data: ticket, error: ticketError } = await supabase
       .from("aggregate_tickets")
       .select("*")
@@ -68,10 +145,6 @@ serve(async (req) => {
       return json({ error: "Ticket not found", ticket_id }, 404);
     }
 
-    // Public file URL
-    const file_url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`;
-
-    // OCR scan
     const ocrRes = await fetch(`${supabaseUrl}/functions/v1/ocr-scan`, {
       method: "POST",
       headers: {
@@ -89,7 +162,6 @@ serve(async (req) => {
 
     const ocrData = await ocrRes.json();
 
-    // Update ticket
     await supabase
       .from("aggregate_tickets")
       .update({
@@ -99,7 +171,6 @@ serve(async (req) => {
       })
       .eq("id", ticket_id);
 
-    // Broadcast realtime to dispatcher via Realtime REST API
     await fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
       method: "POST",
       headers: {
