@@ -8,27 +8,27 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
+    <div className="min-h-screen bg-[#0a0a0b] text-[#f5f5f5]">
       {/* Navigation */}
-      <nav className="border-b border-blue-500/20 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
+      <nav className="border-b border-[#2a2a2f] bg-[#0f0f11]/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-2xl font-black text-white">M</span>
+              <div className="w-12 h-12 bg-[#f7931e] rounded-lg flex items-center justify-center text-black font-black text-2xl shadow-lg shadow-[#f7931e]/30">
+                M
               </div>
               <div>
-                <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                <div className="text-xl font-black tracking-tight text-[#f5f5f5]">
                   MOVE AROUND TMS
                 </div>
-                <div className="text-[9px] text-blue-300/60 font-semibold uppercase tracking-wider">
+                <div className="text-[9px] text-[#a1a1aa] font-semibold uppercase tracking-wider">
                   From Street Smart to Fleet Smart™
                 </div>
               </div>
             </div>
             <Link
               href="/dashboard"
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-sm rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all"
+              className="px-6 py-2.5 bg-[#f7931e] text-black font-bold text-sm rounded-lg hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
             >
               Launch Dashboard →
             </Link>
@@ -37,53 +37,44 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-24 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-500/20 border border-blue-500/30 backdrop-blur-xl mb-8">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-xs font-bold text-blue-200 tracking-wider uppercase">
+      <section className="relative pt-28 pb-20 px-6 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(247,147,30,0.08),_transparent_55%)]" />
+        <div className="max-w-6xl mx-auto text-center relative">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#2a2a2f] bg-[#141418] mb-8">
+            <span className="w-2 h-2 bg-[#16a34a] rounded-full animate-pulse"></span>
+            <span className="text-xs font-bold text-[#a1a1aa] tracking-wider uppercase">
               Built by Operators, For Operators
             </span>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-6xl md:text-8xl font-black mb-8 leading-tight">
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-              Stop Losing Money
-            </span>
-            <span className="block text-white mt-3">
-              Start Recovering It
-            </span>
+          <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
+            <span className="block text-[#f5f5f5]">Stop Losing Money</span>
+            <span className="block text-[#f7931e]">Start Recovering It</span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-blue-100 max-w-4xl mx-auto mb-4 leading-relaxed font-medium">
+          <p className="text-lg md:text-xl text-[#cbd5e1] max-w-4xl mx-auto mb-4 leading-relaxed font-medium">
             The only TMS that automatically catches revenue leakage, reconciles invoices
             in seconds, and turns your operations team into strategic analysts.
           </p>
-          
-          <p className="text-base text-blue-300/70 max-w-3xl mx-auto mb-12">
+          <p className="text-sm text-[#94a3b8] max-w-3xl mx-auto mb-10">
             Recover 2-5% of your revenue • Eliminate 80% of manual work • Audit-ready in real-time
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link
               href="/dashboard"
-              className="px-10 py-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-base rounded-2xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all"
+              className="px-10 py-4 bg-[#f7931e] text-black font-bold text-base rounded-lg hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
             >
               START FREE TRIAL →
             </Link>
             <Link
               href="/aggregates/reconciliation"
-              className="px-10 py-5 bg-white/10 backdrop-blur-xl border-2 border-white/20 text-white font-bold text-base rounded-2xl hover:bg-white/20 transition-all"
+              className="px-10 py-4 border border-[#2a2a2f] text-[#f5f5f5] font-bold text-base rounded-lg hover:bg-[#16161b] transition-all"
             >
               Watch Demo
             </Link>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
               { value: "2-5%", label: "Revenue Recovered" },
@@ -91,11 +82,11 @@ export default function LandingPage() {
               { value: "99.5%", label: "Accuracy Rate" },
               { value: "<5min", label: "Setup Time" },
             ].map((stat, idx) => (
-              <div key={idx} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-2">
+              <div key={idx} className="bg-[#111114] border border-[#222228] rounded-xl p-6">
+                <div className="text-4xl font-black text-[#f7931e] mb-2">
                   {stat.value}
                 </div>
-                <div className="text-xs uppercase tracking-wider text-blue-300/70 font-semibold">
+                <div className="text-xs uppercase tracking-wider text-[#9ca3af] font-semibold">
                   {stat.label}
                 </div>
               </div>
@@ -113,16 +104,16 @@ export default function LandingPage() {
                 💸 The Problem
               </div>
               <h2 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
-                Your Team Is Drowning in <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">Excel Hell</span>
+                Your Team Is Drowning in <span className="text-[#f7931e]">Excel Hell</span>
               </h2>
-              <p className="text-lg text-blue-200/80 leading-relaxed mb-8">
+              <p className="text-lg text-[#cbd5e1] leading-relaxed mb-8">
                 Most trucking companies waste <strong className="text-white">15-25 hours per week</strong> manually
                 matching tickets to invoices. Meanwhile, <strong className="text-white">2-5% of revenue leaks</strong> through
                 quantity variances and missed charges.
               </p>
             </div>
 
-            <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-10">
+            <div className="bg-[#111114] border border-[#222228] rounded-3xl p-10">
               <div className="inline-block px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full text-red-300 text-xs font-bold uppercase tracking-wider mb-8">
                 💰 The Cost
               </div>
@@ -133,14 +124,14 @@ export default function LandingPage() {
                   { label: "Missed Detention", value: "$500-2k/mo" },
                   { label: "Billing Disputes", value: "$1k-5k/mo" },
                 ].map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center pb-6 border-b border-white/10">
-                    <span className="text-base text-blue-200/70">{item.label}</span>
-                    <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">{item.value}</span>
+                  <div key={idx} className="flex justify-between items-center pb-6 border-b border-[#222228]">
+                    <span className="text-base text-[#a1a1aa]">{item.label}</span>
+                    <span className="text-2xl font-bold text-[#f7931e]">{item.value}</span>
                   </div>
                 ))}
-                <div className="flex justify-between items-center pt-4 bg-red-500/20 border border-red-500/30 rounded-xl p-6">
+                <div className="flex justify-between items-center pt-4 bg-[#1a1a1d] border border-[#2a2a2f] rounded-xl p-6">
                   <span className="text-lg font-bold text-white">TOTAL ANNUAL</span>
-                  <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">$60k-150k</span>
+                  <span className="text-4xl font-black text-[#f7931e]">$60k-150k</span>
                 </div>
               </div>
             </div>
@@ -152,7 +143,7 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-300 text-xs font-bold uppercase tracking-wider mb-6">
+            <div className="inline-block px-4 py-2 bg-[#1a1a1d] border border-[#2a2a2f] rounded-full text-[#a1a1aa] text-xs font-bold uppercase tracking-wider mb-6">
               🚀 Complete Platform
             </div>
             <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
@@ -174,11 +165,11 @@ export default function LandingPage() {
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="bg-slate-900/90 border border-white/10 rounded-3xl p-8 hover:border-white/30 transition-all"
+                className="bg-[#111114] border border-[#222228] rounded-3xl p-8 hover:border-[#2f2f36] transition-all"
               >
                 <div className="text-5xl mb-6">{feature.icon}</div>
                 <h3 className="text-xl font-black text-white mb-3">{feature.title}</h3>
-                <p className="text-sm text-blue-200/70 leading-relaxed">{feature.desc}</p>
+                <p className="text-sm text-[#a1a1aa] leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -189,11 +180,11 @@ export default function LandingPage() {
       <section id="pricing" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-full text-green-300 text-xs font-bold uppercase tracking-wider mb-6">
+            <div className="inline-block px-4 py-2 bg-[#1a1a1d] border border-[#2a2a2f] rounded-full text-[#a1a1aa] text-xs font-bold uppercase tracking-wider mb-6">
               💳 Transparent Pricing
             </div>
             <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
-              Simple, <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">Predictable Pricing</span>
+              Simple, <span className="text-[#f7931e]">Predictable Pricing</span>
             </h2>
           </div>
 
@@ -224,26 +215,26 @@ export default function LandingPage() {
             ].map((plan, idx) => (
               <div
                 key={idx}
-                className={`relative bg-slate-900/90 border ${
-                  plan.popular ? "border-purple-500/50 scale-105" : "border-white/10"
+                className={`relative bg-[#111114] border ${
+                  plan.popular ? "border-[#f7931e] scale-105" : "border-[#222228]"
                 } rounded-3xl p-8`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold uppercase rounded-full">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-[#f7931e] text-black text-xs font-bold uppercase rounded-full">
                     ⭐ Most Popular
                   </div>
                 )}
-                <div className="text-sm font-bold text-blue-300/70 uppercase mb-2">{plan.name}</div>
+                <div className="text-sm font-bold text-[#a1a1aa] uppercase mb-2">{plan.name}</div>
                 <div className="mb-6">
                   <span className="text-6xl font-black text-white">{plan.price}</span>
-                  <span className="text-lg text-blue-300/70">/mo</span>
+                  <span className="text-lg text-[#a1a1aa]">/mo</span>
                 </div>
-                <div className="text-sm text-blue-300/70 mb-2">{plan.setup}</div>
+                <div className="text-sm text-[#a1a1aa] mb-2">{plan.setup}</div>
                 <div className="text-sm font-bold text-white mb-8 uppercase">{plan.trucks}</div>
-                <ul className="space-y-3 mb-8 pb-8 border-b border-white/10">
+                <ul className="space-y-3 mb-8 pb-8 border-b border-[#222228]">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-blue-200/80">
-                      <span className="text-green-400 text-lg">✓</span>
+                    <li key={i} className="flex items-start gap-3 text-sm text-[#a1a1aa]">
+                      <span className="text-[#16a34a] text-lg">✓</span>
                       {feature}
                     </li>
                   ))}
@@ -252,8 +243,8 @@ export default function LandingPage() {
                   href="/dashboard"
                   className={`block w-full py-4 text-center font-bold text-sm rounded-2xl transition-all ${
                     plan.popular
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                      : "bg-white/10 text-white border border-white/20"
+                      ? "bg-[#f7931e] text-black hover:bg-[#ff8c1a]"
+                      : "bg-[#1a1a1d] text-white border border-[#2a2a2f] hover:bg-[#1f1f24]"
                   }`}
                 >
                   Start Free Trial →
@@ -263,7 +254,7 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-12">
-            <div className="text-base text-blue-200/80">
+            <div className="text-base text-[#cbd5e1]">
               <span className="text-2xl">💯</span> <strong className="text-white">30-Day Money-Back Guarantee</strong>
             </div>
           </div>
@@ -275,38 +266,38 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-6xl md:text-7xl font-black mb-6 text-white leading-tight">
             Ready to Go From<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+            <span className="text-[#f7931e]">
               Street Smart to Fleet Smart?
             </span>
           </h2>
-          <p className="text-xl text-blue-200/80 mb-12">
+          <p className="text-xl text-[#cbd5e1] mb-12">
             Start free. No credit card. Full access for 30 days.
           </p>
           <Link
             href="/dashboard"
-            className="inline-block px-12 py-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-black text-lg rounded-2xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all"
+            className="inline-block px-12 py-6 bg-[#f7931e] text-black font-black text-lg rounded-2xl hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
           >
             START FREE TRIAL NOW →
           </Link>
-          <div className="mt-8 text-sm text-blue-300/70">
+          <div className="mt-8 text-sm text-[#a1a1aa]">
             Questions? <a href="mailto:sales@movearoundtms.com" className="text-white font-semibold underline">sales@movearoundtms.com</a>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-slate-950/80 py-16 px-6">
+      <footer className="border-t border-[#222228] bg-[#0f0f11] py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-xl font-black text-white">M</span>
+            <div className="w-10 h-10 bg-[#f7931e] rounded-lg flex items-center justify-center shadow-lg shadow-[#f7931e]/30">
+              <span className="text-xl font-black text-black">M</span>
             </div>
-            <span className="font-black text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+            <span className="font-black text-lg text-white">
               MOVE AROUND TMS
             </span>
           </div>
-          <div className="text-sm text-blue-300/60 mb-8">From Street Smart to Fleet Smart™</div>
-          <div className="text-sm text-blue-300/60">
+          <div className="text-sm text-[#a1a1aa] mb-8">From Street Smart to Fleet Smart™</div>
+          <div className="text-sm text-[#71717a]">
             © {new Date().getFullYear()} Move Around TMS. All rights reserved.
           </div>
         </div>
