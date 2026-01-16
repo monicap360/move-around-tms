@@ -4,301 +4,1596 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState("3pl");
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-[#f5f5f5]">
-      {/* Navigation */}
-      <nav className="border-b border-[#2a2a2f] bg-[#0f0f11]/95 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[#f7931e] rounded-lg flex items-center justify-center text-black font-black text-2xl shadow-lg shadow-[#f7931e]/30">
-                M
-              </div>
-              <div>
-                <div className="text-xl font-black tracking-tight text-[#f5f5f5]">
-                  MOVE AROUND TMS
-                </div>
-                <div className="text-[9px] text-[#a1a1aa] font-semibold uppercase tracking-wider">
-                  From Street Smart to Fleet Smart™
-                </div>
-              </div>
-            </div>
-            <Link
-              href="/ronyx"
-              className="px-6 py-2.5 bg-[#f7931e] text-black font-bold text-sm rounded-lg hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
-            >
-              Launch Dashboard →
-            </Link>
+    <div className="landing-performance">
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap");
+        @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
+
+        :root {
+          --bulletproof-black: #080808;
+          --carbon-fiber: #121212;
+          --titanium-gray: #1e1e1e;
+          --hyper-yellow: #ffd700;
+          --racing-silver: #c0c0c0;
+          --performance-red: #ff2800;
+          --speed-white: #ffffff;
+          --turbo-blue: #00b4ff;
+          --chrome-accent: #e8e8e8;
+          --kevlar-gray: #2a2a2a;
+          --success-green: #00ff9d;
+
+          --gradient-performance: linear-gradient(
+            135deg,
+            #ffd700 0%,
+            #c0c0c0 50%,
+            #00b4ff 100%
+          );
+          --gradient-bulletproof: linear-gradient(
+            135deg,
+            rgba(255, 215, 0, 0.15),
+            rgba(0, 180, 255, 0.1)
+          );
+          --gradient-speed: linear-gradient(90deg, #ffd700, #ff2800);
+          --gradient-success: linear-gradient(90deg, #00ff9d, #00b4ff);
+
+          --shadow-performance: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+          --shadow-bulletproof: 0 0 60px rgba(255, 215, 0, 0.4);
+          --shadow-chrome: 0 15px 50px rgba(232, 232, 232, 0.25);
+          --shadow-speed: 0 0 40px rgba(255, 40, 0, 0.3);
+
+          --border-performance: 1px solid rgba(255, 215, 0, 0.3);
+          --border-bulletproof: 2px solid rgba(0, 180, 255, 0.2);
+
+          --radius-sharp: 4px;
+          --radius-performance: 8px;
+          --radius-smooth: 16px;
+          --radius-pill: 100px;
+
+          --speed-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .landing-performance {
+          font-family: "Montserrat", sans-serif;
+          background-color: var(--bulletproof-black);
+          color: var(--speed-white);
+          line-height: 1.7;
+          overflow-x: hidden;
+          background: linear-gradient(145deg, #080808 0%, #121212 100%),
+            radial-gradient(
+              circle at 0% 0%,
+              rgba(255, 215, 0, 0.05) 0%,
+              transparent 50%
+            ),
+            radial-gradient(
+              circle at 100% 100%,
+              rgba(0, 180, 255, 0.05) 0%,
+              transparent 50%
+            );
+          position: relative;
+        }
+
+        .landing-performance::before {
+          content: "";
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+              45deg,
+              transparent 0%,
+              rgba(255, 40, 0, 0.02) 100%
+            ),
+            radial-gradient(
+              circle at 80% 20%,
+              rgba(0, 180, 255, 0.03) 0%,
+              transparent 70%
+            );
+          z-index: -1;
+          pointer-events: none;
+          animation: pulseSpeed 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseSpeed {
+          0% {
+            opacity: 0.3;
+          }
+          100% {
+            opacity: 0.7;
+          }
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          font-family: "Space Grotesk", sans-serif;
+          font-weight: 900;
+          letter-spacing: -0.03em;
+          line-height: 1.05;
+        }
+
+        h1 {
+          font-size: 5rem;
+          margin-bottom: 1.5rem;
+          text-transform: uppercase;
+          letter-spacing: -0.04em;
+        }
+
+        h2 {
+          font-size: 3.5rem;
+          margin-bottom: 1rem;
+        }
+
+        h3 {
+          font-size: 2rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .speed-gradient {
+          background: var(--gradient-speed);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .performance-gradient {
+          background: var(--gradient-performance);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        p {
+          font-size: 1.125rem;
+          color: rgba(255, 255, 255, 0.85);
+          margin-bottom: 1.5rem;
+          line-height: 1.8;
+          font-weight: 400;
+        }
+
+        .container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 24px;
+        }
+
+        section {
+          padding: 120px 0;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .navbar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          background: rgba(8, 8, 8, 0.98);
+          backdrop-filter: blur(20px);
+          z-index: 1000;
+          padding: 15px 0;
+          border-bottom: var(--border-bulletproof);
+          box-shadow: 0 5px 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .navbar-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          text-decoration: none;
+          position: relative;
+        }
+
+        .logo-icon {
+          width: 52px;
+          height: 52px;
+          background: var(--gradient-performance);
+          border-radius: var(--radius-performance);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          color: var(--bulletproof-black);
+          font-size: 26px;
+          font-family: "Space Grotesk", sans-serif;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .logo-icon::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.2) 50%,
+            transparent 70%
+          );
+          animation: shine 3s infinite;
+        }
+
+        .logo-text {
+          font-size: 2rem;
+          font-weight: 900;
+          background: var(--gradient-performance);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          font-family: "Space Grotesk", sans-serif;
+          letter-spacing: -1px;
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 48px;
+          align-items: center;
+        }
+
+        .nav-link {
+          color: rgba(255, 255, 255, 0.8);
+          text-decoration: none;
+          font-weight: 700;
+          font-size: 0.95rem;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          transition: var(--speed-transition);
+          position: relative;
+          padding: 8px 0;
+        }
+
+        .nav-link::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: var(--gradient-speed);
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-link:hover {
+          color: var(--speed-white);
+        }
+
+        .nav-link:hover::after {
+          width: 100%;
+        }
+
+        .nav-cta {
+          background: var(--gradient-speed);
+          color: var(--speed-white);
+          padding: 14px 32px;
+          border-radius: var(--radius-pill);
+          font-weight: 900;
+          font-size: 0.9rem;
+          transition: var(--speed-transition);
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          border: none;
+        }
+
+        .nav-cta:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-speed);
+        }
+
+        .mobile-menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          color: white;
+          font-size: 1.5rem;
+          cursor: pointer;
+          z-index: 1001;
+        }
+
+        .hero {
+          padding-top: 180px;
+          padding-bottom: 150px;
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(
+              145deg,
+              rgba(8, 8, 8, 0.9),
+              rgba(18, 18, 18, 0.95)
+            ),
+            radial-gradient(
+              circle at 20% 30%,
+              rgba(255, 215, 0, 0.1) 0%,
+              transparent 60%
+            );
+        }
+
+        .hero::before {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          right: -50%;
+          bottom: -50%;
+          background: radial-gradient(
+              circle at 30% 40%,
+              rgba(255, 215, 0, 0.15) 0%,
+              transparent 50%
+            ),
+            radial-gradient(
+              circle at 70% 60%,
+              rgba(255, 40, 0, 0.1) 0%,
+              transparent 50%
+            );
+          animation: pulse 8s ease-in-out infinite alternate;
+          z-index: -1;
+        }
+
+        .hero-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 100px;
+          align-items: center;
+          position: relative;
+          z-index: 1;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(255, 215, 0, 0.1);
+          color: var(--hyper-yellow);
+          padding: 14px 28px;
+          border-radius: var(--radius-pill);
+          font-weight: 700;
+          font-size: 0.85rem;
+          margin-bottom: 40px;
+          border: var(--border-performance);
+          backdrop-filter: blur(10px);
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+        }
+
+        .hero-cta {
+          display: flex;
+          gap: 24px;
+          margin-top: 60px;
+        }
+
+        .btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px 48px;
+          border-radius: var(--radius-performance);
+          font-weight: 900;
+          font-size: 1rem;
+          text-decoration: none;
+          transition: var(--speed-transition);
+          cursor: pointer;
+          border: none;
+          gap: 14px;
+          position: relative;
+          overflow: hidden;
+          font-family: "Space Grotesk", sans-serif;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .btn::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+          transition: 0.6s;
+        }
+
+        .btn:hover::before {
+          left: 100%;
+        }
+
+        .btn-primary {
+          background: var(--gradient-speed);
+          color: var(--speed-white);
+          box-shadow: var(--shadow-speed);
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 60px rgba(255, 40, 0, 0.4);
+        }
+
+        .btn-secondary {
+          background: transparent;
+          color: var(--speed-white);
+          border: 2px solid rgba(255, 215, 0, 0.4);
+          backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+          border-color: var(--hyper-yellow);
+          transform: translateY(-4px);
+          box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .dashboard-preview {
+          background: linear-gradient(
+            145deg,
+            rgba(30, 30, 30, 0.9),
+            rgba(18, 18, 18, 0.7)
+          );
+          border-radius: var(--radius-smooth);
+          overflow: hidden;
+          box-shadow: var(--shadow-performance);
+          border: var(--border-performance);
+          backdrop-filter: blur(30px);
+          transform: perspective(1500px) rotateY(-10deg) rotateX(5deg);
+          transition: var(--speed-transition);
+          position: relative;
+        }
+
+        .dashboard-preview:hover {
+          transform: perspective(1500px) rotateY(-5deg) rotateX(3deg);
+          box-shadow: var(--shadow-bulletproof);
+        }
+
+        .dashboard-header {
+          background: rgba(30, 30, 30, 0.95);
+          padding: 24px 32px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: var(--border-performance);
+        }
+
+        .performance-stats {
+          padding: 40px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 24px;
+        }
+
+        .stat-widget {
+          background: rgba(42, 42, 42, 0.6);
+          border-radius: var(--radius-performance);
+          padding: 24px;
+          border: 1px solid rgba(255, 215, 0, 0.15);
+          position: relative;
+          overflow: hidden;
+          transition: var(--speed-transition);
+        }
+
+        .stat-widget:hover {
+          border-color: var(--hyper-yellow);
+          transform: translateY(-5px);
+        }
+
+        .stat-widget::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 4px;
+          height: 100%;
+          background: var(--gradient-speed);
+        }
+
+        .modules-performance {
+          background: linear-gradient(
+              145deg,
+              rgba(18, 18, 18, 0.9),
+              rgba(8, 8, 8, 0.95)
+            ),
+            radial-gradient(
+              circle at 50% 0%,
+              rgba(255, 215, 0, 0.05) 0%,
+              transparent 50%
+            );
+          border-top: var(--border-performance);
+          border-bottom: var(--border-performance);
+        }
+
+        .modules-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 32px;
+          margin-top: 80px;
+        }
+
+        .module-card {
+          background: linear-gradient(
+            145deg,
+            rgba(30, 30, 30, 0.8),
+            rgba(42, 42, 42, 0.4)
+          );
+          border-radius: var(--radius-smooth);
+          padding: 48px 36px;
+          border: var(--border-performance);
+          backdrop-filter: blur(20px);
+          transition: var(--speed-transition);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .module-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: var(--gradient-speed);
+        }
+
+        .module-card:hover {
+          transform: translateY(-15px);
+          border-color: var(--hyper-yellow);
+          box-shadow: var(--shadow-performance);
+        }
+
+        .module-icon {
+          width: 80px;
+          height: 80px;
+          background: rgba(255, 215, 0, 0.1);
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 32px;
+          border: 1px solid rgba(255, 215, 0, 0.3);
+          position: relative;
+        }
+
+        .module-icon i {
+          font-size: 36px;
+          color: var(--hyper-yellow);
+        }
+
+        .module-badge {
+          display: inline-block;
+          background: rgba(255, 215, 0, 0.15);
+          color: var(--hyper-yellow);
+          padding: 8px 16px;
+          border-radius: var(--radius-pill);
+          font-size: 0.75rem;
+          font-weight: 700;
+          border: 1px solid rgba(255, 215, 0, 0.3);
+          margin-bottom: 20px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .onboarding-process,
+        .reporting-features,
+        .switch-benefits,
+        .pricing-performance {
+          background: linear-gradient(
+            145deg,
+            rgba(30, 30, 30, 0.7),
+            rgba(8, 8, 8, 0.9)
+          );
+          border-top: var(--border-performance);
+        }
+
+        .onboarding-steps {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 30px;
+          margin-top: 60px;
+          position: relative;
+        }
+
+        .onboarding-steps::before {
+          content: "";
+          position: absolute;
+          top: 40px;
+          left: 40px;
+          right: 40px;
+          height: 2px;
+          background: var(--gradient-speed);
+          z-index: 1;
+        }
+
+        .onboarding-step {
+          text-align: center;
+          padding: 30px 20px;
+          background: rgba(42, 42, 42, 0.4);
+          border-radius: var(--radius-smooth);
+          border: var(--border-performance);
+          position: relative;
+          z-index: 2;
+          transition: var(--speed-transition);
+        }
+
+        .onboarding-step:hover {
+          transform: translateY(-10px);
+          border-color: var(--hyper-yellow);
+        }
+
+        .step-number {
+          width: 60px;
+          height: 60px;
+          background: var(--gradient-speed);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          color: var(--speed-white);
+          margin: 0 auto 20px;
+          font-size: 1.5rem;
+          font-family: "Space Grotesk", sans-serif;
+        }
+
+        .reporting-grid,
+        .benefits-grid,
+        .pricing-tiers {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 30px;
+          margin-top: 60px;
+        }
+
+        .reporting-card,
+        .benefit-card,
+        .pricing-card {
+          padding: 40px;
+          background: rgba(42, 42, 42, 0.4);
+          border-radius: var(--radius-smooth);
+          border: var(--border-performance);
+          transition: var(--speed-transition);
+        }
+
+        .reporting-card:hover,
+        .benefit-card:hover,
+        .pricing-card:hover {
+          transform: translateY(-10px);
+          border-color: var(--hyper-yellow);
+        }
+
+        .pricing-header {
+          padding: 40px 32px;
+          background: rgba(30, 30, 30, 0.9);
+          border-bottom: var(--border-performance);
+        }
+
+        .deposit-amount {
+          background: rgba(255, 215, 0, 0.1);
+          padding: 15px;
+          border-radius: var(--radius-performance);
+          margin-top: 20px;
+          text-align: center;
+          border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .footer-performance {
+          background: linear-gradient(
+            145deg,
+            rgba(8, 8, 8, 0.98),
+            rgba(18, 18, 18, 0.95)
+          );
+          padding: 100px 0 50px;
+          border-top: var(--border-performance);
+          position: relative;
+        }
+
+        .footer-performance::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: var(--gradient-speed);
+        }
+
+        .footer-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 48px;
+          margin-bottom: 80px;
+        }
+
+        @keyframes shine {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        @keyframes pulse {
+          0% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0.5;
+          }
+        }
+
+        @media (max-width: 1400px) {
+          h1 {
+            font-size: 4rem;
+          }
+          h2 {
+            font-size: 3rem;
+          }
+          .container {
+            max-width: 1200px;
+          }
+        }
+
+        @media (max-width: 1200px) {
+          .hero-container {
+            grid-template-columns: 1fr;
+            gap: 60px;
+          }
+          .modules-grid,
+          .pricing-tiers,
+          .reporting-grid,
+          .benefits-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .onboarding-steps {
+            grid-template-columns: 1fr;
+          }
+          .onboarding-steps::before {
+            display: none;
+          }
+        }
+
+        @media (max-width: 992px) {
+          .mobile-menu-btn {
+            display: block;
+          }
+          .nav-links {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            background: rgba(8, 8, 8, 0.98);
+            flex-direction: column;
+            padding: 40px;
+            gap: 30px;
+            border-bottom: var(--border-performance);
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: var(--speed-transition);
+            backdrop-filter: blur(30px);
+            z-index: 999;
+          }
+          .nav-links.active {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          .hero {
+            padding-top: 140px;
+          }
+          .hero-cta {
+            flex-direction: column;
+          }
+          .footer-grid {
+            grid-template-columns: 1fr;
+            text-align: center;
+          }
+        }
+
+        @media (max-width: 768px) {
+          h1 {
+            font-size: 3rem;
+          }
+          h2 {
+            font-size: 2.5rem;
+          }
+          section {
+            padding: 80px 0;
+          }
+          .modules-grid,
+          .pricing-tiers,
+          .reporting-grid,
+          .benefits-grid {
+            grid-template-columns: 1fr;
+          }
+          .performance-stats {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 576px) {
+          h1 {
+            font-size: 2.5rem;
+          }
+          h2 {
+            font-size: 2rem;
+          }
+          .container {
+            padding: 0 20px;
+          }
+          .hero-badge,
+          .btn {
+            padding-left: 24px;
+            padding-right: 24px;
+          }
+        }
+      `}</style>
+
+      <nav className="navbar">
+        <div className="container navbar-container">
+          <Link href="/" className="logo" onClick={() => setMenuOpen(false)}>
+            <div className="logo-icon">M</div>
+            <div className="logo-text">MoveAround TMS</div>
+          </Link>
+
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label="Toggle navigation"
+          >
+            <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`}></i>
+          </button>
+
+          <div className={`nav-links ${menuOpen ? "active" : ""}`}>
+            <a href="#performance" className="nav-link" onClick={() => setMenuOpen(false)}>
+              Performance
+            </a>
+            <a href="#modules" className="nav-link" onClick={() => setMenuOpen(false)}>
+              Modules
+            </a>
+            <a href="#onboarding" className="nav-link" onClick={() => setMenuOpen(false)}>
+              Onboarding
+            </a>
+            <a href="#pricing" className="nav-link" onClick={() => setMenuOpen(false)}>
+              Pricing
+            </a>
+            <a href="#demo" className="nav-link nav-cta" onClick={() => setMenuOpen(false)}>
+              Get Demo
+            </a>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-28 pb-20 px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(247,147,30,0.08),_transparent_55%)]" />
-        <div className="max-w-6xl mx-auto text-center relative">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#2a2a2f] bg-[#141418] mb-8">
-            <span className="w-2 h-2 bg-[#16a34a] rounded-full animate-pulse"></span>
-            <span className="text-xs font-bold text-[#a1a1aa] tracking-wider uppercase">
-              Built by Operators, For Operators
-            </span>
-          </div>
-
-          <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
-            <span className="block text-[#f5f5f5]">Stop Losing Money</span>
-            <span className="block text-[#f7931e]">Start Recovering It</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-[#cbd5e1] max-w-4xl mx-auto mb-4 leading-relaxed font-medium">
-            The only TMS that automatically catches revenue leakage, reconciles invoices
-            in seconds, and turns your operations team into strategic analysts.
-          </p>
-          <p className="text-sm text-[#94a3b8] max-w-3xl mx-auto mb-10">
-            Recover 2-5% of your revenue • Eliminate 80% of manual work • Audit-ready in real-time
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link
-              href="/ronyx"
-              className="px-10 py-4 bg-[#f7931e] text-black font-bold text-base rounded-lg hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
-            >
-              START FREE TRIAL →
-            </Link>
-            <Link
-              href="/aggregates/reconciliation"
-              className="px-10 py-4 border border-[#2a2a2f] text-[#f5f5f5] font-bold text-base rounded-lg hover:bg-[#16161b] transition-all"
-            >
-              Watch Demo
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {[
-              { value: "2-5%", label: "Revenue Recovered" },
-              { value: "80%", label: "Time Saved" },
-              { value: "99.5%", label: "Accuracy Rate" },
-              { value: "<5min", label: "Setup Time" },
-            ].map((stat, idx) => (
-              <div key={idx} className="bg-[#111114] border border-[#222228] rounded-xl p-6">
-                <div className="text-4xl font-black text-[#f7931e] mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-xs uppercase tracking-wider text-[#9ca3af] font-semibold">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Problem Section */}
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-block px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full text-red-300 text-xs font-bold uppercase tracking-wider mb-6">
-                💸 The Problem
-              </div>
-              <h2 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
-                Your Team Is Drowning in <span className="text-[#f7931e]">Excel Hell</span>
-              </h2>
-              <p className="text-lg text-[#cbd5e1] leading-relaxed mb-8">
-                Most trucking companies waste <strong className="text-white">15-25 hours per week</strong> manually
-                matching tickets to invoices. Meanwhile, <strong className="text-white">2-5% of revenue leaks</strong> through
-                quantity variances and missed charges.
-              </p>
+      <section className="hero" id="performance">
+        <div className="container hero-container">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <i className="fas fa-bolt"></i>
+              GET STARTED FOR $999 DEPOSIT
             </div>
+            <h1 className="speed-gradient">Switch to Bulletproof Performance</h1>
+            <p>
+              <strong>99.99% Uptime • 30-Day Implementation • 2x ROI Guarantee</strong>
+            </p>
+            <p>
+              MoveBeyond the limitations of your current TMS. MoveAround delivers{" "}
+              <strong className="performance-gradient">military-grade performance</strong>{" "}
+              with Lamborghini-level speed and Mercedes-level reliability.
+            </p>
+            <p>
+              <strong>Why Switch?</strong> Our average customer saves $142,000 annually
+              while increasing operational efficiency by 85%.
+            </p>
 
-            <div className="bg-[#111114] border border-[#222228] rounded-3xl p-10">
-              <div className="inline-block px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full text-red-300 text-xs font-bold uppercase tracking-wider mb-8">
-                💰 The Cost
+            <div className="hero-cta">
+              <a href="#demo" className="btn btn-primary">
+                <i className="fas fa-exchange-alt"></i>
+                Switch Now for $999
+              </a>
+              <a href="#modules" className="btn btn-secondary">
+                <i className="fas fa-chart-bar"></i>
+                Explore Modules
+              </a>
+            </div>
+          </div>
+
+          <div className="hero-image">
+            <div className="dashboard-preview">
+              <div className="dashboard-header">
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      background: "var(--gradient-speed)",
+                      borderRadius: "50%",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "var(--hyper-yellow)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    MOVEAROUND CONTROL • LIVE
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "rgba(255, 255, 255, 0.6)",
+                    fontWeight: 600,
+                  }}
+                >
+                  Avg. ROI: 214% • Payback: 4.2 months
+                </div>
               </div>
-              <div className="space-y-6">
+              <div className="performance-stats">
                 {[
-                  { label: "Ticket Clerk Salary", value: "$3.5k-5.5k/mo" },
-                  { label: "Revenue Leakage", value: "2-5% annually" },
-                  { label: "Missed Detention", value: "$500-2k/mo" },
-                  { label: "Billing Disputes", value: "$1k-5k/mo" },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center pb-6 border-b border-[#222228]">
-                    <span className="text-base text-[#a1a1aa]">{item.label}</span>
-                    <span className="text-2xl font-bold text-[#f7931e]">{item.value}</span>
+                  {
+                    label: "STARTUP DEPOSIT",
+                    value: "$999",
+                    detail: "Get started • Full implementation",
+                    accent: "var(--gradient-speed)",
+                  },
+                  {
+                    label: "TIME TO VALUE",
+                    value: "30 Days",
+                    detail: "Implementation • Training • Go-live",
+                    accent: "var(--gradient-performance)",
+                  },
+                  {
+                    label: "AVG. ROI",
+                    value: "214%",
+                    detail: "First year return on investment",
+                    accent: "var(--gradient-success)",
+                  },
+                  {
+                    label: "PAYBACK PERIOD",
+                    value: "4.2 Mos",
+                    detail: "Average time to recover investment",
+                    accent: "var(--gradient-speed)",
+                  },
+                ].map((stat) => (
+                  <div className="stat-widget" key={stat.label}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          color: "rgba(255, 255, 255, 0.7)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {stat.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "2rem",
+                          fontWeight: 900,
+                          color: "var(--hyper-yellow)",
+                        }}
+                      >
+                        {stat.value}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "rgba(255, 255, 255, 0.6)",
+                      }}
+                    >
+                      {stat.detail}
+                    </div>
+                    <div
+                      style={{
+                        height: 4,
+                        background: "rgba(255, 255, 255, 0.1)",
+                        borderRadius: 2,
+                        marginTop: 15,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          background: stat.accent,
+                          borderRadius: 2,
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
-                <div className="flex justify-between items-center pt-4 bg-[#1a1a1d] border border-[#2a2a2f] rounded-xl p-6">
-                  <span className="text-lg font-bold text-white">TOTAL ANNUAL</span>
-                  <span className="text-4xl font-black text-[#f7931e]">$60k-150k</span>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 bg-[#1a1a1d] border border-[#2a2a2f] rounded-full text-[#a1a1aa] text-xs font-bold uppercase tracking-wider mb-6">
-              🚀 Complete Platform
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
-              Everything Automated.
+      <section id="modules" className="modules-performance">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Selling Modules: <span className="speed-gradient">Choose What You Need</span>
             </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Mix and match modules based on your operational requirements
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="modules-grid">
             {[
-              { icon: "📸", title: "FastScan OCR", desc: "99.5% accuracy. Extracts tons, yards, dates, trucks, pits, moisture, fines." },
-              { icon: "🔄", title: "Auto Reconciliation", desc: "Match tickets → invoices → POs automatically." },
-              { icon: "💵", title: "Revenue Shield", desc: "Recover 2-5% of revenue through intelligent detection." },
-              { icon: "⏱️", title: "Detention Tracking", desc: "Geofence-based automatic detention with proof." },
-              { icon: "📊", title: "Driver Payroll", desc: "Calculate pay by ton, yard, hour, load, or percentage." },
-              { icon: "🌐", title: "Cross-Border", desc: "CFDI 4.0 + Carta Porte ready. Automated customs." },
-              { icon: "🚚", title: "Fleet Tracking", desc: "Real-time ELD integration with Samsara, Motive, Geotab." },
-              { icon: "🛡️", title: "HR Compliance", desc: "Auto-alerts for expiring CDLs, med cards, insurance." },
-              { icon: "📈", title: "Dashboards", desc: "Real-time KPIs, trend analysis, actionable insights." },
-            ].map((feature, idx) => (
-              <div
-                key={idx}
-                className="bg-[#111114] border border-[#222228] rounded-3xl p-8 hover:border-[#2f2f36] transition-all"
-              >
-                <div className="text-5xl mb-6">{feature.icon}</div>
-                <h3 className="text-xl font-black text-white mb-3">{feature.title}</h3>
-                <p className="text-sm text-[#a1a1aa] leading-relaxed">{feature.desc}</p>
+              {
+                icon: "fa-bolt",
+                price: "Sell Separately: $499/month",
+                title: "FastScan OCR Module",
+                desc: "Process paper tickets at 99.97% accuracy with AI-powered optical character recognition.",
+                features: [
+                  "2-second ticket processing",
+                  "Handwriting recognition",
+                  "Multi-language support",
+                  "Learning AI improves over time",
+                ],
+                target: "Companies with paper-based processes, manual data entry",
+              },
+              {
+                icon: "fa-weight-hanging",
+                price: "Sell Separately: $799/month",
+                title: "Pit-Scale Analysis Module",
+                desc: "Real-time scale validation with fraud detection and automated billing verification.",
+                features: [
+                  "150+ validation rules",
+                  "Anomaly detection algorithms",
+                  "Cross-reference verification",
+                  "Automated dispute evidence",
+                ],
+                target: "Aggregate haulers, quarries, bulk material transport",
+              },
+              {
+                icon: "fa-tachometer-alt",
+                price: "Sell Separately: $1,499/month",
+                title: "TMS Operations Platform",
+                desc: "Complete fleet management system with dispatch, compliance, and real-time tracking.",
+                features: [
+                  "Real-time dispatch & tracking",
+                  "Automated compliance monitoring",
+                  "Integrated billing & payroll",
+                  "Advanced reporting suite",
+                ],
+                target: "All fleet operations needing complete management",
+              },
+              {
+                icon: "fa-route",
+                price: "Sell Separately: $299/month",
+                title: "Route Optimization",
+                desc: "Smart routing suggestions that reduce fuel and improve on-time performance.",
+                features: [
+                  "Multi-stop optimization",
+                  "Fuel-efficient routing",
+                  "Load sequencing",
+                  "Real-time route adjustments",
+                ],
+                target: "Dispatch teams optimizing daily routes",
+              },
+              {
+                icon: "fa-file-invoice-dollar",
+                price: "Sell Separately: $599/month",
+                title: "Revenue Shield",
+                desc: "Automated reconciliation and revenue leakage prevention.",
+                features: [
+                  "Invoice matching",
+                  "Exception detection",
+                  "Detention claims",
+                  "Evidence packet generator",
+                ],
+                target: "Companies losing revenue to missed accessorials",
+              },
+              {
+                icon: "fa-globe",
+                price: "Sell Separately: $399/month",
+                title: "Cross-Border Mexico",
+                desc: "Automated customs documentation and compliance monitoring.",
+                features: [
+                  "CFDI 4.0 + Carta Porte",
+                  "Customs status tracking",
+                  "Multi-currency invoicing",
+                  "Compliance audit trails",
+                ],
+                target: "Cross-border carriers and 3PLs",
+              },
+            ].map((module) => (
+              <div className="module-card" key={module.title}>
+                <div className="module-icon">
+                  <i className={`fas ${module.icon}`}></i>
+                </div>
+                <span className="module-badge">{module.price}</span>
+                <h3>{module.title}</h3>
+                <p>
+                  <strong>{module.desc}</strong>
+                </p>
+
+                <div style={{ marginTop: 30 }}>
+                  <h4 style={{ color: "var(--hyper-yellow)", marginBottom: 15 }}>
+                    Key Selling Features:
+                  </h4>
+                  <ul
+                    style={{
+                      color: "rgba(255, 255, 255, 0.8)",
+                      fontSize: "0.95rem",
+                      paddingLeft: 20,
+                      marginBottom: 25,
+                    }}
+                  >
+                    {module.features.map((feature) => (
+                      <li key={feature} style={{ marginBottom: 8 }}>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div
+                  style={{
+                    background: "rgba(255, 215, 0, 0.05)",
+                    padding: 20,
+                    borderRadius: 8,
+                    border: "1px solid rgba(255, 215, 0, 0.2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "rgba(255, 255, 255, 0.7)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    TARGET CUSTOMERS:
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--hyper-yellow)",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    {module.target}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 bg-[#1a1a1d] border border-[#2a2a2f] rounded-full text-[#a1a1aa] text-xs font-bold uppercase tracking-wider mb-6">
-              💳 Transparent Pricing
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
-              Simple, <span className="text-[#f7931e]">Predictable Pricing</span>
+      <section id="onboarding" className="onboarding-process">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Quick Onboarding: <span className="speed-gradient">Live in 30 Days</span>
             </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              From $999 deposit to full implementation in 30 days flat
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="onboarding-steps">
+            {[
+              "Deposit & Discovery",
+              "Module Configuration",
+              "Data Migration",
+              "Team Training",
+              "Go Live & Support",
+            ].map((step, idx) => (
+              <div className="onboarding-step" key={step}>
+                <div className="step-number">{idx + 1}</div>
+                <h3>{step}</h3>
+                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                  Streamlined onboarding with white-glove support for every team.
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="reporting" className="reporting-features">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Advanced Reporting:{" "}
+              <span className="speed-gradient">Actionable Intelligence</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Reporting that turns operational data into executive decisions
+            </p>
+          </div>
+
+          <div className="reporting-grid">
             {[
               {
-                name: "Starter",
-                price: "$399",
-                setup: "$2,499 setup",
-                trucks: "1-7 trucks",
-                features: ["Basic OCR", "Basic reconciliation", "Email support", "Mobile app", "Basic reports"],
+                icon: "fa-chart-line",
+                title: "Financial Performance",
+                items: [
+                  "Revenue per truck analysis",
+                  "Cost per mile tracking",
+                  "Profitability by lane",
+                  "ROI calculation reports",
+                ],
               },
               {
-                name: "Professional",
-                price: "$699",
-                setup: "$3,999 setup",
-                trucks: "8-25 trucks",
-                features: ["Advanced OCR", "Full reconciliation", "Priority support", "ELD integrations", "Detention tracking", "Advanced analytics"],
-                popular: true,
+                icon: "fa-truck",
+                title: "Operational Efficiency",
+                items: [
+                  "Truck utilization rates",
+                  "Driver performance metrics",
+                  "Fuel efficiency tracking",
+                  "Maintenance cost analysis",
+                ],
               },
               {
-                name: "Enterprise",
-                price: "$1,999",
-                setup: "$6,999 setup",
-                trucks: "26-100 trucks",
-                features: ["Everything in Pro", "Multi-org dashboard", "Custom integrations", "Account manager", "API access", "White-label"],
+                icon: "fa-shield-alt",
+                title: "Compliance & Safety",
+                items: [
+                  "HOS compliance tracking",
+                  "Safety violation reports",
+                  "Cross-border compliance",
+                  "Audit trail documentation",
+                ],
               },
-            ].map((plan, idx) => (
-              <div
-                key={idx}
-                className={`relative bg-[#111114] border ${
-                  plan.popular ? "border-[#f7931e] scale-105" : "border-[#222228]"
-                } rounded-3xl p-8`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-[#f7931e] text-black text-xs font-bold uppercase rounded-full">
-                    ⭐ Most Popular
-                  </div>
-                )}
-                <div className="text-sm font-bold text-[#a1a1aa] uppercase mb-2">{plan.name}</div>
-                <div className="mb-6">
-                  <span className="text-6xl font-black text-white">{plan.price}</span>
-                  <span className="text-lg text-[#a1a1aa]">/mo</span>
+            ].map((card) => (
+              <div className="reporting-card" key={card.title}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(255, 215, 0, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 25,
+                    border: "2px solid rgba(255, 215, 0, 0.3)",
+                  }}
+                >
+                  <i className={`fas ${card.icon}`} style={{ fontSize: 24, color: "var(--hyper-yellow)" }}></i>
                 </div>
-                <div className="text-sm text-[#a1a1aa] mb-2">{plan.setup}</div>
-                <div className="text-sm font-bold text-white mb-8 uppercase">{plan.trucks}</div>
-                <ul className="space-y-3 mb-8 pb-8 border-b border-[#222228]">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-[#a1a1aa]">
-                      <span className="text-[#16a34a] text-lg">✓</span>
-                      {feature}
+                <h3>{card.title}</h3>
+                <ul
+                  style={{
+                    color: "rgba(255, 255, 255, 0.8)",
+                    fontSize: "0.95rem",
+                    paddingLeft: 20,
+                    marginTop: 15,
+                  }}
+                >
+                  {card.items.map((item) => (
+                    <li key={item} style={{ marginBottom: 8 }}>
+                      {item}
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/ronyx"
-                  className={`block w-full py-4 text-center font-bold text-sm rounded-2xl transition-all ${
-                    plan.popular
-                      ? "bg-[#f7931e] text-black hover:bg-[#ff8c1a]"
-                      : "bg-[#1a1a1d] text-white border border-[#2a2a2f] hover:bg-[#1f1f24]"
-                  }`}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="switch" className="switch-benefits">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Why Switch Now: <span className="speed-gradient">Immediate Benefits</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              What you gain immediately when switching from other systems
+            </p>
+          </div>
+
+          <div className="benefits-grid">
+            {[
+              {
+                icon: "fa-dollar-sign",
+                title: "Immediate Cost Savings",
+                desc: "Average 35% reduction in operational costs within the first 90 days.",
+              },
+              {
+                icon: "fa-bolt",
+                title: "85% Faster Processing",
+                desc: "Ticket processing time reduced from hours to seconds.",
+              },
+              {
+                icon: "fa-chart-bar",
+                title: "Revenue Recovery",
+                desc: "Find 5-8% of lost revenue from missed billable loads.",
+              },
+            ].map((benefit) => (
+              <div className="benefit-card" key={benefit.title}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(255, 215, 0, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 25px",
+                    border: "2px solid rgba(255, 215, 0, 0.3)",
+                  }}
                 >
-                  Start Free Trial →
-                </Link>
+                  <i className={`fas ${benefit.icon}`} style={{ fontSize: 24, color: "var(--hyper-yellow)" }}></i>
+                </div>
+                <h3>{benefit.title}</h3>
+                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                  {benefit.desc}
+                </p>
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <div className="text-base text-[#cbd5e1]">
-              <span className="text-2xl">💯</span> <strong className="text-white">30-Day Money-Back Guarantee</strong>
-            </div>
+          <div style={{ textAlign: "center", marginTop: 60 }}>
+            <a href="#demo" className="btn btn-primary" style={{ padding: "25px 60px", fontSize: "1.25rem" }}>
+              <i className="fas fa-exchange-alt"></i>
+              Switch Now for $999 Deposit
+            </a>
+            <p style={{ color: "rgba(255, 255, 255, 0.7)", marginTop: 20, fontSize: "0.95rem" }}>
+              30-day money-back guarantee • Average ROI: 214% • Payback: 4.2 months
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-32 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-6xl md:text-7xl font-black mb-6 text-white leading-tight">
-            Ready to Go From<br />
-            <span className="text-[#f7931e]">
-              Street Smart to Fleet Smart?
-            </span>
+      <section id="pricing" className="pricing-performance">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Pricing: <span className="speed-gradient">Get Started for $999</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Choose your modules, pay only for what you need
+            </p>
+          </div>
+
+          <div className="pricing-tiers">
+            {[
+              {
+                badge: "FASTSCAN OCR ONLY",
+                price: "$499",
+                desc: "For companies needing only OCR capabilities",
+                deposit: "$499",
+                features: [
+                  "5,000 tickets/month processing",
+                  "99.97% accuracy guarantee",
+                  "Multi-language support",
+                  "Basic reporting",
+                ],
+                cta: "Start with FastScan",
+                ctaClass: "btn btn-secondary",
+              },
+              {
+                badge: "PROFESSIONAL BUNDLE",
+                price: "$2,499",
+                desc: "Complete solution for serious operations",
+                deposit: "$999",
+                features: [
+                  "FastScan OCR (Unlimited)",
+                  "Pit-Scale Analysis",
+                  "TMS Platform",
+                  "Cross-Border Mexico",
+                  "Advanced Reporting Suite",
+                ],
+                cta: "Start Professional for $999",
+                ctaClass: "btn btn-primary",
+                highlight: true,
+              },
+              {
+                badge: "ENTERPRISE CUSTOM",
+                price: "Custom",
+                desc: "Tailored solutions for large operations",
+                deposit: "$2,499",
+                features: [
+                  "All Professional Bundle features",
+                  "Custom module development",
+                  "Dedicated account manager",
+                  "On-premise deployment",
+                  "Predictive Analytics Module",
+                ],
+                cta: "Contact Enterprise Sales",
+                ctaClass: "btn btn-secondary",
+              },
+            ].map((tier) => (
+              <div
+                className="pricing-card"
+                key={tier.badge}
+                style={tier.highlight ? { borderColor: "var(--hyper-yellow)", transform: "scale(1.05)" } : undefined}
+              >
+                {tier.highlight && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      background: "var(--gradient-speed)",
+                      color: "var(--speed-white)",
+                      padding: "8px 24px",
+                      borderRadius: "0 0 8px 8px",
+                      fontWeight: 900,
+                      fontSize: "0.8rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    Most Popular
+                  </div>
+                )}
+                <div className="pricing-header">
+                  <div className="module-badge" style={tier.highlight ? { background: "rgba(255, 215, 0, 0.2)" } : undefined}>
+                    {tier.badge}
+                  </div>
+                  <h3 style={{ fontSize: "2.5rem", marginBottom: 10 }}>
+                    {tier.price}
+                    <span style={{ fontSize: "1rem", color: "rgba(255, 255, 255, 0.7)" }}>/month</span>
+                  </h3>
+                  <p style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+                    {tier.desc}
+                  </p>
+                  <div className="deposit-amount">
+                    <div style={{ fontSize: "0.875rem", color: "rgba(255, 255, 255, 0.7)" }}>
+                      STARTUP DEPOSIT
+                    </div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "var(--hyper-yellow)" }}>
+                      {tier.deposit}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ padding: 32 }}>
+                  <h4 style={{ color: "var(--hyper-yellow)", marginBottom: 20 }}>Includes:</h4>
+                  <ul
+                    style={{
+                      color: "rgba(255, 255, 255, 0.8)",
+                      fontSize: "0.95rem",
+                      paddingLeft: 20,
+                      marginBottom: 30,
+                    }}
+                  >
+                    {tier.features.map((feature) => (
+                      <li key={feature} style={{ marginBottom: 10 }}>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="#demo" className={tier.ctaClass} style={{ width: "100%" }}>
+                    <i className="fas fa-rocket"></i>
+                    {tier.cta}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="demo" className="switch-benefits">
+        <div className="container" style={{ textAlign: "center" }}>
+          <h2>
+            Get Your Custom Demo: <span className="speed-gradient">Move Fast</span>
           </h2>
-          <p className="text-xl text-[#cbd5e1] mb-12">
-            Start free. No credit card. Full access for 30 days.
+          <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>
+            Tell us your fleet size and modules. We’ll build your ROI plan within 24 hours.
           </p>
-          <Link
-            href="/ronyx"
-            className="inline-block px-12 py-6 bg-[#f7931e] text-black font-black text-lg rounded-2xl hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
-          >
-            START FREE TRIAL NOW →
-          </Link>
-          <div className="mt-8 text-sm text-[#a1a1aa]">
-            Questions? <a href="mailto:sales@movearoundtms.com" className="text-white font-semibold underline">sales@movearoundtms.com</a>
+          <div style={{ marginTop: 30 }}>
+            <a
+              href="mailto:sales@movearoundtms.com"
+              className="btn btn-primary"
+              style={{ padding: "22px 60px" }}
+            >
+              <i className="fas fa-envelope"></i>
+              Request Demo
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-[#222228] bg-[#0f0f11] py-16 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-[#f7931e] rounded-lg flex items-center justify-center shadow-lg shadow-[#f7931e]/30">
-              <span className="text-xl font-black text-black">M</span>
+      <footer className="footer-performance">
+        <div className="container">
+          <div className="footer-grid">
+            <div>
+              <div className="logo" style={{ marginBottom: 30 }}>
+                <div className="logo-icon">M</div>
+                <div className="logo-text">MoveAround TMS</div>
+              </div>
+              <p style={{ color: "rgba(255, 255, 255, 0.7)", marginBottom: 30, maxWidth: 400 }}>
+                Bulletproof fleet intelligence. 99.99% uptime. 30-day implementation. 214% average ROI.
+              </p>
             </div>
-            <span className="font-black text-lg text-white">
-              MOVE AROUND TMS
-            </span>
+
+            <div>
+              <h4 style={{ color: "var(--speed-white)", marginBottom: 25, fontSize: "1.1rem" }}>
+                Modules
+              </h4>
+              <ul style={{ listStyle: "none", padding: 0 }}>
+                <li style={{ marginBottom: 15 }}>
+                  <a href="#modules" className="nav-link">FastScan OCR</a>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <a href="#modules" className="nav-link">Pit-Scale Analysis</a>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <a href="#modules" className="nav-link">TMS Platform</a>
+                </li>
+                <li>
+                  <a href="#modules" className="nav-link">Cross-Border</a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 style={{ color: "var(--speed-white)", marginBottom: 25, fontSize: "1.1rem" }}>
+                Company
+              </h4>
+              <ul style={{ listStyle: "none", padding: 0 }}>
+                <li style={{ marginBottom: 15 }}>
+                  <a href="#onboarding" className="nav-link">Onboarding</a>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <a href="#reporting" className="nav-link">Reporting</a>
+                </li>
+                <li>
+                  <a href="#pricing" className="nav-link">Pricing</a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 style={{ color: "var(--speed-white)", marginBottom: 25, fontSize: "1.1rem" }}>
+                Get Started
+              </h4>
+              <ul style={{ listStyle: "none", padding: 0 }}>
+                <li style={{ marginBottom: 15, color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+                  <i className="fas fa-envelope" style={{ color: "var(--hyper-yellow)", marginRight: 10 }}></i>
+                  sales@movearoundtms.com
+                </li>
+                <li style={{ marginBottom: 15, color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+                  <i className="fas fa-map-marker-alt" style={{ color: "var(--turbo-blue)", marginRight: 10 }}></i>
+                  Houston, TX
+                </li>
+                <li style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+                  <i className="fas fa-dollar-sign" style={{ color: "var(--success-green)", marginRight: 10 }}></i>
+                  Startup Deposit: $999
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="text-sm text-[#a1a1aa] mb-8">From Street Smart to Fleet Smart™</div>
-          <div className="text-sm text-[#71717a]">
-            © {new Date().getFullYear()} Move Around TMS. All rights reserved.
+
+          <div style={{ textAlign: "center", paddingTop: 50, borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}>
+            <p style={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "0.875rem" }}>
+              © {new Date().getFullYear()} MoveAround TMS. From Street Smart to Fleet Smart.
+            </p>
+            <p style={{ color: "rgba(255, 255, 255, 0.4)", fontSize: "0.75rem", marginTop: 10 }}>
+              99.99% Uptime Guarantee • 30-Day Implementation • 214% Average ROI
+            </p>
           </div>
         </div>
       </footer>
