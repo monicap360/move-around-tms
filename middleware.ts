@@ -4,6 +4,22 @@ import { NextResponse } from "next/server";
 // 🚀 Lightweight middleware - Security headers only, no payment/auth blocking
 export async function middleware(req: NextRequest) {
   try {
+    const url = req.nextUrl.clone();
+    const host = req.headers.get("host") || "";
+    const pathname = url.pathname;
+
+    // Route subdomain traffic to the Ronyx dashboard paths
+    if (host.startsWith("ronyx.") && !pathname.startsWith("/ronyx")) {
+      url.pathname = `/ronyx${pathname === "/" ? "" : pathname}`;
+      const res = NextResponse.rewrite(url);
+
+      res.headers.set("X-Frame-Options", "SAMEORIGIN");
+      res.headers.set("X-Content-Type-Options", "nosniff");
+      res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+      return res;
+    }
+
     const res = NextResponse.next();
     
     // Security headers
