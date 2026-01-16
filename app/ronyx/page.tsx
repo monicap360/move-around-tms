@@ -1,324 +1,213 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
 
-export default function RonyxLandingPage() {
-  const [mounted, setMounted] = useState(false);
+const navItems = [
+  { label: "Overview", href: "/ronyx" },
+  { label: "Loads", href: "/loads" },
+  { label: "Drivers", href: "/drivers" },
+  { label: "Trucks", href: "/trucks" },
+  { label: "Dispatch", href: "/dispatch" },
+  { label: "Tracking", href: "/tracking" },
+  { label: "Payroll", href: "/payroll" },
+  { label: "Reports", href: "/reports" },
+  { label: "Settings", href: "/settings" },
+];
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+const quickActions = [
+  { title: "Create Load", href: "/loads/new" },
+  { title: "Assign Driver", href: "/drivers" },
+  { title: "Track Shipment", href: "/tracking" },
+  { title: "Run Payroll", href: "/payroll" },
+];
 
+export default function RonyxDashboard() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#0a0a0b] text-white">
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
         * {
-          font-family: 'Poppins', sans-serif;
+          font-family: "Poppins", sans-serif;
         }
       `}</style>
 
-      {/* Navigation */}
-      <nav className="border-b border-[#F7931E] bg-black/90 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-8 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-[#F7931E] rounded-lg flex items-center justify-center font-bold text-black text-2xl">
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-72 bg-[#0f0f11] border-r border-[#2a2a2f] flex flex-col">
+          <div className="px-6 py-6 border-b border-[#2a2a2f]">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#F7931E] rounded-lg flex items-center justify-center font-bold text-black text-2xl shadow-lg shadow-[#F7931E]/30">
                 R
               </div>
-              <div className="flex flex-col">
-                <div className="text-2xl font-bold text-[#F7931E] tracking-tight">
-                  RONYX LOGISTICS LLC
+              <div>
+                <div className="text-lg font-bold text-[#F7931E]">
+                  RONYX LOGISTICS
                 </div>
                 <div className="text-xs text-gray-400 tracking-wider">
-                  Fleet Management Portal
+                  Fleet Operations
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/ronyx/login"
-                className="px-6 py-2.5 border border-[#F7931E] text-[#F7931E] font-semibold text-sm rounded hover:bg-[#F7931E] hover:text-black transition-all"
-              >
-                Portal Login
-              </Link>
-            </div>
           </div>
-        </div>
-      </nav>
 
-      {/* Hero Section */}
-      <section className="pt-24 pb-20 px-8 bg-gradient-to-br from-black via-black to-[#F7931E]/10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#F7931E]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#F7931E]/5 rounded-full blur-3xl"></div>
-        
-        <div className="max-w-[1200px] mx-auto relative">
-          <div
-            className={`text-center transition-all duration-1000 ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-            }`}
-          >
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#F7931E]/30 bg-[#F7931E]/10 mb-8">
-              <span className="w-2 h-2 bg-[#F7931E] rounded-full animate-pulse"></span>
-              <span className="text-xs font-semibold text-[#F7931E] tracking-widest uppercase">
-                Fleet Management System
-              </span>
-            </div>
-
-            {/* Main Heading */}
-            <h1 className="text-7xl font-extrabold mb-6 leading-tight">
-              <span className="block text-white">Ronyx Logistics</span>
-              <span className="block text-[#F7931E]">Command Center</span>
-            </h1>
-
-            {/* Subheading */}
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">
-              Real-time fleet tracking, driver management, and load optimization.
-              Powered by Move Around TMS™ — built specifically for Ronyx operations.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            {navItems.map((item) => (
               <Link
-                href="/ronyx/login"
-                className="group px-10 py-5 bg-[#F7931E] text-black font-bold text-base rounded-lg hover:bg-[#ff8800] transition-all shadow-2xl shadow-[#F7931E]/30 flex items-center gap-3"
+                key={item.label}
+                href={item.href}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-gray-300 hover:text-white hover:bg-[#1a1a1d] transition-all"
               >
-                Access Portal
-                <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                <span className="w-2 h-2 rounded-full bg-[#F7931E]/60"></span>
+                {item.label}
               </Link>
-              <Link
-                href="#features"
-                className="px-10 py-5 border-2 border-[#F7931E]/30 text-white font-semibold text-base rounded-lg hover:border-[#F7931E] hover:bg-[#F7931E]/5 transition-all"
-              >
-                See Features
-              </Link>
-            </div>
+            ))}
+          </nav>
 
+          <div className="px-6 py-6 border-t border-[#2a2a2f]">
+            <div className="text-xs text-gray-500 mb-2">Support</div>
+            <a
+              href="mailto:support@movearoundtms.com"
+              className="text-sm text-gray-300 hover:text-[#F7931E] transition-colors"
+            >
+              support@movearoundtms.com
+            </a>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Top bar */}
+          <header className="border-b border-[#2a2a2f] bg-[#0f0f11] px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Operations Dashboard</h1>
+                <p className="text-sm text-gray-400">
+                  Real-time overview of fleet performance
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="hidden md:block">
+                  <input
+                    type="text"
+                    placeholder="Search loads, drivers, trucks..."
+                    className="w-72 bg-[#141418] border border-[#2a2a2f] rounded-lg px-4 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:outline-none focus:border-[#F7931E]/60"
+                  />
+                </div>
+                <button className="px-4 py-2 bg-[#141418] border border-[#2a2a2f] rounded-lg text-sm text-gray-200 hover:border-[#F7931E]/60 transition-all">
+                  Notifications
+                </button>
+                <button className="px-4 py-2 bg-[#F7931E] text-black font-semibold rounded-lg hover:bg-[#ff8800] transition-all">
+                  Portal Admin
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto px-6 py-6">
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto pt-16 border-t border-[#F7931E]/20">
+            <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
               {[
-                { value: "58", label: "Active Drivers", suffix: "" },
-                { value: "42", label: "Trucks in Fleet", suffix: "" },
-                { value: "98%", label: "On-Time Delivery", suffix: "" },
-                { value: "24/7", label: "Live Tracking", suffix: "" },
-              ].map((stat, idx) => (
-                <div key={idx} className="text-center">
-                  <div className="text-5xl font-bold text-[#F7931E] mb-2">
-                    {stat.value}{stat.suffix}
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
+                { label: "Active Loads", value: "42", trend: "+6 today" },
+                { label: "Available Drivers", value: "18", trend: "2 on break" },
+                { label: "Trucks In Service", value: "37", trend: "3 in maintenance" },
+                { label: "On-Time Rate", value: "98%", trend: "+1.2% WoW" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="bg-[#111114] border border-[#222228] rounded-xl p-6"
+                >
+                  <div className="text-xs text-gray-500 uppercase tracking-wider">
                     {stat.label}
                   </div>
+                  <div className="text-3xl font-bold text-[#F7931E] mt-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-2">{stat.trend}</div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
+            </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-8 bg-black border-t border-[#F7931E]/20">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="text-center mb-16">
-            <div className="text-xs font-bold text-[#F7931E] tracking-widest uppercase mb-4">
-              YOUR OPERATIONS DASHBOARD
-            </div>
-            <h2 className="text-5xl font-bold text-white mb-6">
-              Everything You Need to<br />Run Your Fleet
-            </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              Built for Ronyx drivers, dispatchers, and management.
-            </p>
-          </div>
+            {/* Quick actions */}
+            <section className="bg-[#111114] border border-[#222228] rounded-xl p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-white">Quick Actions</h2>
+                <span className="text-xs text-gray-500 uppercase tracking-wider">
+                  Dispatch shortcuts
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.title}
+                    href={action.href}
+                    className="px-4 py-4 bg-[#141418] border border-[#2a2a2f] rounded-lg text-sm font-semibold text-gray-200 hover:border-[#F7931E]/60 hover:text-white transition-all"
+                  >
+                    {action.title}
+                  </Link>
+                ))}
+              </div>
+            </section>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: "🚚",
-                title: "Live Fleet Tracking",
-                desc: "Real-time location of every truck. ELD integration with Samsara and Motive.",
-              },
-              {
-                icon: "👥",
-                title: "Driver Management",
-                desc: "Profiles, schedules, performance metrics, and compliance tracking.",
-              },
-              {
-                icon: "📋",
-                title: "Load Board",
-                desc: "Assign loads, track status, and manage delivery schedules.",
-              },
-              {
-                icon: "💰",
-                title: "Automated Payroll",
-                desc: "Driver pay calculations by load, hour, or mileage. Instant reports.",
-              },
-              {
-                icon: "⏱️",
-                title: "Detention Tracking",
-                desc: "Automatic detention time tracking and claim generation.",
-              },
-              {
-                icon: "📊",
-                title: "Analytics & Reports",
-                desc: "Revenue, fuel, performance, and compliance dashboards.",
-              },
-            ].map((feature, idx) => (
-              <div
-                key={idx}
-                className="bg-[#F7931E]/5 border border-[#F7931E]/20 rounded-xl p-8 hover:border-[#F7931E]/50 hover:bg-[#F7931E]/10 transition-all group"
-              >
-                <div className="text-5xl mb-6 group-hover:scale-110 transition-transform">
-                  {feature.icon}
+            {/* Fleet overview */}
+            <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 bg-[#111114] border border-[#222228] rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-white">Live Loads</h2>
+                  <button className="text-sm text-[#F7931E] hover:text-[#ff8800] transition-colors">
+                    View all
+                  </button>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-400 leading-relaxed text-sm">
-                  {feature.desc}
-                </p>
+                <div className="space-y-4">
+                  {[
+                    { id: "LD-2471", route: "Houston → Dallas", status: "In Transit", driver: "J. Smith" },
+                    { id: "LD-2475", route: "Austin → San Antonio", status: "Loading", driver: "K. Alvarez" },
+                    { id: "LD-2481", route: "El Paso → Laredo", status: "Delivered", driver: "R. Thompson" },
+                  ].map((load) => (
+                    <div
+                      key={load.id}
+                      className="flex items-center justify-between bg-[#141418] border border-[#2a2a2f] rounded-lg px-4 py-3"
+                    >
+                      <div>
+                        <div className="text-sm font-semibold text-white">
+                          {load.id} • {load.route}
+                        </div>
+                        <div className="text-xs text-gray-400">Driver: {load.driver}</div>
+                      </div>
+                      <span className="text-xs font-semibold text-[#F7931E]">
+                        {load.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+
+              <div className="bg-[#111114] border border-[#222228] rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-white">Alerts</h2>
+                  <button className="text-xs text-gray-400 hover:text-[#F7931E] transition-colors">
+                    Manage
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    "Truck 18 due for maintenance in 3 days",
+                    "Driver K. Alvarez HOS limit approaching",
+                    "Load LD-2475 detention timer running",
+                    "Insurance renewal due in 12 days",
+                  ].map((alert) => (
+                    <div
+                      key={alert}
+                      className="bg-[#141418] border border-[#2a2a2f] rounded-lg p-4 text-sm text-gray-300"
+                    >
+                      {alert}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </main>
         </div>
-      </section>
-
-      {/* Quick Access Section */}
-      <section className="py-24 px-8 bg-gradient-to-br from-[#F7931E]/10 to-black border-t border-[#F7931E]/20">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="text-center mb-16">
-            <div className="text-xs font-bold text-[#F7931E] tracking-widest uppercase mb-4">
-              QUICK ACCESS
-            </div>
-            <h2 className="text-5xl font-bold text-white mb-6">
-              Your Ronyx Portal
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <Link
-              href="/ronyx/login"
-              className="group bg-black/50 border-2 border-[#F7931E]/30 rounded-2xl p-10 hover:border-[#F7931E] hover:bg-[#F7931E]/5 transition-all"
-            >
-              <div className="text-5xl mb-6">👤</div>
-              <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-[#F7931E] transition-colors">
-                Driver Portal
-              </h3>
-              <p className="text-gray-400 leading-relaxed mb-6">
-                Access your loads, submit tickets, update status, and view your pay.
-              </p>
-              <div className="text-sm font-semibold text-[#F7931E] uppercase tracking-wider flex items-center gap-2">
-                ACCESS NOW
-                <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
-              </div>
-            </Link>
-
-            <Link
-              href="/ronyx/login"
-              className="group bg-black/50 border-2 border-[#F7931E]/30 rounded-2xl p-10 hover:border-[#F7931E] hover:bg-[#F7931E]/5 transition-all"
-            >
-              <div className="text-5xl mb-6">🎯</div>
-              <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-[#F7931E] transition-colors">
-                Management Portal
-              </h3>
-              <p className="text-gray-400 leading-relaxed mb-6">
-                Full dashboard access, fleet analytics, driver management, and reports.
-              </p>
-              <div className="text-sm font-semibold text-[#F7931E] uppercase tracking-wider flex items-center gap-2">
-                ACCESS NOW
-                <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Section */}
-      <section className="py-24 px-8 bg-black border-t border-[#F7931E]/20">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-gradient-to-br from-[#F7931E]/10 to-transparent border border-[#F7931E]/30 rounded-3xl p-12">
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="text-4xl mb-4">🔒</div>
-                <h3 className="font-bold text-lg mb-2 text-white">Secure Access</h3>
-                <p className="text-gray-400 text-sm">
-                  Bank-level encryption
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl mb-4">📱</div>
-                <h3 className="font-bold text-lg mb-2 text-white">Mobile Ready</h3>
-                <p className="text-gray-400 text-sm">
-                  Access from any device
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl mb-4">⚡</div>
-                <h3 className="font-bold text-lg mb-2 text-white">Real-Time Updates</h3>
-                <p className="text-gray-400 text-sm">
-                  Live data sync
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-32 px-8 bg-gradient-to-br from-black to-[#F7931E]/10 border-t border-[#F7931E]/20">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-6xl font-bold mb-6 text-white">
-            Ready to Access<br />Your Ronyx Portal?
-          </h2>
-          <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-            Login to manage your fleet, track loads, and optimize operations.
-          </p>
-          <Link
-            href="/ronyx/login"
-            className="inline-flex items-center gap-3 px-12 py-6 bg-[#F7931E] text-black font-bold text-base rounded-lg hover:bg-[#ff8800] transition-all shadow-2xl shadow-[#F7931E]/30"
-          >
-            <span>ACCESS PORTAL NOW</span>
-            <span className="text-2xl">→</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-[#F7931E]/20 bg-black py-12 px-8">
-        <div className="max-w-[1400px] mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#F7931E] rounded-lg flex items-center justify-center font-bold text-black text-xl">
-                R
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-base text-white">
-                  RONYX LOGISTICS LLC
-                </span>
-                <span className="text-xs text-gray-400">
-                  Powered by Move Around TMS™
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-400">
-              <Link href="/ronyx/login" className="hover:text-[#F7931E] transition-colors">
-                Portal Login
-              </Link>
-              <Link href="#features" className="hover:text-[#F7931E] transition-colors">
-                Features
-              </Link>
-              <a href="mailto:support@movearoundtms.com" className="hover:text-[#F7931E] transition-colors">
-                Support
-              </a>
-            </div>
-            <div className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Ronyx Logistics LLC
-            </div>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }
