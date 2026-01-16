@@ -125,6 +125,7 @@ export default function ClientLayoutWrapper({
   const isPublic =
     pathname === "/" ||
     pathname === "/app" ||
+    pathname === "/ronyx" ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup") ||
     pathname?.startsWith("/reset-password") ||
