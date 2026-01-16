@@ -1199,6 +1199,121 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section id="reconciliation" className="reporting-features">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Automated Reconciliation:{" "}
+              <span className="speed-gradient">Excel + Plant Invoices</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Upload your Excel tickets, match against CSV invoices, and resolve exceptions fast.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 30 }}>
+            {[
+              {
+                step: "1",
+                title: "Upload Excel Tickets",
+                desc: "Drag & drop Excel exports. We detect columns, normalize units, and validate totals automatically.",
+              },
+              {
+                step: "2",
+                title: "Match CSV Invoices",
+                desc: "Plant invoices are matched by load, date, truck, and tonnage. Variances are flagged instantly.",
+              },
+              {
+                step: "3",
+                title: "Resolve Exceptions",
+                desc: "Exception queue shows discrepancies with evidence and one-click dispute packets.",
+              },
+            ].map((item) => (
+              <div className="reporting-card" key={item.title}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(0, 180, 255, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 25,
+                    border: "2px solid rgba(0, 180, 255, 0.3)",
+                    fontWeight: 900,
+                    fontSize: "1.25rem",
+                    color: "var(--turbo-blue)",
+                  }}
+                >
+                  {item.step}
+                </div>
+                <h3>{item.title}</h3>
+                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="pits" className="switch-benefits">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Pit‑Scale Intelligence:{" "}
+              <span className="speed-gradient">Catch Errors in Seconds</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Validate scale tickets, detect anomalies, and protect revenue before invoices go out.
+            </p>
+          </div>
+
+          <div className="benefits-grid">
+            {[
+              {
+                icon: "fa-scale-balanced",
+                title: "150+ Validation Rules",
+                desc: "Auto-check tons, yards, moisture, fines, and rate tables for every ticket.",
+              },
+              {
+                icon: "fa-triangle-exclamation",
+                title: "Anomaly Detection",
+                desc: "Find outliers and fraud patterns instantly with alerts and audit trails.",
+              },
+              {
+                icon: "fa-file-signature",
+                title: "Evidence Packets",
+                desc: "Generate dispute-ready evidence packets with timestamps and references.",
+              },
+            ].map((item) => (
+              <div className="benefit-card" key={item.title}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(255, 40, 0, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 25px",
+                    border: "2px solid rgba(255, 40, 0, 0.3)",
+                  }}
+                >
+                  <i className={`fas ${item.icon}`} style={{ fontSize: 24, color: "var(--performance-red)" }}></i>
+                </div>
+                <h3>{item.title}</h3>
+                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="onboarding" className="onboarding-process">
         <div className="container">
           <div className="section-header">
