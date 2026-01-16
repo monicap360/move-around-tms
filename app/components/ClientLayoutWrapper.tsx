@@ -121,8 +121,10 @@ export default function ClientLayoutWrapper({
 }: ClientLayoutWrapperProps) {
   const pathname = usePathname();
 
-  // Check if this is a public route (login, signup, etc.)
+  // Check if this is a public route (login, signup, landing page, etc.)
   const isPublic =
+    pathname === "/" ||
+    pathname === "/app" ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup") ||
     pathname?.startsWith("/reset-password") ||

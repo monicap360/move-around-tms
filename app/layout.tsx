@@ -41,27 +41,11 @@ export default async function RootLayout(props: { children: ReactNode }) {
         />
         <style>{`:root { --color-primary: ${branding.primaryColor}; --color-accent: ${branding.accentColor}; --color-background: ${branding.backgroundColor}; }`}</style>
       </head>
-      <body className="h-screen bg-gray-100 text-gray-800">
-        {/* Add to Home Screen button logic should be handled in a client component for proper prompt management */}
-        <div id="a2hs-btn-container"></div>
-        <header className="w-full flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-200">
-          <img
-            src={branding.logoUrl}
-            alt="Logo"
-            className="h-8 w-8 rounded mr-2"
-            style={{ background: "white" }}
-          />
-          <span
-            className="font-bold text-lg"
-            style={{ color: branding.primaryColor }}
-          >
-            {branding.companyName}
-          </span>
-        </header>
+      <body>
         <SupabaseProvider>
           <LoadingProvider>
             <I18nProvider>
-              <ClientLayoutWrapper>{props.children}</ClientLayoutWrapper>
+              {props.children}
             </I18nProvider>
           </LoadingProvider>
         </SupabaseProvider>
