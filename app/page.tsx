@@ -6,16 +6,27 @@ import { useState } from "react";
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [roiInputs, setRoiInputs] = useState({
-    loadsPerDay: 40,
-    shortLoadValue: 35,
-    manualHoursPerWeek: 10,
+    loadsPerDay: 45,
+    avgValuePerLoad: 420,
+    discrepancyPct: 4,
+    manualHoursPerDay: 2,
+    missedAccessorialPct: 2,
   });
 
   const hourlyRate = 30;
-  const annualRecoveredRevenue =
-    roiInputs.loadsPerDay * roiInputs.shortLoadValue * 260;
-  const annualLaborSavings = roiInputs.manualHoursPerWeek * 52 * hourlyRate;
-  const annualTotalSavings = annualRecoveredRevenue + annualLaborSavings;
+  const annualRevenue =
+    roiInputs.loadsPerDay * roiInputs.avgValuePerLoad * 260;
+  const recoveredTonnageRevenue =
+    roiInputs.loadsPerDay *
+    (roiInputs.discrepancyPct / 100) *
+    roiInputs.avgValuePerLoad *
+    260;
+  const annualLaborSavings =
+    roiInputs.manualHoursPerDay * hourlyRate * 260;
+  const recoveredAccessorials =
+    annualRevenue * (roiInputs.missedAccessorialPct / 100);
+  const annualTotalSavings =
+    recoveredTonnageRevenue + annualLaborSavings + recoveredAccessorials;
 
   return (
     <div className="landing-performance">
@@ -871,7 +882,7 @@ export default function LandingPage() {
 
           <div className={`nav-links ${menuOpen ? "active" : ""}`}>
             <a href="#performance" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Performance
+              Pit-to-Pay
             </a>
             <a href="#pits" className="nav-link" onClick={() => setMenuOpen(false)}>
               Pits & Quarries
@@ -897,30 +908,30 @@ export default function LandingPage() {
           <div className="hero-content">
             <div className="hero-badge">
               <i className="fas fa-bolt"></i>
-              GET STARTED FOR $999 DEPOSIT
+              PIT-TO-PAY INTELLIGENCE PLATFORM
             </div>
-            <h1 className="speed-gradient">Switch to Bulletproof Performance</h1>
+            <h1 className="speed-gradient">Stop Losing Money at the Scale House</h1>
             <p>
-              <strong>99.99% Uptime • 30-Day Implementation • 2x ROI Guarantee</strong>
+              <strong>Short loads • scale fraud • ticket matching • production tracking</strong>
             </p>
             <p>
-              MoveBeyond the limitations of your current TMS. MoveAround delivers{" "}
-              <strong className="performance-gradient">military-grade performance</strong>{" "}
-              with Lamborghini-level speed and Mercedes-level reliability.
+              MoveAround’s <strong className="performance-gradient">Pit-to-Pay Intelligence</strong>{" "}
+              automates your haul cycle—from load-out to invoice—to eliminate short loads,
+              prevent fraud, and capture every dollar you’ve earned.
             </p>
             <p>
-              <strong>Why Switch?</strong> Our average customer saves $142,000 annually
-              while increasing operational efficiency by 85%.
+              <strong>Get a custom ROI analysis</strong> based on your loads, discrepancies,
+              and manual reconciliation hours.
             </p>
 
             <div className="hero-cta">
-              <a href="#demo" className="btn btn-primary">
-                <i className="fas fa-exchange-alt"></i>
-                Switch Now for $999
+              <a href="#roi-calculator" className="btn btn-primary">
+                <i className="fas fa-chart-line"></i>
+                Get ROI Analysis
               </a>
-              <a href="#modules" className="btn btn-secondary">
-                <i className="fas fa-chart-bar"></i>
-                Explore Modules
+              <a href="#pits" className="btn btn-secondary">
+                <i className="fas fa-industry"></i>
+                See Pit-to-Pay
               </a>
             </div>
           </div>
@@ -1061,7 +1072,7 @@ export default function LandingPage() {
               {
                 icon: "fa-bolt",
                 price: "Sell Separately: $499/month",
-                title: "FastScan OCR Module",
+                title: "TicketFlash OCR Module",
                 desc: "Process paper tickets at 99.97% accuracy with AI-powered optical character recognition.",
                 features: [
                   "2-second ticket processing",
@@ -1074,7 +1085,7 @@ export default function LandingPage() {
               {
                 icon: "fa-weight-hanging",
                 price: "Sell Separately: $799/month",
-                title: "Pit-Scale Analysis Module",
+                title: "ScaleShield Module",
                 desc: "Real-time scale validation with fraud detection and automated billing verification.",
                 features: [
                   "150+ validation rules",
@@ -1277,23 +1288,23 @@ export default function LandingPage() {
           <div className="section-header">
             <h2>
               For Aggregate & Bulk Material Haulers:{" "}
-              <span className="speed-gradient">Pit‑Scale Intelligence</span>
+              <span className="speed-gradient">ScaleShield Intelligence</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
               Ticket matching, short loads, scale fraud, and production tracking—handled end‑to‑end.
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 30 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 30 }}>
             <div className="benefit-card">
-              <h3 style={{ marginBottom: 12 }}>Make Pit‑Scale the Hero</h3>
+              <h3 style={{ marginBottom: 12 }}>ScaleShield Is Mission‑Critical</h3>
               <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
                 <strong>Stop Revenue Leakage:</strong> Automatically flag load weight discrepancies
                 before they become billing disputes.
               </p>
               <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
-                <strong>Eliminate Manual Ticket Matching:</strong> Sync scale house data with
-                dispatch tickets in real-time, ending hours of clerical work.
+                <strong>End Manual Ticket Matching:</strong> Sync scale house data with dispatch tickets
+                in real-time, eliminating clerical hours.
               </p>
               <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
                 <strong>Prevent Fraud & Collusion:</strong> AI alerts for suspicious patterns
@@ -1301,16 +1312,16 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="benefit-card" style={{ textAlign: "left" }}>
-              <h3 style={{ marginBottom: 12 }}>Pit‑to‑Dump Workflow</h3>
+              <h3 style={{ marginBottom: 12 }}>Pit‑to‑Pay Workflow</h3>
               <ol style={{ paddingLeft: 18, color: "rgba(255, 255, 255, 0.8)", fontSize: "0.95rem" }}>
                 <li style={{ marginBottom: 10 }}>
                   <strong>Scale Integration:</strong> Weight captured automatically at the pit.
                 </li>
                 <li style={{ marginBottom: 10 }}>
-                  <strong>Ticket Creation:</strong> FastScan OCR generates a digital ticket instantly.
+                  <strong>Ticket Creation:</strong> TicketFlash OCR generates a digital ticket instantly.
                 </li>
                 <li style={{ marginBottom: 10 }}>
-                  <strong>Dispatch & Tracking:</strong> Load assigned, tracked, and monitored live.
+                  <strong>Dispatch & Tracking:</strong> Load assigned and tracked live.
                 </li>
                 <li style={{ marginBottom: 10 }}>
                   <strong>Delivery Verification:</strong> Destination weight verified; mismatches flagged.
@@ -1323,21 +1334,80 @@ export default function LandingPage() {
             <div className="benefit-card">
               <h3 style={{ marginBottom: 12 }}>Industry Proof</h3>
               <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
-                “We recovered <strong>$84,000</strong> in missed revenue in the first 90 days.
-                Short loads and scale discrepancies used to slip through every week.”
+                “We recovered <strong>$87,000</strong> in disputed loads and saved 240 admin hours
+                in the first quarter.”
               </p>
               <p style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>
-                — Operations Manager, Mid‑Market Aggregate Hauler
+                — Aggregate Hauler, Texas Gulf Region
               </p>
             </div>
           </div>
 
           <div style={{ marginTop: 60 }} className="reporting-card">
-            <h3 style={{ marginBottom: 12 }}>
-              Aggregate Hauler ROI Calculator
-            </h3>
+            <h3 style={{ marginBottom: 16 }}>The 5 Costly Problems We Solve for Pits</h3>
+            <div style={{ display: "grid", gap: 16 }}>
+              {[
+                {
+                  problem: "Short Loads & Weight Disputes",
+                  pain: "Unbillable tons, customer arguments, manual ticket matching.",
+                  solution:
+                    "ScaleShield validates pit scale vs destination weight in real time.",
+                },
+                {
+                  problem: "Revenue Leakage & Manual Errors",
+                  pain: "Lost tickets, miskeyed weights, missed accessorial charges.",
+                  solution:
+                    "Revenue Shield + TicketFlash OCR auto-match loads to invoices and flag misses.",
+                },
+                {
+                  problem: "Scale House Fraud & Collusion",
+                  pain: "Suspicious overrides, no audit trail, unverified edits.",
+                  solution:
+                    "150+ validation rules with anomaly detection and immutable audit logs.",
+                },
+                {
+                  problem: "Inefficient Haul Cycles",
+                  pain: "Idle trucks, poor sequencing, dispatch in the dark.",
+                  solution:
+                    "Route Optimization + Live TMS visibility across pit, queue, and en route.",
+                },
+                {
+                  problem: "Cross‑Border Complexity",
+                  pain: "Manual customs docs, currency issues, compliance risks.",
+                  solution:
+                    "Cross‑Border Mexico module auto‑generates CFDI 4.0 + Carta Porte.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.problem}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.3fr 1.2fr 1.5fr",
+                    gap: 16,
+                    background: "rgba(30,30,30,0.6)",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,215,0,0.2)",
+                    padding: 16,
+                  }}
+                >
+                  <div>
+                    <strong style={{ color: "var(--hyper-yellow)" }}>{item.problem}</strong>
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.95rem" }}>
+                    {item.pain}
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.95rem" }}>
+                    {item.solution}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div id="roi-calculator" style={{ marginTop: 60 }} className="reporting-card">
+            <h3 style={{ marginBottom: 12 }}>Aggregate Hauler ROI Calculator</h3>
             <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
-              Estimate your annual recovered revenue from short loads and manual reconciliation.
+              Estimate your annual recovery from short loads, manual reconciliation, and missed accessorials.
               <span style={{ color: "var(--hyper-yellow)" }}> Assumes $30/hr admin cost.</span>
             </p>
             <div
@@ -1371,14 +1441,14 @@ export default function LandingPage() {
                 />
               </label>
               <label>
-                Avg. short load value ($)
+                Average value per load ($)
                 <input
                   type="number"
-                  value={roiInputs.shortLoadValue}
+                  value={roiInputs.avgValuePerLoad}
                   onChange={(e) =>
                     setRoiInputs((prev) => ({
                       ...prev,
-                      shortLoadValue: Number(e.target.value || 0),
+                      avgValuePerLoad: Number(e.target.value || 0),
                     }))
                   }
                   style={{
@@ -1393,14 +1463,58 @@ export default function LandingPage() {
                 />
               </label>
               <label>
-                Manual reconciliation hours/week
+                % loads with weight discrepancies
                 <input
                   type="number"
-                  value={roiInputs.manualHoursPerWeek}
+                  value={roiInputs.discrepancyPct}
                   onChange={(e) =>
                     setRoiInputs((prev) => ({
                       ...prev,
-                      manualHoursPerWeek: Number(e.target.value || 0),
+                      discrepancyPct: Number(e.target.value || 0),
+                    }))
+                  }
+                  style={{
+                    marginTop: 6,
+                    width: "100%",
+                    background: "rgba(30,30,30,0.7)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    color: "white",
+                  }}
+                />
+              </label>
+              <label>
+                Manual reconciliation hours/day
+                <input
+                  type="number"
+                  value={roiInputs.manualHoursPerDay}
+                  onChange={(e) =>
+                    setRoiInputs((prev) => ({
+                      ...prev,
+                      manualHoursPerDay: Number(e.target.value || 0),
+                    }))
+                  }
+                  style={{
+                    marginTop: 6,
+                    width: "100%",
+                    background: "rgba(30,30,30,0.7)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    color: "white",
+                  }}
+                />
+              </label>
+              <label>
+                % revenue lost to missed accessorials
+                <input
+                  type="number"
+                  value={roiInputs.missedAccessorialPct}
+                  onChange={(e) =>
+                    setRoiInputs((prev) => ({
+                      ...prev,
+                      missedAccessorialPct: Number(e.target.value || 0),
                     }))
                   }
                   style={{
@@ -1425,10 +1539,10 @@ export default function LandingPage() {
             >
               <div className="stat-widget">
                 <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
-                  Annual recovered revenue
+                  Recovered tonnage revenue
                 </div>
                 <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--hyper-yellow)" }}>
-                  ${annualRecoveredRevenue.toLocaleString()}
+                  ${recoveredTonnageRevenue.toLocaleString()}
                 </div>
               </div>
               <div className="stat-widget">
@@ -1441,12 +1555,25 @@ export default function LandingPage() {
               </div>
               <div className="stat-widget">
                 <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
+                  Recovered accessorials
+                </div>
+                <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--hyper-yellow)" }}>
+                  ${recoveredAccessorials.toLocaleString()}
+                </div>
+              </div>
+              <div className="stat-widget">
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
                   Total annual impact
                 </div>
                 <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--turbo-blue)" }}>
                   ${annualTotalSavings.toLocaleString()}
                 </div>
               </div>
+            </div>
+            <div style={{ marginTop: 20, textAlign: "right" }}>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ padding: "16px 28px" }}>
+                Schedule ROI Walkthrough
+              </a>
             </div>
           </div>
 
@@ -1464,6 +1591,25 @@ export default function LandingPage() {
                   </div>
                 )
               )}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 50 }} className="reporting-card">
+            <h3 style={{ marginBottom: 12 }}>Pit Operator’s Guide to Digital Transformation</h3>
+            <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+              A practical guide built for quarries and bulk material haulers.
+            </p>
+            <ul style={{ paddingLeft: 20, color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+              <li style={{ marginBottom: 8 }}>The true cost of paper tickets</li>
+              <li style={{ marginBottom: 8 }}>Scale house tech & integration checklist</li>
+              <li style={{ marginBottom: 8 }}>Building a dispute‑proof audit trail</li>
+              <li style={{ marginBottom: 8 }}>ROI framework for short loads & accessorials</li>
+              <li>What to expect in a 30‑day implementation</li>
+            </ul>
+            <div style={{ marginTop: 20 }}>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-secondary" style={{ padding: "14px 26px" }}>
+                Request the Guide
+              </a>
             </div>
           </div>
         </div>
@@ -1671,7 +1817,7 @@ export default function LandingPage() {
                   "Multi-language support",
                   "Basic reporting",
                 ],
-                cta: "Start with FastScan",
+                cta: "Start with TicketFlash",
                 ctaClass: "btn btn-secondary",
               },
               {
@@ -1680,8 +1826,8 @@ export default function LandingPage() {
                 desc: "Complete solution for serious operations",
                 deposit: "$999",
                 features: [
-                  "FastScan OCR (Unlimited)",
-                  "Pit-Scale Analysis",
+                  "TicketFlash OCR (Unlimited)",
+                  "ScaleShield",
                   "TMS Platform",
                   "Cross-Border Mexico",
                   "Advanced Reporting Suite",
@@ -1818,10 +1964,10 @@ export default function LandingPage() {
               </h4>
               <ul style={{ listStyle: "none", padding: 0 }}>
                 <li style={{ marginBottom: 15 }}>
-                  <a href="#modules" className="nav-link">FastScan OCR</a>
+                  <a href="#modules" className="nav-link">TicketFlash OCR</a>
                 </li>
                 <li style={{ marginBottom: 15 }}>
-                  <a href="#modules" className="nav-link">Pit-Scale Analysis</a>
+                  <a href="#modules" className="nav-link">ScaleShield</a>
                 </li>
                 <li style={{ marginBottom: 15 }}>
                   <a href="#modules" className="nav-link">TMS Platform</a>
