@@ -1242,6 +1242,70 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section id="solutions" className="reporting-features">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Choose Your Path: <span className="speed-gradient">Clear Solutions</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Start with the package that matches your operation.
+            </p>
+          </div>
+
+          <div className="benefits-grid">
+            {[
+              {
+                icon: "fa-industry",
+                title: "I run a Quarry or Aggregate Business",
+                desc: "Pit‑to‑Pay workflow built for scale houses, short loads, and ticket matching.",
+                cta: "Explore Pit‑to‑Pay",
+                href: "#pits",
+              },
+              {
+                icon: "fa-globe",
+                title: "I am a Cross‑Border Carrier",
+                desc: "CFDI 4.0 + Carta Porte automation with customs tracking and multi‑currency billing.",
+                cta: "View Cross‑Border",
+                href: "#modules",
+              },
+              {
+                icon: "fa-briefcase",
+                title: "I need to Automate My Back Office",
+                desc: "TicketFlash OCR + Revenue Shield to eliminate manual entry and recover revenue.",
+                cta: "Automate the Office",
+                href: "#modules",
+              },
+            ].map((path) => (
+              <div className="benefit-card" key={path.title}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(255, 215, 0, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 25px",
+                    border: "2px solid rgba(255, 215, 0, 0.3)",
+                  }}
+                >
+                  <i className={`fas ${path.icon}`} style={{ fontSize: 24, color: "var(--hyper-yellow)" }}></i>
+                </div>
+                <h3>{path.title}</h3>
+                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                  {path.desc}
+                </p>
+                <a href={path.href} className="btn btn-secondary" style={{ marginTop: 20 }}>
+                  {path.cta}
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="reconciliation" className="reporting-features">
         <div className="container">
           <div className="section-header">
@@ -1938,6 +2002,33 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 60 }}>
+            <div
+              style={{
+                background: "rgba(0, 180, 255, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 40,
+                border: "1px solid rgba(0, 180, 255, 0.3)",
+                maxWidth: 900,
+                margin: "0 auto",
+              }}
+            >
+              <h3 style={{ color: "var(--turbo-blue)", marginBottom: 12 }}>
+                Starter Pilot (Risk‑Free)
+              </h3>
+              <p style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.95rem" }}>
+                Try <strong>AccuriScale</strong> for 90 days with a $0 deposit. Only pay the
+                $799/month fee if you recover more than <strong>$5,000</strong> in disputed loads.
+              </p>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 18 }}>
+                Start Pilot
+              </a>
+              <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.85rem", marginTop: 12 }}>
+                Value‑first guarantee designed for 1–2 truck operators and new pits.
+              </p>
+            </div>
           </div>
         </div>
       </section>
