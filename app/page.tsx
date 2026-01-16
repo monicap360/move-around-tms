@@ -915,9 +915,14 @@ export default function LandingPage() {
               <strong>Short loads • scale fraud • ticket matching • production tracking</strong>
             </p>
             <p>
-              MoveAround’s <strong className="performance-gradient">Pit-to-Pay Intelligence</strong>{" "}
+              MoveAround’s <strong className="performance-gradient">VeriFlow Pit‑to‑Pay Suite</strong>{" "}
               automates your haul cycle—from load-out to invoice—to eliminate short loads,
               prevent fraud, and capture every dollar you’ve earned.
+            </p>
+            <p>
+              Powered by <strong>TicketFlash</strong> for ticket capture,{" "}
+              <strong>AccuriScale</strong> for scale validation, and{" "}
+              <strong>DocPulse</strong> for audit‑ready documentation.
             </p>
             <p>
               <strong>Get a custom ROI analysis</strong> based on your loads, discrepancies,
@@ -1085,7 +1090,7 @@ export default function LandingPage() {
               {
                 icon: "fa-weight-hanging",
                 price: "Sell Separately: $799/month",
-                title: "ScaleShield Module",
+                title: "AccuriScale Module",
                 desc: "Real-time scale validation with fraud detection and automated billing verification.",
                 features: [
                   "150+ validation rules",
@@ -1159,6 +1164,19 @@ export default function LandingPage() {
                   "Compliance audit trails",
                 ],
                 target: "Cross-border carriers and 3PLs",
+              },
+              {
+                icon: "fa-file-lines",
+                price: "Sell Separately: $349/month",
+                title: "DocPulse Documentation",
+                desc: "Centralized document vault with audit trails and dispute-ready evidence packets.",
+                features: [
+                  "Auto-organized tickets and invoices",
+                  "Immutable audit trails",
+                  "One-click evidence packets",
+                  "Compliance-ready exports",
+                ],
+                target: "Teams managing high-volume ticket and invoice documentation",
               },
             ].map((module) => (
               <div className="module-card" key={module.title}>
@@ -1288,7 +1306,7 @@ export default function LandingPage() {
           <div className="section-header">
             <h2>
               For Aggregate & Bulk Material Haulers:{" "}
-              <span className="speed-gradient">ScaleShield Intelligence</span>
+              <span className="speed-gradient">AccuriScale Intelligence</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
               Ticket matching, short loads, scale fraud, and production tracking—handled end‑to‑end.
@@ -1297,7 +1315,7 @@ export default function LandingPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 30 }}>
             <div className="benefit-card">
-              <h3 style={{ marginBottom: 12 }}>ScaleShield Is Mission‑Critical</h3>
+              <h3 style={{ marginBottom: 12 }}>AccuriScale Is Mission‑Critical</h3>
               <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
                 <strong>Stop Revenue Leakage:</strong> Automatically flag load weight discrepancies
                 before they become billing disputes.
@@ -1351,7 +1369,7 @@ export default function LandingPage() {
                   problem: "Short Loads & Weight Disputes",
                   pain: "Unbillable tons, customer arguments, manual ticket matching.",
                   solution:
-                    "ScaleShield validates pit scale vs destination weight in real time.",
+                    "AccuriScale validates pit scale vs destination weight in real time.",
                 },
                 {
                   problem: "Revenue Leakage & Manual Errors",
@@ -1827,7 +1845,7 @@ export default function LandingPage() {
                 deposit: "$999",
                 features: [
                   "TicketFlash OCR (Unlimited)",
-                  "ScaleShield",
+                  "AccuriScale",
                   "TMS Platform",
                   "Cross-Border Mexico",
                   "Advanced Reporting Suite",
@@ -1967,7 +1985,7 @@ export default function LandingPage() {
                   <a href="#modules" className="nav-link">TicketFlash OCR</a>
                 </li>
                 <li style={{ marginBottom: 15 }}>
-                  <a href="#modules" className="nav-link">ScaleShield</a>
+                  <a href="#modules" className="nav-link">AccuriScale</a>
                 </li>
                 <li style={{ marginBottom: 15 }}>
                   <a href="#modules" className="nav-link">TMS Platform</a>
