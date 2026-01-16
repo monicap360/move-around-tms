@@ -27,7 +27,7 @@ export default function LandingPage() {
               </div>
             </div>
             <Link
-              href="/dashboard"
+              href="/ronyx"
               className="px-6 py-2.5 bg-[#f7931e] text-black font-bold text-sm rounded-lg hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
             >
               Launch Dashboard →
@@ -62,7 +62,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link
-              href="/dashboard"
+              href="/ronyx"
               className="px-10 py-4 bg-[#f7931e] text-black font-bold text-base rounded-lg hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
             >
               START FREE TRIAL →
@@ -240,7 +240,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/dashboard"
+                  href="/ronyx"
                   className={`block w-full py-4 text-center font-bold text-sm rounded-2xl transition-all ${
                     plan.popular
                       ? "bg-[#f7931e] text-black hover:bg-[#ff8c1a]"
@@ -274,7 +274,7 @@ export default function LandingPage() {
             Start free. No credit card. Full access for 30 days.
           </p>
           <Link
-            href="/dashboard"
+            href="/ronyx"
             className="inline-block px-12 py-6 bg-[#f7931e] text-black font-black text-lg rounded-2xl hover:bg-[#ff8c1a] transition-all shadow-lg shadow-[#f7931e]/30"
           >
             START FREE TRIAL NOW →
