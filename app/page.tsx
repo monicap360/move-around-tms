@@ -887,6 +887,9 @@ export default function LandingPage() {
             <a href="#pits" className="nav-link" onClick={() => setMenuOpen(false)}>
               Pits & Quarries
             </a>
+            <a href="#dump-truck" className="nav-link" onClick={() => setMenuOpen(false)}>
+              Dump Truck Fleets
+            </a>
             <a href="#modules" className="nav-link" onClick={() => setMenuOpen(false)}>
               Modules
             </a>
@@ -902,6 +905,32 @@ export default function LandingPage() {
           </div>
         </div>
       </nav>
+
+      <section style={{ paddingTop: 120, paddingBottom: 40 }}>
+        <div className="container">
+          <div className="reporting-card" style={{ textAlign: "center" }}>
+            <h3 style={{ marginBottom: 8 }}>Choose Your Path</h3>
+            <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.95rem" }}>
+              We serve two distinct operations with dedicated workflows.
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: 16,
+                marginTop: 20,
+              }}
+            >
+              <a href="#pits" className="btn btn-primary" style={{ width: "100%" }}>
+                I haul Aggregates / Run a Quarry
+              </a>
+              <a href="#solutions" className="btn btn-secondary" style={{ width: "100%" }}>
+                I run General Freight / Trucking
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="hero" id="performance">
         <div className="container hero-container">
@@ -1361,6 +1390,112 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="dump-truck" className="reporting-features">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              For Dump Truck Fleets:{" "}
+              <span className="speed-gradient">Turn More Trips Into More Profit</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              A TMS built for the unique chaos of dump trucking—connecting pits, jobsites, and load boards.
+            </p>
+          </div>
+
+          <div className="benefits-grid">
+            {[
+              {
+                icon: "fa-route",
+                title: "Deadhead & Empty Miles",
+                desc: "Load‑to‑Dump Sequencing finds backhauls and minimizes empty return trips.",
+                solution: "Route Optimization + TMS Platform",
+              },
+              {
+                icon: "fa-list-check",
+                title: "Spot Market Loads",
+                desc: "Backhaul Board surfaces nearby loads without switching apps.",
+                solution: "Backhaul Board + Dispatch (coming soon)",
+              },
+              {
+                icon: "fa-file-invoice-dollar",
+                title: "Disputed Invoicing",
+                desc: "Auto‑invoicing from scale tickets, signed slips, and driver logs.",
+                solution: "Revenue Shield + TicketFlash + DocPulse",
+              },
+              {
+                icon: "fa-location-dot",
+                title: "Driver & Asset Downtime",
+                desc: "Live Pit‑to‑Dump visibility with statuses: Loaded, Empty, In Queue, At Site.",
+                solution: "Live TMS Tracking",
+              },
+              {
+                icon: "fa-screwdriver-wrench",
+                title: "Maintenance Surprises",
+                desc: "Track cost‑per‑ton and truck health to spot money‑losing assets early.",
+                solution: "Operational Efficiency Reporting",
+              },
+              {
+                icon: "fa-chart-line",
+                title: "Daily Profit Cycle",
+                desc: "Find & Dispatch → Haul & Track → Verify & Bill → Analyze & Grow.",
+                solution: "VeriFlow + TicketFlash + AccuriScale",
+              },
+            ].map((item) => (
+              <div className="benefit-card" key={item.title}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(255, 215, 0, 0.1)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 25px",
+                    border: "2px solid rgba(255, 215, 0, 0.3)",
+                  }}
+                >
+                  <i className={`fas ${item.icon}`} style={{ fontSize: 24, color: "var(--hyper-yellow)" }}></i>
+                </div>
+                <h3>{item.title}</h3>
+                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                  {item.desc}
+                </p>
+                <p style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>
+                  <strong>Solution:</strong> {item.solution}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 50 }}>
+            <div
+              style={{
+                background: "rgba(0, 255, 157, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 36,
+                border: "1px solid rgba(0, 255, 157, 0.3)",
+                maxWidth: 900,
+                margin: "0 auto",
+              }}
+            >
+              <h3 style={{ color: "var(--success-green)", marginBottom: 10 }}>
+                90‑Day Profitability Boost
+              </h3>
+              <p style={{ color: "rgba(255, 255, 255, 0.85)", fontSize: "0.95rem" }}>
+                We’ll help you reduce empty miles by <strong>15%</strong> or the quarter is free.
+              </p>
+              <p style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.9rem" }}>
+                For less than the daily cost of one truck sitting idle, ensure your entire fleet is profitable.
+              </p>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
+                Start Dump Fleet Pilot
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -2027,6 +2162,34 @@ export default function LandingPage() {
               </a>
               <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.85rem", marginTop: 12 }}>
                 Value‑first guarantee designed for 1–2 truck operators and new pits.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 60 }}>
+            <div
+              style={{
+                background: "rgba(255, 40, 0, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 40,
+                border: "1px solid rgba(255, 40, 0, 0.3)",
+                maxWidth: 980,
+                margin: "0 auto",
+              }}
+            >
+              <h3 style={{ color: "var(--performance-red)", marginBottom: 12 }}>
+                The 90‑Day Pit Profit Guarantee
+              </h3>
+              <p style={{ color: "rgba(255, 255, 255, 0.85)", fontSize: "0.95rem" }}>
+                We implement the <strong>VeriFlow Pit‑to‑Pay Suite</strong> in your operation.
+                You pay <strong>$0 for 90 days</strong>. If AccuriScale doesn’t identify at least
+                <strong> 5x its monthly cost</strong> in discrepancies and savings, you owe nothing.
+              </p>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 18 }}>
+                Start the 90‑Day Guarantee
+              </a>
+              <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.85rem", marginTop: 12 }}>
+                Built for pits, quarries, and bulk material haulers who need proof before commitment.
               </p>
             </div>
           </div>
