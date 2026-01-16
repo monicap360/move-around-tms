@@ -93,6 +93,39 @@ async function updateDetentionFromGeofence(
       status: "closed",
     })
     .eq("id", openEvent.id);
+
+  if (geofence.rules?.autoClaim) {
+    const { data: policy } = await supabase
+      .from("detention_policies")
+      .select("free_minutes, rate_per_hour")
+      .eq("organization_id", organizationId)
+      .single();
+
+    const freeMinutes = policy?.free_minutes ?? 60;
+    const ratePerHour = policy?.rate_per_hour ?? 75;
+    const billableMinutes = Math.max(totalMinutes - freeMinutes, 0);
+    const claimAmount = Math.round(((billableMinutes / 60) * ratePerHour) * 100) / 100;
+
+    const { data: existingClaim } = await supabase
+      .from("detention_claims")
+      .select("id")
+      .eq("detention_event_id", openEvent.id)
+      .limit(1)
+      .single();
+
+    if (!existingClaim) {
+      await supabase.from("detention_claims").insert({
+        organization_id: organizationId,
+        detention_event_id: openEvent.id,
+        status: "draft",
+        claimed_minutes: billableMinutes,
+        free_minutes: freeMinutes,
+        rate_per_hour: ratePerHour,
+        claim_amount: claimAmount,
+        currency: "USD",
+      });
+    }
+  }
 }
 
 export async function POST(req: NextRequest) {

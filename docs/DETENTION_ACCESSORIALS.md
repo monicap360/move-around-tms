@@ -32,3 +32,7 @@
 - Storage webhook calls OCR with `kind: "detention"` and stores results in:
   - `detention_events.metadata.detention_ocr`
   - `detention_claims.evidence.detention_ocr`
+
+## Detention Photo Upload
+- UI upload available in `/detention`
+- API endpoint: `POST /api/detention/upload-photo`

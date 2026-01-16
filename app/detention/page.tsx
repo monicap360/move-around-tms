@@ -31,6 +31,9 @@ export default function DetentionPage() {
   const [claims, setClaims] = useState<DetentionClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [claimLoading, setClaimLoading] = useState(true);
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [uploadFiles, setUploadFiles] = useState<Record<string, File | null>>({});
+  const [uploadStatus, setUploadStatus] = useState<Record<string, string>>({});
   const [eventForm, setEventForm] = useState({
     facility_name: "",
     load_reference: "",
@@ -145,6 +148,35 @@ export default function DetentionPage() {
       await loadClaims();
     } catch (error: any) {
       alert(error.message);
+    }
+  }
+
+  async function handleUploadPhoto(eventId: string) {
+    const file = uploadFiles[eventId];
+    if (!file) return;
+    setUploading((prev) => ({ ...prev, [eventId]: true }));
+    setUploadStatus((prev) => ({ ...prev, [eventId]: "Uploading..." }));
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("detention_event_id", eventId);
+      const res = await fetch("/api/detention/upload-photo", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Upload failed");
+      }
+      setUploadStatus((prev) => ({ ...prev, [eventId]: "Uploaded" }));
+      setUploadFiles((prev) => ({ ...prev, [eventId]: null }));
+    } catch (error: any) {
+      setUploadStatus((prev) => ({
+        ...prev,
+        [eventId]: error.message || "Upload failed",
+      }));
+    } finally {
+      setUploading((prev) => ({ ...prev, [eventId]: false }));
     }
   }
 
@@ -299,6 +331,32 @@ export default function DetentionPage() {
                           Departed: {new Date(event.departed_at).toLocaleString()}
                         </div>
                       )}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) =>
+                            setUploadFiles((prev) => ({
+                              ...prev,
+                              [event.id]: e.target.files?.[0] || null,
+                            }))
+                          }
+                          className="text-xs text-text-secondary"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUploadPhoto(event.id)}
+                          disabled={demoMode || uploading[event.id] || !uploadFiles[event.id]}
+                        >
+                          Upload Photo
+                        </Button>
+                        {uploadStatus[event.id] && (
+                          <span className="text-xs text-text-secondary">
+                            {uploadStatus[event.id]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-xs text-text-secondary">
                       {event.total_minutes ? `${event.total_minutes} min` : "Open"}
