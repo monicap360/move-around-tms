@@ -175,7 +175,7 @@ export default function LandingPage() {
                 href="/aggregates/reconciliation"
                 className="px-8 py-4 rounded-full border-2 border-white/20 hover:border-blue-400 bg-white/5 hover:bg-white/10 text-white font-semibold transition-all backdrop-blur-sm"
               >
-                See Reconciliation Demo
+                See Reconciliation Engine
               </Link>
             </div>
 
@@ -344,7 +344,7 @@ export default function LandingPage() {
               href="/tracking"
               className="px-10 py-5 rounded-full border-2 border-white/20 hover:border-blue-400 bg-white/5 hover:bg-white/10 text-white font-semibold text-lg transition-all backdrop-blur-sm"
             >
-              View Live Demo
+              View Live Tracking
             </Link>
           </div>
         </div>
