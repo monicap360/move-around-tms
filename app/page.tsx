@@ -5,6 +5,17 @@ import { useState } from "react";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [roiInputs, setRoiInputs] = useState({
+    loadsPerDay: 40,
+    shortLoadValue: 35,
+    manualHoursPerWeek: 10,
+  });
+
+  const hourlyRate = 30;
+  const annualRecoveredRevenue =
+    roiInputs.loadsPerDay * roiInputs.shortLoadValue * 260;
+  const annualLaborSavings = roiInputs.manualHoursPerWeek * 52 * hourlyRate;
+  const annualTotalSavings = annualRecoveredRevenue + annualLaborSavings;
 
   return (
     <div className="landing-performance">
@@ -862,6 +873,9 @@ export default function LandingPage() {
             <a href="#performance" className="nav-link" onClick={() => setMenuOpen(false)}>
               Performance
             </a>
+            <a href="#pits" className="nav-link" onClick={() => setMenuOpen(false)}>
+              Pits & Quarries
+            </a>
             <a href="#modules" className="nav-link" onClick={() => setMenuOpen(false)}>
               Modules
             </a>
@@ -1262,54 +1276,195 @@ export default function LandingPage() {
         <div className="container">
           <div className="section-header">
             <h2>
-              Pit‑Scale Intelligence:{" "}
-              <span className="speed-gradient">Catch Errors in Seconds</span>
+              For Aggregate & Bulk Material Haulers:{" "}
+              <span className="speed-gradient">Pit‑Scale Intelligence</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              Validate scale tickets, detect anomalies, and protect revenue before invoices go out.
+              Ticket matching, short loads, scale fraud, and production tracking—handled end‑to‑end.
             </p>
           </div>
 
-          <div className="benefits-grid">
-            {[
-              {
-                icon: "fa-scale-balanced",
-                title: "150+ Validation Rules",
-                desc: "Auto-check tons, yards, moisture, fines, and rate tables for every ticket.",
-              },
-              {
-                icon: "fa-triangle-exclamation",
-                title: "Anomaly Detection",
-                desc: "Find outliers and fraud patterns instantly with alerts and audit trails.",
-              },
-              {
-                icon: "fa-file-signature",
-                title: "Evidence Packets",
-                desc: "Generate dispute-ready evidence packets with timestamps and references.",
-              },
-            ].map((item) => (
-              <div className="benefit-card" key={item.title}>
-                <div
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 30 }}>
+            <div className="benefit-card">
+              <h3 style={{ marginBottom: 12 }}>Make Pit‑Scale the Hero</h3>
+              <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
+                <strong>Stop Revenue Leakage:</strong> Automatically flag load weight discrepancies
+                before they become billing disputes.
+              </p>
+              <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
+                <strong>Eliminate Manual Ticket Matching:</strong> Sync scale house data with
+                dispatch tickets in real-time, ending hours of clerical work.
+              </p>
+              <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
+                <strong>Prevent Fraud & Collusion:</strong> AI alerts for suspicious patterns
+                between drivers, loaders, and scale operators.
+              </p>
+            </div>
+            <div className="benefit-card" style={{ textAlign: "left" }}>
+              <h3 style={{ marginBottom: 12 }}>Pit‑to‑Dump Workflow</h3>
+              <ol style={{ paddingLeft: 18, color: "rgba(255, 255, 255, 0.8)", fontSize: "0.95rem" }}>
+                <li style={{ marginBottom: 10 }}>
+                  <strong>Scale Integration:</strong> Weight captured automatically at the pit.
+                </li>
+                <li style={{ marginBottom: 10 }}>
+                  <strong>Ticket Creation:</strong> FastScan OCR generates a digital ticket instantly.
+                </li>
+                <li style={{ marginBottom: 10 }}>
+                  <strong>Dispatch & Tracking:</strong> Load assigned, tracked, and monitored live.
+                </li>
+                <li style={{ marginBottom: 10 }}>
+                  <strong>Delivery Verification:</strong> Destination weight verified; mismatches flagged.
+                </li>
+                <li>
+                  <strong>Automated Billing:</strong> Clean, dispute‑free invoice generated instantly.
+                </li>
+              </ol>
+            </div>
+            <div className="benefit-card">
+              <h3 style={{ marginBottom: 12 }}>Industry Proof</h3>
+              <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
+                “We recovered <strong>$84,000</strong> in missed revenue in the first 90 days.
+                Short loads and scale discrepancies used to slip through every week.”
+              </p>
+              <p style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>
+                — Operations Manager, Mid‑Market Aggregate Hauler
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 60 }} className="reporting-card">
+            <h3 style={{ marginBottom: 12 }}>
+              Aggregate Hauler ROI Calculator
+            </h3>
+            <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+              Estimate your annual recovered revenue from short loads and manual reconciliation.
+              <span style={{ color: "var(--hyper-yellow)" }}> Assumes $30/hr admin cost.</span>
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 16,
+                marginTop: 20,
+              }}
+            >
+              <label>
+                Loads per day
+                <input
+                  type="number"
+                  value={roiInputs.loadsPerDay}
+                  onChange={(e) =>
+                    setRoiInputs((prev) => ({
+                      ...prev,
+                      loadsPerDay: Number(e.target.value || 0),
+                    }))
+                  }
                   style={{
-                    width: 60,
-                    height: 60,
-                    background: "rgba(255, 40, 0, 0.1)",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 25px",
-                    border: "2px solid rgba(255, 40, 0, 0.3)",
+                    marginTop: 6,
+                    width: "100%",
+                    background: "rgba(30,30,30,0.7)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    color: "white",
                   }}
-                >
-                  <i className={`fas ${item.icon}`} style={{ fontSize: 24, color: "var(--performance-red)" }}></i>
+                />
+              </label>
+              <label>
+                Avg. short load value ($)
+                <input
+                  type="number"
+                  value={roiInputs.shortLoadValue}
+                  onChange={(e) =>
+                    setRoiInputs((prev) => ({
+                      ...prev,
+                      shortLoadValue: Number(e.target.value || 0),
+                    }))
+                  }
+                  style={{
+                    marginTop: 6,
+                    width: "100%",
+                    background: "rgba(30,30,30,0.7)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    color: "white",
+                  }}
+                />
+              </label>
+              <label>
+                Manual reconciliation hours/week
+                <input
+                  type="number"
+                  value={roiInputs.manualHoursPerWeek}
+                  onChange={(e) =>
+                    setRoiInputs((prev) => ({
+                      ...prev,
+                      manualHoursPerWeek: Number(e.target.value || 0),
+                    }))
+                  }
+                  style={{
+                    marginTop: 6,
+                    width: "100%",
+                    background: "rgba(30,30,30,0.7)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    color: "white",
+                  }}
+                />
+              </label>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 16,
+                marginTop: 24,
+              }}
+            >
+              <div className="stat-widget">
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
+                  Annual recovered revenue
                 </div>
-                <h3>{item.title}</h3>
-                <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
-                  {item.desc}
-                </p>
+                <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--hyper-yellow)" }}>
+                  ${annualRecoveredRevenue.toLocaleString()}
+                </div>
               </div>
-            ))}
+              <div className="stat-widget">
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
+                  Annual labor savings
+                </div>
+                <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--success-green)" }}>
+                  ${annualLaborSavings.toLocaleString()}
+                </div>
+              </div>
+              <div className="stat-widget">
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
+                  Total annual impact
+                </div>
+                <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--turbo-blue)" }}>
+                  ${annualTotalSavings.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 50 }} className="reporting-card">
+            <h3 style={{ marginBottom: 12 }}>Scale System Compatibility</h3>
+            <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
+              Works with leading scale house software and hardware. We can integrate with
+              common CSV exports and API feeds.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+              {["ScaleSoft Pro", "WeighMaster", "QuarryTrack", "TicketPro", "Custom CSV Exports", "API Feeds"].map(
+                (item) => (
+                  <div key={item} className="stat-widget" style={{ padding: "14px 16px" }}>
+                    <span style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.8)" }}>{item}</span>
+                  </div>
+                )
+              )}
+            </div>
           </div>
         </div>
       </section>
