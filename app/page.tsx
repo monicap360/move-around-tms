@@ -1110,6 +1110,19 @@ export default function LandingPage() {
                 target: "Companies losing revenue to missed accessorials",
               },
               {
+                icon: "fa-file-excel",
+                price: "Sell Separately: $699/month",
+                title: "Excel & Plant Invoice Reconciliation",
+                desc: "Upload Excel tickets and auto-reconcile against CSV invoices from material plants.",
+                features: [
+                  "Excel import with schema detection",
+                  "Auto error scanning and variance flags",
+                  "CSV invoice matching by load, date, and tonnage",
+                  "Exception queue with audit trail",
+                ],
+                target: "Aggregate and materials haulers reconciling plant invoices",
+              },
+              {
                 icon: "fa-globe",
                 price: "Sell Separately: $399/month",
                 title: "Cross-Border Mexico",
