@@ -5,6 +5,7 @@ import { useState } from "react";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedDemo, setSelectedDemo] = useState("all");
   const [roiInputs, setRoiInputs] = useState({
     loadsPerDay: 45,
     avgValuePerLoad: 420,
@@ -1495,6 +1496,180 @@ export default function LandingPage() {
               <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
                 Start Dump Fleet Pilot
               </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo" className="reporting-features">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Don’t Watch a Generic Demo.{" "}
+              <span className="speed-gradient">Experience Yours.</span>
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Select your biggest profit leak and jump to the exact solution.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            {[
+              { id: "deadhead", label: "Empty Miles / Deadhead", target: "#demo-deadhead" },
+              { id: "billing", label: "Invoice Disputes & Late Payments", target: "#demo-billing" },
+              { id: "dispatch", label: "Dispatch Chaos & Unknown Status", target: "#demo-dispatch" },
+              { id: "all", label: "All of the Above", target: "#demo-cycle" },
+            ].map((option) => (
+              <button
+                key={option.id}
+                onClick={() => {
+                  setSelectedDemo(option.id);
+                  const el = document.querySelector(option.target);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                className="btn btn-secondary"
+                style={{
+                  width: "100%",
+                  borderColor: selectedDemo === option.id ? "var(--hyper-yellow)" : "rgba(255,215,0,0.3)",
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 40, display: "grid", gap: 24 }}>
+            <div id="demo-deadhead" className="reporting-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                <h3>Module A: Plug the Empty Miles Leak</h3>
+                <span style={{ color: "var(--hyper-yellow)", fontWeight: 700 }}>
+                  Smart Route & Load Optimization
+                </span>
+              </div>
+              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+                Video: How to Turn Deadhead into Paid Backhauls (60–90s).
+              </p>
+              <div
+                style={{
+                  background: "rgba(30,30,30,0.6)",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,215,0,0.2)",
+                  padding: 24,
+                }}
+              >
+                <p style={{ marginBottom: 10 }}>
+                  <strong>Scene 1:</strong> Truck #101 finishes a dump run and returns empty.
+                  “This 38‑mile deadhead just cost you $120.”
+                </p>
+                <p style={{ marginBottom: 10 }}>
+                  <strong>Scene 2:</strong> Backhaul Alert surfaces a 22‑ton load 2 miles away.
+                </p>
+                <p>
+                  <strong>Scene 3:</strong> Dispatcher assigns the load. “In 10 seconds, a cost becomes profit.”
+                </p>
+              </div>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
+                Book My Demo to Calculate Deadhead Savings
+              </a>
+            </div>
+
+            <div id="demo-billing" className="reporting-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                <h3>Module B: Plug the Billing Leaks</h3>
+                <span style={{ color: "var(--hyper-yellow)", fontWeight: 700 }}>
+                  TicketFlash + Revenue Shield
+                </span>
+              </div>
+              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+                Video: From Scale Ticket to Paid Invoice, Automatically (60–90s).
+              </p>
+              <div
+                style={{
+                  background: "rgba(30,30,30,0.6)",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,215,0,0.2)",
+                  padding: 24,
+                }}
+              >
+                <p style={{ marginBottom: 10 }}>
+                  <strong>Scene 1:</strong> Pile of tickets, disputed invoice.
+                </p>
+                <p style={{ marginBottom: 10 }}>
+                  <strong>Scene 2:</strong> TicketFlash digitizes ticket; Revenue Shield flags a 1.5‑ton discrepancy.
+                </p>
+                <p>
+                  <strong>Scene 3:</strong> Clean invoice sent with evidence. “Paid 14 days faster.”
+                </p>
+              </div>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
+                Book My Demo to Stop Billing Disputes
+              </a>
+            </div>
+
+            <div id="demo-dispatch" className="reporting-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+                <h3>Module C: Eliminate Dispatch Chaos</h3>
+                <span style={{ color: "var(--hyper-yellow)", fontWeight: 700 }}>
+                  Live Fleet Command
+                </span>
+              </div>
+              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+                Video: Your Entire Fleet on One Screen, in Real‑Time (60–90s).
+              </p>
+              <div
+                style={{
+                  background: "rgba(30,30,30,0.6)",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,215,0,0.2)",
+                  padding: 24,
+                }}
+              >
+                <p style={{ marginBottom: 10 }}>
+                  <strong>Scene 1:</strong> Dispatcher buried in check‑calls and spreadsheets.
+                </p>
+                <p style={{ marginBottom: 10 }}>
+                  <strong>Scene 2:</strong> Live map shows status: Loaded, Empty, At Site.
+                </p>
+                <p>
+                  <strong>Scene 3:</strong> In‑app messaging replaces chaos with control.
+                </p>
+              </div>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
+                Book My Demo to See Live Fleet Control
+              </a>
+            </div>
+
+            <div id="demo-cycle" className="reporting-card">
+              <h3>Unified Vision: The Daily Profit Cycle</h3>
+              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+                30‑second overview: dispatch → backhaul → ticket scan → invoice → profit dashboard.
+              </p>
+              <div
+                style={{
+                  background: "rgba(30,30,30,0.6)",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,215,0,0.2)",
+                  padding: 24,
+                }}
+              >
+                <p style={{ marginBottom: 10 }}>
+                  “It’s the brain our operation was missing. We’re billing more, arguing less, and our
+                  trucks are never empty.”
+                </p>
+                <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)" }}>
+                  — Dump Truck Fleet Owner
+                </p>
+              </div>
+              <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <a href="mailto:sales@movearoundtms.com" className="btn btn-primary">
+                  Book My Personalized Profit Demo
+                </a>
+                <a href="mailto:sales@movearoundtms.com" className="btn btn-secondary">
+                  Download Profit Leak Calculator
+                </a>
+              </div>
             </div>
           </div>
         </div>
