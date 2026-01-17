@@ -185,7 +185,15 @@ export default function RonyxDashboard() {
           </nav>
 
           <div className="ronyx-support">
-            Support: support@movearoundtms.com
+            <div>Support: support@movearoundtms.com</div>
+            <div style={{ marginTop: 8, display: "flex", gap: 12 }}>
+              <Link href="/ronyx/terms" style={{ color: "var(--ronyx-accent)" }}>
+                Terms
+              </Link>
+              <Link href="/ronyx/privacy" style={{ color: "var(--ronyx-accent)" }}>
+                Privacy
+              </Link>
+            </div>
           </div>
         </aside>
 

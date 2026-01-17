@@ -2817,6 +2817,12 @@ export default function LandingPage() {
                 <li style={{ marginTop: 15 }}>
                   <a href="#audit-shield" className="nav-link">Audit Shield</a>
                 </li>
+                <li style={{ marginTop: 15 }}>
+                  <Link href="/terms" prefetch={false} className="nav-link">Terms</Link>
+                </li>
+                <li style={{ marginTop: 10 }}>
+                  <Link href="/privacy" prefetch={false} className="nav-link">Privacy</Link>
+                </li>
               </ul>
             </div>
 

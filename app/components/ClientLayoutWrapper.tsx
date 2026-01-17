@@ -138,7 +138,9 @@ export default function ClientLayoutWrapper({
     pathname === "/integrations" ||
     pathname?.startsWith("/for-shippers") ||
     pathname?.startsWith("/roadmap") ||
-    pathname?.startsWith("/audit-support-for-trucking-companies");
+    pathname?.startsWith("/audit-support-for-trucking-companies") ||
+    pathname?.startsWith("/terms") ||
+    pathname?.startsWith("/privacy");
 
   // Debug: Uncomment these lines to debug layout rendering
   // console.log('ClientLayoutWrapper - pathname:', pathname);
