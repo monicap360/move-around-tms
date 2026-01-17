@@ -2810,6 +2810,76 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="switch-benefits" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              Module 1: Excel‑to‑Ticket Reconciliation{" "}
+              <span className="speed-gradient">Validation Checklist</span>
+            </h2>
+            <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>
+              Objective: verify the workflow is complete, connected, and automated.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {[
+              {
+                title: "What to Ask",
+                points: [
+                  "“Show me the column mapping setup.”",
+                  "“What happens if my Excel has a blank cell or typo?”",
+                  "“After import, where do the tickets go?”",
+                ],
+              },
+              {
+                title: "What to Demand to See",
+                points: [
+                  "Drag/drop header mapping into Ronyx fields.",
+                  "An Import Exceptions report listing bad rows.",
+                  "Tickets in Live Loads/Dispatch with “Ready” status.",
+                ],
+              },
+              {
+                title: "Red Flags",
+                points: [
+                  "“We’ll handle the setup for you.”",
+                  "Silent failures or bad tickets created.",
+                  "Tickets stuck in an imports screen only.",
+                ],
+              },
+            ].map((column) => (
+              <div key={column.title} className="benefit-card" style={{ textAlign: "left" }}>
+                <h3 style={{ marginBottom: 8 }}>{column.title}</h3>
+                <ul style={{ margin: 0, paddingLeft: 18, color: "rgba(255,255,255,0.8)" }}>
+                  {column.points.map((point) => (
+                    <li key={point} style={{ marginBottom: 8 }}>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <div
+              style={{
+                background: "rgba(0, 180, 255, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 24,
+                border: "1px solid rgba(0, 180, 255, 0.3)",
+                maxWidth: 920,
+                margin: "0 auto",
+              }}
+            >
+              <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
+                Live test: “Use my Excel from last Tuesday. Map the columns, create tickets, and show one on the
+                dispatch board.”
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="demo" className="switch-benefits">
         <div className="container">
           <div className="section-header" style={{ textAlign: "center" }}>
