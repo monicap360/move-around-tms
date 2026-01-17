@@ -221,6 +221,8 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
     unit_type: ticketData.unitType ? 0.75 : 0.4,
     ticket_date: ticketData.ticketDate ? 0.75 : 0.4,
     plant: ticketData.plant ? 0.75 : 0.4,
+    truck_identifier: ticketData.truckIdentifier ? 0.7 : 0.4,
+    job_name: ticketData.jobName ? 0.7 : 0.4,
   };
 
   // Match driver
@@ -272,16 +274,22 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
       fleet_id: body.fleetId || null,
       ticket_date: ticketData.ticketDate || new Date().toISOString(),
       status: "Pending Manager Review",
+      recon_status: "ingest_queue",
       ocr_raw_text: rawText,
       ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
       ocr_processed_at: new Date().toISOString(),
       ocr_json: {
-        ticket_number: ticketData.ticketNumber,
-        material: ticketData.material,
-        quantity: ticketData.quantity,
-        unit_type: ticketData.unitType,
-        ticket_date: ticketData.ticketDate,
-        plant: ticketData.plant,
+        extracted_data: {
+          ticket_number: ticketData.ticketNumber,
+          material: ticketData.material,
+          quantity: ticketData.quantity,
+          unit_type: ticketData.unitType,
+          ticket_date: ticketData.ticketDate,
+          plant: ticketData.plant,
+          truck_identifier: ticketData.truckIdentifier,
+          job_name: ticketData.jobName,
+        },
+        confidence_scores: ocrFieldsConfidence,
         raw_text_preview: rawText.slice(0, 5000),
       },
       ocr_fields_confidence: ocrFieldsConfidence,
@@ -357,6 +365,24 @@ function extractTicketData(text: string, partner: Partner | null): any {
     /(?:driver|operator|hauler)\s*:?\s*([a-z]+(?:\s+[a-z]+)*)/i;
   const driverMatch = text.match(driverRegex);
   data.driverName = driverMatch ? driverMatch[1].trim() : null;
+
+  const plantRegex = partner?.regex_patterns?.plant
+    ? new RegExp(partner.regex_patterns.plant, "i")
+    : /(pit|plant|source)\s*:?\s*([^\n]+)/i;
+  const plantMatch = text.match(plantRegex);
+  data.plant = plantMatch ? plantMatch[2]?.trim?.() || plantMatch[1]?.trim?.() : null;
+
+  const truckRegex = partner?.regex_patterns?.truck_identifier
+    ? new RegExp(partner.regex_patterns.truck_identifier, "i")
+    : /(truck|unit|hauler)\s*:?\s*([A-Z0-9\-]+)/i;
+  const truckMatch = text.match(truckRegex);
+  data.truckIdentifier = truckMatch ? truckMatch[2]?.trim?.() : null;
+
+  const jobRegex = partner?.regex_patterns?.job_name
+    ? new RegExp(partner.regex_patterns.job_name, "i")
+    : /(job|site)\s*:?\s*([^\n]+)/i;
+  const jobMatch = text.match(jobRegex);
+  data.jobName = jobMatch ? jobMatch[2]?.trim?.() : null;
 
   return data;
 }
