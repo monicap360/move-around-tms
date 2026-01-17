@@ -5,15 +5,24 @@ import Link from "next/link";
 const navItems = [
   { label: "Overview", href: "/ronyx" },
   { label: "Dispatch", href: "/ronyx/dispatch" },
+  { label: "Customer Requests", href: "/ronyx/customer-requests" },
   { label: "Loads", href: "/ronyx/loads" },
   { label: "Tickets", href: "/ronyx/tickets" },
   { label: "Aggregates", href: "/ronyx/aggregates" },
+  { label: "Workflows", href: "/ronyx/workflows" },
+  { label: "Driver App", href: "/ronyx/driver-app" },
+  { label: "Customer Portal", href: "/ronyx/portal" },
+  { label: "Integrations", href: "/ronyx/integrations" },
+  { label: "Roadmap", href: "/ronyx/roadmap" },
+  { label: "Onboarding & Support", href: "/ronyx/onboarding-support" },
   { label: "HR & TXDOT Compliance", href: "/ronyx/hr-compliance" },
   { label: "Drivers", href: "/ronyx/drivers" },
   { label: "Trucks", href: "/ronyx/trucks" },
   { label: "Maintenance", href: "/ronyx/maintenance" },
   { label: "Billing", href: "/ronyx/billing" },
   { label: "Finance", href: "/ronyx/finance" },
+  { label: "Accounting", href: "/ronyx/accounting" },
+  { label: "Accounts Receivable", href: "/ronyx/accounts-receivable" },
   { label: "Compliance", href: "/ronyx/compliance" },
   { label: "FMCSA", href: "/ronyx/fmcsa" },
   { label: "Reports", href: "/ronyx/reports" },
@@ -22,6 +31,7 @@ const navItems = [
 
 const quickActions = [
   { title: "Create Load", href: "/ronyx/loads" },
+  { title: "New Customer Request", href: "/ronyx/customer-requests" },
   { title: "Assign Driver", href: "/ronyx/drivers" },
   { title: "Open Tickets", href: "/ronyx/tickets" },
 ];
@@ -206,17 +216,17 @@ export default function RonyxDashboard() {
                 Privacy
               </Link>
             </div>
-          </div>
+      </div>
         </aside>
 
         <main className="ronyx-main">
           <div className="ronyx-topbar">
-            <div>
+          <div>
               <h1 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Dump Fleet Command Center</h1>
               <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
                 Live control for pit‑to‑site hauling, backhauls, and ticket accuracy.
-              </p>
-            </div>
+            </p>
+          </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <input type="text" placeholder="Search loads, drivers, tickets..." />
               <span className="ronyx-pill">Shift: Morning</span>
@@ -227,7 +237,7 @@ export default function RonyxDashboard() {
                 Portal Admin
               </Link>
             </div>
-          </div>
+        </div>
 
           <section className="ronyx-grid" style={{ marginBottom: 22 }}>
             {[
@@ -254,7 +264,7 @@ export default function RonyxDashboard() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <h3>Quick Actions</h3>
               <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Dump fleet tools</span>
-            </div>
+              </div>
             <div className="ronyx-grid">
               {quickActions.map((action) => (
                 <Link key={action.title} href={action.href} className="ronyx-row">
@@ -262,6 +272,57 @@ export default function RonyxDashboard() {
                   <span style={{ color: "var(--ronyx-accent)" }}>→</span>
                 </Link>
               ))}
+          </div>
+          </section>
+
+          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h3>SaaS System Layers</h3>
+              <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Create data, not just view it</span>
+            </div>
+            <div className="ronyx-grid">
+              <div className="ronyx-card">
+                <h4 style={{ marginBottom: 8 }}>Input Layers</h4>
+                <p style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
+                  Dispatcher web app + driver mobile input to capture loads, tickets, and GPS.
+                </p>
+                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <Link href="/ronyx/driver-app" className="ronyx-action">
+                    Driver App
+                  </Link>
+                  <Link href="/ronyx/loads" className="ronyx-action">
+                    Dispatch Input
+                  </Link>
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h4 style={{ marginBottom: 8 }}>Workflow Engines</h4>
+                <p style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
+                  Order → Dispatch → Ticket → Invoice automation with approvals and audit trails.
+                </p>
+                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <Link href="/ronyx/workflows" className="ronyx-action">
+                    View Workflows
+                  </Link>
+                  <Link href="/ronyx/tickets" className="ronyx-action">
+                    Tickets
+                  </Link>
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h4 style={{ marginBottom: 8 }}>External Interfaces</h4>
+                <p style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
+                  Customer portal + integrations for shippers, brokers, and accounting tools.
+                </p>
+                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <Link href="/ronyx/portal" className="ronyx-action">
+                    Customer Portal
+                  </Link>
+                  <Link href="/ronyx/integrations" className="ronyx-action">
+                    Integrations
+                  </Link>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -307,12 +368,12 @@ export default function RonyxDashboard() {
                 ].map((alert) => (
                   <div key={alert} className="ronyx-row">
                     {alert}
-                  </div>
-                ))}
-              </div>
             </div>
+                ))}
+          </div>
+        </div>
           </section>
-        </main>
+      </main>
       </div>
     </div>
   );

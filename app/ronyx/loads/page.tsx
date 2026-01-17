@@ -35,6 +35,14 @@ export default function RonyxLoadsPage() {
     }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [newLoad, setNewLoad] = useState({
+    load_number: "",
+    route: "",
+    status: "available",
+    driver_name: "",
+    customer_name: "",
+  });
 
   useEffect(() => {
     void loadLoads();
@@ -68,6 +76,42 @@ export default function RonyxLoadsPage() {
     const target = statusMap[activeTab];
     return target ? load.status === target : true;
   });
+
+  async function createLoad() {
+    try {
+      const res = await fetch("/api/ronyx/loads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newLoad),
+      });
+      const data = await res.json();
+      if (data.load) {
+        setLoads((prev) => [data.load, ...prev]);
+        setNewLoad({ load_number: "", route: "", status: "available", driver_name: "", customer_name: "" });
+      }
+    } catch (err) {
+      console.error("Failed to create load", err);
+    }
+  }
+
+  async function updateLoad(loadId: string, updates: Partial<(typeof loads)[number]>) {
+    setSavingId(loadId);
+    try {
+      const res = await fetch("/api/ronyx/loads", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: loadId, ...updates }),
+      });
+      const data = await res.json();
+      if (data.load) {
+        setLoads((prev) => prev.map((load) => (load.id === loadId ? data.load : load)));
+      }
+    } catch (err) {
+      console.error("Failed to update load", err);
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   return (
     <div className="ronyx-shell">
@@ -129,6 +173,21 @@ export default function RonyxLoadsPage() {
           text-decoration: none;
           font-weight: 600;
           background: rgba(29, 78, 216, 0.08);
+        }
+        .ronyx-input {
+          width: 100%;
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 12px;
+          padding: 10px 12px;
+          color: #0f172a;
+          box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        }
+        .ronyx-input:focus,
+        .ronyx-input:focus-visible {
+          outline: none;
+          border-color: rgba(29, 78, 216, 0.6);
+          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
         }
         .ronyx-tab {
           padding: 8px 14px;
@@ -193,6 +252,58 @@ export default function RonyxLoadsPage() {
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Create Load</h2>
+          <div className="ronyx-grid" style={{ rowGap: 16 }}>
+            <div>
+              <label className="ronyx-label">Load Number</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.load_number}
+                onChange={(e) => setNewLoad({ ...newLoad, load_number: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Route</label>
+              <input className="ronyx-input" value={newLoad.route} onChange={(e) => setNewLoad({ ...newLoad, route: e.target.value })} />
+            </div>
+            <div>
+              <label className="ronyx-label">Status</label>
+              <select
+                className="ronyx-input"
+                value={newLoad.status}
+                onChange={(e) => setNewLoad({ ...newLoad, status: e.target.value })}
+              >
+                <option value="available">Available</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="ronyx-label">Driver</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.driver_name}
+                onChange={(e) => setNewLoad({ ...newLoad, driver_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Customer</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.customer_name}
+                onChange={(e) => setNewLoad({ ...newLoad, customer_name: e.target.value })}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
+              <button className="ronyx-action" onClick={createLoad}>
+                Create Load
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
             <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>{activeTab}</h2>
             <div style={{ display: "flex", gap: 10 }}>
@@ -212,7 +323,7 @@ export default function RonyxLoadsPage() {
             ) : (
               filteredLoads.map((load) => (
                 <div key={load.id || load.load_number} className="ronyx-row">
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700 }}>
                       {load.load_number} • {load.route}
                     </div>
@@ -220,7 +331,41 @@ export default function RonyxLoadsPage() {
                       Driver: {load.driver_name || "Unassigned"} • Customer: {load.customer_name || "—"}
                     </div>
                   </div>
-                  <span className="status good">{load.status}</span>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <select
+                      className="ronyx-input"
+                      style={{ minWidth: 140 }}
+                      value={load.status}
+                      onChange={(e) => {
+                        setLoads((prev) =>
+                          prev.map((item) => (item.id === load.id ? { ...item, status: e.target.value } : item)),
+                        );
+                      }}
+                    >
+                      <option value="available">Available</option>
+                      <option value="active">Active</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                    <input
+                      className="ronyx-input"
+                      style={{ minWidth: 160 }}
+                      value={load.driver_name || ""}
+                      placeholder="Assign driver"
+                      onChange={(e) => {
+                        setLoads((prev) =>
+                          prev.map((item) => (item.id === load.id ? { ...item, driver_name: e.target.value } : item)),
+                        );
+                      }}
+                    />
+                    <button
+                      className="ronyx-action"
+                      onClick={() => load.id && updateLoad(load.id, { status: load.status, driver_name: load.driver_name })}
+                      disabled={savingId === load.id}
+                    >
+                      {savingId === load.id ? "Saving..." : "Save"}
+                    </button>
+                  </div>
                 </div>
               ))
             )}

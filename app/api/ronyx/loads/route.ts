@@ -78,3 +78,26 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ load: data });
 }
+
+export async function PUT(request: Request) {
+  const payload = await request.json();
+  const { id, ...updates } = payload || {};
+
+  if (!id) {
+    return NextResponse.json({ error: "Missing load id" }, { status: 400 });
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("ronyx_loads")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ load: data });
+}

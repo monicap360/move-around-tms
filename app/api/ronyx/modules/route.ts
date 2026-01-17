@@ -13,6 +13,26 @@ const DEFAULT_ROWS: Record<string, { title: string; subtitle: string; status: st
     { title: "LD-5074 • Pit 7 → I‑10", subtitle: "Material: Gravel", status: "In Transit" },
     { title: "LD-5079 • Pit 3 → Loop 610", subtitle: "Material: Sand", status: "Loading" },
   ],
+  workflows: [
+    { title: "Order → Dispatch", subtitle: "Auto-assign trucks by availability", status: "Enabled" },
+    { title: "Dispatch → Ticket", subtitle: "TicketFlash OCR + validation", status: "Enabled" },
+    { title: "Ticket → Invoice", subtitle: "Invoice auto-generated on approval", status: "Enabled" },
+  ],
+  "driver-app": [
+    { title: "Mobile Ticket Upload", subtitle: "Camera + OCR capture", status: "Live" },
+    { title: "Status Updates", subtitle: "Loaded / Empty / At Site", status: "Live" },
+    { title: "GPS Proof", subtitle: "Pickup and dropoff timestamps", status: "Live" },
+  ],
+  portal: [
+    { title: "Live Load Visibility", subtitle: "Customer view of in-progress loads", status: "Ready" },
+    { title: "Digital Tickets", subtitle: "Downloadable POD + ticket images", status: "Ready" },
+    { title: "Statements", subtitle: "Invoice history + balances", status: "Ready" },
+  ],
+  integrations: [
+    { title: "Accounting Sync", subtitle: "QuickBooks / Sage mapping", status: "Planned" },
+    { title: "Telematics", subtitle: "GPS + ELD providers", status: "Ready" },
+    { title: "Scale House", subtitle: "Ticket validation feeds", status: "Ready" },
+  ],
   drivers: [
     { title: "D. Perez", subtitle: "Available • 9.2 hrs on duty", status: "Ready" },
     { title: "S. Grant", subtitle: "On load LD-5084", status: "On Route" },
@@ -42,6 +62,16 @@ const DEFAULT_ROWS: Record<string, { title: string; subtitle: string; status: st
     { title: "Cash Flow Snapshot", subtitle: "14-day outlook", status: "Ready" },
     { title: "Settlement Batch", subtitle: "Week 03 • $48,220", status: "Processing" },
     { title: "Unbilled Revenue", subtitle: "$12,480 pending", status: "Review" },
+  ],
+  accounting: [
+    { title: "General Ledger", subtitle: "Exported to QuickBooks", status: "Ready" },
+    { title: "Journal Entries", subtitle: "12 pending approvals", status: "Review" },
+    { title: "Month-End Close", subtitle: "3 tasks remaining", status: "In Progress" },
+  ],
+  "accounts-receivable": [
+    { title: "Metro Paving", subtitle: "$12,480 • 14 days overdue", status: "Past Due" },
+    { title: "Gulf Aggregate", subtitle: "$8,230 • Due in 7 days", status: "Open" },
+    { title: "City Site", subtitle: "$6,900 • Paid", status: "Cleared" },
   ],
   compliance: [
     { title: "Driver J. Lane", subtitle: "HOS limit approaching", status: "Warning" },

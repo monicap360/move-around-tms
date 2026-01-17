@@ -43,6 +43,58 @@ const sectionConfig: Record<
       { title: "LD-5079 • Pit 3 → Loop 610", subtitle: "Material: Sand", status: "Loading" },
     ],
   },
+  workflows: {
+    label: "Workflows",
+    description: "Automate the order-to-invoice lifecycle with approvals and audit trails.",
+    actions: [
+      { label: "Dispatch", href: "/ronyx/dispatch" },
+      { label: "Tickets", href: "/ronyx/tickets" },
+    ],
+    rows: [
+      { title: "Order → Dispatch", subtitle: "Auto-assign trucks by availability", status: "Enabled" },
+      { title: "Dispatch → Ticket", subtitle: "TicketFlash OCR + validation", status: "Enabled" },
+      { title: "Ticket → Invoice", subtitle: "Invoice auto-generated on approval", status: "Enabled" },
+    ],
+  },
+  "driver-app": {
+    label: "Driver App",
+    description: "Mobile input for drivers to submit tickets, status, and GPS.",
+    actions: [
+      { label: "Tickets", href: "/ronyx/tickets" },
+      { label: "Tracking", href: "/ronyx/tracking" },
+    ],
+    rows: [
+      { title: "Mobile Ticket Upload", subtitle: "Camera + OCR capture", status: "Live" },
+      { title: "Status Updates", subtitle: "Loaded / Empty / At Site", status: "Live" },
+      { title: "GPS Proof", subtitle: "Pickup and dropoff timestamps", status: "Live" },
+    ],
+  },
+  portal: {
+    label: "Customer Portal",
+    description: "External visibility for shippers and job sites.",
+    actions: [
+      { label: "Reports", href: "/ronyx/reports" },
+      { label: "Billing", href: "/ronyx/billing" },
+    ],
+    rows: [
+      { title: "Live Load Visibility", subtitle: "Customer view of in-progress loads", status: "Ready" },
+      { title: "Digital Tickets", subtitle: "Downloadable POD + ticket images", status: "Ready" },
+      { title: "Statements", subtitle: "Invoice history + balances", status: "Ready" },
+    ],
+  },
+  integrations: {
+    label: "Integrations",
+    description: "Connect accounting, telematics, and scale systems.",
+    actions: [
+      { label: "Accounting", href: "/ronyx/billing" },
+      { label: "Tracking", href: "/ronyx/tracking" },
+    ],
+    rows: [
+      { title: "Accounting Sync", subtitle: "QuickBooks / Sage mapping", status: "Planned" },
+      { title: "Telematics", subtitle: "GPS + ELD providers", status: "Ready" },
+      { title: "Scale House", subtitle: "Ticket validation feeds", status: "Ready" },
+    ],
+  },
   drivers: {
     label: "Drivers",
     description: "Availability, compliance, and performance by driver.",
@@ -119,6 +171,32 @@ const sectionConfig: Record<
       { title: "Cash Flow Snapshot", subtitle: "14-day outlook", status: "Ready" },
       { title: "Settlement Batch", subtitle: "Week 03 • $48,220", status: "Processing" },
       { title: "Unbilled Revenue", subtitle: "$12,480 pending", status: "Review" },
+    ],
+  },
+  accounting: {
+    label: "Accounting",
+    description: "General ledger, journal entries, and month-end close.",
+    actions: [
+      { label: "Accounts Receivable", href: "/ronyx/accounts-receivable" },
+      { label: "Reports", href: "/ronyx/reports" },
+    ],
+    rows: [
+      { title: "General Ledger", subtitle: "Exported to QuickBooks", status: "Ready" },
+      { title: "Journal Entries", subtitle: "12 pending approvals", status: "Review" },
+      { title: "Month-End Close", subtitle: "3 tasks remaining", status: "In Progress" },
+    ],
+  },
+  "accounts-receivable": {
+    label: "Accounts Receivable",
+    description: "Open invoices, collections, and customer balances.",
+    actions: [
+      { label: "Billing", href: "/ronyx/billing" },
+      { label: "Finance", href: "/ronyx/finance" },
+    ],
+    rows: [
+      { title: "Metro Paving", subtitle: "$12,480 • 14 days overdue", status: "Past Due" },
+      { title: "Gulf Aggregate", subtitle: "$8,230 • Due in 7 days", status: "Open" },
+      { title: "City Site", subtitle: "$6,900 • Paid", status: "Cleared" },
     ],
   },
   compliance: {
