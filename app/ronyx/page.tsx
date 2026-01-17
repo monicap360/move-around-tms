@@ -31,17 +31,17 @@ export default function RonyxDashboard() {
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
         :root {
-          --ronyx-black: #f3f5f9;
-          --ronyx-carbon: #ffffff;
-          --ronyx-steel: #eef1f6;
-          --ronyx-border: rgba(31, 41, 55, 0.12);
-          --ronyx-accent: #2563eb;
+          --ronyx-black: #e2eaf6;
+          --ronyx-carbon: #f8fafc;
+          --ronyx-steel: #dbe5f1;
+          --ronyx-border: rgba(30, 64, 175, 0.18);
+          --ronyx-accent: #1d4ed8;
           --ronyx-blue: #0ea5e9;
           --ronyx-red: #ef4444;
         }
         .ronyx-shell {
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 55%), var(--ronyx-black);
+          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 55%), var(--ronyx-black);
           color: #0f172a;
         }
         .ronyx-layout {
@@ -50,7 +50,7 @@ export default function RonyxDashboard() {
           min-height: 100vh;
         }
         .ronyx-sidebar {
-          background: var(--ronyx-carbon);
+          background: #f1f5fb;
           border-right: 1px solid var(--ronyx-border);
           display: flex;
           flex-direction: column;
@@ -67,9 +67,10 @@ export default function RonyxDashboard() {
           border-radius: 999px;
           border: 1px solid var(--ronyx-border);
           color: var(--ronyx-accent);
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.14em;
+          background: rgba(29, 78, 216, 0.08);
         }
         .ronyx-nav {
           flex: 1;
@@ -81,22 +82,27 @@ export default function RonyxDashboard() {
         }
         .ronyx-nav a {
           padding: 12px 14px;
-          border-radius: 10px;
-          color: rgba(15, 23, 42, 0.78);
+          border-radius: 12px;
+          color: rgba(15, 23, 42, 0.8);
           text-decoration: none;
-          border: 1px solid transparent;
+          border: 1px solid var(--ronyx-border);
           font-weight: 600;
+          background: rgba(29, 78, 216, 0.06);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+          transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
         }
         .ronyx-nav a:hover {
-          border-color: var(--ronyx-border);
+          border-color: rgba(29, 78, 216, 0.35);
           color: #0f172a;
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(29, 78, 216, 0.14);
+          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+          transform: translateY(-1px);
         }
         .ronyx-support {
           padding: 20px 24px;
           border-top: 1px solid var(--ronyx-border);
           font-size: 0.85rem;
-          color: rgba(15, 23, 42, 0.6);
+          color: rgba(15, 23, 42, 0.65);
         }
         .ronyx-main {
           padding: 28px 32px 40px;
@@ -110,9 +116,9 @@ export default function RonyxDashboard() {
           margin-bottom: 24px;
         }
         .ronyx-topbar input {
-          background: var(--ronyx-steel);
+          background: #ffffff;
           border: 1px solid var(--ronyx-border);
-          border-radius: 10px;
+          border-radius: 12px;
           padding: 10px 14px;
           color: #0f172a;
           width: 280px;
@@ -122,20 +128,21 @@ export default function RonyxDashboard() {
           border-radius: 999px;
           border: 1px solid var(--ronyx-border);
           font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.7);
+          color: rgba(15, 23, 42, 0.75);
+          background: rgba(29, 78, 216, 0.08);
         }
         .ronyx-action {
           padding: 10px 16px;
           border-radius: 999px;
           border: 1px solid var(--ronyx-border);
-          color: #fff;
+          color: #0f172a;
           text-decoration: none;
           font-weight: 600;
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(29, 78, 216, 0.08);
         }
         .ronyx-action.primary {
           background: var(--ronyx-accent);
-          color: #111;
+          color: #fff;
         }
         .ronyx-grid {
           display: grid;
@@ -145,8 +152,9 @@ export default function RonyxDashboard() {
         .ronyx-card {
           background: var(--ronyx-carbon);
           border: 1px solid var(--ronyx-border);
-          border-radius: 14px;
+          border-radius: 16px;
           padding: 18px;
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
         }
         .ronyx-card h3 {
           margin: 0 0 8px;
@@ -161,19 +169,21 @@ export default function RonyxDashboard() {
           justify-content: space-between;
           align-items: center;
           padding: 12px 14px;
-          border-radius: 10px;
-          background: var(--ronyx-steel);
-          border: 1px solid rgba(37, 99, 235, 0.12);
+          border-radius: 12px;
+          background: #ffffff;
+          border: 1px solid rgba(29, 78, 216, 0.16);
         }
       `}</style>
 
       <div className="ronyx-layout">
         <aside className="ronyx-sidebar">
           <div className="ronyx-brand">
-            <div className="ronyx-badge">Ronyx Dump Fleet</div>
-            <h2 style={{ marginTop: 12, fontSize: "1.25rem", fontWeight: 800 }}>RONYX LOGISTICS</h2>
-            <p style={{ color: "rgba(255,255,255,0.6)", marginTop: 6 }}>
-              Dump Truck Operations Command
+            <div className="ronyx-badge">Ronyx Logistics LLC</div>
+            <h2 style={{ marginTop: 12, fontSize: "1.25rem", fontWeight: 800, color: "#0f172a" }}>
+              RONYX LOGISTICS LLC
+            </h2>
+            <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
+              Powered by MoveAround TMS · iGotta Technologies
             </p>
           </div>
 
@@ -202,7 +212,7 @@ export default function RonyxDashboard() {
           <div className="ronyx-topbar">
             <div>
               <h1 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Dump Fleet Command Center</h1>
-              <p style={{ color: "rgba(255,255,255,0.7)", marginTop: 6 }}>
+              <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
                 Live control for pit‑to‑site hauling, backhauls, and ticket accuracy.
               </p>
             </div>
@@ -226,13 +236,13 @@ export default function RonyxDashboard() {
               { label: "On‑Time Rate", value: "97.4%", note: "+1.1% WoW" },
             ].map((stat) => (
               <div key={stat.label} className="ronyx-card">
-                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.75rem", textTransform: "uppercase" }}>
                   {stat.label}
                 </div>
                 <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ronyx-accent)", marginTop: 6 }}>
                   {stat.value}
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", marginTop: 6 }}>
+                <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem", marginTop: 6 }}>
                   {stat.note}
                 </div>
               </div>
@@ -242,7 +252,7 @@ export default function RonyxDashboard() {
           <section className="ronyx-card" style={{ marginBottom: 22 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <h3>Quick Actions</h3>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>Dump fleet tools</span>
+              <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Dump fleet tools</span>
             </div>
             <div className="ronyx-grid">
               {quickActions.map((action) => (
@@ -271,7 +281,7 @@ export default function RonyxDashboard() {
                   <div key={load.id} className="ronyx-row">
                     <div>
                       <strong>{load.id}</strong> • {load.route}
-                      <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.6)" }}>
+                      <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
                         Driver: {load.driver}
                       </div>
                     </div>

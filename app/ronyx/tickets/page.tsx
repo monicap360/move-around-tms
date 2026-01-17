@@ -314,15 +314,15 @@ export default function RonyxTicketsPage() {
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
         :root {
-          --ronyx-black: #f3f5f9;
-          --ronyx-carbon: #ffffff;
-          --ronyx-steel: #eef1f6;
-          --ronyx-border: rgba(31, 41, 55, 0.12);
-          --ronyx-accent: #2563eb;
+          --ronyx-black: #e2eaf6;
+          --ronyx-carbon: #f8fafc;
+          --ronyx-steel: #dbe5f1;
+          --ronyx-border: rgba(30, 64, 175, 0.18);
+          --ronyx-accent: #1d4ed8;
         }
         .ronyx-shell {
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 55%), var(--ronyx-black);
+          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 55%), var(--ronyx-black);
           color: #0f172a;
           padding: 32px;
         }
@@ -333,8 +333,9 @@ export default function RonyxTicketsPage() {
         .ronyx-card {
           background: var(--ronyx-carbon);
           border: 1px solid var(--ronyx-border);
-          border-radius: 14px;
+          border-radius: 16px;
           padding: 18px;
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
         }
         .ronyx-grid {
           display: grid;
@@ -342,9 +343,9 @@ export default function RonyxTicketsPage() {
           gap: 16px;
         }
         .ronyx-input {
-          background: var(--ronyx-steel);
+          background: #ffffff;
           border: 1px solid var(--ronyx-border);
-          border-radius: 10px;
+          border-radius: 12px;
           padding: 10px 12px;
           color: #0f172a;
           width: 100%;
@@ -357,7 +358,7 @@ export default function RonyxTicketsPage() {
         }
         .ronyx-btn {
           background: var(--ronyx-accent);
-          color: #111;
+          color: #ffffff;
           border-radius: 999px;
           padding: 10px 20px;
           font-weight: 700;
@@ -368,13 +369,14 @@ export default function RonyxTicketsPage() {
           border-radius: 999px;
           border: 1px solid var(--ronyx-border);
           font-size: 0.75rem;
+          background: rgba(29, 78, 216, 0.08);
         }
       `}</style>
 
       <div className="ronyx-container">
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Tickets — Upload & Calculation Management</h1>
-          <p style={{ color: "rgba(255,255,255,0.7)" }}>
+          <p style={{ color: "rgba(15,23,42,0.7)" }}>
             Create, upload, calculate, approve, and reconcile dump fleet tickets.
           </p>
         </div>
@@ -796,13 +798,13 @@ export default function RonyxTicketsPage() {
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Discrepancy Report</h2>
           {discrepancies.length === 0 ? (
-            <p style={{ color: "rgba(255,255,255,0.7)" }}>No discrepancies flagged.</p>
+            <p style={{ color: "rgba(15,23,42,0.7)" }}>No discrepancies flagged.</p>
           ) : (
             <div className="ronyx-grid">
               {discrepancies.map((ticket) => (
                 <div key={ticket.id} className="ronyx-card">
                   <div style={{ fontWeight: 700 }}>{ticket.ticket_number}</div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.7)" }}>{ticket.reason}</div>
+                  <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{ticket.reason}</div>
                 </div>
               ))}
             </div>
@@ -884,7 +886,7 @@ export default function RonyxTicketsPage() {
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
             TicketFlash Reconciliation
           </h2>
-          <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: 12 }}>
+          <p style={{ color: "rgba(15,23,42,0.7)", marginBottom: 12 }}>
             Match tickets, weights, and rates to flag discrepancies automatically.
           </p>
           <div className="ronyx-grid">
@@ -938,7 +940,7 @@ export default function RonyxTicketsPage() {
             <div className="ronyx-card">
               <h3 style={{ marginBottom: 8 }}>Results</h3>
               {reconResults.length === 0 ? (
-                <p style={{ color: "rgba(255,255,255,0.7)" }}>No reconciliation results yet.</p>
+                <p style={{ color: "rgba(15,23,42,0.7)" }}>No reconciliation results yet.</p>
               ) : (
                 reconResults.slice(0, 6).map((result) => (
                   <div key={result.id} className="ronyx-row" style={{ marginBottom: 8 }}>
@@ -951,7 +953,7 @@ export default function RonyxTicketsPage() {
             <div className="ronyx-card">
               <h3 style={{ marginBottom: 8 }}>Exceptions</h3>
               {reconExceptions.length === 0 ? (
-                <p style={{ color: "rgba(255,255,255,0.7)" }}>No exceptions flagged.</p>
+                <p style={{ color: "rgba(15,23,42,0.7)" }}>No exceptions flagged.</p>
               ) : (
                 reconExceptions.slice(0, 6).map((ex) => (
                   <div key={ex.id} className="ronyx-row" style={{ marginBottom: 8 }}>
@@ -969,7 +971,7 @@ export default function RonyxTicketsPage() {
           {loading ? (
             <p>Loading tickets...</p>
           ) : tickets.length === 0 ? (
-            <p style={{ color: "rgba(255,255,255,0.7)" }}>No tickets yet.</p>
+            <p style={{ color: "rgba(15,23,42,0.7)" }}>No tickets yet.</p>
           ) : (
             <div className="ronyx-grid">
               {tickets.slice(0, 12).map((ticket) => (
@@ -978,10 +980,10 @@ export default function RonyxTicketsPage() {
                     <strong>{ticket.ticket_number}</strong>
                     <span className="ronyx-tag">{ticket.status}</span>
                   </div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.7)" }}>
+                  <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>
                     {ticket.driver_name || "Unassigned"} • {ticket.material || "Material"}
                   </div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.7)" }}>
+                  <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>
                     {ticket.delivery_location || "Delivery site"}
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
