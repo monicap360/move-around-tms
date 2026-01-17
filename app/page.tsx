@@ -160,6 +160,37 @@ export default function LandingPage() {
           },
         ];
 
+  const demoFlowSteps =
+    language === "es"
+      ? [
+          {
+            title: "Módulo 1: Excel → Ticket",
+            description: "Sube tu Excel y crea un ticket oficial en minutos.",
+          },
+          {
+            title: "Módulo 2: Ticket de báscula → Reconciliación",
+            description: "Sube la factura del pit y ve el mismatch resaltado.",
+          },
+          {
+            title: "Módulo 3: Ticket aprobado → QuickBooks",
+            description: "El ticket aprobado se exporta directo al payroll.",
+          },
+        ]
+      : [
+          {
+            title: "Module 1: Excel → Ticket",
+            description: "Upload your Excel and see a clean ticket created.",
+          },
+          {
+            title: "Module 2: Pit Invoice → Match",
+            description: "Upload a pit invoice and watch mismatches flag instantly.",
+          },
+          {
+            title: "Module 3: Approved Ticket → QuickBooks",
+            description: "That approved ticket flows into payroll export.",
+          },
+        ];
+
   const hourlyRate = 30;
   const annualRevenue =
     roiInputs.loadsPerDay * roiInputs.avgValuePerLoad * 260;
@@ -2732,6 +2763,48 @@ export default function LandingPage() {
               <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.85rem", marginTop: 12 }}>
                 Built for pits, quarries, and bulk material haulers who need proof before commitment.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="switch-benefits" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              Integrated 3‑Module Demo{" "}
+              <span className="speed-gradient">End‑to‑End Proof</span>
+            </h2>
+            <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>
+              Show the connected story: ingest → reconcile → payroll export.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {demoFlowSteps.map((step) => (
+              <div key={step.title} className="benefit-card" style={{ textAlign: "left" }}>
+                <h3 style={{ marginBottom: 8 }}>{step.title}</h3>
+                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>{step.description}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 30, textAlign: "center" }}>
+            <div
+              style={{
+                background: "rgba(255, 215, 0, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 28,
+                border: "1px solid rgba(255, 215, 0, 0.3)",
+                maxWidth: 920,
+                margin: "0 auto",
+              }}
+            >
+              <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
+                Demo script: “Show me Excel → Ticket, then Pit invoice mismatch, then that approved ticket exported to
+                QuickBooks.”
+              </p>
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
+                Request the 3‑Module Demo
+              </a>
             </div>
           </div>
         </div>

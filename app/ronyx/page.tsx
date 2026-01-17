@@ -8,7 +8,6 @@ const navItems = [
   { label: "Customer Requests", href: "/ronyx/customer-requests" },
   { label: "Loads", href: "/ronyx/loads" },
   { label: "Tickets", href: "/ronyx/tickets" },
-  { label: "Reconciliation Hub", href: "/ronyx/reconciliation" },
   { label: "Aggregates", href: "/ronyx/aggregates" },
   { label: "Workflows", href: "/ronyx/workflows" },
   { label: "Driver App", href: "/ronyx/driver-app" },
