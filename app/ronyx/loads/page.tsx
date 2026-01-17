@@ -29,18 +29,18 @@ export default function RonyxLoadsPage() {
     <div className="ronyx-shell">
       <style jsx global>{`
         :root {
-          --ronyx-black: #f3f5f9;
-          --ronyx-carbon: #ffffff;
-          --ronyx-steel: #eef1f6;
-          --ronyx-border: rgba(31, 41, 55, 0.12);
-          --ronyx-accent: #2563eb;
+          --ronyx-black: #e2eaf6;
+          --ronyx-carbon: #f8fafc;
+          --ronyx-steel: #dbe5f1;
+          --ronyx-border: rgba(30, 64, 175, 0.18);
+          --ronyx-accent: #1d4ed8;
           --ronyx-success: #16a34a;
           --ronyx-warning: #f59e0b;
           --ronyx-danger: #ef4444;
         }
         .ronyx-shell {
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 55%), var(--ronyx-black);
+          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 55%), var(--ronyx-black);
           color: #0f172a;
           padding: 32px;
         }
@@ -51,8 +51,9 @@ export default function RonyxLoadsPage() {
         .ronyx-card {
           background: var(--ronyx-carbon);
           border: 1px solid var(--ronyx-border);
-          border-radius: 14px;
+          border-radius: 16px;
           padding: 18px;
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
         }
         .ronyx-grid {
           display: grid;
@@ -64,16 +65,17 @@ export default function RonyxLoadsPage() {
           border-radius: 999px;
           border: 1px solid var(--ronyx-border);
           font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.7);
+          color: rgba(15, 23, 42, 0.75);
+          background: rgba(29, 78, 216, 0.08);
         }
         .ronyx-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 12px 14px;
-          border-radius: 10px;
-          background: var(--ronyx-steel);
-          border: 1px solid rgba(37, 99, 235, 0.12);
+          border-radius: 12px;
+          background: #ffffff;
+          border: 1px solid rgba(29, 78, 216, 0.16);
         }
         .ronyx-action {
           padding: 8px 14px;
@@ -82,7 +84,7 @@ export default function RonyxLoadsPage() {
           color: #0f172a;
           text-decoration: none;
           font-weight: 600;
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(29, 78, 216, 0.08);
         }
         .ronyx-tab {
           padding: 8px 14px;
@@ -94,9 +96,9 @@ export default function RonyxLoadsPage() {
           cursor: pointer;
         }
         .ronyx-tab.active {
-          background: rgba(37, 99, 235, 0.12);
+          background: rgba(29, 78, 216, 0.14);
           color: #0f172a;
-          border-color: rgba(37, 99, 235, 0.35);
+          border-color: rgba(29, 78, 216, 0.35);
         }
         .status {
           font-size: 0.75rem;
