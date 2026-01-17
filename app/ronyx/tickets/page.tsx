@@ -382,11 +382,16 @@ export default function RonyxTicketsPage() {
       `}</style>
 
       <div className="ronyx-container">
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
           <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Tickets — Upload & Calculation Management</h1>
           <p style={{ color: "rgba(15,23,42,0.7)" }}>
             Create, upload, calculate, approve, and reconcile dump fleet tickets.
           </p>
+          </div>
+          <Link href="/ronyx" className="ronyx-btn" style={{ textDecoration: "none" }}>
+            Back to Dashboard
+          </Link>
         </div>
 
         <section className="ronyx-grid" style={{ marginBottom: 18 }}>

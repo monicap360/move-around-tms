@@ -43,6 +43,7 @@ export default function RonyxLoginPage() {
           <p className="login-tagline">Logins are disabled for demos.</p>
           <div className="space-y-3">
             <Link href="/ronyx">Go to Ronyx Portal</Link>
+            <Link href="/ronyx">Back to Dashboard</Link>
           </div>
         </div>
       </div>
@@ -77,6 +78,9 @@ export default function RonyxLoginPage() {
         </form>
 
         {error && <p className="error-message">{error}</p>}
+        <div className="space-y-3" style={{ marginTop: 12 }}>
+          <Link href="/ronyx">Back to Dashboard</Link>
+        </div>
       </div>
     </div>
   );
