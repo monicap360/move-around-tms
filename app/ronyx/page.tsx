@@ -8,6 +8,7 @@ const navItems = [
   { label: "Loads", href: "/ronyx/loads" },
   { label: "Backhaul Board", href: "/ronyx/backhaul" },
   { label: "Pit Tickets", href: "/ronyx/tickets" },
+  { label: "HR & TXDOT Compliance", href: "/ronyx/hr-compliance" },
   { label: "Drivers", href: "/ronyx/drivers" },
   { label: "Trucks", href: "/ronyx/trucks" },
   { label: "Maintenance", href: "/ronyx/maintenance" },
