@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 function formatDate(value?: string | null) {
   if (!value) return "";
   const date = new Date(value);

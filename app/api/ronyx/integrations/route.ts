@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_INTEGRATIONS = [
   { name: "QuickBooks", category: "Accounting", status: "disconnected", enabled: false },
   { name: "Sage Intacct", category: "Accounting", status: "disconnected", enabled: false },

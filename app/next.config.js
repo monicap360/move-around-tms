@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🏗️ SITEGROUND STATIC EXPORT CONFIGURATION
-  output: "export",
+  // Use standalone output for server runtime
+  output: "standalone",
 
   // Required for static export
   images: {
@@ -10,9 +10,6 @@ const nextConfig = {
 
   // Set base path and asset prefix if needed
   basePath: "",
-
-  // Disable server features for static export
-  trailingSlash: true,
 
   // Ensure trailing slashes for static hosting
   trailingSlash: true,
@@ -32,10 +29,7 @@ const nextConfig = {
     NEXT_PUBLIC_PARTNER_SUBDOMAIN: "movearoundtms.app",
   },
 
-  // Disable server-side features
-  experimental: {
-    serverActions: false,
-  },
+  // Keep server actions enabled for app router APIs
 };
 
 module.exports = nextConfig;
