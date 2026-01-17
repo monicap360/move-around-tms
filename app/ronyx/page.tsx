@@ -22,6 +22,7 @@ const navItems = [
   { label: "Billing", href: "/ronyx/billing" },
   { label: "Finance", href: "/ronyx/finance" },
   { label: "Accounting", href: "/ronyx/accounting" },
+  { label: "Payroll", href: "/ronyx/payroll" },
   { label: "Accounts Receivable", href: "/ronyx/accounts-receivable" },
   { label: "Compliance", href: "/ronyx/compliance" },
   { label: "FMCSA", href: "/ronyx/fmcsa" },
@@ -34,6 +35,7 @@ const quickActions = [
   { title: "New Customer Request", href: "/ronyx/customer-requests" },
   { title: "Assign Driver", href: "/ronyx/drivers" },
   { title: "Open Tickets", href: "/ronyx/tickets" },
+  { title: "Run Payroll", href: "/ronyx/payroll" },
 ];
 
 export default function RonyxDashboard() {

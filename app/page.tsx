@@ -2880,6 +2880,79 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="switch-benefits" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              Module 3: Payroll (Ticket‑to‑Driver){" "}
+              <span className="speed-gradient">Validation Checklist</span>
+            </h2>
+            <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>
+              Objective: confirm payroll is automated, itemized, and exportable to QuickBooks.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {[
+              {
+                title: "What to Ask",
+                points: [
+                  "“Where are driver pay rules set?”",
+                  "“Show me the payroll calculation for Driver D. Perez last week.”",
+                  "“Show me the export to QuickBooks.”",
+                  "“What if I need to correct a ticket after payroll is run?”",
+                ],
+              },
+              {
+                title: "What to Demand to See",
+                points: [
+                  "Driver profile showing pay type and base rate.",
+                  "Itemized pay stub with delivered tickets + deductions.",
+                  "Export button and actual .IIF file (or QBO connect screen).",
+                  "Re‑open pay period / void payroll before export.",
+                ],
+              },
+              {
+                title: "Red Flags",
+                points: [
+                  "Rules only in a spreadsheet‑like table.",
+                  "Single total with no ticket breakdown.",
+                  "Payroll approved but no export proof.",
+                  "“Fix it in QuickBooks manually.”",
+                ],
+              },
+            ].map((column) => (
+              <div key={column.title} className="benefit-card" style={{ textAlign: "left" }}>
+                <h3 style={{ marginBottom: 8 }}>{column.title}</h3>
+                <ul style={{ margin: 0, paddingLeft: 18, color: "rgba(255,255,255,0.8)" }}>
+                  {column.points.map((point) => (
+                    <li key={point} style={{ marginBottom: 8 }}>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <div
+              style={{
+                background: "rgba(255, 40, 0, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 24,
+                border: "1px solid rgba(255, 40, 0, 0.3)",
+                maxWidth: 920,
+                margin: "0 auto",
+              }}
+            >
+              <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
+                Live test: “Show D. Perez’s pay stub for last week, the tickets that make it up, then generate the
+                QuickBooks export file.”
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="demo" className="switch-benefits">
         <div className="container">
           <div className="section-header" style={{ textAlign: "center" }}>
