@@ -25,6 +25,9 @@ type Ticket = {
   net_weight?: number | null;
   customer_name?: string | null;
   delivery_location?: string | null;
+  unit_type?: string | null;
+  status?: string | null;
+  payment_status?: string | null;
 };
 
 type ReconResult = {
@@ -92,6 +95,12 @@ export default function RonyxTicketsPage() {
     odometer: "",
     shift: "",
     work_order_number: "",
+    barcode_scan: "",
+    gps_pickup_time: "",
+    gps_dropoff_time: "",
+    digital_signature: "",
+    auto_invoice: false,
+    email_notifications: false,
     ticket_image_url: "",
     delivery_receipt_url: "",
     pod_url: "",
@@ -184,6 +193,37 @@ export default function RonyxTicketsPage() {
     return { total, paid, pending, revenue };
   }, [tickets]);
 
+  const reportSummary = useMemo(() => {
+    const byPeriod: Record<string, { count: number; revenue: number }> = {};
+    const byMaterial: Record<string, number> = {};
+    const byCustomer: Record<string, number> = {};
+    const byDriver: Record<string, number> = {};
+    const byLoadType: Record<string, number> = {};
+
+    tickets.forEach((t) => {
+      const date = t.ticket_date || "";
+      const monthKey = date ? date.slice(0, 7) : "unknown";
+      const weekKey = date ? `${date.slice(0, 4)}-W${Math.ceil(Number(date.slice(5, 7)) / 2)}` : "unknown";
+      const dayKey = date || "unknown";
+      const qty = Number(t.quantity || 0);
+      const rate = Number(t.bill_rate || 0);
+      const revenue = qty * rate;
+
+      [dayKey, weekKey, monthKey].forEach((key) => {
+        if (!byPeriod[key]) byPeriod[key] = { count: 0, revenue: 0 };
+        byPeriod[key].count += 1;
+        byPeriod[key].revenue += revenue;
+      });
+
+      if (t.material) byMaterial[t.material] = (byMaterial[t.material] || 0) + qty;
+      if (t.customer_name) byCustomer[t.customer_name] = (byCustomer[t.customer_name] || 0) + revenue;
+      if (t.driver_name) byDriver[t.driver_name] = (byDriver[t.driver_name] || 0) + revenue;
+      if (t.unit_type) byLoadType[t.unit_type] = (byLoadType[t.unit_type] || 0) + revenue;
+    });
+
+    return { byPeriod, byMaterial, byCustomer, byDriver, byLoadType };
+  }, [tickets]);
+
   const discrepancies = useMemo(() => {
     return clarifier(tickets);
   }, [tickets]);
@@ -274,16 +314,16 @@ export default function RonyxTicketsPage() {
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
         :root {
-          --ronyx-black: #080808;
-          --ronyx-carbon: #121212;
-          --ronyx-steel: #1e1e1e;
-          --ronyx-border: rgba(255, 215, 0, 0.25);
-          --ronyx-accent: #ffd700;
+          --ronyx-black: #f3f5f9;
+          --ronyx-carbon: #ffffff;
+          --ronyx-steel: #eef1f6;
+          --ronyx-border: rgba(31, 41, 55, 0.12);
+          --ronyx-accent: #2563eb;
         }
         .ronyx-shell {
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(0, 180, 255, 0.08), transparent 55%), var(--ronyx-black);
-          color: #ffffff;
+          background: radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 55%), var(--ronyx-black);
+          color: #0f172a;
           padding: 32px;
         }
         .ronyx-container {
@@ -306,12 +346,12 @@ export default function RonyxTicketsPage() {
           border: 1px solid var(--ronyx-border);
           border-radius: 10px;
           padding: 10px 12px;
-          color: #fff;
+          color: #0f172a;
           width: 100%;
         }
         .ronyx-label {
           font-size: 0.8rem;
-          color: rgba(255, 255, 255, 0.7);
+          color: rgba(15, 23, 42, 0.7);
           margin-bottom: 6px;
           display: inline-block;
         }
@@ -689,6 +729,64 @@ export default function RonyxTicketsPage() {
           </div>
         </section>
 
+        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Optional Features</h2>
+          <div className="ronyx-grid">
+            <div>
+              <label className="ronyx-label">Barcode / QR Scan</label>
+              <input
+                className="ronyx-input"
+                placeholder="Scan code to auto-fill"
+                value={form.barcode_scan}
+                onChange={(e) => setForm({ ...form, barcode_scan: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">GPS Pickup Timestamp</label>
+              <input
+                className="ronyx-input"
+                type="datetime-local"
+                value={form.gps_pickup_time}
+                onChange={(e) => setForm({ ...form, gps_pickup_time: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">GPS Dropoff Timestamp</label>
+              <input
+                className="ronyx-input"
+                type="datetime-local"
+                value={form.gps_dropoff_time}
+                onChange={(e) => setForm({ ...form, gps_dropoff_time: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Digital Signature</label>
+              <input
+                className="ronyx-input"
+                placeholder="Captured signature reference"
+                value={form.digital_signature}
+                onChange={(e) => setForm({ ...form, digital_signature: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Auto-Invoice on Approval</label>
+              <input
+                type="checkbox"
+                checked={form.auto_invoice}
+                onChange={(e) => setForm({ ...form, auto_invoice: e.target.checked })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Email Notifications</label>
+              <input
+                type="checkbox"
+                checked={form.email_notifications}
+                onChange={(e) => setForm({ ...form, email_notifications: e.target.checked })}
+              />
+            </div>
+          </div>
+        </section>
+
         <div style={{ textAlign: "right", marginBottom: 24 }}>
           <button className="ronyx-btn" onClick={handleSubmit} disabled={loading}>
             {loading ? "Saving..." : "Save Ticket"}
@@ -709,6 +807,77 @@ export default function RonyxTicketsPage() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Reports & Calculations</h2>
+          <div className="ronyx-grid">
+            <div className="ronyx-card">
+              <h3>Totals by Day / Week / Month</h3>
+              <div className="ronyx-table">
+                {Object.entries(reportSummary.byPeriod)
+                  .slice(0, 6)
+                  .map(([period, value]) => (
+                    <div key={period} className="ronyx-row">
+                      <span>{period}</span>
+                      <span>${value.revenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="ronyx-card">
+              <h3>Tons/Yards by Material</h3>
+              <div className="ronyx-table">
+                {Object.entries(reportSummary.byMaterial)
+                  .slice(0, 6)
+                  .map(([material, qty]) => (
+                    <div key={material} className="ronyx-row">
+                      <span>{material}</span>
+                      <span>{qty.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="ronyx-card">
+              <h3>Driver Earnings Summary</h3>
+              <div className="ronyx-table">
+                {Object.entries(reportSummary.byDriver)
+                  .slice(0, 6)
+                  .map(([driver, revenue]) => (
+                    <div key={driver} className="ronyx-row">
+                      <span>{driver}</span>
+                      <span>${revenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="ronyx-card">
+              <h3>Revenue by Load Type</h3>
+              <div className="ronyx-table">
+                {Object.entries(reportSummary.byLoadType)
+                  .slice(0, 6)
+                  .map(([unit, revenue]) => (
+                    <div key={unit} className="ronyx-row">
+                      <span>{unit}</span>
+                      <span>${revenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="ronyx-card">
+              <h3>Revenue by Customer</h3>
+              <div className="ronyx-table">
+                {Object.entries(reportSummary.byCustomer)
+                  .slice(0, 6)
+                  .map(([customer, revenue]) => (
+                    <div key={customer} className="ronyx-row">
+                      <span>{customer}</span>
+                      <span>${revenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>

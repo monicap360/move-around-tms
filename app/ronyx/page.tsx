@@ -30,18 +30,18 @@ export default function RonyxDashboard() {
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
         :root {
-          --ronyx-black: #080808;
-          --ronyx-carbon: #121212;
-          --ronyx-steel: #1e1e1e;
-          --ronyx-border: rgba(255, 215, 0, 0.25);
-          --ronyx-accent: #ffd700;
-          --ronyx-blue: #00b4ff;
-          --ronyx-red: #ff2800;
+          --ronyx-black: #f3f5f9;
+          --ronyx-carbon: #ffffff;
+          --ronyx-steel: #eef1f6;
+          --ronyx-border: rgba(31, 41, 55, 0.12);
+          --ronyx-accent: #2563eb;
+          --ronyx-blue: #0ea5e9;
+          --ronyx-red: #ef4444;
         }
         .ronyx-shell {
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(0, 180, 255, 0.08), transparent 55%), var(--ronyx-black);
-          color: #ffffff;
+          background: radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 55%), var(--ronyx-black);
+          color: #0f172a;
         }
         .ronyx-layout {
           display: grid;
@@ -81,21 +81,21 @@ export default function RonyxDashboard() {
         .ronyx-nav a {
           padding: 12px 14px;
           border-radius: 10px;
-          color: rgba(255, 255, 255, 0.75);
+          color: rgba(15, 23, 42, 0.78);
           text-decoration: none;
           border: 1px solid transparent;
           font-weight: 600;
         }
         .ronyx-nav a:hover {
           border-color: var(--ronyx-border);
-          color: #fff;
-          background: rgba(255, 255, 255, 0.03);
+          color: #0f172a;
+          background: rgba(37, 99, 235, 0.08);
         }
         .ronyx-support {
           padding: 20px 24px;
           border-top: 1px solid var(--ronyx-border);
           font-size: 0.85rem;
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(15, 23, 42, 0.6);
         }
         .ronyx-main {
           padding: 28px 32px 40px;
@@ -113,7 +113,7 @@ export default function RonyxDashboard() {
           border: 1px solid var(--ronyx-border);
           border-radius: 10px;
           padding: 10px 14px;
-          color: #fff;
+          color: #0f172a;
           width: 280px;
         }
         .ronyx-pill {
@@ -121,7 +121,7 @@ export default function RonyxDashboard() {
           border-radius: 999px;
           border: 1px solid var(--ronyx-border);
           font-size: 0.8rem;
-          color: rgba(255, 255, 255, 0.75);
+          color: rgba(15, 23, 42, 0.7);
         }
         .ronyx-action {
           padding: 10px 16px;
@@ -162,7 +162,7 @@ export default function RonyxDashboard() {
           padding: 12px 14px;
           border-radius: 10px;
           background: var(--ronyx-steel);
-          border: 1px solid rgba(255, 215, 0, 0.15);
+          border: 1px solid rgba(37, 99, 235, 0.12);
         }
       `}</style>
 
