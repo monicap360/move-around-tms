@@ -55,6 +55,8 @@ export async function POST(request: Request) {
           invoice_number: invoiceNumber,
           customer_name: customer,
           status: "open",
+          payment_status: "unpaid",
+          accounting_status: "not_exported",
           issued_date: new Date().toISOString().slice(0, 10),
           due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
           total_amount: total,
@@ -82,6 +84,29 @@ export async function POST(request: Request) {
   }
 
   const { data, error } = await supabase.from("ronyx_invoices").insert(payload).select("*").single();
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ invoice: data });
+}
+
+export async function PUT(request: Request) {
+  const payload = await request.json();
+  const { id, ...updates } = payload || {};
+
+  if (!id) {
+    return NextResponse.json({ error: "Missing invoice id" }, { status: 400 });
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("ronyx_invoices")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*")
+    .single();
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
