@@ -2952,6 +2952,78 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section id="launch-partner" className="switch-benefits">
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              Become a <span className="speed-gradient">Launch Partner</span>
+            </h2>
+            <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>
+              A low‑risk pilot with real‑world feedback and a locked‑in launch partner rate.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {[
+              {
+                title: "90‑Day Evaluation",
+                points: [
+                  "Discounted or free access during the pilot",
+                  "Weekly feedback loop with dedicated support",
+                  "Focus on Excel → Ticket, Pit Match, Payroll export",
+                ],
+              },
+              {
+                title: "Launch Partner Contract",
+                points: [
+                  "12‑month contract after success metrics hit",
+                  "Launch partner rate at least 30% below public pricing",
+                  "Rate locked for the initial contract term",
+                ],
+              },
+              {
+                title: "Success Metrics",
+                points: [
+                  "Reduce admin time by X hours per week",
+                  "Catch Y% of discrepancies before billing",
+                  "Run a full cycle without manual re‑entry",
+                ],
+              },
+            ].map((column) => (
+              <div key={column.title} className="benefit-card" style={{ textAlign: "left" }}>
+                <h3 style={{ marginBottom: 8 }}>{column.title}</h3>
+                <ul style={{ margin: 0, paddingLeft: 18, color: "rgba(255,255,255,0.8)" }}>
+                  {column.points.map((point) => (
+                    <li key={point} style={{ marginBottom: 8 }}>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <div
+              style={{
+                background: "rgba(0, 255, 157, 0.08)",
+                borderRadius: "var(--radius-smooth)",
+                padding: 24,
+                border: "1px solid rgba(0, 255, 157, 0.3)",
+                maxWidth: 920,
+                margin: "0 auto",
+              }}
+            >
+              <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
+                “I’m willing to be a launch partner. I’ll provide feedback and real‑world usage. In return, I need a
+                90‑day evaluation and a launch partner rate if the system hits our metrics.”
+              </p>
+              <a href="/launch-partner" className="btn btn-primary" style={{ marginTop: 16 }}>
+                Apply to Become a Launch Partner
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="demo" className="switch-benefits">
         <div className="container">
           <div className="section-header" style={{ textAlign: "center" }}>
