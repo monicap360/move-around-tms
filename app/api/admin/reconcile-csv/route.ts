@@ -115,6 +115,17 @@ function findTicketInCsv(ticket: any, csvData: any[]): any | null {
 
   if (match) return match;
 
+  const ticketNumber = normalizeTicket(ticket.ticket_number);
+  if (ticketNumber) {
+    match = csvData.find((row) => {
+      const candidate = normalizeTicket(row.ticket_number || row.TicketNumber || row["Ticket #"]);
+      if (!candidate) return false;
+      return editDistance(ticketNumber, candidate) <= 1;
+    });
+  }
+
+  if (match) return match;
+
   // Try fuzzy match by date + quantity + material
   match = csvData.find((row) => {
     const dateMatch =
@@ -137,6 +148,29 @@ function findTicketInCsv(ticket: any, csvData: any[]): any | null {
   });
 
   return match || null;
+}
+
+function normalizeTicket(value?: string) {
+  if (!value) return "";
+  return String(value).replace(/\s+/g, "").toUpperCase();
+}
+
+function editDistance(a: string, b: string) {
+  if (!a || !b) return Math.max(a.length, b.length);
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      );
+    }
+  }
+  return matrix[a.length][b.length];
 }
 
 // GET endpoint to auto-reconcile all missing tickets

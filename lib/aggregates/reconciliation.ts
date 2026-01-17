@@ -43,7 +43,7 @@ export async function runAggregateReconciliation(config: AggregateReconciliation
 
   const runId = runInsert.data.id;
 
-  const [ticketsRes, labsRes, proofsRes, invoicesRes] = await Promise.all([
+  const [ticketsRes, labsRes, proofsRes, invoicesRes, partnersRes] = await Promise.all([
     supabase
       .from("aggregate_tickets")
       .select("*")
@@ -60,12 +60,24 @@ export async function runAggregateReconciliation(config: AggregateReconciliation
       .from("invoices")
       .select("*")
       .eq("organization_id", config.organizationId),
+    supabase.from("aggregate_partners").select("id, trust_level, tolerance_multiplier"),
   ]);
 
   const tickets = ticketsRes.data || [];
   const labResults = labsRes.data || [];
   const deliveryProofs = proofsRes.data || [];
   const invoices = invoicesRes.data || [];
+  const partners = partnersRes.data || [];
+
+  const partnerMap = new Map<string, { trust_level?: string | null; tolerance_multiplier?: number | null }>();
+  partners.forEach((partner) => {
+    if (partner.id) {
+      partnerMap.set(partner.id, {
+        trust_level: partner.trust_level,
+        tolerance_multiplier: partner.tolerance_multiplier,
+      });
+    }
+  });
 
   const inputCounts = {
     tickets: tickets.length,
@@ -103,35 +115,42 @@ export async function runAggregateReconciliation(config: AggregateReconciliation
       ? deliveryByTicket.get(ticket.ticket_number)
       : null;
 
+    const partner = ticket.partner_id ? partnerMap.get(ticket.partner_id) : null;
+    const multiplier = Number(partner?.tolerance_multiplier || 1);
+    const scaleTolerance = config.scaleTolerancePct * multiplier;
+    const moistureTolerance = config.moistureTolerancePct * multiplier;
+    const finesTolerance = config.finesTolerancePct * multiplier;
+    const priceTolerance = config.priceVariancePct * multiplier;
+
     const quantityVariance = percentVariance(
       ticket.net_weight || ticket.quantity,
       ticket.quantity,
     );
-    if (quantityVariance !== null && quantityVariance > config.scaleTolerancePct) {
+    if (quantityVariance !== null && quantityVariance > scaleTolerance) {
       exceptions.push({
         type: "weight_mismatch",
-        severity: quantityVariance > 5 ? "high" : "medium",
-        explanation: `Scale variance ${quantityVariance.toFixed(2)}% exceeds tolerance.`,
+        severity: quantityVariance > scaleTolerance * 2 ? "high" : "medium",
+        explanation: `Scale variance ${quantityVariance.toFixed(2)}% exceeds tolerance (${scaleTolerance.toFixed(2)}%).`,
       });
     }
 
     if (lab?.moisture_pct !== null && lab?.moisture_pct !== undefined) {
       const moistureVariance = Math.abs(lab.moisture_pct - (ticket.moisture_pct || 0));
-      if (moistureVariance > config.moistureTolerancePct) {
+      if (moistureVariance > moistureTolerance) {
         exceptions.push({
           type: "moisture_variance",
-          severity: moistureVariance > 2 ? "high" : "medium",
-          explanation: `Moisture variance ${moistureVariance.toFixed(2)}% exceeds tolerance.`,
+          severity: moistureVariance > moistureTolerance * 2 ? "high" : "medium",
+          explanation: `Moisture variance ${moistureVariance.toFixed(2)}% exceeds tolerance (${moistureTolerance.toFixed(2)}%).`,
         });
       }
     }
 
     if (lab?.fines_pct !== null && lab?.fines_pct !== undefined) {
-      if (lab.fines_pct > config.finesTolerancePct) {
+      if (lab.fines_pct > finesTolerance) {
         exceptions.push({
           type: "quality_variance",
           severity: "high",
-          explanation: `Fines content ${lab.fines_pct.toFixed(2)}% exceeds tolerance.`,
+          explanation: `Fines content ${lab.fines_pct.toFixed(2)}% exceeds tolerance (${finesTolerance.toFixed(2)}%).`,
         });
       }
     }
@@ -160,13 +179,13 @@ export async function runAggregateReconciliation(config: AggregateReconciliation
 
     if (invoice) {
       const priceVariance = percentVariance(invoice.total, ticket.total_bill);
-      if (priceVariance !== null && priceVariance > config.priceVariancePct) {
+      if (priceVariance !== null && priceVariance > priceTolerance) {
         exceptions.push({
           type: "price_variance",
-          severity: priceVariance > 10 ? "high" : "medium",
+          severity: priceVariance > priceTolerance * 2 ? "high" : "medium",
           explanation: `Invoice price variance ${priceVariance.toFixed(
             2,
-          )}% exceeds tolerance.`,
+          )}% exceeds tolerance (${priceTolerance.toFixed(2)}%).`,
         });
       }
     }

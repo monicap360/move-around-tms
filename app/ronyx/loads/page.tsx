@@ -23,6 +23,7 @@ const detailTabs = [
 
 type CustomerOption = { id: string; customer_name: string };
 type TruckOption = { id: string; truck_number: string };
+type DriverOption = { id: string; name: string };
 
 type Load = {
   id?: string;
@@ -54,6 +55,7 @@ export default function RonyxLoadsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [trucks, setTrucks] = useState<TruckOption[]>([]);
+  const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [newLoad, setNewLoad] = useState({
     load_number: "",
     route: "",
@@ -71,6 +73,13 @@ export default function RonyxLoadsPage() {
     truck_number: "",
     status_notes: "",
   });
+  const [assignment, setAssignment] = useState({
+    load_id: "",
+    driver_name: "",
+    truck_number: "",
+    status_notes: "",
+  });
+  const [assignmentMessage, setAssignmentMessage] = useState("");
 
   const alerts = useMemo(() => {
     const now = Date.now();
@@ -84,10 +93,38 @@ export default function RonyxLoadsPage() {
       .filter((entry) => entry.hours >= 2);
   }, [loads]);
 
+  const availableLoads = useMemo(() => loads.filter((load) => load.status === "available"), [loads]);
+
+  async function assignLoad() {
+    if (!assignment.load_id) {
+      setAssignmentMessage("Select a load to assign.");
+      return;
+    }
+    if (!assignment.driver_name) {
+      setAssignmentMessage("Select a driver.");
+      return;
+    }
+    setAssignmentMessage("");
+    await updateLoad(assignment.load_id, {
+      status: "active",
+      driver_name: assignment.driver_name,
+      truck_number: assignment.truck_number || null,
+      status_notes: assignment.status_notes || null,
+    });
+    setAssignment({
+      load_id: "",
+      driver_name: "",
+      truck_number: "",
+      status_notes: "",
+    });
+    setAssignmentMessage("Load assigned to driver.");
+  }
+
   useEffect(() => {
     void loadLoads();
     void loadCustomers();
     void loadTrucks();
+    void loadDrivers();
   }, []);
 
   async function loadLoads() {
@@ -123,6 +160,17 @@ export default function RonyxLoadsPage() {
     } catch (err) {
       console.error("Failed to load trucks", err);
       setTrucks([]);
+    }
+  }
+
+  async function loadDrivers() {
+    try {
+      const res = await fetch("/api/ronyx/drivers/list");
+      const data = await res.json();
+      setDrivers(data.drivers || []);
+    } catch (err) {
+      console.error("Failed to load drivers", err);
+      setDrivers([]);
     }
   }
 
@@ -357,6 +405,64 @@ export default function RonyxLoadsPage() {
               </div>
             ))
           )}
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Dispatcher Intake (Assign Load)</h2>
+          <div className="ronyx-grid" style={{ rowGap: 16 }}>
+            <div>
+              <label className="ronyx-label">Available Load</label>
+              <select
+                className="ronyx-input"
+                value={assignment.load_id}
+                onChange={(e) => setAssignment((prev) => ({ ...prev, load_id: e.target.value }))}
+              >
+                <option value="">Select load</option>
+                {availableLoads.map((load) => (
+                  <option key={load.id || load.load_number} value={load.id}>
+                    {load.load_number} • {load.route}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="ronyx-label">Driver</label>
+              <input
+                className="ronyx-input"
+                list="driver-list"
+                value={assignment.driver_name}
+                onChange={(e) => setAssignment((prev) => ({ ...prev, driver_name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Truck</label>
+              <input
+                className="ronyx-input"
+                list="truck-list"
+                value={assignment.truck_number}
+                onChange={(e) => setAssignment((prev) => ({ ...prev, truck_number: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Notes</label>
+              <input
+                className="ronyx-input"
+                value={assignment.status_notes}
+                onChange={(e) => setAssignment((prev) => ({ ...prev, status_notes: e.target.value }))}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+              <button className="ronyx-action" onClick={assignLoad}>
+                Assign & Dispatch
+              </button>
+              {assignmentMessage ? <span style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{assignmentMessage}</span> : null}
+            </div>
+          </div>
+          <datalist id="driver-list">
+            {drivers.map((driver) => (
+              <option key={driver.id} value={driver.name} />
+            ))}
+          </datalist>
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>

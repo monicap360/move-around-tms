@@ -214,6 +214,15 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
   // Extract ticket data
   const ticketData = extractTicketData(rawText, matchedPartner);
 
+  const ocrFieldsConfidence = {
+    ticket_number: ticketData.ticketNumber ? 0.9 : 0.4,
+    material: ticketData.material ? 0.85 : 0.4,
+    quantity: ticketData.quantity ? 0.85 : 0.4,
+    unit_type: ticketData.unitType ? 0.75 : 0.4,
+    ticket_date: ticketData.ticketDate ? 0.75 : 0.4,
+    plant: ticketData.plant ? 0.75 : 0.4,
+  };
+
   // Match driver
   const { data: drivers } = await supabase.from("drivers").select("id, name");
   const matchedDriver = await matchDriverFromOcr(
@@ -266,6 +275,16 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
       ocr_raw_text: rawText,
       ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
       ocr_processed_at: new Date().toISOString(),
+      ocr_json: {
+        ticket_number: ticketData.ticketNumber,
+        material: ticketData.material,
+        quantity: ticketData.quantity,
+        unit_type: ticketData.unitType,
+        ticket_date: ticketData.ticketDate,
+        plant: ticketData.plant,
+        raw_text_preview: rawText.slice(0, 5000),
+      },
+      ocr_fields_confidence: ocrFieldsConfidence,
       image_url: fileUrl || null,
     })
     .select()

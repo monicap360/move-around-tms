@@ -79,6 +79,10 @@ export async function POST(req: Request) {
       updateData.recon_net = Number(updateData.recon_gross) - Number(updateData.recon_tare);
     }
 
+    const updatedFields = Object.keys(updateData).filter(
+      (field) => updateData[field] !== undefined && String(updateData[field] ?? "") !== String(ticket?.[field] ?? ""),
+    );
+
     // Try to update in aggregate_tickets first, then tickets table
     let updateError: any = null;
     const { error: aggregateUpdateError } = await supabase
@@ -103,6 +107,22 @@ export async function POST(req: Request) {
         { error: updateError.message || "Failed to update ticket" },
         { status: 500 },
       );
+    }
+
+    if (updatedFields.length > 0) {
+      const auditRows = updatedFields.map((field) => ({
+        ticket_id: ticketId,
+        action: "reconciled",
+        field_name: field,
+        old_value: ticket?.[field] !== undefined ? String(ticket?.[field]) : null,
+        new_value: updateData?.[field] !== undefined ? String(updateData?.[field]) : null,
+        description: `Reconciliation updated ${field}`,
+        metadata: {
+          matched_by: reconciliationData?.matched_by || null,
+          recon_status: updateData?.recon_status || null,
+        },
+      }));
+      await supabase.from("ticket_audit_log").insert(auditRows);
     }
 
     return NextResponse.json({
