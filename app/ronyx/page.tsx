@@ -146,6 +146,19 @@ export default function RonyxDashboard() {
           font-size: 0.8rem;
           color: rgba(255, 255, 255, 0.75);
         }
+        .ronyx-action {
+          padding: 10px 16px;
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          color: #fff;
+          text-decoration: none;
+          font-weight: 600;
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .ronyx-action.primary {
+          background: var(--ronyx-accent);
+          color: #111;
+        }
         .ronyx-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -210,6 +223,12 @@ export default function RonyxDashboard() {
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <input type="text" placeholder="Search loads, drivers, tickets..." />
               <span className="ronyx-pill">Shift: Morning</span>
+              <Link href="/ronyx/alerts" className="ronyx-action">
+                Notifications
+              </Link>
+              <Link href="/ronyx/settings" className="ronyx-action primary">
+                Portal Admin
+              </Link>
             </div>
           </div>
 
@@ -251,7 +270,12 @@ export default function RonyxDashboard() {
 
           <section className="ronyx-grid">
             <div className="ronyx-card" style={{ gridColumn: "span 2" }}>
-              <h3>Live Loads</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h3>Live Loads</h3>
+                <Link href="/ronyx/loads" className="ronyx-action">
+                  View all
+                </Link>
+              </div>
               <div className="ronyx-table">
                 {[
                   { id: "LD-4021", route: "Pit 7 → I‑45 Jobsite", status: "In Transit", driver: "D. Perez" },
@@ -272,7 +296,12 @@ export default function RonyxDashboard() {
             </div>
 
             <div className="ronyx-card">
-              <h3>Alerts</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h3>Alerts</h3>
+                <Link href="/ronyx/compliance" className="ronyx-action">
+                  Manage
+                </Link>
+              </div>
               <div className="ronyx-table">
                 {[
                   "Truck 18 due for maintenance in 3 days",
