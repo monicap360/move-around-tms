@@ -29,6 +29,10 @@ export default function RonyxDriverAppPage() {
   const [assignedLoads, setAssignedLoads] = useState<AssignedLoad[]>([]);
   const [loadMessage, setLoadMessage] = useState("");
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
+  const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
+  const [showIssuePanel, setShowIssuePanel] = useState(false);
+  const [offlineQueue, setOfflineQueue] = useState<string[]>([]);
+  const [lastSynced, setLastSynced] = useState("2 min ago");
 
   useEffect(() => {
     if (!driverName) {
@@ -44,6 +48,13 @@ export default function RonyxDriverAppPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ driver_name: driverName, status, notes, ticket_id: ticketId || null }),
     });
+  }
+
+  async function handleQuickAction(action: string, load?: AssignedLoad) {
+    setStatus(action);
+    await submitUpdate(load?.ticket_id || null);
+    setLastSynced("Just now");
+    setOfflineQueue((prev) => prev.filter((item) => item !== action));
   }
 
   async function handleTicketUpload(file: File) {
@@ -167,6 +178,12 @@ export default function RonyxDriverAppPage() {
           --ronyx-carbon: #f8fafc;
           --ronyx-border: rgba(30, 64, 175, 0.18);
           --ronyx-accent: #1d4ed8;
+          --primary: #0ea5e9;
+          --danger: #ef4444;
+          --success: #10b981;
+          --warning: #f59e0b;
+          --secondary: #6b7280;
+          --disabled: #374151;
         }
         .ronyx-shell {
           min-height: 100vh;
@@ -223,15 +240,66 @@ export default function RonyxDriverAppPage() {
           color: #ffffff;
           border-color: transparent;
         }
+        .btn-touch-primary,
+        .btn-touch-secondary,
+        .btn-touch-warning,
+        .btn-touch-success {
+          height: 44px;
+          padding: 0 18px;
+          border-radius: 8px;
+          border: none;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        .btn-touch-primary {
+          background: var(--primary);
+          color: #ffffff;
+        }
+        .btn-touch-primary:hover {
+          background: #0c94d1;
+        }
+        .btn-touch-primary:active {
+          background: #0a83b9;
+        }
+        .btn-touch-secondary {
+          background: var(--secondary);
+          color: #ffffff;
+        }
+        .btn-touch-secondary:hover {
+          background: #4b5563;
+        }
+        .btn-touch-secondary:active {
+          background: #374151;
+        }
+        .btn-touch-warning {
+          background: var(--warning);
+          color: #ffffff;
+        }
+        .btn-touch-warning:hover {
+          background: #d97706;
+        }
+        .btn-touch-warning:active {
+          background: #b45309;
+        }
+        .btn-touch-success {
+          background: var(--success);
+          color: #ffffff;
+        }
+        .btn-touch-success:hover {
+          background: #059669;
+        }
+        .btn-touch-success:active {
+          background: #047857;
+        }
       `}</style>
 
       <div className="ronyx-container">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div>
             <p className="ronyx-pill">Driver App</p>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>Driver Status & Ticket Upload</h1>
+            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>Hauler App</h1>
             <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-              Submit status updates, ticket photos, and notes from the field.
+              Simple, fast, offline-first driver workflow for today’s loads.
             </p>
           </div>
           <Link href="/ronyx" className="ronyx-action">
@@ -240,53 +308,178 @@ export default function RonyxDriverAppPage() {
         </div>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Assigned Loads</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4 }}>
+                Hauler App — {driverName || "Driver"} {driverName ? "(Truck #12)" : ""}
+              </h2>
+              <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.6)" }}>
+                Offline queue: {offlineQueue.length} • Last synced: {lastSynced}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="ronyx-action">Start Shift</button>
+              <button className="ronyx-action">Log Fuel</button>
+              <button className="ronyx-action" onClick={() => setShowIssuePanel(true)}>Help</button>
+            </div>
+          </div>
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Today’s Loads</h2>
           {assignedLoads.length === 0 ? (
             <div className="ronyx-row">No assigned loads yet. Enter your name to pull assignments.</div>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
-              {assignedLoads.map((load) => (
+              {assignedLoads.map((load, idx) => (
                 <div key={load.id} className="ronyx-row" style={{ alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700 }}>
-                      {load.load_number} • {load.route}
+                      {idx === 0 ? "▶️ CURRENT LOAD" : "🕐 NEXT"} {load.load_number}
                     </div>
                     <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                      {load.customer_name || "Customer"} • {load.job_site || "Job Site"} • {load.material || "Material"}
+                      {load.customer_name || "Customer"} • {load.material || "Material"} • {load.quantity || "—"} {load.unit_type || ""}
                     </div>
                     <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                      Status: {load.status} • Started: {load.started_at ? new Date(load.started_at).toLocaleString() : "—"} •
-                      Completed: {load.completed_at ? new Date(load.completed_at).toLocaleString() : "—"}
+                      {load.route}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <button
-                      className="ronyx-action"
-                      onClick={() => startLoad(load.id)}
-                      disabled={load.status === "active" || load.status === "completed"}
-                    >
-                      Start Load
+                    <button className="ronyx-action primary" onClick={() => setSelectedLoadId(load.id)}>
+                      Open Load
                     </button>
-                    <label className="ronyx-action" style={{ cursor: "pointer" }}>
-                      Upload Proof
-                      <input
-                        type="file"
-                        style={{ display: "none" }}
-                        onChange={(e) =>
-                          setProofFiles((prev) => ({ ...prev, [load.id]: e.target.files?.[0] || null }))
-                        }
-                      />
-                    </label>
-                    <button className="ronyx-action primary" onClick={() => completeLoad(load)} disabled={load.status === "completed"}>
-                      Complete Load
-                    </button>
+                    <button className="ronyx-action">Call Dispatch</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          {loadMessage ? <div style={{ marginTop: 10, fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{loadMessage}</div> : null}
         </section>
+
+        {selectedLoadId && (
+          <section className="ronyx-card" style={{ marginBottom: 20 }}>
+            {assignedLoads
+              .filter((load) => load.id === selectedLoadId)
+              .map((load) => (
+                <div key={load.id} style={{ display: "grid", gap: 16 }}>
+                  <div style={{ fontWeight: 700 }}>
+                    LOAD {load.load_number} — {load.customer_name || "Customer"}
+                  </div>
+                  <div style={{ fontSize: "0.9rem", color: "rgba(15,23,42,0.7)" }}>
+                    {load.material || "Material"} | {load.route}
+                  </div>
+                  <div>
+                    <div>1. ✅ ACCEPTED</div>
+                    <div>2. 🟡 AT PIT</div>
+                    <div>3. ⬜ EN ROUTE</div>
+                    <div>4. ⬜ ON SITE</div>
+                    <div>5. ⬜ DELIVERED</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button className="btn-touch-primary" onClick={() => handleQuickAction("At Pit", load)}>
+                      I’m at the Pit
+                    </button>
+                    <label className="btn-touch-secondary" style={{ cursor: "pointer" }}>
+                      Add Photo
+                      <input
+                        type="file"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void handleTicketUpload(file);
+                        }}
+                      />
+                    </label>
+                    <button className="btn-touch-warning" onClick={() => setShowIssuePanel(true)}>
+                      Report Issue
+                    </button>
+                    <button className="btn-touch-success" onClick={() => completeLoad(load)}>
+                      Complete Delivery
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="ronyx-action" onClick={() => handleQuickAction("Loading Complete", load)}>
+                      Loading Complete
+                    </button>
+                    <button className="ronyx-action" onClick={() => handleQuickAction("En Route", load)}>
+                      En Route
+                    </button>
+                    <button className="ronyx-action" onClick={() => handleQuickAction("On Site", load)}>
+                      On Site
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </section>
+        )}
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Critical Actions</h2>
+          <div className="ronyx-grid" style={{ rowGap: 16 }}>
+            <div>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>Capture Pit Ticket</div>
+              <label className="ronyx-action" style={{ cursor: "pointer" }}>
+                📷 Open Camera
+                <input
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleTicketUpload(file);
+                  }}
+                />
+              </label>
+              <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)", marginTop: 8 }}>
+                Extracted data: Gross 36.2T | Tare 14.2T | Net 22.0T
+              </div>
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>Confirm Delivery</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="ronyx-action" onClick={() => handleQuickAction("On Site")}>
+                  I’m on Site
+                </button>
+                <label className="ronyx-action" style={{ cursor: "pointer" }}>
+                  📸 Photo of Pile
+                  <input
+                    type="file"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setProofFiles((prev) => ({ ...prev, delivery: file }));
+                    }}
+                  />
+                </label>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <label className="ronyx-label">Customer Name</label>
+                <input className="ronyx-input" value={ticketNumber} onChange={(e) => setTicketNumber(e.target.value)} />
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <label className="ronyx-label">Sign Here</label>
+                <input className="ronyx-input" value={signature} onChange={(e) => setSignature(e.target.value)} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {showIssuePanel && (
+          <section className="ronyx-card" style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Report Issue</h2>
+            <div style={{ display: "grid", gap: 10 }}>
+              {["Site delayed me", "Need fuel advance", "Lost ticket", "Breakdown", "Other"].map((item) => (
+                <button key={item} className="ronyx-action" onClick={() => setNotes(item)}>
+                  {item}
+                </button>
+              ))}
+              <label className="ronyx-label">Add Note</label>
+              <input className="ronyx-input" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <button className="ronyx-action primary" onClick={handleSubmit}>
+                Send to Dispatch
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="ronyx-card">
           <div style={{ display: "grid", gap: 16 }}>

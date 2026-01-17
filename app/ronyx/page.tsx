@@ -52,6 +52,12 @@ export default function RonyxDashboard() {
           --ronyx-accent: #1d4ed8;
           --ronyx-blue: #0ea5e9;
           --ronyx-red: #ef4444;
+          --primary: #0ea5e9;
+          --danger: #ef4444;
+          --success: #10b981;
+          --warning: #f59e0b;
+          --secondary: #6b7280;
+          --disabled: #374151;
         }
         .ronyx-shell {
           min-height: 100vh;
@@ -187,6 +193,112 @@ export default function RonyxDashboard() {
           background: #ffffff;
           border: 1px solid rgba(29, 78, 216, 0.16);
         }
+        .quick-actions-bar {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .btn-primary,
+        .btn-secondary,
+        .btn-success,
+        .btn-warning,
+        .btn-danger {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          border: none;
+          padding: 0 20px;
+          height: 40px;
+          font-weight: 700;
+          text-transform: uppercase;
+          cursor: pointer;
+          text-decoration: none;
+        }
+        .btn-primary {
+          background: var(--primary);
+          color: #ffffff;
+        }
+        .btn-primary:hover {
+          background: #0c94d1;
+        }
+        .btn-primary:active {
+          background: #0a83b9;
+        }
+        .btn-secondary {
+          background: var(--secondary);
+          color: #ffffff;
+        }
+        .btn-secondary:hover {
+          background: #4b5563;
+        }
+        .btn-secondary:active {
+          background: #374151;
+        }
+        .btn-success {
+          background: var(--success);
+          color: #ffffff;
+        }
+        .btn-success:hover {
+          background: #059669;
+        }
+        .btn-success:active {
+          background: #047857;
+        }
+        .btn-warning {
+          background: var(--warning);
+          color: #ffffff;
+        }
+        .btn-warning:hover {
+          background: #d97706;
+        }
+        .btn-warning:active {
+          background: #b45309;
+        }
+        .btn-danger {
+          background: var(--danger);
+          color: #ffffff;
+        }
+        .btn-danger:hover {
+          background: #dc2626;
+        }
+        .btn-danger:active {
+          background: #b91c1c;
+        }
+        .btn-sm {
+          height: 32px;
+          padding: 0 12px;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+        }
+        .status-badge {
+          padding: 4px 12px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 700;
+        }
+        .in-transit {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+        .completed {
+          background: #d1fae5;
+          color: #065f46;
+        }
+        .flagged {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        .alert-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: #fff;
+          border: 1px solid rgba(29, 78, 216, 0.16);
+        }
       `}</style>
 
       <div className="ronyx-layout">
@@ -278,15 +390,13 @@ export default function RonyxDashboard() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <h3>Quick Actions</h3>
               <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Turn goals into tasks</span>
-              </div>
-            <div className="ronyx-grid">
-              {quickActions.map((action) => (
-                <Link key={action.title} href={action.href} className="ronyx-row">
-                  <span>{action.title}</span>
-                  <span style={{ color: "var(--ronyx-accent)" }}>→</span>
-                </Link>
-              ))}
-          </div>
+            </div>
+            <div className="quick-actions-bar">
+              <Link href="/ronyx/loads" className="btn-primary">+ Create Load</Link>
+              <Link href="/ronyx/drivers" className="btn-primary">Assign Driver</Link>
+              <Link href="/ronyx/payroll" className="btn-success">Run Payroll</Link>
+              <Link href="/ronyx/reports" className="btn-secondary">View Reports</Link>
+            </div>
           </section>
 
           <section className="ronyx-card" style={{ marginBottom: 22 }}>
@@ -349,39 +459,28 @@ export default function RonyxDashboard() {
                 </Link>
               </div>
               <div className="ronyx-table">
+                <div className="ronyx-row" style={{ fontWeight: 700 }}>
+                  <span>Load #</span>
+                  <span>Driver</span>
+                  <span>Status</span>
+                  <span>Actions</span>
+                </div>
                 {[
-                  { id: "LD-4021", route: "Dispatch → I‑45 Jobsite", status: "In Transit", driver: "D. Perez" },
-                  { id: "LD-4025", route: "Dispatch → Beltway 8", status: "Loading", driver: "S. Grant" },
-                  { id: "LD-4029", route: "Dispatch → Katy Site", status: "Queued", driver: "J. Lane" },
+                  { id: "LD-4021", status: "IN TRANSIT", driver: "D. Perez" },
+                  { id: "LD-4025", status: "LOADING", driver: "S. Grant" },
+                  { id: "LD-4029", status: "QUEUED", driver: "J. Lane" },
                 ].map((load) => (
                   <div key={load.id} className="ronyx-row">
-                    <div>
-                      <strong>{load.id}</strong> • {load.route}
-                      <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                        Driver: {load.driver}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ color: "var(--ronyx-accent)", fontWeight: 700 }}>{load.status}</span>
-                      {load.status === "In Transit" && (
-                        <>
-                          <Link href="/ronyx/loads" className="ronyx-action">Update to Delivered</Link>
-                          <Link href="/ronyx/driver-app" className="ronyx-action">Contact Driver</Link>
-                        </>
-                      )}
-                      {load.status === "Loading" && (
-                        <>
-                          <Link href="/ronyx/loads" className="ronyx-action">Mark Delayed</Link>
-                          <Link href="/ronyx/loads" className="ronyx-action">Switch Truck</Link>
-                        </>
-                      )}
-                      {load.status === "Queued" && (
-                        <>
-                          <Link href="/ronyx/loads" className="ronyx-action">Priority Up</Link>
-                          <Link href="/ronyx/loads" className="ronyx-action">Cancel Load</Link>
-                        </>
-                      )}
-                    </div>
+                    <span>{load.id}</span>
+                    <span>{load.driver}</span>
+                    <span className={`status-badge ${load.status === "IN TRANSIT" ? "in-transit" : load.status === "LOADING" ? "flagged" : "completed"}`}>
+                      {load.status}
+                    </span>
+                    <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button className="btn-sm btn-secondary">Message</button>
+                      <button className="btn-sm btn-secondary">Update</button>
+                      <button className="btn-sm btn-warning">Flag</button>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -395,41 +494,28 @@ export default function RonyxDashboard() {
                 </Link>
               </div>
               <div className="ronyx-table">
-                {[
-                  {
-                    text: "Truck 18 due for maintenance in 3 days",
-                    actions: [
-                      { label: "Schedule", href: "/ronyx/maintenance" },
-                      { label: "Ignore 1 Week", href: "/ronyx/maintenance" },
-                    ],
-                  },
-                  {
-                    text: "Ticket #T-884 mismatch flagged",
-                    actions: [
-                      { label: "Review", href: "/ronyx/tickets" },
-                    ],
-                  },
-                  {
-                    text: "Load LD-4025 detention timer running",
-                    actions: [
-                      { label: "Notify Driver", href: "/ronyx/driver-app" },
-                      { label: "Contact Site", href: "/ronyx/loads" },
-                      { label: "Add Charge", href: "/ronyx/billing" },
-                    ],
-                  },
-                ].map((alert) => (
-                  <div key={alert.text} className="ronyx-row">
-                    <span>{alert.text}</span>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {alert.actions.map((action) => (
-                        <Link key={action.label} href={action.href} className="ronyx-action">
-                          {action.label}
-                        </Link>
-                      ))}
-                    </div>
+                <div className="alert-bar">
+                  <span>⚠️ Truck 18 due for maintenance in 3 days</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="btn-primary">Schedule Now</button>
+                    <button className="btn-secondary">Dismiss</button>
                   </div>
-                ))}
-          </div>
+                </div>
+                <div className="alert-bar" style={{ marginTop: 10 }}>
+                  <span>⚠️ Ticket #T-884 mismatch flagged</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="btn-primary">Review</button>
+                    <button className="btn-secondary">Dismiss</button>
+                  </div>
+                </div>
+                <div className="alert-bar" style={{ marginTop: 10 }}>
+                  <span>⚠️ Load LD-4025 detention timer running</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="btn-primary">Notify Driver</button>
+                    <button className="btn-secondary">Contact Site</button>
+                  </div>
+                </div>
+              </div>
         </div>
           </section>
       </main>

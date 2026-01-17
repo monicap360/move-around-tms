@@ -62,6 +62,7 @@ export default function RonyxTicketsPage() {
   const [activeTab, setActiveTab] = useState<"manage" | "reconcile">("manage");
   const [showFullForm, setShowFullForm] = useState(false);
   const [showReconConfig, setShowReconConfig] = useState(false);
+  const [inboxFilter, setInboxFilter] = useState<"all" | "pending_upload" | "awaiting" | "flagged" | "approved">("all");
   const [reconRunning, setReconRunning] = useState(false);
   const [reconResults, setReconResults] = useState<ReconResult[]>([]);
   const [reconExceptions, setReconExceptions] = useState<ReconException[]>([]);
@@ -312,6 +313,46 @@ export default function RonyxTicketsPage() {
     return { pendingUpload, awaitingApproval, flagged, approved };
   }, [tickets, reconByTicket]);
 
+  const inboxTickets = useMemo(() => {
+    const base = tickets.map((ticket) => {
+      const reconStatus = reconByTicket.get(ticket.ticket_number || "")?.status?.toLowerCase() || "";
+      const flagged = reconStatus.includes("exception") || reconStatus.includes("variance");
+      const pendingUpload = !ticket.ticket_image_url;
+      const awaitingApproval = ticket.status === "pending";
+      const approved = ticket.status === "approved" || ticket.status === "paid";
+      const priority = flagged ? "red" : pendingUpload || awaitingApproval ? "yellow" : "green";
+      const amount = (Number(ticket.quantity || 0) * Number(ticket.bill_rate || 0)).toFixed(2);
+      const inlineAlert = flagged
+        ? reconStatus.includes("exception")
+          ? "Weight mismatch"
+          : "Variance detected"
+        : pendingUpload
+          ? "Missing POD"
+          : "";
+      const actionLabel = pendingUpload
+        ? "Upload POD"
+        : flagged
+          ? "Review"
+          : awaitingApproval
+            ? "Add Details"
+            : "View";
+      return { ticket, flagged, pendingUpload, awaitingApproval, approved, priority, amount, inlineAlert, actionLabel };
+    });
+
+    switch (inboxFilter) {
+      case "pending_upload":
+        return base.filter((item) => item.pendingUpload);
+      case "awaiting":
+        return base.filter((item) => item.awaitingApproval);
+      case "flagged":
+        return base.filter((item) => item.flagged);
+      case "approved":
+        return base.filter((item) => item.approved);
+      default:
+        return base;
+    }
+  }, [tickets, reconByTicket, inboxFilter]);
+
   async function ensureTicketId() {
     if (ticketId) return ticketId;
     const res = await fetch("/api/ronyx/tickets", {
@@ -443,6 +484,12 @@ export default function RonyxTicketsPage() {
           --ronyx-steel: #dbe5f1;
           --ronyx-border: rgba(30, 64, 175, 0.18);
           --ronyx-accent: #1d4ed8;
+          --primary: #0ea5e9;
+          --danger: #ef4444;
+          --success: #10b981;
+          --warning: #f59e0b;
+          --secondary: #6b7280;
+          --disabled: #374151;
         }
         .ronyx-shell {
           min-height: 100vh;
@@ -503,41 +550,342 @@ export default function RonyxTicketsPage() {
           font-size: 0.75rem;
           background: rgba(29, 78, 216, 0.08);
         }
+        .ronyx-tab {
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          background: rgba(29, 78, 216, 0.06);
+          padding: 8px 16px;
+          font-weight: 600;
+        }
+        .ronyx-tab.active {
+          background: var(--ronyx-accent);
+          color: #fff;
+        }
+        .ronyx-muted {
+          color: rgba(15, 23, 42, 0.7);
+          font-size: 0.9rem;
+        }
+        .btn-primary,
+        .btn-secondary,
+        .btn-success,
+        .btn-warning,
+        .btn-danger {
+          border-radius: 6px;
+          border: none;
+          padding: 0 20px;
+          height: 40px;
+          font-weight: 700;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .btn-primary {
+          background: var(--primary);
+          color: #ffffff;
+        }
+        .btn-primary:hover {
+          background: #0c94d1;
+        }
+        .btn-primary:active {
+          background: #0a83b9;
+        }
+        .btn-secondary {
+          background: var(--secondary);
+          color: #ffffff;
+        }
+        .btn-secondary:hover {
+          background: #4b5563;
+        }
+        .btn-secondary:active {
+          background: #374151;
+        }
+        .btn-success {
+          background: var(--success);
+          color: #ffffff;
+        }
+        .btn-success:hover {
+          background: #059669;
+        }
+        .btn-success:active {
+          background: #047857;
+        }
+        .btn-warning {
+          background: var(--warning);
+          color: #ffffff;
+        }
+        .btn-warning:hover {
+          background: #d97706;
+        }
+        .btn-warning:active {
+          background: #b45309;
+        }
+        .btn-danger {
+          background: var(--danger);
+          color: #ffffff;
+        }
+        .btn-danger:hover {
+          background: #dc2626;
+        }
+        .btn-danger:active {
+          background: #b91c1c;
+        }
+        .btn-status {
+          height: 34px;
+          padding: 0 14px;
+          border-radius: 6px;
+          border: none;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        .btn-status.active {
+          background: var(--success);
+          color: #ffffff;
+        }
+        .btn-status.pending {
+          background: var(--warning);
+          color: #ffffff;
+        }
+        .btn-status.flagged {
+          background: var(--danger);
+          color: #ffffff;
+        }
+        .btn-status.complete {
+          background: var(--success);
+          color: #ffffff;
+        }
       `}</style>
 
       <div className="ronyx-container">
         <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
-          <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Tickets — Upload & Calculation Management</h1>
-          <p style={{ color: "rgba(15,23,42,0.7)" }}>
-            Create, upload, calculate, approve, and reconcile dump fleet tickets.
-          </p>
+            <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Tickets — Upload & Calculation Management</h1>
+            <p style={{ color: "rgba(15,23,42,0.7)" }}>
+              Create, upload, calculate, approve, and reconcile dump fleet tickets.
+            </p>
           </div>
           <Link href="/ronyx" className="ronyx-btn" style={{ textDecoration: "none" }}>
             Back to Dashboard
           </Link>
         </div>
 
+        <section style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+          <button
+            className={`ronyx-tab ${activeTab === "manage" ? "active" : ""}`}
+            onClick={() => setActiveTab("manage")}
+          >
+            Create & Manage
+          </button>
+          <button
+            className={`ronyx-tab ${activeTab === "reconcile" ? "active" : ""}`}
+            onClick={() => setActiveTab("reconcile")}
+          >
+            Reconcile & Approve
+          </button>
+          {activeTab === "reconcile" && (
+            <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="ronyx-btn" onClick={runReconciliation} disabled={reconRunning}>
+                {reconRunning ? "Running..." : "Run Daily Reconciliation"}
+              </button>
+              <button
+                className="ronyx-btn"
+                style={{ background: "#0f172a" }}
+                onClick={() => setShowReconConfig((prev) => !prev)}
+              >
+                Configure Rules
+              </button>
+            </div>
+          )}
+        </section>
+
         <section className="ronyx-grid" style={{ marginBottom: 18 }}>
           <div className="ronyx-card">
             <div className="ronyx-label">Total Tickets</div>
             <div style={{ fontSize: "1.6rem", fontWeight: 800 }}>{summary.total}</div>
+            <div className="ronyx-muted">{weeklySnapshot.thisWeek.count} this week</div>
           </div>
           <div className="ronyx-card">
             <div className="ronyx-label">Paid Tickets</div>
             <div style={{ fontSize: "1.6rem", fontWeight: 800 }}>{summary.paid}</div>
+            <div className="ronyx-muted">{weeklySnapshot.lastWeek.count} last week</div>
           </div>
           <div className="ronyx-card">
             <div className="ronyx-label">Pending Approval</div>
             <div style={{ fontSize: "1.6rem", fontWeight: 800 }}>{summary.pending}</div>
+            <div className="ronyx-muted">{ticketQueue.awaitingApproval.length} awaiting</div>
           </div>
           <div className="ronyx-card">
             <div className="ronyx-label">Revenue (Est.)</div>
             <div style={{ fontSize: "1.6rem", fontWeight: 800 }}>${summary.revenue.toFixed(2)}</div>
+            <div className="ronyx-muted">
+              {weeklySnapshot.delta >= 0 ? "+" : ""}
+              {weeklySnapshot.delta.toFixed(1)}% vs last week
+            </div>
           </div>
         </section>
 
-        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+        {activeTab === "manage" && (
+          <>
+            <section className="ronyx-card" style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: 4 }}>Ticket Inbox</h2>
+                  <p className="ronyx-muted">Filter by status and clear today’s worklist.</p>
+                </div>
+                <button className="ronyx-btn" style={{ background: "#0f172a" }}>
+                  Create Filter
+                </button>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                <button className={`ronyx-tab ${inboxFilter === "pending_upload" ? "active" : ""}`} onClick={() => setInboxFilter("pending_upload")}>
+                  🔄 Pending Upload ({ticketQueue.pendingUpload.length})
+                </button>
+                <button className={`ronyx-tab ${inboxFilter === "awaiting" ? "active" : ""}`} onClick={() => setInboxFilter("awaiting")}>
+                  ⏳ Awaiting Approval ({ticketQueue.awaitingApproval.length})
+                </button>
+                <button className={`ronyx-tab ${inboxFilter === "flagged" ? "active" : ""}`} onClick={() => setInboxFilter("flagged")}>
+                  ⚠️ Flagged ({ticketQueue.flagged.length})
+                </button>
+                <button className={`ronyx-tab ${inboxFilter === "approved" ? "active" : ""}`} onClick={() => setInboxFilter("approved")}>
+                  ✅ Approved ({ticketQueue.approved.length})
+                </button>
+                <button className={`ronyx-tab ${inboxFilter === "all" ? "active" : ""}`} onClick={() => setInboxFilter("all")}>
+                  All ({tickets.length})
+                </button>
+              </div>
+              <div className="ronyx-card" style={{ marginTop: 16 }}>
+                <div className="ronyx-row" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                  <span>•</span>
+                  <span>Date</span>
+                  <span>Ticket #</span>
+                  <span>Driver / Truck</span>
+                  <span>Customer</span>
+                  <span>Amount</span>
+                </div>
+                {inboxTickets.slice(0, 12).map((item) => (
+                  <div key={item.ticket.id} className="ronyx-row" style={{ alignItems: "center", marginTop: 10 }}>
+                    <span>{item.priority === "red" ? "🔴" : item.priority === "yellow" ? "🟡" : "🟢"}</span>
+                    <span>{item.ticket.ticket_date || "—"}</span>
+                    <span>{item.ticket.ticket_number || "—"}</span>
+                    <span>
+                      {item.ticket.driver_name || "Unassigned"} {item.ticket.truck_number ? `- #${item.ticket.truck_number}` : ""}
+                      {item.inlineAlert && <span className="ronyx-tag" style={{ marginLeft: 8 }}>{item.inlineAlert}</span>}
+                    </span>
+                    <span>{item.ticket.customer_name || "—"}</span>
+                    <span>
+                      ${item.amount}
+                      <button className="ronyx-btn" style={{ marginLeft: 10, padding: "6px 12px", fontSize: "0.75rem" }}>
+                        {item.actionLabel}
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4 }}>Quick Ticket</h2>
+                  <p className="ronyx-muted">Capture the essentials fast. Expand for full detail.</p>
+                </div>
+                <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={() => setShowFullForm((prev) => !prev)}>
+                  {showFullForm ? "Collapse Full Details" : "Full Details →"}
+                </button>
+              </div>
+              <div className="ronyx-grid" style={{ rowGap: 20, marginTop: 16 }}>
+                <div>
+                  <label className="ronyx-label">Date</label>
+                  <input
+                    type="date"
+                    className="ronyx-input"
+                    value={form.ticket_date}
+                    onChange={(e) => setForm({ ...form, ticket_date: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Driver</label>
+                  <select
+                    className="ronyx-input"
+                    value={form.driver_id}
+                    onChange={(e) => {
+                      const selected = drivers.find((d) => d.id === e.target.value);
+                      setForm({
+                        ...form,
+                        driver_id: e.target.value,
+                        driver_name: selected?.full_name || form.driver_name,
+                      });
+                    }}
+                  >
+                    <option value="">Select driver</option>
+                    {drivers.map((driver) => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.full_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="ronyx-label">Truck</label>
+                  <input
+                    className="ronyx-input"
+                    placeholder="Truck Number"
+                    value={form.truck_number}
+                    onChange={(e) => setForm({ ...form, truck_number: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Customer</label>
+                  <input
+                    className="ronyx-input"
+                    value={form.customer_name}
+                    onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+                    placeholder="Customer / Job"
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Pickup</label>
+                  <input
+                    className="ronyx-input"
+                    value={form.pickup_location}
+                    onChange={(e) => setForm({ ...form, pickup_location: e.target.value })}
+                    placeholder="Source yard / pit"
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Delivery</label>
+                  <input
+                    className="ronyx-input"
+                    value={form.delivery_location}
+                    onChange={(e) => setForm({ ...form, delivery_location: e.target.value })}
+                    placeholder="Job site"
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Status</label>
+                  <select
+                    className="ronyx-input"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-end" }}>
+                  <button className="ronyx-btn" onClick={handleSubmit} disabled={loading} style={{ width: "100%" }}>
+                    {loading ? "Saving..." : "Save & Calculate"}
+                  </button>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {activeTab === "manage" && showFullForm && (
+          <>
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Information</h2>
           <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
@@ -735,6 +1083,7 @@ export default function RonyxTicketsPage() {
               <input
                 type="file"
                 className="ronyx-input"
+                accept="image/*,application/pdf"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
@@ -743,6 +1092,23 @@ export default function RonyxTicketsPage() {
                   }
                 }}
               />
+              <input
+                type="file"
+                className="ronyx-input"
+                style={{ marginTop: 8 }}
+                accept="image/*"
+                capture="environment"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const path = await handleUpload(file, "ticket");
+                    if (path) setForm({ ...form, ticket_image_url: path });
+                  }
+                }}
+              />
+              <div className="ronyx-muted" style={{ marginTop: 6 }}>
+                Take a photo to trigger OCR auto-fill for weights and dates.
+              </div>
               {form.ticket_image_url && <div className="ronyx-tag" style={{ marginTop: 8 }}>{form.ticket_image_url}</div>}
             </div>
             <div>
@@ -781,6 +1147,15 @@ export default function RonyxTicketsPage() {
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Approval & Payment</h2>
           <div className="ronyx-grid" style={{ rowGap: 20 }}>
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button className="ronyx-btn" onClick={approveTicket} disabled={!ticketId}>
+                ✔ Approve Ticket
+              </button>
+              <button className="ronyx-btn" onClick={markTicketPaid} disabled={!ticketId} style={{ background: "#0f172a" }}>
+                💰 Mark Paid
+              </button>
+              {!ticketId && <span className="ronyx-muted">Save the ticket first to enable actions.</span>}
+            </div>
             <div>
               <label className="ronyx-label">Approval (Supervisor)</label>
               <input
@@ -931,219 +1306,406 @@ export default function RonyxTicketsPage() {
             {loading ? "Saving..." : "Save Ticket"}
           </button>
         </div>
+          </>
+        )}
 
-        <section className="ronyx-card" style={{ marginBottom: 22 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Discrepancy Report</h2>
-          {discrepancies.length === 0 ? (
-            <p style={{ color: "rgba(15,23,42,0.7)" }}>No discrepancies flagged.</p>
-          ) : (
-            <div className="ronyx-grid">
-              {discrepancies.map((ticket) => (
-                <div key={ticket.id} className="ronyx-card">
-                  <div style={{ fontWeight: 700 }}>{ticket.ticket_number}</div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{ticket.reason}</div>
+        {activeTab === "reconcile" && (
+          <>
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                <div>
+                  <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4 }}>🔍 Ticket Reconciliation Dashboard</h2>
+                  <div className="ronyx-muted">Last Run: Today, 06:00 AM • Auto-run: Every 6 hrs</div>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={() => setShowReconConfig((prev) => !prev)}>
+                    ⚙️ Configure
+                  </button>
+                  <button className="ronyx-btn" onClick={runReconciliation} disabled={reconRunning}>
+                    {reconRunning ? "Running..." : "Run Now"}
+                  </button>
+                </div>
+              </div>
+              <div className="ronyx-grid">
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Reconciliation Summary</div>
+                  <div style={{ fontWeight: 700, marginTop: 6 }}>{summary.total} Total Tickets</div>
+                  <div style={{ marginTop: 6 }}>✓ {reconSummary.matched} Auto-Matched</div>
+                  <div>⚠ {reconSummary.variance} Minor Variance</div>
+                  <div>✗ {reconSummary.exception} Major Exception</div>
+                  <div>❓ {Math.max(summary.total - reconResults.length, 0)} Unmatched</div>
+                </div>
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Match Confidence</div>
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ height: 10, borderRadius: 999, background: "rgba(29,78,216,0.15)" }}>
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${Math.min(100, Math.max(60, reconSummary.matched ? 92 : 0))}%`,
+                          borderRadius: 999,
+                          background: "#22c55e",
+                        }}
+                      />
+                    </div>
+                    <div className="ronyx-muted" style={{ marginTop: 6 }}>92% confidence</div>
+                  </div>
+                </div>
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Batch Actions</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                    <button className="ronyx-btn">Accept All Minor (&lt;2%)</button>
+                    <button className="ronyx-btn" style={{ background: "#0f172a" }}>
+                      Export All Exceptions
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {showReconConfig && (
+                <div style={{ marginTop: 18 }}>
+                  <p className="ronyx-muted" style={{ marginBottom: 12 }}>
+                    Configure tolerance rules for TicketFlash.
+                  </p>
+                  <div className="ronyx-grid">
+                    <div>
+                      <label className="ronyx-label">Scale tolerance %</label>
+                      <input
+                        className="ronyx-input"
+                        value={thresholds.scaleTolerancePct}
+                        onChange={(e) => setThresholds({ ...thresholds, scaleTolerancePct: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="ronyx-label">Moisture tolerance %</label>
+                      <input
+                        className="ronyx-input"
+                        value={thresholds.moistureTolerancePct}
+                        onChange={(e) => setThresholds({ ...thresholds, moistureTolerancePct: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="ronyx-label">Fines tolerance %</label>
+                      <input
+                        className="ronyx-input"
+                        value={thresholds.finesTolerancePct}
+                        onChange={(e) => setThresholds({ ...thresholds, finesTolerancePct: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="ronyx-label">Price variance %</label>
+                      <input
+                        className="ronyx-input"
+                        value={thresholds.priceVariancePct}
+                        onChange={(e) => setThresholds({ ...thresholds, priceVariancePct: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="ronyx-label">Delivery window (hours)</label>
+                      <input
+                        className="ronyx-input"
+                        value={thresholds.deliveryWindowHours}
+                        onChange={(e) => setThresholds({ ...thresholds, deliveryWindowHours: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
 
-        <section className="ronyx-card" style={{ marginBottom: 22 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Reports & Calculations</h2>
-          <div className="ronyx-grid">
-            <div className="ronyx-card">
-              <h3>Totals by Day / Week / Month</h3>
-              <div className="ronyx-table">
-                {Object.entries(reportSummary.byPeriod)
-                  .slice(0, 6)
-                  .map(([period, value]) => (
-                    <div key={period} className="ronyx-row">
-                      <span>{period}</span>
-                      <span>${value.revenue.toFixed(2)}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <div className="ronyx-card">
-              <h3>Tons/Yards by Material</h3>
-              <div className="ronyx-table">
-                {Object.entries(reportSummary.byMaterial)
-                  .slice(0, 6)
-                  .map(([material, qty]) => (
-                    <div key={material} className="ronyx-row">
-                      <span>{material}</span>
-                      <span>{qty.toFixed(2)}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <div className="ronyx-card">
-              <h3>Driver Earnings Summary</h3>
-              <div className="ronyx-table">
-                {Object.entries(reportSummary.byDriver)
-                  .slice(0, 6)
-                  .map(([driver, revenue]) => (
-                    <div key={driver} className="ronyx-row">
-                      <span>{driver}</span>
-                      <span>${revenue.toFixed(2)}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <div className="ronyx-card">
-              <h3>Revenue by Load Type</h3>
-              <div className="ronyx-table">
-                {Object.entries(reportSummary.byLoadType)
-                  .slice(0, 6)
-                  .map(([unit, revenue]) => (
-                    <div key={unit} className="ronyx-row">
-                      <span>{unit}</span>
-                      <span>${revenue.toFixed(2)}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <div className="ronyx-card">
-              <h3>Revenue by Customer</h3>
-              <div className="ronyx-table">
-                {Object.entries(reportSummary.byCustomer)
-                  .slice(0, 6)
-                  .map(([customer, revenue]) => (
-                    <div key={customer} className="ronyx-row">
-                      <span>{customer}</span>
-                      <span>${revenue.toFixed(2)}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 22 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
-            TicketFlash Reconciliation
-          </h2>
-          <p style={{ color: "rgba(15,23,42,0.7)", marginBottom: 12 }}>
-            Match tickets, weights, and rates to flag discrepancies automatically.
-          </p>
-          <div className="ronyx-grid">
-            <div>
-              <label className="ronyx-label">Scale tolerance %</label>
-              <input
-                className="ronyx-input"
-                value={thresholds.scaleTolerancePct}
-                onChange={(e) => setThresholds({ ...thresholds, scaleTolerancePct: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Moisture tolerance %</label>
-              <input
-                className="ronyx-input"
-                value={thresholds.moistureTolerancePct}
-                onChange={(e) => setThresholds({ ...thresholds, moistureTolerancePct: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Fines tolerance %</label>
-              <input
-                className="ronyx-input"
-                value={thresholds.finesTolerancePct}
-                onChange={(e) => setThresholds({ ...thresholds, finesTolerancePct: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Price variance %</label>
-              <input
-                className="ronyx-input"
-                value={thresholds.priceVariancePct}
-                onChange={(e) => setThresholds({ ...thresholds, priceVariancePct: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Delivery window (hours)</label>
-              <input
-                className="ronyx-input"
-                value={thresholds.deliveryWindowHours}
-                onChange={(e) => setThresholds({ ...thresholds, deliveryWindowHours: e.target.value })}
-              />
-            </div>
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <button className="ronyx-btn" onClick={runReconciliation} disabled={reconRunning}>
-              {reconRunning ? "Running..." : "Run TicketFlash Reconciliation"}
-            </button>
-          </div>
-          <div className="ronyx-grid" style={{ marginTop: 18 }}>
-            <div className="ronyx-card">
-              <h3 style={{ marginBottom: 8 }}>Results</h3>
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Exceptions Queue</h2>
               {reconResults.length === 0 ? (
-                <p style={{ color: "rgba(15,23,42,0.7)" }}>No reconciliation results yet.</p>
+                <p className="ronyx-muted">No reconciliation results yet.</p>
               ) : (
-                reconResults.slice(0, 6).map((result) => (
-                  <div key={result.id} className="ronyx-row" style={{ marginBottom: 8 }}>
-                    <span>{result.ticket_number}</span>
-                    <span className="ronyx-tag">{result.status}</span>
+                <div>
+                  <div className="ronyx-row" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                    <span>!</span>
+                    <span>Ticket #</span>
+                    <span>Driver</span>
+                    <span>Issue</span>
+                    <span>Variance</span>
+                    <span>Actions</span>
                   </div>
-                ))
-              )}
-            </div>
-            <div className="ronyx-card">
-              <h3 style={{ marginBottom: 8 }}>Exceptions</h3>
-              {reconExceptions.length === 0 ? (
-                <p style={{ color: "rgba(15,23,42,0.7)" }}>No exceptions flagged.</p>
-              ) : (
-                reconExceptions.slice(0, 6).map((ex) => (
-                  <div key={ex.id} className="ronyx-row" style={{ marginBottom: 8 }}>
-                    <span>{ex.exception_type}</span>
-                    <span className="ronyx-tag">{ex.severity}</span>
+                  {reconResults.slice(0, 8).map((result) => (
+                    <div key={result.id} className="ronyx-row" style={{ alignItems: "center", marginTop: 10 }}>
+                      <span>{result.status.toLowerCase().includes("exception") ? "✗" : "⚠️"}</span>
+                      <span>{result.ticket_number}</span>
+                      <span>Driver TBD</span>
+                      <span>{result.status}</span>
+                      <span>{result.quantity_variance_pct ? `${result.quantity_variance_pct.toFixed(1)}%` : "—"}</span>
+                      <span>
+                        <button className="btn-secondary" style={{ padding: "0 12px", height: 32, fontSize: "0.7rem" }}>
+                          Review
+                        </button>
+                        <button className="btn-primary" style={{ padding: "0 12px", height: 32, fontSize: "0.7rem", marginLeft: 8 }}>
+                          Accept
+                        </button>
+                        <button className="btn-warning" style={{ padding: "0 12px", height: 32, fontSize: "0.7rem", marginLeft: 8 }}>
+                          Flag
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                  <div className="ronyx-muted" style={{ marginTop: 10 }}>
+                    Showing {Math.min(8, reconResults.length)} of {reconResults.length} exceptions
                   </div>
-                ))
+                </div>
               )}
-            </div>
-          </div>
-        </section>
+            </section>
 
-        <section className="ronyx-card">
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Recent Tickets</h2>
-          {loading ? (
-            <p>Loading tickets...</p>
-          ) : tickets.length === 0 ? (
-            <p style={{ color: "rgba(15,23,42,0.7)" }}>No tickets yet.</p>
-          ) : (
-            <div className="ronyx-grid">
-              {tickets.slice(0, 12).map((ticket) => (
-                <div key={ticket.id} className="ronyx-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <strong>{ticket.ticket_number}</strong>
-                    <span className="ronyx-tag">{ticket.status}</span>
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ fontWeight: 800, fontSize: "1.05rem" }}>
+                  ⚠️ [SITE DISPUTE] Ticket #T-901 — Riverside Site — 05/17/2024
+                </div>
+                <div className="ronyx-muted">Driver: J. Smith (Truck #7) | Haul: Pit 3 → Riverside</div>
+                <div style={{ borderTop: "1px solid var(--ronyx-border)", marginTop: 6 }} />
+              </div>
+              <div style={{ marginTop: 16 }} className="ticket-actions">
+                <h3 style={{ marginBottom: 10 }}>
+                  Ticket #T-884 • Weight Discrepancy: 22.5T vs 23.1T
+                </h3>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button className="btn-primary">Accept Pit Weight</button>
+                  <button className="btn-warning">Flag for Review</button>
+                  <button className="btn-secondary">View Scale Ticket</button>
+                  <button className="btn-danger">Reject Ticket</button>
+                </div>
+              </div>
+              <div style={{ marginTop: 14 }} className="status-controls">
+                <button className="btn-status active">On Duty</button>
+                <button className="btn-status pending">Pending Review</button>
+                <button className="btn-status flagged">Flagged</button>
+                <button className="btn-status complete">Paid</button>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ marginBottom: 12 }}>Yardstick (What Actually Happened)</h3>
+                <div className="ronyx-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+                  <div className="ronyx-card">
+                    <div className="ronyx-label">From Pit (What We Loaded)</div>
+                    <div>Ticket: #P-7716 | Pit 3</div>
+                    <div>Material: 3/4" Crushed Gravel</div>
+                    <div>Quantity: 12 Cubic Yards</div>
+                    <div>Signature: ✅ Pit scale operator</div>
                   </div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>
-                    {ticket.driver_name || "Unassigned"} • {ticket.material || "Material"}
+                  <div className="ronyx-card">
+                    <div className="ronyx-label">To Site (What They Signed)</div>
+                    <div>Ticket: Signed by "R. Foreman"</div>
+                    <div>Material: "Gravel"</div>
+                    <div>Quantity: 10 Cubic Yards</div>
+                    <div>Signature: ✅ (Quantity disputed)</div>
                   </div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>
-                    {ticket.delivery_location || "Delivery site"}
+                  <div className="ronyx-card">
+                    <div className="ronyx-label">The Gap</div>
+                    <div>Missing: 2 Cubic Yards</div>
+                    <div>Value: $60.00 (at $30/yd)</div>
+                    <div className="ronyx-tag" style={{ marginTop: 8 }}>Dispute Severity: ⚠️ Moderate</div>
                   </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                    <button
-                      className="ronyx-btn"
-                      style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                      onClick={() => updateTicketStatus(ticket.id, "approved")}
-                    >
-                      Approve
+                </div>
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ marginBottom: 12 }}>What the Driver Saw</h3>
+                <div className="ronyx-grid">
+                  {[
+                    { label: "Truck at Pit 3, loaded.", time: "07:15 AM" },
+                    { label: "Close-up of load in truck.", time: "07:18 AM" },
+                    { label: "Empty truck at site.", time: "08:05 AM" },
+                    { label: "Pile on ground at site.", time: "08:10 AM" },
+                  ].map((photo, index) => (
+                    <div key={photo.label} className="ronyx-card">
+                      <div style={{ fontWeight: 700 }}>Photo {index + 1}</div>
+                      <div className="ronyx-muted">{photo.label}</div>
+                      <div className="ronyx-tag" style={{ marginTop: 8 }}>Timestamp: {photo.time}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ marginBottom: 12 }}>Resolve It</h3>
+                <div className="ronyx-grid">
+                  <div className="ronyx-card">
+                    <div style={{ fontWeight: 700 }}>[Charge Full 12 Yards] ($360)</div>
+                    <div className="ronyx-muted" style={{ marginTop: 6 }}>
+                      The pit doesn&apos;t lie. We&apos;re billing for what we hauled.
+                    </div>
+                    <button className="ronyx-btn" style={{ marginTop: 12 }}>Send Invoice for 12</button>
+                  </div>
+                  <div className="ronyx-card">
+                    <div style={{ fontWeight: 700 }}>[Accept Site&apos;s 10 Yards] ($300)</div>
+                    <div className="ronyx-muted" style={{ marginTop: 6 }}>
+                      Eat the loss to keep the peace and get paid fast.
+                    </div>
+                    <button className="ronyx-btn" style={{ marginTop: 12, background: "#0f172a" }}>
+                      Accept &amp; Note Customer
                     </button>
-                    <button
-                      className="ronyx-btn"
-                      style={{ padding: "6px 12px", fontSize: "0.75rem", background: "#222", color: "#fff" }}
-                      onClick={() => updateTicketStatus(ticket.id, "paid", "paid")}
-                    >
-                      Mark Paid
+                  </div>
+                  <div className="ronyx-card">
+                    <div style={{ fontWeight: 700 }}>[Split the Difference — 11 Yards] ($330)</div>
+                    <div className="ronyx-muted" style={{ marginTop: 6 }}>
+                      Meet in the middle. Call the foreman now.
+                    </div>
+                    <input className="ronyx-input" style={{ marginTop: 8 }} placeholder="Log call notes..." />
+                    <button className="ronyx-btn" style={{ marginTop: 12, background: "#7c3aed" }}>
+                      Adjust Ticket to 11
                     </button>
                   </div>
                 </div>
-              ))}
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ marginBottom: 12 }}>For the Dispatch Board</h3>
+                <div className="ronyx-card">
+                  <div>Driver Note: &quot;Foreman said pile looked short. I showed him pit ticket.&quot;</div>
+                  <div>Site Reputation: ⭐⭐☆☆☆ (2/5 stars - Often disputes quantity)</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                    <button className="ronyx-btn">Call Site</button>
+                    <button className="ronyx-btn" style={{ background: "#0f172a" }}>Flag Customer</button>
+                    <button className="ronyx-btn" style={{ background: "#22c55e" }}>Close &amp; Bill</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Discrepancy Report</h2>
+              {discrepancies.length === 0 ? (
+                <p style={{ color: "rgba(15,23,42,0.7)" }}>No discrepancies flagged.</p>
+              ) : (
+                <div className="ronyx-grid">
+                  {discrepancies.map((ticket) => (
+                    <div key={ticket.id} className="ronyx-card">
+                      <div style={{ fontWeight: 700 }}>{ticket.ticket_number}</div>
+                      <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{ticket.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {activeTab === "manage" && (
+          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Live Insights</h2>
+            <div className="ronyx-grid">
+              <div className="ronyx-card">
+                <h3>Driver Earnings Summary</h3>
+                <div className="ronyx-table">
+                  {Object.entries(reportSummary.byDriver)
+                    .slice(0, 3)
+                    .map(([driver, revenue]) => (
+                      <div key={driver} className="ronyx-row">
+                        <span>{driver}</span>
+                        <span>${revenue.toFixed(2)}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h3>Revenue by Customer</h3>
+                <div className="ronyx-table">
+                  {Object.entries(reportSummary.byCustomer)
+                    .slice(0, 3)
+                    .map(([customer, revenue]) => (
+                      <div key={customer} className="ronyx-row">
+                        <span>{customer}</span>
+                        <span>${revenue.toFixed(2)}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h3>Tons by Material</h3>
+                <div className="ronyx-table">
+                  {Object.entries(reportSummary.byMaterial)
+                    .slice(0, 3)
+                    .map(([material, qty]) => (
+                      <div key={material} className="ronyx-row">
+                        <span>{material}</span>
+                        <span>{qty.toFixed(2)}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h3>Revenue by Load Type</h3>
+                <div className="ronyx-table">
+                  {Object.entries(reportSummary.byLoadType)
+                    .slice(0, 3)
+                    .map(([unit, revenue]) => (
+                      <div key={unit} className="ronyx-row">
+                        <span>{unit}</span>
+                        <span>${revenue.toFixed(2)}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
-          )}
-        </section>
+            <div className="ronyx-grid" style={{ marginTop: 16 }}>
+              <div className="ronyx-card">
+                <h3>This Week vs Last Week</h3>
+                <div className="ronyx-row">
+                  <span>This Week</span>
+                  <span>${weeklySnapshot.thisWeek.revenue.toFixed(2)}</span>
+                </div>
+                <div className="ronyx-row">
+                  <span>Last Week</span>
+                  <span>${weeklySnapshot.lastWeek.revenue.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === "manage" && (
+          <section className="ronyx-card">
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Recent Tickets</h2>
+            {loading ? (
+              <p>Loading tickets...</p>
+            ) : tickets.length === 0 ? (
+              <p style={{ color: "rgba(15,23,42,0.7)" }}>No tickets yet.</p>
+            ) : (
+              <div className="ronyx-grid">
+                {tickets.slice(0, 12).map((ticket) => (
+                  <div key={ticket.id} className="ronyx-card">
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <strong>
+                        {reconIconFor(ticket)} {ticket.ticket_number}
+                      </strong>
+                      <span className="ronyx-tag">{ticket.status}</span>
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>
+                      {ticket.driver_name || "Unassigned"} • {ticket.material || "Material"}
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>
+                      {ticket.delivery_location || "Delivery site"}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)", marginTop: 6 }}>
+                      {reconByTicket.get(ticket.ticket_number || "")?.status
+                        ? `Recon: ${reconByTicket.get(ticket.ticket_number || "")?.status}`
+                        : "Recon: Not run yet"}
+                    </div>
+                    <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                      <button
+                        className="ronyx-btn"
+                        style={{ padding: "6px 12px", fontSize: "0.75rem" }}
+                        onClick={() => updateTicketStatus(ticket.id, "approved")}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="ronyx-btn"
+                        style={{ padding: "6px 12px", fontSize: "0.75rem", background: "#222", color: "#fff" }}
+                        onClick={() => updateTicketStatus(ticket.id, "paid", "paid")}
+                      >
+                        Mark Paid
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

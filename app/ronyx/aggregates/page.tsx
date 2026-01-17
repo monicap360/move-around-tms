@@ -1,141 +1,200 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
-type AggregateProfile = {
-  id?: string;
-  material_type: string;
-  material_code: string;
-  material_description: string;
-  supplier_location: string;
-  material_category: string;
-  stockpile_location: string;
-  availability_inventory: string;
-  rate_type: string;
-  base_rate: string;
-  fuel_surcharge: string;
-  delivery_charge: string;
-  minimum_load_charge: string;
-  brokered_load_pct: string;
-  customer_specific_rates: string;
-  effective_start_date: string;
-  effective_end_date: string;
-  customer_name: string;
-  job_name: string;
-  job_site_address: string;
-  contact_person: string;
-  contact_number: string;
-  billing_terms: string;
-  customer_notes: string;
-  truck_type: string;
-  truck_assigned: string;
-  driver_assigned: string;
-  pickup_location: string;
-  delivery_location: string;
-  hauling_distance: string;
-  estimated_load_time: string;
-  estimated_unload_time: string;
-  ticket_number: string;
-  tare_weight: string;
-  gross_weight: string;
-  net_weight: string;
-  digital_ticket_uploads: boolean;
-  gps_tracking: boolean;
-  signature_capture: boolean;
-  auto_invoice: boolean;
+type RateCard = {
+  id: string;
+  customer: string;
+  rateName: string;
+  structure: string;
+  basePrice: string;
+  effective: string;
+  method: "hour" | "mile" | "load";
+  baseRate: string;
+  materialSurcharges: { material: string; surcharge: string }[];
+  fuelLinked: boolean;
+  fuelPct: string;
+  detentionFreeMinutes: string;
+  detentionRate: string;
+  notes: string;
 };
 
-const emptyProfile: AggregateProfile = {
-  material_type: "",
-  material_code: "",
-  material_description: "",
-  supplier_location: "",
-  material_category: "Raw Material",
-  stockpile_location: "",
-  availability_inventory: "",
-  rate_type: "Per Ton",
-  base_rate: "",
-  fuel_surcharge: "",
-  delivery_charge: "",
-  minimum_load_charge: "",
-  brokered_load_pct: "",
-  customer_specific_rates: "",
-  effective_start_date: "",
-  effective_end_date: "",
-  customer_name: "",
-  job_name: "",
-  job_site_address: "",
-  contact_person: "",
-  contact_number: "",
-  billing_terms: "",
-  customer_notes: "",
-  truck_type: "",
-  truck_assigned: "",
-  driver_assigned: "",
-  pickup_location: "",
-  delivery_location: "",
-  hauling_distance: "",
-  estimated_load_time: "",
-  estimated_unload_time: "",
-  ticket_number: "",
-  tare_weight: "",
-  gross_weight: "",
-  net_weight: "",
-  digital_ticket_uploads: false,
-  gps_tracking: false,
-  signature_capture: false,
-  auto_invoice: false,
+type JobSite = {
+  id: string;
+  name: string;
+  location: string;
+  contactName: string;
+  contactPhone: string;
+  hours: string;
+  accessNotes: string;
+  unloadInstructions: string;
+  history: string;
+  alerts: string;
+  rating: string;
+  ratingNote: string;
+  gps: string;
 };
+
+const sampleRateCards: RateCard[] = [
+  {
+    id: "rate-1",
+    customer: "Jones Const",
+    rateName: "Jones Const - Main St Project",
+    structure: "$85/hr + $15/ton mat",
+    basePrice: "$85.00 / hour",
+    effective: "01/01/24",
+    method: "hour",
+    baseRate: "85",
+    materialSurcharges: [
+      { material: '3/4" Clean Rock', surcharge: "15" },
+      { material: "Wet Clay", surcharge: "30" },
+    ],
+    fuelLinked: true,
+    fuelPct: "3.5",
+    detentionFreeMinutes: "45",
+    detentionRate: "75",
+    notes: "Rate locked through Dec 2024.",
+  },
+  {
+    id: "rate-2",
+    customer: "City Project",
+    rateName: "City Project - Highway",
+    structure: "$4.25/mi loaded, $3.00/mi empty",
+    basePrice: "$4.25 / mile",
+    effective: "02/15/24",
+    method: "mile",
+    baseRate: "4.25",
+    materialSurcharges: [],
+    fuelLinked: false,
+    fuelPct: "0",
+    detentionFreeMinutes: "30",
+    detentionRate: "60",
+    notes: "City project pricing.",
+  },
+  {
+    id: "rate-3",
+    customer: "Thompson Co",
+    rateName: "Thompson Co - Fuel Index",
+    structure: "10% over fuel index",
+    basePrice: "Variable",
+    effective: "03/01/24",
+    method: "load",
+    baseRate: "0",
+    materialSurcharges: [],
+    fuelLinked: true,
+    fuelPct: "10",
+    detentionFreeMinutes: "60",
+    detentionRate: "80",
+    notes: "Variable pricing based on fuel index.",
+  },
+];
+
+const sampleSites: JobSite[] = [
+  {
+    id: "site-1",
+    name: "Riverside Apts",
+    location: "2500 River Rd",
+    contactName: "Bob (Foreman)",
+    contactPhone: "555-0123",
+    hours: "Mon-Fri, 7am-3pm",
+    accessNotes: "Call before arrival.",
+    unloadInstructions: "Unload NE of crane.",
+    history: "4/12, 4/15, 4/18, 4/22, 4/30",
+    alerts: "⚠️ GATE CLOSES 3PM",
+    rating: "3",
+    ratingNote: "Slow to sign tickets.",
+    gps: "32.7765° N, 96.7969° W",
+  },
+  {
+    id: "site-2",
+    name: "Main St Project",
+    location: "1500 Main St",
+    contactName: "Site Lead",
+    contactPhone: "555-0199",
+    hours: "Mon-Sat, 6am-5pm",
+    accessNotes: "Use South gate.",
+    unloadInstructions: "Dump in marked area.",
+    history: "4/10, 4/12, 4/14, 4/17, 4/19",
+    alerts: "✅ Good site",
+    rating: "4",
+    ratingNote: "Fast turnaround.",
+    gps: "32.7791° N, 96.8001° W",
+  },
+  {
+    id: "site-3",
+    name: "Oakridge Subdiv.",
+    location: "HWY 45 & Oak",
+    contactName: "Dispatch Desk",
+    contactPhone: "555-0110",
+    hours: "Mon-Fri, 8am-4pm",
+    accessNotes: "Call 1hr before arrival.",
+    unloadInstructions: "Dump at staging area.",
+    history: "4/02, 4/05, 4/08, 4/11, 4/16",
+    alerts: "🔴 NO DELIVERIES FRI",
+    rating: "2",
+    ratingNote: "Gate delays.",
+    gps: "32.7720° N, 96.7920° W",
+  },
+];
 
 export default function RonyxAggregatesPage() {
-  const [profile, setProfile] = useState<AggregateProfile>(emptyProfile);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [activeTab, setActiveTab] = useState<"rates" | "sites" | "quote">("rates");
+  const [rateCards, setRateCards] = useState<RateCard[]>(sampleRateCards);
+  const [jobSites, setJobSites] = useState<JobSite[]>(sampleSites);
+  const [selectedRateId, setSelectedRateId] = useState<string | null>(sampleRateCards[0]?.id || null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(sampleSites[0]?.id || null);
+  const [quote, setQuote] = useState({
+    from: "Pit 7",
+    to: "Riverside Apts",
+    distance: "14",
+    material: "Clean Fill",
+    loadHours: "1.5",
+    customer: "Jones Const",
+  });
 
-  useEffect(() => {
-    void loadProfile();
-  }, []);
+  const selectedRate = rateCards.find((card) => card.id === selectedRateId) || rateCards[0];
+  const selectedSite = jobSites.find((site) => site.id === selectedSiteId) || jobSites[0];
 
-  async function loadProfile() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/ronyx/aggregates/profile");
-      const data = await res.json();
-      setProfile({ ...emptyProfile, ...(data.profile || {}) });
-    } catch (err) {
-      console.error("Failed to load aggregates profile", err);
-      setProfile(emptyProfile);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const quoteTotals = useMemo(() => {
+    const distance = Number(quote.distance || 0);
+    const hours = Number(quote.loadHours || 0);
+    const fuelPct = Number(selectedRate?.fuelPct || 0);
+    const haulRate = selectedRate?.method === "mile" ? Number(selectedRate.baseRate || 0) : 0;
+    const hourlyRate = selectedRate?.method === "hour" ? Number(selectedRate.baseRate || 0) : 0;
+    const haulCharge = distance * haulRate;
+    const timeCharge = hours * hourlyRate;
+    const baseTotal = haulCharge + timeCharge;
+    const fuelCharge = baseTotal * (fuelPct / 100);
+    const total = baseTotal + fuelCharge;
+    return { haulCharge, timeCharge, fuelCharge, total };
+  }, [quote, selectedRate]);
 
-  async function saveProfile() {
-    setSaving(true);
-    setStatusMessage("");
-    try {
-      const res = await fetch("/api/ronyx/aggregates/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      if (!res.ok) throw new Error("Save failed");
-      const data = await res.json();
-      setProfile({ ...emptyProfile, ...(data.profile || {}) });
-      setStatusMessage("Saved");
-    } catch (err) {
-      console.error("Failed to save aggregates profile", err);
-      setStatusMessage("Save failed. Try again.");
-    } finally {
-      setSaving(false);
-      setTimeout(() => setStatusMessage(""), 3000);
-    }
-  }
+  const updateRateField = (field: keyof RateCard, value: string | boolean) => {
+    if (!selectedRate) return;
+    setRateCards((prev) =>
+      prev.map((card) => (card.id === selectedRate.id ? { ...card, [field]: value } : card)),
+    );
+  };
 
-  const updateField = (field: keyof AggregateProfile, value: string | boolean) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+  const updateSurcharge = (index: number, field: "material" | "surcharge", value: string) => {
+    if (!selectedRate) return;
+    const updated = selectedRate.materialSurcharges.map((item, idx) =>
+      idx === index ? { ...item, [field]: value } : item,
+    );
+    updateRateField("materialSurcharges", updated);
+  };
+
+  const addSurcharge = () => {
+    if (!selectedRate) return;
+    updateRateField("materialSurcharges", [...selectedRate.materialSurcharges, { material: "", surcharge: "" }]);
+  };
+
+  const updateSiteField = (field: keyof JobSite, value: string) => {
+    if (!selectedSite) return;
+    setJobSites((prev) =>
+      prev.map((site) => (site.id === selectedSite.id ? { ...site, [field]: value } : site)),
+    );
   };
 
   return (
@@ -147,9 +206,6 @@ export default function RonyxAggregatesPage() {
           --ronyx-steel: #dbe5f1;
           --ronyx-border: rgba(30, 64, 175, 0.18);
           --ronyx-accent: #1d4ed8;
-          --ronyx-success: #16a34a;
-          --ronyx-warning: #f59e0b;
-          --ronyx-danger: #ef4444;
         }
         .ronyx-shell {
           min-height: 100vh;
@@ -174,13 +230,14 @@ export default function RonyxAggregatesPage() {
           gap: 16px;
         }
         .ronyx-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 24px repeat(5, minmax(120px, 1fr));
+          gap: 12px;
           padding: 12px 14px;
           border-radius: 12px;
           background: #ffffff;
           border: 1px solid rgba(29, 78, 216, 0.16);
+          align-items: center;
         }
         .ronyx-action {
           padding: 8px 14px;
@@ -222,408 +279,366 @@ export default function RonyxAggregatesPage() {
           color: #0f172a;
           resize: vertical;
         }
+        .ronyx-tab {
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          background: rgba(29, 78, 216, 0.06);
+          padding: 8px 16px;
+          font-weight: 600;
+        }
+        .ronyx-tab.active {
+          background: var(--ronyx-accent);
+          color: #fff;
+        }
+        .ronyx-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: rgba(29, 78, 216, 0.08);
+          color: var(--ronyx-accent);
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+        .ronyx-table {
+          display: grid;
+          gap: 10px;
+        }
+        .ronyx-panel {
+          border-left: 2px solid rgba(29, 78, 216, 0.2);
+          padding-left: 16px;
+        }
       `}</style>
 
       <div className="ronyx-container">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 16, flexWrap: "wrap" }}>
           <div>
             <p className="ronyx-pill">Ronyx TMS</p>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>Aggregates — Material & Rate Management</h1>
+            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>Rates & Job Sites Hub</h1>
             <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-              Manage materials, pricing, customer job sites, dispatch details, and profitability in one hub.
+              Live pricing and location intelligence for your hauling business.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <button className="ronyx-action" onClick={saveProfile} disabled={saving || loading}>
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-            <span style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>{statusMessage}</span>
-            <Link href="/ronyx" className="ronyx-action">
-              Back to Dashboard
-            </Link>
-          </div>
+          <Link href="/ronyx" className="ronyx-action">
+            Back to Dashboard
+          </Link>
         </div>
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Material Information</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Material Type</label>
-              <input
-                className="ronyx-input"
-                placeholder="Gravel, Sand, Limestone, Topsoil..."
-                value={profile.material_type}
-                onChange={(e) => updateField("material_type", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Material Code / ID</label>
-              <input
-                className="ronyx-input"
-                placeholder="MAT-001"
-                value={profile.material_code}
-                onChange={(e) => updateField("material_code", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Material Description</label>
-              <textarea
-                className="ronyx-textarea"
-                placeholder="Washed gravel, 3/4 inch..."
-                value={profile.material_description}
-                onChange={(e) => updateField("material_description", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Supplier / Source Location</label>
-              <input
-                className="ronyx-input"
-                placeholder="Pit 7, Plant 3..."
-                value={profile.supplier_location}
-                onChange={(e) => updateField("supplier_location", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Material Category</label>
-              <select
-                className="ronyx-input"
-                value={profile.material_category}
-                onChange={(e) => updateField("material_category", e.target.value)}
-              >
-                <option>Raw Material</option>
-                <option>Processed</option>
-                <option>Recycled</option>
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Stockpile Location / Yard</label>
-              <input
-                className="ronyx-input"
-                placeholder="Yard A / Stockpile 4"
-                value={profile.stockpile_location}
-                onChange={(e) => updateField("stockpile_location", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Availability / Inventory</label>
-              <input
-                className="ronyx-input"
-                placeholder="Available tons / yards"
-                value={profile.availability_inventory}
-                onChange={(e) => updateField("availability_inventory", e.target.value)}
-              />
-            </div>
-          </div>
+        <section style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+          <button className={`ronyx-tab ${activeTab === "rates" ? "active" : ""}`} onClick={() => setActiveTab("rates")}>
+            Customer Rates
+          </button>
+          <button className={`ronyx-tab ${activeTab === "sites" ? "active" : ""}`} onClick={() => setActiveTab("sites")}>
+            Job Site Directory
+          </button>
+          <button className={`ronyx-tab ${activeTab === "quote" ? "active" : ""}`} onClick={() => setActiveTab("quote")}>
+            Quick Quote
+          </button>
         </section>
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Rate Management</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Rate Type</label>
-              <select
-                className="ronyx-input"
-                value={profile.rate_type}
-                onChange={(e) => updateField("rate_type", e.target.value)}
-              >
-                <option>Per Ton</option>
-                <option>Per Yard</option>
-                <option>Per Load</option>
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Base Rate</label>
-              <input
-                className="ronyx-input"
-                placeholder="$10.50 per ton"
-                value={profile.base_rate}
-                onChange={(e) => updateField("base_rate", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Fuel Surcharge</label>
-              <input
-                className="ronyx-input"
-                placeholder="$ / % surcharge"
-                value={profile.fuel_surcharge}
-                onChange={(e) => updateField("fuel_surcharge", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Delivery Charge / Hauling Fee</label>
-              <input
-                className="ronyx-input"
-                placeholder="$ per load"
-                value={profile.delivery_charge}
-                onChange={(e) => updateField("delivery_charge", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Minimum Load Charge</label>
-              <input
-                className="ronyx-input"
-                placeholder="$ minimum"
-                value={profile.minimum_load_charge}
-                onChange={(e) => updateField("minimum_load_charge", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Brokered Load %</label>
-              <input
-                className="ronyx-input"
-                placeholder="%"
-                value={profile.brokered_load_pct}
-                onChange={(e) => updateField("brokered_load_pct", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Customer-Specific Rates</label>
-              <textarea
-                className="ronyx-textarea"
-                placeholder="Overrides by account"
-                value={profile.customer_specific_rates}
-                onChange={(e) => updateField("customer_specific_rates", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Effective Date Range</label>
-              <div style={{ display: "grid", gap: 8 }}>
-                <input
-                  type="date"
-                  className="ronyx-input"
-                  value={profile.effective_start_date}
-                  onChange={(e) => updateField("effective_start_date", e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="ronyx-input"
-                  value={profile.effective_end_date}
-                  onChange={(e) => updateField("effective_end_date", e.target.value)}
-                />
+        {activeTab === "rates" && (
+          <section className="ronyx-grid">
+            <div className="ronyx-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Customer Rate Cards</h2>
+                <button className="ronyx-action">+ Add New Rate Card</button>
+              </div>
+              <div className="ronyx-table">
+                <div className="ronyx-row" style={{ fontWeight: 700 }}>
+                  <span />
+                  <span>Customer</span>
+                  <span>Rate Structure</span>
+                  <span>Base Price</span>
+                  <span>Effective</span>
+                  <span>Actions</span>
+                </div>
+                {rateCards.map((card) => (
+                  <div key={card.id} className="ronyx-row">
+                    <span>•</span>
+                    <span>{card.customer}</span>
+                    <span>{card.structure}</span>
+                    <span>{card.basePrice}</span>
+                    <span>{card.effective}</span>
+                    <span>
+                      <button className="ronyx-action" onClick={() => setSelectedRateId(card.id)}>
+                        Edit
+                      </button>
+                      <button className="ronyx-action" style={{ marginLeft: 8 }}>
+                        Deactivate
+                      </button>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Customer & Job Site Details</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Customer Name / Company</label>
-              <input
-                className="ronyx-input"
-                value={profile.customer_name}
-                onChange={(e) => updateField("customer_name", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Job Name / Project ID</label>
-              <input
-                className="ronyx-input"
-                value={profile.job_name}
-                onChange={(e) => updateField("job_name", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Job Site Address</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.job_site_address}
-                onChange={(e) => updateField("job_site_address", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Contact Person & Number</label>
-              <input
-                className="ronyx-input"
-                value={profile.contact_person}
-                onChange={(e) => updateField("contact_person", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Contact Number</label>
-              <input
-                className="ronyx-input"
-                value={profile.contact_number}
-                onChange={(e) => updateField("contact_number", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Billing Account / Payment Terms</label>
-              <input
-                className="ronyx-input"
-                value={profile.billing_terms}
-                onChange={(e) => updateField("billing_terms", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Notes / Special Instructions</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.customer_notes}
-                onChange={(e) => updateField("customer_notes", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+            {selectedRate && (
+              <div className="ronyx-card ronyx-panel">
+                <h3 style={{ fontWeight: 700, marginBottom: 12 }}>Edit Rate Card</h3>
+                <div className="ronyx-grid" style={{ rowGap: 16 }}>
+                  <div>
+                    <label className="ronyx-label">Rate Name</label>
+                    <input
+                      className="ronyx-input"
+                      value={selectedRate.rateName}
+                      onChange={(e) => updateRateField("rateName", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Calculation Method</label>
+                    <select
+                      className="ronyx-input"
+                      value={selectedRate.method}
+                      onChange={(e) => updateRateField("method", e.target.value)}
+                    >
+                      <option value="hour">Per Hour</option>
+                      <option value="mile">Per Mile</option>
+                      <option value="load">Fixed per Load</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Base Rate</label>
+                    <input
+                      className="ronyx-input"
+                      value={selectedRate.baseRate}
+                      onChange={(e) => updateRateField("baseRate", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Fuel Surcharge</label>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRate.fuelLinked}
+                          onChange={(e) => updateRateField("fuelLinked", e.target.checked)}
+                        />
+                        Link to DOE Index
+                      </label>
+                      <input
+                        className="ronyx-input"
+                        style={{ maxWidth: 120 }}
+                        value={selectedRate.fuelPct}
+                        onChange={(e) => updateRateField("fuelPct", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Detention</label>
+                    <input
+                      className="ronyx-input"
+                      placeholder="Free minutes"
+                      value={selectedRate.detentionFreeMinutes}
+                      onChange={(e) => updateRateField("detentionFreeMinutes", e.target.value)}
+                    />
+                    <input
+                      className="ronyx-input"
+                      style={{ marginTop: 8 }}
+                      placeholder="Rate after"
+                      value={selectedRate.detentionRate}
+                      onChange={(e) => updateRateField("detentionRate", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h4>Material Surcharges</h4>
+                    <button className="ronyx-action" onClick={addSurcharge}>
+                      + Add
+                    </button>
+                  </div>
+                  {selectedRate.materialSurcharges.map((item, index) => (
+                    <div key={`${selectedRate.id}-surcharge-${index}`} style={{ marginTop: 10 }}>
+                      <input
+                        className="ronyx-input"
+                        placeholder="Material"
+                        value={item.material}
+                        onChange={(e) => updateSurcharge(index, "material", e.target.value)}
+                      />
+                      <input
+                        className="ronyx-input"
+                        style={{ marginTop: 8 }}
+                        placeholder="Surcharge"
+                        value={item.surcharge}
+                        onChange={(e) => updateSurcharge(index, "surcharge", e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  <label className="ronyx-label">Notes</label>
+                  <textarea
+                    className="ronyx-textarea"
+                    value={selectedRate.notes}
+                    onChange={(e) => updateRateField("notes", e.target.value)}
+                  />
+                </div>
+                <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                  <button className="ronyx-action">Save Rate Card</button>
+                  <button className="ronyx-action">Cancel</button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Trucking / Dispatch Info</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Truck Type</label>
-              <input
-                className="ronyx-input"
-                placeholder="End dump, belly dump, tandem..."
-                value={profile.truck_type}
-                onChange={(e) => updateField("truck_type", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Truck Assigned</label>
-              <input
-                className="ronyx-input"
-                value={profile.truck_assigned}
-                onChange={(e) => updateField("truck_assigned", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Driver Assigned</label>
-              <input
-                className="ronyx-input"
-                value={profile.driver_assigned}
-                onChange={(e) => updateField("driver_assigned", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Pickup Location / Scale Site</label>
-              <input
-                className="ronyx-input"
-                value={profile.pickup_location}
-                onChange={(e) => updateField("pickup_location", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Delivery Location</label>
-              <input
-                className="ronyx-input"
-                value={profile.delivery_location}
-                onChange={(e) => updateField("delivery_location", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Hauling Distance</label>
-              <input
-                className="ronyx-input"
-                placeholder="mi / km"
-                value={profile.hauling_distance}
-                onChange={(e) => updateField("hauling_distance", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Estimated Load / Unload Time</label>
-              <div style={{ display: "grid", gap: 8 }}>
-                <input
-                  type="time"
-                  className="ronyx-input"
-                  value={profile.estimated_load_time}
-                  onChange={(e) => updateField("estimated_load_time", e.target.value)}
-                />
-                <input
-                  type="time"
-                  className="ronyx-input"
-                  value={profile.estimated_unload_time}
-                  onChange={(e) => updateField("estimated_unload_time", e.target.value)}
-                />
+        {activeTab === "sites" && (
+          <section className="ronyx-grid">
+            <div className="ronyx-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Job Site Directory</h2>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="ronyx-action">+ New Site</button>
+                  <button className="ronyx-action">Map View</button>
+                </div>
+              </div>
+              <div className="ronyx-table">
+                <div className="ronyx-row" style={{ fontWeight: 700 }}>
+                  <span />
+                  <span>Site Name</span>
+                  <span>Location</span>
+                  <span>Key Info & Alerts</span>
+                  <span />
+                  <span />
+                </div>
+                {jobSites.map((site) => (
+                  <div key={site.id} className="ronyx-row">
+                    <span>•</span>
+                    <span>{site.name}</span>
+                    <span>{site.location}</span>
+                    <span>
+                      {site.alerts}
+                      <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>{site.contactName}</div>
+                    </span>
+                    <span />
+                    <span>
+                      <button className="ronyx-action" onClick={() => setSelectedSiteId(site.id)}>
+                        View
+                      </button>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-            <div>
-              <label className="ronyx-label">Ticket or Scale Number</label>
-              <input
-                className="ronyx-input"
-                value={profile.ticket_number}
-                onChange={(e) => updateField("ticket_number", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Tare / Gross / Net Weight</label>
-              <div style={{ display: "grid", gap: 8 }}>
-                <input
-                  className="ronyx-input"
-                  placeholder="Tare"
-                  value={profile.tare_weight}
-                  onChange={(e) => updateField("tare_weight", e.target.value)}
-                />
-                <input
-                  className="ronyx-input"
-                  placeholder="Gross"
-                  value={profile.gross_weight}
-                  onChange={(e) => updateField("gross_weight", e.target.value)}
-                />
-                <input
-                  className="ronyx-input"
-                  placeholder="Net"
-                  value={profile.net_weight}
-                  onChange={(e) => updateField("net_weight", e.target.value)}
-                />
+
+            {selectedSite && (
+              <div className="ronyx-card ronyx-panel">
+                <h3 style={{ fontWeight: 700, marginBottom: 12 }}>{selectedSite.name}</h3>
+                <div className="ronyx-grid" style={{ rowGap: 14 }}>
+                  <div>
+                    <label className="ronyx-label">Full Address</label>
+                    <input className="ronyx-input" value={selectedSite.location} onChange={(e) => updateSiteField("location", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Site Contact</label>
+                    <input className="ronyx-input" value={selectedSite.contactName} onChange={(e) => updateSiteField("contactName", e.target.value)} />
+                    <input className="ronyx-input" style={{ marginTop: 8 }} value={selectedSite.contactPhone} onChange={(e) => updateSiteField("contactPhone", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Hours & Access</label>
+                    <input className="ronyx-input" value={selectedSite.hours} onChange={(e) => updateSiteField("hours", e.target.value)} />
+                    <input className="ronyx-input" style={{ marginTop: 8 }} value={selectedSite.accessNotes} onChange={(e) => updateSiteField("accessNotes", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Unload Instructions</label>
+                    <textarea className="ronyx-textarea" value={selectedSite.unloadInstructions} onChange={(e) => updateSiteField("unloadInstructions", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">History</label>
+                    <input className="ronyx-input" value={selectedSite.history} onChange={(e) => updateSiteField("history", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Site Rating</label>
+                    <input className="ronyx-input" value={selectedSite.rating} onChange={(e) => updateSiteField("rating", e.target.value)} />
+                    <input className="ronyx-input" style={{ marginTop: 8 }} value={selectedSite.ratingNote} onChange={(e) => updateSiteField("ratingNote", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">GPS Location</label>
+                    <input className="ronyx-input" value={selectedSite.gps} onChange={(e) => updateSiteField("gps", e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                  <button className="ronyx-action">Save Site</button>
+                  <button className="ronyx-action">Clone for New Project</button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === "quote" && (
+          <section className="ronyx-card">
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Quick Hauling Quote</h2>
+            <div className="ronyx-grid" style={{ rowGap: 20 }}>
+              <div>
+                <label className="ronyx-label">From</label>
+                <input className="ronyx-input" value={quote.from} onChange={(e) => setQuote((prev) => ({ ...prev, from: e.target.value }))} />
+              </div>
+              <div>
+                <label className="ronyx-label">To</label>
+                <input className="ronyx-input" value={quote.to} onChange={(e) => setQuote((prev) => ({ ...prev, to: e.target.value }))} />
+              </div>
+              <div>
+                <label className="ronyx-label">Distance (mi)</label>
+                <input className="ronyx-input" value={quote.distance} onChange={(e) => setQuote((prev) => ({ ...prev, distance: e.target.value }))} />
+              </div>
+              <div>
+                <label className="ronyx-label">Material</label>
+                <input className="ronyx-input" value={quote.material} onChange={(e) => setQuote((prev) => ({ ...prev, material: e.target.value }))} />
+              </div>
+              <div>
+                <label className="ronyx-label">Est. Load/Unload (hrs)</label>
+                <input className="ronyx-input" value={quote.loadHours} onChange={(e) => setQuote((prev) => ({ ...prev, loadHours: e.target.value }))} />
+              </div>
+              <div>
+                <label className="ronyx-label">Customer</label>
+                <input className="ronyx-input" value={quote.customer} onChange={(e) => setQuote((prev) => ({ ...prev, customer: e.target.value }))} />
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Reports & Tracking</h2>
-          <div className="ronyx-grid">
-            {[
-              "Daily Tonnage / Yardage Report",
-              "Load Summary by Material, Customer, or Driver",
-              "Revenue by Material Type",
-              "Rate History / Adjustments Log",
-              "Profit per Load / Job / Material",
-            ].map((item) => (
-              <div key={item} className="ronyx-row">
-                <span>{item}</span>
-                <button className="ronyx-action">View</button>
+            <div className="ronyx-card" style={{ marginTop: 18 }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                Live Price Breakdown
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="ronyx-row">
+                <span>Hauling ({quote.distance} mi @ {selectedRate?.baseRate}/mi)</span>
+                <span>${quoteTotals.haulCharge.toFixed(2)}</span>
+              </div>
+              <div className="ronyx-row">
+                <span>Load/Unload ({quote.loadHours} hrs @ {selectedRate?.baseRate}/hr)</span>
+                <span>${quoteTotals.timeCharge.toFixed(2)}</span>
+              </div>
+              <div className="ronyx-row">
+                <span>Fuel Surcharge ({selectedRate?.fuelPct || "0"}%)</span>
+                <span>${quoteTotals.fuelCharge.toFixed(2)}</span>
+              </div>
+              <div className="ronyx-row" style={{ fontWeight: 700 }}>
+                <span>Quote Total</span>
+                <span>${quoteTotals.total.toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                <button className="ronyx-action">Create Load & Ticket</button>
+                <button className="ronyx-action">Copy Quote</button>
+                <button className="ronyx-action">Email to Customer</button>
+              </div>
+            </div>
+          </section>
+        )}
 
-        <section className="ronyx-card">
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Optional Add-ons</h2>
-          <div className="ronyx-grid">
-            <div className="ronyx-row">
-              <span>Digital Ticket Uploads (photo or scan)</span>
-              <input
-                type="checkbox"
-                checked={profile.digital_ticket_uploads}
-                onChange={(e) => updateField("digital_ticket_uploads", e.target.checked)}
-              />
-            </div>
-            <div className="ronyx-row">
-              <span>GPS Tracking for Load Verification</span>
-              <input
-                type="checkbox"
-                checked={profile.gps_tracking}
-                onChange={(e) => updateField("gps_tracking", e.target.checked)}
-              />
-            </div>
-            <div className="ronyx-row">
-              <span>Signature Capture for Delivery Confirmation</span>
-              <input
-                type="checkbox"
-                checked={profile.signature_capture}
-                onChange={(e) => updateField("signature_capture", e.target.checked)}
-              />
-            </div>
-            <div className="ronyx-row">
-              <span>Automated Invoice Generation</span>
-              <input
-                type="checkbox"
-                checked={profile.auto_invoice}
-                onChange={(e) => updateField("auto_invoice", e.target.checked)}
-              />
-            </div>
+        <section className="ronyx-grid" style={{ marginTop: 20 }}>
+          <div className="ronyx-card">
+            <h3 style={{ marginBottom: 8 }}>Most Profitable Customers (This Month)</h3>
+            <div>Jones Const ($12,850)</div>
+            <div>City Project ($9,200)</div>
+          </div>
+          <div className="ronyx-card">
+            <h3 style={{ marginBottom: 8 }}>Top Job Sites by Volume</h3>
+            <div>Main St (85 loads)</div>
+            <div>Riverside (42 loads)</div>
+          </div>
+          <div className="ronyx-card">
+            <h3 style={{ marginBottom: 8 }}>Rate Expiration Alerts</h3>
+            <div>2 rate cards expire in next 30 days.</div>
           </div>
         </section>
       </div>
