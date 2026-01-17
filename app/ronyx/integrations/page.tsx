@@ -36,6 +36,14 @@ export default function RonyxIntegrationsPage() {
     }
   }
 
+  async function connectQuickBooks() {
+    const res = await fetch("/api/ronyx/quickbooks/connect", { method: "POST" });
+    const data = await res.json();
+    if (data.integration) {
+      setIntegrations((prev) => prev.map((item) => (item.id === data.integration.id ? data.integration : item)));
+    }
+  }
+
   return (
     <div className="ronyx-shell">
       <style jsx global>{`
@@ -113,9 +121,15 @@ export default function RonyxIntegrationsPage() {
                   {integration.category} • {integration.status}
                 </div>
               </div>
-              <button className="ronyx-toggle" onClick={() => toggleIntegration(integration)}>
-                {integration.enabled ? "Enabled" : "Disabled"}
-              </button>
+              {integration.name === "QuickBooks" ? (
+                <button className="ronyx-toggle" onClick={connectQuickBooks}>
+                  {integration.enabled ? "Reconnect QBO" : "Connect QBO"}
+                </button>
+              ) : (
+                <button className="ronyx-toggle" onClick={() => toggleIntegration(integration)}>
+                  {integration.enabled ? "Enabled" : "Disabled"}
+                </button>
+              )}
             </div>
           ))}
         </section>

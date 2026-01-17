@@ -57,6 +57,26 @@ export default function RonyxAccountingPage() {
     [integrations],
   );
 
+  const quickbooks = accountingIntegrations.find((integration) => integration.name === "QuickBooks");
+
+  async function connectQuickBooks() {
+    try {
+      const res = await fetch("/api/ronyx/quickbooks/connect", { method: "POST" });
+      const data = await res.json();
+      if (data.integration) {
+        setIntegrations((prev) =>
+          prev.map((item) => (item.id === data.integration.id ? data.integration : item)),
+        );
+      }
+    } catch (err) {
+      console.error("Failed to connect QuickBooks", err);
+    }
+  }
+
+  function exportQuickBooksDesktop() {
+    window.location.href = "/api/ronyx/quickbooks/export?type=invoices";
+  }
+
   async function markExported(invoice: Invoice) {
     setSavingId(invoice.id);
     try {
@@ -155,6 +175,32 @@ export default function RonyxAccountingPage() {
             Back to Dashboard
           </Link>
         </div>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>QuickBooks Setup</h2>
+          <div className="ronyx-row" style={{ marginBottom: 12 }}>
+            <div>
+              <div style={{ fontWeight: 700 }}>QuickBooks Online (QBO)</div>
+              <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                Connect via Intuit API to push approved payroll or invoices.
+              </div>
+            </div>
+            <button className="ronyx-action" onClick={connectQuickBooks}>
+              {quickbooks?.enabled ? "Reconnect QBO" : "Connect QBO"}
+            </button>
+          </div>
+          <div className="ronyx-row">
+            <div>
+              <div style={{ fontWeight: 700 }}>QuickBooks Desktop (QBDT)</div>
+              <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                Export an .IIF file for manual import.
+              </div>
+            </div>
+            <button className="ronyx-action primary" onClick={exportQuickBooksDesktop}>
+              Export IIF
+            </button>
+          </div>
+        </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Accounting Connections</h2>
