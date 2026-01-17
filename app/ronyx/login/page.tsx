@@ -31,10 +31,7 @@ export default function RonyxLoginPage() {
       return;
     }
 
-    const role = data.user?.user_metadata?.role;
-    if (role === "manager") router.push("/ronyx");
-    else if (role === "admin") router.push("/dashboard");
-    else router.push("/home");
+    router.push("/ronyx");
   }
 
   if (demoMode) {
@@ -46,8 +43,6 @@ export default function RonyxLoginPage() {
           <p className="login-tagline">Logins are disabled for demos.</p>
           <div className="space-y-3">
             <Link href="/ronyx">Go to Ronyx Portal</Link>
-            <br />
-            <Link href="/demo">Open Sales Demo</Link>
           </div>
         </div>
       </div>
