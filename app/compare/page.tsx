@@ -1,3 +1,5 @@
+"use client";
+
 import MarketingShell from "../components/MarketingShell";
 
 export default function ComparePage() {
