@@ -748,71 +748,205 @@ export default function RonyxHrCompliancePage() {
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Legal & Compliance Documents</h2>
           <div className="ronyx-grid">
-            {[
-              "Signed employment contract",
-              "Non-compete / confidentiality agreements",
-              "Background check completion",
-              "Drug/alcohol policy acknowledgment",
-              "Driver handbook acknowledgment",
-            ].map((item) => (
-              <div key={item} className="ronyx-row">
-                <span>{item}</span>
-                <button className="ronyx-action">Upload</button>
-              </div>
-            ))}
+            <div className="ronyx-row">
+              <span>Signed employment contract</span>
+              <input
+                type="checkbox"
+                checked={profile.employment_contract_signed}
+                onChange={(e) => updateField("employment_contract_signed", e.target.checked)}
+              />
+            </div>
+            <div className="ronyx-row">
+              <span>Non-compete / confidentiality agreements</span>
+              <input
+                type="checkbox"
+                checked={profile.non_compete_signed}
+                onChange={(e) => updateField("non_compete_signed", e.target.checked)}
+              />
+            </div>
+            <div className="ronyx-row">
+              <span>Background check completion</span>
+              <input
+                type="checkbox"
+                checked={profile.background_check_completed}
+                onChange={(e) => updateField("background_check_completed", e.target.checked)}
+              />
+            </div>
+            <div className="ronyx-row">
+              <span>Drug/alcohol policy acknowledgment</span>
+              <input
+                type="checkbox"
+                checked={profile.drug_policy_ack}
+                onChange={(e) => updateField("drug_policy_ack", e.target.checked)}
+              />
+            </div>
+            <div className="ronyx-row">
+              <span>Driver handbook acknowledgment</span>
+              <input
+                type="checkbox"
+                checked={profile.handbook_ack}
+                onChange={(e) => updateField("handbook_ack", e.target.checked)}
+              />
+            </div>
           </div>
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Performance & Reviews</h2>
           <div className="ronyx-grid">
-            {[
-              "Review date",
-              "Reviewer (manager / supervisor)",
-              "Driver scorecard (on-time %, fuel efficiency, safety points)",
-              "Training or improvement plan",
-              "Disciplinary actions (warnings, suspensions, terminations)",
-            ].map((item) => (
-              <div key={item} className="ronyx-row">
-                <span>{item}</span>
-                <button className="ronyx-action">Manage</button>
-              </div>
-            ))}
+            <div>
+              <label className="ronyx-label">Review date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={profile.review_date}
+                onChange={(e) => updateField("review_date", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Reviewer (manager / supervisor)</label>
+              <input
+                className="ronyx-input"
+                value={profile.reviewer}
+                onChange={(e) => updateField("reviewer", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Driver scorecard</label>
+              <textarea
+                className="ronyx-textarea"
+                value={profile.driver_scorecard}
+                onChange={(e) => updateField("driver_scorecard", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Training or improvement plan</label>
+              <textarea
+                className="ronyx-textarea"
+                value={profile.improvement_plan}
+                onChange={(e) => updateField("improvement_plan", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Disciplinary actions</label>
+              <textarea
+                className="ronyx-textarea"
+                value={profile.disciplinary_actions}
+                onChange={(e) => updateField("disciplinary_actions", e.target.value)}
+              />
+            </div>
           </div>
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Recruiting & Onboarding</h2>
           <div className="ronyx-grid">
-            {[
-              "Application date",
-              "Referral source (job board, word of mouth, etc.)",
-              "Pre-hire checklist complete",
-              "Orientation date and trainer name",
-              "Road test result and date",
-            ].map((item) => (
-              <div key={item} className="ronyx-row">
-                <span>{item}</span>
-                <button className="ronyx-action">Track</button>
-              </div>
-            ))}
+            <div>
+              <label className="ronyx-label">Application date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={profile.application_date}
+                onChange={(e) => updateField("application_date", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Referral source</label>
+              <input
+                className="ronyx-input"
+                value={profile.referral_source}
+                onChange={(e) => updateField("referral_source", e.target.value)}
+              />
+            </div>
+            <div className="ronyx-row">
+              <span>Pre-hire checklist complete</span>
+              <input
+                type="checkbox"
+                checked={profile.prehire_checklist_complete}
+                onChange={(e) => updateField("prehire_checklist_complete", e.target.checked)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Orientation date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={profile.orientation_date}
+                onChange={(e) => updateField("orientation_date", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Orientation trainer name</label>
+              <input
+                className="ronyx-input"
+                value={profile.orientation_trainer}
+                onChange={(e) => updateField("orientation_trainer", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Road test result</label>
+              <input
+                className="ronyx-input"
+                value={profile.road_test_result}
+                onChange={(e) => updateField("road_test_result", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Road test date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={profile.road_test_date}
+                onChange={(e) => updateField("road_test_date", e.target.value)}
+              />
+            </div>
           </div>
         </section>
 
         <section className="ronyx-card">
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Offboarding</h2>
           <div className="ronyx-grid">
-            {[
-              "Termination date and reason",
-              "Equipment returned (keys, fuel card, ELD device, uniforms)",
-              "Exit interview notes",
-              "Final paycheck issued",
-            ].map((item) => (
-              <div key={item} className="ronyx-row">
-                <span>{item}</span>
-                <button className="ronyx-action">Record</button>
-              </div>
-            ))}
+            <div>
+              <label className="ronyx-label">Termination date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={profile.termination_date}
+                onChange={(e) => updateField("termination_date", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Termination reason</label>
+              <input
+                className="ronyx-input"
+                value={profile.termination_reason}
+                onChange={(e) => updateField("termination_reason", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Equipment returned</label>
+              <textarea
+                className="ronyx-textarea"
+                value={profile.equipment_returned}
+                onChange={(e) => updateField("equipment_returned", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Exit interview notes</label>
+              <textarea
+                className="ronyx-textarea"
+                value={profile.exit_interview_notes}
+                onChange={(e) => updateField("exit_interview_notes", e.target.value)}
+              />
+            </div>
+            <div className="ronyx-row">
+              <span>Final paycheck issued</span>
+              <input
+                type="checkbox"
+                checked={profile.final_paycheck_issued}
+                onChange={(e) => updateField("final_paycheck_issued", e.target.checked)}
+              />
+            </div>
           </div>
         </section>
 

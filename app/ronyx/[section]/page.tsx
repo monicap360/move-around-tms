@@ -123,7 +123,7 @@ const sectionConfig: Record<
     description: "HOS, safety, and audit readiness.",
     actions: [
       { label: "Review Alerts", href: "/ronyx/alerts" },
-      { label: "Audit Shield", href: "/audit-support-for-trucking-companies" },
+      { label: "Compliance Reports", href: "/ronyx/reports" },
     ],
     rows: [
       { title: "Driver J. Lane", subtitle: "HOS limit approaching", status: "Warning" },
@@ -194,48 +194,48 @@ export default function RonyxSectionPage({ params }: SectionPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white">
+    <div className="min-h-screen bg-[#e2eaf6] text-slate-900">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider">Ronyx TMS</p>
-            <h1 className="text-3xl font-bold text-[#F7931E]">{config.label}</h1>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Ronyx TMS</p>
+            <h1 className="text-3xl font-bold text-[#1d4ed8]">{config.label}</h1>
           </div>
           <Link
             href="/ronyx"
-            className="px-4 py-2 bg-[#141418] border border-[#2a2a2f] rounded-lg text-sm text-gray-200 hover:border-[#F7931E]/60 transition-all"
+            className="px-4 py-2 bg-white border border-[#c7d6ea] rounded-lg text-sm text-slate-700 hover:border-[#1d4ed8]/60 transition-all"
           >
             Back to Dashboard
           </Link>
         </div>
 
-        <div className="bg-[#111114] border border-[#222228] rounded-xl p-6">
-          <p className="text-sm text-gray-400 mb-4">{config.description}</p>
+        <div className="bg-[#f8fafc] border border-[#c7d6ea] rounded-2xl p-6 shadow-[0_18px_30px_rgba(15,23,42,0.08)]">
+          <p className="text-sm text-slate-600 mb-4">{config.description}</p>
           <div className="flex flex-wrap gap-3 mb-6">
             {config.actions.map((action) => (
               <Link
                 key={action.label}
                 href={action.href}
-                className="px-4 py-2 bg-[#141418] border border-[#2a2a2f] rounded-lg text-sm text-gray-200 hover:border-[#F7931E]/60 transition-all"
+                className="px-4 py-2 bg-white border border-[#c7d6ea] rounded-full text-sm text-slate-700 hover:border-[#1d4ed8]/60 transition-all"
               >
                 {action.label}
               </Link>
             ))}
           </div>
           {config.rows.length === 0 ? (
-            <p className="text-sm text-gray-400">No records yet.</p>
+            <p className="text-sm text-slate-500">No records yet.</p>
           ) : (
             <div className="space-y-3">
               {config.rows.map((row) => (
                 <div
                   key={row.title}
-                  className="flex items-center justify-between bg-[#141418] border border-[#2a2a2f] rounded-lg px-4 py-3"
+                  className="flex items-center justify-between bg-white border border-[#c7d6ea] rounded-xl px-4 py-3"
                 >
                   <div>
-                    <div className="text-sm font-semibold text-white">{row.title}</div>
-                    <div className="text-xs text-gray-400">{row.subtitle}</div>
+                    <div className="text-sm font-semibold text-slate-900">{row.title}</div>
+                    <div className="text-xs text-slate-500">{row.subtitle}</div>
                   </div>
-                  <span className="text-xs font-semibold text-[#F7931E]">{row.status}</span>
+                  <span className="text-xs font-semibold text-[#1d4ed8]">{row.status}</span>
                 </div>
               ))}
             </div>

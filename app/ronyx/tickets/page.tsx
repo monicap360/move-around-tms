@@ -349,6 +349,13 @@ export default function RonyxTicketsPage() {
           padding: 10px 12px;
           color: #0f172a;
           width: 100%;
+          box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        }
+        .ronyx-input:focus,
+        .ronyx-input:focus-visible {
+          outline: none;
+          border-color: rgba(29, 78, 216, 0.6);
+          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
         }
         .ronyx-label {
           font-size: 0.8rem;
@@ -363,6 +370,7 @@ export default function RonyxTicketsPage() {
           padding: 10px 20px;
           font-weight: 700;
           border: none;
+          box-shadow: 0 10px 18px rgba(29, 78, 216, 0.22);
         }
         .ronyx-tag {
           padding: 4px 10px;
@@ -402,7 +410,7 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Information</h2>
-          <div className="ronyx-grid">
+          <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Ticket Number</label>
               <input
@@ -542,7 +550,7 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Weight / Quantity Details</h2>
-          <div className="ronyx-grid">
+          <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Gross Weight</label>
               <input
@@ -592,7 +600,7 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Uploads</h2>
-          <div className="ronyx-grid">
+          <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Upload Scale Ticket</label>
               <input
@@ -643,7 +651,7 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Approval & Payment</h2>
-          <div className="ronyx-grid">
+          <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Approval (Supervisor)</label>
               <input
@@ -695,7 +703,7 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Additional Details</h2>
-          <div className="ronyx-grid">
+          <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Odometer</label>
               <input
@@ -733,7 +741,7 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Optional Features</h2>
-          <div className="ronyx-grid">
+          <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Barcode / QR Scan</label>
               <input
@@ -789,7 +797,7 @@ export default function RonyxTicketsPage() {
           </div>
         </section>
 
-        <div style={{ textAlign: "right", marginBottom: 24 }}>
+        <div style={{ textAlign: "right", marginBottom: 24, display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
           <button className="ronyx-btn" onClick={handleSubmit} disabled={loading}>
             {loading ? "Saving..." : "Save Ticket"}
           </button>

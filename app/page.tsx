@@ -1028,9 +1028,6 @@ export default function LandingPage() {
           </button>
 
           <div className={`nav-links ${menuOpen ? "active" : ""}`}>
-            <a href="#performance" className="nav-link" onClick={() => setMenuOpen(false)}>
-              {t("navPitToPay")}
-            </a>
             <a href="#pits" className="nav-link" onClick={() => setMenuOpen(false)}>
               {t("navPits")}
             </a>
@@ -1095,16 +1092,36 @@ export default function LandingPage() {
                 marginTop: 20,
               }}
             >
-              <Link href="/pit-to-pay" prefetch={false} className="btn btn-primary" style={{ width: "100%" }}>
+              <Link
+                href="/pit-to-pay"
+                prefetch={false}
+                className="btn btn-primary"
+                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
+              >
                 {t("choosePathPits")}
               </Link>
-              <Link href="/dump-truck-fleets" prefetch={false} className="btn btn-secondary" style={{ width: "100%" }}>
+              <Link
+                href="/dump-truck-fleets"
+                prefetch={false}
+                className="btn btn-secondary"
+                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
+              >
                 {t("choosePathDump")}
               </Link>
-              <Link href="/cross-border" prefetch={false} className="btn btn-secondary" style={{ width: "100%" }}>
+              <Link
+                href="/cross-border"
+                prefetch={false}
+                className="btn btn-secondary"
+                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
+              >
                 {t("choosePathCrossBorder")}
               </Link>
-              <Link href="/" prefetch={false} className="btn btn-secondary" style={{ width: "100%" }}>
+              <Link
+                href="/"
+                prefetch={false}
+                className="btn btn-secondary"
+                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
+              >
                 {t("choosePathGeneral")}
               </Link>
             </div>
