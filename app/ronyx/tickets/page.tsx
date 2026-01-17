@@ -17,7 +17,6 @@ type Ticket = {
   truck_number?: string | null;
   trailer_number?: string | null;
   material?: string | null;
-  unit_type?: string | null;
   quantity?: number | null;
   bill_rate?: number | null;
   status?: string | null;
@@ -28,8 +27,12 @@ type Ticket = {
   customer_name?: string | null;
   delivery_location?: string | null;
   unit_type?: string | null;
-  status?: string | null;
-  payment_status?: string | null;
+  ticket_image_url?: string | null;
+  delivery_receipt_url?: string | null;
+  pod_url?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  invoice_number?: string | null;
 };
 
 type ReconResult = {
@@ -56,6 +59,9 @@ export default function RonyxTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [ticketId, setTicketId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"manage" | "reconcile">("manage");
+  const [showFullForm, setShowFullForm] = useState(false);
+  const [showReconConfig, setShowReconConfig] = useState(false);
   const [reconRunning, setReconRunning] = useState(false);
   const [reconResults, setReconResults] = useState<ReconResult[]>([]);
   const [reconExceptions, setReconExceptions] = useState<ReconException[]>([]);
@@ -195,6 +201,40 @@ export default function RonyxTicketsPage() {
     return { total, paid, pending, revenue };
   }, [tickets]);
 
+  const weeklySnapshot = useMemo(() => {
+    const now = new Date();
+    const startThisWeek = new Date(now);
+    startThisWeek.setDate(now.getDate() - 7);
+    const startLastWeek = new Date(now);
+    startLastWeek.setDate(now.getDate() - 14);
+    const endLastWeek = new Date(now);
+    endLastWeek.setDate(now.getDate() - 7);
+
+    const thisWeek = { count: 0, revenue: 0 };
+    const lastWeek = { count: 0, revenue: 0 };
+
+    tickets.forEach((t) => {
+      if (!t.ticket_date) return;
+      const date = new Date(t.ticket_date);
+      if (Number.isNaN(date.getTime())) return;
+      const qty = Number(t.quantity || 0);
+      const rate = Number(t.bill_rate || 0);
+      const revenue = qty * rate;
+
+      if (date >= startThisWeek && date <= now) {
+        thisWeek.count += 1;
+        thisWeek.revenue += revenue;
+      } else if (date >= startLastWeek && date < endLastWeek) {
+        lastWeek.count += 1;
+        lastWeek.revenue += revenue;
+      }
+    });
+
+    const delta =
+      lastWeek.revenue > 0 ? ((thisWeek.revenue - lastWeek.revenue) / lastWeek.revenue) * 100 : 0;
+    return { thisWeek, lastWeek, delta };
+  }, [tickets]);
+
   const reportSummary = useMemo(() => {
     const byPeriod: Record<string, { count: number; revenue: number }> = {};
     const byMaterial: Record<string, number> = {};
@@ -229,6 +269,48 @@ export default function RonyxTicketsPage() {
   const discrepancies = useMemo(() => {
     return clarifier(tickets);
   }, [tickets]);
+
+  const reconByTicket = useMemo(() => {
+    return new Map(reconResults.map((result) => [result.ticket_number, result]));
+  }, [reconResults]);
+
+  const reconSummary = useMemo(() => {
+    let matched = 0;
+    let variance = 0;
+    let exception = 0;
+    reconResults.forEach((result) => {
+      const status = result.status?.toLowerCase() || "";
+      if (status.includes("exception") || status.includes("fail")) {
+        exception += 1;
+      } else if (status.includes("variance") || status.includes("warning")) {
+        variance += 1;
+      } else {
+        matched += 1;
+      }
+    });
+    return { matched, variance, exception };
+  }, [reconResults]);
+
+  const ticketQueue = useMemo(() => {
+    const pendingUpload: Ticket[] = [];
+    const awaitingApproval: Ticket[] = [];
+    const flagged: Ticket[] = [];
+    const approved: Ticket[] = [];
+
+    tickets.forEach((ticket) => {
+      const reconStatus = reconByTicket.get(ticket.ticket_number || "")?.status?.toLowerCase() || "";
+      const isFlagged = reconStatus.includes("exception") || reconStatus.includes("variance");
+      if (isFlagged) flagged.push(ticket);
+      if (ticket.status === "approved" || ticket.status === "paid") {
+        approved.push(ticket);
+      } else if (ticket.status === "pending") {
+        awaitingApproval.push(ticket);
+      }
+      if (!ticket.ticket_image_url) pendingUpload.push(ticket);
+    });
+
+    return { pendingUpload, awaitingApproval, flagged, approved };
+  }, [tickets, reconByTicket]);
 
   async function ensureTicketId() {
     if (ticketId) return ticketId;
@@ -309,6 +391,46 @@ export default function RonyxTicketsPage() {
       body: JSON.stringify({ status, payment_status }),
     });
     await loadTickets();
+  }
+
+  async function approveTicket() {
+    if (!ticketId) return;
+    const approvedAt = new Date().toISOString();
+    await fetch(`/api/ronyx/tickets/${ticketId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "approved",
+        approved_by: "Dispatcher",
+        approved_at: approvedAt,
+      }),
+    });
+    setForm((prev) => ({ ...prev, status: "approved", approved_by: "Dispatcher", approved_at: approvedAt }));
+    await loadTickets();
+  }
+
+  async function markTicketPaid() {
+    if (!ticketId) return;
+    const invoiceNumber = window.prompt("Enter invoice number (optional):") || "";
+    await fetch(`/api/ronyx/tickets/${ticketId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "paid",
+        payment_status: "paid",
+        invoice_number: invoiceNumber,
+      }),
+    });
+    setForm((prev) => ({ ...prev, status: "paid", payment_status: "paid", invoice_number: invoiceNumber }));
+    await loadTickets();
+  }
+
+  function reconIconFor(ticket: Ticket) {
+    const status = reconByTicket.get(ticket.ticket_number || "")?.status?.toLowerCase() || "";
+    if (!status) return "·";
+    if (status.includes("exception") || status.includes("fail")) return "✗";
+    if (status.includes("variance") || status.includes("warning")) return "⚠";
+    return "✓";
   }
 
   return (
