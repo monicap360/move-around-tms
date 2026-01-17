@@ -50,6 +50,7 @@ export default function RonyxTicketsPage() {
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
+  const [ticketId, setTicketId] = useState<string | null>(null);
   const [reconRunning, setReconRunning] = useState(false);
   const [reconResults, setReconResults] = useState<ReconResult[]>([]);
   const [reconExceptions, setReconExceptions] = useState<ReconException[]>([]);
@@ -187,11 +188,43 @@ export default function RonyxTicketsPage() {
     return clarifier(tickets);
   }, [tickets]);
 
+  async function ensureTicketId() {
+    if (ticketId) return ticketId;
+    const res = await fetch("/api/ronyx/tickets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticket_number: form.ticket_number,
+        ticket_date: form.ticket_date,
+        driver_id: form.driver_id || null,
+        driver_name: form.driver_name || null,
+        truck_number: form.truck_number || null,
+        trailer_number: form.trailer_number || null,
+        material: form.material || null,
+        unit_type: form.unit_type,
+        quantity: form.quantity || null,
+        bill_rate: form.bill_rate || form.rate_amount || null,
+        status: form.status,
+        payment_status: form.payment_status,
+      }),
+    });
+    const data = await res.json();
+    if (data.ticket?.id) {
+      setTicketId(data.ticket.id);
+      if (!form.ticket_number && data.ticket.ticket_number) {
+        setForm((prev) => ({ ...prev, ticket_number: data.ticket.ticket_number }));
+      }
+      return data.ticket.id as string;
+    }
+    throw new Error("Unable to create ticket");
+  }
+
   async function handleUpload(file: File, docType: string) {
+    const id = await ensureTicketId();
     const formData = new FormData();
     formData.append("file", file);
     formData.append("doc_type", docType);
-    formData.append("ticket_id", form.ticket_number || "new");
+    formData.append("ticket_id", id);
 
     const res = await fetch("/api/ronyx/tickets/upload", { method: "POST", body: formData });
     const data = await res.json();
@@ -206,13 +239,20 @@ export default function RonyxTicketsPage() {
         net_weight: form.net_weight || calculatedNet,
         bill_rate: form.bill_rate || form.rate_amount,
       };
-      const res = await fetch("/api/ronyx/tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = ticketId
+        ? await fetch(`/api/ronyx/tickets/${ticketId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/ronyx/tickets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
       if (res.ok) {
         setForm((prev) => ({ ...prev, ticket_number: "", material: "", quantity: "", rate_amount: "", bill_rate: "" }));
+        setTicketId(null);
         await loadTickets();
       }
     } finally {

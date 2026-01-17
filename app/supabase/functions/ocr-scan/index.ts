@@ -243,40 +243,86 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
   const totalBill = quantity * finalBillRate;
   const totalProfit = quantity * (finalBillRate - finalPayRate);
 
-  const { data: ticket, error: insertError } = await supabase
-    .from("aggregate_tickets")
-    .insert({
-      partner_id: matchedPartner?.id || null,
-      driver_id: matchedDriver?.id || body.driverId || null,
-      driver_name_ocr: ticketData.driverName || null,
-      driver_matched_confidence: matchedDriver?.confidence || null,
-      auto_matched: Boolean(matchedDriver),
-      ticket_number: ticketData.ticketNumber,
-      material: ticketData.material,
-      quantity: quantity,
-      unit_type: ticketData.unitType || "Ton",
-      pay_rate: finalPayRate,
-      bill_rate: finalBillRate,
-      total_pay: totalPay,
-      total_bill: totalBill,
-      total_profit: totalProfit,
-      fleet_id: body.fleetId || null,
-      ticket_date: ticketData.ticketDate || new Date().toISOString(),
-      status: "Pending Manager Review",
+  const ticketId = body.ticket_id || body.ticketId || null;
+  let ticket: any = null;
+
+  if (ticketId) {
+    const updatePayload: Record<string, any> = {
       ocr_raw_text: rawText,
       ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
       ocr_processed_at: new Date().toISOString(),
-      image_url: fileUrl || null,
-    })
-    .select()
-    .single();
+      ocr_json: {
+        success: true,
+        extracted_data: ticketData,
+        rates: { pay_rate: finalPayRate, bill_rate: finalBillRate },
+      },
+    };
 
-  if (insertError) throw insertError;
+    if (fileUrl) updatePayload.image_url = fileUrl;
+    if (ticketData.ticketNumber) updatePayload.ticket_number = ticketData.ticketNumber;
+    if (ticketData.material) updatePayload.material = ticketData.material;
+    if (ticketData.unitType) updatePayload.unit_type = ticketData.unitType;
+    if (ticketData.ticketDate) updatePayload.ticket_date = ticketData.ticketDate;
+    if (quantity) updatePayload.quantity = quantity;
+    if (finalPayRate) updatePayload.pay_rate = finalPayRate;
+    if (finalBillRate) updatePayload.bill_rate = finalBillRate;
+    if (quantity && finalPayRate) updatePayload.total_pay = totalPay;
+    if (quantity && finalBillRate) updatePayload.total_bill = totalBill;
+    if (quantity && finalBillRate && finalPayRate) updatePayload.total_profit = totalProfit;
+
+    if (matchedDriver?.id || body.driverId) {
+      updatePayload.driver_id = matchedDriver?.id || body.driverId;
+    }
+    if (ticketData.driverName) updatePayload.driver_name_ocr = ticketData.driverName;
+    if (matchedDriver?.confidence) updatePayload.driver_matched_confidence = matchedDriver.confidence;
+    updatePayload.auto_matched = Boolean(matchedDriver);
+
+    const { data: updated, error: updateError } = await supabase
+      .from("aggregate_tickets")
+      .update(updatePayload)
+      .eq("id", ticketId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    ticket = updated;
+  } else {
+    const { data: inserted, error: insertError } = await supabase
+      .from("aggregate_tickets")
+      .insert({
+        partner_id: matchedPartner?.id || null,
+        driver_id: matchedDriver?.id || body.driverId || null,
+        driver_name_ocr: ticketData.driverName || null,
+        driver_matched_confidence: matchedDriver?.confidence || null,
+        auto_matched: Boolean(matchedDriver),
+        ticket_number: ticketData.ticketNumber,
+        material: ticketData.material,
+        quantity: quantity,
+        unit_type: ticketData.unitType || "Ton",
+        pay_rate: finalPayRate,
+        bill_rate: finalBillRate,
+        total_pay: totalPay,
+        total_bill: totalBill,
+        total_profit: totalProfit,
+        fleet_id: body.fleetId || null,
+        ticket_date: ticketData.ticketDate || new Date().toISOString(),
+        status: "Pending Manager Review",
+        ocr_raw_text: rawText,
+        ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
+        ocr_processed_at: new Date().toISOString(),
+        image_url: fileUrl || null,
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+    ticket = inserted;
+  }
 
   // Score confidence for the new ticket (async, non-blocking)
   // Use Deno's fetch to call the API endpoint
-  const driver_id = matchedDriver?.id || body.driverId || ticket.driver_id;
-  if (ticket.id && (ticket.quantity || ticket.pay_rate || ticket.bill_rate)) {
+  const driver_id = matchedDriver?.id || body.driverId || ticket?.driver_id;
+  if (ticket?.id && (ticket.quantity || ticket.pay_rate || ticket.bill_rate)) {
     const appUrl = Deno.env.get("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
     fetch(`${appUrl}/api/tickets/score-confidence`, {
       method: "POST",
