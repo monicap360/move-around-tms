@@ -1,8 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function RonyxOnboardingSupportPage() {
+  const [tasks, setTasks] = useState<{ id: string; title: string; status: string }[]>([]);
+
+  useEffect(() => {
+    void loadTasks();
+  }, []);
+
+  async function loadTasks() {
+    try {
+      const res = await fetch("/api/assistants/larry/tasks");
+      const data = await res.json();
+      setTasks(data.tasks || []);
+    } catch (err) {
+      console.error("Failed to load Larry tasks", err);
+      setTasks([]);
+    }
+  }
+
   return (
     <div className="ronyx-shell">
       <style jsx global>{`
@@ -47,6 +65,31 @@ export default function RonyxOnboardingSupportPage() {
           font-weight: 600;
           background: rgba(29, 78, 216, 0.08);
         }
+        .larry-panel {
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1px solid var(--ronyx-border);
+          padding: 18px;
+          margin-bottom: 20px;
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
+        }
+        .larry-task {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: #f8fafc;
+          border: 1px solid rgba(29, 78, 216, 0.16);
+          margin-bottom: 10px;
+        }
+        .larry-status {
+          font-size: 0.7rem;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: rgba(29, 78, 216, 0.12);
+          font-weight: 700;
+        }
       `}</style>
 
       <div className="ronyx-container">
@@ -62,6 +105,28 @@ export default function RonyxOnboardingSupportPage() {
             Back to Dashboard
           </Link>
         </div>
+
+        <section className="larry-panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div>
+              <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Larry — Onboarding Partner</h2>
+              <p style={{ color: "rgba(15,23,42,0.7)" }}>
+                Larry keeps your setup optimized 24/7 with guided tasks and progress tracking.
+              </p>
+            </div>
+            <button className="ronyx-action">Optimize Setup</button>
+          </div>
+          {tasks.length === 0 ? (
+            <div className="ronyx-row">No onboarding tasks found.</div>
+          ) : (
+            tasks.map((task) => (
+              <div key={task.id} className="larry-task">
+                <span>{task.title}</span>
+                <span className="larry-status">{task.status.replace("_", " ").toUpperCase()}</span>
+              </div>
+            ))
+          )}
+        </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Onboarding Timeline</h2>

@@ -53,6 +53,17 @@ export default function WorkflowRulesPage() {
     secondValue: "PlannedWeight * 0.98",
   });
 
+  const addNewRule = () => {
+    const newRule: Rule = {
+      id: `rule-${Date.now()}`,
+      name: "New Automation Rule",
+      trigger: "Select trigger",
+      action: "Select action",
+      enabled: false,
+    };
+    setRules((prev) => [newRule, ...prev]);
+  };
+
   const toggleRule = (id: string) => {
     setRules((prev) => prev.map((rule) => (rule.id === id ? { ...rule, enabled: !rule.enabled } : rule)));
   };
@@ -130,10 +141,15 @@ export default function WorkflowRulesPage() {
             <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Workflow Automation Rules</h1>
             <p className="ronyx-muted">Status: ACTIVE — Managing 142 loads with {rules.length} active rules.</p>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button className="ronyx-action">+ Add New Rule</button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button className="ronyx-action" onClick={addNewRule}>
+              + Add New Rule
+            </button>
             <Link href="/ronyx/workflows" className="ronyx-action">
               Back to Workflows
+            </Link>
+            <Link href="/ronyx" className="ronyx-action">
+              Back to Dashboard
             </Link>
           </div>
         </div>

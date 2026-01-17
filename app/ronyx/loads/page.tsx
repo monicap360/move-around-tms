@@ -12,19 +12,6 @@ const loadTabs = [
   "Assigned Drivers",
 ];
 
-const detailTabs = [
-  "Load Details",
-  "Documents",
-  "Payments & Settlements",
-  "Tracking / GPS",
-  "Status Updates",
-  "Customer Info",
-];
-
-type CustomerOption = { id: string; customer_name: string };
-type TruckOption = { id: string; truck_number: string };
-type DriverOption = { id: string; name: string };
-
 type Load = {
   id?: string;
   load_number: string;
@@ -49,13 +36,9 @@ type Load = {
 
 export default function RonyxLoadsPage() {
   const [activeTab, setActiveTab] = useState(loadTabs[0]);
-  const [detailTab, setDetailTab] = useState(detailTabs[0]);
   const [loads, setLoads] = useState<Load[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [trucks, setTrucks] = useState<TruckOption[]>([]);
-  const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [newLoad, setNewLoad] = useState({
     load_number: "",
     route: "",
@@ -79,32 +62,136 @@ export default function RonyxLoadsPage() {
     truck_number: "",
     status_notes: "",
   });
-  const [assignmentMessage, setAssignmentMessage] = useState("");
-
-  const alerts = useMemo(() => {
-    const now = Date.now();
-    return loads
-      .filter((load) => load.status === "active" && load.started_at)
-      .map((load) => {
-        const startedAt = load.started_at ? new Date(load.started_at).getTime() : 0;
-        const hours = startedAt ? Math.floor((now - startedAt) / (1000 * 60 * 60)) : 0;
-        return { load, hours };
-      })
-      .filter((entry) => entry.hours >= 2);
-  }, [loads]);
+  const [showMap, setShowMap] = useState(false);
+  const [leoInsights, setLeoInsights] = useState<
+    { id: string; type: string; message: string; action: string }[]
+  >([]);
 
   const availableLoads = useMemo(() => loads.filter((load) => load.status === "available"), [loads]);
+  const activeLoads = useMemo(() => loads.filter((load) => load.status === "active"), [loads]);
+  const completedLoads = useMemo(() => loads.filter((load) => load.status === "completed"), [loads]);
+  const cancelledLoads = useMemo(() => loads.filter((load) => load.status === "cancelled"), [loads]);
+
+  const dispatchCards = [
+    {
+      id: "LD-4029",
+      status: "LOADING",
+      statusClass: "loading",
+      driver: "J. Lane",
+      truck: "#24",
+      from: "Pit 3",
+      to: "Katy Site",
+      material: "12yd Gravel",
+      timer: "12 min",
+      column: "pit",
+    },
+    {
+      id: "LD-4031",
+      status: "WAITING",
+      statusClass: "waiting",
+      driver: "S. Grant",
+      truck: "#18",
+      from: "Pit 7",
+      to: "Beltway 8",
+      material: "15yd Topsoil",
+      timer: "8 min wait",
+      column: "pit",
+    },
+    {
+      id: "LD-4021",
+      status: "ON TRACK",
+      statusClass: "ontrack",
+      driver: "D. Perez",
+      truck: "#12",
+      from: "Pit 7",
+      to: "I-45 Jobsite",
+      material: "",
+      eta: "14 min",
+      distance: "8.2 mi",
+      column: "transit",
+    },
+    {
+      id: "LD-4018",
+      status: "DELIVERING",
+      statusClass: "delivering",
+      driver: "M. Chen",
+      truck: "#07",
+      from: "",
+      to: "Main St Project",
+      material: "18yd Road Base",
+      detention: "0 min",
+      column: "site",
+    },
+  ];
+
+  const driverAvailability = [
+    {
+      name: "D. Perez",
+      truck: "#12",
+      status: "available",
+      detail: "4h 22m available",
+      location: "Returning empty from I-45",
+      distance: "3.2 mi from Pit 7",
+      actionLabel: "Assign",
+      actionVariant: "primary",
+    },
+    {
+      name: "J. Lane",
+      truck: "#24",
+      status: "on-break",
+      detail: "On break until 10:30",
+      location: "At Pit 3",
+      distance: "18 min remaining",
+      actionLabel: "On Break",
+      actionVariant: "secondary",
+      disabled: true,
+    },
+  ];
+
+  const backhaulOpportunities = [
+    {
+      id: "bh001",
+      title: "Pit 3 → Downtown Site",
+      detail: "8yd Fill Sand • 6.5 miles",
+      price: "$185",
+      delta: "+$42 over empty return",
+    },
+  ];
+
+  const dispatchAlerts = [
+    {
+      id: "alert-1",
+      icon: "⛔",
+      title: "Truck 18 - Maintenance Due",
+      body: "Due in 3 days | Last service: 12,542 mi ago",
+      tone: "critical",
+      actions: ["Schedule"],
+    },
+    {
+      id: "alert-2",
+      icon: "⚠️",
+      title: "Load LD-4025 - Detention Timer",
+      body: "45 min free time elapsed | Site: Thompson Co",
+      tone: "warning",
+      actions: ["Charge $75", "Contact Site"],
+    },
+    {
+      id: "alert-3",
+      icon: "ℹ️",
+      title: "Shift Change in 45 min",
+      body: "Evening crew: 4 drivers available",
+      tone: "info",
+      actions: ["View Crew"],
+    },
+  ];
 
   async function assignLoad() {
     if (!assignment.load_id) {
-      setAssignmentMessage("Select a load to assign.");
       return;
     }
     if (!assignment.driver_name) {
-      setAssignmentMessage("Select a driver.");
       return;
     }
-    setAssignmentMessage("");
     await updateLoad(assignment.load_id, {
       status: "active",
       driver_name: assignment.driver_name,
@@ -117,15 +204,23 @@ export default function RonyxLoadsPage() {
       truck_number: "",
       status_notes: "",
     });
-    setAssignmentMessage("Load assigned to driver.");
   }
 
   useEffect(() => {
     void loadLoads();
-    void loadCustomers();
-    void loadTrucks();
-    void loadDrivers();
+    void loadLeoInsights();
   }, []);
+
+  async function loadLeoInsights() {
+    try {
+      const res = await fetch("/api/assistants/leo/insights");
+      const data = await res.json();
+      setLeoInsights(data.insights || []);
+    } catch (err) {
+      console.error("Failed to load Leo insights", err);
+      setLeoInsights([]);
+    }
+  }
 
   async function loadLoads() {
     setLoading(true);
@@ -138,39 +233,6 @@ export default function RonyxLoadsPage() {
       setLoads([]);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadCustomers() {
-    try {
-      const res = await fetch("/api/ronyx/customers");
-      const data = await res.json();
-      setCustomers(data.customers || []);
-    } catch (err) {
-      console.error("Failed to load customers", err);
-      setCustomers([]);
-    }
-  }
-
-  async function loadTrucks() {
-    try {
-      const res = await fetch("/api/ronyx/trucks");
-      const data = await res.json();
-      setTrucks(data.trucks || []);
-    } catch (err) {
-      console.error("Failed to load trucks", err);
-      setTrucks([]);
-    }
-  }
-
-  async function loadDrivers() {
-    try {
-      const res = await fetch("/api/ronyx/drivers/list");
-      const data = await res.json();
-      setDrivers(data.drivers || []);
-    } catch (err) {
-      console.error("Failed to load drivers", err);
-      setDrivers([]);
     }
   }
 
@@ -358,6 +420,284 @@ export default function RonyxLoadsPage() {
           color: var(--ronyx-danger);
           background: rgba(239, 68, 68, 0.12);
         }
+        .dispatch-header {
+          display: grid;
+          gap: 10px;
+          padding: 18px;
+          border-radius: 16px;
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+          margin-bottom: 20px;
+        }
+        .dispatch-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .live-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(239, 68, 68, 0.12);
+          color: #b91c1c;
+          font-weight: 700;
+          font-size: 0.8rem;
+        }
+        .dispatch-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .dispatch-btn {
+          padding: 10px 14px;
+          border-radius: 12px;
+          border: 1px solid transparent;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .dispatch-btn.primary {
+          background: var(--ronyx-accent);
+          color: #ffffff;
+        }
+        .dispatch-btn.secondary {
+          background: rgba(29, 78, 216, 0.08);
+          border-color: var(--ronyx-border);
+          color: #0f172a;
+        }
+        .dispatch-btn.success {
+          background: rgba(22, 163, 74, 0.16);
+          border-color: rgba(22, 163, 74, 0.4);
+          color: #166534;
+        }
+        .dispatch-btn.warning {
+          background: rgba(245, 158, 11, 0.16);
+          border-color: rgba(245, 158, 11, 0.45);
+          color: #92400e;
+        }
+        .operations-layout {
+          display: grid;
+          grid-template-columns: 2.2fr 1fr;
+          gap: 18px;
+        }
+        .operations-board {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+        .board-column {
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 12px;
+          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+        }
+        .column-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+          padding-bottom: 8px;
+          margin-bottom: 12px;
+        }
+        .column-stats {
+          font-size: 0.8rem;
+          color: rgba(15, 23, 42, 0.6);
+        }
+        .load-card {
+          background: #f8fafc;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          border-radius: 12px;
+          padding: 12px;
+          display: grid;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .load-card:last-child {
+          margin-bottom: 0;
+        }
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 700;
+        }
+        .load-status {
+          font-size: 0.7rem;
+          padding: 4px 8px;
+          border-radius: 999px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .load-status.loading {
+          background: rgba(29, 78, 216, 0.14);
+          color: #1d4ed8;
+        }
+        .load-status.waiting {
+          background: rgba(245, 158, 11, 0.16);
+          color: #b45309;
+        }
+        .load-status.ontrack {
+          background: rgba(22, 163, 74, 0.16);
+          color: #15803d;
+        }
+        .load-status.delivering {
+          background: rgba(99, 102, 241, 0.16);
+          color: #4338ca;
+        }
+        .card-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .mini-map {
+          height: 42px;
+          border-radius: 8px;
+          background: linear-gradient(90deg, rgba(29, 78, 216, 0.2), rgba(14, 116, 144, 0.2));
+          position: relative;
+          overflow: hidden;
+        }
+        .mini-map .map-dot {
+          position: absolute;
+          top: 50%;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #1d4ed8;
+          transform: translateY(-50%);
+        }
+        .mini-map .map-dot.end {
+          right: 12px;
+          background: #16a34a;
+        }
+        .mini-map .map-dot.start {
+          left: 12px;
+        }
+        .mini-map .map-line {
+          position: absolute;
+          top: 50%;
+          left: 20px;
+          right: 20px;
+          height: 2px;
+          background: rgba(15, 23, 42, 0.2);
+          transform: translateY(-50%);
+        }
+        .driver-sidebar {
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+          display: grid;
+          gap: 12px;
+        }
+        .driver-card {
+          display: grid;
+          gap: 8px;
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(15, 23, 42, 0.1);
+          background: #f8fafc;
+        }
+        .driver-card.available {
+          border-color: rgba(22, 163, 74, 0.4);
+        }
+        .driver-card.on-break {
+          border-color: rgba(245, 158, 11, 0.4);
+        }
+        .backhaul-section {
+          margin-top: 6px;
+          border-top: 1px solid rgba(15, 23, 42, 0.12);
+          padding-top: 12px;
+        }
+        .backhaul-card {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px dashed rgba(15, 23, 42, 0.2);
+          background: #f8fafc;
+        }
+        .map-overlay {
+          margin-top: 18px;
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 16px;
+          display: grid;
+          gap: 12px;
+        }
+        .map-container {
+          height: 360px;
+          border-radius: 12px;
+          background: linear-gradient(180deg, rgba(29, 78, 216, 0.1), rgba(14, 116, 144, 0.1));
+        }
+        .map-legend {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          font-size: 0.8rem;
+          color: rgba(15, 23, 42, 0.7);
+        }
+        .alerts-panel {
+          margin-top: 18px;
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 16px;
+          display: grid;
+          gap: 12px;
+        }
+        .alert-item {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          background: #f8fafc;
+        }
+        .alert-item.critical {
+          border-color: rgba(239, 68, 68, 0.45);
+        }
+        .alert-item.warning {
+          border-color: rgba(245, 158, 11, 0.45);
+        }
+        .alert-item.info {
+          border-color: rgba(59, 130, 246, 0.45);
+        }
+        .leo-panel {
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 16px;
+          margin-bottom: 18px;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+          display: grid;
+          gap: 10px;
+        }
+        .leo-insight {
+          border-radius: 12px;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          padding: 12px;
+          background: #f8fafc;
+          display: grid;
+          gap: 6px;
+        }
+        @media (max-width: 980px) {
+          .operations-layout {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
       <div className="ronyx-container">
@@ -374,8 +714,256 @@ export default function RonyxLoadsPage() {
           </Link>
         </div>
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        <section className="dispatch-header">
+          <div className="dispatch-header-top">
+                <div>
+              <h2 style={{ fontSize: "1.6rem", fontWeight: 800 }}>🚛 Dispatch Command Center</h2>
+              <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
+                Morning Shift | {activeLoads.length} Active Loads | {availableLoads.length} at pit queue | On-time: 97.4%
+              </p>
+                  </div>
+            <div className="live-pill">🔴 LIVE • Last updated: Now</div>
+                </div>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", color: "rgba(15,23,42,0.7)" }}>
+            <span>Weather: ☀️ Clear</span>
+            <span>Traffic: 🟢 Normal</span>
+            <span>Fuel Price: $3.85/gal (-0.02)</span>
+              </div>
+          <div className="dispatch-toolbar">
+            <button className="dispatch-btn primary" onClick={createLoad}>
+              <span className="icon">+</span> Quick Create Load
+            </button>
+            <button className="dispatch-btn primary" onClick={assignLoad}>
+              <span className="icon">👤</span> Assign Driver
+            </button>
+            <button className="dispatch-btn success">
+              <span className="icon">🔄</span> Backhaul Board (3 available)
+            </button>
+            <button className="dispatch-btn secondary" onClick={() => setShowMap((prev) => !prev)}>
+              <span className="icon">🗺️</span> {showMap ? "Return to Board" : "Map View"}
+            </button>
+            <button className="dispatch-btn secondary">
+              <span className="icon">⚡</span> Optimize Routes
+            </button>
+            <button className="dispatch-btn warning">
+              <span className="icon">🔔</span> Alerts ({dispatchAlerts.length})
+            </button>
+          </div>
+        </section>
+
+        <div className="operations-layout">
+          <div className="operations-board">
+            <div className="board-column pit-queue">
+              <div className="column-header">
+                <h3>⛏️ Pit Queue (6)</h3>
+                <div className="column-stats">Avg wait: 18 min</div>
+            </div>
+              {dispatchCards
+                .filter((card) => card.column === "pit")
+                .map((card) => (
+                  <div key={card.id} className="load-card" draggable>
+                    <div className="card-header">
+                      <span className="load-id">{card.id}</span>
+                      <span className={`load-status ${card.statusClass}`}>{card.status}</span>
+            </div>
+                    <div className="card-body">
+                      <div className="driver-info">
+                        <span className="driver-name">{card.driver}</span>
+                        <span className="truck"> {card.truck}</span>
+            </div>
+                      <div className="route-info">
+                        <span className="from">{card.from}</span> → <span className="to">{card.to}</span>
+            </div>
+                      <div className="load-details">
+                        <span className="material">{card.material}</span>
+                        <span className="timer"> ⏱️ {card.timer}</span>
+            </div>
+          </div>
+                    <div className="card-actions">
+                      <button className="dispatch-btn secondary">MSG</button>
+                      <button className="dispatch-btn warning">FLAG</button>
+                      <button className="dispatch-btn success">LOADED</button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            <div className="board-column in-transit">
+              <div className="column-header">
+                <h3>🚛 In Transit (24)</h3>
+                <div className="column-stats">Avg speed: 42 mph</div>
+            </div>
+              {dispatchCards
+                .filter((card) => card.column === "transit")
+                .map((card) => (
+                  <div key={card.id} className="load-card">
+                    <div className="card-header">
+                      <span className="load-id">{card.id}</span>
+                      <span className={`load-status ${card.statusClass}`}>{card.status}</span>
+            </div>
+                    <div className="card-body">
+                      <div className="driver-info">
+                        <span className="driver-name">{card.driver}</span>
+                        <span className="truck"> {card.truck}</span>
+            </div>
+                      <div className="route-info">
+                        <span className="from">{card.from}</span> → <span className="to">{card.to}</span>
+            </div>
+                      <div className="load-details">
+                        <span className="eta">🕐 ETA: {card.eta}</span>
+                        <span className="distance"> 📍 {card.distance}</span>
+            </div>
+                      <div className="mini-map">
+                        <div className="map-dot start"></div>
+                        <div className="map-line"></div>
+                        <div className="map-dot end"></div>
+            </div>
+            </div>
+                    <div className="card-actions">
+                      <button className="dispatch-btn primary">Live Track</button>
+                      <button className="dispatch-btn secondary">Call</button>
+            </div>
+            </div>
+                ))}
+            </div>
+
+            <div className="board-column on-site">
+              <div className="column-header">
+                <h3>🏗️ On Site (8)</h3>
+                <div className="column-stats">Avg unload: 22 min</div>
+            </div>
+              {dispatchCards
+                .filter((card) => card.column === "site")
+                .map((card) => (
+                  <div key={card.id} className="load-card">
+                    <div className="card-header">
+                      <span className="load-id">{card.id}</span>
+                      <span className={`load-status ${card.statusClass}`}>{card.status}</span>
+            </div>
+                    <div className="card-body">
+                      <div className="driver-info">
+                        <span className="driver-name">{card.driver}</span>
+                        <span className="truck"> {card.truck}</span>
+            </div>
+                      <div className="route-info">
+                        <span className="to">{card.to}</span>
+            </div>
+                      <div className="load-details">
+                        <span className="material">{card.material}</span>
+                        <span className="detention"> ⏰ Detention: {card.detention}</span>
+            </div>
+                      <div className="site-alert">
+                        <span className="alert-note">⚠️ Site closes at 3 PM</span>
+            </div>
+          </div>
+                    <div className="card-actions">
+                      <button className="dispatch-btn warning">Detention</button>
+                      <button className="dispatch-btn success">Delivered</button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="driver-sidebar">
+            <h3>👥 Available Drivers (8/12)</h3>
+            {driverAvailability.map((driver) => (
+              <div key={driver.name} className={`driver-card ${driver.status}`}>
+                <div className="driver-info">
+                  <strong>{driver.name}</strong>
+                  <small>
+                    {" "}
+                    Truck {driver.truck} • {driver.detail}
+                  </small>
+            </div>
+                <div className="driver-location">
+                  <span className="location">{driver.location}</span>
+                  <span className="distance"> {driver.distance}</span>
+          </div>
+                <button className={`dispatch-btn ${driver.actionVariant}`} disabled={driver.disabled}>
+                  {driver.actionLabel}
+                </button>
+                    </div>
+            ))}
+
+            <div className="backhaul-section">
+              <h4>🔄 Backhaul Opportunities</h4>
+              {backhaulOpportunities.map((bh) => (
+                <div key={bh.id} className="backhaul-card">
+                  <div className="bh-info">
+                    <strong>{bh.title}</strong>
+                    <small> {bh.detail}</small>
+                    </div>
+                  <div className="bh-value">
+                    <span className="price">{bh.price}</span>
+                    <small> {bh.delta}</small>
+                    </div>
+                  <button className="dispatch-btn success">Assign</button>
+                  </div>
+              ))}
+                  </div>
+                </div>
+          </div>
+
+        {showMap && (
+          <div className="map-overlay">
+            <div className="dispatch-header-top">
+              <h3>📍 Live Fleet Map</h3>
+              <button className="dispatch-btn secondary" onClick={() => setShowMap(false)}>
+                Return to Board
+              </button>
+          </div>
+            <div className="map-container" />
+            <div className="map-legend">
+              <div className="legend-item">● Loaded</div>
+              <div className="legend-item">● Empty</div>
+              <div className="legend-item">● Pit Location</div>
+              <div className="legend-item">● Job Site</div>
+                </div>
+            </div>
+          )}
+
+        <div className="alerts-panel">
+          <h3>🔔 Active Alerts</h3>
+          {dispatchAlerts.map((alert) => (
+            <div key={alert.id} className={`alert-item ${alert.tone}`}>
+              <div className="alert-content">
+                <strong>
+                  {alert.icon} {alert.title}
+                </strong>
+                <p>{alert.body}</p>
+                </div>
+              <div className="alert-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {alert.actions.map((action) => (
+                  <button key={action} className="dispatch-btn secondary">
+                    {action}
+                  </button>
+              ))}
+            </div>
+                </div>
+              ))}
+            </div>
+
+        <div className="leo-panel">
+          <h3>🧠 Leo — Shipment Copilot</h3>
+          {leoInsights.length === 0 ? (
+            <div className="ronyx-row">No insights available.</div>
+          ) : (
+            leoInsights.map((insight) => (
+              <div key={insight.id} className="leo-insight">
+                <strong>{insight.message}</strong>
+                <span style={{ color: "rgba(15,23,42,0.7)" }}>{insight.action}</span>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="dispatch-btn secondary">Apply</button>
+                  <button className="dispatch-btn secondary">Dismiss</button>
+                </div>
+            </div>
+            ))
+          )}
+                </div>
+
+        <section className="ronyx-card" style={{ marginTop: 20 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
             {loadTabs.map((tab) => (
               <button
                 key={tab}
@@ -384,432 +972,51 @@ export default function RonyxLoadsPage() {
               >
                 {tab}
               </button>
-            ))}
+              ))}
+            </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <span className="status good">Active: {activeLoads.length}</span>
+            <span className="status warn">Available: {availableLoads.length}</span>
+            <span className="status good">Completed: {completedLoads.length}</span>
+            <span className="status bad">Cancelled: {cancelledLoads.length}</span>
           </div>
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Live Alerts</h2>
-          {alerts.length === 0 ? (
-            <div className="ronyx-row">No active detention alerts.</div>
+          {loading ? (
+            <div className="ronyx-row">Loading loads...</div>
+          ) : filteredLoads.length === 0 ? (
+            <div className="ronyx-row">No loads in this view yet.</div>
           ) : (
-            alerts.map(({ load, hours }) => (
-              <div key={load.id || load.load_number} className="ronyx-row" style={{ marginBottom: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{load.load_number} • {load.route}</div>
-                  <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                    Detention timer running • {hours} hrs since start
-                  </div>
-                </div>
-                <span className="status warn">Alert</span>
-              </div>
-            ))
-          )}
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Dispatcher Intake (Assign Load)</h2>
-          <div className="ronyx-grid" style={{ rowGap: 16 }}>
-            <div>
-              <label className="ronyx-label">Available Load</label>
-              <select
-                className="ronyx-input"
-                value={assignment.load_id}
-                onChange={(e) => setAssignment((prev) => ({ ...prev, load_id: e.target.value }))}
-              >
-                <option value="">Select load</option>
-                {availableLoads.map((load) => (
-                  <option key={load.id || load.load_number} value={load.id}>
-                    {load.load_number} • {load.route}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Driver</label>
-              <input
-                className="ronyx-input"
-                list="driver-list"
-                value={assignment.driver_name}
-                onChange={(e) => setAssignment((prev) => ({ ...prev, driver_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Truck</label>
-              <input
-                className="ronyx-input"
-                list="truck-list"
-                value={assignment.truck_number}
-                onChange={(e) => setAssignment((prev) => ({ ...prev, truck_number: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Notes</label>
-              <input
-                className="ronyx-input"
-                value={assignment.status_notes}
-                onChange={(e) => setAssignment((prev) => ({ ...prev, status_notes: e.target.value }))}
-              />
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
-              <button className="ronyx-action" onClick={assignLoad}>
-                Assign & Dispatch
-              </button>
-              {assignmentMessage ? <span style={{ fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{assignmentMessage}</span> : null}
-            </div>
-          </div>
-          <datalist id="driver-list">
-            {drivers.map((driver) => (
-              <option key={driver.id} value={driver.name} />
-            ))}
-          </datalist>
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Create Load</h2>
-          <div className="ronyx-grid" style={{ rowGap: 16 }}>
-            <div>
-              <label className="ronyx-label">Load Number</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.load_number}
-                onChange={(e) => setNewLoad({ ...newLoad, load_number: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Customer</label>
-              <input
-                className="ronyx-input"
-                list="customer-list"
-                value={newLoad.customer_name}
-                onChange={(e) => setNewLoad({ ...newLoad, customer_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Job Site</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.job_site}
-                onChange={(e) => setNewLoad({ ...newLoad, job_site: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Material</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.material}
-                onChange={(e) => setNewLoad({ ...newLoad, material: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Quantity</label>
-              <input
-                className="ronyx-input"
-                type="number"
-                value={newLoad.quantity}
-                onChange={(e) => setNewLoad({ ...newLoad, quantity: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Unit Type</label>
-              <select
-                className="ronyx-input"
-                value={newLoad.unit_type}
-                onChange={(e) => setNewLoad({ ...newLoad, unit_type: e.target.value })}
-              >
-                <option value="Load">Load</option>
-                <option value="Ton">Ton</option>
-                <option value="Yard">Yard</option>
-                <option value="Hour">Hour</option>
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Rate Type</label>
-              <select
-                className="ronyx-input"
-                value={newLoad.rate_type}
-                onChange={(e) => setNewLoad({ ...newLoad, rate_type: e.target.value })}
-              >
-                <option value="per_load">Per Load</option>
-                <option value="per_ton">Per Ton</option>
-                <option value="per_yard">Per Yard</option>
-                <option value="per_hour">Per Hour</option>
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Rate Amount</label>
-              <input
-                className="ronyx-input"
-                type="number"
-                value={newLoad.rate_amount}
-                onChange={(e) => setNewLoad({ ...newLoad, rate_amount: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Pickup Location</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.pickup_location}
-                onChange={(e) => setNewLoad({ ...newLoad, pickup_location: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Delivery Location</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.delivery_location}
-                onChange={(e) => setNewLoad({ ...newLoad, delivery_location: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Route (optional)</label>
-              <input className="ronyx-input" value={newLoad.route} onChange={(e) => setNewLoad({ ...newLoad, route: e.target.value })} />
-            </div>
-            <div>
-              <label className="ronyx-label">Driver</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.driver_name}
-                onChange={(e) => setNewLoad({ ...newLoad, driver_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Truck</label>
-              <input
-                className="ronyx-input"
-                list="truck-list"
-                value={newLoad.truck_number}
-                onChange={(e) => setNewLoad({ ...newLoad, truck_number: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Status</label>
-              <select
-                className="ronyx-input"
-                value={newLoad.status}
-                onChange={(e) => setNewLoad({ ...newLoad, status: e.target.value })}
-              >
-                <option value="available">Available</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Notes</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.status_notes}
-                onChange={(e) => setNewLoad({ ...newLoad, status_notes: e.target.value })}
-              />
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end" }}>
-              <button className="ronyx-action" onClick={createLoad}>
-                Create Load
-              </button>
-            </div>
-          </div>
-          <datalist id="customer-list">
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.customer_name} />
-            ))}
-          </datalist>
-          <datalist id="truck-list">
-            {trucks.map((truck) => (
-              <option key={truck.id} value={truck.truck_number} />
-            ))}
-          </datalist>
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>{activeTab}</h2>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Link href="/ronyx/dispatch" className="ronyx-action">
-                Dispatch
-              </Link>
-              <Link href="/ronyx/tickets" className="ronyx-action">
-                Tickets
-              </Link>
-            </div>
-          </div>
-          <div className="ronyx-grid">
-            {loading ? (
-              <div className="ronyx-row">Loading loads...</div>
-            ) : filteredLoads.length === 0 ? (
-              <div className="ronyx-row">No loads in this view yet.</div>
-            ) : (
-              filteredLoads.map((load) => (
+            <div className="ronyx-grid">
+              {filteredLoads.map((load) => (
                 <div key={load.id || load.load_number} className="ronyx-row">
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700 }}>
-                      {load.load_number} • {load.route}
-                    </div>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{load.load_number} • {load.route}</div>
                     <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                      Driver: {load.driver_name || "Unassigned"} • Truck: {load.truck_number || "—"} • Customer:{" "}
-                      {load.customer_name || "—"}
+                      {load.customer_name} • {load.material || "Material"} • {load.quantity || "—"} {load.unit_type || ""}
                     </div>
-                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                      {load.material || "Material —"} • {load.quantity || "—"} {load.unit_type || ""} • Job:{" "}
-                      {load.job_site || "—"} • Ticket: {load.ticket_id ? "Created" : "Pending"}
+                    <div style={{ fontSize: "0.75rem", color: "rgba(15,23,42,0.5)" }}>
+                      Driver: {load.driver_name || "Unassigned"} • Truck: {load.truck_number || "TBD"}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <select
-                      className="ronyx-input"
-                      style={{ minWidth: 140 }}
-                      value={load.status}
-                      onChange={(e) => {
-                        setLoads((prev) =>
-                          prev.map((item) => (item.id === load.id ? { ...item, status: e.target.value } : item)),
-                        );
-                      }}
-                    >
-                      <option value="available">Available</option>
-                      <option value="active">Active</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                    <input
-                      className="ronyx-input"
-                      style={{ minWidth: 160 }}
-                      value={load.driver_name || ""}
-                      placeholder="Assign driver"
-                      onChange={(e) => {
-                        setLoads((prev) =>
-                          prev.map((item) => (item.id === load.id ? { ...item, driver_name: e.target.value } : item)),
-                        );
-                      }}
-                    />
-                    <input
-                      className="ronyx-input"
-                      style={{ minWidth: 140 }}
-                      value={load.truck_number || ""}
-                      placeholder="Truck"
-                      onChange={(e) => {
-                        setLoads((prev) =>
-                          prev.map((item) => (item.id === load.id ? { ...item, truck_number: e.target.value } : item)),
-                        );
-                      }}
-                    />
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <span className={`status ${load.status === "completed" ? "good" : "warn"}`}>{load.status}</span>
                     <button
                       className="ronyx-action"
-                      onClick={() =>
-                        load.id &&
-                        updateLoad(load.id, {
-                          status: load.status,
-                          driver_name: load.driver_name,
-                          truck_number: load.truck_number,
-                        })
-                      }
-                      disabled={savingId === load.id}
+                      onClick={() => updateLoad(load.id, { status: "completed", completed_at: new Date().toISOString() })}
+                      disabled={!load.id || savingId === load.id}
                     >
-                      {savingId === load.id ? "Saving..." : "Save"}
+                      Mark Complete
                     </button>
-                    {load.status === "completed" && !load.ticket_id ? (
-                      <button
-                        className="ronyx-action"
-                        onClick={() => load.id && updateLoad(load.id, { action: "complete" })}
-                        disabled={savingId === load.id}
-                      >
-                        Create Ticket
-                      </button>
-                    ) : null}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="ronyx-card">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-            {detailTabs.map((tab) => (
-              <button
-                key={tab}
-                className={`ronyx-tab ${detailTab === tab ? "active" : ""}`}
-                onClick={() => setDetailTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {detailTab === "Load Details" && (
-            <div className="ronyx-grid">
-              {[
-                "Load number",
-                "Pickup & delivery dates",
-                "Shipper & receiver details",
-                "Commodity",
-                "Weight & pieces",
-                "Rate confirmation",
-                "Contact info",
-                "Instructions / Notes",
-              ].map((item) => (
-                <div key={item} className="ronyx-row">
-                  <span>{item}</span>
-                  <span className="status good">Captured</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {detailTab === "Documents" && (
-            <div className="ronyx-grid">
-              {["BOL", "Rate Confirmations", "Receipts", "POD"].map((item) => (
-                <div key={item} className="ronyx-row">
-                  <span>{item}</span>
-                  <button className="ronyx-action">Upload / Download</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {detailTab === "Payments & Settlements" && (
-            <div className="ronyx-grid">
-              {["Freight Rate", "Detention / Layover", "Fuel Surcharge", "Driver Pay Breakdown"].map((item) => (
-                <div key={item} className="ronyx-row">
-                  <span>{item}</span>
-                  <span className="status warn">Review</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {detailTab === "Tracking / GPS" && (
-            <div className="ronyx-grid">
-              {["Live GPS Location", "ETA Updates", "Geofence Events"].map((item) => (
-                <div key={item} className="ronyx-row">
-                  <span>{item}</span>
-                  <span className="status good">Live</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {detailTab === "Status Updates" && (
-            <div className="ronyx-grid">
-              {["Dispatched", "In Transit", "Delivered", "POD Received", "Paid"].map((item) => (
-                <div key={item} className="ronyx-row">
-                  <span>{item}</span>
-                  <span className="status good">Enabled</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {detailTab === "Customer Info" && (
-            <div className="ronyx-grid">
-              {["Broker / Shipper Contact", "Credit Terms", "Notes / History"].map((item) => (
-                <div key={item} className="ronyx-row">
-                  <span>{item}</span>
-                  <span className="status good">Available</span>
-                </div>
               ))}
             </div>
           )}
         </section>
+
+
+
+
+
       </div>
     </div>
   );
