@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type RateCard = {
   id: string;
@@ -18,6 +18,7 @@ type RateCard = {
   detentionFreeMinutes: string;
   detentionRate: string;
   notes: string;
+  status?: string;
 };
 
 type JobSite = {
@@ -34,116 +35,52 @@ type JobSite = {
   rating: string;
   ratingNote: string;
   gps: string;
+  status?: string;
 };
 
-const sampleRateCards: RateCard[] = [
-  {
-    id: "rate-1",
-    customer: "Jones Const",
-    rateName: "Jones Const - Main St Project",
-    structure: "$85/hr + $15/ton mat",
-    basePrice: "$85.00 / hour",
-    effective: "01/01/24",
-    method: "hour",
-    baseRate: "85",
-    materialSurcharges: [
-      { material: '3/4" Clean Rock', surcharge: "15" },
-      { material: "Wet Clay", surcharge: "30" },
-    ],
-    fuelLinked: true,
-    fuelPct: "3.5",
-    detentionFreeMinutes: "45",
-    detentionRate: "75",
-    notes: "Rate locked through Dec 2024.",
-  },
-  {
-    id: "rate-2",
-    customer: "City Project",
-    rateName: "City Project - Highway",
-    structure: "$4.25/mi loaded, $3.00/mi empty",
-    basePrice: "$4.25 / mile",
-    effective: "02/15/24",
-    method: "mile",
-    baseRate: "4.25",
-    materialSurcharges: [],
-    fuelLinked: false,
-    fuelPct: "0",
-    detentionFreeMinutes: "30",
-    detentionRate: "60",
-    notes: "City project pricing.",
-  },
-  {
-    id: "rate-3",
-    customer: "Thompson Co",
-    rateName: "Thompson Co - Fuel Index",
-    structure: "10% over fuel index",
-    basePrice: "Variable",
-    effective: "03/01/24",
-    method: "load",
-    baseRate: "0",
-    materialSurcharges: [],
-    fuelLinked: true,
-    fuelPct: "10",
-    detentionFreeMinutes: "60",
-    detentionRate: "80",
-    notes: "Variable pricing based on fuel index.",
-  },
-];
+const emptyRateCard: RateCard = {
+  id: "",
+  customer: "",
+  rateName: "",
+  structure: "",
+  basePrice: "",
+  effective: "",
+  method: "hour",
+  baseRate: "",
+  materialSurcharges: [],
+  fuelLinked: false,
+  fuelPct: "",
+  detentionFreeMinutes: "",
+  detentionRate: "",
+  notes: "",
+  status: "active",
+};
 
-const sampleSites: JobSite[] = [
-  {
-    id: "site-1",
-    name: "Riverside Apts",
-    location: "2500 River Rd",
-    contactName: "Bob (Foreman)",
-    contactPhone: "555-0123",
-    hours: "Mon-Fri, 7am-3pm",
-    accessNotes: "Call before arrival.",
-    unloadInstructions: "Unload NE of crane.",
-    history: "4/12, 4/15, 4/18, 4/22, 4/30",
-    alerts: "⚠️ GATE CLOSES 3PM",
-    rating: "3",
-    ratingNote: "Slow to sign tickets.",
-    gps: "32.7765° N, 96.7969° W",
-  },
-  {
-    id: "site-2",
-    name: "Main St Project",
-    location: "1500 Main St",
-    contactName: "Site Lead",
-    contactPhone: "555-0199",
-    hours: "Mon-Sat, 6am-5pm",
-    accessNotes: "Use South gate.",
-    unloadInstructions: "Dump in marked area.",
-    history: "4/10, 4/12, 4/14, 4/17, 4/19",
-    alerts: "✅ Good site",
-    rating: "4",
-    ratingNote: "Fast turnaround.",
-    gps: "32.7791° N, 96.8001° W",
-  },
-  {
-    id: "site-3",
-    name: "Oakridge Subdiv.",
-    location: "HWY 45 & Oak",
-    contactName: "Dispatch Desk",
-    contactPhone: "555-0110",
-    hours: "Mon-Fri, 8am-4pm",
-    accessNotes: "Call 1hr before arrival.",
-    unloadInstructions: "Dump at staging area.",
-    history: "4/02, 4/05, 4/08, 4/11, 4/16",
-    alerts: "🔴 NO DELIVERIES FRI",
-    rating: "2",
-    ratingNote: "Gate delays.",
-    gps: "32.7720° N, 96.7920° W",
-  },
-];
+const emptyJobSite: JobSite = {
+  id: "",
+  name: "",
+  location: "",
+  contactName: "",
+  contactPhone: "",
+  hours: "",
+  accessNotes: "",
+  unloadInstructions: "",
+  history: "",
+  alerts: "",
+  rating: "3",
+  ratingNote: "",
+  gps: "",
+  status: "active",
+};
 
 export default function RonyxAggregatesPage() {
   const [activeTab, setActiveTab] = useState<"rates" | "sites" | "quote">("rates");
-  const [rateCards, setRateCards] = useState<RateCard[]>(sampleRateCards);
-  const [jobSites, setJobSites] = useState<JobSite[]>(sampleSites);
-  const [selectedRateId, setSelectedRateId] = useState<string | null>(sampleRateCards[0]?.id || null);
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(sampleSites[0]?.id || null);
+  const [rateCards, setRateCards] = useState<RateCard[]>([]);
+  const [jobSites, setJobSites] = useState<JobSite[]>([]);
+  const [selectedRateId, setSelectedRateId] = useState<string | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [rateMessage, setRateMessage] = useState("");
+  const [siteMessage, setSiteMessage] = useState("");
   const [quote, setQuote] = useState({
     from: "Pit 7",
     to: "Riverside Apts",
@@ -153,8 +90,117 @@ export default function RonyxAggregatesPage() {
     customer: "Jones Const",
   });
 
-  const selectedRate = rateCards.find((card) => card.id === selectedRateId) || rateCards[0];
-  const selectedSite = jobSites.find((site) => site.id === selectedSiteId) || jobSites[0];
+  const selectedRate = rateCards.find((card) => card.id === selectedRateId);
+  const selectedSite = jobSites.find((site) => site.id === selectedSiteId);
+
+  useEffect(() => {
+    void loadRateCards();
+    void loadJobSites();
+  }, []);
+
+  async function loadRateCards() {
+    try {
+      const res = await fetch("/api/ronyx/rate-cards", { cache: "no-store" });
+      const data = await res.json();
+      const cards = (data.rateCards || []).map(mapRateCardFromDb);
+      setRateCards(cards);
+      setSelectedRateId(cards[0]?.id || null);
+    } catch {
+      setRateCards([]);
+    }
+  }
+
+  async function loadJobSites() {
+    try {
+      const res = await fetch("/api/ronyx/job-sites", { cache: "no-store" });
+      const data = await res.json();
+      const sites = (data.jobSites || []).map(mapJobSiteFromDb);
+      setJobSites(sites);
+      setSelectedSiteId(sites[0]?.id || null);
+    } catch {
+      setJobSites([]);
+    }
+  }
+
+  function mapRateCardFromDb(card: any): RateCard {
+    return {
+      id: card.id,
+      customer: card.customer_name || "",
+      rateName: card.rate_name || "",
+      structure: card.structure || "",
+      basePrice: card.base_price || "",
+      effective: card.effective_date ? new Date(card.effective_date).toLocaleDateString("en-GB") : "",
+      method: card.method || "hour",
+      baseRate: card.base_rate?.toString() || "",
+      materialSurcharges: card.material_surcharges || [],
+      fuelLinked: Boolean(card.fuel_linked),
+      fuelPct: card.fuel_pct?.toString() || "",
+      detentionFreeMinutes: card.detention_free_minutes?.toString() || "",
+      detentionRate: card.detention_rate?.toString() || "",
+      notes: card.notes || "",
+      status: card.status || "active",
+    };
+  }
+
+  function mapRateCardToDb(card: RateCard) {
+    const isTemp = card.id.startsWith("temp-");
+    return {
+      id: !isTemp && card.id ? card.id : undefined,
+      customer_name: card.customer,
+      rate_name: card.rateName,
+      structure: card.structure,
+      base_price: card.basePrice,
+      effective_date: card.effective ? new Date(card.effective).toISOString().slice(0, 10) : null,
+      method: card.method,
+      base_rate: card.baseRate,
+      material_surcharges: card.materialSurcharges,
+      fuel_linked: card.fuelLinked,
+      fuel_pct: card.fuelPct,
+      detention_free_minutes: card.detentionFreeMinutes,
+      detention_rate: card.detentionRate,
+      notes: card.notes,
+      status: card.status || "active",
+    };
+  }
+
+  function mapJobSiteFromDb(site: any): JobSite {
+    return {
+      id: site.id,
+      name: site.site_name || "",
+      location: site.location || "",
+      contactName: site.contact_name || "",
+      contactPhone: site.contact_phone || "",
+      hours: site.hours || "",
+      accessNotes: site.access_notes || "",
+      unloadInstructions: site.unload_instructions || "",
+      history: site.history || "",
+      alerts: site.alerts || "",
+      rating: site.rating?.toString() || "3",
+      ratingNote: site.rating_note || "",
+      gps: site.gps || "",
+      status: site.status || "active",
+    };
+  }
+
+  function mapJobSiteToDb(site: JobSite) {
+    const isTemp = site.id.startsWith("temp-");
+    return {
+      id: !isTemp && site.id ? site.id : undefined,
+      site_name: site.name,
+      location: site.location,
+      contact_name: site.contactName,
+      contact_phone: site.contactPhone,
+      hours: site.hours,
+      access_notes: site.accessNotes,
+      unload_instructions: site.unloadInstructions,
+      history: site.history,
+      alerts: site.alerts,
+      rating: site.rating,
+      rating_note: site.ratingNote,
+      gps: site.gps,
+      status: site.status || "active",
+    };
+  }
 
   const quoteTotals = useMemo(() => {
     const distance = Number(quote.distance || 0);
@@ -190,12 +236,92 @@ export default function RonyxAggregatesPage() {
     updateRateField("materialSurcharges", [...selectedRate.materialSurcharges, { material: "", surcharge: "" }]);
   };
 
+  async function saveRateCard() {
+    if (!selectedRate) return;
+    setRateMessage("");
+    const payload = mapRateCardToDb(selectedRate);
+    const res = await fetch("/api/ronyx/rate-cards", {
+      method: payload.id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      setRateMessage("Save failed.");
+      return;
+    }
+    const data = await res.json();
+    const saved = mapRateCardFromDb(data.rateCard);
+    setRateCards((prev) => {
+      const exists = prev.some((card) => card.id === saved.id);
+      return exists ? prev.map((card) => (card.id === saved.id ? saved : card)) : [saved, ...prev];
+    });
+    setSelectedRateId(saved.id);
+    setRateMessage("Saved.");
+  }
+
+  async function saveJobSite() {
+    if (!selectedSite) return;
+    setSiteMessage("");
+    const payload = mapJobSiteToDb(selectedSite);
+    const res = await fetch("/api/ronyx/job-sites", {
+      method: payload.id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      setSiteMessage("Save failed.");
+      return;
+    }
+    const data = await res.json();
+    const saved = mapJobSiteFromDb(data.jobSite);
+    setJobSites((prev) => {
+      const exists = prev.some((site) => site.id === saved.id);
+      return exists ? prev.map((site) => (site.id === saved.id ? saved : site)) : [saved, ...prev];
+    });
+    setSelectedSiteId(saved.id);
+    setSiteMessage("Saved.");
+  }
+
+  function addRateCard() {
+    const newCard = { ...emptyRateCard, id: `temp-${Date.now()}`, customer: "New Customer", rateName: "New Rate Card" };
+    setRateCards((prev) => [newCard, ...prev]);
+    setSelectedRateId(newCard.id);
+    setRateMessage("Fill details and save.");
+  }
+
+  function addJobSite() {
+    const newSite = { ...emptyJobSite, id: `temp-${Date.now()}`, name: "New Site" };
+    setJobSites((prev) => [newSite, ...prev]);
+    setSelectedSiteId(newSite.id);
+    setSiteMessage("Fill details and save.");
+  }
+
   const updateSiteField = (field: keyof JobSite, value: string) => {
     if (!selectedSite) return;
     setJobSites((prev) =>
       prev.map((site) => (site.id === selectedSite.id ? { ...site, [field]: value } : site)),
     );
   };
+
+  function cloneRateCard(card: RateCard) {
+    const clone = {
+      ...card,
+      id: `temp-${Date.now()}`,
+      customer: `${card.customer} (Copy)`,
+      rateName: `${card.rateName} Copy`,
+    };
+    setRateCards((prev) => [clone, ...prev]);
+    setSelectedRateId(clone.id);
+    setRateMessage("Cloned. Update details and save.");
+  }
+
+  function toggleRateCardStatus(card: RateCard) {
+    const nextStatus = card.status === "inactive" ? "active" : "inactive";
+    setRateCards((prev) => prev.map((item) => (item.id === card.id ? { ...item, status: nextStatus } : item)));
+    if (selectedRate?.id === card.id) {
+      updateRateField("status", nextStatus);
+    }
+  }
 
   return (
     <div className="ronyx-shell">
@@ -342,7 +468,7 @@ export default function RonyxAggregatesPage() {
             <div className="ronyx-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Customer Rate Cards</h2>
-                <button className="ronyx-action">+ Add New Rate Card</button>
+                <button className="ronyx-action" onClick={addRateCard}>+ Add New Rate Card</button>
               </div>
               <div className="ronyx-table">
                 <div className="ronyx-row" style={{ fontWeight: 700 }}>
@@ -364,8 +490,11 @@ export default function RonyxAggregatesPage() {
                       <button className="ronyx-action" onClick={() => setSelectedRateId(card.id)}>
                         Edit
                       </button>
-                      <button className="ronyx-action" style={{ marginLeft: 8 }}>
-                        Deactivate
+                      <button className="ronyx-action" style={{ marginLeft: 8 }} onClick={() => toggleRateCardStatus(card)}>
+                        {card.status === "inactive" ? "Activate" : "Deactivate"}
+                      </button>
+                      <button className="ronyx-action" style={{ marginLeft: 8 }} onClick={() => cloneRateCard(card)}>
+                        Clone
                       </button>
                     </span>
                   </div>
@@ -475,8 +604,9 @@ export default function RonyxAggregatesPage() {
                   />
                 </div>
                 <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-                  <button className="ronyx-action">Save Rate Card</button>
-                  <button className="ronyx-action">Cancel</button>
+                  <button className="ronyx-action" onClick={saveRateCard}>Save Rate Card</button>
+                  <button className="ronyx-action" onClick={() => setSelectedRateId(null)}>Cancel</button>
+                  {rateMessage && <span className="ronyx-label">{rateMessage}</span>}
                 </div>
               </div>
             )}
@@ -489,7 +619,7 @@ export default function RonyxAggregatesPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Job Site Directory</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="ronyx-action">+ New Site</button>
+                  <button className="ronyx-action" onClick={addJobSite}>+ New Site</button>
                   <button className="ronyx-action">Map View</button>
                 </div>
               </div>
@@ -559,8 +689,9 @@ export default function RonyxAggregatesPage() {
                   </div>
                 </div>
                 <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-                  <button className="ronyx-action">Save Site</button>
-                  <button className="ronyx-action">Clone for New Project</button>
+                  <button className="ronyx-action" onClick={saveJobSite}>Save Site</button>
+                  <button className="ronyx-action" onClick={() => addJobSite()}>Clone for New Project</button>
+                  {siteMessage && <span className="ronyx-label">{siteMessage}</span>}
                 </div>
               </div>
             )}
