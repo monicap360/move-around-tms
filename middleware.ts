@@ -8,8 +8,17 @@ export async function middleware(req: NextRequest) {
     const host = req.headers.get("host") || "";
     const pathname = url.pathname;
 
+    const isPublicAsset =
+      pathname === "/manifest.json" ||
+      pathname === "/sw.js" ||
+      pathname === "/service-worker.js" ||
+      pathname === "/offline.html" ||
+      pathname.startsWith("/icons/") ||
+      pathname.startsWith("/_next/") ||
+      pathname === "/favicon.ico";
+
     // Route subdomain traffic to the Ronyx dashboard paths
-    if (host.startsWith("ronyx.") && !pathname.startsWith("/ronyx")) {
+    if (host.startsWith("ronyx.") && !pathname.startsWith("/ronyx") && !isPublicAsset) {
       url.pathname = `/ronyx${pathname === "/" ? "" : pathname}`;
       const res = NextResponse.rewrite(url);
 

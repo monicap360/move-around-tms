@@ -4,6 +4,12 @@
 
 body {
   font-family: "Inter", "Roboto", "Helvetica Neue", sans-serif;
+  background-color: #080808;
+  color: #ffffff;
+}
+
+html {
+  background-color: #080808;
 }
 
 :root {

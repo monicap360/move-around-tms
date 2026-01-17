@@ -1,18 +1,24 @@
 // Ronyx Logistics TMS - Service Worker
 // Provides offline capabilities and caching for mobile users
 
-const CACHE_NAME = "ronyx-tms-v1.0.0";
-const API_CACHE_NAME = "ronyx-tms-api-v1.0.0";
+const CACHE_NAME = "ronyx-tms-v1.0.2";
+const API_CACHE_NAME = "ronyx-tms-api-v1.0.2";
 
 // Static assets to cache
 const STATIC_ASSETS = [
-  "/",
+  "/ronyx",
   "/manifest.json",
-  "/driver/profile",
-  "/aggregates/upload",
-  "/fleet",
-  "/compliance",
-  "/dispatch",
+  "/ronyx/dispatch",
+  "/ronyx/tickets",
+  "/ronyx/loads",
+  "/ronyx/drivers",
+  "/ronyx/trucks",
+  "/ronyx/backhaul",
+  "/ronyx/maintenance",
+  "/ronyx/billing",
+  "/ronyx/reports",
+  "/ronyx/settings",
+  "/ronyx/compliance",
   "/offline.html",
 ];
 

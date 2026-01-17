@@ -1,212 +1,292 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 
 const navItems = [
   { label: "Overview", href: "/ronyx" },
-  { label: "Loads", href: "/loads" },
-  { label: "Drivers", href: "/drivers" },
-  { label: "Trucks", href: "/trucks" },
-  { label: "Dispatch", href: "/dispatch" },
-  { label: "Tracking", href: "/tracking" },
-  { label: "Payroll", href: "/payroll" },
-  { label: "Reports", href: "/reports" },
-  { label: "Settings", href: "/settings" },
+  { label: "Dispatch", href: "/ronyx/dispatch" },
+  { label: "Loads", href: "/ronyx/loads" },
+  { label: "Backhaul Board", href: "/ronyx/backhaul" },
+  { label: "Pit Tickets", href: "/ronyx/tickets" },
+  { label: "Drivers", href: "/ronyx/drivers" },
+  { label: "Trucks", href: "/ronyx/trucks" },
+  { label: "Maintenance", href: "/ronyx/maintenance" },
+  { label: "Billing", href: "/ronyx/billing" },
+  { label: "Compliance", href: "/ronyx/compliance" },
+  { label: "Reports", href: "/ronyx/reports" },
+  { label: "Settings", href: "/ronyx/settings" },
 ];
 
 const quickActions = [
-  { title: "Create Load", href: "/loads/new" },
-  { title: "Assign Driver", href: "/drivers" },
-  { title: "Track Shipment", href: "/tracking" },
-  { title: "Run Payroll", href: "/payroll" },
+  { title: "Create Load", href: "/ronyx/loads" },
+  { title: "Assign Driver", href: "/ronyx/drivers" },
+  { title: "Open Backhaul Board", href: "/ronyx/backhaul" },
+  { title: "Scan Pit Ticket", href: "/ronyx/tickets" },
 ];
 
 export default function RonyxDashboard() {
+  useEffect(() => {
+    if (!window.location.host.startsWith("ronyx.")) return;
+    const resetKey = "ronyx_sw_reset_v101";
+    if (localStorage.getItem(resetKey)) return;
+    localStorage.setItem(resetKey, "1");
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
+        .then(() => {
+          if ("caches" in window) {
+            return caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+          }
+          return Promise.resolve();
+        })
+        .finally(() => {
+          window.location.reload();
+        });
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white">
+    <div className="ronyx-shell">
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
-        * {
-          font-family: "Poppins", sans-serif;
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+        :root {
+          --ronyx-black: #080808;
+          --ronyx-carbon: #121212;
+          --ronyx-steel: #1e1e1e;
+          --ronyx-border: rgba(255, 215, 0, 0.25);
+          --ronyx-accent: #ffd700;
+          --ronyx-blue: #00b4ff;
+          --ronyx-red: #ff2800;
+        }
+        .ronyx-shell {
+          min-height: 100vh;
+          background: radial-gradient(circle at top, rgba(0, 180, 255, 0.08), transparent 55%), var(--ronyx-black);
+          color: #ffffff;
+        }
+        .ronyx-layout {
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          min-height: 100vh;
+        }
+        .ronyx-sidebar {
+          background: var(--ronyx-carbon);
+          border-right: 1px solid var(--ronyx-border);
+          display: flex;
+          flex-direction: column;
+        }
+        .ronyx-brand {
+          padding: 24px;
+          border-bottom: 1px solid var(--ronyx-border);
+        }
+        .ronyx-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          color: var(--ronyx-accent);
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+        .ronyx-nav {
+          flex: 1;
+          padding: 18px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          overflow-y: auto;
+        }
+        .ronyx-nav a {
+          padding: 12px 14px;
+          border-radius: 10px;
+          color: rgba(255, 255, 255, 0.75);
+          text-decoration: none;
+          border: 1px solid transparent;
+          font-weight: 600;
+        }
+        .ronyx-nav a:hover {
+          border-color: var(--ronyx-border);
+          color: #fff;
+          background: rgba(255, 255, 255, 0.03);
+        }
+        .ronyx-support {
+          padding: 20px 24px;
+          border-top: 1px solid var(--ronyx-border);
+          font-size: 0.85rem;
+          color: rgba(255, 255, 255, 0.6);
+        }
+        .ronyx-main {
+          padding: 28px 32px 40px;
+        }
+        .ronyx-topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 20px;
+          border-bottom: 1px solid var(--ronyx-border);
+          margin-bottom: 24px;
+        }
+        .ronyx-topbar input {
+          background: var(--ronyx-steel);
+          border: 1px solid var(--ronyx-border);
+          border-radius: 10px;
+          padding: 10px 14px;
+          color: #fff;
+          width: 280px;
+        }
+        .ronyx-pill {
+          padding: 8px 14px;
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.75);
+        }
+        .ronyx-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+        .ronyx-card {
+          background: var(--ronyx-carbon);
+          border: 1px solid var(--ronyx-border);
+          border-radius: 14px;
+          padding: 18px;
+        }
+        .ronyx-card h3 {
+          margin: 0 0 8px;
+          font-size: 1rem;
+        }
+        .ronyx-table {
+          display: grid;
+          gap: 12px;
+        }
+        .ronyx-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: var(--ronyx-steel);
+          border: 1px solid rgba(255, 215, 0, 0.15);
         }
       `}</style>
 
-      <div className="flex h-screen overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-72 bg-[#0f0f11] border-r border-[#2a2a2f] flex flex-col">
-          <div className="px-6 py-6 border-b border-[#2a2a2f]">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[#F7931E] rounded-lg flex items-center justify-center font-bold text-black text-2xl shadow-lg shadow-[#F7931E]/30">
-                R
-              </div>
-              <div>
-                <div className="text-lg font-bold text-[#F7931E]">
-                  RONYX LOGISTICS
-                </div>
-                <div className="text-xs text-gray-400 tracking-wider">
-                  Fleet Operations
-                </div>
-              </div>
-            </div>
+      <div className="ronyx-layout">
+        <aside className="ronyx-sidebar">
+          <div className="ronyx-brand">
+            <div className="ronyx-badge">Ronyx Dump Fleet</div>
+            <h2 style={{ marginTop: 12, fontSize: "1.25rem", fontWeight: 800 }}>RONYX LOGISTICS</h2>
+            <p style={{ color: "rgba(255,255,255,0.6)", marginTop: 6 }}>
+              Dump Truck Operations Command
+            </p>
           </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className="ronyx-nav">
             {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-gray-300 hover:text-white hover:bg-[#1a1a1d] transition-all"
-              >
-                <span className="w-2 h-2 rounded-full bg-[#F7931E]/60"></span>
+              <Link key={item.label} href={item.href}>
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="px-6 py-6 border-t border-[#2a2a2f]">
-            <div className="text-xs text-gray-500 mb-2">Support</div>
-            <a
-              href="mailto:support@movearoundtms.com"
-              className="text-sm text-gray-300 hover:text-[#F7931E] transition-colors"
-            >
-              support@movearoundtms.com
-            </a>
+          <div className="ronyx-support">
+            Support: support@movearoundtms.com
           </div>
         </aside>
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Top bar */}
-          <header className="border-b border-[#2a2a2f] bg-[#0f0f11] px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-white">Operations Dashboard</h1>
-                <p className="text-sm text-gray-400">
-                  Real-time overview of fleet performance
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="hidden md:block">
-                  <input
-                    type="text"
-                    placeholder="Search loads, drivers, trucks..."
-                    className="w-72 bg-[#141418] border border-[#2a2a2f] rounded-lg px-4 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:outline-none focus:border-[#F7931E]/60"
-                  />
-                </div>
-                <button className="px-4 py-2 bg-[#141418] border border-[#2a2a2f] rounded-lg text-sm text-gray-200 hover:border-[#F7931E]/60 transition-all">
-                  Notifications
-                </button>
-                <button className="px-4 py-2 bg-[#F7931E] text-black font-semibold rounded-lg hover:bg-[#ff8800] transition-all">
-                  Portal Admin
-                </button>
-              </div>
+        <main className="ronyx-main">
+          <div className="ronyx-topbar">
+            <div>
+              <h1 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Dump Fleet Command Center</h1>
+              <p style={{ color: "rgba(255,255,255,0.7)", marginTop: 6 }}>
+                Live control for pit‑to‑site hauling, backhauls, and ticket accuracy.
+              </p>
             </div>
-          </header>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <input type="text" placeholder="Search loads, drivers, tickets..." />
+              <span className="ronyx-pill">Shift: Morning</span>
+            </div>
+          </div>
 
-          <main className="flex-1 overflow-y-auto px-6 py-6">
-            {/* Stats */}
-            <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-              {[
-                { label: "Active Loads", value: "42", trend: "+6 today" },
-                { label: "Available Drivers", value: "18", trend: "2 on break" },
-                { label: "Trucks In Service", value: "37", trend: "3 in maintenance" },
-                { label: "On-Time Rate", value: "98%", trend: "+1.2% WoW" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-[#111114] border border-[#222228] rounded-xl p-6"
-                >
-                  <div className="text-xs text-gray-500 uppercase tracking-wider">
-                    {stat.label}
-                  </div>
-                  <div className="text-3xl font-bold text-[#F7931E] mt-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-2">{stat.trend}</div>
+          <section className="ronyx-grid" style={{ marginBottom: 22 }}>
+            {[
+              { label: "Active Loads", value: "38", note: "6 at pit queue" },
+              { label: "Empty Miles Today", value: "14%", note: "↓ 3% vs last week" },
+              { label: "Tickets Pending", value: "12", note: "3 flagged for review" },
+              { label: "On‑Time Rate", value: "97.4%", note: "+1.1% WoW" },
+            ].map((stat) => (
+              <div key={stat.label} className="ronyx-card">
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                  {stat.label}
                 </div>
-              ))}
-            </section>
-
-            {/* Quick actions */}
-            <section className="bg-[#111114] border border-[#222228] rounded-xl p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white">Quick Actions</h2>
-                <span className="text-xs text-gray-500 uppercase tracking-wider">
-                  Dispatch shortcuts
-                </span>
+                <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ronyx-accent)", marginTop: 6 }}>
+                  {stat.value}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", marginTop: 6 }}>
+                  {stat.note}
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                {quickActions.map((action) => (
-                  <Link
-                    key={action.title}
-                    href={action.href}
-                    className="px-4 py-4 bg-[#141418] border border-[#2a2a2f] rounded-lg text-sm font-semibold text-gray-200 hover:border-[#F7931E]/60 hover:text-white transition-all"
-                  >
-                    {action.title}
-                  </Link>
+            ))}
+          </section>
+
+          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h3>Quick Actions</h3>
+              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>Dump fleet tools</span>
+            </div>
+            <div className="ronyx-grid">
+              {quickActions.map((action) => (
+                <Link key={action.title} href={action.href} className="ronyx-row">
+                  <span>{action.title}</span>
+                  <span style={{ color: "var(--ronyx-accent)" }}>→</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="ronyx-grid">
+            <div className="ronyx-card" style={{ gridColumn: "span 2" }}>
+              <h3>Live Loads</h3>
+              <div className="ronyx-table">
+                {[
+                  { id: "LD-4021", route: "Pit 7 → I‑45 Jobsite", status: "In Transit", driver: "D. Perez" },
+                  { id: "LD-4025", route: "Pit 7 → Beltway 8", status: "Loading", driver: "S. Grant" },
+                  { id: "LD-4029", route: "Pit 3 → Katy Site", status: "Queued", driver: "J. Lane" },
+                ].map((load) => (
+                  <div key={load.id} className="ronyx-row">
+                    <div>
+                      <strong>{load.id}</strong> • {load.route}
+                      <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.6)" }}>
+                        Driver: {load.driver}
+                      </div>
+                    </div>
+                    <span style={{ color: "var(--ronyx-accent)", fontWeight: 700 }}>{load.status}</span>
+                  </div>
                 ))}
               </div>
-            </section>
+            </div>
 
-            {/* Fleet overview */}
-            <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 bg-[#111114] border border-[#222228] rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-white">Live Loads</h2>
-                  <button className="text-sm text-[#F7931E] hover:text-[#ff8800] transition-colors">
-                    View all
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {[
-                    { id: "LD-2471", route: "Houston → Dallas", status: "In Transit", driver: "J. Smith" },
-                    { id: "LD-2475", route: "Austin → San Antonio", status: "Loading", driver: "K. Alvarez" },
-                    { id: "LD-2481", route: "El Paso → Laredo", status: "Delivered", driver: "R. Thompson" },
-                  ].map((load) => (
-                    <div
-                      key={load.id}
-                      className="flex items-center justify-between bg-[#141418] border border-[#2a2a2f] rounded-lg px-4 py-3"
-                    >
-                      <div>
-                        <div className="text-sm font-semibold text-white">
-                          {load.id} • {load.route}
-                        </div>
-                        <div className="text-xs text-gray-400">Driver: {load.driver}</div>
-                      </div>
-                      <span className="text-xs font-semibold text-[#F7931E]">
-                        {load.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            <div className="ronyx-card">
+              <h3>Alerts</h3>
+              <div className="ronyx-table">
+                {[
+                  "Truck 18 due for maintenance in 3 days",
+                  "Ticket #T-884 mismatch flagged",
+                  "Load LD-4025 detention timer running",
+                ].map((alert) => (
+                  <div key={alert} className="ronyx-row">
+                    {alert}
+                  </div>
+                ))}
               </div>
-
-              <div className="bg-[#111114] border border-[#222228] rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-white">Alerts</h2>
-                  <button className="text-xs text-gray-400 hover:text-[#F7931E] transition-colors">
-                    Manage
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {[
-                    "Truck 18 due for maintenance in 3 days",
-                    "Driver K. Alvarez HOS limit approaching",
-                    "Load LD-2475 detention timer running",
-                    "Insurance renewal due in 12 days",
-                  ].map((alert) => (
-                    <div
-                      key={alert}
-                      className="bg-[#141418] border border-[#2a2a2f] rounded-lg p-4 text-sm text-gray-300"
-                    >
-                      {alert}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </main>
-        </div>
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   );

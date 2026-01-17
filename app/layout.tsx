@@ -30,6 +30,7 @@ export default async function RootLayout(props: { children: ReactNode }) {
           name="description"
           content={`Enterprise Transportation Management System for ${branding.companyName}`}
         />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href={branding.faviconUrl} />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />

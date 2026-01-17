@@ -130,7 +130,15 @@ export default function ClientLayoutWrapper({
     pathname?.startsWith("/signup") ||
     pathname?.startsWith("/reset-password") ||
     pathname?.startsWith("/auth/callback") ||
-    pathname?.startsWith("/demo");
+    pathname?.startsWith("/demo") ||
+    pathname?.startsWith("/pit-to-pay") ||
+    pathname?.startsWith("/dump-truck-fleets") ||
+    pathname?.startsWith("/cross-border") ||
+    pathname?.startsWith("/compare") ||
+    pathname === "/integrations" ||
+    pathname?.startsWith("/for-shippers") ||
+    pathname?.startsWith("/roadmap") ||
+    pathname?.startsWith("/audit-support-for-trucking-companies");
 
   // Debug: Uncomment these lines to debug layout rendering
   // console.log('ClientLayoutWrapper - pathname:', pathname);

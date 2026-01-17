@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState("all");
+  const [language, setLanguage] = useState<"en" | "es">("en");
   const [roiInputs, setRoiInputs] = useState({
     loadsPerDay: 45,
     avgValuePerLoad: 420,
@@ -13,6 +14,180 @@ export default function LandingPage() {
     manualHoursPerDay: 2,
     missedAccessorialPct: 2,
   });
+
+  const copy = {
+    en: {
+      navPitToPay: "Pit-to-Pay",
+      navPits: "Pits & Quarries",
+      navDump: "Dump Truck Fleets",
+      navModules: "Modules",
+      navOnboarding: "Onboarding",
+      navPricing: "Pricing",
+      navAudit: "Audit Shield",
+      navDemo: "Get Demo",
+      choosePathTitle: "What best describes your business?",
+      choosePathSubtitle: "Pick the path that fits you. You’ll land on a tailored page.",
+      choosePathPits: "I haul Aggregates / Run a Quarry",
+      choosePathDump: "I run a Dump Truck or Heavy Haul Fleet",
+      choosePathCrossBorder: "I run Cross‑Border (US‑Mexico) Operations",
+      choosePathGeneral: "I run General Freight / Trucking / 3PL",
+      heroBadge: "PIT-TO-PAY INTELLIGENCE PLATFORM",
+      heroTitle: "Stop Losing Money at the Scale House",
+      heroSub: "Short loads • scale fraud • ticket matching • production tracking",
+      heroBody1:
+        "MoveAround’s VeriFlow Pit‑to‑Pay Suite automates your haul cycle—from load-out to invoice—to eliminate short loads, prevent fraud, and capture every dollar you’ve earned.",
+      heroBody2:
+        "Powered by TicketFlash for ticket capture, AccuriScale for scale validation, and DocPulse for audit‑ready documentation.",
+      heroBody3:
+        "Get a custom ROI analysis based on your loads, discrepancies, and manual reconciliation hours.",
+      heroCtaPrimary: "Get ROI Analysis",
+      heroCtaSecondary: "See Pit-to-Pay",
+      pitsTitle: "For Aggregate & Bulk Material Haulers",
+      pitsSubtitle:
+        "Ticket matching, short loads, scale fraud, and production tracking—handled end‑to‑end.",
+      dumpTitle: "For Dump Truck Fleets",
+      dumpSubtitle:
+        "A TMS built for the unique chaos of dump trucking—connecting pits, jobsites, and load boards.",
+      demoTitle: "Don’t Watch a Generic Demo. Experience Yours.",
+      demoSubtitle: "Select your biggest profit leak and jump to the exact solution.",
+      pricingTitle: "Pricing: Get Started for $999",
+      pricingSubtitle: "Choose your modules, pay only for what you need",
+      pricingNoContract: "No long‑term contracts. Cancel anytime.",
+      demoMenuTitle: "Request a Demo Menu",
+      demoMenuSubtitle: "Choose the session that matches your operation and get an instant asset when you book.",
+      demoMenuCta: "Book This Demo",
+      demoMenuForLabel: "For",
+      demoMenuAssetLabel: "Instant asset",
+    },
+    es: {
+      navPitToPay: "Pit‑to‑Pay",
+      navPits: "Canteras y Agregados",
+      navDump: "Flotas de Volteo",
+      navModules: "Módulos",
+      navOnboarding: "Implementación",
+      navPricing: "Precios",
+      navAudit: "Audit Shield",
+      navDemo: "Solicitar Demo",
+      choosePathTitle: "¿Cuál describe mejor tu negocio?",
+      choosePathSubtitle: "Elige tu ruta y verás una página hecha para ti.",
+      choosePathPits: "Transporto agregados / Opero una cantera",
+      choosePathDump: "Opero una flota de volteo o carga pesada",
+      choosePathCrossBorder: "Opero cruces fronterizos (EE. UU.‑México)",
+      choosePathGeneral: "Opero carga general / transporte / 3PL",
+      heroBadge: "PLATAFORMA PIT‑TO‑PAY",
+      heroTitle: "Deja de perder dinero en la báscula",
+      heroSub: "cargas cortas • fraude en báscula • tickets • control de producción",
+      heroBody1:
+        "La suite VeriFlow Pit‑to‑Pay automatiza tu ciclo de acarreo—desde carga hasta factura—para eliminar cargas cortas, prevenir fraudes y capturar cada dólar.",
+      heroBody2:
+        "Impulsado por TicketFlash para tickets, AccuriScale para validación de báscula y DocPulse para documentación auditada.",
+      heroBody3:
+        "Obtén un análisis ROI basado en tus cargas, discrepancias y horas manuales.",
+      heroCtaPrimary: "Obtener ROI",
+      heroCtaSecondary: "Ver Pit‑to‑Pay",
+      pitsTitle: "Para Canteras y Materiales a Granel",
+      pitsSubtitle:
+        "Ticket matching, cargas cortas, fraude en báscula y producción—todo de punta a punta.",
+      dumpTitle: "Para Flotas de Volteo",
+      dumpSubtitle:
+        "Un TMS para el caos del volteo—conecta canteras, obras y bolsas de carga.",
+      demoTitle: "No veas un demo genérico. Vive el tuyo.",
+      demoSubtitle: "Selecciona tu mayor fuga de utilidad y ve la solución exacta.",
+      pricingTitle: "Precios: Inicia con $999",
+      pricingSubtitle: "Elige módulos y paga solo lo que necesitas",
+      pricingNoContract: "Sin contratos a largo plazo. Cancela cuando quieras.",
+      demoMenuTitle: "Menú de Demos",
+      demoMenuSubtitle: "Elige la sesión ideal y recibe un recurso al agendar.",
+      demoMenuCta: "Agendar Demo",
+      demoMenuForLabel: "Para",
+      demoMenuAssetLabel: "Recurso inmediato",
+    },
+  } as const;
+
+  const t = (key: keyof typeof copy.en) => copy[language][key];
+  useEffect(() => {
+    const host = (globalThis as any).location?.host || "";
+    if (host.startsWith("ronyx.")) return;
+    const resetKey = "sales_sw_reset_v1";
+    if (localStorage.getItem(resetKey)) return;
+    localStorage.setItem(resetKey, "1");
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
+        .finally(() => {
+          const safeReload = () => {
+            const loc = (globalThis as any).location;
+            if (loc?.reload) loc.reload();
+          };
+          if ("caches" in globalThis) {
+            caches
+              .keys()
+              .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+              .finally(() => {
+                safeReload();
+              });
+          } else {
+            safeReload();
+          }
+        });
+    }
+  }, []);
+  const demoMenuOptions =
+    language === "es"
+      ? [
+          {
+            title: "Auditoría de Fugas de Ganancia",
+            forWho: "Flotas de Volteo",
+            asset: "Checklist de 5 puntos de utilidad (PDF)",
+            subject: "Solicitud de Demo: Auditoría de Fugas",
+          },
+          {
+            title: "Análisis Pit‑to‑Pay",
+            forWho: "Transportistas de Agregados",
+            asset: "Autoevaluación de báscula (Hoja de trabajo)",
+            subject: "Solicitud de Demo: Pit‑to‑Pay",
+          },
+          {
+            title: "Briefing de Estrategia Fronteriza",
+            forWho: "Operaciones Cross‑Border",
+            asset: "Guía SAT 2024 (PDF)",
+            subject: "Solicitud de Demo: Estrategia Fronteriza",
+          },
+          {
+            title: "Consulta General de ROI",
+            forWho: "Carga General / 3PL",
+            asset: "Calculadora ROI TMS (Excel)",
+            subject: "Solicitud de Demo: ROI General",
+          },
+        ]
+      : [
+          {
+            title: "The Profit Leak Audit",
+            forWho: "Dump Truck Fleets",
+            asset: "The 5‑Point Fleet Profit Checklist (PDF)",
+            subject: "Profit Leak Audit Demo Request",
+          },
+          {
+            title: "The Pit‑to‑Pay Analysis",
+            forWho: "Aggregate Haulers",
+            asset: "Scale House Efficiency Self‑Audit (Worksheet)",
+            subject: "Pit‑to‑Pay Analysis Demo Request",
+          },
+          {
+            title: "The Border Strategy Briefing",
+            forWho: "Cross‑Border Ops",
+            asset: "2024 SAT Compliance Update Cheat Sheet (PDF)",
+            subject: "Border Strategy Briefing Request",
+          },
+          {
+            title: "General ROI Consultation",
+            forWho: "General Freight / 3PL",
+            asset: "TMS ROI Calculator (Excel)",
+            subject: "General ROI Consultation Request",
+          },
+        ];
 
   const hourlyRate = 30;
   const annualRevenue =
@@ -868,7 +1043,7 @@ export default function LandingPage() {
 
       <nav className="navbar">
         <div className="container navbar-container">
-          <Link href="/" className="logo" onClick={() => setMenuOpen(false)}>
+          <Link href="/" prefetch={false} className="logo" onClick={() => setMenuOpen(false)}>
             <div className="logo-icon">M</div>
             <div className="logo-text">MoveAround TMS</div>
           </Link>
@@ -883,26 +1058,53 @@ export default function LandingPage() {
 
           <div className={`nav-links ${menuOpen ? "active" : ""}`}>
             <a href="#performance" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Pit-to-Pay
+              {t("navPitToPay")}
             </a>
             <a href="#pits" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Pits & Quarries
+              {t("navPits")}
             </a>
             <a href="#dump-truck" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Dump Truck Fleets
+              {t("navDump")}
             </a>
             <a href="#modules" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Modules
+              {t("navModules")}
             </a>
             <a href="#onboarding" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Onboarding
+              {t("navOnboarding")}
             </a>
             <a href="#pricing" className="nav-link" onClick={() => setMenuOpen(false)}>
-              Pricing
+              {t("navPricing")}
+            </a>
+            <a href="#audit-shield" className="nav-link" onClick={() => setMenuOpen(false)}>
+              {t("navAudit")}
             </a>
             <a href="#demo" className="nav-link nav-cta" onClick={() => setMenuOpen(false)}>
-              Get Demo
+              {t("navDemo")}
             </a>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
+            <button
+              onClick={() => setLanguage("en")}
+              className="btn btn-secondary"
+              style={{
+                padding: "8px 14px",
+                fontSize: "0.75rem",
+                borderColor: language === "en" ? "var(--hyper-yellow)" : "rgba(255,215,0,0.2)",
+              }}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage("es")}
+              className="btn btn-secondary"
+              style={{
+                padding: "8px 14px",
+                fontSize: "0.75rem",
+                borderColor: language === "es" ? "var(--hyper-yellow)" : "rgba(255,215,0,0.2)",
+              }}
+            >
+              ES
+            </button>
           </div>
         </div>
       </nav>
@@ -910,9 +1112,9 @@ export default function LandingPage() {
       <section style={{ paddingTop: 120, paddingBottom: 40 }}>
         <div className="container">
           <div className="reporting-card" style={{ textAlign: "center" }}>
-            <h3 style={{ marginBottom: 8 }}>Choose Your Path</h3>
+            <h3 style={{ marginBottom: 8 }}>{t("choosePathTitle")}</h3>
             <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.95rem" }}>
-              We serve two distinct operations with dedicated workflows.
+              {t("choosePathSubtitle")}
             </p>
             <div
               style={{
@@ -922,12 +1124,18 @@ export default function LandingPage() {
                 marginTop: 20,
               }}
             >
-              <a href="#pits" className="btn btn-primary" style={{ width: "100%" }}>
-                I haul Aggregates / Run a Quarry
-              </a>
-              <a href="#solutions" className="btn btn-secondary" style={{ width: "100%" }}>
-                I run General Freight / Trucking
-              </a>
+              <Link href="/pit-to-pay" prefetch={false} className="btn btn-primary" style={{ width: "100%" }}>
+                {t("choosePathPits")}
+              </Link>
+              <Link href="/dump-truck-fleets" prefetch={false} className="btn btn-secondary" style={{ width: "100%" }}>
+                {t("choosePathDump")}
+              </Link>
+              <Link href="/cross-border" prefetch={false} className="btn btn-secondary" style={{ width: "100%" }}>
+                {t("choosePathCrossBorder")}
+              </Link>
+              <Link href="/" prefetch={false} className="btn btn-secondary" style={{ width: "100%" }}>
+                {t("choosePathGeneral")}
+              </Link>
             </div>
           </div>
         </div>
@@ -938,36 +1146,43 @@ export default function LandingPage() {
           <div className="hero-content">
             <div className="hero-badge">
               <i className="fas fa-bolt"></i>
-              PIT-TO-PAY INTELLIGENCE PLATFORM
+              {t("heroBadge")}
             </div>
-            <h1 className="speed-gradient">Stop Losing Money at the Scale House</h1>
+            <h1 className="speed-gradient">{t("heroTitle")}</h1>
             <p>
-              <strong>Short loads • scale fraud • ticket matching • production tracking</strong>
+              <strong>{t("heroSub")}</strong>
             </p>
+            <p>{t("heroBody1")}</p>
+            <p>{t("heroBody2")}</p>
             <p>
-              MoveAround’s <strong className="performance-gradient">VeriFlow Pit‑to‑Pay Suite</strong>{" "}
-              automates your haul cycle—from load-out to invoice—to eliminate short loads,
-              prevent fraud, and capture every dollar you’ve earned.
-            </p>
-            <p>
-              Powered by <strong>TicketFlash</strong> for ticket capture,{" "}
-              <strong>AccuriScale</strong> for scale validation, and{" "}
-              <strong>DocPulse</strong> for audit‑ready documentation.
-            </p>
-            <p>
-              <strong>Get a custom ROI analysis</strong> based on your loads, discrepancies,
-              and manual reconciliation hours.
+              <strong>{t("heroBody3")}</strong>
             </p>
 
             <div className="hero-cta">
               <a href="#roi-calculator" className="btn btn-primary">
                 <i className="fas fa-chart-line"></i>
-                Get ROI Analysis
+                {t("heroCtaPrimary")}
               </a>
               <a href="#pits" className="btn btn-secondary">
                 <i className="fas fa-industry"></i>
-                See Pit-to-Pay
+                {t("heroCtaSecondary")}
               </a>
+            </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 18 }}>
+              {["SSL Secured", "SOC2-Ready", "Audit-Ready Docs", "No Long-Term Contracts"].map((badge) => (
+                <span
+                  key={badge}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    color: "rgba(255,255,255,0.8)",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  {badge}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -1287,24 +1502,31 @@ export default function LandingPage() {
             {[
               {
                 icon: "fa-industry",
-                title: "I run a Quarry or Aggregate Business",
+                title: "I haul Aggregates / Run a Quarry",
                 desc: "Pit‑to‑Pay workflow built for scale houses, short loads, and ticket matching.",
                 cta: "Explore Pit‑to‑Pay",
-                href: "#pits",
+                href: "/pit-to-pay",
+              },
+              {
+                icon: "fa-truck",
+                title: "I run a Dump Truck or Heavy Haul Fleet",
+                desc: "Dispatch, backhauls, ticket capture, and dispute‑proof billing built for dump fleets.",
+                cta: "View Dump Fleet Tools",
+                href: "/dump-truck-fleets",
               },
               {
                 icon: "fa-globe",
-                title: "I am a Cross‑Border Carrier",
-                desc: "CFDI 4.0 + Carta Porte automation with customs tracking and multi‑currency billing.",
+                title: "I run Cross‑Border (US‑Mexico) Operations",
+                desc: "CFDI 4.0 + Carta Porte automation with live customs visibility.",
                 cta: "View Cross‑Border",
-                href: "#modules",
+                href: "/cross-border",
               },
               {
                 icon: "fa-briefcase",
-                title: "I need to Automate My Back Office",
-                desc: "TicketFlash OCR + Revenue Shield to eliminate manual entry and recover revenue.",
-                cta: "Automate the Office",
-                href: "#modules",
+                title: "I run General Freight / Trucking / 3PL",
+                desc: "Core TMS, invoicing, and reporting without enterprise bloat.",
+                cta: "View General TMS",
+                href: "/",
               },
             ].map((path) => (
               <div className="benefit-card" key={path.title}>
@@ -1327,9 +1549,9 @@ export default function LandingPage() {
                 <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
                   {path.desc}
                 </p>
-                <a href={path.href} className="btn btn-secondary" style={{ marginTop: 20 }}>
+                <Link href={path.href} prefetch={false} className="btn btn-secondary" style={{ marginTop: 20 }}>
                   {path.cta}
-                </a>
+                </Link>
               </div>
             ))}
           </div>
@@ -1399,11 +1621,11 @@ export default function LandingPage() {
         <div className="container">
           <div className="section-header">
             <h2>
-              For Dump Truck Fleets:{" "}
+              {t("dumpTitle")}:{" "}
               <span className="speed-gradient">Turn More Trips Into More Profit</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              A TMS built for the unique chaos of dump trucking—connecting pits, jobsites, and load boards.
+              {t("dumpSubtitle")}
             </p>
           </div>
 
@@ -1501,15 +1723,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="demo" className="reporting-features">
+      <section id="interactive-demo" className="reporting-features">
         <div className="container">
           <div className="section-header">
             <h2>
-              Don’t Watch a Generic Demo.{" "}
+              {t("demoTitle")}{" "}
               <span className="speed-gradient">Experience Yours.</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              Select your biggest profit leak and jump to the exact solution.
+              {t("demoSubtitle")}
             </p>
           </div>
 
@@ -1679,11 +1901,11 @@ export default function LandingPage() {
         <div className="container">
           <div className="section-header">
             <h2>
-              For Aggregate & Bulk Material Haulers:{" "}
+              {t("pitsTitle")}:{" "}
               <span className="speed-gradient">AccuriScale Intelligence</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              Ticket matching, short loads, scale fraud, and production tracking—handled end‑to‑end.
+              {t("pitsSubtitle")}
             </p>
           </div>
 
@@ -2189,10 +2411,13 @@ export default function LandingPage() {
         <div className="container">
           <div className="section-header">
             <h2>
-              Pricing: <span className="speed-gradient">Get Started for $999</span>
+              {t("pricingTitle")}
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              Choose your modules, pay only for what you need
+              {t("pricingSubtitle")}
+            </p>
+            <p style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+              {t("pricingNoContract")}
             </p>
           </div>
 
@@ -2314,6 +2539,159 @@ export default function LandingPage() {
             ))}
           </div>
 
+          <div id="audit-shield" style={{ marginTop: 60 }} className="reporting-card">
+            <div className="section-header" style={{ marginBottom: 24 }}>
+              <h2>Audit Shield Service Packages & Pricing</h2>
+              <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+                Premium compliance protection with clear, value-based tiers
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+              {[
+                {
+                  title: "Audit Ready (Preventative)",
+                  target: "All fleets who want proactive compliance",
+                  oneTime: "Included in Professional Bundle & above",
+                  retainer: "$2,495/year ($208/month)",
+                  value:
+                    "Your proactive insurance. A serious, high‑value layer to prevent $8,000+ fines and 80+ hours of panic.",
+                  includes: [
+                    "One‑Click Audit Packet in DocPulse",
+                    "Quarterly compliance health scan report",
+                    "Semi‑annual audit preparedness strategy call",
+                    "Audit playbook with checklists & templates",
+                  ],
+                },
+                {
+                  title: "Audit Defense (FLAGSHIP)",
+                  target: "Audited fleets needing immediate crisis help",
+                  oneTime: "$8,500–$15,000 per audit",
+                  retainer: "N/A",
+                  value:
+                    "Your expert defense team. Priced for high‑stakes outcomes and liability—protecting $30k–$100k+ risk.",
+                  includes: [
+                    "Immediate triage + response plan (24 hrs)",
+                    "End‑to‑end document gathering & submission",
+                    "Direct expert representation in meetings",
+                    "Penalty negotiation + dispute support",
+                    "Post‑audit resolution report",
+                  ],
+                },
+                {
+                  title: "Audit Concierge (Elite)",
+                  target: "High‑risk, hazmat, or 25+ truck fleets",
+                  oneTime: "$25,000+ per audit",
+                  retainer: "$25,000+/year",
+                  value:
+                    "Your full‑time compliance department. White‑glove, dedicated protection for mission‑critical fleets.",
+                  includes: [
+                    "Dedicated audit liaison (single point of contact)",
+                    "Unlimited, priority support",
+                    "Bi‑monthly compliance reviews",
+                    "Guaranteed 4‑hour response time",
+                    "24‑hour packet preparation",
+                  ],
+                },
+              ].map((tier) => (
+                <div key={tier.title} className="benefit-card" style={{ textAlign: "left" }}>
+                  <h3 style={{ marginBottom: 10 }}>{tier.title}</h3>
+                  <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.95rem" }}>
+                    <strong>Best for:</strong> {tier.target}
+                  </p>
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)" }}>ONE‑TIME FEE</div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--hyper-yellow)" }}>
+                      {tier.oneTime}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)" }}>ANNUAL RETAINER</div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{tier.retainer}</div>
+                  </div>
+                  <p style={{ marginTop: 12, color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+                    {tier.value}
+                  </p>
+                  <ul style={{ paddingLeft: 18, marginTop: 12, color: "rgba(255,255,255,0.8)" }}>
+                    {tier.includes.map((item) => (
+                      <li key={item} style={{ marginBottom: 6 }}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 60 }} className="reporting-card">
+            <div className="section-header" style={{ marginBottom: 24 }}>
+              <h2>The Dump Truck Audit Nightmare: Pain Points You Solve</h2>
+              <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+                Every audit phase mapped to an Audit Shield solution
+              </p>
+            </div>
+            <div style={{ display: "grid", gap: 16 }}>
+              {[
+                {
+                  phase: "The Audit Notice",
+                  panic: "Panic: “What did we do wrong? Where do we even start?” Scrambling to find records.",
+                  solution:
+                    "Immediate Audit Triage: A dedicated specialist explains the notice in plain English and builds a Strategic Response Plan.",
+                },
+                {
+                  phase: "Document Gathering",
+                  panic:
+                    "Chaos: Weeks wasted digging through filing cabinets, emails, and disparate software for logs, tickets, receipts.",
+                  solution:
+                    "One‑Click Audit Packet: DocPulse generates a complete, organized digital packet with time‑stamped records.",
+                },
+                {
+                  phase: "Discrepancy Analysis",
+                  panic:
+                    "Fear: Finding errors before the auditor does (missing tickets, unlogged miles, HOS violations).",
+                  solution:
+                    "Pre‑Audit Health Scan: Automated compliance checks flag vulnerabilities with clear explanations.",
+                },
+                {
+                  phase: "Agent Interaction",
+                  panic:
+                    "Intimidation: Nervous owners/staff saying the wrong thing to auditors.",
+                  solution:
+                    "Representation & Coaching: Guided representation or role‑play coaching for common questions.",
+                },
+                {
+                  phase: "Resolution & Appeal",
+                  panic:
+                    "Cost: Unprepared for fines, penalties, and calculating what they truly owe.",
+                  solution:
+                    "Dispute Support & Negotiation: Challenge unjust penalties with evidence and clear liability math.",
+                },
+              ].map((row) => (
+                <div
+                  key={row.phase}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1.4fr 1.6fr",
+                    gap: 16,
+                    background: "rgba(30,30,30,0.6)",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,215,0,0.2)",
+                    padding: 16,
+                  }}
+                >
+                  <div style={{ color: "var(--hyper-yellow)", fontWeight: 700 }}>{row.phase}</div>
+                  <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.95rem" }}>{row.panic}</div>
+                  <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.95rem" }}>{row.solution}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 24, textAlign: "center" }}>
+              <Link href="/audit-support-for-trucking-companies" prefetch={false} className="btn btn-secondary">
+                Learn More About Audit Shield
+              </Link>
+            </div>
+          </div>
+
           <div style={{ textAlign: "center", marginTop: 60 }}>
             <div
               style={{
@@ -2372,22 +2750,33 @@ export default function LandingPage() {
       </section>
 
       <section id="demo" className="switch-benefits">
-        <div className="container" style={{ textAlign: "center" }}>
-          <h2>
-            Get Your Custom Demo: <span className="speed-gradient">Move Fast</span>
-          </h2>
-          <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>
-            Tell us your fleet size and modules. We’ll build your ROI plan within 24 hours.
-          </p>
-          <div style={{ marginTop: 30 }}>
-            <a
-              href="mailto:sales@movearoundtms.com"
-              className="btn btn-primary"
-              style={{ padding: "22px 60px" }}
-            >
-              <i className="fas fa-envelope"></i>
-              Request Demo
-            </a>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              {t("demoMenuTitle")}: <span className="speed-gradient">Move Fast</span>
+            </h2>
+            <p style={{ color: "rgba(255, 255, 255, 0.8)" }}>{t("demoMenuSubtitle")}</p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {demoMenuOptions.map((demo) => (
+              <div key={demo.title} className="benefit-card" style={{ textAlign: "left" }}>
+                <h3 style={{ marginBottom: 8 }}>{demo.title}</h3>
+                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.95rem" }}>
+                  <strong>{t("demoMenuForLabel")}:</strong> {demo.forWho}
+                </p>
+                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>
+                  <strong>{t("demoMenuAssetLabel")}:</strong> {demo.asset}
+                </p>
+                <a
+                  href={`mailto:sales@movearoundtms.com?subject=${encodeURIComponent(demo.subject)}`}
+                  className="btn btn-primary"
+                  style={{ marginTop: 14, width: "100%" }}
+                >
+                  {t("demoMenuCta")}
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -2436,8 +2825,26 @@ export default function LandingPage() {
                 <li style={{ marginBottom: 15 }}>
                   <a href="#reporting" className="nav-link">Reporting</a>
                 </li>
+                <li style={{ marginBottom: 15 }}>
+                  <Link href="/compare" prefetch={false} className="nav-link">Compare</Link>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <Link href="/integrations" prefetch={false} className="nav-link">Integrations</Link>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <Link href="/for-shippers" prefetch={false} className="nav-link">For Shippers</Link>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <Link href="/roadmap" prefetch={false} className="nav-link">Roadmap</Link>
+                </li>
+                <li style={{ marginBottom: 15 }}>
+                  <Link href="/audit-support-for-trucking-companies" prefetch={false} className="nav-link">Audit Shield</Link>
+                </li>
                 <li>
                   <a href="#pricing" className="nav-link">Pricing</a>
+                </li>
+                <li style={{ marginTop: 15 }}>
+                  <a href="#audit-shield" className="nav-link">Audit Shield</a>
                 </li>
               </ul>
             </div>

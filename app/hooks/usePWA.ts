@@ -8,8 +8,11 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Register service worker
-    if ("serviceWorker" in navigator) {
+    // Register service worker (Ronyx subdomain only)
+    if (
+      "serviceWorker" in navigator &&
+      window.location.host.startsWith("ronyx.")
+    ) {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {
