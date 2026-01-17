@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 
 const navItems = [
   { label: "Overview", href: "/ronyx" },
@@ -26,28 +25,6 @@ const quickActions = [
 ];
 
 export default function RonyxDashboard() {
-  useEffect(() => {
-    if (!window.location.host.startsWith("ronyx.")) return;
-    const resetKey = "ronyx_sw_reset_v101";
-    if (localStorage.getItem(resetKey)) return;
-    localStorage.setItem(resetKey, "1");
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .getRegistrations()
-        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
-        .then(() => {
-          if ("caches" in window) {
-            return caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
-          }
-          return Promise.resolve();
-        })
-        .finally(() => {
-          window.location.reload();
-        });
-    }
-  }, []);
-
   return (
     <div className="ronyx-shell">
       <style jsx global>{`

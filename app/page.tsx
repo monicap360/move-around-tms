@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,35 +105,6 @@ export default function LandingPage() {
   } as const;
 
   const t = (key: keyof typeof copy.en) => copy[language][key];
-  useEffect(() => {
-    const host = (globalThis as any).location?.host || "";
-    if (host.startsWith("ronyx.")) return;
-    const resetKey = "sales_sw_reset_v1";
-    if (localStorage.getItem(resetKey)) return;
-    localStorage.setItem(resetKey, "1");
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .getRegistrations()
-        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
-        .finally(() => {
-          const safeReload = () => {
-            const loc = (globalThis as any).location;
-            if (loc?.reload) loc.reload();
-          };
-          if ("caches" in globalThis) {
-            caches
-              .keys()
-              .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-              .finally(() => {
-                safeReload();
-              });
-          } else {
-            safeReload();
-          }
-        });
-    }
-  }, []);
   const demoMenuOptions =
     language === "es"
       ? [
