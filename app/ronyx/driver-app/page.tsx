@@ -1,7 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type AssignedLoad = {
+  id: string;
+  load_number: string;
+  route: string;
+  status: string;
+  customer_name?: string;
+  job_site?: string;
+  material?: string;
+  quantity?: number;
+  unit_type?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  ticket_id?: string | null;
+};
 
 export default function RonyxDriverAppPage() {
   const [driverName, setDriverName] = useState("");
@@ -11,12 +26,23 @@ export default function RonyxDriverAppPage() {
   const [signature, setSignature] = useState("");
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [assignedLoads, setAssignedLoads] = useState<AssignedLoad[]>([]);
+  const [loadMessage, setLoadMessage] = useState("");
+  const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
+
+  useEffect(() => {
+    if (!driverName) {
+      setAssignedLoads([]);
+      return;
+    }
+    void loadAssignedLoads();
+  }, [driverName]);
 
   async function submitUpdate(ticketId?: string) {
     await fetch("/api/ronyx/driver-updates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ driver_name: driverName, status, notes: `${notes}${signature ? ` | Signature: ${signature}` : ""}`, ticket_id: ticketId || null }),
+      body: JSON.stringify({ driver_name: driverName, status, notes, ticket_id: ticketId || null }),
     });
   }
 
@@ -65,6 +91,74 @@ export default function RonyxDriverAppPage() {
     setMessage("Status update sent.");
   }
 
+  async function loadAssignedLoads() {
+    try {
+      const res = await fetch(`/api/ronyx/loads?driver_name=${encodeURIComponent(driverName)}`);
+      const data = await res.json();
+      setAssignedLoads(data.loads || []);
+    } catch (err) {
+      console.error("Failed to load assigned loads", err);
+      setAssignedLoads([]);
+    }
+  }
+
+  async function startLoad(loadId: string) {
+    setLoadMessage("");
+    try {
+      await fetch("/api/ronyx/loads", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: loadId, action: "start" }),
+      });
+      await loadAssignedLoads();
+    } catch (err) {
+      console.error("Failed to start load", err);
+      setLoadMessage("Failed to start load.");
+    }
+  }
+
+  async function completeLoad(load: AssignedLoad) {
+    setLoadMessage("");
+    try {
+      const res = await fetch("/api/ronyx/loads", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: load.id,
+          action: "complete",
+          digital_signature: signature || null,
+          signature_name: signature || null,
+          signed_at: signature ? new Date().toISOString() : null,
+        }),
+      });
+      const data = await res.json();
+      const ticketId = data.ticket_id;
+
+      const file = proofFiles[load.id];
+      if (file && ticketId) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("ticket_id", ticketId);
+        formData.append("doc_type", "pod");
+        const uploadRes = await fetch("/api/ronyx/tickets/upload", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        if (uploadData.path) {
+          await fetch("/api/ronyx/loads", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: load.id, pod_url: uploadData.path }),
+          });
+        }
+      }
+
+      await loadAssignedLoads();
+      setLoadMessage("Load completed and proof recorded.");
+    } catch (err) {
+      console.error("Failed to complete load", err);
+      setLoadMessage("Failed to complete load.");
+    }
+  }
+
   return (
     <div className="ronyx-shell">
       <style jsx global>{`
@@ -90,6 +184,15 @@ export default function RonyxDriverAppPage() {
           border-radius: 16px;
           padding: 18px;
           box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
+        }
+        .ronyx-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: #ffffff;
+          border: 1px solid rgba(29, 78, 216, 0.16);
         }
         .ronyx-input {
           width: 100%;
@@ -135,6 +238,55 @@ export default function RonyxDriverAppPage() {
             Back to Dashboard
           </Link>
         </div>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Assigned Loads</h2>
+          {assignedLoads.length === 0 ? (
+            <div className="ronyx-row">No assigned loads yet. Enter your name to pull assignments.</div>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              {assignedLoads.map((load) => (
+                <div key={load.id} className="ronyx-row" style={{ alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700 }}>
+                      {load.load_number} • {load.route}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                      {load.customer_name || "Customer"} • {load.job_site || "Job Site"} • {load.material || "Material"}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                      Status: {load.status} • Started: {load.started_at ? new Date(load.started_at).toLocaleString() : "—"} •
+                      Completed: {load.completed_at ? new Date(load.completed_at).toLocaleString() : "—"}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <button
+                      className="ronyx-action"
+                      onClick={() => startLoad(load.id)}
+                      disabled={load.status === "active" || load.status === "completed"}
+                    >
+                      Start Load
+                    </button>
+                    <label className="ronyx-action" style={{ cursor: "pointer" }}>
+                      Upload Proof
+                      <input
+                        type="file"
+                        style={{ display: "none" }}
+                        onChange={(e) =>
+                          setProofFiles((prev) => ({ ...prev, [load.id]: e.target.files?.[0] || null }))
+                        }
+                      />
+                    </label>
+                    <button className="ronyx-action primary" onClick={() => completeLoad(load)} disabled={load.status === "completed"}>
+                      Complete Load
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {loadMessage ? <div style={{ marginTop: 10, fontSize: "0.85rem", color: "rgba(15,23,42,0.7)" }}>{loadMessage}</div> : null}
+        </section>
 
         <section className="ronyx-card">
           <div style={{ display: "grid", gap: 16 }}>

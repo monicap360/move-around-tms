@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 const loadTabs = [
@@ -21,31 +21,73 @@ const detailTabs = [
   "Customer Info",
 ];
 
+type CustomerOption = { id: string; customer_name: string };
+type TruckOption = { id: string; truck_number: string };
+
+type Load = {
+  id?: string;
+  load_number: string;
+  route: string;
+  status: string;
+  driver_name: string;
+  customer_name: string;
+  job_site?: string;
+  material?: string;
+  quantity?: number;
+  unit_type?: string;
+  rate_type?: string;
+  rate_amount?: number;
+  pickup_location?: string;
+  delivery_location?: string;
+  truck_number?: string;
+  ticket_id?: string | null;
+  status_notes?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+};
+
 export default function RonyxLoadsPage() {
   const [activeTab, setActiveTab] = useState(loadTabs[0]);
   const [detailTab, setDetailTab] = useState(detailTabs[0]);
-  const [loads, setLoads] = useState<
-    {
-      id?: string;
-      load_number: string;
-      route: string;
-      status: string;
-      driver_name: string;
-      customer_name: string;
-    }[]
-  >([]);
+  const [loads, setLoads] = useState<Load[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [trucks, setTrucks] = useState<TruckOption[]>([]);
   const [newLoad, setNewLoad] = useState({
     load_number: "",
     route: "",
     status: "available",
     driver_name: "",
     customer_name: "",
+    job_site: "",
+    material: "",
+    quantity: "",
+    unit_type: "Load",
+    rate_type: "per_load",
+    rate_amount: "",
+    pickup_location: "",
+    delivery_location: "",
+    truck_number: "",
+    status_notes: "",
   });
+
+  const alerts = useMemo(() => {
+    const now = Date.now();
+    return loads
+      .filter((load) => load.status === "active" && load.started_at)
+      .map((load) => {
+        const startedAt = load.started_at ? new Date(load.started_at).getTime() : 0;
+        const hours = startedAt ? Math.floor((now - startedAt) / (1000 * 60 * 60)) : 0;
+        return { load, hours };
+      })
+      .filter((entry) => entry.hours >= 2);
+  }, [loads]);
 
   useEffect(() => {
     void loadLoads();
+    void loadCustomers();
+    void loadTrucks();
   }, []);
 
   async function loadLoads() {
@@ -59,6 +101,28 @@ export default function RonyxLoadsPage() {
       setLoads([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadCustomers() {
+    try {
+      const res = await fetch("/api/ronyx/customers");
+      const data = await res.json();
+      setCustomers(data.customers || []);
+    } catch (err) {
+      console.error("Failed to load customers", err);
+      setCustomers([]);
+    }
+  }
+
+  async function loadTrucks() {
+    try {
+      const res = await fetch("/api/ronyx/trucks");
+      const data = await res.json();
+      setTrucks(data.trucks || []);
+    } catch (err) {
+      console.error("Failed to load trucks", err);
+      setTrucks([]);
     }
   }
 
@@ -79,22 +143,47 @@ export default function RonyxLoadsPage() {
 
   async function createLoad() {
     try {
+      const route =
+        newLoad.route || (newLoad.pickup_location && newLoad.delivery_location
+          ? `${newLoad.pickup_location} → ${newLoad.delivery_location}`
+          : "");
       const res = await fetch("/api/ronyx/loads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newLoad),
+        body: JSON.stringify({
+          ...newLoad,
+          route,
+          quantity: newLoad.quantity ? Number(newLoad.quantity) : null,
+          rate_amount: newLoad.rate_amount ? Number(newLoad.rate_amount) : null,
+        }),
       });
       const data = await res.json();
       if (data.load) {
         setLoads((prev) => [data.load, ...prev]);
-        setNewLoad({ load_number: "", route: "", status: "available", driver_name: "", customer_name: "" });
+        setNewLoad({
+          load_number: "",
+          route: "",
+          status: "available",
+          driver_name: "",
+          customer_name: "",
+          job_site: "",
+          material: "",
+          quantity: "",
+          unit_type: "Load",
+          rate_type: "per_load",
+          rate_amount: "",
+          pickup_location: "",
+          delivery_location: "",
+          truck_number: "",
+          status_notes: "",
+        });
       }
     } catch (err) {
       console.error("Failed to create load", err);
     }
   }
 
-  async function updateLoad(loadId: string, updates: Partial<(typeof loads)[number]>) {
+  async function updateLoad(loadId: string, updates: Partial<Load> & { action?: string }) {
     setSavingId(loadId);
     try {
       const res = await fetch("/api/ronyx/loads", {
@@ -252,6 +341,25 @@ export default function RonyxLoadsPage() {
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Live Alerts</h2>
+          {alerts.length === 0 ? (
+            <div className="ronyx-row">No active detention alerts.</div>
+          ) : (
+            alerts.map(({ load, hours }) => (
+              <div key={load.id || load.load_number} className="ronyx-row" style={{ marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{load.load_number} • {load.route}</div>
+                  <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                    Detention timer running • {hours} hrs since start
+                  </div>
+                </div>
+                <span className="status warn">Alert</span>
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Create Load</h2>
           <div className="ronyx-grid" style={{ rowGap: 16 }}>
             <div>
@@ -263,8 +371,110 @@ export default function RonyxLoadsPage() {
               />
             </div>
             <div>
-              <label className="ronyx-label">Route</label>
+              <label className="ronyx-label">Customer</label>
+              <input
+                className="ronyx-input"
+                list="customer-list"
+                value={newLoad.customer_name}
+                onChange={(e) => setNewLoad({ ...newLoad, customer_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Job Site</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.job_site}
+                onChange={(e) => setNewLoad({ ...newLoad, job_site: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Material</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.material}
+                onChange={(e) => setNewLoad({ ...newLoad, material: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Quantity</label>
+              <input
+                className="ronyx-input"
+                type="number"
+                value={newLoad.quantity}
+                onChange={(e) => setNewLoad({ ...newLoad, quantity: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Unit Type</label>
+              <select
+                className="ronyx-input"
+                value={newLoad.unit_type}
+                onChange={(e) => setNewLoad({ ...newLoad, unit_type: e.target.value })}
+              >
+                <option value="Load">Load</option>
+                <option value="Ton">Ton</option>
+                <option value="Yard">Yard</option>
+                <option value="Hour">Hour</option>
+              </select>
+            </div>
+            <div>
+              <label className="ronyx-label">Rate Type</label>
+              <select
+                className="ronyx-input"
+                value={newLoad.rate_type}
+                onChange={(e) => setNewLoad({ ...newLoad, rate_type: e.target.value })}
+              >
+                <option value="per_load">Per Load</option>
+                <option value="per_ton">Per Ton</option>
+                <option value="per_yard">Per Yard</option>
+                <option value="per_hour">Per Hour</option>
+              </select>
+            </div>
+            <div>
+              <label className="ronyx-label">Rate Amount</label>
+              <input
+                className="ronyx-input"
+                type="number"
+                value={newLoad.rate_amount}
+                onChange={(e) => setNewLoad({ ...newLoad, rate_amount: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Pickup Location</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.pickup_location}
+                onChange={(e) => setNewLoad({ ...newLoad, pickup_location: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Delivery Location</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.delivery_location}
+                onChange={(e) => setNewLoad({ ...newLoad, delivery_location: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Route (optional)</label>
               <input className="ronyx-input" value={newLoad.route} onChange={(e) => setNewLoad({ ...newLoad, route: e.target.value })} />
+            </div>
+            <div>
+              <label className="ronyx-label">Driver</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.driver_name}
+                onChange={(e) => setNewLoad({ ...newLoad, driver_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">Truck</label>
+              <input
+                className="ronyx-input"
+                list="truck-list"
+                value={newLoad.truck_number}
+                onChange={(e) => setNewLoad({ ...newLoad, truck_number: e.target.value })}
+              />
             </div>
             <div>
               <label className="ronyx-label">Status</label>
@@ -280,19 +490,11 @@ export default function RonyxLoadsPage() {
               </select>
             </div>
             <div>
-              <label className="ronyx-label">Driver</label>
+              <label className="ronyx-label">Notes</label>
               <input
                 className="ronyx-input"
-                value={newLoad.driver_name}
-                onChange={(e) => setNewLoad({ ...newLoad, driver_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Customer</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.customer_name}
-                onChange={(e) => setNewLoad({ ...newLoad, customer_name: e.target.value })}
+                value={newLoad.status_notes}
+                onChange={(e) => setNewLoad({ ...newLoad, status_notes: e.target.value })}
               />
             </div>
             <div style={{ display: "flex", alignItems: "flex-end" }}>
@@ -301,6 +503,16 @@ export default function RonyxLoadsPage() {
               </button>
             </div>
           </div>
+          <datalist id="customer-list">
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.customer_name} />
+            ))}
+          </datalist>
+          <datalist id="truck-list">
+            {trucks.map((truck) => (
+              <option key={truck.id} value={truck.truck_number} />
+            ))}
+          </datalist>
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
@@ -328,7 +540,12 @@ export default function RonyxLoadsPage() {
                       {load.load_number} • {load.route}
                     </div>
                     <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                      Driver: {load.driver_name || "Unassigned"} • Customer: {load.customer_name || "—"}
+                      Driver: {load.driver_name || "Unassigned"} • Truck: {load.truck_number || "—"} • Customer:{" "}
+                      {load.customer_name || "—"}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                      {load.material || "Material —"} • {load.quantity || "—"} {load.unit_type || ""} • Job:{" "}
+                      {load.job_site || "—"} • Ticket: {load.ticket_id ? "Created" : "Pending"}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -358,13 +575,40 @@ export default function RonyxLoadsPage() {
                         );
                       }}
                     />
+                    <input
+                      className="ronyx-input"
+                      style={{ minWidth: 140 }}
+                      value={load.truck_number || ""}
+                      placeholder="Truck"
+                      onChange={(e) => {
+                        setLoads((prev) =>
+                          prev.map((item) => (item.id === load.id ? { ...item, truck_number: e.target.value } : item)),
+                        );
+                      }}
+                    />
                     <button
                       className="ronyx-action"
-                      onClick={() => load.id && updateLoad(load.id, { status: load.status, driver_name: load.driver_name })}
+                      onClick={() =>
+                        load.id &&
+                        updateLoad(load.id, {
+                          status: load.status,
+                          driver_name: load.driver_name,
+                          truck_number: load.truck_number,
+                        })
+                      }
                       disabled={savingId === load.id}
                     >
                       {savingId === load.id ? "Saving..." : "Save"}
                     </button>
+                    {load.status === "completed" && !load.ticket_id ? (
+                      <button
+                        className="ronyx-action"
+                        onClick={() => load.id && updateLoad(load.id, { action: "complete" })}
+                        disabled={savingId === load.id}
+                      >
+                        Create Ticket
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))
