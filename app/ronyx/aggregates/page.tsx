@@ -129,7 +129,7 @@ export default function RonyxAggregatesPage() {
       rateName: card.rate_name || "",
       structure: card.structure || "",
       basePrice: card.base_price || "",
-      effective: card.effective_date ? new Date(card.effective_date).toLocaleDateString("en-GB") : "",
+      effective: card.effective_date ? String(card.effective_date).slice(0, 10) : "",
       method: card.method || "hour",
       baseRate: card.base_rate?.toString() || "",
       materialSurcharges: card.material_surcharges || [],
@@ -321,6 +321,17 @@ export default function RonyxAggregatesPage() {
     if (selectedRate?.id === card.id) {
       updateRateField("status", nextStatus);
     }
+  }
+
+  function cloneJobSite(site: JobSite) {
+    const clone = {
+      ...site,
+      id: `temp-${Date.now()}`,
+      name: `${site.name} Copy`,
+    };
+    setJobSites((prev) => [clone, ...prev]);
+    setSelectedSiteId(clone.id);
+    setSiteMessage("Cloned. Update details and save.");
   }
 
   return (
@@ -708,7 +719,22 @@ export default function RonyxAggregatesPage() {
               </div>
               <div>
                 <label className="ronyx-label">To</label>
-                <input className="ronyx-input" value={quote.to} onChange={(e) => setQuote((prev) => ({ ...prev, to: e.target.value }))} />
+                <select
+                  className="ronyx-input"
+                  value={quote.to}
+                  onChange={(e) => {
+                    setQuote((prev) => ({ ...prev, to: e.target.value }));
+                    const match = jobSites.find((site) => site.name === e.target.value);
+                    if (match) setSelectedSiteId(match.id);
+                  }}
+                >
+                  <option value="">Select job site</option>
+                  {jobSites.map((site) => (
+                    <option key={site.id} value={site.name}>
+                      {site.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="ronyx-label">Distance (mi)</label>
@@ -724,7 +750,22 @@ export default function RonyxAggregatesPage() {
               </div>
               <div>
                 <label className="ronyx-label">Customer</label>
-                <input className="ronyx-input" value={quote.customer} onChange={(e) => setQuote((prev) => ({ ...prev, customer: e.target.value }))} />
+                <select
+                  className="ronyx-input"
+                  value={quote.customer}
+                  onChange={(e) => {
+                    setQuote((prev) => ({ ...prev, customer: e.target.value }));
+                    const match = rateCards.find((card) => card.customer === e.target.value);
+                    if (match) setSelectedRateId(match.id);
+                  }}
+                >
+                  <option value="">Select customer</option>
+                  {rateCards.map((card) => (
+                    <option key={card.id} value={card.customer}>
+                      {card.customer}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="ronyx-card" style={{ marginTop: 18 }}>
@@ -732,11 +773,11 @@ export default function RonyxAggregatesPage() {
                 Live Price Breakdown
               </div>
               <div className="ronyx-row">
-                <span>Hauling ({quote.distance} mi @ {selectedRate?.baseRate}/mi)</span>
+                <span>Hauling ({quote.distance} mi @ {selectedRate?.baseRate || "0"}/mi)</span>
                 <span>${quoteTotals.haulCharge.toFixed(2)}</span>
               </div>
               <div className="ronyx-row">
-                <span>Load/Unload ({quote.loadHours} hrs @ {selectedRate?.baseRate}/hr)</span>
+                <span>Load/Unload ({quote.loadHours} hrs @ {selectedRate?.baseRate || "0"}/hr)</span>
                 <span>${quoteTotals.timeCharge.toFixed(2)}</span>
               </div>
               <div className="ronyx-row">
