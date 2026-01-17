@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type DriverOption = {
   id: string;
@@ -66,6 +66,18 @@ type DriverProfile = {
   hr_dispatch_updates: string;
 };
 
+type DriverDocument = {
+  id: string;
+  doc_type: string;
+  status: string;
+  expires_on: string | null;
+  uploaded_at: string | null;
+  file_url: string | null;
+  verified_by: string | null;
+  verified_at: string | null;
+  notes: string | null;
+};
+
 const emptyProfile: DriverProfile = {
   full_name: "",
   photo_url: "",
@@ -128,9 +140,18 @@ export default function RonyxDriversPage() {
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [profile, setProfile] = useState<DriverProfile>(emptyProfile);
+  const [documents, setDocuments] = useState<DriverDocument[]>([]);
+  const [activeTab, setActiveTab] = useState<"status" | "docs" | "performance">("status");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [docUpload, setDocUpload] = useState({
+    doc_type: "CDL",
+    expires_on: "",
+    file: null as File | null,
+  });
+  const [docMessage, setDocMessage] = useState("");
+  const [assignedLoad, setAssignedLoad] = useState<any | null>(null);
 
   useEffect(() => {
     void loadDrivers();
@@ -139,6 +160,8 @@ export default function RonyxDriversPage() {
   useEffect(() => {
     if (!selectedDriverId) return;
     void loadProfile(selectedDriverId);
+    void loadDocuments(selectedDriverId);
+    void loadAssignedLoad();
   }, [selectedDriverId]);
 
   async function loadDrivers() {
@@ -173,6 +196,52 @@ export default function RonyxDriversPage() {
     }
   }
 
+  async function loadDocuments(driverId: string) {
+    try {
+      const res = await fetch(`/api/ronyx/drivers/documents?driverId=${driverId}`, { cache: "no-store" });
+      const data = await res.json();
+      setDocuments(data.documents || []);
+    } catch (err) {
+      console.error("Failed to load driver documents", err);
+      setDocuments([]);
+    }
+  }
+
+  async function loadAssignedLoad() {
+    if (!profile.full_name) return;
+    try {
+      const res = await fetch(`/api/ronyx/loads?driver_name=${encodeURIComponent(profile.full_name)}`, { cache: "no-store" });
+      const data = await res.json();
+      setAssignedLoad(data.loads?.[0] || null);
+    } catch {
+      setAssignedLoad(null);
+    }
+  }
+
+  async function uploadDocument() {
+    if (!selectedDriverId || !docUpload.doc_type) return;
+    setDocMessage("");
+    const payload = {
+      driver_id: selectedDriverId,
+      doc_type: docUpload.doc_type,
+      status: "pending",
+      expires_on: docUpload.expires_on || null,
+      file_url: docUpload.file ? docUpload.file.name : null,
+    };
+    const res = await fetch("/api/ronyx/drivers/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      setDocMessage("Upload failed.");
+      return;
+    }
+    const data = await res.json();
+    setDocuments((prev) => [data.document, ...prev]);
+    setDocMessage("Document uploaded.");
+  }
+
   async function saveProfile() {
     if (!selectedDriverId) return;
     setSaving(true);
@@ -200,6 +269,25 @@ export default function RonyxDriversPage() {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
+  const documentAlerts = useMemo(() => {
+    const now = new Date();
+    const alerts: string[] = [];
+    documents.forEach((doc) => {
+      if (!doc.expires_on) return;
+      const expires = new Date(doc.expires_on);
+      const diffDays = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) {
+        alerts.push(`${doc.doc_type} expired TODAY`);
+      } else if (diffDays <= 14) {
+        alerts.push(`${doc.doc_type} expires in ${diffDays} days`);
+      }
+    });
+    return alerts;
+  }, [documents]);
+
+  const requiredDocs = ["CDL", "Medical Card", "Drug Test", "Insurance", "Background Check"];
+  const getDocForType = (type: string) => documents.find((doc) => doc.doc_type === type);
+
   return (
     <div className="ronyx-shell">
       <style jsx global>{`
@@ -209,6 +297,11 @@ export default function RonyxDriversPage() {
           --ronyx-steel: #dbe5f1;
           --ronyx-border: rgba(30, 64, 175, 0.18);
           --ronyx-accent: #1d4ed8;
+          --primary: #0ea5e9;
+          --danger: #ef4444;
+          --success: #10b981;
+          --warning: #f59e0b;
+          --secondary: #6b7280;
         }
         .ronyx-shell {
           min-height: 100vh;
@@ -285,6 +378,49 @@ export default function RonyxDriversPage() {
           padding: 10px 12px;
           color: #0f172a;
           resize: vertical;
+        }
+        .ronyx-tab {
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          background: rgba(29, 78, 216, 0.06);
+          padding: 8px 16px;
+          font-weight: 600;
+        }
+        .ronyx-tab.active {
+          background: var(--ronyx-accent);
+          color: #fff;
+        }
+        .ronyx-muted {
+          color: rgba(15, 23, 42, 0.7);
+          font-size: 0.9rem;
+        }
+        .btn-primary,
+        .btn-secondary,
+        .btn-warning,
+        .btn-danger {
+          border-radius: 6px;
+          border: none;
+          padding: 0 16px;
+          height: 36px;
+          font-weight: 700;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .btn-primary {
+          background: var(--primary);
+          color: #ffffff;
+        }
+        .btn-secondary {
+          background: var(--secondary);
+          color: #ffffff;
+        }
+        .btn-warning {
+          background: var(--warning);
+          color: #ffffff;
+        }
+        .btn-danger {
+          background: var(--danger);
+          color: #ffffff;
         }
       `}</style>
 

@@ -67,18 +67,27 @@ export default function AccountingIntegrationsPage() {
     try {
       setConnecting(provider);
 
-      // In production, redirect to OAuth flow
-      // For now, show instruction
       if (provider === 'quickbooks') {
-        window.open('https://appcenter.intuit.com/connect/oauth2', '_blank');
-        alert('Redirecting to QuickBooks OAuth. After authorization, you will be redirected back with an authorization code.');
+        if (!organizationId) {
+          throw new Error("Organization not loaded yet.");
+        }
+        const res = await fetch(`/api/accounting/quickbooks/start?organization_id=${organizationId}`);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error || "Unable to start QuickBooks OAuth.");
+        }
+        window.location.href = data.url;
       } else if (provider === 'xero') {
-        window.open('https://login.xero.com/identity/connect/authorize', '_blank');
-        alert('Redirecting to Xero OAuth. After authorization, you will be redirected back with an authorization code.');
+        if (!organizationId) {
+          throw new Error("Organization not loaded yet.");
+        }
+        const res = await fetch(`/api/accounting/xero/start?organization_id=${organizationId}`);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error || "Unable to start Xero OAuth.");
+        }
+        window.location.href = data.url;
       }
-
-      // Note: In production, implement full OAuth flow with callback handler
-      // This would exchange auth_code for access_token via API route
     } catch (error: any) {
       console.error("Error connecting:", error);
       alert("Error connecting: " + error.message);

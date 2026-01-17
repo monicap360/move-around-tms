@@ -1,0 +1,20 @@
+create table if not exists ronyx_rate_cards (
+  id uuid primary key default gen_random_uuid(),
+  customer_name text not null,
+  rate_name text,
+  structure text,
+  base_price text,
+  effective_date date,
+  method text default 'hour',
+  base_rate numeric,
+  fuel_linked boolean default false,
+  fuel_pct numeric,
+  detention_free_minutes integer,
+  detention_rate numeric,
+  minimum_charge numeric,
+  notes text,
+  material_surcharges jsonb default '[]'::jsonb,
+  status text default 'active',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);

@@ -17,6 +17,7 @@ type RateCard = {
   fuelPct: string;
   detentionFreeMinutes: string;
   detentionRate: string;
+  minimumCharge: string;
   notes: string;
   status?: string;
 };
@@ -52,6 +53,7 @@ const emptyRateCard: RateCard = {
   fuelPct: "",
   detentionFreeMinutes: "",
   detentionRate: "",
+  minimumCharge: "",
   notes: "",
   status: "active",
 };
@@ -89,6 +91,7 @@ export default function RonyxAggregatesPage() {
     loadHours: "1.5",
     customer: "Jones Const",
   });
+  const [quoteMessage, setQuoteMessage] = useState("");
 
   const selectedRate = rateCards.find((card) => card.id === selectedRateId);
   const selectedSite = jobSites.find((site) => site.id === selectedSiteId);
@@ -137,6 +140,7 @@ export default function RonyxAggregatesPage() {
       fuelPct: card.fuel_pct?.toString() || "",
       detentionFreeMinutes: card.detention_free_minutes?.toString() || "",
       detentionRate: card.detention_rate?.toString() || "",
+      minimumCharge: card.minimum_charge?.toString() || "",
       notes: card.notes || "",
       status: card.status || "active",
     };
@@ -158,6 +162,7 @@ export default function RonyxAggregatesPage() {
       fuel_pct: card.fuelPct,
       detention_free_minutes: card.detentionFreeMinutes,
       detention_rate: card.detentionRate,
+      minimum_charge: card.minimumCharge,
       notes: card.notes,
       status: card.status || "active",
     };
@@ -212,8 +217,9 @@ export default function RonyxAggregatesPage() {
     const timeCharge = hours * hourlyRate;
     const baseTotal = haulCharge + timeCharge;
     const fuelCharge = baseTotal * (fuelPct / 100);
-    const total = baseTotal + fuelCharge;
-    return { haulCharge, timeCharge, fuelCharge, total };
+    const minimumCharge = Number(selectedRate?.minimumCharge || 0);
+    const total = Math.max(baseTotal + fuelCharge, minimumCharge || 0);
+    return { haulCharge, timeCharge, fuelCharge, total, minimumCharge };
   }, [quote, selectedRate]);
 
   const updateRateField = (field: keyof RateCard, value: string | boolean) => {
@@ -303,35 +309,137 @@ export default function RonyxAggregatesPage() {
     );
   };
 
-  function cloneRateCard(card: RateCard) {
-    const clone = {
-      ...card,
-      id: `temp-${Date.now()}`,
-      customer: `${card.customer} (Copy)`,
-      rateName: `${card.rateName} Copy`,
+  async function handleCreateLoadFromQuote() {
+    if (!quote.customer || !quote.to || !quote.from) {
+      setQuoteMessage("Add customer, from, and site.");
+      return;
+    }
+    setQuoteMessage("");
+    const loadNumber = `LD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const loadPayload = {
+      load_number: loadNumber,
+      route: `${quote.from} → ${quote.to}`,
+      status: "available",
+      customer_name: quote.customer,
+      job_site: quote.to,
+      material: quote.material,
+      quantity: 1,
+      unit_type: "Load",
+      rate_type: selectedRate?.method || "per_load",
+      rate_amount: quoteTotals.total,
+      pickup_location: quote.from,
+      delivery_location: quote.to,
     };
-    setRateCards((prev) => [clone, ...prev]);
-    setSelectedRateId(clone.id);
-    setRateMessage("Cloned. Update details and save.");
+    const loadRes = await fetch("/api/ronyx/loads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(loadPayload),
+    });
+    if (!loadRes.ok) {
+      setQuoteMessage("Failed to create load.");
+      return;
+    }
+    const loadData = await loadRes.json();
+    const ticketRes = await fetch("/api/ronyx/tickets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticket_number: loadNumber,
+        ticket_date: new Date().toISOString().slice(0, 10),
+        customer_name: quote.customer,
+        delivery_location: quote.to,
+        pickup_location: quote.from,
+        material: quote.material,
+        quantity: 1,
+        unit_type: "Load",
+        bill_rate: quoteTotals.total,
+        status: "pending",
+        payment_status: "unpaid",
+      }),
+    });
+    if (ticketRes.ok) {
+      const ticketData = await ticketRes.json();
+      if (ticketData.ticket?.id && loadData.load?.id) {
+        await fetch("/api/ronyx/loads", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: loadData.load.id, ticket_id: ticketData.ticket.id }),
+        });
+      }
+    }
+    setQuoteMessage("Load and ticket created.");
   }
 
-  function toggleRateCardStatus(card: RateCard) {
-    const nextStatus = card.status === "inactive" ? "active" : "inactive";
-    setRateCards((prev) => prev.map((item) => (item.id === card.id ? { ...item, status: nextStatus } : item)));
-    if (selectedRate?.id === card.id) {
-      updateRateField("status", nextStatus);
+  async function handleCopyQuote() {
+    const text = `Quote for ${quote.customer}: ${quote.from} → ${quote.to} | Total $${quoteTotals.total.toFixed(2)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setQuoteMessage("Quote copied.");
+    } catch {
+      setQuoteMessage("Copy failed.");
     }
   }
 
-  function cloneJobSite(site: JobSite) {
-    const clone = {
-      ...site,
-      id: `temp-${Date.now()}`,
-      name: `${site.name} Copy`,
-    };
-    setJobSites((prev) => [clone, ...prev]);
-    setSelectedSiteId(clone.id);
-    setSiteMessage("Cloned. Update details and save.");
+  function handleEmailQuote() {
+    const subject = encodeURIComponent(`Hauling Quote for ${quote.customer}`);
+    const body = encodeURIComponent(
+      `Route: ${quote.from} → ${quote.to}\nMaterial: ${quote.material}\nTotal: $${quoteTotals.total.toFixed(2)}`,
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
+  async function cloneRateCard(card: RateCard) {
+    const payload = mapRateCardToDb({
+      ...card,
+      id: "",
+      customer: `${card.customer} (Copy)`,
+      rateName: `${card.rateName} Copy`,
+    });
+    const res = await fetch("/api/ronyx/rate-cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      setRateMessage("Copy failed.");
+      return;
+    }
+    const data = await res.json();
+    const saved = mapRateCardFromDb(data.rateCard);
+    setRateCards((prev) => [saved, ...prev]);
+    setSelectedRateId(saved.id);
+    setRateMessage("Copied.");
+  }
+
+  async function toggleRateCardStatus(card: RateCard) {
+    const nextStatus = card.status === "inactive" ? "active" : "inactive";
+    setRateCards((prev) => prev.map((item) => (item.id === card.id ? { ...item, status: nextStatus } : item)));
+    if (selectedRate?.id === card.id) updateRateField("status", nextStatus);
+    if (!card.id.startsWith("temp-")) {
+      await fetch("/api/ronyx/rate-cards", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: card.id, status: nextStatus }),
+      });
+    }
+  }
+
+  async function cloneJobSite(site: JobSite) {
+    const payload = mapJobSiteToDb({ ...site, id: "", name: `${site.name} Copy` });
+    const res = await fetch("/api/ronyx/job-sites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      setSiteMessage("Copy failed.");
+      return;
+    }
+    const data = await res.json();
+    const saved = mapJobSiteFromDb(data.jobSite);
+    setJobSites((prev) => [saved, ...prev]);
+    setSelectedSiteId(saved.id);
+    setSiteMessage("Copied.");
   }
 
   return (
@@ -526,6 +634,14 @@ export default function RonyxAggregatesPage() {
                     />
                   </div>
                   <div>
+                    <label className="ronyx-label">Rate Structure</label>
+                    <input
+                      className="ronyx-input"
+                      value={selectedRate.structure}
+                      onChange={(e) => updateRateField("structure", e.target.value)}
+                    />
+                  </div>
+                  <div>
                     <label className="ronyx-label">Calculation Method</label>
                     <select
                       className="ronyx-input"
@@ -543,6 +659,23 @@ export default function RonyxAggregatesPage() {
                       className="ronyx-input"
                       value={selectedRate.baseRate}
                       onChange={(e) => updateRateField("baseRate", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Base Price Label</label>
+                    <input
+                      className="ronyx-input"
+                      value={selectedRate.basePrice}
+                      onChange={(e) => updateRateField("basePrice", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Effective Date</label>
+                    <input
+                      type="date"
+                      className="ronyx-input"
+                      value={selectedRate.effective}
+                      onChange={(e) => updateRateField("effective", e.target.value)}
                     />
                   </div>
                   <div>
@@ -578,6 +711,15 @@ export default function RonyxAggregatesPage() {
                       placeholder="Rate after"
                       value={selectedRate.detentionRate}
                       onChange={(e) => updateRateField("detentionRate", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="ronyx-label">Minimum Charge</label>
+                    <input
+                      className="ronyx-input"
+                      placeholder="170"
+                      value={selectedRate.minimumCharge}
+                      onChange={(e) => updateRateField("minimumCharge", e.target.value)}
                     />
                   </div>
                 </div>
@@ -701,7 +843,7 @@ export default function RonyxAggregatesPage() {
                 </div>
                 <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
                   <button className="ronyx-action" onClick={saveJobSite}>Save Site</button>
-                  <button className="ronyx-action" onClick={() => addJobSite()}>Clone for New Project</button>
+                  <button className="ronyx-action" onClick={() => selectedSite && cloneJobSite(selectedSite)}>Clone for New Project</button>
                   {siteMessage && <span className="ronyx-label">{siteMessage}</span>}
                 </div>
               </div>
@@ -784,14 +926,21 @@ export default function RonyxAggregatesPage() {
                 <span>Fuel Surcharge ({selectedRate?.fuelPct || "0"}%)</span>
                 <span>${quoteTotals.fuelCharge.toFixed(2)}</span>
               </div>
+              {quoteTotals.minimumCharge > 0 && (
+                <div className="ronyx-row">
+                  <span>Minimum Charge Applied</span>
+                  <span>${quoteTotals.minimumCharge.toFixed(2)}</span>
+                </div>
+              )}
               <div className="ronyx-row" style={{ fontWeight: 700 }}>
                 <span>Quote Total</span>
                 <span>${quoteTotals.total.toFixed(2)}</span>
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-                <button className="ronyx-action">Create Load & Ticket</button>
-                <button className="ronyx-action">Copy Quote</button>
-                <button className="ronyx-action">Email to Customer</button>
+                <button className="ronyx-action" onClick={handleCreateLoadFromQuote}>Create Load & Ticket</button>
+                <button className="ronyx-action" onClick={handleCopyQuote}>Copy Quote</button>
+                <button className="ronyx-action" onClick={handleEmailQuote}>Email to Customer</button>
+                {quoteMessage && <span className="ronyx-label">{quoteMessage}</span>}
               </div>
             </div>
           </section>

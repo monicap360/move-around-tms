@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -14,6 +14,27 @@ export default function LandingPage() {
     manualHoursPerDay: 2,
     missedAccessorialPct: 2,
   });
+  const [activeLoadFilter, setActiveLoadFilter] = useState("active");
+  const [loadSearch, setLoadSearch] = useState("");
+  const [loadSort, setLoadSort] = useState("newest");
+  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(true);
+  const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
+  const [activeLoadTab, setActiveLoadTab] = useState("overview");
+  const [selectedLoadIds, setSelectedLoadIds] = useState<string[]>([]);
+  const [actionToast, setActionToast] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+  const [isTrackingLoading, setIsTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [liveTracking, setLiveTracking] = useState<{
+    lat: number;
+    lng: number;
+    updatedAt?: string;
+    speed?: number;
+    label?: string;
+  } | null>(null);
+  const [isInvoicing, setIsInvoicing] = useState(false);
 
   const copy = {
     en: {
@@ -190,6 +211,473 @@ export default function LandingPage() {
             description: "That approved ticket flows into payroll export.",
           },
         ];
+
+  const loadRows = [
+    {
+      id: "LD-4021",
+      createdAt: "2025-05-17T07:15:00",
+      dateLabel: "05/17",
+      timeLabel: "07:15",
+      customer: "Jones Const",
+      project: "Main St Project",
+      driver: "D. Perez",
+      truck: "#12",
+      driverPhone: "+15550100121",
+      customerId: "123",
+      material: "15yd Gravel",
+      materialDetail: '3/4" Clean',
+      status: "IN TRANSIT",
+      statusType: "in-transit",
+      statusGroup: "active",
+      statusNote: "ETA: 14 min",
+      from: "Pit 7",
+      to: "I-45 Jobsite",
+      currentLocation: {
+        lat: 29.7604,
+        lng: -95.3698,
+        label: "I-45 N, Exit 48",
+        speed: 42,
+        updatedAt: "2 minutes ago",
+      },
+      value: 855,
+      valueNote: "Paid: Net 30",
+      etaMinutes: 14,
+    },
+    {
+      id: "LD-4032",
+      createdAt: "2025-05-17T08:30:00",
+      dateLabel: "05/17",
+      timeLabel: "08:30",
+      customer: "Thompson Co",
+      project: "Oakridge Site",
+      driver: "UNASSIGNED",
+      truck: "",
+      driverPhone: "",
+      customerId: "456",
+      material: "10yd Topsoil",
+      materialDetail: "",
+      status: "AVAILABLE",
+      statusType: "available",
+      statusGroup: "available",
+      statusNote: "Ready to assign",
+      from: "Pit 3",
+      to: "Oakridge",
+      currentLocation: {
+        lat: 29.7499,
+        lng: -95.3584,
+        label: "Dispatch Queue",
+      },
+      value: 425,
+      valueNote: "Per load",
+      etaMinutes: null,
+    },
+    {
+      id: "LD-4018",
+      createdAt: "2025-05-16T10:45:00",
+      dateLabel: "05/16",
+      timeLabel: "10:45",
+      customer: "City Project",
+      project: "",
+      driver: "M. Chen",
+      truck: "#07",
+      driverPhone: "+15550100118",
+      customerId: "789",
+      material: "18yd Road Base",
+      materialDetail: "",
+      status: "COMPLETED",
+      statusType: "completed",
+      statusGroup: "completed",
+      statusNote: "Signed 05/16",
+      from: "Delivered",
+      to: "10:45 AM",
+      currentLocation: {
+        lat: 29.731,
+        lng: -95.366,
+        label: "Delivered",
+      },
+      value: 720,
+      valueNote: "Invoiced",
+      etaMinutes: null,
+    },
+    {
+      id: "LD-4038",
+      createdAt: "2025-05-17T06:10:00",
+      dateLabel: "05/17",
+      timeLabel: "06:10",
+      customer: "Riverton Builders",
+      project: "South Loop",
+      driver: "K. Alston",
+      truck: "#23",
+      driverPhone: "+15550100123",
+      customerId: "654",
+      material: "12yd Fill Sand",
+      materialDetail: "",
+      status: "AT SITE",
+      statusType: "active",
+      statusGroup: "active",
+      statusNote: "Waiting to unload",
+      from: "Yard A",
+      to: "South Loop",
+      currentLocation: {
+        lat: 29.7201,
+        lng: -95.4302,
+        label: "South Loop Site",
+        speed: 0,
+        updatedAt: "6 minutes ago",
+      },
+      value: 610,
+      valueNote: "Paid: Net 15",
+      etaMinutes: 0,
+    },
+    {
+      id: "LD-4025",
+      createdAt: "2025-05-17T05:45:00",
+      dateLabel: "05/17",
+      timeLabel: "05:45",
+      customer: "Thompson Co",
+      project: "Thompson Co Site",
+      driver: "S. Grant",
+      truck: "#18",
+      driverPhone: "+15550100125",
+      customerId: "456",
+      material: "14yd Base",
+      materialDetail: "",
+      status: "DETENTION",
+      statusType: "detention",
+      statusGroup: "detention",
+      statusNote: "45 min elapsed",
+      from: "Pit 7",
+      to: "Thompson Co Site",
+      currentLocation: {
+        lat: 29.7432,
+        lng: -95.4043,
+        label: "Thompson Co Site",
+        speed: 0,
+        updatedAt: "3 minutes ago",
+      },
+      value: 780,
+      valueNote: "Detention eligible",
+      etaMinutes: null,
+    },
+    {
+      id: "LD-4030",
+      createdAt: "2025-05-17T06:25:00",
+      dateLabel: "05/17",
+      timeLabel: "06:25",
+      customer: "Riverside Site",
+      project: "",
+      driver: "L. Owens",
+      truck: "#19",
+      driverPhone: "+15550100129",
+      customerId: "882",
+      material: "16yd Gravel",
+      materialDetail: "",
+      status: "WARNING",
+      statusType: "warning",
+      statusGroup: "detention",
+      statusNote: "10 min until charges",
+      from: "Pit 5",
+      to: "Riverside",
+      currentLocation: {
+        lat: 29.775,
+        lng: -95.392,
+        label: "Riverside",
+        speed: 12,
+        updatedAt: "1 minute ago",
+      },
+      value: 690,
+      valueNote: "Net 30",
+      etaMinutes: 10,
+    },
+    {
+      id: "LD-3995",
+      createdAt: "2025-05-15T15:20:00",
+      dateLabel: "05/15",
+      timeLabel: "15:20",
+      customer: "Westline Haul",
+      project: "Loop 8",
+      driver: "A. Ellis",
+      truck: "#04",
+      driverPhone: "+15550100104",
+      customerId: "991",
+      material: "20yd Road Base",
+      materialDetail: "",
+      status: "CANCELLED",
+      statusType: "cancelled",
+      statusGroup: "cancelled",
+      statusNote: "Cancelled by customer",
+      from: "Pit 2",
+      to: "Loop 8",
+      currentLocation: {
+        lat: 29.7809,
+        lng: -95.347,
+        label: "Pit 2",
+      },
+      value: 560,
+      valueNote: "No charge",
+      etaMinutes: null,
+    },
+  ];
+
+  const detentionAlerts = [
+    {
+      id: "LD-4025",
+      title: "LD-4025 - Thompson Co Site",
+      time: "45 min elapsed",
+      details: ["Driver: S. Grant | Truck #18", "Free time ended 15 min ago"],
+      variant: "danger",
+      actions: [
+        { label: "CHARGE $75", variant: "warning", tab: "payment" },
+        { label: "CONTACT SITE", variant: "secondary", tab: "overview" },
+      ],
+    },
+    {
+      id: "LD-4030",
+      title: "LD-4030 - Riverside Site",
+      time: "35 min elapsed",
+      details: ["10 min until detention charges apply"],
+      variant: "warning",
+      actions: [{ label: "NOTIFY DRIVER", variant: "secondary", tab: "tracking" }],
+    },
+  ];
+
+  const loadCounts = loadRows.reduce(
+    (acc, load) => {
+      acc[load.statusGroup] += 1;
+      return acc;
+    },
+    {
+      active: 0,
+      available: 0,
+      completed: 0,
+      cancelled: 0,
+      detention: 0,
+    }
+  );
+
+  const normalizedSearch = loadSearch.trim().toLowerCase();
+  const filteredLoads = loadRows.filter((load) => {
+    const matchesFilter = load.statusGroup === activeLoadFilter;
+    if (!matchesFilter) {
+      return false;
+    }
+    if (!normalizedSearch) {
+      return true;
+    }
+    const haystack = [
+      load.id,
+      load.customer,
+      load.project,
+      load.driver,
+      load.truck,
+      load.material,
+      load.from,
+      load.to,
+      load.status,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(normalizedSearch);
+  });
+
+  const sortedLoads = [...filteredLoads].sort((a, b) => {
+    switch (loadSort) {
+      case "oldest":
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case "customer":
+        return a.customer.localeCompare(b.customer);
+      case "value":
+        return b.value - a.value;
+      case "eta": {
+        const aEta = a.etaMinutes ?? Number.MAX_SAFE_INTEGER;
+        const bEta = b.etaMinutes ?? Number.MAX_SAFE_INTEGER;
+        return aEta - bEta;
+      }
+      case "newest":
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
+
+  const visibleLoadIds = sortedLoads.map((load) => load.id);
+  const allVisibleSelected =
+    visibleLoadIds.length > 0 && visibleLoadIds.every((id) => selectedLoadIds.includes(id));
+  const selectedLoad = loadRows.find((load) => load.id === selectedLoadId) ?? loadRows[0];
+  const googleMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const fallbackLocation = selectedLoad?.currentLocation;
+  const trackingLat = liveTracking?.lat ?? fallbackLocation?.lat;
+  const trackingLng = liveTracking?.lng ?? fallbackLocation?.lng;
+  const trackingLabel = liveTracking?.label ?? fallbackLocation?.label ?? "Unknown location";
+  const trackingSpeed = liveTracking?.speed ?? fallbackLocation?.speed;
+  const trackingUpdated = liveTracking?.updatedAt ?? fallbackLocation?.updatedAt ?? "—";
+  const mapQuery = trackingLat !== undefined && trackingLng !== undefined ? `${trackingLat},${trackingLng}` : "";
+  const mapSrc = mapQuery
+    ? googleMapsKey
+      ? `https://www.google.com/maps/embed/v1/place?key=${googleMapsKey}&q=${encodeURIComponent(mapQuery)}`
+      : `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=14&output=embed`
+    : "";
+
+  useEffect(() => {
+    if (!actionToast) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setActionToast(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [actionToast]);
+
+  useEffect(() => {
+    if (!selectedLoadId || activeLoadTab !== "tracking") {
+      return;
+    }
+
+    const load = loadRows.find((item) => item.id === selectedLoadId);
+    if (!load) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsTrackingLoading(true);
+    setTrackingError(null);
+    setLiveTracking(null);
+
+    fetch(`/api/load-hub/telemetry?driver=${encodeURIComponent(load.driver)}`)
+      .then(async (res) => {
+        const payload = await res.json();
+        if (!res.ok) {
+          throw new Error(payload?.error || "Telematics unavailable");
+        }
+        const matches = (payload.locations || []) as Array<{
+          name?: string;
+          lat?: number;
+          lon?: number;
+          status?: string;
+          updatedAt?: string;
+        }>;
+        const match = matches.find((item) =>
+          item.name?.toLowerCase().includes(load.driver.toLowerCase())
+        );
+
+        if (!match || match.lat === undefined || match.lon === undefined) {
+          throw new Error("No live location found");
+        }
+
+        if (isMounted) {
+          setLiveTracking({
+            lat: match.lat,
+            lng: match.lon,
+            updatedAt: match.updatedAt,
+            label: match.status,
+          });
+        }
+      })
+      .catch((error: Error) => {
+        if (isMounted) {
+          setTrackingError(error.message);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsTrackingLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeLoadTab, selectedLoadId]);
+
+  const toggleLoadSelection = (loadId: string) => {
+    setSelectedLoadIds((prev) =>
+      prev.includes(loadId) ? prev.filter((id) => id !== loadId) : [...prev, loadId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedLoadIds((prev) => {
+      if (allVisibleSelected) {
+        return prev.filter((id) => !visibleLoadIds.includes(id));
+      }
+      return Array.from(new Set([...prev, ...visibleLoadIds]));
+    });
+  };
+
+  const openLoadModal = (loadId: string, tab: string = "overview") => {
+    setSelectedLoadId(loadId);
+    setActiveLoadTab(tab);
+  };
+
+  const notifyAction = (type: "success" | "error" | "info", message: string) => {
+    setActionToast({ type, message });
+  };
+
+  const sendLoadMessage = async (loadId: string) => {
+    const load = loadRows.find((row) => row.id === loadId);
+    if (!load?.driverPhone) {
+      notifyAction("error", "Driver phone number missing. Add it to send SMS.");
+      return;
+    }
+
+    notifyAction("info", `Sending SMS to ${load.driver}...`);
+    try {
+      const res = await fetch("/api/load-hub/sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: load.driverPhone,
+          body: `Load ${load.id}: Please confirm status and ETA.`,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload?.error || "SMS send failed");
+      }
+      notifyAction("success", `SMS delivered to ${load.driver}.`);
+    } catch (error: any) {
+      notifyAction("error", error.message || "SMS send failed");
+    }
+  };
+
+  const createQuickBooksInvoice = async () => {
+    if (!selectedLoadId) {
+      return;
+    }
+    const load = loadRows.find((row) => row.id === selectedLoadId);
+    if (!load?.customerId) {
+      notifyAction("error", "Customer QuickBooks ID missing.");
+      return;
+    }
+
+    setIsInvoicing(true);
+    notifyAction("info", "Creating QuickBooks invoice...");
+    try {
+      const res = await fetch("/api/load-hub/quickbooks/invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: load.customerId,
+          amount: load.value,
+          docNumber: load.id,
+          lineDescription: `${load.material} • ${load.from} → ${load.to}`,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload?.error || "QuickBooks invoice failed");
+      }
+      notifyAction("success", "QuickBooks invoice created.");
+    } catch (error: any) {
+      notifyAction("error", error.message || "QuickBooks invoice failed");
+    } finally {
+      setIsInvoicing(false);
+    }
+  };
+
+  const focusLoadSearch = () => {
+    const input = document.getElementById("loadSearch");
+    if (input instanceof HTMLInputElement) {
+      input.focus();
+    }
+  };
 
   const hourlyRate = 30;
   const annualRevenue =
@@ -638,6 +1126,13 @@ export default function LandingPage() {
           box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
         }
 
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
         .dashboard-preview {
           background: linear-gradient(
             145deg,
@@ -916,6 +1411,587 @@ export default function LandingPage() {
           margin-bottom: 80px;
         }
 
+        .load-management-hub {
+          background: rgba(10, 10, 10, 0.9);
+          border-top: 1px solid rgba(255, 215, 0, 0.2);
+          border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .load-hub-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+
+        .hub-kicker {
+          font-size: 0.85rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .load-hub-summary {
+          margin-top: 12px;
+          background: rgba(30, 30, 30, 0.5);
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .load-action-toast {
+          margin-top: 12px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-size: 0.9rem;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: rgba(30, 30, 30, 0.6);
+        }
+
+        .load-action-toast.info {
+          border-color: rgba(0, 180, 255, 0.4);
+          background: rgba(0, 180, 255, 0.12);
+        }
+
+        .load-action-toast.success {
+          border-color: rgba(0, 255, 157, 0.4);
+          background: rgba(0, 255, 157, 0.12);
+        }
+
+        .load-action-toast.error {
+          border-color: rgba(255, 40, 0, 0.4);
+          background: rgba(255, 40, 0, 0.12);
+        }
+
+        .load-filter-tabs {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+          flex-wrap: wrap;
+        }
+
+        .tab-btn {
+          background: rgba(30, 30, 30, 0.7);
+          color: rgba(255, 255, 255, 0.85);
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          border-radius: 999px;
+          padding: 10px 16px;
+          font-weight: 600;
+          font-size: 0.85rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: var(--speed-transition);
+        }
+
+        .tab-btn.active {
+          background: rgba(255, 215, 0, 0.15);
+          color: var(--speed-white);
+          border-color: rgba(255, 215, 0, 0.6);
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .count-badge {
+          background: rgba(0, 180, 255, 0.2);
+          border: 1px solid rgba(0, 180, 255, 0.4);
+          color: rgba(255, 255, 255, 0.9);
+          padding: 2px 8px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+        }
+
+        .bulk-actions-bar {
+          margin-top: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          background: rgba(0, 180, 255, 0.12);
+          border: 1px solid rgba(0, 180, 255, 0.3);
+          border-radius: 12px;
+          padding: 12px 16px;
+          font-size: 0.9rem;
+        }
+
+        .load-hub-layout {
+          display: grid;
+          grid-template-columns: 2.2fr 1fr;
+          gap: 24px;
+          margin-top: 24px;
+          align-items: start;
+        }
+
+        .load-board {
+          background: rgba(20, 20, 20, 0.8);
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          border-radius: 18px;
+          padding: 20px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        }
+
+        .board-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-bottom: 18px;
+        }
+
+        .search-box {
+          position: relative;
+          flex: 1;
+          min-width: 220px;
+        }
+
+        .search-box input {
+          width: 100%;
+          background: rgba(8, 8, 8, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: var(--speed-white);
+          padding: 10px 36px 10px 12px;
+          border-radius: 10px;
+          font-size: 0.9rem;
+        }
+
+        .search-icon {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 0.9rem;
+        }
+
+        .view-controls {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .sort-select {
+          background: rgba(8, 8, 8, 0.9);
+          color: var(--speed-white);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          padding: 8px 10px;
+          border-radius: 8px;
+          font-size: 0.85rem;
+        }
+
+        .loads-table-wrap {
+          overflow-x: auto;
+        }
+
+        .loads-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+          min-width: 820px;
+        }
+
+        .loads-table thead th {
+          text-align: left;
+          color: rgba(255, 255, 255, 0.65);
+          font-size: 0.75rem;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          padding: 12px 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .loads-table tbody td {
+          padding: 14px 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          vertical-align: top;
+        }
+
+        .load-row {
+          transition: var(--speed-transition);
+        }
+
+        .load-row:hover {
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .driver-info.unassigned {
+          color: rgba(255, 255, 255, 0.55);
+          font-style: italic;
+        }
+
+        .status-badge {
+          display: inline-flex;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .status-badge.in-transit {
+          background: rgba(0, 180, 255, 0.15);
+          border-color: rgba(0, 180, 255, 0.4);
+          color: rgba(255, 255, 255, 0.95);
+        }
+
+        .status-badge.available {
+          background: rgba(0, 255, 157, 0.12);
+          border-color: rgba(0, 255, 157, 0.4);
+        }
+
+        .status-badge.completed {
+          background: rgba(0, 255, 157, 0.18);
+          border-color: rgba(0, 255, 157, 0.4);
+        }
+
+        .status-badge.cancelled {
+          background: rgba(255, 40, 0, 0.12);
+          border-color: rgba(255, 40, 0, 0.4);
+        }
+
+        .status-badge.detention,
+        .status-badge.warning {
+          background: rgba(255, 200, 0, 0.15);
+          border-color: rgba(255, 200, 0, 0.45);
+        }
+
+        .action-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .btn-xs {
+          padding: 6px 10px;
+          font-size: 0.7rem;
+          border-radius: 6px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+        }
+
+        .btn-warning {
+          background: rgba(255, 200, 0, 0.2);
+          border: 1px solid rgba(255, 200, 0, 0.6);
+          color: var(--speed-white);
+        }
+
+        .btn-success {
+          background: rgba(0, 255, 157, 0.2);
+          border: 1px solid rgba(0, 255, 157, 0.5);
+          color: var(--speed-white);
+        }
+
+        .btn-danger {
+          background: rgba(255, 40, 0, 0.2);
+          border: 1px solid rgba(255, 40, 0, 0.5);
+          color: var(--speed-white);
+        }
+
+        .btn-sm {
+          padding: 8px 12px;
+          font-size: 0.75rem;
+          border-radius: 8px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+        }
+
+        .btn-block {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .load-hub-sidebar {
+          display: grid;
+          gap: 18px;
+        }
+
+        .sidebar-create-load,
+        .detention-panel {
+          background: rgba(20, 20, 20, 0.85);
+          border: 1px solid rgba(0, 180, 255, 0.2);
+          border-radius: 16px;
+          padding: 16px;
+        }
+
+        .sidebar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+        }
+
+        .sidebar-header h3 {
+          font-size: 1.1rem;
+          margin: 0;
+        }
+
+        .toggle-icon {
+          font-size: 1.1rem;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .sidebar-content {
+          margin-top: 16px;
+          display: grid;
+          gap: 14px;
+        }
+
+        .form-group label {
+          display: block;
+          font-size: 0.85rem;
+          margin-bottom: 6px;
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-group select,
+        .form-group input {
+          width: 100%;
+          background: rgba(8, 8, 8, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: var(--speed-white);
+          padding: 8px 10px;
+          border-radius: 8px;
+          font-size: 0.85rem;
+        }
+
+        .inline-inputs,
+        .route-inputs {
+          display: grid;
+          grid-template-columns: 1.4fr 0.6fr 1fr;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .route-inputs {
+          grid-template-columns: 1fr auto 1.2fr;
+        }
+
+        .route-inputs .arrow {
+          text-align: center;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .price-preview {
+          background: rgba(255, 215, 0, 0.08);
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          padding: 12px;
+          border-radius: 12px;
+          display: grid;
+          gap: 6px;
+        }
+
+        .price-line {
+          display: flex;
+          justify-content: space-between;
+          font-weight: 700;
+        }
+
+        .detention-panel h3 {
+          margin-bottom: 12px;
+        }
+
+        .alert-item {
+          background: rgba(30, 30, 30, 0.75);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 12px;
+          margin-bottom: 12px;
+        }
+
+        .alert-item.warning {
+          border-color: rgba(255, 200, 0, 0.35);
+        }
+
+        .alert-header {
+          display: flex;
+          justify-content: space-between;
+          font-weight: 700;
+        }
+
+        .alert-time {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.8rem;
+        }
+
+        .alert-actions {
+          margin-top: 10px;
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(6px);
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+        }
+
+        .load-details-modal {
+          background: rgba(10, 10, 10, 0.95);
+          border-radius: 18px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          width: min(1100px, 100%);
+          max-height: 85vh;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 18px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .close-btn {
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 1.5rem;
+          cursor: pointer;
+        }
+
+        .modal-tabs {
+          display: flex;
+          gap: 12px;
+          padding: 12px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          flex-wrap: wrap;
+        }
+
+        .modal-tab {
+          background: rgba(30, 30, 30, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.75);
+          padding: 8px 14px;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          cursor: pointer;
+        }
+
+        .modal-tab.active {
+          background: rgba(255, 215, 0, 0.18);
+          border-color: rgba(255, 215, 0, 0.4);
+          color: var(--speed-white);
+        }
+
+        .modal-content {
+          padding: 20px;
+          overflow-y: auto;
+          display: grid;
+          gap: 20px;
+        }
+
+        .tab-content {
+          display: none;
+        }
+
+        .tab-content.active {
+          display: block;
+        }
+
+        .detail-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .detail-column {
+          background: rgba(30, 30, 30, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 16px;
+        }
+
+        .document-list {
+          display: grid;
+          gap: 12px;
+        }
+
+        .doc-item {
+          display: grid;
+          grid-template-columns: auto 1fr auto auto;
+          gap: 12px;
+          align-items: center;
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(30, 30, 30, 0.6);
+        }
+
+        .doc-item.missing {
+          border-color: rgba(255, 200, 0, 0.4);
+        }
+
+        .upload-zone {
+          margin-top: 12px;
+          border: 1px dashed rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          padding: 16px;
+          text-align: center;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tracking-info {
+          margin-top: 12px;
+          display: grid;
+          gap: 6px;
+          font-size: 0.9rem;
+        }
+
+        .tracking-status {
+          margin-top: 10px;
+          font-size: 0.85rem;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tracking-frame {
+          width: 100%;
+          height: 260px;
+          border: none;
+          border-radius: 12px;
+        }
+
+        .load-mobile-view {
+          display: none;
+          margin-top: 32px;
+          background: rgba(20, 20, 20, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          padding: 16px;
+        }
+
+        .mobile-load-card {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 12px 0;
+        }
+
+        .mobile-load-card:last-child {
+          border-bottom: none;
+        }
+
+        .mobile-load-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 10px;
+          flex-wrap: wrap;
+        }
+
         @keyframes shine {
           0% {
             transform: translateX(-100%);
@@ -954,6 +2030,9 @@ export default function LandingPage() {
             grid-template-columns: 1fr;
             gap: 60px;
           }
+          .load-hub-layout {
+            grid-template-columns: 1fr;
+          }
           .modules-grid,
           .pricing-tiers,
           .reporting-grid,
@@ -970,6 +2049,9 @@ export default function LandingPage() {
 
         @media (max-width: 992px) {
           .mobile-menu-btn {
+            display: block;
+          }
+          .load-mobile-view {
             display: block;
           }
           .nav-links {
@@ -1914,6 +2996,572 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section id="load-hub" className="load-management-hub">
+        <div className="container">
+          <div className="load-hub-header">
+            <div>
+              <p className="hub-kicker">Load Command Center</p>
+              <h2>
+                📦 Load Management <span className="speed-gradient">Hub</span>
+              </h2>
+            </div>
+            <div>
+              <button className="btn btn-secondary btn-sm" onClick={focusLoadSearch}>
+                🔍 Search Loads
+              </button>
+            </div>
+          </div>
+          <div className="load-hub-summary">
+            Active: 38 | Today: 12 | This Week: 85 | Revenue: $42,850
+          </div>
+          {actionToast && <div className={`load-action-toast ${actionToast.type}`}>{actionToast.message}</div>}
+
+          <div className="load-filter-tabs">
+            {[
+              { id: "active", label: "🚛 ACTIVE LOADS", count: loadCounts.active },
+              { id: "available", label: "⏳ AVAILABLE", count: loadCounts.available },
+              { id: "completed", label: "✅ COMPLETED", count: loadCounts.completed },
+              { id: "cancelled", label: "❌ CANCELLED", count: loadCounts.cancelled },
+              { id: "detention", label: "⚠️ DETENTION", count: loadCounts.detention },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab-btn ${activeLoadFilter === tab.id ? "active" : ""}`}
+                onClick={() => setActiveLoadFilter(tab.id)}
+              >
+                {tab.label} <span className="count-badge">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedLoadIds.length > 0 && (
+            <div className="bulk-actions-bar">
+              <strong>{selectedLoadIds.length} selected</strong>
+              <div className="action-buttons">
+                <button className="btn btn-xs btn-secondary">Bulk Assign</button>
+                <button className="btn btn-xs btn-secondary">Status Update</button>
+                <button className="btn btn-xs btn-secondary">Export</button>
+              </div>
+            </div>
+          )}
+
+          <div className="load-hub-layout">
+            <div className="load-board">
+              <div className="board-toolbar">
+                <div className="search-box">
+                  <input
+                    id="loadSearch"
+                    type="text"
+                    placeholder="Search loads, customers, drivers..."
+                    value={loadSearch}
+                    onChange={(event) => setLoadSearch(event.target.value)}
+                  />
+                  <span className="search-icon">🔍</span>
+                </div>
+
+                <div className="view-controls">
+                  <button className="btn btn-sm btn-secondary">📥 Export</button>
+                  <button className="btn btn-sm btn-secondary">🖨️ Print</button>
+                  <select className="sort-select" value={loadSort} onChange={(event) => setLoadSort(event.target.value)}>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="customer">Customer A-Z</option>
+                    <option value="value">Highest Value</option>
+                    <option value="eta">Soonest ETA</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="loads-table-wrap">
+                <table className="loads-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}>
+                        <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAll} />
+                      </th>
+                      <th style={{ width: 100 }}>Load #</th>
+                      <th style={{ width: 150 }}>Customer</th>
+                      <th style={{ width: 120 }}>Driver/Truck</th>
+                      <th style={{ width: 120 }}>Material</th>
+                      <th style={{ width: 110 }}>Status</th>
+                      <th style={{ width: 120 }}>Location</th>
+                      <th style={{ width: 100 }}>Value</th>
+                      <th style={{ width: 160 }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedLoads.map((load) => (
+                      <tr key={load.id} className={`load-row ${load.statusGroup}`}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedLoadIds.includes(load.id)}
+                            onChange={() => toggleLoadSelection(load.id)}
+                          />
+                        </td>
+                        <td>
+                          <strong>{load.id}</strong>
+                          <br />
+                          <small>
+                            {load.dateLabel} • {load.timeLabel}
+                          </small>
+                        </td>
+                        <td>
+                          <strong>{load.customer}</strong>
+                          <br />
+                          <small>{load.project || "—"}</small>
+                        </td>
+                        <td>
+                          <div className={`driver-info ${load.driver === "UNASSIGNED" ? "unassigned" : ""}`}>
+                            <span className="driver">{load.driver}</span>
+                            <br />
+                            <span className="truck">{load.truck || "—"}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="material">{load.material}</span>
+                          {load.materialDetail ? (
+                            <>
+                              <br />
+                              <small>{load.materialDetail}</small>
+                            </>
+                          ) : null}
+                        </td>
+                        <td>
+                          <span className={`status-badge ${load.statusType}`}>{load.status}</span>
+                          <br />
+                          <small>{load.statusNote}</small>
+                        </td>
+                        <td>
+                          <div className="location">
+                            <span className="from">{load.from}</span> →
+                            <br />
+                            <span className="to">{load.to}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <strong>${load.value.toFixed(2)}</strong>
+                          <br />
+                          <small>{load.valueNote}</small>
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            {load.statusGroup === "active" && (
+                              <>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                                  View
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-secondary"
+                                  onClick={() => openLoadModal(load.id, "tracking")}
+                                >
+                                  Track
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-warning"
+                                  onClick={() => {
+                                    openLoadModal(load.id, "overview");
+                                    sendLoadMessage(load.id);
+                                  }}
+                                >
+                                  Msg
+                                </button>
+                                <button className="btn btn-xs btn-success" onClick={() => openLoadModal(load.id, "tickets")}>
+                                  Ticket
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "available" && (
+                              <>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                                  Assign
+                                </button>
+                                <button className="btn btn-xs btn-secondary" onClick={() => openLoadModal(load.id)}>
+                                  Edit
+                                </button>
+                                <button className="btn btn-xs btn-danger" onClick={() => openLoadModal(load.id)}>
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "completed" && (
+                              <>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id, "payment")}>
+                                  Invoice
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-secondary"
+                                  onClick={() => openLoadModal(load.id, "documents")}
+                                >
+                                  Ticket
+                                </button>
+                                <button className="btn btn-xs btn-success" onClick={() => openLoadModal(load.id)}>
+                                  Repeat
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "cancelled" && (
+                              <>
+                                <button className="btn btn-xs btn-secondary" onClick={() => openLoadModal(load.id)}>
+                                  View
+                                </button>
+                                <button className="btn btn-xs btn-success" onClick={() => openLoadModal(load.id)}>
+                                  Repeat
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "detention" && (
+                              <>
+                                <button className="btn btn-xs btn-warning" onClick={() => openLoadModal(load.id, "payment")}>
+                                  Charge
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-secondary"
+                                  onClick={() => openLoadModal(load.id, "tracking")}
+                                >
+                                  Contact
+                                </button>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                                  View
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="load-hub-sidebar">
+              <div className="sidebar-create-load">
+                <div className="sidebar-header" onClick={() => setIsQuickCreateOpen((prev) => !prev)}>
+                  <h3>⚡ Quick Create Load</h3>
+                  <span className="toggle-icon">{isQuickCreateOpen ? "▼" : "▲"}</span>
+                </div>
+
+                {isQuickCreateOpen && (
+                  <div className="sidebar-content">
+                    <div className="form-group">
+                      <label>Customer</label>
+                      <select className="customer-select">
+                        <option value="">Select customer...</option>
+                        <option value="jones">Jones Construction</option>
+                        <option value="thompson">Thompson Co</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Material & Quantity</label>
+                      <div className="inline-inputs">
+                        <select className="material-select">
+                          <option>3/4" Gravel</option>
+                          <option>Fill Sand</option>
+                          <option>Road Base</option>
+                        </select>
+                        <input type="number" defaultValue={12} min={1} />
+                        <select className="unit-select">
+                          <option>tons</option>
+                          <option>yards</option>
+                          <option>loads</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Route</label>
+                      <div className="route-inputs">
+                        <select className="pickup-select">
+                          <option>Pit 7</option>
+                          <option>Pit 3</option>
+                          <option>Yard A</option>
+                        </select>
+                        <span className="arrow">→</span>
+                        <input type="text" placeholder="Delivery address..." className="delivery-input" />
+                      </div>
+                    </div>
+
+                    <div className="price-preview">
+                      <div className="price-line">
+                        <span>Estimated Price:</span>
+                        <strong>$855.00</strong>
+                      </div>
+                      <small>Based on customer rate card</small>
+                    </div>
+
+                    <button className="btn btn-primary btn-block">Create Load & Dispatch</button>
+                    <button className="btn btn-secondary btn-block">Save as Template</button>
+                  </div>
+                )}
+              </div>
+
+              <div className="detention-panel">
+                <h3>⏰ Detention Alerts</h3>
+                {detentionAlerts.map((alert) => (
+                  <div key={alert.id} className={`alert-item ${alert.variant === "warning" ? "warning" : ""}`}>
+                    <div className="alert-header">
+                      <strong>{alert.title}</strong>
+                      <span className="alert-time">{alert.time}</span>
+                    </div>
+                    <div className="alert-body">
+                      {alert.details.map((detail) => (
+                        <p key={detail}>{detail}</p>
+                      ))}
+                    </div>
+                    <div className="alert-actions">
+                      {alert.actions.map((action) => (
+                        <button
+                          key={action.label}
+                          className={`btn btn-xs btn-${action.variant}`}
+                          onClick={() => openLoadModal(alert.id, action.tab)}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="load-mobile-view">
+            <h3>📦 Loads Mobile</h3>
+            <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: 8 }}>
+              <strong>Active:</strong> {loadCounts.active} | <strong>Available:</strong> {loadCounts.available}
+            </p>
+            {sortedLoads.slice(0, 3).map((load) => (
+              <div key={load.id} className="mobile-load-card">
+                <strong>
+                  {load.id} • {load.driver || "Unassigned"} • ${load.value.toFixed(0)}
+                </strong>
+                <p style={{ margin: "6px 0" }}>
+                  📍 {load.from} → {load.to} • {load.statusNote}
+                </p>
+                <div className="mobile-load-actions">
+                  <button className="btn btn-xs btn-secondary" onClick={() => openLoadModal(load.id, "tracking")}>
+                    Track
+                  </button>
+                  <button
+                    className="btn btn-xs btn-warning"
+                    onClick={() => {
+                      openLoadModal(load.id, "overview");
+                      sendLoadMessage(load.id);
+                    }}
+                  >
+                    Msg
+                  </button>
+                  <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                    View
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+              <button className="btn btn-primary btn-sm">➕ Quick Create</button>
+              <button className="btn btn-secondary btn-sm" onClick={focusLoadSearch}>
+                🔍 Search
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {selectedLoadId && (
+          <div className="modal-overlay" onClick={() => setSelectedLoadId(null)}>
+            <div className="modal load-details-modal" onClick={(event) => event.stopPropagation()}>
+              <div className="modal-header">
+                <h2>
+                  {selectedLoad.id} - {selectedLoad.customer}
+                </h2>
+                <button className="close-btn" onClick={() => setSelectedLoadId(null)}>
+                  ×
+                </button>
+              </div>
+
+              <div className="modal-tabs">
+                {[
+                  { id: "overview", label: "📋 Overview" },
+                  { id: "documents", label: "📄 Documents" },
+                  { id: "tracking", label: "📍 Tracking" },
+                  { id: "tickets", label: "🎫 Tickets" },
+                  { id: "payment", label: "💰 Payment" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`modal-tab ${activeLoadTab === tab.id ? "active" : ""}`}
+                    onClick={() => setActiveLoadTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="modal-content">
+                <div className={`tab-content ${activeLoadTab === "overview" ? "active" : ""}`}>
+                  <div className="detail-grid">
+                    <div className="detail-column">
+                      <h4>Load Info</h4>
+                      <p>
+                        <strong>Created:</strong> {selectedLoad.dateLabel} {selectedLoad.timeLabel}
+                      </p>
+                      <p>
+                        <strong>Status:</strong>{" "}
+                        <span className={`status-badge ${selectedLoad.statusType}`}>{selectedLoad.status}</span>
+                      </p>
+                      <p>
+                        <strong>Value:</strong> ${selectedLoad.value.toFixed(2)} ({selectedLoad.valueNote})
+                      </p>
+                      <p>
+                        <strong>Priority:</strong> Standard
+                      </p>
+                    </div>
+                    <div className="detail-column">
+                      <h4>Assignment</h4>
+                      <p>
+                        <strong>Driver:</strong> {selectedLoad.driver}
+                      </p>
+                      <p>
+                        <strong>Truck:</strong> {selectedLoad.truck || "—"}
+                      </p>
+                      <p>
+                        <strong>Driver Status:</strong> On duty - 4h 22m available
+                      </p>
+                      <button className="btn btn-xs btn-warning">Reassign</button>
+                    </div>
+                    <div className="detail-column">
+                      <h4>Route</h4>
+                      <p>
+                        <strong>Pickup:</strong> {selectedLoad.from}
+                      </p>
+                      <p>
+                        <strong>Delivery:</strong> {selectedLoad.to}
+                      </p>
+                      <p>
+                        <strong>ETA:</strong> {selectedLoad.statusNote}
+                      </p>
+                      <p>
+                        <strong>Distance:</strong> 8.2 miles
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="action-buttons" style={{ marginTop: 16 }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => setActiveLoadTab("tracking")}>
+                      Live Track
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => sendLoadMessage(selectedLoad.id)}>
+                      Message Driver
+                    </button>
+                    <button className="btn btn-warning btn-sm">Update Status</button>
+                    <button className="btn btn-success btn-sm" onClick={() => setActiveLoadTab("payment")}>
+                      Create Invoice
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "documents" ? "active" : ""}`}>
+                  <h4>📄 Load Documents</h4>
+                  <div className="document-list">
+                    <div className="doc-item">
+                      <span className="doc-icon">📋</span>
+                      <span className="doc-name">Rate Confirmation</span>
+                      <span className="doc-status">Uploaded 05/16</span>
+                      <button className="btn btn-xs btn-secondary">View</button>
+                    </div>
+                    <div className="doc-item missing">
+                      <span className="doc-icon">🎫</span>
+                      <span className="doc-name">Delivery Ticket</span>
+                      <span className="doc-status">Pending</span>
+                      <button className="btn btn-xs btn-primary">Upload</button>
+                    </div>
+                  </div>
+                  <div className="upload-zone">
+                    Drag & drop documents here or <button className="btn btn-xs btn-secondary">Browse</button>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "tracking" ? "active" : ""}`}>
+                  <h4>📍 Live Tracking</h4>
+                  {mapSrc ? (
+                    <iframe className="tracking-frame" src={mapSrc} loading="lazy" title="Live load tracking map" />
+                  ) : (
+                    <div style={{ height: 240, borderRadius: 12, background: "rgba(0,180,255,0.1)" }} />
+                  )}
+                  <div className="tracking-info">
+                    <p>
+                      <strong>Current Location:</strong> {trackingLabel}
+                    </p>
+                    <p>
+                      <strong>Speed:</strong> {trackingSpeed !== undefined ? `${trackingSpeed} mph` : "—"}
+                    </p>
+                    <p>
+                      <strong>Last Update:</strong> {trackingUpdated}
+                    </p>
+                  </div>
+                  <div className="tracking-status">
+                    {isTrackingLoading ? "Syncing with telematics..." : trackingError ? trackingError : "Live feed connected."}
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "tickets" ? "active" : ""}`}>
+                  <h4>🎫 Tickets</h4>
+                  <div className="document-list">
+                    <div className="doc-item">
+                      <span className="doc-icon">🧾</span>
+                      <span className="doc-name">Scale Ticket</span>
+                      <span className="doc-status">Captured 07:42</span>
+                      <button className="btn btn-xs btn-secondary">View</button>
+                    </div>
+                    <div className="doc-item">
+                      <span className="doc-icon">🧾</span>
+                      <span className="doc-name">Delivery Ticket</span>
+                      <span className="doc-status">Awaiting signature</span>
+                      <button className="btn btn-xs btn-primary">Request</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "payment" ? "active" : ""}`}>
+                  <h4>💰 Payment</h4>
+                  <div className="detail-grid">
+                    <div className="detail-column">
+                      <p>
+                        <strong>Invoice Status:</strong> Draft
+                      </p>
+                      <p>
+                        <strong>Amount:</strong> ${selectedLoad.value.toFixed(2)}
+                      </p>
+                      <p>
+                        <strong>Terms:</strong> Net 30
+                      </p>
+                    </div>
+                    <div className="detail-column">
+                      <p>
+                        <strong>Customer:</strong> {selectedLoad.customer}
+                      </p>
+                      <p>
+                        <strong>Billing Contact:</strong> ap@{selectedLoad.customer.toLowerCase().replace(/\s+/g, "")}.com
+                      </p>
+                      <p>
+                        <strong>Last Sent:</strong> —
+                      </p>
+                    </div>
+                  </div>
+                  <div className="action-buttons" style={{ marginTop: 16 }}>
+                    <button className="btn btn-primary btn-sm" onClick={createQuickBooksInvoice} disabled={isInvoicing}>
+                      {isInvoicing ? "Creating..." : "Create Invoice"}
+                    </button>
+                    <button className="btn btn-secondary btn-sm">Send Reminder</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section id="pits" className="switch-benefits">
