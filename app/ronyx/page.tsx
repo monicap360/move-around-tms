@@ -6,14 +6,16 @@ const navItems = [
   { label: "Overview", href: "/ronyx" },
   { label: "Dispatch", href: "/ronyx/dispatch" },
   { label: "Loads", href: "/ronyx/loads" },
-  { label: "Backhaul Board", href: "/ronyx/backhaul" },
-  { label: "Pit Tickets", href: "/ronyx/tickets" },
+  { label: "Tickets", href: "/ronyx/tickets" },
+  { label: "Aggregates", href: "/ronyx/aggregates" },
   { label: "HR & TXDOT Compliance", href: "/ronyx/hr-compliance" },
   { label: "Drivers", href: "/ronyx/drivers" },
   { label: "Trucks", href: "/ronyx/trucks" },
   { label: "Maintenance", href: "/ronyx/maintenance" },
   { label: "Billing", href: "/ronyx/billing" },
+  { label: "Finance", href: "/ronyx/finance" },
   { label: "Compliance", href: "/ronyx/compliance" },
+  { label: "FMCSA", href: "/ronyx/fmcsa" },
   { label: "Reports", href: "/ronyx/reports" },
   { label: "Settings", href: "/ronyx/settings" },
 ];
@@ -21,8 +23,7 @@ const navItems = [
 const quickActions = [
   { title: "Create Load", href: "/ronyx/loads" },
   { title: "Assign Driver", href: "/ronyx/drivers" },
-  { title: "Open Backhaul Board", href: "/ronyx/backhaul" },
-  { title: "Scan Pit Ticket", href: "/ronyx/tickets" },
+  { title: "Open Tickets", href: "/ronyx/tickets" },
 ];
 
 export default function RonyxDashboard() {

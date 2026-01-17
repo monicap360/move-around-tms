@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type SectionPageProps = {
   params: { section: string };
@@ -66,19 +69,6 @@ const sectionConfig: Record<
       { title: "Truck 31 • Freightliner", subtitle: "Idle 18 min", status: "Idle Alert" },
     ],
   },
-  backhaul: {
-    label: "Backhaul Board",
-    description: "Fill empty miles with nearby backhaul opportunities.",
-    actions: [
-      { label: "Find Loads", href: "/ronyx/loads" },
-      { label: "Dispatch", href: "/ronyx/dispatch" },
-    ],
-    rows: [
-      { title: "22‑ton asphalt • 2.1 mi away", subtitle: "Adds $420 revenue", status: "Match Ready" },
-      { title: "15‑ton sand • 4.6 mi away", subtitle: "Adds $310 revenue", status: "Match Ready" },
-      { title: "Concrete return • 6.2 mi away", subtitle: "Adds $260 revenue", status: "Match Ready" },
-    ],
-  },
   tickets: {
     label: "Tickets",
     description: "Upload, reconcile, and approve ticketed loads.",
@@ -118,6 +108,19 @@ const sectionConfig: Record<
       { title: "INV-2043 • $6,900", subtitle: "Customer: City Site", status: "Unpaid" },
     ],
   },
+  finance: {
+    label: "Finance",
+    description: "Cash flow, settlements, and profitability controls.",
+    actions: [
+      { label: "View Billing", href: "/ronyx/billing" },
+      { label: "Reports", href: "/ronyx/reports" },
+    ],
+    rows: [
+      { title: "Cash Flow Snapshot", subtitle: "14-day outlook", status: "Ready" },
+      { title: "Settlement Batch", subtitle: "Week 03 • $48,220", status: "Processing" },
+      { title: "Unbilled Revenue", subtitle: "$12,480 pending", status: "Review" },
+    ],
+  },
   compliance: {
     label: "Compliance",
     description: "HOS, safety, and audit readiness.",
@@ -129,6 +132,19 @@ const sectionConfig: Record<
       { title: "Driver J. Lane", subtitle: "HOS limit approaching", status: "Warning" },
       { title: "Truck 18", subtitle: "Inspection due", status: "Due Soon" },
       { title: "Ticket T-884", subtitle: "Missing signature", status: "Needs Review" },
+    ],
+  },
+  fmcsa: {
+    label: "FMCSA",
+    description: "Federal compliance tracking and audit readiness.",
+    actions: [
+      { label: "HOS Alerts", href: "/ronyx/compliance" },
+      { label: "Driver Files", href: "/ronyx/hr-compliance" },
+    ],
+    rows: [
+      { title: "DQ File Review", subtitle: "3 drivers pending", status: "Review" },
+      { title: "Drug & Alcohol Clearinghouse", subtitle: "Consent updates", status: "Due" },
+      { title: "Annual MVR Check", subtitle: "8 drivers completed", status: "Complete" },
     ],
   },
   tracking: {
@@ -186,6 +202,30 @@ const sectionConfig: Record<
 };
 
 export default function RonyxSectionPage({ params }: SectionPageProps) {
+  const [rows, setRows] = useState<{ title: string; subtitle: string; status: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    void loadRows();
+  }, [params.section]);
+
+  async function loadRows() {
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await fetch(`/api/ronyx/modules?section=${params.section}`);
+      const data = await res.json();
+      setRows(data.rows || []);
+    } catch (err) {
+      console.error("Failed to load module rows", err);
+      setErrorMessage("Unable to load records.");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const config = sectionConfig[params.section] || {
     label: "Module",
     description: "Operational tools for Ronyx Logistics.",
@@ -211,7 +251,7 @@ export default function RonyxSectionPage({ params }: SectionPageProps) {
 
         <div className="bg-[#f8fafc] border border-[#c7d6ea] rounded-2xl p-6 shadow-[0_18px_30px_rgba(15,23,42,0.08)]">
           <p className="text-sm text-slate-600 mb-4">{config.description}</p>
-          <div className="flex flex-wrap gap-3 mb-6">
+          <div className="flex flex-wrap gap-3 mb-6 items-center">
             {config.actions.map((action) => (
               <Link
                 key={action.label}
@@ -221,12 +261,22 @@ export default function RonyxSectionPage({ params }: SectionPageProps) {
                 {action.label}
               </Link>
             ))}
+            <button
+              onClick={loadRows}
+              className="px-4 py-2 bg-white border border-[#c7d6ea] rounded-full text-sm text-slate-700 hover:border-[#1d4ed8]/60 transition-all"
+            >
+              Refresh
+            </button>
           </div>
-          {config.rows.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-slate-500">Loading records...</p>
+          ) : errorMessage ? (
+            <p className="text-sm text-red-600">{errorMessage}</p>
+          ) : rows.length === 0 ? (
             <p className="text-sm text-slate-500">No records yet.</p>
           ) : (
             <div className="space-y-3">
-              {config.rows.map((row) => (
+              {rows.map((row) => (
                 <div
                   key={row.title}
                   className="flex items-center justify-between bg-white border border-[#c7d6ea] rounded-xl px-4 py-3"

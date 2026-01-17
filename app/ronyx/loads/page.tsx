@@ -24,6 +24,50 @@ const detailTabs = [
 export default function RonyxLoadsPage() {
   const [activeTab, setActiveTab] = useState(loadTabs[0]);
   const [detailTab, setDetailTab] = useState(detailTabs[0]);
+  const [loads, setLoads] = useState<
+    {
+      id?: string;
+      load_number: string;
+      route: string;
+      status: string;
+      driver_name: string;
+      customer_name: string;
+    }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void loadLoads();
+  }, []);
+
+  async function loadLoads() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ronyx/loads");
+      const data = await res.json();
+      setLoads(data.loads || []);
+    } catch (err) {
+      console.error("Failed to load loads", err);
+      setLoads([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const statusMap: Record<string, string> = {
+    "Active Loads": "active",
+    "Available Loads": "available",
+    "Completed Loads": "completed",
+    "Cancelled Loads": "cancelled",
+    "Load Board Search": "available",
+    "Assigned Drivers": "active",
+  };
+
+  const filteredLoads = loads.filter((load) => {
+    if (activeTab === "Assigned Drivers") return Boolean(load.driver_name);
+    const target = statusMap[activeTab];
+    return target ? load.status === target : true;
+  });
 
   return (
     <div className="ronyx-shell">
@@ -161,41 +205,25 @@ export default function RonyxLoadsPage() {
             </div>
           </div>
           <div className="ronyx-grid">
-            {[
-              {
-                id: "LD-6121",
-                route: "Pit 7 → I‑45 Jobsite",
-                status: "In Transit",
-                driver: "D. Perez",
-                customer: "Metro Paving",
-              },
-              {
-                id: "LD-6124",
-                route: "Pit 3 → Beltway 8",
-                status: "Loading",
-                driver: "S. Grant",
-                customer: "Gulf Aggregate",
-              },
-              {
-                id: "LD-6129",
-                route: "Pit 5 → Katy Site",
-                status: "Delivered",
-                driver: "J. Lane",
-                customer: "City Site",
-              },
-            ].map((load) => (
-              <div key={load.id} className="ronyx-row">
-                <div>
-                  <div style={{ fontWeight: 700 }}>
-                    {load.id} • {load.route}
+            {loading ? (
+              <div className="ronyx-row">Loading loads...</div>
+            ) : filteredLoads.length === 0 ? (
+              <div className="ronyx-row">No loads in this view yet.</div>
+            ) : (
+              filteredLoads.map((load) => (
+                <div key={load.id || load.load_number} className="ronyx-row">
+                  <div>
+                    <div style={{ fontWeight: 700 }}>
+                      {load.load_number} • {load.route}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
+                      Driver: {load.driver_name || "Unassigned"} • Customer: {load.customer_name || "—"}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                    Driver: {load.driver} • Customer: {load.customer}
-                  </div>
+                  <span className="status good">{load.status}</span>
                 </div>
-                <span className="status good">{load.status}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
 
