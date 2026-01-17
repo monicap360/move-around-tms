@@ -31,11 +31,12 @@ const navItems = [
 ];
 
 const quickActions = [
-  { title: "Create Load", href: "/ronyx/loads" },
-  { title: "New Customer Request", href: "/ronyx/customer-requests" },
-  { title: "Assign Driver", href: "/ronyx/drivers" },
-  { title: "Open Tickets", href: "/ronyx/tickets" },
-  { title: "Run Payroll", href: "/ronyx/payroll" },
+  { title: "+ Create Load", href: "/ronyx/loads" },
+  { title: "📄 New Ticket", href: "/ronyx/tickets" },
+  { title: "👤 Assign Driver", href: "/ronyx/drivers" },
+  { title: "🚛 Find Backhaul", href: "/ronyx/loads" },
+  { title: "⚙️ Quick Dispatch", href: "/ronyx/loads" },
+  { title: "💰 Run Payroll", href: "/ronyx/payroll" },
 ];
 
 export default function RonyxDashboard() {
@@ -226,29 +227,40 @@ export default function RonyxDashboard() {
           <div>
               <h1 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Dump Fleet Command Center</h1>
               <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-                Live control for pit‑to‑site hauling, backhauls, and ticket accuracy.
+                Live control for dispatch, backhauls, and ticket accuracy.
             </p>
           </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <input type="text" placeholder="Search loads, drivers, tickets..." />
-              <span className="ronyx-pill">Shift: Morning</span>
+              <details className="ronyx-action" style={{ position: "relative" }}>
+                <summary style={{ listStyle: "none", cursor: "pointer" }}>+ Quick Add ▼</summary>
+                <div style={{ position: "absolute", right: 0, top: "110%", background: "#fff", border: "1px solid var(--ronyx-border)", borderRadius: 12, padding: 12, minWidth: 200, zIndex: 20 }}>
+                  <Link href="/ronyx/loads" className="ronyx-row" style={{ marginBottom: 8 }}>New Load</Link>
+                  <Link href="/ronyx/customer-requests" className="ronyx-row" style={{ marginBottom: 8 }}>New Customer</Link>
+                  <Link href="/ronyx/drivers" className="ronyx-row" style={{ marginBottom: 8 }}>New Driver</Link>
+                  <Link href="/ronyx/tickets" className="ronyx-row">New Ticket</Link>
+                </div>
+              </details>
+              <Link href="/ronyx/reports" className="ronyx-action">
+                📊 Reports
+              </Link>
               <Link href="/ronyx/alerts" className="ronyx-action">
-                Notifications
+                🔔 Alerts (3)
               </Link>
               <Link href="/ronyx/settings" className="ronyx-action primary">
-                Portal Admin
+                👤 Portal Admin
               </Link>
             </div>
         </div>
 
           <section className="ronyx-grid" style={{ marginBottom: 22 }}>
             {[
-              { label: "Active Loads", value: "38", note: "6 at pit queue" },
-              { label: "Empty Miles Today", value: "14%", note: "↓ 3% vs last week" },
-              { label: "Tickets Pending", value: "12", note: "3 flagged for review" },
-              { label: "On‑Time Rate", value: "97.4%", note: "+1.1% WoW" },
+              { label: "Active Loads", value: "38", note: "6 in queue", href: "/ronyx/loads?status=active" },
+              { label: "Empty Miles Today", value: "14%", note: "↓ 3% vs last week", href: "/ronyx/tracking?filter=empty" },
+              { label: "Tickets Pending", value: "12", note: "3 flagged for review", href: "/ronyx/tickets?status=pending" },
+              { label: "On‑Time Rate", value: "97.4%", note: "2.6% late", href: "/ronyx/reports?filter=late" },
             ].map((stat) => (
-              <div key={stat.label} className="ronyx-card">
+              <Link key={stat.label} href={stat.href} className="ronyx-card" style={{ textDecoration: "none", color: "inherit" }}>
                 <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.75rem", textTransform: "uppercase" }}>
                   {stat.label}
                 </div>
@@ -258,14 +270,14 @@ export default function RonyxDashboard() {
                 <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem", marginTop: 6 }}>
                   {stat.note}
                 </div>
-              </div>
+              </Link>
             ))}
           </section>
 
           <section className="ronyx-card" style={{ marginBottom: 22 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <h3>Quick Actions</h3>
-              <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Dump fleet tools</span>
+              <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Turn goals into tasks</span>
               </div>
             <div className="ronyx-grid">
               {quickActions.map((action) => (
@@ -338,9 +350,9 @@ export default function RonyxDashboard() {
               </div>
               <div className="ronyx-table">
                 {[
-                  { id: "LD-4021", route: "Pit 7 → I‑45 Jobsite", status: "In Transit", driver: "D. Perez" },
-                  { id: "LD-4025", route: "Pit 7 → Beltway 8", status: "Loading", driver: "S. Grant" },
-                  { id: "LD-4029", route: "Pit 3 → Katy Site", status: "Queued", driver: "J. Lane" },
+                  { id: "LD-4021", route: "Dispatch → I‑45 Jobsite", status: "In Transit", driver: "D. Perez" },
+                  { id: "LD-4025", route: "Dispatch → Beltway 8", status: "Loading", driver: "S. Grant" },
+                  { id: "LD-4029", route: "Dispatch → Katy Site", status: "Queued", driver: "J. Lane" },
                 ].map((load) => (
                   <div key={load.id} className="ronyx-row">
                     <div>
@@ -349,7 +361,27 @@ export default function RonyxDashboard() {
                         Driver: {load.driver}
                       </div>
                     </div>
-                    <span style={{ color: "var(--ronyx-accent)", fontWeight: 700 }}>{load.status}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ color: "var(--ronyx-accent)", fontWeight: 700 }}>{load.status}</span>
+                      {load.status === "In Transit" && (
+                        <>
+                          <Link href="/ronyx/loads" className="ronyx-action">Update to Delivered</Link>
+                          <Link href="/ronyx/driver-app" className="ronyx-action">Contact Driver</Link>
+                        </>
+                      )}
+                      {load.status === "Loading" && (
+                        <>
+                          <Link href="/ronyx/loads" className="ronyx-action">Mark Delayed</Link>
+                          <Link href="/ronyx/loads" className="ronyx-action">Switch Truck</Link>
+                        </>
+                      )}
+                      {load.status === "Queued" && (
+                        <>
+                          <Link href="/ronyx/loads" className="ronyx-action">Priority Up</Link>
+                          <Link href="/ronyx/loads" className="ronyx-action">Cancel Load</Link>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -364,13 +396,38 @@ export default function RonyxDashboard() {
               </div>
               <div className="ronyx-table">
                 {[
-                  "Truck 18 due for maintenance in 3 days",
-                  "Ticket #T-884 mismatch flagged",
-                  "Load LD-4025 detention timer running",
+                  {
+                    text: "Truck 18 due for maintenance in 3 days",
+                    actions: [
+                      { label: "Schedule", href: "/ronyx/maintenance" },
+                      { label: "Ignore 1 Week", href: "/ronyx/maintenance" },
+                    ],
+                  },
+                  {
+                    text: "Ticket #T-884 mismatch flagged",
+                    actions: [
+                      { label: "Review", href: "/ronyx/tickets" },
+                    ],
+                  },
+                  {
+                    text: "Load LD-4025 detention timer running",
+                    actions: [
+                      { label: "Notify Driver", href: "/ronyx/driver-app" },
+                      { label: "Contact Site", href: "/ronyx/loads" },
+                      { label: "Add Charge", href: "/ronyx/billing" },
+                    ],
+                  },
                 ].map((alert) => (
-                  <div key={alert} className="ronyx-row">
-                    {alert}
-            </div>
+                  <div key={alert.text} className="ronyx-row">
+                    <span>{alert.text}</span>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {alert.actions.map((action) => (
+                        <Link key={action.label} href={action.href} className="ronyx-action">
+                          {action.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 ))}
           </div>
         </div>
