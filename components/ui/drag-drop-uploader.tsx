@@ -35,7 +35,8 @@ export default function DragDropUploader({
   const [isDragActive, setIsDragActive] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
 
-  const validateFile = (file: File): boolean => {
+  const validateFile = useCallback(
+    (file: File): boolean => {
     // Check file size
     if (file.size > maxFileSize * 1024 * 1024) {
       alert(
@@ -58,27 +59,32 @@ export default function DragDropUploader({
     }
 
     return true;
-  };
+    },
+    [acceptedTypes, maxFileSize],
+  );
 
-  const processFiles = (fileList: FileList | File[]): FileWithPreview[] => {
-    const files = Array.from(fileList);
-    const validFiles = files.filter(validateFile);
+  const processFiles = useCallback(
+    (fileList: FileList | File[]): FileWithPreview[] => {
+      const files = Array.from(fileList);
+      const validFiles = files.filter(validateFile);
 
-    if (validFiles.length > maxFiles) {
-      alert(`You can only upload up to ${maxFiles} files at once.`);
-      validFiles.splice(maxFiles);
-    }
+      if (validFiles.length > maxFiles) {
+        alert(`You can only upload up to ${maxFiles} files at once.`);
+        validFiles.splice(maxFiles);
+      }
 
-    return validFiles.map((file) => {
-      const fileWithPreview: FileWithPreview = Object.assign(file, {
-        id: Math.random().toString(36).substr(2, 9),
-        preview: file.type.startsWith("image/")
-          ? URL.createObjectURL(file)
-          : undefined,
+      return validFiles.map((file) => {
+        const fileWithPreview: FileWithPreview = Object.assign(file, {
+          id: Math.random().toString(36).substr(2, 9),
+          preview: file.type.startsWith("image/")
+            ? URL.createObjectURL(file)
+            : undefined,
+        });
+        return fileWithPreview;
       });
-      return fileWithPreview;
-    });
-  };
+    },
+    [maxFiles, validateFile],
+  );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -117,7 +123,7 @@ export default function DragDropUploader({
         onFilesAdded(processedFiles);
       }
     },
-    [onFilesAdded, maxFileSize, maxFiles, acceptedTypes],
+    [onFilesAdded, processFiles],
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {

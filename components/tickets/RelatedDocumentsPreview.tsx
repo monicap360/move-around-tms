@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardHeader,
@@ -10,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   FileText,
-  Image,
   Download,
   ExternalLink,
   Eye,
@@ -41,11 +41,7 @@ export default function RelatedDocumentsPreview({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDocuments();
-  }, [ticketId]);
-
-  async function loadDocuments() {
+  const loadDocuments = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/tickets/${ticketId}/documents`);
@@ -58,7 +54,11 @@ export default function RelatedDocumentsPreview({
     } finally {
       setLoading(false);
     }
-  }
+  }, [ticketId]);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
 
   const getDocumentIcon = (type: string) => {
     switch (type) {

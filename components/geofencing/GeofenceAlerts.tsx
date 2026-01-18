@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,7 @@ export default function GeofenceAlerts({
   const [loading, setLoading] = useState(true);
   const [unacknowledgedCount, setUnacknowledgedCount] = useState(0);
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/geofencing/events?organizationId=${organizationId}&limit=50&acknowledged=false`
@@ -58,7 +58,7 @@ export default function GeofenceAlerts({
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId]);
 
   useEffect(() => {
     fetchEvents();
@@ -67,7 +67,7 @@ export default function GeofenceAlerts({
       const interval = setInterval(fetchEvents, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [organizationId, autoRefresh, refreshInterval]);
+  }, [fetchEvents, autoRefresh, refreshInterval]);
 
   const handleAcknowledge = async (eventId: string) => {
     try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,11 +42,7 @@ export default function GeofenceManager({
     process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
     "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3Z4b2J6b3gwM2JwMnZxczZ6b2J6b2JwIn0.abc123";
 
-  useEffect(() => {
-    fetchGeofences();
-  }, [organizationId]);
-
-  const fetchGeofences = async () => {
+  const fetchGeofences = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/geofencing/geofences?organizationId=${organizationId}&activeOnly=false`
@@ -58,7 +54,11 @@ export default function GeofenceManager({
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId]);
+
+  useEffect(() => {
+    fetchGeofences();
+  }, [fetchGeofences]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

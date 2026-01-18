@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
@@ -328,7 +329,6 @@ export default function TicketsPage() {
               })}
             </ul>
           </div>
-        )}
         )}
         {activeTab === "reports" && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

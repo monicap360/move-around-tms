@@ -10,18 +10,18 @@ const supabase = createClient(
 );
 
 export default function Sidebar() {
-  const [orgCode, setOrgCode] = useState<string | null>(null);
+  const [companyCode, setCompanyCode] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadOrg() {
+    async function loadCompany() {
       const { data: user } = await supabase.auth.getUser();
-      const org = user?.user?.user_metadata?.organization_code;
-      if (org) setOrgCode(org);
+      const company = user?.user?.user_metadata?.organization_code;
+      if (company) setCompanyCode(company);
     }
-    loadOrg();
+    loadCompany();
   }, []);
 
-  if (!orgCode) {
+  if (!companyCode) {
     return (
       <div className="p-4 text-gray-400 text-sm">
         Loading company navigation…
@@ -29,7 +29,7 @@ export default function Sidebar() {
     );
   }
 
-  const base = `/company/${orgCode}`;
+  const base = `/company/${companyCode}`;
 
   const links = [
     { name: "Dashboard", href: `${base}/dashboard`, icon: "🏠" },

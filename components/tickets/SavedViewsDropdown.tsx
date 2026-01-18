@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, Star, Users, Plus, ChevronDown } from "lucide-react";
 
@@ -32,13 +32,7 @@ export default function SavedViewsDropdown({
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (userId) {
-      loadSavedViews();
-    }
-  }, [userId, organizationId]);
-
-  async function loadSavedViews() {
+  const loadSavedViews = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -61,7 +55,13 @@ export default function SavedViewsDropdown({
     } finally {
       setLoading(false);
     }
-  }
+  }, [userId, organizationId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadSavedViews();
+    }
+  }, [userId, loadSavedViews]);
 
   async function deleteView(viewId: string) {
     try {

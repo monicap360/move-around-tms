@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Card,
   CardHeader,
@@ -48,15 +48,13 @@ export default function TicketComparison({
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadTickets();
-  }, [ticketIds.join(",")]);
+  const ticketIdsKey = useMemo(() => ticketIds.join(","), [ticketIds]);
 
-  async function loadTickets() {
+  const loadTickets = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/tickets/batch?ids=${ticketIds.join(",")}`
+        `/api/tickets/batch?ids=${ticketIdsKey}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -67,7 +65,11 @@ export default function TicketComparison({
     } finally {
       setLoading(false);
     }
-  }
+  }, [ticketIdsKey]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
 
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
