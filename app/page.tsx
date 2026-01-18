@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 export default function LandingPage() {
+  return (
+    <Suspense fallback={<div />}>
+      <LandingPageContent />
+    </Suspense>
+  );
+}
+
+function LandingPageContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState("all");
   const [language, setLanguage] = useState<"en" | "es">("en");
