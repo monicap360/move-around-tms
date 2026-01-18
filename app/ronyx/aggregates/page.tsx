@@ -554,6 +554,22 @@ export default function RonyxAggregatesPage() {
           border-left: 2px solid rgba(29, 78, 216, 0.2);
           padding-left: 16px;
         }
+        .row-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+        }
+        @media (max-width: 768px) {
+          .row-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .row-actions .ronyx-action {
+            width: 100%;
+            margin-left: 0 !important;
+          }
+        }
       `}</style>
 
       <div className="ronyx-container">
@@ -605,7 +621,7 @@ export default function RonyxAggregatesPage() {
                     <span>{card.structure}</span>
                     <span>{card.basePrice}</span>
                     <span>{card.effective}</span>
-                    <span>
+                    <span className="row-actions">
                       <button className="ronyx-action" onClick={() => setSelectedRateId(card.id)}>
                         Edit
                       </button>
@@ -756,7 +772,7 @@ export default function RonyxAggregatesPage() {
                     onChange={(e) => updateRateField("notes", e.target.value)}
                   />
                 </div>
-                <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                <div style={{ marginTop: 16 }} className="row-actions">
                   <button className="ronyx-action" onClick={saveRateCard}>Save Rate Card</button>
                   <button className="ronyx-action" onClick={() => setSelectedRateId(null)}>Cancel</button>
                   {rateMessage && <span className="ronyx-label">{rateMessage}</span>}
@@ -771,7 +787,7 @@ export default function RonyxAggregatesPage() {
             <div className="ronyx-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Job Site Directory</h2>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="row-actions">
                   <button className="ronyx-action" onClick={addJobSite}>+ New Site</button>
                   <button className="ronyx-action">Map View</button>
                 </div>
@@ -795,7 +811,7 @@ export default function RonyxAggregatesPage() {
                       <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>{site.contactName}</div>
                     </span>
                     <span />
-                    <span>
+                    <span className="row-actions">
                       <button className="ronyx-action" onClick={() => setSelectedSiteId(site.id)}>
                         View
                       </button>
@@ -841,7 +857,7 @@ export default function RonyxAggregatesPage() {
                     <input className="ronyx-input" value={selectedSite.gps} onChange={(e) => updateSiteField("gps", e.target.value)} />
                   </div>
                 </div>
-                <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                <div style={{ marginTop: 16 }} className="row-actions">
                   <button className="ronyx-action" onClick={saveJobSite}>Save Site</button>
                   <button className="ronyx-action" onClick={() => selectedSite && cloneJobSite(selectedSite)}>Clone for New Project</button>
                   {siteMessage && <span className="ronyx-label">{siteMessage}</span>}
@@ -936,7 +952,7 @@ export default function RonyxAggregatesPage() {
                 <span>Quote Total</span>
                 <span>${quoteTotals.total.toFixed(2)}</span>
               </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+              <div className="row-actions" style={{ marginTop: 12 }}>
                 <button className="ronyx-action" onClick={handleCreateLoadFromQuote}>Create Load & Ticket</button>
                 <button className="ronyx-action" onClick={handleCopyQuote}>Copy Quote</button>
                 <button className="ronyx-action" onClick={handleEmailQuote}>Email to Customer</button>

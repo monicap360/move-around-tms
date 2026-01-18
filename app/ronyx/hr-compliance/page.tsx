@@ -1275,7 +1275,9 @@ export default function RonyxHrCompliancePage() {
                     <strong>{doc.label}</strong>
                   </label>
                   <div className="doc-actions">
-                    <button className="ronyx-action">📸 Take Photo</button>
+                    <button className="ronyx-action" onClick={() => openCameraCapture(doc.id)}>
+                      📸 Take Photo
+                    </button>
                     <button className="ronyx-action">📁 Upload</button>
                   </div>
                 </div>
@@ -1330,6 +1332,17 @@ export default function RonyxHrCompliancePage() {
               onChange={async (e) => {
                 if (e.target.files?.[0]) {
                   await fetch("/api/ronyx/compliance/capture", { method: "POST" });
+                  if (cameraDocType === "cdl") {
+                    updateField("cdl_copy_uploaded", true);
+                    setDocChecklist((prev) => ({ ...prev, cdl: true }));
+                  }
+                  if (cameraDocType === "medical") {
+                    updateField("medical_certificate_uploaded", true);
+                    setDocChecklist((prev) => ({ ...prev, medical: true }));
+                  }
+                  if (cameraDocType === "mvr") {
+                    setDocChecklist((prev) => ({ ...prev, mvr: true }));
+                  }
                   setComplianceActionMessage(`Captured ${cameraDocType} document.`);
                 }
                 if (cameraInputRef.current) cameraInputRef.current.value = "";
@@ -1538,6 +1551,17 @@ export default function RonyxHrCompliancePage() {
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Required Driver Documents</h2>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+            <button className="ronyx-action primary" onClick={() => openCameraCapture("cdl")}>
+              📷 Scan CDL
+            </button>
+            <button className="ronyx-action primary" onClick={() => openCameraCapture("medical")}>
+              🩺 Scan Medical Card
+            </button>
+            <button className="ronyx-action primary" onClick={() => openCameraCapture("mvr")}>
+              📄 Scan MVR
+            </button>
+          </div>
           <div className="ronyx-grid">
             {[
               "Driver License (Front & Back)",

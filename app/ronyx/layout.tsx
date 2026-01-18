@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const mainNav = [
   { label: "Dashboard", href: "/ronyx" },
@@ -42,6 +42,8 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [now, setNow] = useState(new Date());
+  const scanInputRef = useRef<HTMLInputElement | null>(null);
+  const [scanMessage, setScanMessage] = useState("");
   const [metrics, setMetrics] = useState({
     fleet: { active: 18, total: 24, moving: 12, idle: 4 },
     deliveries: { today: 142, completed: 128, in_progress: 14, on_time_rate: 94.7 },
@@ -55,6 +57,12 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleGlobalScan = (file?: File) => {
+    if (!file) return;
+    setScanMessage(`Scan ready: ${file.name}`);
+    setTimeout(() => setScanMessage(""), 4000);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -349,6 +357,10 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
         </div>
         <div className="ronyx-top-group">
           <input className="ronyx-search" placeholder="Search trucks, loads, drivers..." />
+          <button className="ronyx-stat-pill" onClick={() => scanInputRef.current?.click()}>
+            📷 Scan
+          </button>
+          {scanMessage && <span className="ronyx-stat-pill">{scanMessage}</span>}
           <span className="ronyx-status">
             <span className="ronyx-status-dot" /> System Online
           </span>
@@ -358,6 +370,16 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           <button className="ronyx-stat-pill">Notifications</button>
           <button className="ronyx-stat-pill">Profile</button>
           <button className="ronyx-stat-pill">Apps</button>
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              handleGlobalScan(e.target.files?.[0]);
+              if (scanInputRef.current) scanInputRef.current.value = "";
+            }}
+          />
         </div>
       </header>
 

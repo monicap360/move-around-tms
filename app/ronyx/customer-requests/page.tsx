@@ -375,6 +375,24 @@ export default function RonyxCustomerRequestsPage() {
           color: rgba(15, 23, 42, 0.75);
           background: rgba(29, 78, 216, 0.08);
         }
+        @media (max-width: 768px) {
+          .request-header > div {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .request-header .ronyx-action {
+            width: 100%;
+          }
+          .quantity-input {
+            grid-template-columns: 1fr;
+          }
+          .form-actions {
+            flex-direction: column;
+          }
+          .form-actions .ronyx-action {
+            width: 100%;
+          }
+        }
       `}</style>
 
       <div className="ronyx-container">

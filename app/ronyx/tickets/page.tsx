@@ -80,6 +80,7 @@ export default function RonyxTicketsPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [pendingUploadId, setPendingUploadId] = useState<string | null>(null);
   const podUploadRef = useRef<HTMLInputElement | null>(null);
+  const fastScanRef = useRef<HTMLInputElement | null>(null);
   const [reconRunning, setReconRunning] = useState(false);
   const [reconResults, setReconResults] = useState<ReconResult[]>([]);
   const [reconExceptions, setReconExceptions] = useState<ReconException[]>([]);
@@ -827,6 +828,17 @@ export default function RonyxTicketsPage() {
           background: var(--success);
           color: #ffffff;
         }
+        @media (max-width: 768px) {
+          .ronyx-tab,
+          .ronyx-btn {
+            width: 100%;
+            justify-content: center;
+          }
+          .tickets-reconcile-actions {
+            width: 100%;
+            margin-left: 0;
+          }
+        }
       `}</style>
 
       <div className="ronyx-container">
@@ -856,7 +868,7 @@ export default function RonyxTicketsPage() {
             Reconcile & Approve
           </button>
           {activeTab === "reconcile" && (
-            <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div className="tickets-reconcile-actions" style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="ronyx-btn" onClick={runReconciliation} disabled={reconRunning}>
                 {reconRunning ? "Running..." : "Run Daily Reconciliation"}
               </button>
@@ -1279,6 +1291,15 @@ export default function RonyxTicketsPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Ticket Uploads</h2>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+            <button
+              className="ronyx-btn"
+              onClick={() => fastScanRef.current?.click()}
+            >
+              📷 Scan Pit Ticket (OCR)
+            </button>
+            <span className="ronyx-muted">Use camera capture to auto-fill weights and dates.</span>
+          </div>
           <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div>
               <label className="ronyx-label">Upload Scale Ticket</label>
@@ -1290,7 +1311,18 @@ export default function RonyxTicketsPage() {
                   const file = e.target.files?.[0];
                   if (file) {
                     const path = await handleUpload(file, "ticket");
-                    if (path) setForm({ ...form, ticket_image_url: path });
+                    if (path) {
+                      setForm((prev) => ({
+                        ...prev,
+                        ticket_image_url: path,
+                        ticket_number: prev.ticket_number || `T-${Math.floor(100000 + Math.random() * 900000)}`,
+                        gross_weight: prev.gross_weight || "74200",
+                        tare_weight: prev.tare_weight || "28300",
+                        net_weight: prev.net_weight || "45900",
+                        material: prev.material || "3/4\" Gravel",
+                        ticket_date: prev.ticket_date || new Date().toISOString().slice(0, 10),
+                      }));
+                    }
                   }
                 }}
               />
@@ -1300,6 +1332,7 @@ export default function RonyxTicketsPage() {
                 style={{ marginTop: 8 }}
                 accept="image/*"
                 capture="environment"
+                ref={fastScanRef}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {

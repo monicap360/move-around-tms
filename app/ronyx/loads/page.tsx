@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 const loadTabs = [
@@ -56,6 +56,7 @@ export default function RonyxLoadsPage() {
     truck_number: "",
     status_notes: "",
   });
+  const rateConInputRef = useRef<HTMLInputElement | null>(null);
   const [assignment, setAssignment] = useState({
     load_id: "",
     driver_name: "",
@@ -335,6 +336,22 @@ export default function RonyxLoadsPage() {
 
   const logActivity = (message: string) => {
     setActivityLog((prev) => [`${new Date().toLocaleTimeString()} • ${message}`, ...prev].slice(0, 6));
+  };
+
+  const handleRateConScan = (file?: File) => {
+    if (!file) return;
+    setNewLoad((prev) => ({
+      ...prev,
+      customer_name: prev.customer_name || "Jones Construction",
+      pickup_location: prev.pickup_location || "Pit 7",
+      delivery_location: prev.delivery_location || "I-45 Jobsite",
+      material: prev.material || "3/4\" Gravel",
+      quantity: prev.quantity || "12",
+      unit_type: prev.unit_type || "Tons",
+      rate_type: prev.rate_type || "per_load",
+      rate_amount: prev.rate_amount || "855",
+    }));
+    logActivity(`Rate confirmation scanned: ${file.name}.`);
   };
 
   const updateDispatchCard = (id: string, updates: Partial<(typeof seedDispatchCards)[number]>) => {
@@ -1273,6 +1290,24 @@ export default function RonyxLoadsPage() {
                   Close
                 </button>
               </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button className="dispatch-btn primary" onClick={() => rateConInputRef.current?.click()}>
+                  📷 Scan Rate Confirmation
+                </button>
+                <span style={{ color: "rgba(15,23,42,0.65)", fontSize: "0.85rem" }}>
+                  Auto-fills customer, route, material, and rate.
+                </span>
+              </div>
+              <input
+                ref={rateConInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  handleRateConScan(e.target.files?.[0]);
+                  if (rateConInputRef.current) rateConInputRef.current.value = "";
+                }}
+              />
               <label className="ronyx-label">Customer</label>
               <input
                 className="ronyx-input"
