@@ -72,7 +72,7 @@ export default function RonyxLoadsPage() {
   const completedLoads = useMemo(() => loads.filter((load) => load.status === "completed"), [loads]);
   const cancelledLoads = useMemo(() => loads.filter((load) => load.status === "cancelled"), [loads]);
 
-  const dispatchCards = [
+  const seedDispatchCards = [
     {
       id: "LD-4029",
       status: "LOADING",
@@ -124,7 +124,7 @@ export default function RonyxLoadsPage() {
     },
   ];
 
-  const driverAvailability = [
+  const seedDriverAvailability = [
     {
       name: "D. Perez",
       truck: "#12",
@@ -148,7 +148,7 @@ export default function RonyxLoadsPage() {
     },
   ];
 
-  const backhaulOpportunities = [
+  const seedBackhaulOpportunities = [
     {
       id: "bh001",
       title: "Pit 3 → Downtown Site",
@@ -158,7 +158,7 @@ export default function RonyxLoadsPage() {
     },
   ];
 
-  const dispatchAlerts = [
+  const seedDispatchAlerts = [
     {
       id: "alert-1",
       icon: "⛔",
@@ -185,6 +185,25 @@ export default function RonyxLoadsPage() {
     },
   ];
 
+  const [dispatchCards, setDispatchCards] = useState(seedDispatchCards);
+  const [driverAvailability, setDriverAvailability] = useState(seedDriverAvailability);
+  const [backhaulOpportunities, setBackhaulOpportunities] = useState(seedBackhaulOpportunities);
+  const [dispatchAlerts, setDispatchAlerts] = useState(seedDispatchAlerts);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [activityLog, setActivityLog] = useState<string[]>([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCreateSidebar, setShowCreateSidebar] = useState(false);
+  const [showDriverPanel, setShowDriverPanel] = useState(true);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsTab, setDetailsTab] = useState<"comms" | "docs" | "tracking" | "payment">("comms");
+  const [visibleColumns, setVisibleColumns] = useState({
+    pit: true,
+    transit: true,
+    site: true,
+  });
+
   async function assignLoad() {
     if (!assignment.load_id) {
       return;
@@ -209,6 +228,8 @@ export default function RonyxLoadsPage() {
   useEffect(() => {
     void loadLoads();
     void loadLeoInsights();
+    const interval = setInterval(() => setLastUpdated(new Date()), 15000);
+    return () => clearInterval(interval);
   }, []);
 
   async function loadLeoInsights() {
@@ -311,6 +332,80 @@ export default function RonyxLoadsPage() {
       setSavingId(null);
     }
   }
+
+  const logActivity = (message: string) => {
+    setActivityLog((prev) => [`${new Date().toLocaleTimeString()} • ${message}`, ...prev].slice(0, 6));
+  };
+
+  const updateDispatchCard = (id: string, updates: Partial<(typeof seedDispatchCards)[number]>) => {
+    setDispatchCards((prev) => prev.map((card) => (card.id === id ? { ...card, ...updates } : card)));
+  };
+
+  const handleMessageDriver = (id: string) => {
+    const driverMap: Record<string, { name: string; phone: string }> = {
+      "LD-4029": { name: "J. Lane", phone: "+15551230001" },
+      "LD-4031": { name: "S. Grant", phone: "+15551230002" },
+      "LD-4021": { name: "D. Perez", phone: "+15551230003" },
+      "LD-4018": { name: "M. Chen", phone: "+15551230004" },
+    };
+    const target = driverMap[id];
+    if (!target) {
+      logActivity(`No driver contact on file for ${id}.`);
+      return;
+    }
+    fetch("/api/load-hub/sms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: target.phone,
+        message: `Dispatch update for ${id}. Please confirm status.`,
+      }),
+    }).then(() => logActivity(`Message sent to ${target.name} (${id}).`));
+  };
+
+  const handleStatusUpdate = (id: string, status: string, column?: "pit" | "transit" | "site") => {
+    updateDispatchCard(id, { status, column: column ?? undefined });
+    logActivity(`Status updated for ${id} → ${status}.`);
+  };
+
+  const handleAssignDriver = (loadId: string, driverName: string, truck: string) => {
+    updateDispatchCard(loadId, { driver: driverName, truck });
+    setDriverAvailability((prev) =>
+      prev.map((driver) =>
+        driver.name === driverName ? { ...driver, status: "assigned", actionLabel: "Assigned", actionVariant: "secondary" } : driver,
+      ),
+    );
+    logActivity(`Assigned ${driverName} (${truck}) to ${loadId}.`);
+  };
+
+  const handleBackhaulAssign = (backhaulId: string) => {
+    const bh = backhaulOpportunities.find((item) => item.id === backhaulId);
+    if (!bh) return;
+    logActivity(`Backhaul assigned: ${bh.title}.`);
+  };
+
+  const handleAlertAction = (alertId: string, action: string) => {
+    const alert = dispatchAlerts.find((item) => item.id === alertId);
+    if (!alert) return;
+    logActivity(`Alert action: ${alert.title} → ${action}.`);
+  };
+
+  const refreshDispatch = async () => {
+    await Promise.all([loadLoads(), loadLeoInsights()]);
+    setLastUpdated(new Date());
+    logActivity("Dispatch data refreshed.");
+  };
+
+  const filteredDispatchCards = dispatchCards.filter((card) => {
+    if (!searchTerm) return true;
+    const needle = searchTerm.toLowerCase();
+    return (
+      card.id.toLowerCase().includes(needle) ||
+      card.driver.toLowerCase().includes(needle) ||
+      card.to.toLowerCase().includes(needle) ||
+      card.from.toLowerCase().includes(needle)
+    );
+  });
 
   return (
     <div className="ronyx-shell">
@@ -453,6 +548,9 @@ export default function RonyxLoadsPage() {
           flex-wrap: wrap;
           gap: 10px;
         }
+        .dispatch-toolbar input {
+          min-width: 220px;
+        }
         .dispatch-btn {
           padding: 10px 14px;
           border-radius: 12px;
@@ -520,6 +618,12 @@ export default function RonyxLoadsPage() {
           display: grid;
           gap: 8px;
           margin-bottom: 12px;
+          cursor: pointer;
+          transition: transform 120ms ease, box-shadow 120ms ease;
+        }
+        .load-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
         }
         .load-card:last-child {
           margin-bottom: 0;
@@ -557,6 +661,38 @@ export default function RonyxLoadsPage() {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+        }
+        .card-more {
+          margin-left: auto;
+          border: none;
+          background: transparent;
+          font-weight: 800;
+          cursor: pointer;
+          opacity: 0.6;
+        }
+        .card-actions-menu {
+          position: relative;
+        }
+        .card-menu {
+          position: absolute;
+          right: 0;
+          top: 28px;
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 12px;
+          padding: 8px;
+          display: grid;
+          gap: 6px;
+          min-width: 180px;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+          z-index: 5;
+        }
+        .card-menu button {
+          text-align: left;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-weight: 600;
         }
         .mini-map {
           height: 42px;
@@ -693,6 +829,82 @@ export default function RonyxLoadsPage() {
           display: grid;
           gap: 6px;
         }
+        .details-panel {
+          position: sticky;
+          top: 20px;
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1px solid var(--ronyx-border);
+          padding: 16px;
+          display: grid;
+          gap: 10px;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+        }
+        .create-sidebar {
+          position: fixed;
+          top: 0;
+          right: 0;
+          height: 100vh;
+          width: 360px;
+          background: #ffffff;
+          border-left: 1px solid var(--ronyx-border);
+          padding: 18px;
+          box-shadow: -12px 0 24px rgba(15, 23, 42, 0.12);
+          display: grid;
+          gap: 12px;
+          z-index: 20;
+        }
+        .overlay-scrim {
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.4);
+          z-index: 15;
+        }
+        .details-modal {
+          position: fixed;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          z-index: 30;
+        }
+        .modal-card {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 18px;
+          width: min(820px, 92vw);
+          max-height: 85vh;
+          overflow: auto;
+          border: 1px solid var(--ronyx-border);
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+        }
+        .modal-tabs {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin: 12px 0;
+        }
+        .modal-tabs button {
+          border-radius: 999px;
+          border: 1px solid var(--ronyx-border);
+          padding: 6px 10px;
+          background: #f8fafc;
+          font-weight: 600;
+        }
+        .modal-tabs button.active {
+          background: rgba(29, 78, 216, 0.12);
+        }
+        .activity-log {
+          display: grid;
+          gap: 6px;
+          font-size: 0.85rem;
+          color: rgba(15, 23, 42, 0.7);
+        }
+        .column-filter {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-bottom: 10px;
+        }
         @media (max-width: 980px) {
           .operations-layout {
             grid-template-columns: 1fr;
@@ -722,7 +934,7 @@ export default function RonyxLoadsPage() {
                 Morning Shift | {activeLoads.length} Active Loads | {availableLoads.length} at pit queue | On-time: 97.4%
               </p>
                   </div>
-            <div className="live-pill">🔴 LIVE • Last updated: Now</div>
+            <div className="live-pill">🔴 LIVE • Last updated: {lastUpdated.toLocaleTimeString()}</div>
                 </div>
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", color: "rgba(15,23,42,0.7)" }}>
             <span>Weather: ☀️ Clear</span>
@@ -730,7 +942,14 @@ export default function RonyxLoadsPage() {
             <span>Fuel Price: $3.85/gal (-0.02)</span>
               </div>
           <div className="dispatch-toolbar">
-            <button className="dispatch-btn primary" onClick={createLoad}>
+            <input
+              className="ronyx-input"
+              style={{ flex: "1 1 240px" }}
+              placeholder="Search loads, drivers, routes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button className="dispatch-btn primary" onClick={() => setShowCreateSidebar(true)}>
               <span className="icon">+</span> Quick Create Load
             </button>
             <button className="dispatch-btn primary" onClick={assignLoad}>
@@ -745,6 +964,9 @@ export default function RonyxLoadsPage() {
             <button className="dispatch-btn secondary">
               <span className="icon">⚡</span> Optimize Routes
             </button>
+            <button className="dispatch-btn secondary" onClick={refreshDispatch}>
+              <span className="icon">🔄</span> Refresh
+            </button>
             <button className="dispatch-btn warning">
               <span className="icon">🔔</span> Alerts ({dispatchAlerts.length})
             </button>
@@ -753,17 +975,71 @@ export default function RonyxLoadsPage() {
 
         <div className="operations-layout">
           <div className="operations-board">
+            <div className="column-filter">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={visibleColumns.pit}
+                  onChange={() => setVisibleColumns((prev) => ({ ...prev, pit: !prev.pit }))}
+                />{" "}
+                Pit Queue
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={visibleColumns.transit}
+                  onChange={() => setVisibleColumns((prev) => ({ ...prev, transit: !prev.transit }))}
+                />{" "}
+                In Transit
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={visibleColumns.site}
+                  onChange={() => setVisibleColumns((prev) => ({ ...prev, site: !prev.site }))}
+                />{" "}
+                On Site
+              </label>
+            </div>
+
+            {visibleColumns.pit && (
             <div className="board-column pit-queue">
               <div className="column-header">
                 <h3>⛏️ Pit Queue (6)</h3>
                 <div className="column-stats">Avg wait: 18 min</div>
             </div>
-              {dispatchCards
+              {filteredDispatchCards
                 .filter((card) => card.column === "pit")
                 .map((card) => (
-                  <div key={card.id} className="load-card" draggable>
+                  <div
+                    key={card.id}
+                    className="load-card"
+                    draggable
+                    onClick={() => setSelectedCardId(card.id)}
+                    onDragStart={(e) => e.dataTransfer.setData("text/plain", card.id)}
+                  >
                     <div className="card-header">
                       <span className="load-id">{card.id}</span>
+                      <div className="card-actions-menu">
+                        <button
+                          className="card-more"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId((prev) => (prev === card.id ? null : card.id));
+                          }}
+                        >
+                          ···
+                        </button>
+                        {menuOpenId === card.id && (
+                          <div className="card-menu">
+                            <button onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
+                            <button onClick={() => handleStatusUpdate(card.id, "LOADED", "transit")}>Update → LOADED</button>
+                            <button onClick={() => { setSelectedCardId(card.id); setShowDetailsModal(true); }}>View Details</button>
+                            <button onClick={() => logActivity(`Note added to ${card.id}.`)}>Add Note</button>
+                            <button onClick={() => logActivity(`Reassign pit for ${card.id}.`)}>Reassign Pit</button>
+                          </div>
+                        )}
+                      </div>
                       <span className={`load-status ${card.statusClass}`}>{card.status}</span>
             </div>
                     <div className="card-body">
@@ -780,25 +1056,46 @@ export default function RonyxLoadsPage() {
             </div>
           </div>
                     <div className="card-actions">
-                      <button className="dispatch-btn secondary">MSG</button>
-                      <button className="dispatch-btn warning">FLAG</button>
-                      <button className="dispatch-btn success">LOADED</button>
+                      <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(card.id)}>MSG</button>
+                      <button className="dispatch-btn warning" onClick={() => handleStatusUpdate(card.id, "UPDATE")}>UPDATE</button>
+                      <button className="dispatch-btn secondary" onClick={() => setMenuOpenId((prev) => (prev === card.id ? null : card.id))}>···</button>
                     </div>
                   </div>
                 ))}
             </div>
+            )}
 
+            {visibleColumns.transit && (
             <div className="board-column in-transit">
               <div className="column-header">
                 <h3>🚛 In Transit (24)</h3>
                 <div className="column-stats">Avg speed: 42 mph</div>
             </div>
-              {dispatchCards
+              {filteredDispatchCards
                 .filter((card) => card.column === "transit")
                 .map((card) => (
-                  <div key={card.id} className="load-card">
+                  <div key={card.id} className="load-card" onClick={() => setSelectedCardId(card.id)}>
                     <div className="card-header">
                       <span className="load-id">{card.id}</span>
+                      <div className="card-actions-menu">
+                        <button
+                          className="card-more"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId((prev) => (prev === card.id ? null : card.id));
+                          }}
+                        >
+                          ···
+                        </button>
+                        {menuOpenId === card.id && (
+                          <div className="card-menu">
+                            <button onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
+                            <button onClick={() => logActivity(`ETA updated for ${card.id}.`)}>Update ETA</button>
+                            <button onClick={() => { setSelectedCardId(card.id); setShowDetailsModal(true); }}>View Details</button>
+                            <button onClick={() => logActivity(`Note added to ${card.id}.`)}>Add Note</button>
+                          </div>
+                        )}
+                      </div>
                       <span className={`load-status ${card.statusClass}`}>{card.status}</span>
             </div>
                     <div className="card-body">
@@ -820,24 +1117,46 @@ export default function RonyxLoadsPage() {
             </div>
             </div>
                     <div className="card-actions">
-                      <button className="dispatch-btn primary">Live Track</button>
-                      <button className="dispatch-btn secondary">Call</button>
+                      <button className="dispatch-btn primary" onClick={() => logActivity(`Live tracking opened for ${card.id}.`)}>Live Track</button>
+                      <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(card.id)}>Call</button>
+                      <button className="dispatch-btn secondary" onClick={() => setMenuOpenId((prev) => (prev === card.id ? null : card.id))}>···</button>
             </div>
             </div>
                 ))}
             </div>
+            )}
 
+            {visibleColumns.site && (
             <div className="board-column on-site">
               <div className="column-header">
                 <h3>🏗️ On Site (8)</h3>
                 <div className="column-stats">Avg unload: 22 min</div>
             </div>
-              {dispatchCards
+              {filteredDispatchCards
                 .filter((card) => card.column === "site")
                 .map((card) => (
-                  <div key={card.id} className="load-card">
+                  <div key={card.id} className="load-card" onClick={() => setSelectedCardId(card.id)}>
                     <div className="card-header">
                       <span className="load-id">{card.id}</span>
+                      <div className="card-actions-menu">
+                        <button
+                          className="card-more"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId((prev) => (prev === card.id ? null : card.id));
+                          }}
+                        >
+                          ···
+                        </button>
+                        {menuOpenId === card.id && (
+                          <div className="card-menu">
+                            <button onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
+                            <button onClick={() => handleStatusUpdate(card.id, "DELIVERED", "site")}>Update → Delivered</button>
+                            <button onClick={() => { setSelectedCardId(card.id); setShowDetailsModal(true); }}>View Details</button>
+                            <button onClick={() => logActivity(`Note added to ${card.id}.`)}>Add Note</button>
+                          </div>
+                        )}
+                      </div>
                       <span className={`load-status ${card.statusClass}`}>{card.status}</span>
             </div>
                     <div className="card-body">
@@ -857,18 +1176,33 @@ export default function RonyxLoadsPage() {
             </div>
           </div>
                     <div className="card-actions">
-                      <button className="dispatch-btn warning">Detention</button>
-                      <button className="dispatch-btn success">Delivered</button>
+                      <button className="dispatch-btn warning" onClick={() => handleStatusUpdate(card.id, "DETENTION")}>Detention</button>
+                      <button className="dispatch-btn success" onClick={() => handleStatusUpdate(card.id, "DELIVERED", "site")}>Delivered</button>
+                      <button className="dispatch-btn secondary" onClick={() => setMenuOpenId((prev) => (prev === card.id ? null : card.id))}>···</button>
                     </div>
                   </div>
                 ))}
             </div>
+            )}
           </div>
 
           <div className="driver-sidebar">
-            <h3>👥 Available Drivers (8/12)</h3>
-            {driverAvailability.map((driver) => (
-              <div key={driver.name} className={`driver-card ${driver.status}`}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3>👥 Available Drivers (8/12)</h3>
+              <button className="dispatch-btn secondary" onClick={() => setShowDriverPanel((prev) => !prev)}>
+                {showDriverPanel ? "Collapse" : "Expand"}
+              </button>
+            </div>
+            {showDriverPanel && driverAvailability.map((driver) => (
+              <div
+                key={driver.name}
+                className={`driver-card ${driver.status}`}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  const loadId = e.dataTransfer.getData("text/plain");
+                  if (loadId) handleAssignDriver(loadId, driver.name, driver.truck);
+                }}
+              >
                 <div className="driver-info">
                   <strong>{driver.name}</strong>
                   <small>
@@ -880,7 +1214,13 @@ export default function RonyxLoadsPage() {
                   <span className="location">{driver.location}</span>
                   <span className="distance"> {driver.distance}</span>
           </div>
-                <button className={`dispatch-btn ${driver.actionVariant}`} disabled={driver.disabled}>
+                <button
+                  className={`dispatch-btn ${driver.actionVariant}`}
+                  disabled={driver.disabled}
+                  onClick={() =>
+                    selectedCardId ? handleAssignDriver(selectedCardId, driver.name, driver.truck) : logActivity(`Select a load for ${driver.name}.`)
+                  }
+                >
                   {driver.actionLabel}
                 </button>
                     </div>
@@ -898,7 +1238,7 @@ export default function RonyxLoadsPage() {
                     <span className="price">{bh.price}</span>
                     <small> {bh.delta}</small>
                     </div>
-                  <button className="dispatch-btn success">Assign</button>
+                  <button className="dispatch-btn success" onClick={() => handleBackhaulAssign(bh.id)}>Assign</button>
                   </div>
               ))}
                   </div>
@@ -923,10 +1263,125 @@ export default function RonyxLoadsPage() {
             </div>
           )}
 
+        {showCreateSidebar && (
+          <>
+            <div className="overlay-scrim" onClick={() => setShowCreateSidebar(false)} />
+            <aside className="create-sidebar">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3>➕ Create Load</h3>
+                <button className="dispatch-btn secondary" onClick={() => setShowCreateSidebar(false)}>
+                  Close
+                </button>
+              </div>
+              <label className="ronyx-label">Customer</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.customer_name}
+                onChange={(e) => setNewLoad((prev) => ({ ...prev, customer_name: e.target.value }))}
+                placeholder="Jones Construction"
+              />
+              <label className="ronyx-label">From</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.pickup_location}
+                onChange={(e) => setNewLoad((prev) => ({ ...prev, pickup_location: e.target.value }))}
+                placeholder="Pit 7"
+              />
+              <label className="ronyx-label">To</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.delivery_location}
+                onChange={(e) => setNewLoad((prev) => ({ ...prev, delivery_location: e.target.value }))}
+                placeholder="1500 Main St"
+              />
+              <label className="ronyx-label">Material</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.material}
+                onChange={(e) => setNewLoad((prev) => ({ ...prev, material: e.target.value }))}
+                placeholder="Gravel"
+              />
+              <label className="ronyx-label">Quantity</label>
+              <input
+                className="ronyx-input"
+                value={newLoad.quantity}
+                onChange={(e) => setNewLoad((prev) => ({ ...prev, quantity: e.target.value }))}
+                placeholder="12"
+              />
+              <label className="ronyx-label">Unit</label>
+              <select
+                className="ronyx-input"
+                value={newLoad.unit_type}
+                onChange={(e) => setNewLoad((prev) => ({ ...prev, unit_type: e.target.value }))}
+              >
+                <option value="Load">Load</option>
+                <option value="Tons">Tons</option>
+                <option value="Yards">Yards</option>
+              </select>
+              <div>
+                <label className="ronyx-label">Quick Assign To</label>
+                <div style={{ display: "grid", gap: 6 }}>
+                  {driverAvailability.map((driver) => (
+                    <button
+                      key={driver.name}
+                      className="dispatch-btn secondary"
+                      onClick={() => handleAssignDriver(selectedCardId || "LD-NEW", driver.name, driver.truck)}
+                    >
+                      {driver.name} • {driver.truck}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="dispatch-btn primary" onClick={createLoad}>
+                  Save & Dispatch
+                </button>
+                <button className="dispatch-btn secondary" onClick={createLoad}>
+                  Save
+                </button>
+              </div>
+            </aside>
+          </>
+        )}
+
+        {showDetailsModal && (
+          <div className="details-modal">
+            <div className="overlay-scrim" onClick={() => setShowDetailsModal(false)} />
+            <div className="modal-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <strong>Load Details • {selectedCardId}</strong>
+                <button className="dispatch-btn secondary" onClick={() => setShowDetailsModal(false)}>
+                  ✕ Close
+                </button>
+              </div>
+              <div className="modal-tabs">
+                <button className={detailsTab === "comms" ? "active" : ""} onClick={() => setDetailsTab("comms")}>📞 Communications</button>
+                <button className={detailsTab === "docs" ? "active" : ""} onClick={() => setDetailsTab("docs")}>📄 Documents</button>
+                <button className={detailsTab === "tracking" ? "active" : ""} onClick={() => setDetailsTab("tracking")}>📍 Tracking</button>
+                <button className={detailsTab === "payment" ? "active" : ""} onClick={() => setDetailsTab("payment")}>💰 Payment</button>
+              </div>
+              {detailsTab === "comms" && (
+                <div>
+                  <div className="ronyx-row">08:30 AM - You (SMS): "ETA still 09:45?"</div>
+                  <div className="ronyx-row">08:31 AM - Driver: "Yes, traffic clear now."</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(selectedCardId || "")}>New Message</button>
+                    <button className="dispatch-btn secondary">Call Driver</button>
+                    <button className="dispatch-btn secondary">Email Customer</button>
+                  </div>
+                </div>
+              )}
+              {detailsTab === "docs" && <div className="ronyx-row">Documents: Rate con, BOL, ticket, invoice.</div>}
+              {detailsTab === "tracking" && <div className="ronyx-row">Tracking timeline + GPS snapshots.</div>}
+              {detailsTab === "payment" && <div className="ronyx-row">Payment status: Net 30 • Invoice draft.</div>}
+            </div>
+          </div>
+        )}
+
         <div className="alerts-panel">
           <h3>🔔 Active Alerts</h3>
           {dispatchAlerts.map((alert) => (
-            <div key={alert.id} className={`alert-item ${alert.tone}`}>
+            <div key={alert.id} className={`alert-item ${alert.tone}`} onClick={() => logActivity(`Opened alert: ${alert.title}`)}>
               <div className="alert-content">
                 <strong>
                   {alert.icon} {alert.title}
@@ -935,7 +1390,7 @@ export default function RonyxLoadsPage() {
                 </div>
               <div className="alert-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {alert.actions.map((action) => (
-                  <button key={action} className="dispatch-btn secondary">
+                  <button key={action} className="dispatch-btn secondary" onClick={() => handleAlertAction(alert.id, action)}>
                     {action}
                   </button>
               ))}
@@ -954,13 +1409,48 @@ export default function RonyxLoadsPage() {
                 <strong>{insight.message}</strong>
                 <span style={{ color: "rgba(15,23,42,0.7)" }}>{insight.action}</span>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="dispatch-btn secondary">Apply</button>
-                  <button className="dispatch-btn secondary">Dismiss</button>
+                  <button className="dispatch-btn secondary" onClick={() => logActivity(`Leo action applied: ${insight.action}`)}>
+                    Activate
+                  </button>
+                  <button className="dispatch-btn secondary" onClick={() => logActivity(`Leo insight dismissed: ${insight.id}`)}>
+                    Dismiss
+                  </button>
                 </div>
             </div>
             ))
           )}
                 </div>
+
+        <div className="details-panel">
+          <h3>Load Details</h3>
+          {selectedCardId ? (
+            (() => {
+              const card = dispatchCards.find((item) => item.id === selectedCardId);
+              if (!card) return <div className="ronyx-row">Select a load card to view details.</div>;
+              return (
+                <>
+                  <strong>{card.id}</strong>
+                  <div>{card.from ? `${card.from} → ${card.to}` : card.to}</div>
+                  <div>Driver: {card.driver} {card.truck}</div>
+                  <div>Status: {card.status}</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
+                    <button className="dispatch-btn secondary" onClick={() => logActivity(`Opened documents for ${card.id}.`)}>Docs</button>
+                    <button className="dispatch-btn secondary" onClick={() => logActivity(`Opened tracking for ${card.id}.`)}>Tracking</button>
+                  </div>
+                </>
+              );
+            })()
+          ) : (
+            <div className="ronyx-row">Select a load card to view details.</div>
+          )}
+          <div>
+            <h4 style={{ marginTop: 8 }}>Recent Activity</h4>
+            <div className="activity-log">
+              {activityLog.length === 0 ? <span>No activity yet.</span> : activityLog.map((item) => <span key={item}>{item}</span>)}
+            </div>
+          </div>
+        </div>
 
         <section className="ronyx-card" style={{ marginTop: 20 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>

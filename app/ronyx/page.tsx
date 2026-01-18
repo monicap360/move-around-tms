@@ -25,6 +25,7 @@ const navItems = [
   { label: "Payroll", href: "/ronyx/payroll" },
   { label: "Accounts Receivable", href: "/ronyx/accounts-receivable" },
   { label: "Compliance", href: "/ronyx/compliance" },
+  { label: "IFTA & Fuel Compliance", href: "/ronyx/ifta-fuel" },
   { label: "FMCSA", href: "/ronyx/fmcsa" },
   { label: "Reports", href: "/ronyx/reports" },
   { label: "Settings", href: "/ronyx/settings" },

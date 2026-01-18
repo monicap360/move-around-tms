@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type DriverOption = {
   id: string;
@@ -133,6 +133,29 @@ export default function RonyxHrCompliancePage() {
   const [showMissingDocs, setShowMissingDocs] = useState(false);
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [batchAction, setBatchAction] = useState("");
+  const [bulkQueue, setBulkQueue] = useState<
+    { name: string; status: string; action?: string }[]
+  >([{ name: "perez_medical_card.jpg", status: "Matched: D. Perez (Driver #12)", action: "Approve" }]);
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [auditOptions, setAuditOptions] = useState({
+    full: true,
+    single: false,
+    dateRange: false,
+    driver: "",
+    startDate: "2024-01-01",
+    endDate: "2024-05-17",
+  });
+  const [auditStatus, setAuditStatus] = useState("");
+  const [qrStatus, setQrStatus] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [importType, setImportType] = useState("excel");
+  const [inviteStatus, setInviteStatus] = useState("");
+  const [batchStatus, setBatchStatus] = useState("");
+  const [complianceActionMessage, setComplianceActionMessage] = useState("");
+  const [cameraDocType, setCameraDocType] = useState("");
+  const bulkInputRef = useRef<HTMLInputElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const complianceRows = [
     {
@@ -215,6 +238,77 @@ export default function RonyxHrCompliancePage() {
     setSelectedDrivers([]);
   };
 
+  const handleBulkFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    Array.from(files).forEach((file) => formData.append("files", file));
+    await fetch("/api/ronyx/compliance/bulk-upload", {
+      method: "POST",
+      body: formData,
+    });
+    const newItems = Array.from(files).map((file) => ({
+      name: file.name,
+      status: "Queued for OCR + matching",
+      action: "Approve",
+    }));
+    setBulkQueue((prev) => [...newItems, ...prev]);
+    setBulkMessage(`Queued ${files.length} file(s) for processing.`);
+  };
+
+  const handleAuditPackage = async () => {
+    await fetch("/api/ronyx/compliance/audit-package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(auditOptions),
+    });
+    setAuditStatus("Audit package generation started.");
+  };
+
+  const handleQrCheckIn = async () => {
+    await fetch("/api/ronyx/compliance/qr-checkin", { method: "POST" });
+    setQrStatus("QR check-in session opened.");
+  };
+
+  const handleImport = async (type: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    formData.append("type", type);
+    formData.append("file", files[0]);
+    await fetch("/api/ronyx/compliance/import", {
+      method: "POST",
+      body: formData,
+    });
+    setImportStatus(`Import queued for ${type.toUpperCase()} data.`);
+  };
+
+  const handleInviteDrivers = async () => {
+    await fetch("/api/ronyx/compliance/invites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ drivers: selectedDrivers }),
+    });
+    setInviteStatus(`Invites sent to ${selectedDrivers.length || 0} driver(s).`);
+  };
+
+  const handleBatchExecute = async () => {
+    if (!batchAction || selectedDrivers.length === 0) return;
+    await fetch("/api/ronyx/compliance/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: batchAction, drivers: selectedDrivers }),
+    });
+    setBatchStatus(`Batch action "${batchAction}" queued for ${selectedDrivers.length} driver(s).`);
+  };
+
+  const handleDriverAction = (driver: string, action: string) => {
+    setComplianceActionMessage(`${action} action queued for ${driver}.`);
+  };
+
+  const openCameraCapture = (docType: string) => {
+    setCameraDocType(docType);
+    cameraInputRef.current?.click();
+  };
+
   useEffect(() => {
     void loadDrivers();
   }, []);
@@ -286,19 +380,21 @@ export default function RonyxHrCompliancePage() {
     <div className="ronyx-shell">
       <style jsx global>{`
         :root {
-          --ronyx-black: #e2eaf6;
-          --ronyx-carbon: #f8fafc;
-          --ronyx-steel: #dbe5f1;
-          --ronyx-border: rgba(30, 64, 175, 0.18);
-          --ronyx-accent: #1d4ed8;
-          --ronyx-success: #16a34a;
+          --ronyx-black: #0f172a;
+          --ronyx-carbon: #111827;
+          --ronyx-steel: #1f2937;
+          --ronyx-border: rgba(59, 130, 246, 0.35);
+          --ronyx-accent: #3b82f6;
+          --ronyx-success: #22c55e;
           --ronyx-warning: #f59e0b;
           --ronyx-danger: #ef4444;
+          --ronyx-panel: #0b1220;
+          --ronyx-panel-light: #0f172a;
         }
         .ronyx-shell {
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 55%), var(--ronyx-black);
-          color: #0f172a;
+          background: radial-gradient(circle at top, rgba(59, 130, 246, 0.22), transparent 55%), #0b1020;
+          color: #e2e8f0;
           padding: 32px;
         }
         .ronyx-container {
@@ -306,11 +402,11 @@ export default function RonyxHrCompliancePage() {
           margin: 0 auto;
         }
         .ronyx-card {
-          background: var(--ronyx-carbon);
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 18px;
-          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
+          background: linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+          border: 2px solid var(--ronyx-border);
+          border-radius: 18px;
+          padding: 22px;
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.35), inset 0 0 0 1px rgba(148, 163, 184, 0.08);
         }
         .ronyx-grid {
           display: grid;
@@ -320,28 +416,30 @@ export default function RonyxHrCompliancePage() {
         .ronyx-pill {
           padding: 6px 12px;
           border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
+          border: 1px solid rgba(59, 130, 246, 0.6);
           font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.75);
-          background: rgba(29, 78, 216, 0.08);
+          color: #cbd5f5;
+          background: rgba(59, 130, 246, 0.12);
         }
         .ronyx-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 12px 14px;
+          padding: 12px 16px;
           border-radius: 12px;
-          background: #ffffff;
-          border: 1px solid rgba(29, 78, 216, 0.16);
+          background: rgba(15, 23, 42, 0.7);
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          color: #e2e8f0;
         }
         .ronyx-action {
-          padding: 8px 14px;
+          padding: 8px 16px;
           border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          color: #0f172a;
+          border: 2px solid rgba(59, 130, 246, 0.4);
+          color: #e2e8f0;
           text-decoration: none;
-          font-weight: 600;
-          background: rgba(29, 78, 216, 0.08);
+          font-weight: 700;
+          background: rgba(15, 23, 42, 0.6);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
         }
         .ronyx-action.primary {
           background: var(--ronyx-accent);
@@ -556,20 +654,20 @@ export default function RonyxHrCompliancePage() {
           font-weight: 700;
         }
         .bulk-upload {
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid var(--ronyx-border);
-          padding: 16px;
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          border-radius: 18px;
+          border: 2px solid rgba(59, 130, 246, 0.35);
+          padding: 20px;
           margin-bottom: 20px;
           display: grid;
           gap: 12px;
         }
         .upload-zone {
-          border: 1px dashed rgba(15, 23, 42, 0.2);
+          border: 2px dashed rgba(59, 130, 246, 0.4);
           border-radius: 12px;
           padding: 16px;
           text-align: center;
-          background: #f8fafc;
+          background: rgba(15, 23, 42, 0.8);
         }
         .processing-queue {
           display: grid;
@@ -579,16 +677,16 @@ export default function RonyxHrCompliancePage() {
           display: flex;
           justify-content: space-between;
           gap: 10px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
+          border: 2px solid rgba(59, 130, 246, 0.22);
           border-radius: 12px;
           padding: 10px 12px;
-          background: #ffffff;
+          background: rgba(15, 23, 42, 0.75);
         }
         .audit-generator {
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid var(--ronyx-border);
-          padding: 16px;
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          border-radius: 18px;
+          border: 2px solid rgba(59, 130, 246, 0.35);
+          padding: 20px;
           margin-bottom: 20px;
         }
         .audit-options {
@@ -599,26 +697,26 @@ export default function RonyxHrCompliancePage() {
         .audit-option {
           display: grid;
           gap: 6px;
-          padding: 12px;
+          padding: 14px;
           border-radius: 12px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          background: #f8fafc;
+          border: 2px solid rgba(59, 130, 246, 0.25);
+          background: rgba(15, 23, 42, 0.75);
         }
         .compliance-rules {
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid var(--ronyx-border);
-          padding: 16px;
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          border-radius: 18px;
+          border: 2px solid rgba(59, 130, 246, 0.35);
+          padding: 20px;
           margin-bottom: 20px;
         }
         .rule-item {
           display: grid;
           gap: 6px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
+          border: 2px solid rgba(59, 130, 246, 0.25);
           border-radius: 12px;
           padding: 12px;
           margin-bottom: 8px;
-          background: #f8fafc;
+          background: rgba(15, 23, 42, 0.75);
         }
         .compliance-mobile {
           background: #0f172a;
@@ -634,10 +732,10 @@ export default function RonyxHrCompliancePage() {
         .self-service,
         .batch-operations,
         .validation-rules {
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid var(--ronyx-border);
-          padding: 16px;
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          border-radius: 18px;
+          border: 2px solid rgba(59, 130, 246, 0.35);
+          padding: 20px;
           margin-bottom: 20px;
           display: grid;
           gap: 12px;
@@ -650,9 +748,10 @@ export default function RonyxHrCompliancePage() {
         .progress-step {
           padding: 8px 10px;
           border-radius: 999px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
+          border: 2px solid rgba(59, 130, 246, 0.25);
           font-size: 0.75rem;
           text-align: center;
+          color: #cbd5f5;
         }
         .progress-step.active {
           background: rgba(29, 78, 216, 0.12);
@@ -677,8 +776,8 @@ export default function RonyxHrCompliancePage() {
           gap: 12px;
           padding: 12px;
           border-radius: 12px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          background: #f8fafc;
+          border: 2px solid rgba(59, 130, 246, 0.25);
+          background: rgba(15, 23, 42, 0.75);
         }
         .doc-actions {
           display: flex;
@@ -705,9 +804,9 @@ export default function RonyxHrCompliancePage() {
         }
         .import-card {
           border-radius: 12px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          padding: 12px;
-          background: #f8fafc;
+          border: 2px solid rgba(59, 130, 246, 0.25);
+          padding: 14px;
+          background: rgba(15, 23, 42, 0.75);
           cursor: pointer;
         }
         .ai-feature {
@@ -812,7 +911,9 @@ export default function RonyxHrCompliancePage() {
             <div className="metric-icon">📋</div>
             <div className="metric-value">100%</div>
             <div className="metric-label">AUDIT READY</div>
-            <button className="ronyx-action primary">Generate Package</button>
+            <button className="ronyx-action primary" onClick={handleAuditPackage}>
+              Generate Package
+            </button>
           </div>
         </section>
 
@@ -921,8 +1022,14 @@ export default function RonyxHrCompliancePage() {
                     </span>
                   </td>
                   <td>
-                    <button className="ronyx-action">Suspend</button>
-                    <button className="ronyx-action primary" style={{ marginLeft: 6 }}>
+                    <button className="ronyx-action" onClick={() => handleDriverAction(row.driver, "Suspend")}>
+                      Suspend
+                    </button>
+                    <button
+                      className="ronyx-action primary"
+                      style={{ marginLeft: 6 }}
+                      onClick={() => handleDriverAction(row.driver, "Fix")}
+                    >
                       Fix
                     </button>
                   </td>
@@ -930,11 +1037,23 @@ export default function RonyxHrCompliancePage() {
               ))}
             </tbody>
           </table>
+          {complianceActionMessage && (
+            <div className="ronyx-tag" style={{ marginTop: 12 }}>
+              {complianceActionMessage}
+            </div>
+          )}
         </section>
 
         <section className="bulk-upload">
           <h3>📁 Bulk Document Processing</h3>
-          <div className="upload-zone">
+          <div
+            className="upload-zone"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              void handleBulkFiles(e.dataTransfer.files);
+            }}
+          >
             <div className="upload-icon">📤</div>
             <h4>Drag & Drop Driver Documents Here</h4>
             <p>The system will automatically:</p>
@@ -944,20 +1063,49 @@ export default function RonyxHrCompliancePage() {
               <li>✅ Match to correct driver</li>
               <li>✅ Update compliance status automatically</li>
             </ul>
-            <button className="ronyx-action primary" style={{ marginTop: 8 }}>
+            <button
+              className="ronyx-action primary"
+              style={{ marginTop: 8 }}
+              onClick={() => bulkInputRef.current?.click()}
+            >
               Select Files
             </button>
             <p className="upload-note">Supports: PDF, JPG, PNG. Max 50 files, 10MB each.</p>
           </div>
+          <input
+            ref={bulkInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => {
+              void handleBulkFiles(e.target.files);
+              if (bulkInputRef.current) bulkInputRef.current.value = "";
+            }}
+          />
+          {bulkMessage && <div className="ronyx-tag">{bulkMessage}</div>}
           <div className="processing-queue">
-            <h4>Processing Queue (3 files)</h4>
-            <div className="queue-item">
-              <span className="file-name">perez_medical_card.jpg</span>
-              <span className="file-status">→ Matched to D. Perez (Driver #12)</span>
-              <span className="file-action">
-                <button className="ronyx-action primary">Approve</button>
-              </span>
-            </div>
+            <h4>Processing Queue ({bulkQueue.length} files)</h4>
+            {bulkQueue.map((item) => (
+              <div key={item.name} className="queue-item">
+                <span className="file-name">{item.name}</span>
+                <span className="file-status">→ {item.status}</span>
+                <span className="file-action">
+                  <button
+                    className="ronyx-action primary"
+                    onClick={() =>
+                      setBulkQueue((prev) =>
+                        prev.map((entry) =>
+                          entry.name === item.name ? { ...entry, status: "Approved & posted" } : entry,
+                        ),
+                      )
+                    }
+                  >
+                    {item.action || "Approve"}
+                  </button>
+                </span>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -966,15 +1114,29 @@ export default function RonyxHrCompliancePage() {
           <div className="audit-options">
             <div className="audit-option">
               <label>
-                <input type="checkbox" defaultChecked /> Full TXDOT Audit Package
+                <input
+                  type="checkbox"
+                  checked={auditOptions.full}
+                  onChange={(e) => setAuditOptions((prev) => ({ ...prev, full: e.target.checked }))}
+                />{" "}
+                Full TXDOT Audit Package
               </label>
               <span className="audit-desc">All drivers, all documents, 6-month HOS logs</span>
             </div>
             <div className="audit-option">
               <label>
-                <input type="checkbox" /> Single Driver Package
+                <input
+                  type="checkbox"
+                  checked={auditOptions.single}
+                  onChange={(e) => setAuditOptions((prev) => ({ ...prev, single: e.target.checked }))}
+                />{" "}
+                Single Driver Package
               </label>
-              <select className="ronyx-input">
+              <select
+                className="ronyx-input"
+                value={auditOptions.driver}
+                onChange={(e) => setAuditOptions((prev) => ({ ...prev, driver: e.target.value }))}
+              >
                 <option>Select driver...</option>
                 <option>D. Perez</option>
                 <option>J. Smith</option>
@@ -982,17 +1144,33 @@ export default function RonyxHrCompliancePage() {
             </div>
             <div className="audit-option">
               <label>
-                <input type="checkbox" /> Date Range
+                <input
+                  type="checkbox"
+                  checked={auditOptions.dateRange}
+                  onChange={(e) => setAuditOptions((prev) => ({ ...prev, dateRange: e.target.checked }))}
+                />{" "}
+                Date Range
               </label>
               <div style={{ display: "flex", gap: 8 }}>
-                <input className="ronyx-input" type="date" defaultValue="2024-01-01" />
-                <input className="ronyx-input" type="date" defaultValue="2024-05-17" />
+                <input
+                  className="ronyx-input"
+                  type="date"
+                  value={auditOptions.startDate}
+                  onChange={(e) => setAuditOptions((prev) => ({ ...prev, startDate: e.target.value }))}
+                />
+                <input
+                  className="ronyx-input"
+                  type="date"
+                  value={auditOptions.endDate}
+                  onChange={(e) => setAuditOptions((prev) => ({ ...prev, endDate: e.target.value }))}
+                />
               </div>
             </div>
           </div>
-          <button className="ronyx-action primary" style={{ padding: "10px 18px" }}>
+          <button className="ronyx-action primary" style={{ padding: "10px 18px" }} onClick={handleAuditPackage}>
             🚀 Generate Audit Package (PDF + ZIP)
           </button>
+          {auditStatus && <div className="ronyx-tag" style={{ marginTop: 8 }}>{auditStatus}</div>}
           <div className="audit-preview" style={{ marginTop: 12 }}>
             <h4>Package will include:</h4>
             <ul>
@@ -1125,14 +1303,38 @@ export default function RonyxHrCompliancePage() {
             <h4>🔳 Driver QR Check-In</h4>
             <p>Drivers scan QR code at yard entrance to log arrival, verify docs, and view briefing.</p>
             <div className="ronyx-row">QR code preview placeholder</div>
+            <button className="ronyx-action primary" onClick={handleQrCheckIn}>
+              Open Check-In
+            </button>
+            {qrStatus && <div className="ronyx-tag">{qrStatus}</div>}
           </div>
           <div className="photo-upload">
             <h4>📸 Instant Document Capture</h4>
             <div className="ronyx-grid">
-              <button className="ronyx-action primary">📷 Capture CDL</button>
-              <button className="ronyx-action primary">🩺 Capture Medical Card</button>
-              <button className="ronyx-action primary">🛡️ Capture Insurance</button>
+              <button className="ronyx-action primary" onClick={() => openCameraCapture("cdl")}>
+                📷 Capture CDL
+              </button>
+              <button className="ronyx-action primary" onClick={() => openCameraCapture("medical")}>
+                🩺 Capture Medical Card
+              </button>
+              <button className="ronyx-action primary" onClick={() => openCameraCapture("insurance")}>
+                🛡️ Capture Insurance
+              </button>
             </div>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={async (e) => {
+                if (e.target.files?.[0]) {
+                  await fetch("/api/ronyx/compliance/capture", { method: "POST" });
+                  setComplianceActionMessage(`Captured ${cameraDocType} document.`);
+                }
+                if (cameraInputRef.current) cameraInputRef.current.value = "";
+              }}
+            />
           </div>
         </section>
 
@@ -1145,17 +1347,37 @@ export default function RonyxHrCompliancePage() {
               { id: "eld", icon: "🚛", title: "ELD System Import", desc: "Samsara, Geotab, KeepTruckin" },
               { id: "folder", icon: "📁", title: "Folder Sync", desc: "Watch folder auto-process" },
             ].map((item) => (
-              <div key={item.id} className="import-card">
+              <div
+                key={item.id}
+                className="import-card"
+                onClick={() => {
+                  setImportType(item.id);
+                  importInputRef.current?.click();
+                }}
+              >
                 <div>{item.icon}</div>
                 <strong>{item.title}</strong>
                 <p>{item.desc}</p>
               </div>
             ))}
           </div>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              void handleImport(importType, e.target.files);
+              if (importInputRef.current) importInputRef.current.value = "";
+            }}
+          />
           <div className="import-template">
             <h4>📋 Excel Template</h4>
             <p>Download our template, fill it out, upload back:</p>
-            <button className="ronyx-action">⬇️ Download Template</button>
+            <button className="ronyx-action" onClick={() => setImportStatus("Template download started.")}>
+              ⬇️ Download Template
+            </button>
+            {importStatus && <div className="ronyx-tag">{importStatus}</div>}
           </div>
         </section>
 
@@ -1189,7 +1411,24 @@ export default function RonyxHrCompliancePage() {
           </div>
           <div className="invite-system">
             <h4>📧 Invite Drivers to Portal</h4>
-            <button className="ronyx-action primary">📲 Send Invites</button>
+            <select
+              multiple
+              className="ronyx-input"
+              value={selectedDrivers}
+              onChange={(e) =>
+                setSelectedDrivers(Array.from(e.target.selectedOptions).map((option) => option.value))
+              }
+            >
+              {complianceRows.map((row) => (
+                <option key={row.driver} value={row.driver}>
+                  {row.driver}
+                </option>
+              ))}
+            </select>
+            <button className="ronyx-action primary" onClick={handleInviteDrivers}>
+              📲 Send Invites (SMS + Email)
+            </button>
+            {inviteStatus && <div className="ronyx-tag">{inviteStatus}</div>}
           </div>
         </section>
 
@@ -1226,9 +1465,14 @@ export default function RonyxHrCompliancePage() {
               <option value="assign_truck">Assign Trucks</option>
               <option value="export_data">Export Selected Data</option>
             </select>
-            <button className="ronyx-action primary" disabled={selectedDrivers.length === 0 || !batchAction}>
+            <button
+              className="ronyx-action primary"
+              disabled={selectedDrivers.length === 0 || !batchAction}
+              onClick={handleBatchExecute}
+            >
               Execute on {selectedDrivers.length} selected drivers
             </button>
+            {batchStatus && <div className="ronyx-tag">{batchStatus}</div>}
           </div>
         </section>
 

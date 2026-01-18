@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { clarifier } from "@/lib/tickets/clarifier";
 
 type DriverOption = {
@@ -50,6 +50,18 @@ type ReconException = {
   explanation: string;
 };
 
+type ThreeWayRow = {
+  id: string;
+  ticket_number: string;
+  customer: string;
+  load: string;
+  status: "matched" | "partial" | "mismatch" | "pending";
+  dispatched: { qty: number; unit: string; amount: number };
+  delivered: { qty: number; unit: string; amount: number };
+  billed: { qty: number; unit: string; amount: number };
+  variance?: string;
+};
+
 const statusOptions = ["pending", "approved", "rejected", "invoiced", "paid"];
 const paymentOptions = ["unpaid", "processing", "paid"];
 const unitOptions = ["Load", "Yard", "Ton", "Hour"];
@@ -59,13 +71,21 @@ export default function RonyxTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [ticketId, setTicketId] = useState<string | null>(null);
+  const [focusedTicket, setFocusedTicket] = useState<Ticket | null>(null);
   const [activeTab, setActiveTab] = useState<"manage" | "reconcile">("manage");
   const [showFullForm, setShowFullForm] = useState(false);
   const [showReconConfig, setShowReconConfig] = useState(false);
   const [inboxFilter, setInboxFilter] = useState<"all" | "pending_upload" | "awaiting" | "flagged" | "approved">("all");
+  const [filters, setFilters] = useState<{ id: string; name: string }[]>([]);
+  const [actionMessage, setActionMessage] = useState("");
+  const [pendingUploadId, setPendingUploadId] = useState<string | null>(null);
+  const podUploadRef = useRef<HTMLInputElement | null>(null);
   const [reconRunning, setReconRunning] = useState(false);
   const [reconResults, setReconResults] = useState<ReconResult[]>([]);
   const [reconExceptions, setReconExceptions] = useState<ReconException[]>([]);
+  const [threeWayRows, setThreeWayRows] = useState<ThreeWayRow[]>([]);
+  const [comparisonTicket, setComparisonTicket] = useState<ThreeWayRow | null>(null);
+  const [comparisonData, setComparisonData] = useState<any>(null);
   const [thresholds, setThresholds] = useState({
     scaleTolerancePct: "2",
     moistureTolerancePct: "1",
@@ -119,6 +139,7 @@ export default function RonyxTicketsPage() {
     loadDrivers();
     loadTickets();
     loadReconciliation();
+    loadFilters();
   }, []);
 
   async function loadDrivers() {
@@ -150,9 +171,23 @@ export default function RonyxTicketsPage() {
       const data = await res.json();
       setReconResults(data.results || []);
       setReconExceptions(data.exceptions || []);
+      const threeRes = await fetch("/api/ronyx/tickets/reconciliation-status", { cache: "no-store" });
+      const threeData = await threeRes.json();
+      setThreeWayRows(threeData.rows || []);
     } catch {
       setReconResults([]);
       setReconExceptions([]);
+      setThreeWayRows([]);
+    }
+  }
+
+  async function loadFilters() {
+    try {
+      const res = await fetch("/api/ronyx/tickets/filters", { cache: "no-store" });
+      const data = await res.json();
+      setFilters(data.filters || []);
+    } catch {
+      setFilters([]);
     }
   }
 
@@ -170,6 +205,7 @@ export default function RonyxTicketsPage() {
           deliveryWindowHours: Number(thresholds.deliveryWindowHours || 12),
         }),
       });
+      await fetch("/api/ronyx/tickets/reconcile", { method: "POST" });
       await loadReconciliation();
     } finally {
       setReconRunning(false);
@@ -434,6 +470,103 @@ export default function RonyxTicketsPage() {
     await loadTickets();
   }
 
+  function selectTicket(ticket: Ticket) {
+    setTicketId(ticket.id);
+    setFocusedTicket(ticket);
+    setShowFullForm(true);
+    setForm((prev) => ({
+      ...prev,
+      ticket_number: ticket.ticket_number || prev.ticket_number,
+      ticket_date: ticket.ticket_date || prev.ticket_date,
+      driver_name: ticket.driver_name || prev.driver_name,
+      truck_number: ticket.truck_number || prev.truck_number,
+      trailer_number: ticket.trailer_number || prev.trailer_number,
+      material: ticket.material || prev.material,
+      quantity: ticket.quantity ? String(ticket.quantity) : prev.quantity,
+      bill_rate: ticket.bill_rate ? String(ticket.bill_rate) : prev.bill_rate,
+      status: ticket.status || prev.status,
+      payment_status: ticket.payment_status || prev.payment_status,
+      customer_name: ticket.customer_name || prev.customer_name,
+      delivery_location: ticket.delivery_location || prev.delivery_location,
+      ticket_image_url: ticket.ticket_image_url || prev.ticket_image_url,
+      delivery_receipt_url: ticket.delivery_receipt_url || prev.delivery_receipt_url,
+      pod_url: ticket.pod_url || prev.pod_url,
+    }));
+  }
+
+  async function handleInboxAction(item: ReturnType<typeof inboxTickets>[number]) {
+    const { ticket, pendingUpload, flagged, awaitingApproval } = item;
+    selectTicket(ticket);
+    if (pendingUpload) {
+      setPendingUploadId(ticket.id);
+      podUploadRef.current?.click();
+      return;
+    }
+    if (flagged) {
+      setActiveTab("reconcile");
+      setActionMessage(`Opened reconciliation for ${ticket.ticket_number}.`);
+      return;
+    }
+    if (awaitingApproval) {
+      setActionMessage(`Loaded ${ticket.ticket_number} for approval.`);
+      return;
+    }
+    setActionMessage(`Viewing ${ticket.ticket_number}.`);
+  }
+
+  async function handleCreateFilter() {
+    const name = window.prompt("Name this filter:");
+    if (!name) return;
+    const res = await fetch("/api/ronyx/tickets/filters", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (data.filter) {
+      setFilters((prev) => [data.filter, ...prev]);
+      setActionMessage(`Filter saved: ${data.filter.name}`);
+    }
+  }
+
+  function handleCallSite() {
+    if (!focusedTicket?.delivery_location) {
+      setActionMessage("Select a ticket to call the site.");
+      return;
+    }
+    setActionMessage(`Call requested for site: ${focusedTicket.delivery_location}`);
+  }
+
+  function handleFlagCustomer() {
+    if (!focusedTicket?.customer_name) {
+      setActionMessage("Select a ticket to flag a customer.");
+      return;
+    }
+    setActionMessage(`Customer flagged: ${focusedTicket.customer_name}`);
+  }
+
+  async function handleCloseAndBill() {
+    if (!focusedTicket?.id) {
+      setActionMessage("Select a ticket to close & bill.");
+      return;
+    }
+    await updateTicketStatus(focusedTicket.id, "invoiced");
+    setActionMessage(`Ticket ${focusedTicket.ticket_number} moved to invoiced.`);
+  }
+
+  async function openComparison(row: ThreeWayRow) {
+    setComparisonTicket(row);
+    const res = await fetch(`/api/ronyx/tickets/${row.id}/comparison`, { cache: "no-store" });
+    const data = await res.json();
+    setComparisonData(data.comparison || null);
+  }
+
+  async function resolveDiscrepancy(row: ThreeWayRow) {
+    await fetch(`/api/ronyx/tickets/${row.id}/resolve-discrepancy`, { method: "POST" });
+    setActionMessage(`Discrepancy resolved for ${row.ticket_number}.`);
+    await loadReconciliation();
+  }
+
   async function approveTicket() {
     if (!ticketId) return;
     const approvedAt = new Date().toISOString();
@@ -549,6 +682,48 @@ export default function RonyxTicketsPage() {
           border: 1px solid var(--ronyx-border);
           font-size: 0.75rem;
           background: rgba(29, 78, 216, 0.08);
+        }
+        .recon-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 0.7rem;
+          font-weight: 700;
+        }
+        .recon-status.matched {
+          background: rgba(16, 185, 129, 0.16);
+          color: #047857;
+        }
+        .recon-status.partial {
+          background: rgba(245, 158, 11, 0.2);
+          color: #92400e;
+        }
+        .recon-status.mismatch {
+          background: rgba(239, 68, 68, 0.18);
+          color: #b91c1c;
+        }
+        .recon-status.pending {
+          background: rgba(148, 163, 184, 0.2);
+          color: #334155;
+        }
+        .comparison-modal {
+          position: fixed;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          z-index: 50;
+        }
+        .comparison-card {
+          background: #ffffff;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 18px;
+          width: min(900px, 94vw);
+          max-height: 85vh;
+          overflow: auto;
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
         }
         .ronyx-tab {
           border-radius: 999px;
@@ -730,7 +905,7 @@ export default function RonyxTicketsPage() {
                   <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: 4 }}>Ticket Inbox</h2>
                   <p className="ronyx-muted">Filter by status and clear today’s worklist.</p>
                 </div>
-                <button className="ronyx-btn" style={{ background: "#0f172a" }}>
+                <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={handleCreateFilter}>
                   Create Filter
                 </button>
               </div>
@@ -752,6 +927,11 @@ export default function RonyxTicketsPage() {
                 </button>
               </div>
               <div className="ronyx-card" style={{ marginTop: 16 }}>
+                {actionMessage && (
+                  <div className="ronyx-tag" style={{ marginBottom: 10 }}>
+                    {actionMessage}
+                  </div>
+                )}
                 <div className="ronyx-row" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
                   <span>•</span>
                   <span>Date</span>
@@ -772,12 +952,34 @@ export default function RonyxTicketsPage() {
                     <span>{item.ticket.customer_name || "—"}</span>
                     <span>
                       ${item.amount}
-                      <button className="ronyx-btn" style={{ marginLeft: 10, padding: "6px 12px", fontSize: "0.75rem" }}>
+                      <button
+                        className="ronyx-btn"
+                        style={{ marginLeft: 10, padding: "6px 12px", fontSize: "0.75rem" }}
+                        onClick={() => handleInboxAction(item)}
+                      >
                         {item.actionLabel}
                       </button>
                     </span>
                   </div>
                 ))}
+                <input
+                  ref={podUploadRef}
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file && pendingUploadId) {
+                      setTicketId(pendingUploadId);
+                      const path = await handleUpload(file, "pod");
+                      if (path) {
+                        await loadTickets();
+                        setActionMessage("POD uploaded.");
+                      }
+                    }
+                    setPendingUploadId(null);
+                    if (podUploadRef.current) podUploadRef.current.value = "";
+                  }}
+                />
               </div>
             </section>
 
@@ -1413,6 +1615,62 @@ export default function RonyxTicketsPage() {
             </section>
 
             <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Three-Way Ticket Reconciliation</h2>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button className="ronyx-btn" onClick={runReconciliation}>
+                    Refresh Status
+                  </button>
+                  <button className="ronyx-btn" style={{ background: "#0f172a" }}>
+                    Bulk Actions
+                  </button>
+                </div>
+              </div>
+              {threeWayRows.length === 0 ? (
+                <p className="ronyx-muted" style={{ marginTop: 12 }}>
+                  No three-way reconciliation records yet.
+                </p>
+              ) : (
+                <div className="ronyx-card" style={{ marginTop: 12 }}>
+                  <div className="ronyx-row" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                    <span>Ticket #</span>
+                    <span>Customer</span>
+                    <span>Load</span>
+                    <span>3-Way Status</span>
+                    <span>Dispatched</span>
+                    <span>Delivered</span>
+                    <span>Billed</span>
+                    <span>Actions</span>
+                  </div>
+                  {threeWayRows.map((row) => (
+                    <div key={row.id} className="ronyx-row" style={{ alignItems: "center", marginTop: 10 }}>
+                      <span>{row.ticket_number}</span>
+                      <span>{row.customer}</span>
+                      <span>{row.load}</span>
+                      <span className={`recon-status ${row.status}`}>
+                        {row.status === "matched" && "✅ MATCHED"}
+                        {row.status === "partial" && "⚠️ PARTIAL MATCH"}
+                        {row.status === "mismatch" && "❌ MISMATCH"}
+                        {row.status === "pending" && "⏳ PENDING"}
+                      </span>
+                      <span>{row.dispatched.qty} {row.dispatched.unit}</span>
+                      <span>{row.delivered.qty} {row.delivered.unit}</span>
+                      <span>{row.billed.qty} {row.billed.unit}</span>
+                      <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button className="ronyx-btn" style={{ padding: "6px 12px", fontSize: "0.75rem" }} onClick={() => openComparison(row)}>
+                          Compare
+                        </button>
+                        <button className="ronyx-btn" style={{ padding: "6px 12px", fontSize: "0.75rem", background: "#0f172a" }} onClick={() => resolveDiscrepancy(row)}>
+                          Resolve
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
               <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Exceptions Queue</h2>
               {reconResults.length === 0 ? (
                 <p className="ronyx-muted">No reconciliation results yet.</p>
@@ -1557,9 +1815,13 @@ export default function RonyxTicketsPage() {
                   <div>Driver Note: &quot;Foreman said pile looked short. I showed him pit ticket.&quot;</div>
                   <div>Site Reputation: ⭐⭐☆☆☆ (2/5 stars - Often disputes quantity)</div>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-                    <button className="ronyx-btn">Call Site</button>
-                    <button className="ronyx-btn" style={{ background: "#0f172a" }}>Flag Customer</button>
-                    <button className="ronyx-btn" style={{ background: "#22c55e" }}>Close &amp; Bill</button>
+                    <button className="ronyx-btn" onClick={handleCallSite}>Call Site</button>
+                    <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={handleFlagCustomer}>
+                      Flag Customer
+                    </button>
+                    <button className="ronyx-btn" style={{ background: "#22c55e" }} onClick={handleCloseAndBill}>
+                      Close &amp; Bill
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1707,6 +1969,44 @@ export default function RonyxTicketsPage() {
           </section>
         )}
       </div>
+      {comparisonTicket && (
+        <div className="comparison-modal">
+          <div className="comparison-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <strong>Ticket Comparison • {comparisonTicket.ticket_number}</strong>
+              <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={() => setComparisonTicket(null)}>
+                Close
+              </button>
+            </div>
+            {comparisonData ? (
+              <div className="ronyx-grid" style={{ marginTop: 16 }}>
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Dispatched (Ordered)</div>
+                  <div>{comparisonData.dispatched?.summary}</div>
+                </div>
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Delivered (Actual)</div>
+                  <div>{comparisonData.delivered?.summary}</div>
+                </div>
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Billed (Invoiced)</div>
+                  <div>{comparisonData.billed?.summary}</div>
+                </div>
+                <div className="ronyx-card">
+                  <div className="ronyx-label">Variance Details</div>
+                  <ul>
+                    {(comparisonData.variance || []).map((item: string) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <p className="ronyx-muted" style={{ marginTop: 16 }}>Loading comparison...</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
