@@ -2069,6 +2069,8 @@ export default function LandingPage() {
             transition: var(--speed-transition);
             backdrop-filter: blur(30px);
             z-index: 999;
+            max-height: 80vh;
+            overflow-y: auto;
           }
           .nav-links.active {
             transform: translateY(0);
@@ -2076,6 +2078,18 @@ export default function LandingPage() {
           }
           .hero {
             padding-top: 140px;
+          }
+          .hero-container {
+            grid-template-columns: 1fr;
+            gap: 40px;
+          }
+          .dashboard-preview {
+            transform: none;
+          }
+          .dashboard-header {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
           }
           .hero-cta {
             flex-direction: column;
@@ -2095,6 +2109,22 @@ export default function LandingPage() {
           }
           section {
             padding: 80px 0;
+          }
+          .navbar {
+            padding: 10px 0;
+          }
+          .logo-text {
+            font-size: 1.4rem;
+          }
+          .hero-cta .btn {
+            width: 100%;
+          }
+          .performance-stats {
+            padding: 24px;
+            grid-template-columns: 1fr;
+          }
+          .module-card {
+            padding: 32px 24px;
           }
           .modules-grid,
           .pricing-tiers,
@@ -2121,6 +2151,22 @@ export default function LandingPage() {
           .btn {
             padding-left: 24px;
             padding-right: 24px;
+          }
+          .nav-links {
+            padding: 24px;
+            gap: 20px;
+          }
+          .nav-cta {
+            width: 100%;
+            text-align: center;
+          }
+          .logo {
+            gap: 10px;
+          }
+          .logo-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
           }
         }
       `}</style>
