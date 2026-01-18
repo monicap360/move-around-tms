@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState("all");
   const [language, setLanguage] = useState<"en" | "es">("en");
+  const searchParams = useSearchParams();
   const [roiInputs, setRoiInputs] = useState({
     loadsPerDay: 45,
     avgValuePerLoad: 420,
@@ -126,6 +128,27 @@ export default function LandingPage() {
   } as const;
 
   const t = (key: keyof typeof copy.en) => copy[language][key];
+
+  useEffect(() => {
+    const paramLang = searchParams.get("lang");
+    const storedLang =
+      typeof window !== "undefined"
+        ? (window.localStorage.getItem("sales_lang") as "en" | "es" | null)
+        : null;
+    const nextLang = paramLang === "en" || paramLang === "es" ? paramLang : storedLang;
+    if (nextLang && nextLang !== language) {
+      setLanguage(nextLang);
+    }
+  }, [searchParams, language]);
+
+  const setLanguageAndPersist = (next: "en" | "es") => {
+    setLanguage(next);
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("sales_lang", next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", next);
+    window.history.replaceState({}, "", url.toString());
+  };
   const demoMenuOptions =
     language === "es"
       ? [
@@ -2211,7 +2234,7 @@ export default function LandingPage() {
           </div>
           <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
             <button
-              onClick={() => setLanguage("en")}
+              onClick={() => setLanguageAndPersist("en")}
               className="btn btn-secondary"
               style={{
                 padding: "8px 14px",
@@ -2222,7 +2245,7 @@ export default function LandingPage() {
               EN
             </button>
             <button
-              onClick={() => setLanguage("es")}
+              onClick={() => setLanguageAndPersist("es")}
               className="btn btn-secondary"
               style={{
                 padding: "8px 14px",
@@ -3946,10 +3969,10 @@ export default function LandingPage() {
         <div className="container">
           <div className="section-header">
             <h2>
-              Quick Onboarding: <span className="speed-gradient">Live in 30 Days</span>
+              Quick Onboarding: <span className="speed-gradient">Live in 7 Days or Less</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              From $999 deposit to full implementation in 30 days flat
+              From $999 deposit to full implementation in 7 days or less
             </p>
           </div>
 
@@ -4850,7 +4873,7 @@ export default function LandingPage() {
               © {new Date().getFullYear()} MoveAround TMS. From Street Smart to Fleet Smart.
             </p>
             <p style={{ color: "rgba(255, 255, 255, 0.4)", fontSize: "0.75rem", marginTop: 10 }}>
-              99.99% Uptime Guarantee • 30-Day Implementation • 214% Average ROI
+              99.99% Uptime Guarantee • 7-Day Implementation • 214% Average ROI
             </p>
           </div>
         </div>

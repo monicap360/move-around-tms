@@ -403,9 +403,9 @@ export default function RonyxHrCompliancePage() {
         }
         .ronyx-card {
           background: linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
-          border: 2px solid var(--ronyx-border);
-          border-radius: 18px;
-          padding: 22px;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 16px;
+          padding: 18px;
           box-shadow: 0 18px 30px rgba(15, 23, 42, 0.35), inset 0 0 0 1px rgba(148, 163, 184, 0.08);
         }
         .ronyx-grid {
@@ -425,16 +425,16 @@ export default function RonyxHrCompliancePage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 12px 16px;
+          padding: 12px 14px;
           border-radius: 12px;
           background: rgba(15, 23, 42, 0.7);
-          border: 2px solid rgba(59, 130, 246, 0.2);
+          border: 1px solid rgba(59, 130, 246, 0.2);
           color: #e2e8f0;
         }
         .ronyx-action {
-          padding: 8px 16px;
+          padding: 8px 14px;
           border-radius: 999px;
-          border: 2px solid rgba(59, 130, 246, 0.4);
+          border: 1px solid rgba(59, 130, 246, 0.4);
           color: #e2e8f0;
           text-decoration: none;
           font-weight: 700;
@@ -655,15 +655,15 @@ export default function RonyxHrCompliancePage() {
         }
         .bulk-upload {
           background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
-          border-radius: 18px;
-          border: 2px solid rgba(59, 130, 246, 0.35);
-          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid rgba(59, 130, 246, 0.35);
+          padding: 16px;
           margin-bottom: 20px;
           display: grid;
           gap: 12px;
         }
         .upload-zone {
-          border: 2px dashed rgba(59, 130, 246, 0.4);
+          border: 1px dashed rgba(59, 130, 246, 0.4);
           border-radius: 12px;
           padding: 16px;
           text-align: center;
@@ -677,16 +677,16 @@ export default function RonyxHrCompliancePage() {
           display: flex;
           justify-content: space-between;
           gap: 10px;
-          border: 2px solid rgba(59, 130, 246, 0.22);
+          border: 1px solid rgba(59, 130, 246, 0.22);
           border-radius: 12px;
           padding: 10px 12px;
           background: rgba(15, 23, 42, 0.75);
         }
         .audit-generator {
           background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
-          border-radius: 18px;
-          border: 2px solid rgba(59, 130, 246, 0.35);
-          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid rgba(59, 130, 246, 0.35);
+          padding: 16px;
           margin-bottom: 20px;
         }
         .audit-options {
@@ -697,22 +697,22 @@ export default function RonyxHrCompliancePage() {
         .audit-option {
           display: grid;
           gap: 6px;
-          padding: 14px;
+          padding: 12px;
           border-radius: 12px;
-          border: 2px solid rgba(59, 130, 246, 0.25);
+          border: 1px solid rgba(59, 130, 246, 0.25);
           background: rgba(15, 23, 42, 0.75);
         }
         .compliance-rules {
           background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
-          border-radius: 18px;
-          border: 2px solid rgba(59, 130, 246, 0.35);
-          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid rgba(59, 130, 246, 0.35);
+          padding: 16px;
           margin-bottom: 20px;
         }
         .rule-item {
           display: grid;
           gap: 6px;
-          border: 2px solid rgba(59, 130, 246, 0.25);
+          border: 1px solid rgba(59, 130, 246, 0.25);
           border-radius: 12px;
           padding: 12px;
           margin-bottom: 8px;
@@ -733,9 +733,9 @@ export default function RonyxHrCompliancePage() {
         .batch-operations,
         .validation-rules {
           background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
-          border-radius: 18px;
-          border: 2px solid rgba(59, 130, 246, 0.35);
-          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid rgba(59, 130, 246, 0.35);
+          padding: 16px;
           margin-bottom: 20px;
           display: grid;
           gap: 12px;
@@ -748,7 +748,7 @@ export default function RonyxHrCompliancePage() {
         .progress-step {
           padding: 8px 10px;
           border-radius: 999px;
-          border: 2px solid rgba(59, 130, 246, 0.25);
+          border: 1px solid rgba(59, 130, 246, 0.25);
           font-size: 0.75rem;
           text-align: center;
           color: #cbd5f5;
@@ -776,7 +776,7 @@ export default function RonyxHrCompliancePage() {
           gap: 12px;
           padding: 12px;
           border-radius: 12px;
-          border: 2px solid rgba(59, 130, 246, 0.25);
+          border: 1px solid rgba(59, 130, 246, 0.25);
           background: rgba(15, 23, 42, 0.75);
         }
         .doc-actions {
@@ -804,8 +804,8 @@ export default function RonyxHrCompliancePage() {
         }
         .import-card {
           border-radius: 12px;
-          border: 2px solid rgba(59, 130, 246, 0.25);
-          padding: 14px;
+          border: 1px solid rgba(59, 130, 246, 0.25);
+          padding: 12px;
           background: rgba(15, 23, 42, 0.75);
           cursor: pointer;
         }
