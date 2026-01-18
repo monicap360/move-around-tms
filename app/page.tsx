@@ -17,6 +17,13 @@ function LandingPageContent() {
   const [selectedDemo, setSelectedDemo] = useState("all");
   const [language, setLanguage] = useState<"en" | "es">("en");
   const searchParams = useSearchParams();
+  const [profitLeakOpen, setProfitLeakOpen] = useState(false);
+  const [profitLeakInputs, setProfitLeakInputs] = useState({
+    fleetSize: 10,
+    loadsPerWeek: 15,
+    avgLoadValue: 850,
+    emptyMiles: 14,
+  });
   const [roiInputs, setRoiInputs] = useState({
     loadsPerDay: 45,
     avgValuePerLoad: 420,
@@ -725,6 +732,43 @@ function LandingPageContent() {
   const annualTotalSavings =
     recoveredTonnageRevenue + annualLaborSavings + recoveredAccessorials;
 
+  const profitLeakMetrics = (() => {
+    const trucks = Number(profitLeakInputs.fleetSize || 0);
+    const loads = Number(profitLeakInputs.loadsPerWeek || 0);
+    const loadValue = Number(profitLeakInputs.avgLoadValue || 0);
+    const emptyMilesPercent = Number(profitLeakInputs.emptyMiles || 0);
+    const monthlyLoads = trucks * loads * 4.33;
+    const monthlyRevenue = monthlyLoads * loadValue;
+    const emptyMilesLoss = monthlyRevenue * (emptyMilesPercent / 100) * 0.45;
+    const billingErrorsLoss = monthlyRevenue * 0.03;
+    const adminTimeLoss = trucks * 40 * 35 + loads * 0.5 * 35;
+    const detentionLoss = monthlyLoads * 0.3 * 75;
+    const totalMonthlyLoss = emptyMilesLoss + billingErrorsLoss + adminTimeLoss + detentionLoss;
+    const totalAnnualLoss = totalMonthlyLoss * 12;
+    const emptyMilesSavings = emptyMilesLoss * 0.35;
+    const billingSavings = billingErrorsLoss * 0.75;
+    const adminSavings = adminTimeLoss * 0.5;
+    const detentionSavings = detentionLoss * 0.8;
+    const totalMonthlySavings = emptyMilesSavings + billingSavings + adminSavings + detentionSavings;
+    const monthlyCost = 3000;
+    const annualSavings = totalMonthlySavings * 12;
+    const annualCost = monthlyCost * 12;
+    const roi = annualCost ? ((annualSavings - annualCost) / annualCost) * 100 : 0;
+    return {
+      emptyMilesLoss,
+      billingErrorsLoss,
+      adminTimeLoss,
+      detentionLoss,
+      totalMonthlyLoss,
+      totalAnnualLoss,
+      totalMonthlySavings,
+      roi,
+    };
+  })();
+
+  const formatMoney = (value: number) =>
+    Math.round(value || 0).toLocaleString("en-US");
+
   return (
     <div className="landing-performance">
       <style jsx global>{`
@@ -1169,6 +1213,119 @@ function LandingPageContent() {
         .nav-cta:focus-visible {
           outline: none;
           box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+        }
+
+        .profit-leak-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(5, 5, 5, 0.65);
+          backdrop-filter: blur(6px);
+          z-index: 1200;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+        }
+        .profit-leak-modal {
+          width: min(1000px, 100%);
+          max-height: 90vh;
+          overflow-y: auto;
+          background: rgba(18, 18, 18, 0.95);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 215, 0, 0.18);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+          padding: 28px;
+        }
+        .profit-leak-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .profit-leak-title {
+          font-size: 2rem;
+          font-weight: 800;
+        }
+        .profit-leak-subtitle {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.95rem;
+        }
+        .profit-leak-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 20px;
+          margin-top: 24px;
+        }
+        .profit-leak-panel {
+          background: rgba(30, 30, 30, 0.7);
+          border-radius: 16px;
+          border: 1px solid rgba(255, 215, 0, 0.16);
+          padding: 20px;
+        }
+        .profit-leak-input {
+          display: grid;
+          gap: 8px;
+          margin-bottom: 18px;
+          color: rgba(255, 255, 255, 0.85);
+        }
+        .profit-leak-input input[type="number"] {
+          background: rgba(18, 18, 18, 0.8);
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          border-radius: 10px;
+          padding: 10px 12px;
+          color: #fff;
+        }
+        .profit-leak-range {
+          width: 100%;
+          appearance: none;
+          height: 6px;
+          border-radius: 999px;
+          background: rgba(255, 215, 0, 0.2);
+        }
+        .profit-leak-range::-webkit-slider-thumb {
+          appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--hyper-yellow);
+          cursor: pointer;
+        }
+        .profit-leak-metric {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 215, 0, 0.15);
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 12px;
+        }
+        .profit-leak-metric strong {
+          display: block;
+          font-size: 1.6rem;
+          color: var(--hyper-yellow);
+        }
+        .profit-leak-metric.loss strong {
+          color: #ff6b6b;
+        }
+        .profit-leak-metric.savings strong {
+          color: var(--success-green);
+        }
+        .profit-leak-breakdown {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 12px;
+          margin-top: 12px;
+        }
+        .profit-leak-breakdown div {
+          background: rgba(255, 255, 255, 0.04);
+          border-radius: 12px;
+          padding: 12px;
+          text-align: center;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .profit-leak-cta {
+          margin-top: 18px;
+          width: 100%;
         }
 
         .btn:disabled {
@@ -3106,9 +3263,13 @@ function LandingPageContent() {
                 <a href="mailto:sales@movearoundtms.com" className="btn btn-primary">
                   Book My Personalized Profit Demo
                 </a>
-                <a href="mailto:sales@movearoundtms.com" className="btn btn-secondary">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setProfitLeakOpen(true)}
+                >
                   Download Profit Leak Calculator
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -3680,6 +3841,164 @@ function LandingPageContent() {
           </div>
         )}
       </section>
+
+      {profitLeakOpen && (
+        <div className="profit-leak-backdrop" onClick={() => setProfitLeakOpen(false)}>
+          <div className="profit-leak-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="profit-leak-header">
+              <div>
+                <div className="hero-badge" style={{ marginBottom: 8 }}>
+                  <i className="fas fa-triangle-exclamation"></i>
+                  Profit Leak Calculator
+                </div>
+                <div className="profit-leak-title speed-gradient">Know Your Monthly Revenue Leakage</div>
+                <div className="profit-leak-subtitle">
+                  Model empty miles, billing errors, admin time, and detention losses in seconds.
+                </div>
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={() => setProfitLeakOpen(false)}>
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="profit-leak-grid">
+              <div className="profit-leak-panel">
+                <div className="profit-leak-input">
+                  Fleet Size (Trucks)
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={profitLeakInputs.fleetSize}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, fleetSize: Number(e.target.value || 0) }))
+                    }
+                  />
+                  <input
+                    type="range"
+                    className="profit-leak-range"
+                    min={1}
+                    max={50}
+                    value={profitLeakInputs.fleetSize}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, fleetSize: Number(e.target.value || 0) }))
+                    }
+                  />
+                </div>
+                <div className="profit-leak-input">
+                  Avg Loads per Truck per Week
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={profitLeakInputs.loadsPerWeek}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, loadsPerWeek: Number(e.target.value || 0) }))
+                    }
+                  />
+                  <input
+                    type="range"
+                    className="profit-leak-range"
+                    min={5}
+                    max={30}
+                    value={profitLeakInputs.loadsPerWeek}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, loadsPerWeek: Number(e.target.value || 0) }))
+                    }
+                  />
+                </div>
+                <div className="profit-leak-input">
+                  Average Load Value ($)
+                  <input
+                    type="number"
+                    min={100}
+                    max={5000}
+                    value={profitLeakInputs.avgLoadValue}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, avgLoadValue: Number(e.target.value || 0) }))
+                    }
+                  />
+                  <input
+                    type="range"
+                    className="profit-leak-range"
+                    min={500}
+                    max={2000}
+                    value={profitLeakInputs.avgLoadValue}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, avgLoadValue: Number(e.target.value || 0) }))
+                    }
+                  />
+                </div>
+                <div className="profit-leak-input">
+                  Current Empty Miles (%)
+                  <input
+                    type="number"
+                    min={5}
+                    max={40}
+                    value={profitLeakInputs.emptyMiles}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, emptyMiles: Number(e.target.value || 0) }))
+                    }
+                  />
+                  <input
+                    type="range"
+                    className="profit-leak-range"
+                    min={5}
+                    max={40}
+                    value={profitLeakInputs.emptyMiles}
+                    onChange={(e) =>
+                      setProfitLeakInputs((prev) => ({ ...prev, emptyMiles: Number(e.target.value || 0) }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="profit-leak-panel">
+                <div className="profit-leak-metric loss">
+                  Monthly Profit Loss
+                  <strong>${formatMoney(profitLeakMetrics.totalMonthlyLoss)}</strong>
+                  <span className="profit-leak-subtitle">Lost monthly to inefficiencies</span>
+                </div>
+                <div className="profit-leak-metric">
+                  Annual Profit Loss
+                  <strong>${formatMoney(profitLeakMetrics.totalAnnualLoss)}</strong>
+                  <span className="profit-leak-subtitle">Total yearly revenue leakage</span>
+                </div>
+                <div className="profit-leak-metric savings">
+                  Potential Monthly Savings
+                  <strong>${formatMoney(profitLeakMetrics.totalMonthlySavings)}</strong>
+                  <span className="profit-leak-subtitle">With Ronyx optimization</span>
+                </div>
+                <div className="profit-leak-breakdown">
+                  <div>
+                    Empty Miles
+                    <strong>${formatMoney(profitLeakMetrics.emptyMilesLoss)}</strong>
+                  </div>
+                  <div>
+                    Billing Errors
+                    <strong>${formatMoney(profitLeakMetrics.billingErrorsLoss)}</strong>
+                  </div>
+                  <div>
+                    Admin Time
+                    <strong>${formatMoney(profitLeakMetrics.adminTimeLoss)}</strong>
+                  </div>
+                  <div>
+                    Detention
+                    <strong>${formatMoney(profitLeakMetrics.detentionLoss)}</strong>
+                  </div>
+                </div>
+                <div className="profit-leak-metric" style={{ marginTop: 16 }}>
+                  ROI on a $3,000/mo investment
+                  <strong>{Math.round(profitLeakMetrics.roi)}%</strong>
+                </div>
+                <a href="https://movearoundtms.com/#dump-truck" className="btn btn-primary profit-leak-cta">
+                  🚀 Plug Your Profit Leaks with Ronyx TMS
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section id="pits" className="switch-benefits">
         <div className="container">
