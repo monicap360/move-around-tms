@@ -40,6 +40,7 @@ const adminNav = [
 export default function RonyxLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [now, setNow] = useState(new Date());
   const [metrics, setMetrics] = useState({
     fleet: { active: 18, total: 24, moving: 12, idle: 4 },
@@ -77,7 +78,7 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <div className={`ronyx-app ${collapsed ? "collapsed" : ""}`}>
+    <div className={`ronyx-app ${collapsed ? "collapsed" : ""} ${mobileNavOpen ? "mobile-open" : ""}`}>
       <style jsx global>{`
         .ronyx-app {
           display: grid;
@@ -131,6 +132,15 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           flex-direction: column;
           gap: 16px;
         }
+        .ronyx-mobile-toggle {
+          display: none;
+          background: rgba(15, 23, 42, 0.6);
+          color: #f8fafc;
+          border: 1px solid rgba(148, 163, 184, 0.35);
+          padding: 8px 12px;
+          border-radius: 10px;
+          font-weight: 600;
+        }
         .ronyx-side-nav .section-title {
           font-size: 0.7rem;
           text-transform: uppercase;
@@ -178,13 +188,98 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
             grid-column: 1 / -1;
           }
           .ronyx-side-nav {
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 30;
-            grid-row: auto;
+            left: 0;
+            bottom: 0;
+            width: 280px;
+            transform: translateX(-100%);
+            transition: transform 160ms ease;
+            z-index: 40;
+          }
+          .ronyx-app.mobile-open .ronyx-side-nav {
+            transform: translateX(0);
+          }
+          .ronyx-app.mobile-open::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            z-index: 35;
           }
           .ronyx-content {
             grid-column: 1 / -1;
+          }
+          .ronyx-mobile-toggle {
+            display: inline-flex;
+          }
+        }
+        @media (max-width: 768px) {
+          .ronyx-top-nav {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+          }
+          .ronyx-top-group {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .ronyx-search {
+            width: 100%;
+            min-width: unset;
+          }
+          .ronyx-content {
+            padding: 12px 12px 28px;
+          }
+          .ronyx-stat-pill {
+            font-size: 0.75rem;
+          }
+          .ronyx-shell {
+            padding: 16px !important;
+          }
+          .ronyx-container {
+            padding: 0 4px;
+          }
+          .ronyx-card {
+            padding: 14px;
+          }
+          .ronyx-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px;
+          }
+          .ronyx-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          table {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          thead,
+          tbody,
+          tr,
+          th,
+          td {
+            white-space: nowrap;
+          }
+          .ronyx-input,
+          .ronyx-action,
+          .ronyx-btn {
+            width: 100%;
+          }
+        }
+        @media (max-width: 540px) {
+          .ronyx-top-group {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .ronyx-stat-pill {
+            width: 100%;
+            text-align: left;
           }
         }
       `}</style>
@@ -241,6 +336,9 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
 
       <header className="ronyx-top-nav">
         <div className="ronyx-top-group">
+          <button className="ronyx-mobile-toggle" onClick={() => setMobileNavOpen((prev) => !prev)}>
+            {mobileNavOpen ? "Close Menu" : "Menu"}
+          </button>
           <span className="ronyx-logo">Ronyx Logistics</span>
           <span className="ronyx-stat-pill">
             {metrics.fleet.active}/{metrics.fleet.total} Trucks Active

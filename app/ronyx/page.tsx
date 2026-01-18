@@ -2,35 +2,6 @@
 
 import Link from "next/link";
 
-const navItems = [
-  { label: "Overview", href: "/ronyx" },
-  { label: "Dispatch", href: "/ronyx/dispatch" },
-  { label: "Customer Requests", href: "/ronyx/customer-requests" },
-  { label: "Loads", href: "/ronyx/loads" },
-  { label: "Tickets", href: "/ronyx/tickets" },
-  { label: "Aggregates", href: "/ronyx/aggregates" },
-  { label: "Workflows", href: "/ronyx/workflows" },
-  { label: "Driver App", href: "/ronyx/driver-app" },
-  { label: "Customer Portal", href: "/ronyx/portal" },
-  { label: "Integrations", href: "/ronyx/integrations" },
-  { label: "Roadmap", href: "/ronyx/roadmap" },
-  { label: "Onboarding & Support", href: "/ronyx/onboarding-support" },
-  { label: "HR & TXDOT Compliance", href: "/ronyx/hr-compliance" },
-  { label: "Drivers", href: "/ronyx/drivers" },
-  { label: "Trucks", href: "/ronyx/trucks" },
-  { label: "Maintenance", href: "/ronyx/maintenance" },
-  { label: "Billing", href: "/ronyx/billing" },
-  { label: "Finance", href: "/ronyx/finance" },
-  { label: "Accounting", href: "/ronyx/accounting" },
-  { label: "Payroll", href: "/ronyx/payroll" },
-  { label: "Accounts Receivable", href: "/ronyx/accounts-receivable" },
-  { label: "Compliance", href: "/ronyx/compliance" },
-  { label: "IFTA & Fuel Compliance", href: "/ronyx/ifta-fuel" },
-  { label: "FMCSA", href: "/ronyx/fmcsa" },
-  { label: "Reports", href: "/ronyx/reports" },
-  { label: "Settings", href: "/ronyx/settings" },
-];
-
 const quickActions = [
   { title: "+ Create Load", href: "/ronyx/loads" },
   { title: "📄 New Ticket", href: "/ronyx/tickets" },
@@ -302,68 +273,14 @@ export default function RonyxDashboard() {
         }
       `}</style>
 
-      <div className="ronyx-layout">
-        <aside className="ronyx-sidebar">
-          <div className="ronyx-brand">
-            <div className="ronyx-badge">Ronyx Logistics LLC</div>
-            <h2 style={{ marginTop: 12, fontSize: "1.25rem", fontWeight: 800, color: "#0f172a" }}>
-              RONYX LOGISTICS LLC
-            </h2>
-            <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-              Powered by MoveAround TMS · iGotta Technologies
-            </p>
-          </div>
-
-          <nav className="ronyx-nav">
-            {navItems.map((item) => (
-              <Link key={item.label} href={item.href}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="ronyx-support">
-            <div>Support: support@movearoundtms.com</div>
-            <div style={{ marginTop: 8, display: "flex", gap: 12 }}>
-              <Link href="/ronyx/terms" style={{ color: "var(--ronyx-accent)" }}>
-                Terms
-              </Link>
-              <Link href="/ronyx/privacy" style={{ color: "var(--ronyx-accent)" }}>
-                Privacy
-              </Link>
-            </div>
-      </div>
-        </aside>
-
-        <main className="ronyx-main">
-          <div className="ronyx-topbar">
+      <div className="ronyx-container">
+        <div className="ronyx-topbar">
           <div>
-              <h1 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Dump Fleet Command Center</h1>
-              <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-                Live control for dispatch, backhauls, and ticket accuracy.
+            <h1 style={{ fontSize: "1.8rem", fontWeight: 800 }}>Dump Fleet Command Center</h1>
+            <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
+              Live control for dispatch, backhauls, and ticket accuracy.
             </p>
           </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <input type="text" placeholder="Search loads, drivers, tickets..." />
-              <details className="ronyx-action" style={{ position: "relative" }}>
-                <summary style={{ listStyle: "none", cursor: "pointer" }}>+ Quick Add ▼</summary>
-                <div style={{ position: "absolute", right: 0, top: "110%", background: "#fff", border: "1px solid var(--ronyx-border)", borderRadius: 12, padding: 12, minWidth: 200, zIndex: 20 }}>
-                  <Link href="/ronyx/loads" className="ronyx-row" style={{ marginBottom: 8 }}>New Load</Link>
-                  <Link href="/ronyx/customer-requests" className="ronyx-row" style={{ marginBottom: 8 }}>New Customer</Link>
-                  <Link href="/ronyx/drivers" className="ronyx-row" style={{ marginBottom: 8 }}>New Driver</Link>
-                  <Link href="/ronyx/tickets" className="ronyx-row">New Ticket</Link>
-                </div>
-              </details>
-              <Link href="/ronyx/reports" className="ronyx-action">
-                📊 Reports
-              </Link>
-              <Link href="/ronyx/alerts" className="ronyx-action">
-                🔔 Alerts (3)
-              </Link>
-              <Link href="/ronyx/settings" className="ronyx-action primary">
-                👤 Portal Admin
-              </Link>
-            </div>
         </div>
 
           <section className="ronyx-grid" style={{ marginBottom: 22 }}>
@@ -519,7 +436,6 @@ export default function RonyxDashboard() {
               </div>
         </div>
           </section>
-      </main>
       </div>
     </div>
   );
