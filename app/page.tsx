@@ -2670,7 +2670,7 @@ function LandingPageContent() {
             {[
               {
                 icon: "fa-bolt",
-                price: "Sell Separately: $499/month",
+                price: "Sell Separately: $599/month",
                 title: "TicketFlash OCR Module",
                 desc: "Process paper tickets at 99.97% accuracy with AI-powered optical character recognition.",
                 features: [
@@ -2680,6 +2680,8 @@ function LandingPageContent() {
                   "Learning AI improves over time",
                 ],
                 target: "Companies with paper-based processes, manual data entry",
+                href: "/ticketflash-ocr",
+                cta: "Subscribe for $599/mo",
               },
               {
                 icon: "fa-weight-hanging",
@@ -2856,6 +2858,16 @@ function LandingPageContent() {
                     {module.target}
                   </div>
                 </div>
+                {module.href && (
+                  <Link
+                    href={module.href}
+                    prefetch={false}
+                    className="btn btn-primary"
+                    style={{ marginTop: 20, width: "100%", justifyContent: "center" }}
+                  >
+                    {module.cta || "Learn More"}
+                  </Link>
+                )}
               </div>
             ))}
           </div>

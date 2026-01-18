@@ -9,18 +9,18 @@ const supabase = createClient<Database>(
 export async function getCompanyDashboardData(org_code: string) {
   try {
     // Get organization ID from organization_code
-    const { data: org, error: orgError } = await supabase
+    const { data: companyRecord, error: companyError } = await supabase
       .from("organizations")
       .select("id")
       .eq("organization_code", org_code)
       .single();
 
-    if (orgError || !org) {
-      console.error("Organization not found:", orgError);
+    if (companyError || !companyRecord) {
+      console.error("Organization not found:", companyError);
       return getDefaultDashboardData();
     }
 
-    const organizationId = org.id;
+    const organizationId = companyRecord.id;
 
     // Calculate week range
     const now = new Date();

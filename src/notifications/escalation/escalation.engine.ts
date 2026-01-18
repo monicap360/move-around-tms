@@ -9,11 +9,11 @@ import { getAlertEvents } from "@/src/alerts/history/alert.event.store";
 function sendEscalationEmail(
   target: string,
   events: AlertEvent[],
-  org: string,
+  organizationId: string,
   rule: EscalationRule,
 ) {
   console.log(
-    `[ESCALATION] Email to ${target} for org ${org}:`,
+    `[ESCALATION] Email to ${target} for org ${organizationId}:`,
     events.map((e) => e.message),
   );
 }

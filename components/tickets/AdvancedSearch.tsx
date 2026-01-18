@@ -118,7 +118,7 @@ export default function AdvancedSearch({
         <div className="space-y-3">
           {criteria.length === 0 && (
             <p className="text-sm text-gray-500 text-center py-4">
-              No search criteria. Click "Add Criteria" to start.
+              No search criteria. Click &quot;Add Criteria&quot; to start.
             </p>
           )}
 
