@@ -1143,6 +1143,10 @@ function LandingPageContent() {
           transform: translateY(-4px);
           box-shadow: 0 20px 60px rgba(255, 40, 0, 0.4);
         }
+        .btn-primary:active {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 28px rgba(255, 120, 80, 0.35);
+        }
 
         .btn-secondary {
           background: transparent;
@@ -1155,6 +1159,16 @@ function LandingPageContent() {
           border-color: var(--hyper-yellow);
           transform: translateY(-4px);
           box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+        }
+        .btn-secondary:active {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
+        }
+
+        .btn:focus-visible,
+        .nav-cta:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
         }
 
         .btn:disabled {
@@ -2574,6 +2588,32 @@ function LandingPageContent() {
                   "Exception queue with audit trail",
                 ],
                 target: "Aggregate and materials haulers reconciling plant invoices",
+              },
+              {
+                icon: "fa-clipboard-check",
+                price: "Sell Separately: $349/month",
+                title: "Module 1: Excel-to-Ticket Reconciliation Validation Checklist",
+                desc: "Step-by-step validation that auto-flags mismatches before they hit billing.",
+                features: [
+                  "Ticket #, date, and material checks",
+                  "Gross/tare/net validation rules",
+                  "Auto-flag short loads and duplicates",
+                  "Audit-ready exception log",
+                ],
+                target: "Teams standardizing Excel-to-ticket reconciliation",
+              },
+              {
+                icon: "fa-user-check",
+                price: "Sell Separately: $399/month",
+                title: "Module 3: Payroll (Ticket-to-Driver) Validation Checklist",
+                desc: "Validate pay rules and driver tickets before payroll closes.",
+                features: [
+                  "Driver/ticket match validation",
+                  "Rate type & unit checks",
+                  "Auto-flag missing PODs",
+                  "Exception-ready payroll audit log",
+                ],
+                target: "Ops teams preventing payroll disputes",
               },
               {
                 icon: "fa-globe",
