@@ -418,7 +418,7 @@ export default function RonyxHrCompliancePage() {
           border-radius: 999px;
           border: 1px solid rgba(59, 130, 246, 0.6);
           font-size: 0.8rem;
-          color: #cbd5f5;
+          color: #1d4ed8;
           background: rgba(59, 130, 246, 0.12);
         }
         .ronyx-row {
@@ -427,19 +427,19 @@ export default function RonyxHrCompliancePage() {
           justify-content: space-between;
           padding: 12px 14px;
           border-radius: 12px;
-          background: rgba(15, 23, 42, 0.7);
+          background: #ffffff;
           border: 1px solid rgba(59, 130, 246, 0.2);
-          color: #e2e8f0;
+          color: #0f172a;
         }
         .ronyx-action {
           padding: 8px 14px;
           border-radius: 999px;
           border: 1px solid rgba(59, 130, 246, 0.4);
-          color: #e2e8f0;
+          color: #0f172a;
           text-decoration: none;
           font-weight: 700;
-          background: rgba(15, 23, 42, 0.6);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+          background: rgba(59, 130, 246, 0.12);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
         }
         .ronyx-action.primary {
           background: var(--ronyx-accent);
@@ -654,7 +654,7 @@ export default function RonyxHrCompliancePage() {
           font-weight: 700;
         }
         .bulk-upload {
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(226, 232, 240, 0.9));
           border-radius: 16px;
           border: 1px solid rgba(59, 130, 246, 0.35);
           padding: 16px;
@@ -667,7 +667,7 @@ export default function RonyxHrCompliancePage() {
           border-radius: 12px;
           padding: 16px;
           text-align: center;
-          background: rgba(15, 23, 42, 0.8);
+          background: #ffffff;
         }
         .processing-queue {
           display: grid;
@@ -680,10 +680,10 @@ export default function RonyxHrCompliancePage() {
           border: 1px solid rgba(59, 130, 246, 0.22);
           border-radius: 12px;
           padding: 10px 12px;
-          background: rgba(15, 23, 42, 0.75);
+          background: #ffffff;
         }
         .audit-generator {
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(226, 232, 240, 0.9));
           border-radius: 16px;
           border: 1px solid rgba(59, 130, 246, 0.35);
           padding: 16px;
@@ -700,10 +700,10 @@ export default function RonyxHrCompliancePage() {
           padding: 12px;
           border-radius: 12px;
           border: 1px solid rgba(59, 130, 246, 0.25);
-          background: rgba(15, 23, 42, 0.75);
+          background: #ffffff;
         }
         .compliance-rules {
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(226, 232, 240, 0.9));
           border-radius: 16px;
           border: 1px solid rgba(59, 130, 246, 0.35);
           padding: 16px;
@@ -716,11 +716,11 @@ export default function RonyxHrCompliancePage() {
           border-radius: 12px;
           padding: 12px;
           margin-bottom: 8px;
-          background: rgba(15, 23, 42, 0.75);
+          background: #ffffff;
         }
         .compliance-mobile {
-          background: #0f172a;
-          color: #e2e8f0;
+          background: #ffffff;
+          color: #0f172a;
           border-radius: 16px;
           padding: 16px;
           margin-bottom: 20px;
@@ -732,7 +732,7 @@ export default function RonyxHrCompliancePage() {
         .self-service,
         .batch-operations,
         .validation-rules {
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.9));
+          background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(226, 232, 240, 0.9));
           border-radius: 16px;
           border: 1px solid rgba(59, 130, 246, 0.35);
           padding: 16px;
@@ -751,7 +751,7 @@ export default function RonyxHrCompliancePage() {
           border: 1px solid rgba(59, 130, 246, 0.25);
           font-size: 0.75rem;
           text-align: center;
-          color: #cbd5f5;
+          color: #334155;
         }
         .progress-step.active {
           background: rgba(29, 78, 216, 0.12);

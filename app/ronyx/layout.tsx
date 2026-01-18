@@ -107,9 +107,9 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           justify-content: space-between;
           gap: 16px;
           padding: 12px 20px;
-          background: #0f172a;
-          color: #f8fafc;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+          background: #f8fafc;
+          color: #0f172a;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.4);
         }
         .ronyx-top-group {
           display: flex;
@@ -118,23 +118,23 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           flex-wrap: wrap;
         }
         .ronyx-search {
-          background: rgba(255, 255, 255, 0.12);
-          border: 1px solid rgba(148, 163, 184, 0.35);
-          color: #f8fafc;
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          color: #0f172a;
           padding: 8px 12px;
           border-radius: 12px;
           min-width: 240px;
         }
         .ronyx-stat-pill {
-          background: rgba(255, 255, 255, 0.14);
+          background: rgba(148, 163, 184, 0.2);
           padding: 6px 10px;
           border-radius: 999px;
           font-size: 0.8rem;
         }
         .ronyx-side-nav {
           grid-row: 1 / span 2;
-          background: #111827;
-          color: #e2e8f0;
+          background: #ffffff;
+          color: #0f172a;
           padding: 18px 16px;
           display: flex;
           flex-direction: column;
@@ -142,9 +142,9 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
         }
         .ronyx-mobile-toggle {
           display: none;
-          background: rgba(15, 23, 42, 0.6);
-          color: #f8fafc;
-          border: 1px solid rgba(148, 163, 184, 0.35);
+          background: rgba(148, 163, 184, 0.2);
+          color: #0f172a;
+          border: 1px solid rgba(148, 163, 184, 0.4);
           padding: 8px 12px;
           border-radius: 10px;
           font-weight: 600;
@@ -153,7 +153,7 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           font-size: 0.7rem;
           text-transform: uppercase;
           letter-spacing: 0.12em;
-          color: rgba(148, 163, 184, 0.7);
+          color: rgba(71, 85, 105, 0.7);
         }
         .ronyx-side-nav a {
           display: flex;
@@ -165,8 +165,8 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
         }
         .ronyx-side-nav a.active {
-          background: rgba(59, 130, 246, 0.25);
-          color: #ffffff;
+          background: rgba(59, 130, 246, 0.18);
+          color: #0f172a;
         }
         .ronyx-content {
           grid-column: 2 / -1;
