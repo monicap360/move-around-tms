@@ -141,7 +141,9 @@ export default function RonyxDriversPage() {
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [profile, setProfile] = useState<DriverProfile>(emptyProfile);
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
-  const [activeTab, setActiveTab] = useState<"status" | "docs" | "performance">("status");
+  const [activeTab, setActiveTab] = useState<
+    "compliance" | "performance" | "financials" | "history"
+  >("compliance");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -428,9 +430,11 @@ export default function RonyxDriversPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 16, flexWrap: "wrap" }}>
           <div>
             <p className="ronyx-pill">Ronyx TMS</p>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>Driver Profile</h1>
+            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>
+              Fleet Productivity Hub
+            </h1>
             <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-              Complete profile, compliance, assignments, and performance tracking.
+              Actionable compliance, performance, financials, and history for each driver.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -459,391 +463,426 @@ export default function RonyxDriversPage() {
         </div>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>1. Driver Profile</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Full name</label>
-              <input className="ronyx-input" value={profile.full_name} onChange={(e) => updateField("full_name", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Photo URL</label>
-              <input className="ronyx-input" value={profile.photo_url} onChange={(e) => updateField("photo_url", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Date of birth</label>
-              <input type="date" className="ronyx-input" value={profile.date_of_birth} onChange={(e) => updateField("date_of_birth", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Phone</label>
-              <input className="ronyx-input" value={profile.phone} onChange={(e) => updateField("phone", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Email</label>
-              <input className="ronyx-input" value={profile.email} onChange={(e) => updateField("email", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Address</label>
-              <textarea className="ronyx-textarea" value={profile.address} onChange={(e) => updateField("address", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Emergency contact</label>
-              <input className="ronyx-input" value={profile.emergency_contact_name} onChange={(e) => updateField("emergency_contact_name", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Emergency contact phone</label>
-              <input className="ronyx-input" value={profile.emergency_contact_phone} onChange={(e) => updateField("emergency_contact_phone", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">License number</label>
-              <input className="ronyx-input" value={profile.license_number} onChange={(e) => updateField("license_number", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">License state</label>
-              <input className="ronyx-input" value={profile.license_state} onChange={(e) => updateField("license_state", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">License class</label>
-              <input className="ronyx-input" value={profile.license_class} onChange={(e) => updateField("license_class", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">License expiration date</label>
-              <input
-                type="date"
-                className="ronyx-input"
-                value={profile.license_expiration_date}
-                onChange={(e) => updateField("license_expiration_date", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">CDL endorsements</label>
-              <input className="ronyx-input" value={profile.cdl_endorsements} onChange={(e) => updateField("cdl_endorsements", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">CDL restrictions</label>
-              <input className="ronyx-input" value={profile.cdl_restrictions} onChange={(e) => updateField("cdl_restrictions", e.target.value)} />
-            </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <span className="ronyx-pill">
+              Hire: {profile.hire_date || "05/15/2018"}
+            </span>
+            <span className="ronyx-pill">
+              Status: {profile.status ? profile.status.toUpperCase() : "ACTIVE"}
+            </span>
+            <span className="ronyx-pill">
+              Score: {profile.driver_scorecard || "92/100"}
+            </span>
+            <span className="ronyx-pill">
+              2024 Miles: {profile.miles_driven || "14,287"}
+            </span>
+            <span className="ronyx-pill">
+              Driver: {profile.full_name || "Jimmy \"Bull\" Hauler"} #{profile.assigned_truck_number || "245"}
+            </span>
           </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+            <Link href="/ronyx/loads" className="ronyx-action">
+              Assign Load
+            </Link>
+            {profile.email ? (
+              <a className="ronyx-action" href={`mailto:${profile.email}`}>
+                Send Message
+              </a>
+            ) : (
+              <button className="ronyx-action" onClick={() => setStatusMessage("Message queued (demo)")}>
+                Send Message
+              </button>
+            )}
+            <button className="ronyx-action" onClick={() => setStatusMessage("Incident logged (demo)")}>
+              Log Incident
+            </button>
+            <Link href="/ronyx/payroll" className="ronyx-action">
+              Run Settlement
+            </Link>
+            <button className="ronyx-action" onClick={() => setStatusMessage("Export queued (demo)")}>
+              Export Profile
+            </button>
+          </div>
+          {statusMessage && (
+            <div style={{ marginTop: 8, color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
+              {statusMessage}
+            </div>
+          )}
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>2. Employment Information</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Hire date</label>
-              <input type="date" className="ronyx-input" value={profile.hire_date} onChange={(e) => updateField("hire_date", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Status</label>
-              <select className="ronyx-input" value={profile.status} onChange={(e) => updateField("status", e.target.value)}>
-                <option value="active">Active</option>
-                <option value="terminated">Terminated</option>
-                <option value="on_leave">On Leave</option>
-              </select>
-            </div>
-            <div>
-              <label className="ronyx-label">Position / role</label>
-              <input className="ronyx-input" value={profile.position_role} onChange={(e) => updateField("position_role", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Supervisor / fleet manager</label>
-              <input className="ronyx-input" value={profile.supervisor_name} onChange={(e) => updateField("supervisor_name", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Pay rate</label>
-              <input className="ronyx-input" value={profile.pay_rate} onChange={(e) => updateField("pay_rate", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Mileage rate</label>
-              <input className="ronyx-input" value={profile.mileage_rate} onChange={(e) => updateField("mileage_rate", e.target.value)} />
-            </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {[
+              { id: "compliance", label: "Compliance & Safety" },
+              { id: "performance", label: "Assignment & Performance" },
+              { id: "financials", label: "Financials" },
+              { id: "history", label: "Full History" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                className={`ronyx-tab ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </section>
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>3. Documents</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">CDL copy</label>
-              <input className="ronyx-input" value={profile.cdl_copy_url} onChange={(e) => updateField("cdl_copy_url", e.target.value)} />
+        {activeTab === "compliance" && (
+          <section className="ronyx-card" style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
+              Compliance & Safety
+            </h2>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>Critical Alerts</div>
+              <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
+                <li>
+                  ⚠️ Medical card expires in 14 days (05/30/2024){" "}
+                  <button className="btn-sm btn-warning">Upload Renewal</button>
+                </li>
+                <li>
+                  ⚠️ Tanker endorsement renewal due in 30 days{" "}
+                  <button className="btn-sm btn-warning">Schedule Training</button>
+                </li>
+                <li>✅ All other documents are current.</li>
+              </ul>
             </div>
-            <div>
-              <label className="ronyx-label">Medical card (DOT physical)</label>
-              <input className="ronyx-input" value={profile.medical_card_url} onChange={(e) => updateField("medical_card_url", e.target.value)} />
+            <div className="ronyx-grid" style={{ rowGap: 14 }}>
+              <div className="ronyx-card">
+                <h3>Live Compliance Metrics</h3>
+                <p className="ronyx-muted">HOS Current Week: 38/70 hrs</p>
+                <p className="ronyx-muted">34‑Hr Restart: Complete</p>
+                <p className="ronyx-muted">7‑Day CSA Score: 72 (↓2)</p>
+                <p className="ronyx-muted">Last DVIR: 05/16/2024 • Repaired ✅</p>
+              </div>
+              <div className="ronyx-card">
+                <h3>Document Vault</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {[
+                    { label: "CDL Copy", url: profile.cdl_copy_url },
+                    { label: "Medical Card", url: profile.medical_card_url },
+                    { label: "Drug Test", url: profile.drug_test_results_url },
+                    { label: "MVR Report", url: profile.background_check_url },
+                    { label: "Training Certs", url: profile.training_certificates_url },
+                  ].map((doc) =>
+                    doc.url ? (
+                      <a key={doc.label} className="ronyx-action" href={doc.url} target="_blank" rel="noreferrer">
+                        {doc.label}
+                      </a>
+                    ) : (
+                      <button key={doc.label} className="ronyx-action" onClick={() => setStatusMessage("No file on record")}>
+                        {doc.label}
+                      </button>
+                    ),
+                  )}
+                </div>
+                <p className="ronyx-muted" style={{ marginTop: 10 }}>
+                  Documents are OCR-searchable and auto-tagged with expiry dates.
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="ronyx-label">Social Security / work authorization</label>
-              <input
-                className="ronyx-input"
-                value={profile.work_authorization_url}
-                onChange={(e) => updateField("work_authorization_url", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Drug test results</label>
-              <input
-                className="ronyx-input"
-                value={profile.drug_test_results_url}
-                onChange={(e) => updateField("drug_test_results_url", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Background check / MVR reports</label>
-              <input
-                className="ronyx-input"
-                value={profile.background_check_url}
-                onChange={(e) => updateField("background_check_url", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Training certificates</label>
-              <input
-                className="ronyx-input"
-                value={profile.training_certificates_url}
-                onChange={(e) => updateField("training_certificates_url", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>4. Vehicle Assignment</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Current assigned truck number</label>
-              <input
-                className="ronyx-input"
-                value={profile.assigned_truck_number}
-                onChange={(e) => updateField("assigned_truck_number", e.target.value)}
-              />
+        {activeTab === "performance" && (
+          <section className="ronyx-card" style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
+              Assignment & Performance
+            </h2>
+            <div className="ronyx-grid" style={{ rowGap: 14 }}>
+              <div className="ronyx-card">
+                <h3>Current Assignment & Equipment</h3>
+                <p className="ronyx-muted">
+                  Assigned Truck: {profile.assigned_truck_number || "245"} • {profile.equipment_type || "Dump Trailer"}
+                </p>
+                <p className="ronyx-muted">
+                  Status: {assignedLoad?.status || "AT PIT"} • Load {assignedLoad?.load_number || "#14287"}
+                </p>
+                <p className="ronyx-muted">
+                  Material: {assignedLoad?.material || "#57 Gravel"} • Job Site: {assignedLoad?.job_site || "Oak Street"}
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  <Link href="/ronyx/tracking" className="ronyx-action">
+                    View Live Location
+                  </Link>
+                  <Link href="/ronyx/loads" className="ronyx-action">
+                    View Load Details
+                  </Link>
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h3>Performance (Last 30 Days)</h3>
+                <p className="ronyx-muted">Loads Completed: 42 • Avg Tons/Load: 21.5</p>
+                <p className="ronyx-muted">Avg Cycle Time: 3.9h • On‑Time %: 96.7%</p>
+                <p className="ronyx-muted">Deadhead %: 12 • Fuel Efficiency: 6.2 MPG</p>
+                <p className="ronyx-muted">Scorecard: {profile.driver_scorecard || "92/100"} • Rank #3/24</p>
+              </div>
+              <div className="ronyx-card">
+                <h3>Training & Coaching Queue</h3>
+                <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
+                  <li>Scheduled: Monthly Safety Meeting (06/01/2024)</li>
+                  <li>Recommended: Defensive Driving Refresher</li>
+                </ul>
+                <button className="ronyx-action" onClick={() => setStatusMessage("Training assigned (demo)")}>
+                  Assign Training Module
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="ronyx-label">VIN</label>
-              <input className="ronyx-input" value={profile.vehicle_vin} onChange={(e) => updateField("vehicle_vin", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">License plate</label>
-              <input className="ronyx-input" value={profile.license_plate} onChange={(e) => updateField("license_plate", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Equipment type</label>
-              <input className="ronyx-input" value={profile.equipment_type} onChange={(e) => updateField("equipment_type", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Maintenance history</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.maintenance_history}
-                onChange={(e) => updateField("maintenance_history", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>5. Logs & Compliance</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Hours of Service (HOS) logs</label>
-              <textarea className="ronyx-textarea" value={profile.hos_logs} onChange={(e) => updateField("hos_logs", e.target.value)} />
+        {activeTab === "financials" && (
+          <section className="ronyx-card" style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
+              Financials
+            </h2>
+            <div className="ronyx-grid" style={{ rowGap: 14 }}>
+              <div className="ronyx-card">
+                <h3>Current Pay Period (05/01 - 05/15)</h3>
+                <p className="ronyx-muted">Miles: {profile.miles_driven || "1,842"} • Loads: 21 • Tonnage: 451.5</p>
+                <p className="ronyx-muted">
+                  Gross: {profile.pay_period_earnings || "$6,528.75"} • Deductions: {profile.deductions || "$1,305.75"}
+                </p>
+                <p className="ronyx-muted">Net Pay: $4,723.00</p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <Link href="/ronyx/payroll" className="ronyx-action">
+                    Preview Settlement
+                  </Link>
+                  <Link href="/ronyx/payroll" className="ronyx-action">
+                    Export for Payroll
+                  </Link>
+                </div>
+              </div>
+              <div className="ronyx-card">
+                <h3>Cost & Reimbursement Tracker</h3>
+                <p className="ronyx-muted">Fuel Spend: $2,112 • Avg MPG: 6.2</p>
+                <p className="ronyx-muted">Tolls: $84.50 • Permits: $150</p>
+                <p className="ronyx-muted">Pending Reimbursements: $47.25</p>
+                <button className="ronyx-action" onClick={() => setStatusMessage("Reimbursement processed (demo)")}>
+                  Process Reimbursement
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="ronyx-label">ELD records</label>
-              <textarea className="ronyx-textarea" value={profile.eld_records} onChange={(e) => updateField("eld_records", e.target.value)} />
+            <div style={{ marginTop: 16 }} className="ronyx-card">
+              <h3>Settlement Week: May 20-24, 2024</h3>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 8 }}>
+                <span className="ronyx-pill">WTD Haul Pay: $1,428.50</span>
+                <span className="ronyx-pill">WTD Tons: 312.5</span>
+                <span className="ronyx-pill">Avg Rate/Ton: $4.57</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button className="ronyx-action" onClick={() => setStatusMessage("Bonus added (demo)")}>
+                  Add Bonus
+                </button>
+                <button className="ronyx-action" onClick={() => setStatusMessage("Deduction added (demo)")}>
+                  Add Deduction
+                </button>
+                <button className="ronyx-action" onClick={() => setStatusMessage("Week locked (demo)")}>
+                  Lock Week
+                </button>
+                <Link href="/ronyx/payroll" className="ronyx-action">
+                  Run Payroll
+                </Link>
+                <button className="ronyx-action" onClick={() => setStatusMessage("Exported settlement (demo)")}>
+                  Export
+                </button>
+              </div>
+              <div style={{ overflowX: "auto", marginTop: 8 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(15,23,42,0.12)" }}>
+                      <th style={{ padding: "8px 6px" }}>Date</th>
+                      <th style={{ padding: "8px 6px" }}>Ticket #</th>
+                      <th style={{ padding: "8px 6px" }}>Load #</th>
+                      <th style={{ padding: "8px 6px" }}>Material</th>
+                      <th style={{ padding: "8px 6px" }}>Net Tons</th>
+                      <th style={{ padding: "8px 6px" }}>Rate</th>
+                      <th style={{ padding: "8px 6px" }}>Amount</th>
+                      <th style={{ padding: "8px 6px" }}>Status</th>
+                      <th style={{ padding: "8px 6px" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      {
+                        date: "05/20/2024",
+                        ticket: "VTK77891",
+                        load: "#14287",
+                        material: "#57 Gravel",
+                        tons: "22.0",
+                        rate: "$4.50/Ton",
+                        amount: "$99.00",
+                        status: "VERIFIED",
+                        action: "View Ticket",
+                      },
+                      {
+                        date: "05/20/2024",
+                        ticket: "VTK77894",
+                        load: "#14288",
+                        material: "Fill Sand",
+                        tons: "18.5",
+                        rate: "$4.25/Ton",
+                        amount: "$78.63",
+                        status: "VERIFIED",
+                        action: "View Ticket",
+                      },
+                      {
+                        date: "05/21/2024",
+                        ticket: "VTK77902",
+                        load: "#14290",
+                        material: "Crushed Rock",
+                        tons: "24.0",
+                        rate: "$5.00/Ton",
+                        amount: "$120.00",
+                        status: "VERIFIED",
+                        action: "Adjust Rate",
+                      },
+                      {
+                        date: "05/22/2024",
+                        ticket: "--------",
+                        load: "#14295",
+                        material: "Topsoil",
+                        tons: "--",
+                        rate: "$4.75/Ton",
+                        amount: "--",
+                        status: "NO TICKET",
+                        action: "Send Reminder",
+                      },
+                    ].map((row) => (
+                      <tr key={`${row.ticket}-${row.load}`} style={{ borderBottom: "1px solid rgba(15,23,42,0.08)" }}>
+                        <td style={{ padding: "8px 6px" }}>{row.date}</td>
+                        <td style={{ padding: "8px 6px" }}>{row.ticket}</td>
+                        <td style={{ padding: "8px 6px" }}>{row.load}</td>
+                        <td style={{ padding: "8px 6px" }}>{row.material}</td>
+                        <td style={{ padding: "8px 6px" }}>{row.tons}</td>
+                        <td style={{ padding: "8px 6px" }}>{row.rate}</td>
+                        <td style={{ padding: "8px 6px" }}>{row.amount}</td>
+                        <td style={{ padding: "8px 6px", fontWeight: 600 }}>{row.status}</td>
+                        <td style={{ padding: "8px 6px" }}>
+                          <button
+                            className="btn-sm btn-secondary"
+                            onClick={() => setStatusMessage(`${row.action} (demo)`)}
+                          >
+                            {row.action}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Adjustment added (demo)")}>
+                  Add Adjustment
+                </button>
+                <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Exported weekly settlement (demo)")}>
+                  Export This Week
+                </button>
+                <button className="btn-sm btn-primary" onClick={() => setStatusMessage("Settlement locked and finalized (demo)")}>
+                  Lock & Finalize
+                </button>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Weekly Adjustments</div>
+                <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
+                  <li>05/21: Safety Bonus - $50.00 (Perfect DVIR week)</li>
+                  <li>05/22: Deduction - $15.00 (Reimbursed toll)</li>
+                </ul>
+                <div style={{ marginTop: 6, fontWeight: 700 }}>
+                  Weekly Total (Current): $1,582.13
+                </div>
+                <div className="ronyx-muted">Breakdown: Haul $1,297.63 + Bonus $50 - Deduct $15</div>
+              </div>
             </div>
-            <div>
-              <label className="ronyx-label">Inspection reports</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.inspection_reports}
-                onChange={(e) => updateField("inspection_reports", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Violations</label>
-              <textarea className="ronyx-textarea" value={profile.violations} onChange={(e) => updateField("violations", e.target.value)} />
-            </div>
-          </div>
-        </section>
+            <div style={{ marginTop: 16 }} className="ronyx-card">
+              <h3>Ticket → Settlement Flow</h3>
+              <pre
+                style={{
+                  background: "rgba(15, 23, 42, 0.06)",
+                  borderRadius: 12,
+                  padding: 16,
+                  fontSize: "0.85rem",
+                  color: "rgba(15,23,42,0.8)",
+                  overflowX: "auto",
+                }}
+              >
+{`flowchart TD
+  A["Driver Captures Scale Ticket Photo"] --> B{"System Processes Image via OCR and Validation"}
+  B --> C["Data Posted to Office Dashboard Load Queue"]
+  B --> D["Data Logged to Driver Settlement Record"]
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>6. Training & Certifications</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div className="ronyx-row">
-              <span>Orientation completion</span>
-              <input
-                type="checkbox"
-                checked={profile.orientation_completed}
-                onChange={(e) => updateField("orientation_completed", e.target.checked)}
-              />
-            </div>
-            <div className="ronyx-row">
-              <span>Hazmat training</span>
-              <input type="checkbox" checked={profile.hazmat_training} onChange={(e) => updateField("hazmat_training", e.target.checked)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Safety meetings attendance</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.safety_meetings_attendance}
-                onChange={(e) => updateField("safety_meetings_attendance", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Certification renewal dates</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.certification_renewal_dates}
-                onChange={(e) => updateField("certification_renewal_dates", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+  C --> E["Office Generates Customer Invoice"]
+  D --> F["Friday Auto-Generate Driver Settlement"]
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>7. Accidents & Incidents</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Summary</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.accidents_summary}
-                onChange={(e) => updateField("accidents_summary", e.target.value)}
-              />
+  E --> G["Faster Customer Payment"]
+  F --> H["Accurate, Undisputed Driver Pay"]`}
+              </pre>
             </div>
-            <div>
-              <label className="ronyx-label">Photos / reports</label>
-              <input
-                className="ronyx-input"
-                value={profile.incident_photos_url}
-                onChange={(e) => updateField("incident_photos_url", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Resolution / claim status</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.incident_resolution}
-                onChange={(e) => updateField("incident_resolution", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+            <div style={{ marginTop: 16 }} className="ronyx-card">
+              <h3>Friday Payroll Execution Flow</h3>
+              <pre
+                style={{
+                  background: "rgba(15, 23, 42, 0.06)",
+                  borderRadius: 12,
+                  padding: 16,
+                  fontSize: "0.85rem",
+                  color: "rgba(15,23,42,0.8)",
+                  overflowX: "auto",
+                }}
+              >
+{`flowchart TD
+  A["Thursday EOD\\nSystem Generates\\nSettlement Previews"] --> B["Friday 8 AM\\nOffice Reviews and\\nResolves Disputes"]
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>8. Maintenance / DVIR Reports</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Daily Vehicle Inspection Reports (DVIR)</label>
-              <textarea className="ronyx-textarea" value={profile.dvir_reports} onChange={(e) => updateField("dvir_reports", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Repairs requested & completed</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.repairs_requested_completed}
-                onChange={(e) => updateField("repairs_requested_completed", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Preventive maintenance schedule</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.preventive_maintenance_schedule}
-                onChange={(e) => updateField("preventive_maintenance_schedule", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+  B --> C{"For Each Driver\\nClick 'LOCK & PAY'"}
+  C --> D["System Locks Items\\nCreates ACH/Check File\\nPosts to Accounting"]
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>9. Payroll / Settlements</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Miles driven</label>
-              <input className="ronyx-input" value={profile.miles_driven} onChange={(e) => updateField("miles_driven", e.target.value)} />
+  D --> E["Driver Notified\\nPayslip Available in App"]
+  E --> F["Bank Processes\\nDirect Deposit"]`}
+              </pre>
             </div>
-            <div>
-              <label className="ronyx-label">Pay period earnings</label>
-              <input
-                className="ronyx-input"
-                value={profile.pay_period_earnings}
-                onChange={(e) => updateField("pay_period_earnings", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Deductions</label>
-              <input className="ronyx-input" value={profile.deductions} onChange={(e) => updateField("deductions", e.target.value)} />
-            </div>
-            <div>
-              <label className="ronyx-label">Bonuses or reimbursements</label>
-              <input
-                className="ronyx-input"
-                value={profile.bonuses_reimbursements}
-                onChange={(e) => updateField("bonuses_reimbursements", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>10. Performance & Safety</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Driver scorecard</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.driver_scorecard}
-                onChange={(e) => updateField("driver_scorecard", e.target.value)}
-              />
+        {activeTab === "history" && (
+          <section className="ronyx-card">
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
+              Full History & Notes
+            </h2>
+            <div style={{ display: "grid", gap: 12 }}>
+              {[
+                "05/16/2024 07:15 • DVIR Submitted - Minor: Marker light out. Repaired 05/17.",
+                "05/10/2024 • Performance Review - Score 92/100. Excellent customer feedback.",
+                "04/22/2024 • Incident Report #442 - Minor backing incident. Coaching completed.",
+                "03/15/2024 • Training Completed - Winter Driving Safety.",
+              ].map((row) => (
+                <div key={row} className="ronyx-row">
+                  {row}
+                </div>
+              ))}
+              <div className="ronyx-row" style={{ alignItems: "flex-start" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Supervisor Notes</div>
+                  <div className="ronyx-muted">{profile.supervisor_notes || "No notes yet."}</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Note added (demo)")}>
+                    Add New Note
+                  </button>
+                  <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Call logged (demo)")}>
+                    Log Phone Call
+                  </button>
+                </div>
+              </div>
+              <div className="ronyx-row" style={{ alignItems: "flex-start" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Comms Log</div>
+                  <div className="ronyx-muted">{profile.communication_log || "No recent communications."}</div>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="ronyx-label">Disciplinary actions / warnings</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.disciplinary_actions}
-                onChange={(e) => updateField("disciplinary_actions", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Recognition / awards</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.recognition_awards}
-                onChange={(e) => updateField("recognition_awards", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="ronyx-card">
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>11. Notes / Comments</h2>
-          <div className="ronyx-grid" style={{ rowGap: 20 }}>
-            <div>
-              <label className="ronyx-label">Supervisor notes</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.supervisor_notes}
-                onChange={(e) => updateField("supervisor_notes", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Communication log</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.communication_log}
-                onChange={(e) => updateField("communication_log", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="ronyx-label">Updates from HR or dispatch</label>
-              <textarea
-                className="ronyx-textarea"
-                value={profile.hr_dispatch_updates}
-                onChange={(e) => updateField("hr_dispatch_updates", e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );

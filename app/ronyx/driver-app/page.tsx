@@ -142,6 +142,22 @@ export default function RonyxDriverAppPage() {
             material_verified: true,
           },
         });
+        if (ticketData.ticket?.driver_id) {
+          await fetch(`/api/ronyx/drivers/${ticketData.ticket.driver_id}/process-ticket`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              driver_id: ticketData.ticket.driver_id,
+              load_id: ticketData.ticket?.load_id || ticketData.ticket?.id || null,
+              ticket_number: ticketNumber || ticketData.ticket?.ticket_number || "PENDING",
+              net_tons: ticketData.ticket?.net_tons || null,
+              material_type: ticketData.ticket?.material || null,
+              customer_id: ticketData.ticket?.customer_id || null,
+              job_id: ticketData.ticket?.job_id || null,
+              equipment_used: "Truck+Trailer",
+            }),
+          });
+        }
         setMessage("Ticket uploaded and driver update sent.");
       } else {
         setMessage("Upload failed.");
@@ -181,6 +197,20 @@ export default function RonyxDriverAppPage() {
     });
     setLastSynced("Just now");
     setMessage("Fuel receipt logged.");
+  }
+
+  async function handleFlagDispute(loadId: string, ticketNumber?: string) {
+    if (!driverName.trim()) {
+      setMessage("Enter your name before flagging a dispute.");
+      return;
+    }
+    setMessage("Dispute flagged for office review.");
+    await sendDriverEvent({
+      event_type: "DISPUTE_FLAG",
+      load_id: loadId,
+      status_code: "DISPUTED",
+      note: `Dispute flagged for load ${loadId}${ticketNumber ? ` (${ticketNumber})` : ""}`,
+    });
   }
 
   async function startLoad(loadId: string) {
@@ -660,6 +690,73 @@ export default function RonyxDriverAppPage() {
   Data1 --> Impact1["Office Impact:\\nEliminates Manual Data Entry\\nPrevents Billing Errors"]
   Data2 --> Impact2["Office Impact:\\nEnables Same-Day Invoicing\\nEliminates Delivery Disputes"]`}
           </pre>
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
+            My Settlement & Loads
+          </h2>
+          <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+            <div className="ronyx-row">
+              <span>Today's Estimated Earnings</span>
+              <strong>$177.63</strong>
+            </div>
+            <div className="ronyx-row">
+              <span>Week-to-Date</span>
+              <strong>$1,428.50 • 312.5 Tons</strong>
+            </div>
+            <div className="ronyx-row">
+              <span>Pay Day</span>
+              <strong>Friday, May 24</strong>
+            </div>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(15,23,42,0.12)" }}>
+                  <th style={{ padding: "8px 6px" }}>Load #</th>
+                  <th style={{ padding: "8px 6px" }}>Material</th>
+                  <th style={{ padding: "8px 6px" }}>Tons</th>
+                  <th style={{ padding: "8px 6px" }}>Rate</th>
+                  <th style={{ padding: "8px 6px" }}>Earned</th>
+                  <th style={{ padding: "8px 6px" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { load: "#14287", material: "#57 Gravel", tons: "22.0", rate: "$4.50/T", earned: "$99.00", status: "PAID", ticket: "VTK77891" },
+                  { load: "#14288", material: "Fill Sand", tons: "18.5", rate: "$4.25/T", earned: "$78.63", status: "PAID", ticket: "VTK77894" },
+                  { load: "#14290", material: "Crushed Rock", tons: "24.0", rate: "$5.00/T", earned: "$120.00", status: "PENDING", ticket: "VTK77902" },
+                  { load: "#14295", material: "Topsoil", tons: "20.0", rate: "$4.75/T", earned: "$95.00", status: "AWAIT TICKET", ticket: "" },
+                ].map((row) => (
+                  <tr key={row.load} style={{ borderBottom: "1px solid rgba(15,23,42,0.08)" }}>
+                    <td style={{ padding: "8px 6px", fontWeight: 600 }}>{row.load}</td>
+                    <td style={{ padding: "8px 6px" }}>{row.material}</td>
+                    <td style={{ padding: "8px 6px" }}>{row.tons}</td>
+                    <td style={{ padding: "8px 6px" }}>{row.rate}</td>
+                    <td style={{ padding: "8px 6px" }}>{row.earned}</td>
+                    <td style={{ padding: "8px 6px" }}>
+                      {row.status === "PAID" ? "✅ PAID" : row.status === "PENDING" ? "⏳ PENDING" : "📸 AWAIT TICKET"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+            <Link href="/ronyx/tickets" className="ronyx-action">
+              View Details
+            </Link>
+            <button
+              className="ronyx-action"
+              onClick={() => handleFlagDispute("14290", "VTK77902")}
+            >
+              Flag Dispute
+            </button>
+            <Link href="/ronyx/payroll" className="ronyx-action">
+              Settlement History
+            </Link>
+          </div>
         </section>
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>

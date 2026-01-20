@@ -1,107 +1,121 @@
 import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export async function GET() {
+  const { data: loads, error: loadError } = await supabaseAdmin
+    .from("ronyx_loads")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (loadError) {
+    return NextResponse.json({ error: loadError.message }, { status: 500 });
+  }
+
+  const { data: updates } = await supabaseAdmin
+    .from("ronyx_driver_updates")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const { data: events } = await supabaseAdmin
+    .from("ronyx_driver_events")
+    .select("*")
+    .order("timestamp", { ascending: false })
+    .limit(200);
+
+  const latestEventByLoad = new Map<string, any>();
+  (events || []).forEach((event) => {
+    if (!event.load_id) return;
+    if (!latestEventByLoad.has(event.load_id)) {
+      latestEventByLoad.set(event.load_id, event);
+    }
+  });
+
+  const safeLoads = loads || [];
+  const activeStatuses = new Set([
+    "active",
+    "en_route",
+    "at_pit",
+    "delivering",
+    "loading",
+    "on_site",
+  ]);
+  const activeLoads = safeLoads.filter((load) => activeStatuses.has(load.status));
+  const distinctDrivers = new Set(
+    safeLoads.map((load) => load.driver_name).filter(Boolean),
+  );
+  const estimatedRevenue = safeLoads.reduce((sum, load) => {
+    const quantity = Number(load.quantity || 0);
+    const rate = Number(load.rate_amount || 0);
+    return sum + quantity * rate;
+  }, 0);
+
+  const completedLoads = safeLoads.filter((load) => load.status === "completed");
+  const plannedLoads = safeLoads.length;
+  const cycleMinutes = completedLoads
+    .map((load) => {
+      if (!load.started_at || !load.completed_at) return null;
+      const start = new Date(load.started_at).getTime();
+      const end = new Date(load.completed_at).getTime();
+      return Number.isNaN(start) || Number.isNaN(end) ? null : (end - start) / 60000;
+    })
+    .filter((val) => val !== null) as number[];
+  const avgCycle =
+    cycleMinutes.length > 0
+      ? Math.round(cycleMinutes.reduce((sum, val) => sum + val, 0) / cycleMinutes.length)
+      : 0;
+
+  const liveLoads = safeLoads.map((load) => {
+    const hasTicket = Boolean(load.ticket_id || load.ticket_number);
+    const hasPOD = Boolean(load.pod_url);
+    const status = (load.status || "unknown").toUpperCase();
+    const latestEvent = latestEventByLoad.get(load.id) || null;
+    return {
+      load_id: load.id,
+      driver_name: load.driver_name || "Unassigned",
+      status,
+      status_display: status.replace("_", " "),
+      source: load.pickup_location || load.route?.split("→")?.[0]?.trim() || "Unknown",
+      destination:
+        load.delivery_location || load.route?.split("→")?.[1]?.trim() || "Unknown",
+      material: load.material || "Material",
+      net_tons: load.quantity || null,
+      attachments: {
+        ticket_image: load.ticket_image_url || (hasTicket ? "attached" : null),
+        delivery_proof: hasPOD ? load.pod_url : null,
+        signature: load.digital_signature || null,
+      },
+      last_location: latestEvent?.location || null,
+      actions_available: hasTicket && hasPOD ? ["GENERATE_INVOICE"] : ["MESSAGE_DRIVER"],
+      invoice_ready: hasTicket && hasPOD,
+    };
+  });
+
+  const activeExceptions = (updates || [])
+    .filter((update) =>
+      String(update.status || "").toLowerCase().includes("delay") ||
+      String(update.status || "").toLowerCase().includes("truck_down") ||
+      String(update.status || "").toLowerCase().includes("ticket"),
+    )
+    .map((update) => ({
+      type: update.status || "STATUS",
+      load_id: update.ticket_id || null,
+      driver_id: update.driver_name || null,
+      message: update.notes || update.status,
+      timestamp: update.created_at || null,
+    }));
+
   return NextResponse.json({
     summary_metrics: {
-      active_trucks: 18,
-      total_trucks: 24,
-      estimated_revenue: 42180,
-      loads_completed: 142,
-      loads_planned: 150,
-      avg_cycle_time_minutes: 228,
+      active_trucks: activeLoads.length,
+      total_trucks: distinctDrivers.size || activeLoads.length,
+      estimated_revenue: Math.round(estimatedRevenue),
+      loads_completed: completedLoads.length,
+      loads_planned: plannedLoads,
+      avg_cycle_time_minutes: avgCycle,
     },
-    live_loads: [
-      {
-        load_id: "14287",
-        driver_name: "J. Smith",
-        status: "AT_PIT",
-        status_display: "✅ At Pit",
-        source: "Vulcan Quarry",
-        destination: "Oak Street Subdivision",
-        material: "#57 Gravel",
-        net_tons: 22.0,
-        attachments: {
-          ticket_image: "https://storage.ronyx.com/tickets/load_14287.jpg",
-          delivery_proof: null,
-          signature: null,
-        },
-        actions_available: ["MESSAGE_DRIVER"],
-        invoice_ready: false,
-      },
-      {
-        load_id: "14288",
-        driver_name: "M. Jones",
-        status: "EN_ROUTE",
-        status_display: "🚛 En Route",
-        source: "Central Pit",
-        destination: "Highway 10 Project",
-        material: "Fill Sand",
-        net_tons: 18.5,
-        attachments: {
-          ticket_image: null,
-          delivery_proof: null,
-          signature: null,
-        },
-        actions_available: ["TRACK"],
-        invoice_ready: false,
-      },
-      {
-        load_id: "14289",
-        driver_name: "R. Garcia",
-        status: "DELIVERING",
-        status_display: "📦 Delivering",
-        source: "Vulcan Quarry",
-        destination: "Oak Street Subdivision",
-        material: "#57 Gravel",
-        net_tons: 24.0,
-        attachments: {
-          ticket_image: "https://storage.ronyx.com/tickets/load_14289.jpg",
-          delivery_proof: "https://storage.ronyx.com/pod/load_14289.jpg",
-          signature: "https://storage.ronyx.com/pod/sig_14289.png",
-        },
-        actions_available: ["GENERATE_INVOICE", "VIEW_POD"],
-        invoice_ready: true,
-      },
-      {
-        load_id: "14290",
-        driver_name: "T. Chen",
-        status: "LOADING",
-        status_display: "⚠️ Loading",
-        source: "Central Pit",
-        destination: "Hwy 8",
-        material: "Topsoil",
-        net_tons: 20.0,
-        attachments: {
-          ticket_image: null,
-          delivery_proof: null,
-          signature: null,
-        },
-        actions_available: ["MONITOR"],
-        invoice_ready: false,
-      },
-    ],
-    active_exceptions: [
-      {
-        type: "SITE_DELAY",
-        load_id: "14287",
-        driver_id: "driver_245",
-        message: "Site Delay reported at Oak Street (45m)",
-        timestamp: "2024-01-20T10:42:00Z",
-      },
-      {
-        type: "TICKET_UNCLEAR",
-        load_id: "14288",
-        driver_id: "driver_238",
-        message: "Scale ticket unclear - needs review",
-        timestamp: "2024-01-20T09:18:00Z",
-      },
-      {
-        type: "PIT_QUEUE",
-        load_id: "14290",
-        driver_id: "driver_251",
-        message: "Vulcan Pit - Heavy queue (25m avg)",
-        timestamp: "2024-01-20T08:40:00Z",
-      },
-    ],
+    live_loads: liveLoads,
+    active_exceptions: activeExceptions,
   });
 }
