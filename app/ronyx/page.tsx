@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 const quickActions = [
   { title: "+ Create Load", href: "/ronyx/loads" },
@@ -12,6 +13,81 @@ const quickActions = [
 ];
 
 export default function RonyxDashboard() {
+  const [filter, setFilter] = useState("All");
+  const [exceptions, setExceptions] = useState([
+    {
+      id: "ex-245",
+      title: "#245 - Site Delay (45m)",
+      detail: "Oak Street Subdivision",
+    },
+    {
+      id: "ex-238",
+      title: "#238 - Scale Ticket Unclear",
+      detail: "Needs office review",
+    },
+    {
+      id: "ex-vulcan",
+      title: "Vulcan Pit - Heavy Queue",
+      detail: "Avg. wait: 25m",
+    },
+  ]);
+
+  const liveLoads = [
+    {
+      id: "14287",
+      driver: "J. Smith",
+      status: "AT PIT",
+      location: "Vulcan Quarry",
+      tons: "22.0",
+      ticket: true,
+      pod: false,
+      invoiceReady: false,
+    },
+    {
+      id: "14288",
+      driver: "M. Jones",
+      status: "EN ROUTE",
+      location: "Hwy 10",
+      tons: "18.5",
+      ticket: false,
+      pod: false,
+      invoiceReady: false,
+    },
+    {
+      id: "14289",
+      driver: "R. Garcia",
+      status: "DELIVERING",
+      location: "Oak Street",
+      tons: "24.0",
+      ticket: true,
+      pod: true,
+      invoiceReady: true,
+    },
+    {
+      id: "14290",
+      driver: "T. Chen",
+      status: "LOADING",
+      location: "Central Pit",
+      tons: "20.0",
+      ticket: false,
+      pod: false,
+      invoiceReady: false,
+    },
+  ];
+
+  const filteredLoads =
+    filter === "All"
+      ? liveLoads
+      : liveLoads.filter((load) => load.status.replace(" ", "_") === filter);
+
+  const pulseCards = [
+    { label: "Today's Pulse", value: "Live", note: "Real-time command center" },
+    { label: "Trucks Active", value: "18/24", note: "6 in staging" },
+    { label: "Est. Revenue", value: "$42,180", note: "Updates with ticket OCR" },
+    { label: "Loads Today", value: "142/150", note: "8 remaining" },
+    { label: "Avg. Cycle", value: "3.8h", note: "From En Route → Delivered" },
+  ];
+
   return (
     <div className="ronyx-shell">
       <style jsx global>{`
@@ -283,159 +359,144 @@ export default function RonyxDashboard() {
           </div>
         </div>
 
-          <section className="ronyx-grid" style={{ marginBottom: 22 }}>
-            {[
-              { label: "Active Loads", value: "38", note: "6 in queue", href: "/ronyx/loads?status=active" },
-              { label: "Empty Miles Today", value: "14%", note: "↓ 3% vs last week", href: "/ronyx/tracking?filter=empty" },
-              { label: "Tickets Pending", value: "12", note: "3 flagged for review", href: "/ronyx/tickets?status=pending" },
-              { label: "On‑Time Rate", value: "97.4%", note: "2.6% late", href: "/ronyx/reports?filter=late" },
-            ].map((stat) => (
-              <Link key={stat.label} href={stat.href} className="ronyx-card" style={{ textDecoration: "none", color: "inherit" }}>
-                <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.75rem", textTransform: "uppercase" }}>
-                  {stat.label}
-                </div>
-                <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ronyx-accent)", marginTop: 6 }}>
-                  {stat.value}
-                </div>
-                <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem", marginTop: 6 }}>
-                  {stat.note}
-                </div>
-              </Link>
+        <section className="ronyx-grid" style={{ marginBottom: 22 }}>
+          {pulseCards.map((stat) => (
+            <div key={stat.label} className="ronyx-card">
+              <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--ronyx-accent)", marginTop: 6 }}>
+                {stat.value}
+              </div>
+              <div style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem", marginTop: 6 }}>
+                {stat.note}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3>Live Fleet Map (Interactive)</h3>
+            <Link href="/ronyx/tracking" className="ronyx-action">
+              Open Tracking
+            </Link>
+          </div>
+          <div style={{ height: 260, borderRadius: 16, border: "1px dashed rgba(29, 78, 216, 0.4)", background: "#fff" }}>
+            <div style={{ padding: 16, color: "rgba(15,23,42,0.6)", fontSize: "0.9rem" }}>
+              Map preview: Vulcan Pit cluster • Truck #245 in transit • Oak Street site.
+            </div>
+          </div>
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span className="ronyx-pill">Quick Filters</span>
+            {["All", "EN_ROUTE", "AT_PIT", "DELIVERING", "DELAYED"].map((item) => (
+              <button
+                key={item}
+                className={`btn-sm ${filter === item ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setFilter(item)}
+              >
+                {item.replace("_", " ")}
+              </button>
             ))}
-          </section>
+          </div>
+        </section>
 
-          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+        <section className="ronyx-grid">
+          <div className="ronyx-card" style={{ gridColumn: "span 2" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3>Quick Actions</h3>
-              <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Turn goals into tasks</span>
+              <h3>Today’s Loads & Action Queue</h3>
+              <Link href="/ronyx/loads" className="ronyx-action">
+                View all
+              </Link>
             </div>
-            <div className="quick-actions-bar">
-              <Link href="/ronyx/loads" className="btn-primary">+ Create Load</Link>
-              <Link href="/ronyx/drivers" className="btn-primary">Assign Driver</Link>
-              <Link href="/ronyx/payroll" className="btn-success">Run Payroll</Link>
-              <Link href="/ronyx/reports" className="btn-secondary">View Reports</Link>
+            <div className="ronyx-table">
+              <div className="ronyx-row" style={{ fontWeight: 700 }}>
+                <span>Load #</span>
+                <span>Driver</span>
+                <span>Status</span>
+                <span>Location</span>
+                <span>Tons</span>
+                <span>Ticket</span>
+                <span>POD</span>
+                <span>Actions</span>
+              </div>
+              {filteredLoads.map((load) => (
+                <div key={load.id} className="ronyx-row">
+                  <span>#{load.id}</span>
+                  <span>{load.driver}</span>
+                  <span className={`status-badge ${load.status === "EN ROUTE" ? "in-transit" : load.status === "AT PIT" ? "flagged" : "completed"}`}>
+                    {load.status}
+                  </span>
+                  <span>{load.location}</span>
+                  <span>{load.tons}</span>
+                  <Link href={`/ronyx/tickets?load=${load.id}`} className="ronyx-action">
+                    {load.ticket ? "📎" : "--"}
+                  </Link>
+                  <Link href={`/ronyx/tickets?pod=${load.id}`} className="ronyx-action">
+                    {load.pod ? "✅" : "--"}
+                  </Link>
+                  <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Link href={`/ronyx/loads?load=${load.id}`} className="btn-sm btn-secondary">
+                      Message
+                    </Link>
+                    <Link href={`/ronyx/loads?track=${load.id}`} className="btn-sm btn-secondary">
+                      Track
+                    </Link>
+                    {load.invoiceReady ? (
+                      <Link href={`/ronyx/accounts-receivable?invoice=${load.id}`} className="btn-sm btn-primary">
+                        Invoice
+                      </Link>
+                    ) : (
+                      <Link href={`/ronyx/loads?monitor=${load.id}`} className="btn-sm btn-warning">
+                        Monitor
+                      </Link>
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
-          </section>
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Link href="/ronyx/loads" className="btn-primary">
+                Assign New Load
+              </Link>
+              <Link href="/ronyx/reports?filter=eod" className="btn-secondary">
+                Generate End-of-Day Report
+              </Link>
+              <Link href="/ronyx/loads" className="btn-secondary">
+                View All
+              </Link>
+            </div>
+          </div>
 
-          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <div className="ronyx-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3>SaaS System Layers</h3>
-              <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>Create data, not just view it</span>
+              <h3>Exceptions & Alerts ({exceptions.length})</h3>
+              <button className="ronyx-action" onClick={() => setExceptions([])}>
+                Acknowledge All
+              </button>
             </div>
-            <div className="ronyx-grid">
-              <div className="ronyx-card">
-                <h4 style={{ marginBottom: 8 }}>Input Layers</h4>
-                <p style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
-                  Dispatcher web app + driver mobile input to capture loads, tickets, and GPS.
-                </p>
-                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Link href="/ronyx/driver-app" className="ronyx-action">
-                    Driver App
-                  </Link>
-                  <Link href="/ronyx/loads" className="ronyx-action">
-                    Dispatch Input
-                  </Link>
-                </div>
-              </div>
-              <div className="ronyx-card">
-                <h4 style={{ marginBottom: 8 }}>Workflow Engines</h4>
-                <p style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
-                  Order → Dispatch → Ticket → Invoice automation with approvals and audit trails.
-                </p>
-                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Link href="/ronyx/workflows" className="ronyx-action">
-                    View Workflows
-                  </Link>
-                  <Link href="/ronyx/tickets" className="ronyx-action">
-                    Tickets
-                  </Link>
-                </div>
-              </div>
-              <div className="ronyx-card">
-                <h4 style={{ marginBottom: 8 }}>External Interfaces</h4>
-                <p style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
-                  Customer portal + integrations for shippers, brokers, and accounting tools.
-                </p>
-                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Link href="/ronyx/portal" className="ronyx-action">
-                    Customer Portal
-                  </Link>
-                  <Link href="/ronyx/integrations" className="ronyx-action">
-                    Integrations
-                  </Link>
-                </div>
-              </div>
+            <div className="ronyx-table">
+              {exceptions.length === 0 ? (
+                <div className="alert-bar">All clear. No active exceptions.</div>
+              ) : (
+                exceptions.map((exception) => (
+                  <button
+                    key={exception.id}
+                    className="alert-bar"
+                    style={{ textAlign: "left" }}
+                    onClick={() => setFilter("DELAYED")}
+                  >
+                    <span>▶️ {exception.title}</span>
+                    <span style={{ color: "rgba(15,23,42,0.6)", fontSize: "0.8rem" }}>{exception.detail}</span>
+                  </button>
+                ))
+              )}
             </div>
-          </section>
-
-          <section className="ronyx-grid">
-            <div className="ronyx-card" style={{ gridColumn: "span 2" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <h3>Live Loads</h3>
-                <Link href="/ronyx/loads" className="ronyx-action">
-                  View all
-                </Link>
-              </div>
-              <div className="ronyx-table">
-                <div className="ronyx-row" style={{ fontWeight: 700 }}>
-                  <span>Load #</span>
-                  <span>Driver</span>
-                  <span>Status</span>
-                  <span>Actions</span>
-                </div>
-                {[
-                  { id: "LD-4021", status: "IN TRANSIT", driver: "D. Perez" },
-                  { id: "LD-4025", status: "LOADING", driver: "S. Grant" },
-                  { id: "LD-4029", status: "QUEUED", driver: "J. Lane" },
-                ].map((load) => (
-                  <div key={load.id} className="ronyx-row">
-                    <span>{load.id}</span>
-                    <span>{load.driver}</span>
-                    <span className={`status-badge ${load.status === "IN TRANSIT" ? "in-transit" : load.status === "LOADING" ? "flagged" : "completed"}`}>
-                      {load.status}
-                    </span>
-                    <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button className="btn-sm btn-secondary">Message</button>
-                      <button className="btn-sm btn-secondary">Update</button>
-                      <button className="btn-sm btn-warning">Flag</button>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="ronyx-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <h3>Alerts</h3>
-                <Link href="/ronyx/compliance" className="ronyx-action">
-                  Manage
-                </Link>
-              </div>
-              <div className="ronyx-table">
-                <div className="alert-bar">
-                  <span>⚠️ Truck 18 due for maintenance in 3 days</span>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="btn-primary">Schedule Now</button>
-                    <button className="btn-secondary">Dismiss</button>
-                  </div>
-                </div>
-                <div className="alert-bar" style={{ marginTop: 10 }}>
-                  <span>⚠️ Ticket #T-884 mismatch flagged</span>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="btn-primary">Review</button>
-                    <button className="btn-secondary">Dismiss</button>
-                  </div>
-                </div>
-                <div className="alert-bar" style={{ marginTop: 10 }}>
-                  <span>⚠️ Load LD-4025 detention timer running</span>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="btn-primary">Notify Driver</button>
-                    <button className="btn-secondary">Contact Site</button>
-                  </div>
-                </div>
-              </div>
-        </div>
-          </section>
+          </div>
+        </section>
       </div>
     </div>
   );

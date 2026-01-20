@@ -4863,6 +4863,91 @@ function LandingPageContent() {
         </div>
       </section>
 
+      <section id="competitive" className="pricing-performance">
+        <div className="container">
+          <div className="section-header">
+            <h2>
+              Built for Haulers, Not Brokers
+            </h2>
+            <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+              Most tools have features. Very few have the right workflow.
+            </p>
+            <p style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+              We combine dispatch, ticketing, and reconciliation for dirt, sand, and aggregate hauling.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+            {[
+              {
+                title: "Generic TMS Giants",
+                desc: "Built for general freight and brokerage, not material hauling cycles.",
+              },
+              {
+                title: "Construction Telematics",
+                desc: "Strong asset tracking, but dispatch is not a dedicated TMS workflow.",
+              },
+              {
+                title: "Trucking Accounting Suites",
+                desc: "Accounting-first tools with dispatch added on.",
+              },
+              {
+                title: "Niche Legacy Systems",
+                desc: "Material-focused but often dated and clunky.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="benefit-card" style={{ textAlign: "left" }}>
+                <h3 style={{ marginBottom: 8 }}>{item.title}</h3>
+                <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.95rem" }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 40 }} className="reporting-card">
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <h2>The Sweet Spot</h2>
+              <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
+                Best-in-class dispatch layer for material hauling
+              </p>
+            </div>
+            <pre
+              style={{
+                background: "rgba(0, 0, 0, 0.3)",
+                padding: 16,
+                borderRadius: 8,
+                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "0.9rem",
+                overflowX: "auto",
+              }}
+            >
+{`Telematics and Asset Tracking (Tenna, Samsara)
+        |
+        |
+Generic TMS ---- MoveAround TMS ---- Construction ERP
+(Rose Rocket)    (movearoundtms.com) (HCSS, Procore)
+        |
+        |
+Accounting Suites (TruckingOffice, QuickBooks)`}
+            </pre>
+
+            <ul style={{ paddingLeft: 18, marginTop: 16, color: "rgba(255,255,255,0.8)" }}>
+              <li>Industry-tailored UX: material and job site first.</li>
+              <li>Frictionless core loop: ticket to dispatch to invoice.</li>
+              <li>Smart integrations: QuickBooks, Geotab, scale APIs.</li>
+              <li>Support and content built for material haulers.</li>
+            </ul>
+
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <Link href="/pricing" prefetch={false} className="btn btn-secondary">
+                View Full Comparison and Pricing
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="switch-benefits" style={{ paddingTop: 0 }}>
         <div className="container">
           <div className="section-header" style={{ textAlign: "center" }}>

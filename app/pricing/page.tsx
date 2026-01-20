@@ -320,41 +320,6 @@ const competitiveRows = [
   },
 ];
 
-const interviewScript = [
-  {
-    title: "Intro (5 mins)",
-    items: [
-      "We are building software for dump truck and aggregate hauling.",
-      "This is not a sales call; I want to learn your workflow.",
-      "This should take about 20 minutes. Is that okay?",
-    ],
-  },
-  {
-    title: "Current Process and Pain Points (10 mins)",
-    items: [
-      "Walk me through how a load is scheduled, dispatched, and billed.",
-      "Where do delays or mistakes usually happen?",
-      "How do you track materials (tons/yards) for billing and job costing?",
-      "How do you handle overweight permits today?",
-    ],
-  },
-  {
-    title: "Reaction to the Concept (5 mins)",
-    items: [
-      "If this existed today, would it solve your biggest frustrations?",
-      "Which part would help you most?",
-      "What is missing that would be a deal-breaker?",
-    ],
-  },
-  {
-    title: "Pricing Sensitivity (5 mins)",
-    items: [
-      "What do you spend per month on dispatch or operations tools now?",
-      "At $85-$150 per truck, is this a no-brainer, maybe, or too expensive?",
-      "Who else would need to approve this purchase?",
-    ],
-  },
-];
 
 export default function PricingPage() {
   const [plan, setPlan] = useState<"Basic" | "Pro" | "Enterprise">("Basic");
@@ -638,24 +603,13 @@ export default function PricingPage() {
 
         <div className="space-y-2">
           <h3 className="text-lg font-semibold text-gray-800">
-            Customer Interview Script
+            Proof Over Promises
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {interviewScript.map((section) => (
-              <Card key={section.title} className="border border-gray-200">
-                <CardContent className="py-4 space-y-2">
-                  <div className="text-sm font-semibold text-gray-800">
-                    {section.title}
-                  </div>
-                  <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                    {section.items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <p className="text-sm text-gray-600">
+            We built MoveAround TMS specifically for material haulers. The workflow
+            defaults to material type, tons/yards, and pit-to-site cycles so teams
+            stop forcing a general freight tool to fit their daily work.
+          </p>
         </div>
       </section>
     </div>
