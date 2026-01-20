@@ -1,3 +1,5 @@
+"use client";
+
 import { supabase } from "../../lib/supabaseClient";
 import ExcelJS from "exceljs";
 import Papa from "papaparse";

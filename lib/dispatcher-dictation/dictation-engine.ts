@@ -62,12 +62,29 @@ export class DictationEngine {
     dispatcherId: string,
     sessionId: string,
   ): Promise<DictatedMessage> {
-    // In production, use cloud STT service (Google, AWS, Azure)
-    // This is a placeholder - actual implementation would call STT API
-    
-    // Placeholder transcription (would be replaced with actual STT)
-    const transcribedText = ''; // Would come from STT service
-    const confidence = 0.85; // Would come from STT service
+    const audioBlob = audioData instanceof Blob ? audioData : new Blob([audioData]);
+    const formData = new FormData();
+    formData.append("sessionId", sessionId);
+    formData.append("audio", audioBlob, "dictation.wav");
+
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      "http://localhost:3000";
+
+    const response = await fetch(`${baseUrl}/api/dictation/transcribe`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Dictation transcribe failed: ${detail}`);
+    }
+
+    const result = await response.json();
+    const transcribedText = result.transcribedText || "";
+    const confidence = result.confidence ?? 0.85;
 
     const message: DictatedMessage = {
       id: sessionId,

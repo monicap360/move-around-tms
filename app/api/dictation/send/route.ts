@@ -68,8 +68,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Verify dispatcher has permission to message this driver
-    // TODO: Verify driver has active load (if loadId provided)
+    const { data: driver, error: driverError } = await supabase
+      .from("drivers")
+      .select("id, organization_id, phone")
+      .eq("id", driverId)
+      .single();
+
+    if (driverError || !driver) {
+      return NextResponse.json(
+        { error: "Driver not found" },
+        { status: 404 },
+      );
+    }
+
+    if (
+      driver.organization_id &&
+      driver.organization_id !== session.organization_id
+    ) {
+      return NextResponse.json(
+        { error: "Driver does not belong to your organization" },
+        { status: 403 },
+      );
+    }
+
+    if (loadId) {
+      const { data: load, error: loadError } = await supabase
+        .from("loads")
+        .select("id, driver_id, organization_id, status")
+        .eq("id", loadId)
+        .single();
+
+      if (loadError || !load) {
+        return NextResponse.json(
+          { error: "Load not found" },
+          { status: 404 },
+        );
+      }
+
+      if (load.organization_id && load.organization_id !== session.organization_id) {
+        return NextResponse.json(
+          { error: "Load does not belong to your organization" },
+          { status: 403 },
+        );
+      }
+
+      if (load.driver_id && load.driver_id !== driverId) {
+        return NextResponse.json(
+          { error: "Load is not assigned to this driver" },
+          { status: 400 },
+        );
+      }
+    }
     
     // Create dictated message record
     const { data: message, error: messageError } = await supabase
@@ -106,13 +155,31 @@ export async function POST(request: NextRequest) {
       p_delivery_method: deliveryMethod,
     });
 
-    // TODO: Deliver message to driver
-    // - If text: Send to existing messaging system
-    // - If system_voice: Generate synthetic voice audio and deliver
-    // - If both: Do both
-    
-    // For now, integrate with existing dispatch_messages table if it exists
-    // Or create notification/push notification
+    const deliveries: Array<{ method: string; status: string; detail?: string }> = [];
+    const origin = request.nextUrl.origin;
+
+    if (deliveryMethod === "text" || deliveryMethod === "both") {
+      if (!driver.phone) {
+        deliveries.push({ method: "text", status: "skipped", detail: "Missing driver phone" });
+      } else {
+        const smsRes = await fetch(`${origin}/api/sms/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to: driver.phone, message: messageText }),
+        });
+
+        deliveries.push({
+          method: "text",
+          status: smsRes.ok ? "sent" : "failed",
+          detail: smsRes.ok ? undefined : await smsRes.text(),
+        });
+      }
+    }
+
+    if (deliveryMethod === "system_voice" || deliveryMethod === "both") {
+      // Voice delivery is logged for downstream TTS/driver app consumption.
+      deliveries.push({ method: "system_voice", status: "queued" });
+    }
     
     // Log audit event
     await supabase.from("dictation_audit_log").insert({
@@ -130,6 +197,7 @@ export async function POST(request: NextRequest) {
       messageId: message.id,
       status: "sent",
       deliveredAt: message.sent_at,
+      deliveries,
     });
   } catch (err: any) {
     console.error("Error in dictation/send:", err);

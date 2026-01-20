@@ -4,6 +4,8 @@
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import os from "os";
+import fs from "fs";
 
 export interface PayrollSlot {
   acquired: boolean;
@@ -110,8 +112,7 @@ export class PayrollConcurrencyControl {
       };
     }
 
-    // Check memory (placeholder - would integrate with real monitoring)
-    // In production, this would check actual system metrics
+    // Check memory usage using system metrics
     const memoryUsage = await this.getMemoryUsage();
     if (memoryUsage > 85) {
       return {
@@ -120,7 +121,7 @@ export class PayrollConcurrencyControl {
       };
     }
 
-    // Check disk (placeholder)
+    // Check disk usage using filesystem metrics
     const diskUsage = await this.getDiskUsage();
     if (diskUsage > 80) {
       return {
@@ -194,25 +195,38 @@ export class PayrollConcurrencyControl {
   }
 
   /**
-   * Get memory usage (placeholder - integrate with real monitoring)
+   * Get memory usage
    */
   private async getMemoryUsage(): Promise<number> {
-    // In production, would check actual system memory
-    // For now, return placeholder
-    if (typeof process !== 'undefined' && process.memoryUsage) {
+    if (os.totalmem && os.freemem) {
+      const total = os.totalmem();
+      const free = os.freemem();
+      const used = total - free;
+      return total > 0 ? (used / total) * 100 : 0;
+    }
+    if (typeof process !== "undefined" && process.memoryUsage) {
       const usage = process.memoryUsage();
-      const totalMemory = 8 * 1024 * 1024 * 1024; // Assume 8GB
-      return (usage.heapUsed / totalMemory) * 100;
+      const totalMemory = os.totalmem ? os.totalmem() : 8 * 1024 * 1024 * 1024;
+      return totalMemory > 0 ? (usage.heapUsed / totalMemory) * 100 : 0;
     }
     return 0;
   }
 
   /**
-   * Get disk usage (placeholder - integrate with real monitoring)
+   * Get disk usage
    */
   private async getDiskUsage(): Promise<number> {
-    // In production, would check actual disk usage
-    // For now, return placeholder
-    return 0;
+    try {
+      if (fs.statfsSync) {
+        const stats = fs.statfsSync(process.cwd());
+        const total = stats.blocks * stats.bsize;
+        const free = stats.bfree * stats.bsize;
+        const used = total - free;
+        return total > 0 ? (used / total) * 100 : 0;
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
   }
 }

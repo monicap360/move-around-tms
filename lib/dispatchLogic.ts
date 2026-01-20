@@ -1,4 +1,6 @@
 // --- Types and Utilities ---
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
 export interface Truck {
   id: string;
   number: string;
@@ -28,6 +30,7 @@ export interface Assignment {
 
 // --- Mock-based dispatch logic ---
 export async function dispatchNextLoad(driverId: string) {
+  const supabase = createSupabaseServerClient();
   const { data: load, error } = await supabase
     .from("loads")
     .select("*")
@@ -61,60 +64,54 @@ export async function autoAssignBackupTruck(
   originalTruckIdOrDriverId: string,
   loadId?: string,
 ) {
-  // If loadId is provided, use mock logic; else, use Supabase logic
+  const supabase = createSupabaseServerClient();
   if (loadId) {
-    // Mock implementation
-    const availableTrucks: Truck[] = [
-      {
-        id: "truck-backup-1",
-        number: "T-001",
-        status: "available",
-        driverId: "driver-1",
-      },
-      {
-        id: "truck-backup-2",
-        number: "T-002",
-        status: "available",
-        driverId: "driver-2",
-      },
-    ];
+    const { data: backup, error: backupError } = await supabase
+      .from("trucks")
+      .select("*")
+      .neq("id", originalTruckIdOrDriverId)
+      .in("status", ["available", "Ready"])
+      .limit(1)
+      .single();
 
-    if (availableTrucks.length === 0) {
-      return {
-        success: false,
-        message: "No backup trucks available",
-      };
+    if (backupError || !backup) {
+      return { success: false, message: "No backup truck found." };
     }
-
-    const selectedTruck = availableTrucks[0];
-    return {
-      success: true,
-      message: "Backup truck assigned successfully",
-      assignment: {
-        truckId: selectedTruck.id,
-        driverId: selectedTruck.driverId,
-        truckNumber: selectedTruck.number,
-      },
-    };
-  } else {
-    // Supabase-based logic
-    const backup = await findBackupTruck(originalTruckIdOrDriverId);
-    if (!backup) return { success: false, message: "No backup truck found." };
 
     const { error } = await supabase
       .from("driver_assignments")
-      .update({ truck_id: backup.id, status: "Reassigned" })
-      .eq("driver_id", originalTruckIdOrDriverId);
+      .update({ truck_id: backup.id, status: "Reassigned", driver_id: backup.driver_id || null })
+      .eq("load_id", loadId);
 
     if (error) return { success: false, message: error.message };
     return {
       success: true,
-      message: `Driver reassigned to ${backup.unit_number || backup.unit || backup.id}`,
+      message: `Backup truck assigned to load ${loadId}`,
+      assignment: {
+        truckId: backup.id,
+        driverId: backup.driver_id || null,
+        truckNumber: backup.unit_number || backup.unit || backup.id,
+      },
     };
   }
+
+  const backup = await findBackupTruck(originalTruckIdOrDriverId);
+  if (!backup) return { success: false, message: "No backup truck found." };
+
+  const { error } = await supabase
+    .from("driver_assignments")
+    .update({ truck_id: backup.id, status: "Reassigned" })
+    .eq("driver_id", originalTruckIdOrDriverId);
+
+  if (error) return { success: false, message: error.message };
+  return {
+    success: true,
+    message: `Driver reassigned to ${backup.unit_number || backup.unit || backup.id}`,
+  };
 }
 
 export async function findBackupTruck(driverId: string) {
+  const supabase = createSupabaseServerClient();
   // Get the driver's qualified truck types
   const { data: driverQuals, error: dqError } = await supabase
     .from("driver_qualifications")

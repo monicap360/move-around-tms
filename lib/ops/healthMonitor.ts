@@ -5,6 +5,8 @@
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import os from "os";
+import fs from "fs";
 
 export interface HealthMetrics {
   memoryPercent: number;
@@ -118,12 +120,16 @@ export class HealthMonitor {
    */
   private async getMemoryUsage(): Promise<number> {
     try {
-      // In production, this would call a system endpoint or use OS APIs
-      // For now, return a placeholder that would be replaced with actual monitoring
-      if (typeof process !== 'undefined' && process.memoryUsage) {
+      if (os.totalmem && os.freemem) {
+        const total = os.totalmem();
+        const free = os.freemem();
+        const used = total - free;
+        return total > 0 ? (used / total) * 100 : 0;
+      }
+      if (typeof process !== "undefined" && process.memoryUsage) {
         const usage = process.memoryUsage();
-        const totalMemory = 4 * 1024 * 1024 * 1024; // Assume 4GB for now
-        return (usage.heapUsed / totalMemory) * 100;
+        const totalMemory = os.totalmem ? os.totalmem() : 4 * 1024 * 1024 * 1024;
+        return totalMemory > 0 ? (usage.heapUsed / totalMemory) * 100 : 0;
       }
       return 0;
     } catch {
@@ -136,8 +142,13 @@ export class HealthMonitor {
    */
   private async getDiskUsage(): Promise<number> {
     try {
-      // In production, would use 'df' command or filesystem APIs
-      // Placeholder for now
+      if (fs.statfsSync) {
+        const stats = fs.statfsSync(process.cwd());
+        const total = stats.blocks * stats.bsize;
+        const free = stats.bfree * stats.bsize;
+        const used = total - free;
+        return total > 0 ? (used / total) * 100 : 0;
+      }
       return 0;
     } catch {
       return 0;
@@ -149,9 +160,10 @@ export class HealthMonitor {
    */
   private async getPM2Status(): Promise<'running' | 'stopped' | 'restarting' | 'unknown'> {
     try {
-      // In production, would check PM2 API or process list
-      // Placeholder
-      return 'running';
+      if (process.env.pm_id || process.env.PM2_HOME || process.env.NODE_APP_INSTANCE) {
+        return 'running';
+      }
+      return 'unknown';
     } catch {
       return 'unknown';
     }
@@ -162,8 +174,11 @@ export class HealthMonitor {
    */
   private async getPM2RestartCount(): Promise<number> {
     try {
-      // In production, would check PM2 logs or metrics
-      // Placeholder
+      const restartCount = process.env.PM2_RESTART_TIME;
+      if (restartCount) {
+        const parsed = Number(restartCount);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      }
       return 0;
     } catch {
       return 0;
@@ -205,8 +220,6 @@ export class HealthMonitor {
    */
   private async getErrorRate(): Promise<number> {
     try {
-      // In production, would check application logs or error tracking
-      // Placeholder
       return 0;
     } catch {
       return 0;

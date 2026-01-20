@@ -39,39 +39,41 @@ export async function GET(
     dateRangeEnd.setDate(dateRangeEnd.getDate() + 1); // Look 1 day after ticket date
 
     let fuelCost = 0;
+    let fuelGallons = 0;
     let tollsCost = 0;
+    const missingSources: string[] = [];
 
     // Calculate fuel costs
     if (ticket.truck_id) {
-      // Get fuel purchases for this truck around the ticket date
-      const { data: fuelPurchases } = await supabase
+      const { data: fuelPurchases, error: fuelError } = await supabase
         .from("fuel_purchases")
-        .select("total_cost, transaction_date")
+        .select("amount, gallons, purchase_date")
         .eq("truck_id", ticket.truck_id)
-        .gte("transaction_date", dateRange.toISOString().split("T")[0])
-        .lte("transaction_date", dateRangeEnd.toISOString().split("T")[0]);
+        .gte("purchase_date", dateRange.toISOString().split("T")[0])
+        .lte("purchase_date", dateRangeEnd.toISOString().split("T")[0]);
 
-      if (fuelPurchases) {
-        fuelCost = fuelPurchases.reduce((sum, fp) => sum + (Number(fp.total_cost) || 0), 0);
+      if (fuelError) {
+        missingSources.push("fuel_purchases");
       }
 
-      // Also check fuel_allocations if ticket is linked to a load
-      // (This would require load_id in tickets, which may not exist yet)
+      if (fuelPurchases) {
+        fuelCost = fuelPurchases.reduce((sum, fp) => sum + (Number(fp.amount) || 0), 0);
+        fuelGallons = fuelPurchases.reduce((sum, fp) => sum + (Number(fp.gallons) || 0), 0);
+      }
+    } else {
+      missingSources.push("truck_id");
     }
 
-    // Calculate tolls/expenses
-    // Note: Tolls table may not exist yet, but we'll check for expenses
-    // For now, we'll use a placeholder query structure
-    // In production, you'd have an expenses table with tolls, permits, etc.
-
-    // Get other costs (maintenance, permits, etc.) if they exist
-    // This would query an expenses table linked to truck_id or ticket_id
+    // Tolls/expenses table is not present in schema; return 0 and note missing source.
+    missingSources.push("tolls");
 
     return NextResponse.json({
       fuel_cost: fuelCost,
+      fuel_gallons: fuelGallons,
       tolls_cost: tollsCost,
-      other_costs: 0, // Placeholder until expenses table is implemented
+      other_costs: 0,
       total_costs: fuelCost + tollsCost,
+      missing_sources: missingSources,
     });
   } catch (err: any) {
     console.error("Error in ticket costs GET:", err);

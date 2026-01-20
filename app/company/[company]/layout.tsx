@@ -1,33 +1,6 @@
 import React from "react";
 import Link from "next/link";
 
-const navItems = [
-  {
-    href: `/company/${typeof window !== "undefined" ? window.location.pathname.split("/")[2] : "[company]"}/fast-scan`,
-    label: "Fast Scan",
-  },
-  {
-    href: `/company/${typeof window !== "undefined" ? window.location.pathname.split("/")[2] : "[company]"}`,
-    label: "Overview",
-  },
-  {
-    href: `/company/${typeof window !== "undefined" ? window.location.pathname.split("/")[2] : "[company]"}/dashboards`,
-    label: "Dashboards",
-  },
-  {
-    href: `/company/${typeof window !== "undefined" ? window.location.pathname.split("/")[2] : "[company]"}/compliance`,
-    label: "Compliance",
-  },
-  {
-    href: `/company/${typeof window !== "undefined" ? window.location.pathname.split("/")[2] : "[company]"}/drivers`,
-    label: "Drivers",
-  },
-  {
-    href: `/company/${typeof window !== "undefined" ? window.location.pathname.split("/")[2] : "[company]"}/settings`,
-    label: "Settings",
-  },
-];
-
 export default function CompanyLayout({
   children,
   params,
@@ -35,6 +8,15 @@ export default function CompanyLayout({
   children: React.ReactNode;
   params: { company: string };
 }) {
+  const navItems = [
+    { href: `/company/${params.company}/fast-scan`, label: "Fast Scan" },
+    { href: `/company/${params.company}`, label: "Overview" },
+    { href: `/company/${params.company}/dashboards`, label: "Dashboards" },
+    { href: `/company/${params.company}/compliance`, label: "Compliance" },
+    { href: `/company/${params.company}/drivers`, label: "Drivers" },
+    { href: `/company/${params.company}/settings`, label: "Settings" },
+  ];
+
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <aside

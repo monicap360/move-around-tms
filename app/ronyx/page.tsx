@@ -9,6 +9,7 @@ const quickActions = [
   { title: "👤 Assign Driver", href: "/ronyx/drivers" },
   { title: "🚛 Find Backhaul", href: "/ronyx/loads" },
   { title: "⚙️ Quick Dispatch", href: "/ronyx/loads" },
+  { title: "💳 Billing", href: "/ronyx/billing" },
   { title: "💰 Run Payroll", href: "/ronyx/payroll" },
 ];
 

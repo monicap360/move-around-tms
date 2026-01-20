@@ -6,29 +6,69 @@ export const dynamic = 'force-dynamic';
 // Example: Live operational intelligence feed (aggregate latest data)
 export async function GET() {
   const supa = createSupabaseServerClient();
-  // This is a placeholder for a live ops dashboard feed
-  // You can aggregate from multiple tables as needed
-  const [tickets, drivers, trucks] = await Promise.all([
+
+  const [ticketsRes, driversRes, trucksRes, loadsRes] = await Promise.all([
     supa
-      .from("tickets")
-      .select("id, status, forensic_score, anomaly_flags")
-      .order("created_at", { ascending: false })
-      .limit(10),
+      .from("aggregate_tickets")
+      .select("id, status, total_profit, ticket_date")
+      .order("ticket_date", { ascending: false })
+      .limit(20),
     supa
       .from("drivers")
-      .select("id, ops_performance_score, delay_index")
+      .select("id, status, active, last_seen_at")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(20),
     supa
       .from("trucks")
-      .select("id, efficiency_score, idle_loss_score")
+      .select("id, status, last_gps_at")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(20),
+    supa
+      .from("loads")
+      .select("id, status, source, destination, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
+  const tickets = ticketsRes.data || [];
+  const drivers = driversRes.data || [];
+  const trucks = trucksRes.data || [];
+  const loads = loadsRes.data || [];
+
+  const ticketStatusCounts = tickets.reduce<Record<string, number>>((acc, t: any) => {
+    const key = t.status || "unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const driverStatusCounts = drivers.reduce<Record<string, number>>((acc, d: any) => {
+    const key = d.status || (d.active ? "Active" : "Inactive");
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const truckStatusCounts = trucks.reduce<Record<string, number>>((acc, t: any) => {
+    const key = t.status || "unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const loadStatusCounts = loads.reduce<Record<string, number>>((acc, l: any) => {
+    const key = l.status || "unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
   return NextResponse.json({
-    tickets: tickets.data || [],
-    drivers: drivers.data || [],
-    trucks: trucks.data || [],
+    summary: {
+      tickets: ticketStatusCounts,
+      drivers: driverStatusCounts,
+      trucks: truckStatusCounts,
+      loads: loadStatusCounts,
+    },
+    tickets,
+    drivers,
+    trucks,
+    loads,
   });
 }

@@ -12,63 +12,97 @@ export interface EvidencePacketData {
   relatedDocuments: any[];
 }
 
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import JSZip from "jszip";
+
 /**
- * Generate PDF content for evidence packet
- * Note: This is a client-side implementation using browser APIs
- * For server-side, use a library like pdfkit or puppeteer
+ * Generate PDF content for evidence packet (client-safe).
  */
 export async function generateEvidencePDF(data: EvidencePacketData): Promise<Blob> {
-  // For now, we'll create a text-based representation
-  // In production, use a PDF library like jsPDF or pdfkit
-  
-  const pdfContent = `
-EVIDENCE PACKET
-${"=".repeat(50)}
+  const pdfDoc = await PDFDocument.create();
+  let currentPage = pdfDoc.addPage([612, 792]);
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const margin = 48;
+  const lineHeight = 16;
+  const maxWidth = currentPage.getWidth() - margin * 2;
+  let y = currentPage.getHeight() - margin;
 
-Ticket: ${data.ticket.ticket_number || data.ticket.id}
-Generated: ${new Date().toLocaleString()}
+  const addLine = (text: string, bold = false) => {
+    if (y < margin + lineHeight) {
+      currentPage = pdfDoc.addPage([612, 792]);
+      y = currentPage.getHeight() - margin;
+    }
+    currentPage.drawText(text, {
+      x: margin,
+      y,
+      size: 12,
+      font: bold ? fontBold : font,
+      color: rgb(0, 0, 0),
+      maxWidth,
+    });
+    y -= lineHeight;
+  };
 
-${data.narrativeSummary}
+  const lines = [
+    "EVIDENCE PACKET",
+    `Ticket: ${data.ticket.ticket_number || data.ticket.id}`,
+    `Generated: ${new Date().toLocaleString()}`,
+    "",
+    "Narrative Summary",
+    data.narrativeSummary || "No narrative available.",
+    "",
+    "Confidence Analysis",
+    `Total Events: ${data.confidenceSummary.total_events}`,
+    `Average Confidence: ${(data.confidenceSummary.average_confidence * 100).toFixed(1)}%`,
+    `Fields Checked: ${data.confidenceSummary.fields_checked.join(", ")}`,
+    "",
+    "Anomaly Detection",
+    `Total Anomalies: ${data.anomalySummary.total_anomalies}`,
+    `Critical: ${data.anomalySummary.severity_breakdown.critical}`,
+    `High: ${data.anomalySummary.severity_breakdown.high}`,
+    `Medium: ${data.anomalySummary.severity_breakdown.medium}`,
+    `Low: ${data.anomalySummary.severity_breakdown.low}`,
+    "",
+    "Related Tickets",
+    `${data.relatedTickets.length} related tickets found`,
+    "",
+    "Related Documents",
+    `${data.relatedDocuments.length} documents attached`,
+  ];
 
-CONFIDENCE ANALYSIS
-${"-".repeat(50)}
-Total Events: ${data.confidenceSummary.total_events}
-Average Confidence: ${(data.confidenceSummary.average_confidence * 100).toFixed(1)}%
-Fields Checked: ${data.confidenceSummary.fields_checked.join(", ")}
+  for (const line of lines) {
+    addLine(line, line === "EVIDENCE PACKET");
+  }
 
-ANOMALY DETECTION
-${"-".repeat(50)}
-Total Anomalies: ${data.anomalySummary.total_anomalies}
-Critical: ${data.anomalySummary.severity_breakdown.critical}
-High: ${data.anomalySummary.severity_breakdown.high}
-Medium: ${data.anomalySummary.severity_breakdown.medium}
-Low: ${data.anomalySummary.severity_breakdown.low}
-
-RELATED TICKETS
-${"-".repeat(50)}
-${data.relatedTickets.length} related tickets found
-
-RELATED DOCUMENTS
-${"-".repeat(50)}
-${data.relatedDocuments.length} documents attached
-  `.trim();
-
-  // Create a simple text blob (in production, use actual PDF generation)
-  return new Blob([pdfContent], { type: "text/plain" });
+  const pdfBytes = await pdfDoc.save();
+  return new Blob([pdfBytes], { type: "application/pdf" });
 }
 
 /**
  * Generate ZIP file with all evidence packet documents
  */
 export async function generateEvidenceZIP(data: EvidencePacketData): Promise<Blob> {
-  // For now, return a placeholder
-  // In production, use JSZip library to create actual ZIP files
-  
-  const zipContent = `
-Evidence Packet ZIP
-Ticket: ${data.ticket.ticket_number}
-Generated: ${new Date().toISOString()}
-  `.trim();
+  const zip = new JSZip();
+  zip.file(
+    "metadata.json",
+    JSON.stringify(
+      {
+        ticket_id: data.ticket.id,
+        ticket_number: data.ticket.ticket_number,
+        generated_at: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+  );
+  zip.file("narrative_summary.txt", data.narrativeSummary || "No narrative available.");
+  zip.file("confidence_summary.json", JSON.stringify(data.confidenceSummary, null, 2));
+  zip.file("anomaly_summary.json", JSON.stringify(data.anomalySummary, null, 2));
+  zip.file("related_tickets.json", JSON.stringify(data.relatedTickets, null, 2));
+  zip.file("related_documents.json", JSON.stringify(data.relatedDocuments, null, 2));
+  zip.file("ticket.json", JSON.stringify(data.ticket, null, 2));
 
-  return new Blob([zipContent], { type: "application/zip" });
+  const zipBytes = await zip.generateAsync({ type: "uint8array" });
+  return new Blob([zipBytes], { type: "application/zip" });
 }

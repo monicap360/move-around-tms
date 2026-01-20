@@ -9,65 +9,126 @@ export async function GET(req: NextRequest) {
     const range = searchParams.get("range") || "30d";
     const organizationId = searchParams.get("organization_id");
 
-    // Query real performance data from database
     const supabase = createSupabaseServerClient();
 
-    // Generate performance data from real database
-    const generatePerformanceData = async (days: number) => {
-      const data = [];
+    const getRangeStart = (rangeValue: string) => {
       const now = new Date();
-
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        const period = date.toISOString().split("T")[0];
-
-        // Query tickets for this day
-        let ticketsQuery = supabase
-          .from("aggregate_tickets")
-          .select("total_pay, total_bill, total_profit")
-          .eq("ticket_date", period);
-
-        if (organizationId) {
-          ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
-        }
-
-        const { data: dayTickets } = await ticketsQuery;
-
-        const dayRevenue = (dayTickets || []).reduce((sum: number, t: any) => sum + (Number(t.total_bill) || 0), 0);
-        const dayProfit = (dayTickets || []).reduce((sum: number, t: any) => sum + (Number(t.total_profit) || Number(t.total_bill) - Number(t.total_pay) || 0), 0);
-        const dayTicketsCount = dayTickets?.length || 0;
-
-        // MPG calculation (placeholder - would need fuel consumption data)
-        const mpg = 7.2; // Placeholder
-
-        data.push({
-          period,
-          revenue: Math.round(dayRevenue),
-          profit: Math.round(dayProfit),
-          tickets: dayTicketsCount,
-          mpg: parseFloat(mpg.toFixed(1)),
-        });
+      switch (rangeValue) {
+        case "7d":
+          return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        case "90d":
+          return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        case "1y":
+          return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        default:
+          return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
-
-      return data;
     };
 
-    let days: number;
-    switch (range) {
-      case "7d":
-        days = 7;
-        break;
-      case "90d":
-        days = 30; // Show 30 data points for 90 days (every 3 days)
-        break;
-      case "1y":
-        days = 52; // Show 52 data points for 1 year (weekly)
-        break;
-      default: // 30d
-        days = 30;
+    const startDate = getRangeStart(range);
+    const endDate = new Date();
+
+    let ticketsQuery = supabase
+      .from("aggregate_tickets")
+      .select("ticket_date, total_pay, total_bill, total_profit")
+      .gte("ticket_date", startDate.toISOString().split("T")[0])
+      .lte("ticket_date", endDate.toISOString().split("T")[0]);
+
+    if (organizationId) {
+      ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
     }
 
-    const performanceData = await generatePerformanceData(days);
+    const { data: tickets } = await ticketsQuery;
+
+    const ticketRows = tickets || [];
+    const ticketMap = new Map<string, { revenue: number; profit: number; count: number }>();
+    for (const ticket of ticketRows) {
+      const dateKey = ticket.ticket_date || endDate.toISOString().split("T")[0];
+      const current = ticketMap.get(dateKey) || { revenue: 0, profit: 0, count: 0 };
+      const totalBill = Number(ticket.total_bill) || 0;
+      const totalProfit =
+        Number(ticket.total_profit) ||
+        totalBill - (Number(ticket.total_pay) || 0);
+      current.revenue += totalBill;
+      current.profit += totalProfit;
+      current.count += 1;
+      ticketMap.set(dateKey, current);
+    }
+
+    const bucketSize =
+      range === "90d" ? 3 : range === "1y" ? 7 : 1;
+
+    const buildBuckets = () => {
+      const buckets: Array<{
+        period: string;
+        revenue: number;
+        profit: number;
+        tickets: number;
+      }> = [];
+
+      const cursor = new Date(startDate);
+      while (cursor <= endDate) {
+        const bucketStart = new Date(cursor);
+        const bucketEnd = new Date(cursor);
+        bucketEnd.setDate(bucketEnd.getDate() + bucketSize - 1);
+
+        let revenue = 0;
+        let profit = 0;
+        let count = 0;
+
+        for (let d = 0; d < bucketSize; d++) {
+          const day = new Date(bucketStart);
+          day.setDate(bucketStart.getDate() + d);
+          const key = day.toISOString().split("T")[0];
+          const dayData = ticketMap.get(key);
+          if (dayData) {
+            revenue += dayData.revenue;
+            profit += dayData.profit;
+            count += dayData.count;
+          }
+        }
+
+        buckets.push({
+          period: bucketStart.toISOString().split("T")[0],
+          revenue: Math.round(revenue),
+          profit: Math.round(profit),
+          tickets: count,
+        });
+
+        cursor.setDate(cursor.getDate() + bucketSize);
+      }
+
+      return buckets;
+    };
+
+    const performanceBuckets = buildBuckets();
+
+    const { data: eldTrips } = await supabase
+      .from("eld_trips")
+      .select("total_miles, start_time")
+      .gte("start_time", startDate.toISOString())
+      .lte("start_time", endDate.toISOString());
+
+    const { data: fuelPurchases } = await supabase
+      .from("fuel_purchases")
+      .select("gallons, purchase_date")
+      .gte("purchase_date", startDate.toISOString().split("T")[0])
+      .lte("purchase_date", endDate.toISOString().split("T")[0]);
+
+    const totalMiles = (eldTrips || []).reduce(
+      (sum, trip) => sum + (Number(trip.total_miles) || 0),
+      0,
+    );
+    const totalGallons = (fuelPurchases || []).reduce(
+      (sum, purchase) => sum + (Number(purchase.gallons) || 0),
+      0,
+    );
+    const averageMPG = totalGallons > 0 ? totalMiles / totalGallons : 0;
+
+    const performanceData = performanceBuckets.map((bucket) => ({
+      ...bucket,
+      mpg: parseFloat(averageMPG.toFixed(1)),
+    }));
 
     return NextResponse.json({
       success: true,

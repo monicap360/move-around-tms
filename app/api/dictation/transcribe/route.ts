@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const sessionId = formData.get("sessionId") as string;
     const audioFile = formData.get("audio") as File | null;
+    const language = (formData.get("language") as string | null) || undefined;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -43,18 +44,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: In production, send audioFile to cloud STT service
-    // For now, return placeholder (frontend should handle STT client-side or via cloud)
-    // This endpoint is a placeholder for server-side STT processing
-    
-    // Example: If using client-side Web Speech API, this endpoint might not be needed
-    // But if using cloud STT, process audioFile here
-    
-    let transcribedText = "";
-    let confidence = 0.85;
+    if (!audioFile) {
+      return NextResponse.json(
+        { error: "audio file is required" },
+        { status: 400 },
+      );
+    }
 
-    // Placeholder: In production, replace with actual STT service call
-    // const transcribedText = await transcribeAudioWithCloudService(audioFile);
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Speech-to-text service not configured" },
+        { status: 500 },
+      );
+    }
+
+    const sttForm = new FormData();
+    sttForm.append("file", audioFile);
+    sttForm.append("model", process.env.OPENAI_STT_MODEL || "whisper-1");
+    if (language) sttForm.append("language", language);
+
+    const sttResponse = await fetch(
+      "https://api.openai.com/v1/audio/transcriptions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: sttForm,
+      },
+    );
+
+    if (!sttResponse.ok) {
+      const errorText = await sttResponse.text();
+      return NextResponse.json(
+        { error: "STT request failed", details: errorText },
+        { status: 502 },
+      );
+    }
+
+    const sttJson = await sttResponse.json();
+    const transcribedText = sttJson.text || "";
+    const confidence = sttJson.confidence || 0.85;
     
     // Update session with transcription
     const { data: updatedSession, error: updateError } = await supabase

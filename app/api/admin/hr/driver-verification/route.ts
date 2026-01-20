@@ -88,8 +88,12 @@ export async function POST(req: NextRequest) {
     // If HR verified, add verification metadata
     if (field === "hr_verified" && value === true) {
       updateData.hr_verified_date = new Date().toISOString();
-      // TODO: Get actual user email from JWT/session
-      updateData.hr_verified_by = "hr@ronyxlogistics.com";
+      const adminEmail =
+        req.headers.get("x-admin-email") ||
+        body.adminEmail ||
+        process.env.ADMIN_FALLBACK_EMAIL ||
+        "system";
+      updateData.hr_verified_by = adminEmail;
     }
 
     // Add notes if provided

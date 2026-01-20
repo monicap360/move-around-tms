@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AgentRouter } from "@/lib/agents/agentRouter";
 import { ResolutionAgent } from "@/lib/agents/agents/resolutionAgent";
+import { GenericAgent } from "@/lib/agents/agents/genericAgent";
 
 export const dynamic = 'force-dynamic';
 
@@ -69,12 +70,13 @@ export async function POST(req: NextRequest) {
         currentPage,
       });
     } else {
-      // Other agents will be implemented
-      response = {
-        message: "This agent type is not yet implemented.",
-        actions: [],
-        confidence: 0,
-      };
+      const agent = new GenericAgent();
+      response = await agent.respond({
+        organizationId: profile.organization_id,
+        userId: user.id,
+        agentType: agentResponse.agentType,
+        userMessage: message,
+      });
     }
 
     return NextResponse.json({

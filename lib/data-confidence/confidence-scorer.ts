@@ -138,17 +138,57 @@ async function getDriverHistoricalAverage(
 
 /**
  * Get site's historical average for a field
- * Note: Sites may not be directly tracked in aggregate_tickets
- * This is a placeholder for when site tracking is available
+ * Uses partner_id as the closest site proxy in aggregate tickets.
  */
 async function getSiteHistoricalAverage(
   siteId: string,
   fieldName: string,
   days: number
 ): Promise<HistoricalAverage | null> {
-  // TODO: Implement when site_id is available in aggregate_tickets
-  // For now, return null to fallback to global average
-  return null;
+  const supabase = createSupabaseServerClient();
+
+  const columnMap: Record<string, string> = {
+    'quantity': 'quantity',
+    'net_weight': 'quantity',
+    'pay_rate': 'pay_rate',
+    'bill_rate': 'bill_rate',
+  };
+
+  const column = columnMap[fieldName] || 'quantity';
+
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  try {
+    const { data, error } = await supabase
+      .from('aggregate_tickets')
+      .select(column)
+      .eq('partner_id', siteId)
+      .gte('ticket_date', cutoffDate.toISOString().split('T')[0])
+      .not(column, 'is', null);
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const values = data
+      .map((row: any) => parseFloat(row[column]) || 0)
+      .filter((v: number) => v > 0);
+    if (values.length === 0) return null;
+
+    const average =
+      values.reduce((sum: number, val: number) => sum + val, 0) /
+      values.length;
+
+    return {
+      average,
+      count: values.length,
+      period: `${days}d`,
+    };
+  } catch (err) {
+    console.error('Error getting site historical average:', err);
+    return null;
+  }
 }
 
 /**

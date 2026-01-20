@@ -65,6 +65,8 @@ const navigationSections = [
       { name: "Payroll", path: "/payroll", icon: DollarSign },
       { name: "Ronyx Customers", path: "/ronyx/customers", icon: Users },
       { name: "Ronyx Projects", path: "/ronyx/projects", icon: ClipboardList },
+      { name: "Ronyx Financial Ops", path: "/ronyx/financial", icon: DollarSign },
+      { name: "Ronyx Billing", path: "/ronyx/billing", icon: DollarSign },
       { name: "Validation Rules", path: "/ronyx/validation-rules", icon: ShieldCheck },
       { name: "Geofences", path: "/ronyx/geofences", icon: ShieldCheck },
     ],

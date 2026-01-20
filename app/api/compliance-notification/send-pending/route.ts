@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
-// This endpoint checks for unsent compliance notifications and sends emails via the existing /api/email/send route.
+// This endpoint checks for unsent compliance notifications and sends emails via Supabase Edge Functions.
 export async function POST() {
   // Fetch unsent notifications
   const { data: notifications, error } = await supabaseAdmin
@@ -20,20 +20,20 @@ export async function POST() {
     // Compose email
     const subject = `Compliance Alert: ${n.alert_type.replace(/_/g, " ").toUpperCase()}`;
     const text = n.message;
-    // Send email via internal API
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/email/send`,
+    const html = `<p>${n.message}</p>`;
+    const { error: emailError } = await supabaseAdmin.functions.invoke(
+      "send-email",
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           to: n.recipient_email,
           subject,
           text,
-        }),
+          html,
+        },
       },
     );
-    if (res.ok) {
+
+    if (!emailError) {
       // Mark as sent
       await supabaseAdmin
         .from("compliance_notifications")

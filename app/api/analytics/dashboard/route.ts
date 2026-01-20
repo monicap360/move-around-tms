@@ -131,12 +131,67 @@ export async function GET(req: NextRequest) {
     const pendingTickets = tickets.filter((t: any) => t.status === "Pending" || t.status === "pending").length;
     const rejectedTickets = tickets.filter((t: any) => t.status === "Rejected" || t.status === "rejected").length;
 
-    // Calculate safety metrics (placeholder - would need DVIR data)
-    const dvirCompliance = 95; // Placeholder
-    const incidents = 0; // Placeholder - would need incidents table
-    const safetyScore = 92; // Placeholder - would need safety scores
+    let dvirCompliance = 0;
+    let incidents = 0;
+    let safetyScore = 0;
 
-    const mockMetrics = {
+    try {
+      let dvirQuery = supabase
+        .from("dvir_inspections")
+        .select("overall_status, created_at");
+
+      if (organizationId) {
+        dvirQuery = dvirQuery.eq("organization_id", organizationId);
+      }
+
+      dvirQuery = dvirQuery
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", now.toISOString());
+
+      const { data: dvirs, error: dvirError } = await dvirQuery;
+      let dvirList = dvirs || [];
+      if ((!dvirList || dvirList.length === 0) && dvirError) {
+        const { data: legacyDvirs } = await supabase
+          .from("dvir")
+          .select("created_at");
+        dvirList = legacyDvirs || [];
+      }
+      if (dvirList.length > 0) {
+        const compliantCount = dvirList.filter((d: any) => {
+          if (!d.overall_status) return true;
+          return (
+            d.overall_status === "satisfactory" ||
+            d.overall_status === "defects_corrected"
+          );
+        }).length;
+        dvirCompliance = Math.round((compliantCount / dvirList.length) * 100);
+      }
+    } catch {
+      dvirCompliance = 0;
+    }
+
+    try {
+      let incidentsQuery = supabase
+        .from("tms_incidents")
+        .select("id, severity, created_at", { count: "exact" })
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", now.toISOString());
+
+      if (organizationId) {
+        incidentsQuery = incidentsQuery.eq("organization_id", organizationId);
+      }
+
+      const { count } = await incidentsQuery;
+      incidents = count || 0;
+    } catch {
+      incidents = 0;
+    }
+
+    if (dvirCompliance > 0 || incidents > 0) {
+      safetyScore = Math.max(0, Math.min(100, dvirCompliance - incidents * 2));
+    }
+
+    const metrics = {
       revenue: {
         current: Math.round(currentRevenue),
         previous: Math.round(previousRevenue),
@@ -179,7 +234,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      metrics: mockMetrics,
+      metrics,
       dateRange: {
         start: startDate.toISOString(),
         end: now.toISOString(),

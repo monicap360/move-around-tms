@@ -1166,7 +1166,7 @@ function LandingPageContent() {
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(255, 255, 255, 0.2),
+            rgba(255, 255, 255, 0.03),
             transparent
           );
           transition: 0.6s;
@@ -1184,11 +1184,11 @@ function LandingPageContent() {
 
         .btn-primary:hover {
           transform: translateY(-4px);
-          box-shadow: 0 20px 60px rgba(255, 40, 0, 0.4);
+          box-shadow: 0 4px 10px rgba(255, 40, 0, 0.12);
         }
         .btn-primary:active {
           transform: translateY(-2px);
-          box-shadow: 0 12px 28px rgba(255, 120, 80, 0.35);
+          box-shadow: 0 3px 8px rgba(255, 120, 80, 0.12);
         }
 
         .btn-secondary {
@@ -1201,17 +1201,17 @@ function LandingPageContent() {
         .btn-secondary:hover {
           border-color: var(--hyper-yellow);
           transform: translateY(-4px);
-          box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+          box-shadow: 0 4px 10px rgba(255, 215, 0, 0.12);
         }
         .btn-secondary:active {
           transform: translateY(-2px);
-          box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
+          box-shadow: 0 3px 8px rgba(255, 215, 0, 0.1);
         }
 
         .btn:focus-visible,
         .nav-cta:focus-visible {
           outline: none;
-          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
         }
 
         .profit-leak-backdrop {
@@ -2437,58 +2437,6 @@ function LandingPageContent() {
         </div>
       </nav>
 
-      <section style={{ paddingTop: 120, paddingBottom: 40 }}>
-        <div className="container">
-          <div className="reporting-card" style={{ textAlign: "center" }}>
-            <h3 style={{ marginBottom: 8 }}>{t("choosePathTitle")}</h3>
-            <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.95rem" }}>
-              {t("choosePathSubtitle")}
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                gap: 16,
-                marginTop: 20,
-              }}
-            >
-              <Link
-                href="/pit-to-pay"
-                prefetch={false}
-                className="btn btn-primary"
-                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
-              >
-                {t("choosePathPits")}
-              </Link>
-              <Link
-                href="/dump-truck-fleets"
-                prefetch={false}
-                className="btn btn-secondary"
-                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
-              >
-                {t("choosePathDump")}
-              </Link>
-              <Link
-                href="/cross-border"
-                prefetch={false}
-                className="btn btn-secondary"
-                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
-              >
-                {t("choosePathCrossBorder")}
-              </Link>
-              <Link
-                href="/"
-                prefetch={false}
-                className="btn btn-secondary"
-                style={{ width: "100%", padding: "10px 16px", fontSize: "0.9rem" }}
-              >
-                {t("choosePathGeneral")}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="hero" id="performance">
         <div className="container hero-container">
           <div className="hero-content">
@@ -2649,6 +2597,82 @@ function LandingPageContent() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="choose-path" style={{ paddingTop: 40, paddingBottom: 40 }}>
+        <div className="container">
+          <div className="reporting-card" style={{ textAlign: "center" }}>
+            <h3 style={{ marginBottom: 8 }}>{t("choosePathTitle")}</h3>
+            <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.95rem" }}>
+              {t("choosePathSubtitle")}
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: 16,
+                marginTop: 20,
+              }}
+            >
+              <Link
+                href="/pit-to-pay"
+                prefetch={false}
+                className="btn btn-primary"
+                style={{
+                  width: "auto",
+                  maxWidth: 340,
+                  padding: "10px 16px",
+                  fontSize: "0.9rem",
+                  margin: "0",
+                }}
+              >
+                {t("choosePathPits")}
+              </Link>
+              <Link
+                href="/dump-truck-fleets"
+                prefetch={false}
+                className="btn btn-secondary"
+                style={{
+                  width: "auto",
+                  maxWidth: 340,
+                  padding: "10px 16px",
+                  fontSize: "0.9rem",
+                  margin: "0",
+                }}
+              >
+                {t("choosePathDump")}
+              </Link>
+              <Link
+                href="/cross-border"
+                prefetch={false}
+                className="btn btn-secondary"
+                style={{
+                  width: "auto",
+                  maxWidth: 340,
+                  padding: "10px 16px",
+                  fontSize: "0.9rem",
+                  margin: "0",
+                }}
+              >
+                {t("choosePathCrossBorder")}
+              </Link>
+              <Link
+                href="/"
+                prefetch={false}
+                className="btn btn-secondary"
+                style={{
+                  width: "auto",
+                  maxWidth: 340,
+                  padding: "10px 16px",
+                  fontSize: "0.9rem",
+                  margin: "0",
+                }}
+              >
+                {t("choosePathGeneral")}
+              </Link>
             </div>
           </div>
         </div>

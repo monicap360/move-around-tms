@@ -27,7 +27,9 @@ export async function POST(request: Request) {
   if (action === "generate_from_tickets") {
     const { data: tickets, error: ticketsError } = await supabase
       .from("aggregate_tickets")
-      .select("id, customer_name, quantity, bill_rate, status, payment_status")
+      .select(
+        "id, customer_name, quantity, bill_rate, status, payment_status, material, ticket_number, unit_type",
+      )
       .eq("status", "approved")
       .neq("payment_status", "paid");
 
@@ -68,6 +70,28 @@ export async function POST(request: Request) {
 
       if (invoiceError) {
         return NextResponse.json({ error: invoiceError.message }, { status: 500 });
+      }
+
+      const itemRows = items.map((ticket) => {
+        const qty = Number(ticket.quantity || 0);
+        const rate = Number(ticket.bill_rate || 0);
+        return {
+          invoice_id: invoice.id,
+          ticket_id: ticket.id,
+          description: `${ticket.material || "Material"} ticket ${ticket.ticket_number || ticket.id}`,
+          quantity: qty,
+          unit: ticket.unit_type || "Load",
+          unit_price: rate,
+          total_amount: qty * rate,
+        };
+      });
+
+      const { error: itemError } = await supabase
+        .from("ronyx_invoice_items")
+        .insert(itemRows);
+
+      if (itemError) {
+        return NextResponse.json({ error: itemError.message }, { status: 500 });
       }
 
       await supabase

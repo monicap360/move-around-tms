@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import JSZip from "jszip";
 
 // GET: Generate ZIP for evidence packet
 export async function GET(
@@ -35,31 +36,36 @@ export async function GET(
       .eq("id", ticketId)
       .single();
 
-    // Generate ZIP content
-    // Note: In production, use JSZip library to create actual ZIP files
-    const zipManifest = `
-Evidence Packet ZIP Manifest
-${"=".repeat(50)}
+    const zip = new JSZip();
+    const ticketLabel = ticket?.ticket_number || ticketId;
+    const generatedAt = new Date(packet.generated_at).toISOString();
 
-Ticket: ${ticket?.ticket_number || ticketId}
-Generated: ${new Date(packet.generated_at).toLocaleString()}
+    zip.file(
+      "metadata.json",
+      JSON.stringify(
+        {
+          ticket_number: ticketLabel,
+          ticket_id: ticketId,
+          generated_at: generatedAt,
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file("narrative_summary.txt", packet.narrative_summary || "No narrative available.");
+    zip.file("confidence_summary.json", JSON.stringify(packet.confidence_summary || {}, null, 2));
+    zip.file("anomaly_summary.json", JSON.stringify(packet.anomaly_summary || {}, null, 2));
+    zip.file("related_tickets.json", JSON.stringify(packet.related_tickets || [], null, 2));
+    zip.file("related_documents.json", JSON.stringify(packet.related_documents || [], null, 2));
+    zip.file("ticket.json", JSON.stringify(ticket || {}, null, 2));
 
-Contents:
-- Evidence Packet Summary (narrative_summary.txt)
-- Confidence Analysis (confidence_summary.json)
-- Anomaly Report (anomaly_summary.json)
-- Related Tickets List (related_tickets.json)
-- Related Documents List (related_documents.json)
+    const zipBytes = await zip.generateAsync({ type: "uint8array" });
 
-Note: This is a placeholder. In production, use JSZip to create actual ZIP files.
-    `.trim();
-
-    // Return as text/plain for now (in production, generate actual ZIP)
-    return new NextResponse(zipManifest, {
+    return new NextResponse(zipBytes, {
       status: 200,
       headers: {
-        "Content-Type": "text/plain",
-        "Content-Disposition": `attachment; filename="evidence_packet_${ticket?.ticket_number || ticketId}.zip"`,
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="evidence_packet_${ticketLabel}.zip"`,
       },
     });
   } catch (err: any) {
