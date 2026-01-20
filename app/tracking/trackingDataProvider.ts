@@ -1,6 +1,8 @@
 // Mock GPS/ELD data provider and integration interface
 // Replace fetchMockTrackingData with real API integration as needed
 
+import { geotab, keepTruckin, samsara } from "@/integrations/eld";
+
 export type TrackingStatus = "on_schedule" | "delayed" | "critical";
 
 export interface TrackingRecord {
@@ -93,16 +95,73 @@ export async function fetchMockTrackingData(): Promise<TrackingRecord[]> {
 
 // 1. Geotab
 export async function fetchGeotabTrackingData(): Promise<TrackingRecord[]> {
-  // TODO: Implement Geotab API call and map to TrackingRecord
-  // See https://my.geotab.com/sdk/
-  return [];
+  const locations = await geotab.fetchDriverLocations();
+  return locations.map((loc) => ({
+    driverId: loc.id,
+    driverName: loc.name,
+    truckNumber: loc.name || "Unknown",
+    trailerNumber: "",
+    lat: loc.lat || 0,
+    lng: loc.lon || 0,
+    timestamp: loc.updatedAt || new Date().toISOString(),
+    speed: 0,
+    direction: "",
+    status: mapTrackingStatus(loc.status),
+    loadId: "",
+    route: "",
+    eta: "",
+    loadStatus: loc.status || "Unknown",
+    material: "",
+    customer: "",
+    jobSite: "",
+  }));
 }
 
 // 2. Motive (KeepTruckin)
 export async function fetchMotiveTrackingData(): Promise<TrackingRecord[]> {
-  // TODO: Implement Motive API call and map to TrackingRecord
-  // See https://developer.gomotive.com/docs
-  return [];
+  const locations = await keepTruckin.fetchDriverLocations();
+  return locations.map((loc) => ({
+    driverId: loc.id,
+    driverName: loc.name,
+    truckNumber: loc.name || "Unknown",
+    trailerNumber: "",
+    lat: loc.lat || 0,
+    lng: loc.lon || 0,
+    timestamp: loc.updatedAt || new Date().toISOString(),
+    speed: 0,
+    direction: "",
+    status: mapTrackingStatus(loc.status),
+    loadId: "",
+    route: "",
+    eta: "",
+    loadStatus: loc.status || "Unknown",
+    material: "",
+    customer: "",
+    jobSite: "",
+  }));
+}
+
+export async function fetchSamsaraTrackingData(): Promise<TrackingRecord[]> {
+  const locations = await samsara.fetchDriverLocations();
+  return locations.map((loc) => ({
+    driverId: loc.id,
+    driverName: loc.name,
+    truckNumber: loc.name || "Unknown",
+    trailerNumber: "",
+    lat: loc.lat || 0,
+    lng: loc.lon || 0,
+    timestamp: loc.updatedAt || new Date().toISOString(),
+    speed: 0,
+    direction: "",
+    status: mapTrackingStatus(loc.status),
+    loadId: "",
+    route: "",
+    eta: "",
+    loadStatus: loc.status || "Unknown",
+    material: "",
+    customer: "",
+    jobSite: "",
+  }));
 }
 
 // 3. Verizon Connect
@@ -126,4 +185,15 @@ export async function fetchFleetCompleteTrackingData(): Promise<
   // TODO: Implement Fleet Complete API call and map to TrackingRecord
   // See https://developer.fleetcomplete.com/
   return [];
+}
+
+function mapTrackingStatus(status?: string): TrackingStatus {
+  const value = status?.toLowerCase?.() || "";
+  if (value.includes("off") || value.includes("break")) {
+    return "delayed";
+  }
+  if (value.includes("critical") || value.includes("violation")) {
+    return "critical";
+  }
+  return "on_schedule";
 }
