@@ -189,6 +189,28 @@ export async function POST(request: NextRequest) {
       weight_ticket_verified: data.weight_ticket_verified,
     });
     await logValidations(data.ticket_id, validations);
+    const hasErrors = validations.errors.length > 0;
+    const hasWarnings = validations.warnings.length > 0;
+    const validationStatus = hasErrors
+      ? "error"
+      : hasWarnings
+        ? "warning"
+        : "passed";
+    const validationErrors = {
+      errors: validations.errors,
+      warnings: validations.warnings,
+      corrections: validations.corrections,
+    };
+
+    await supabase
+      .from("aggregate_tickets")
+      .update({
+        validation_status: validationStatus,
+        validation_score: validations.confidenceScore,
+        validation_errors: validationErrors,
+        status: hasErrors ? "in_review" : data.status,
+      })
+      .eq("id", data.id);
   } catch (validationError) {
     console.warn("Ticket validation failed:", validationError);
   }

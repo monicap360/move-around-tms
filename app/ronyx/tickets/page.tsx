@@ -33,6 +33,9 @@ type Ticket = {
   approved_by?: string | null;
   approved_at?: string | null;
   invoice_number?: string | null;
+  validation_status?: string | null;
+  validation_score?: number | null;
+  validation_errors?: any;
 };
 
 type ReconResult = {
@@ -75,7 +78,9 @@ export default function RonyxTicketsPage() {
   const [activeTab, setActiveTab] = useState<"manage" | "reconcile">("manage");
   const [showFullForm, setShowFullForm] = useState(false);
   const [showReconConfig, setShowReconConfig] = useState(false);
-  const [inboxFilter, setInboxFilter] = useState<"all" | "pending_upload" | "awaiting" | "flagged" | "approved">("all");
+  const [inboxFilter, setInboxFilter] = useState<
+    "all" | "pending_upload" | "awaiting" | "flagged" | "approved" | "needs_review"
+  >("all");
   const [filters, setFilters] = useState<{ id: string; name: string }[]>([]);
   const [actionMessage, setActionMessage] = useState("");
   const [pendingUploadId, setPendingUploadId] = useState<string | null>(null);
@@ -334,11 +339,15 @@ export default function RonyxTicketsPage() {
     const awaitingApproval: Ticket[] = [];
     const flagged: Ticket[] = [];
     const approved: Ticket[] = [];
+    const needsReview: Ticket[] = [];
 
     tickets.forEach((ticket) => {
       const reconStatus = reconByTicket.get(ticket.ticket_number || "")?.status?.toLowerCase() || "";
       const isFlagged = reconStatus.includes("exception") || reconStatus.includes("variance");
+      const hasValidationError =
+        ticket.validation_status === "error" || ticket.status === "in_review";
       if (isFlagged) flagged.push(ticket);
+      if (hasValidationError) needsReview.push(ticket);
       if (ticket.status === "approved" || ticket.status === "paid") {
         approved.push(ticket);
       } else if (ticket.status === "pending") {
@@ -347,13 +356,14 @@ export default function RonyxTicketsPage() {
       if (!ticket.ticket_image_url) pendingUpload.push(ticket);
     });
 
-    return { pendingUpload, awaitingApproval, flagged, approved };
+    return { pendingUpload, awaitingApproval, flagged, approved, needsReview };
   }, [tickets, reconByTicket]);
 
   const inboxTickets = useMemo(() => {
     const base = tickets.map((ticket) => {
       const reconStatus = reconByTicket.get(ticket.ticket_number || "")?.status?.toLowerCase() || "";
       const flagged = reconStatus.includes("exception") || reconStatus.includes("variance");
+      const needsReview = ticket.validation_status === "error" || ticket.status === "in_review";
       const pendingUpload = !ticket.ticket_image_url;
       const awaitingApproval = ticket.status === "pending";
       const approved = ticket.status === "approved" || ticket.status === "paid";
@@ -363,7 +373,9 @@ export default function RonyxTicketsPage() {
         ? reconStatus.includes("exception")
           ? "Weight mismatch"
           : "Variance detected"
-        : pendingUpload
+        : needsReview
+          ? "AI validation failed"
+          : pendingUpload
           ? "Missing POD"
           : "";
       const actionLabel = pendingUpload
@@ -373,7 +385,18 @@ export default function RonyxTicketsPage() {
           : awaitingApproval
             ? "Add Details"
             : "View";
-      return { ticket, flagged, pendingUpload, awaitingApproval, approved, priority, amount, inlineAlert, actionLabel };
+      return {
+        ticket,
+        flagged,
+        pendingUpload,
+        awaitingApproval,
+        approved,
+        needsReview,
+        priority,
+        amount,
+        inlineAlert,
+        actionLabel,
+      };
     });
 
     switch (inboxFilter) {
@@ -383,6 +406,8 @@ export default function RonyxTicketsPage() {
         return base.filter((item) => item.awaitingApproval);
       case "flagged":
         return base.filter((item) => item.flagged);
+      case "needs_review":
+        return base.filter((item) => item.needsReview);
       case "approved":
         return base.filter((item) => item.approved);
       default:
@@ -570,6 +595,10 @@ export default function RonyxTicketsPage() {
 
   async function approveTicket() {
     if (!ticketId) return;
+    if (focusedTicket?.validation_status === "error") {
+      setActionMessage("AI validation errors must be resolved before approval.");
+      return;
+    }
     const approvedAt = new Date().toISOString();
     await fetch(`/api/ronyx/tickets/${ticketId}`, {
       method: "PUT",
@@ -930,6 +959,9 @@ export default function RonyxTicketsPage() {
                 </button>
                 <button className={`ronyx-tab ${inboxFilter === "flagged" ? "active" : ""}`} onClick={() => setInboxFilter("flagged")}>
                   ⚠️ Flagged ({ticketQueue.flagged.length})
+                </button>
+                <button className={`ronyx-tab ${inboxFilter === "needs_review" ? "active" : ""}`} onClick={() => setInboxFilter("needs_review")}>
+                  🤖 Needs Review ({ticketQueue.needsReview.length})
                 </button>
                 <button className={`ronyx-tab ${inboxFilter === "approved" ? "active" : ""}`} onClick={() => setInboxFilter("approved")}>
                   ✅ Approved ({ticketQueue.approved.length})
@@ -1383,7 +1415,11 @@ export default function RonyxTicketsPage() {
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Approval & Payment</h2>
           <div className="ronyx-grid" style={{ rowGap: 20 }}>
             <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button className="ronyx-btn" onClick={approveTicket} disabled={!ticketId}>
+              <button
+                className="ronyx-btn"
+                onClick={approveTicket}
+                disabled={!ticketId || focusedTicket?.validation_status === "error"}
+              >
                 ✔ Approve Ticket
               </button>
               <button className="ronyx-btn" onClick={markTicketPaid} disabled={!ticketId} style={{ background: "#0f172a" }}>
@@ -1477,6 +1513,46 @@ export default function RonyxTicketsPage() {
             </div>
           </div>
         </section>
+
+        {focusedTicket && (
+          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
+              AI Validation Summary
+            </h2>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <span className="ronyx-pill">
+                Status: {focusedTicket.validation_status || "not_run"}
+              </span>
+              <span className="ronyx-pill">
+                Confidence: {focusedTicket.validation_score ?? "—"}
+              </span>
+            </div>
+            <div className="ronyx-grid" style={{ rowGap: 12 }}>
+              <div>
+                <div className="ronyx-label">Errors</div>
+                <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
+                  {(focusedTicket.validation_errors?.errors || []).length === 0 && (
+                    <li>No errors detected.</li>
+                  )}
+                  {(focusedTicket.validation_errors?.errors || []).map((err: any, idx: number) => (
+                    <li key={`err-${idx}`}>{err.type || "error"}: {(err.notes || []).join(" ")}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="ronyx-label">Warnings</div>
+                <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
+                  {(focusedTicket.validation_errors?.warnings || []).length === 0 && (
+                    <li>No warnings.</li>
+                  )}
+                  {(focusedTicket.validation_errors?.warnings || []).map((warn: any, idx: number) => (
+                    <li key={`warn-${idx}`}>{warn.type || "warning"}: {(warn.notes || []).join(" ")}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="ronyx-card" style={{ marginBottom: 22 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Optional Features</h2>
