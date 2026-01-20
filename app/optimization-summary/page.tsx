@@ -27,7 +27,7 @@ export default function OptimizationSummaryPage() {
             </h3>
             <ul className="text-sm text-emerald-700 list-disc list-inside space-y-1">
               <li>
-                <strong>No Permission Battles:</strong> Uses Supabase's existing
+                <strong>No Permission Battles:</strong> Uses Supabase&apos;s existing
                 indexes
               </li>
               <li>
@@ -53,7 +53,7 @@ export default function OptimizationSummaryPage() {
         <Card className="border-blue-200">
           <CardHeader>
             <CardTitle className="text-blue-800 text-lg flex items-center gap-2">
-              📋 Monica's Action Items
+              📋 Monica&apos;s Action Items
               <Badge variant="outline" className="bg-blue-100">
                 SQL Editor
               </Badge>
@@ -134,7 +134,7 @@ export default function OptimizationSummaryPage() {
                 <li>Helper function in public schema</li>
                 <li>Optimized view using built-in indexes</li>
                 <li>RLS policies with function calls</li>
-                <li>Works with Supabase's architecture</li>
+                <li>Works with Supabase&apos;s architecture</li>
               </ul>
             </div>
           </div>

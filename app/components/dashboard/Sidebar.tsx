@@ -10,20 +10,23 @@ const supabase = createClient(
 );
 
 export default function Sidebar() {
-  const [orgCode, setOrgCode] = useState<string | null>(null);
+  const [companyCode, setCompanyCode] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
 
   useEffect(() => {
-    async function loadOrg() {
+    async function loadCompany() {
       const { data: user } = await supabase.auth.getUser();
-      const org = user?.user?.user_metadata?.organization_code;
-      if (org) setOrgCode(org);
+      const company =
+        user?.user?.user_metadata?.company_code ||
+        user?.user?.user_metadata?.organization_code ||
+        user?.user?.user_metadata?.company;
+      if (company) setCompanyCode(company);
     }
-    loadOrg();
+    loadCompany();
   }, []);
 
-  if (!orgCode) {
+  if (!companyCode) {
     return (
       <div className="p-4 text-gray-400 text-sm">
         Loading company navigation…
@@ -31,7 +34,7 @@ export default function Sidebar() {
     );
   }
 
-  const base = `/company/${orgCode}`;
+  const base = `/company/${companyCode}`;
   // Helper for active link styling (optional: can add usePathname for highlight)
   const linkClass =
     "flex items-center px-3 py-2 text-sm rounded transition-colors text-slate-700 hover:bg-gray-100 hover:text-black";

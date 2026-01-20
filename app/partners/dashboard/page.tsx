@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
 import { exportNodeAsPng } from "../../maintenance/dvir-dashboard/exportAsImage";
 import { createClient } from "@/lib/supabase/client";
+import ComplianceCalendar from "./ComplianceCalendar";
 // Supabase client for compliance reminders/notifications
 const supabase = createClient();
 // Mock compliance reminders (replace with Supabase query)
@@ -652,7 +653,7 @@ export default function PartnerDashboard() {
             Welcome back, {partnerInfo?.full_name?.split(" ")[0] || "Partner"}!
           </h2>
           <p style={{ color: theme.text.secondary }}>
-            Here's your partner performance overview
+            Here&apos;s your partner performance overview
           </p>
         </div>
 
