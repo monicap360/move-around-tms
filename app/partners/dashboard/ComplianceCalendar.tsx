@@ -1,5 +1,5 @@
 // Simple ComplianceCalendar (reuse from DVIR dashboard, but inline for now)
-function ComplianceCalendar({ data, onDayClick }) {
+export default function ComplianceCalendar({ data, onDayClick }) {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   // Group data by week
   const weeks = [];

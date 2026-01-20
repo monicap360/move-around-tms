@@ -31,13 +31,13 @@ export async function POST(req: Request) {
     }
 
     // Verify organization exists
-    const { data: org, error: orgError } = await supabase
+    const { data: organization, error: organizationError } = await supabase
       .from("organizations")
       .select("id")
       .eq("id", organization_id)
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },

@@ -74,7 +74,12 @@ export async function GET(req: NextRequest) {
       .select("id, name, organization_code")
       .in("id", childIds);
 
-    const orgMap = new Map((orgs || []).map((org: any) => [org.id, org]));
+    const orgMap = new Map(
+      (orgs || []).map((organization: any) => [
+        organization.id,
+        organization,
+      ]),
+    );
 
     const clients = (relationships || []).map((rel: any) => ({
       id: rel.id,

@@ -129,8 +129,8 @@ export default async function AggregatesPage() {
                 partner rates and material types
               </p>
               <p>
-                ✅ <strong>Manager review:</strong> All tickets go to "Pending
-                Manager Review" for approval before payroll
+                ✅ <strong>Manager review:</strong> All tickets go to
+                &quot;Pending Manager Review&quot; for approval before payroll
               </p>
             </div>
           </div>

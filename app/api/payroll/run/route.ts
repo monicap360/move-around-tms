@@ -32,13 +32,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify user belongs to organization
-    const { data: org } = await supabase
+    const { data: organization } = await supabase
       .from('organizations')
       .select('id')
       .eq('id', organizationId)
       .single();
 
-    if (!org) {
+    if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }

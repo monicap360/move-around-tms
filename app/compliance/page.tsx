@@ -166,7 +166,7 @@ export default function CompliancePage() {
               </p>
               <p>
                 🛡️ <strong>Insurance Certificates:</strong> Liability, cargo,
-                and worker's comp coverage tracking
+                and worker&apos;s comp coverage tracking
               </p>
               <p>
                 🚨 <strong>DOT Inspections:</strong> Monitor Level 1-6

@@ -81,7 +81,12 @@ export async function GET(req: NextRequest) {
       .from("organizations")
       .select("id, name")
       .in("id", clientIds);
-    const clientMap = new Map((clientOrgs || []).map((org: any) => [org.id, org.name]));
+    const clientMap = new Map(
+      (clientOrgs || []).map((organization: any) => [
+        organization.id,
+        organization.name,
+      ]),
+    );
 
     const enrichedProfiles = (profiles || []).map((profile: any) => ({
       ...profile,

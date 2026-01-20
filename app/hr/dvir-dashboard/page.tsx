@@ -264,7 +264,7 @@ export default function DVIRDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Today's Inspections</p>
+                <p className="text-sm text-gray-500">Today&apos;s Inspections</p>
                 <p className="text-2xl font-bold">
                   {stats?.today_inspections || 0}
                 </p>

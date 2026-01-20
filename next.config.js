@@ -20,10 +20,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Skip ESLint during production builds (CI/Render)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 
   // Exclude problematic routes from build
   pageExtensions: ['ts', 'tsx', 'js', 'jsx'],

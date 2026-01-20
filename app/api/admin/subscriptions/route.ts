@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = createSupabaseServerClient();
@@ -25,16 +25,16 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Flatten subscriptions for easier UI
-  const result = (data || []).map((org: any) => ({
-    id: org.id,
-    name: org.name,
-    plan_tier: org.plan_tier,
-    created_at: org.created_at,
-    status: org.status,
-    payment_status: org.payment_status,
-    admin_override: org.subscriptions?.admin_override || false,
-    override_expires_at: org.subscriptions?.override_expires_at || null,
-    subscription_status: org.subscriptions?.status || null,
+  const result = (data || []).map((organization: any) => ({
+    id: organization.id,
+    name: organization.name,
+    plan_tier: organization.plan_tier,
+    created_at: organization.created_at,
+    status: organization.status,
+    payment_status: organization.payment_status,
+    admin_override: organization.subscriptions?.admin_override || false,
+    override_expires_at: organization.subscriptions?.override_expires_at || null,
+    subscription_status: organization.subscriptions?.status || null,
   }));
 
   return NextResponse.json(result);

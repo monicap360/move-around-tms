@@ -357,7 +357,7 @@ export default function CompleteProfilePage() {
                         <div className="space-y-4">
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">
-                              Driver's License Number
+                              Driver&apos;s License Number
                             </label>
                             <input
                               type="text"

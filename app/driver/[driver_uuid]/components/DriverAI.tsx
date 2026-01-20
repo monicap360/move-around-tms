@@ -7,7 +7,7 @@ export default function DriverAI() {
       </p>
 
       <p className="text-cyan-300 text-lg">
-        • You're 10 minutes from BRP — 2 trucks in queue. <br />
+        • You&apos;re 10 minutes from BRP — 2 trucks in queue. <br />
         • OCR completed for ticket #4912. <br />
         • Earnings on track for today’s goal. <br />
       </p>

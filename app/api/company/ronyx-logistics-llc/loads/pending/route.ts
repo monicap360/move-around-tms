@@ -5,13 +5,13 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export async function GET() {
   try {
     // Get organization_id for ronyx-logistics-llc
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "ronyx-logistics-llc")
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { ok: false, error: "Organization not found" },
         { status: 404 },
@@ -22,7 +22,7 @@ export async function GET() {
       .from("loads")
       .select("*")
       .eq("status", "Pending")
-      .eq("organization_id", org.id)
+      .eq("organization_id", organization.id)
       .order("created_at", { ascending: false });
     
     if (error) throw error;

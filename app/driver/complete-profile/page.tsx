@@ -232,7 +232,7 @@ export default function CompleteProfilePage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Driver's License Number
+                Driver&apos;s License Number
               </label>
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-gray-400" />
@@ -360,8 +360,8 @@ export default function CompleteProfilePage() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> If you're unsure about your pay rate, you
-                can leave it blank and your manager will set it up for you.
+                <strong>Note:</strong> If you&apos;re unsure about your pay rate,
+                you can leave it blank and your manager will set it up for you.
                 Contact your manager if you have questions.
               </p>
             </div>

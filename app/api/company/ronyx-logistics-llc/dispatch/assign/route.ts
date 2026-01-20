@@ -14,20 +14,20 @@ export async function POST(request: Request) {
     }
 
     // Get organization_id for ronyx-logistics-llc
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "ronyx-logistics-llc")
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { ok: false, error: "Organization not found" },
         { status: 404 },
       );
     }
 
-    const organizationId = org.id;
+    const organizationId = organization.id;
 
     // Update the load with driver and truck assignment
     const { error: loadError } = await supabaseAdmin

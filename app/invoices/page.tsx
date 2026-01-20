@@ -336,7 +336,7 @@ export default function InvoicesPage() {
               <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>Loading...</div>
             ) : filteredInvoices.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
-                No invoices found. Click "Create Invoice" to get started.
+                No invoices found. Click &quot;Create Invoice&quot; to get started.
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>

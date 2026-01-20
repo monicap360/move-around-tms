@@ -61,10 +61,22 @@ export default function RonYXDashboard() {
       // Get organizations/companies for this partner
       // Try multiple possible field names for partner association
       const companyQueries = [
-        supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
-        supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
-        supabase.from("companies").select("*").eq("partner_id", partnerData.id),
-        supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
+        supabase
+          .from("organizations")
+          .select("*")
+          .eq("partner_id", partnerData.id),
+        supabase
+          .from("organizations")
+          .select("*")
+          .eq("partner_slug", partnerData["slug"] || "ronyx"),
+        supabase
+          .from("companies")
+          .select("*")
+          .eq("partner_id", partnerData.id),
+        supabase
+          .from("companies")
+          .select("*")
+          .eq("partner_slug", partnerData["slug"] || "ronyx"),
       ];
 
       let companyRecords: any[] = [];

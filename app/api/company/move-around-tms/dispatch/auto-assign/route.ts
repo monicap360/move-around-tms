@@ -15,20 +15,20 @@ export async function POST(req: Request) {
     const orgCode = "move-around-tms";
 
     // Get organization_id from organization_code
-    const { data: org, error: orgError } = await supabase
+    const { data: organization, error: organizationError } = await supabase
       .from("organizations")
       .select("id")
       .eq("organization_code", orgCode)
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
       );
     }
 
-    const organizationId = org.id;
+    const organizationId = organization.id;
 
     // Fetch all unassigned loads
     const { data: loads, error: loadsError } = await supabase

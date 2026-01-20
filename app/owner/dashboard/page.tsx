@@ -17,7 +17,7 @@ interface PartnerOverview {
     primary: string;
     brand: string;
   };
-  slug: string;
+  partnerKey: string;
 }
 
 interface OwnerStats {
@@ -80,9 +80,15 @@ export default function OwnerDashboard() {
         .in("status", ["pending", "active", "in_review"]);
 
       // Calculate monthly revenue from organizations
-      const monthlyRevenue = (organizationsData || []).reduce((sum: number, org: any) => {
-        return sum + (org.monthly_fee || org.subscription_fee || 0);
-      }, 0);
+      const monthlyRevenue = (organizationsData || []).reduce(
+        (sum: number, organization: any) => {
+          return (
+            sum +
+            (organization.monthly_fee || organization.subscription_fee || 0)
+          );
+        },
+        0,
+      );
 
       // Count pending approvals
       const { count: pendingApprovalsCount } = await supabase
@@ -105,14 +111,17 @@ export default function OwnerDashboard() {
           // Count companies for this partner
           const orgQueries = [
             supabase.from("organizations").select("id").eq("partner_id", partner.id),
-            supabase.from("organizations").select("id").eq("partner_slug", partner.slug),
+            supabase
+              .from("organizations")
+              .select("id")
+              .eq("partner_slug", partner["slug"]),
           ];
 
           let orgIds: string[] = [];
           for (const query of orgQueries) {
             const { data, error } = await query;
             if (!error && data && data.length > 0) {
-              orgIds = data.map((org: any) => org.id);
+              orgIds = data.map((organization: any) => organization.id);
               break;
             }
           }
@@ -123,12 +132,24 @@ export default function OwnerDashboard() {
             .select("monthly_fee, subscription_fee, commission_rate")
             .in("id", orgIds);
 
-          const monthlyCommission = (orgData || []).reduce((sum: number, org: any) => {
-            if (org.commission_rate) {
-              return sum + ((org.monthly_fee || org.subscription_fee || 0) * (org.commission_rate / 100));
-            }
-            return sum + (org.monthly_fee || org.subscription_fee || 0);
-          }, 0);
+          const monthlyCommission = (orgData || []).reduce(
+            (sum: number, organization: any) => {
+              if (organization.commission_rate) {
+                return (
+                  sum +
+                  (organization.monthly_fee ||
+                    organization.subscription_fee ||
+                    0) *
+                    (organization.commission_rate / 100)
+                );
+              }
+              return (
+                sum +
+                (organization.monthly_fee || organization.subscription_fee || 0)
+              );
+            },
+            0,
+          );
 
           // Get partner theme
           const theme = partner.theme || {
@@ -143,7 +164,7 @@ export default function OwnerDashboard() {
             companiesCount: orgIds.length,
             monthlyCommission: Math.round(monthlyCommission * 100) / 100,
             theme: theme,
-            slug: partner.slug || partner.id,
+            partnerKey: partner["slug"] || partner.id,
           };
         })
       );
@@ -408,7 +429,7 @@ function PartnerPortalCard({ partner }: { partner: PartnerOverview }) {
 
       <button
         onClick={() =>
-          (window.location.href = `/partners/${partner.slug}/dashboard`)
+          (window.location.href = `/partners/${partner.partnerKey}/dashboard`)
         }
         className="w-full py-2 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
         style={{ backgroundColor: partner.theme.primary }}

@@ -306,7 +306,7 @@ export default function ReviewMissingTicketsPage() {
                   {/* Right Column: Driver Reason & Actions */}
                   <div className="space-y-3">
                     <h4 className="font-semibold text-gray-800 mb-2">
-                      Driver's Reason:
+                      Driver&apos;s Reason:
                     </h4>
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
                       <p className="text-sm text-gray-800">

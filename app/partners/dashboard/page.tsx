@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
 import { exportNodeAsPng } from "../../maintenance/dvir-dashboard/exportAsImage";
 import { createClient } from "@/lib/supabase/client";
+import ComplianceCalendar from "./ComplianceCalendar";
 // Supabase client for compliance reminders/notifications
 const supabase = createClient();
 // Mock compliance reminders (replace with Supabase query)
@@ -192,7 +193,7 @@ export default function PartnerDashboard() {
         .from("organizations")
         .select("id")
         .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
-      return orgs?.map((org) => org.id) || [];
+      return orgs?.map((organization) => organization.id) || [];
     }
     
     loadDashboardData();
@@ -222,8 +223,14 @@ export default function PartnerDashboard() {
       }
 
       const orgQueries = [
-        supabase.from("organizations").select("id, name").eq("partner_id", partnerData.id),
-        supabase.from("organizations").select("id, name").eq("partner_slug", partnerData.slug),
+        supabase
+          .from("organizations")
+          .select("id, name")
+          .eq("partner_id", partnerData.id),
+        supabase
+          .from("organizations")
+          .select("id, name")
+          .eq("partner_slug", partnerData["slug"]),
       ];
 
       let orgIds: string[] = [];
@@ -231,9 +238,9 @@ export default function PartnerDashboard() {
       for (const query of orgQueries) {
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          orgIds = data.map((org: any) => org.id);
-          data.forEach((org: any) => {
-            orgNames[org.id] = org.name;
+          orgIds = data.map((organization: any) => organization.id);
+          data.forEach((organization: any) => {
+            orgNames[organization.id] = organization.name;
           });
           break;
         }
@@ -313,7 +320,7 @@ export default function PartnerDashboard() {
         .select("id, name")
         .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
 
-      const orgIds = orgs?.map((org) => org.id) || [];
+      const orgIds = orgs?.map((organization) => organization.id) || [];
       const companiesOnboarded = orgs?.length || 0;
 
       // Get active drivers count across partner's organizations
@@ -652,7 +659,7 @@ export default function PartnerDashboard() {
             Welcome back, {partnerInfo?.full_name?.split(" ")[0] || "Partner"}!
           </h2>
           <p style={{ color: theme.text.secondary }}>
-            Here's your partner performance overview
+            Here&apos;s your partner performance overview
           </p>
         </div>
 

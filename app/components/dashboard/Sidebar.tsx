@@ -17,8 +17,8 @@ export default function Sidebar() {
   useEffect(() => {
     async function loadOrg() {
       const { data: user } = await supabase.auth.getUser();
-      const org = user?.user?.user_metadata?.organization_code;
-      if (org) setOrgCode(org);
+      const organizationCode = user?.user?.user_metadata?.organization_code;
+      if (organizationCode) setOrgCode(organizationCode);
     }
     loadOrg();
   }, []);

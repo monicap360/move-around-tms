@@ -33,13 +33,13 @@ export async function GET() {
     }
 
     // Get organization to verify it exists
-    const { data: org, error: orgError } = await supabase
+    const { data: organization, error: organizationError } = await supabase
       .from("organizations")
       .select("id, name")
       .eq("organization_code", orgCode)
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         {
           status: "error",
@@ -60,8 +60,8 @@ export async function GET() {
       status: "ok",
       organization: {
         code: orgCode,
-        id: org.id,
-        name: org.name,
+        id: organization.id,
+        name: organization.name,
       },
       checks,
     });

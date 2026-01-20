@@ -36,10 +36,22 @@ export default function RonyxReportsPage() {
 
       // Get organizations/companies for this partner
       const companyQueries = [
-        supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
-        supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
-        supabase.from("companies").select("*").eq("partner_id", partnerData.id),
-        supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
+        supabase
+          .from("organizations")
+          .select("*")
+          .eq("partner_id", partnerData.id),
+        supabase
+          .from("organizations")
+          .select("*")
+          .eq("partner_slug", partnerData["slug"] || "ronyx"),
+        supabase
+          .from("companies")
+          .select("*")
+          .eq("partner_id", partnerData.id),
+        supabase
+          .from("companies")
+          .select("*")
+          .eq("partner_slug", partnerData["slug"] || "ronyx"),
       ];
 
       let companyRecords: any[] = [];

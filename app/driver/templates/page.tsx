@@ -344,7 +344,7 @@ export default function DriverTemplatesPage() {
                 Required Documents to Upload:
               </h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                <li>Commercial Driver's License (CDL)</li>
+                <li>Commercial Driver&apos;s License (CDL)</li>
                 <li>DOT Medical Certificate</li>
                 <li>TWIC Card (if applicable)</li>
                 <li>Social Security Card</li>

@@ -133,7 +133,7 @@ export default function DriverApplicationPage() {
               </h2>
               <p className="text-green-700 mb-4">
                 Your application has been submitted for review by HR, Manager,
-                and Owner. You'll be notified via email once your application is
+                and Owner. You&apos;ll be notified via email once your application is
                 reviewed.
               </p>
               <p className="text-sm text-green-600">
@@ -403,7 +403,7 @@ export default function DriverApplicationPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Driver's License *
+                    Driver&apos;s License *
                   </label>
                   <input
                     type="file"

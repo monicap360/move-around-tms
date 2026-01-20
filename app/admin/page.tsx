@@ -14,7 +14,7 @@ interface PartnerOverview {
     primary: string;
     brand: string;
   };
-  slug: string;
+  partnerKey: string;
 }
 
 interface SuperAdminStats {
@@ -74,7 +74,7 @@ export default function SuperAdminDashboard() {
           primary: "#C9A348",
           brand: "RonYX Logistics LLC",
         },
-        slug: "ronyx",
+        partnerKey: "ronyx",
       },
       {
         id: "2",
@@ -86,7 +86,7 @@ export default function SuperAdminDashboard() {
           primary: "#2563eb",
           brand: "Elite Transport Solutions",
         },
-        slug: "elite",
+        partnerKey: "elite",
       },
       {
         id: "3",
@@ -98,7 +98,7 @@ export default function SuperAdminDashboard() {
           primary: "#16a34a",
           brand: "Meighoo Logistics",
         },
-        slug: "meighoo",
+        partnerKey: "meighoo",
       },
       {
         id: "4",
@@ -110,7 +110,7 @@ export default function SuperAdminDashboard() {
           primary: "#dc2626",
           brand: "Garza Transport Group",
         },
-        slug: "garza",
+        partnerKey: "garza",
       },
     ]);
   }
@@ -411,7 +411,7 @@ function PartnerManagementCard({ partner }: { partner: PartnerOverview }) {
       <div className="flex space-x-2">
         <button
           onClick={() =>
-            (window.location.href = `/partners/${partner.slug}/dashboard`)
+              (window.location.href = `/partners/${partner.partnerKey}/dashboard`)
           }
           className="flex-1 py-2 px-3 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity"
           style={{ backgroundColor: partner.theme.primary }}

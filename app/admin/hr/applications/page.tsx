@@ -107,7 +107,7 @@ export default function HRApplicationsPage() {
                   <tr>
                     <td colSpan={7} className="p-3 text-gray-500">
                       No applications found (or table missing). Ensure
-                      'driver_applications' table exists.
+                      &apos;driver_applications&apos; table exists.
                     </td>
                   </tr>
                 )}

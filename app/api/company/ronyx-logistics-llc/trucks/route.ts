@@ -5,13 +5,13 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export async function GET() {
   try {
     // Get organization_id for ronyx-logistics-llc
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "ronyx-logistics-llc")
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
@@ -21,7 +21,7 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
       .from("trucks")
       .select("*")
-      .eq("organization_id", org.id)
+      .eq("organization_id", organization.id)
       .order("unit_number", { ascending: true });
 
     if (error) {
@@ -46,13 +46,13 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Get organization_id for ronyx-logistics-llc
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "ronyx-logistics-llc")
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       .from("trucks")
       .insert({
         ...body,
-        organization_id: org.id,
+        organization_id: organization.id,
       })
       .select()
       .single();

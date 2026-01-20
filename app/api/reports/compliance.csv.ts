@@ -10,9 +10,9 @@ import {
 import { toCSV } from "@/src/reports/csv.util";
 
 function getOrganizationId(req: NextRequest): string {
-  const org = req.headers.get("x-organization-id");
-  if (!org) throw new Error("Missing organization context");
-  return org;
+  const organizationId = req.headers.get("x-organization-id");
+  if (!organizationId) throw new Error("Missing organization context");
+  return organizationId;
 }
 
 export async function GET(req: NextRequest) {

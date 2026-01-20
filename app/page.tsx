@@ -3549,7 +3549,7 @@ function LandingPageContent() {
                       <label>Material & Quantity</label>
                       <div className="inline-inputs">
                         <select className="material-select">
-                          <option>3/4" Gravel</option>
+                          <option>3/4&quot; Gravel</option>
                           <option>Fill Sand</option>
                           <option>Road Base</option>
                         </select>

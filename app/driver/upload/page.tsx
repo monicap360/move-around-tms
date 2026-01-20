@@ -336,8 +336,8 @@ export default function DriverUploadPage() {
             <li>Take clear photos with good lighting</li>
             <li>Ensure ticket number and material type are visible</li>
             <li>
-              Tickets go to "Pending Manager Review" before counting toward your
-              pay
+              Tickets go to &quot;Pending Manager Review&quot; before counting
+              toward your pay
             </li>
             <li>
               You can also text photos to: <strong>(555) 123-4567</strong>

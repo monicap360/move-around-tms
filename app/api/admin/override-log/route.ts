@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const supabase = createSupabaseServerClient();
 
   const { searchParams } = new URL(req.url);
-  const org = searchParams.get("org");
-  if (!org) return NextResponse.json([]);
+  const organizationId = searchParams.get("org");
+  if (!organizationId) return NextResponse.json([]);
 
   const { data, error } = await supabase
     .from("override_log")
     .select("*")
-    .eq("organization_id", org)
+    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
 
   if (error)

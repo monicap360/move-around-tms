@@ -14,20 +14,20 @@ export async function POST(request: Request) {
     }
 
     // Get organization_id for move-around-tms
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "move-around-tms")
       .single();
 
-    if (orgError || !org) {
+    if (organizationError || !organization) {
       return NextResponse.json(
         { ok: false, error: "Organization not found" },
         { status: 404 },
       );
     }
 
-    const organizationId = org.id;
+    const organizationId = organization.id;
 
     // Update the load with driver and truck assignment
     const { error: loadError } = await supabaseAdmin
