@@ -120,12 +120,18 @@ async function getTruckCapacity(truckId?: string | null) {
 }
 
 async function getProjectGeofences(projectId?: string | null) {
-  if (!projectId) return [];
-  const { data } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("location_geofences")
     .select("*")
-    .eq("project_id", projectId)
     .eq("active", true);
+
+  if (projectId) {
+    query = query.or(`project_id.eq.${projectId},project_id.is.null`);
+  } else {
+    query = query.is("project_id", null);
+  }
+
+  const { data } = await query;
   return data || [];
 }
 
