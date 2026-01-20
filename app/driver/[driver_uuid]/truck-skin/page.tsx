@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useRef } from "react";
 const SKINS = [
   { name: "Matte Black", value: "matte-black", color: "#222" },

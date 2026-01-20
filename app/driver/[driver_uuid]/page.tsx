@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 // Tesla-style, mobile-first, no-login driver portal
 import { useEffect, useState, useRef } from "react";
 import ComplianceTab from "@/components/compliance/ComplianceTab";

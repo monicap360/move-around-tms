@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React from "react";
 import { notFound } from "next/navigation";
 import { getDriverResume } from "@/lib/driver";

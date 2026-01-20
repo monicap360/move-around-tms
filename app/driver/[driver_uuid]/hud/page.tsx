@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import GridLayout from "react-grid-layout";

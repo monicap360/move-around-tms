@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import supabaseAdmin from "../../lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";

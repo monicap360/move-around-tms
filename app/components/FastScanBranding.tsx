@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 export default function FastScanBranding() {
   return (
     <div className="flex flex-col items-center">

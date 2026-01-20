@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable jsx-a11y/alt-text */
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";

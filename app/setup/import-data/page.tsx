@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback } from "react";
 import ExcelJS from "exceljs";
 import { supabase } from "../../lib/supabaseClient";

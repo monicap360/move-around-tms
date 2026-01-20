@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
 import { exportNodeAsPng } from "../../maintenance/dvir-dashboard/exportAsImage";

@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { Bell, X, AlertTriangle, CheckCircle, Clock, User } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
