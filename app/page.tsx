@@ -2893,6 +2893,576 @@ function LandingPageContent() {
         </div>
       </section>
 
+      <section id="load-hub" className="load-management-hub">
+        <div className="container">
+          <div className="load-hub-header">
+            <div>
+              <p className="hub-kicker">Load Command Center</p>
+              <h2>
+                📦 Load Management <span className="speed-gradient">Hub</span>
+              </h2>
+            </div>
+            <div>
+              <button className="btn btn-secondary btn-sm" onClick={focusLoadSearch}>
+                🔍 Search Loads
+              </button>
+            </div>
+          </div>
+          <div className="load-hub-summary">
+            Active: 38 | Today: 12 | This Week: 85 | Revenue: $42,850
+          </div>
+          {actionToast && <div className={`load-action-toast ${actionToast.type}`}>{actionToast.message}</div>}
+
+          <div className="load-filter-tabs">
+            {[
+              { id: "active", label: "🚛 ACTIVE LOADS", count: loadCounts.active },
+              { id: "available", label: "⏳ AVAILABLE", count: loadCounts.available },
+              { id: "completed", label: "✅ COMPLETED", count: loadCounts.completed },
+              { id: "cancelled", label: "❌ CANCELLED", count: loadCounts.cancelled },
+              { id: "detention", label: "⚠️ DETENTION", count: loadCounts.detention },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab-btn ${activeLoadFilter === tab.id ? "active" : ""}`}
+                onClick={() => setActiveLoadFilter(tab.id)}
+              >
+                {tab.label} <span className="count-badge">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedLoadIds.length > 0 && (
+            <div className="bulk-actions-bar">
+              <strong>{selectedLoadIds.length} selected</strong>
+              <div className="action-buttons">
+                <button className="btn btn-xs btn-secondary">Bulk Assign</button>
+                <button className="btn btn-xs btn-secondary">Status Update</button>
+                <button className="btn btn-xs btn-secondary">Export</button>
+              </div>
+            </div>
+          )}
+
+          <div className="load-hub-layout">
+            <div className="load-board">
+              <div className="board-toolbar">
+                <div className="search-box">
+                  <input
+                    id="loadSearch"
+                    type="text"
+                    placeholder="Search loads, customers, drivers..."
+                    value={loadSearch}
+                    onChange={(event) => setLoadSearch(event.target.value)}
+                  />
+                  <span className="search-icon">🔍</span>
+                </div>
+
+                <div className="view-controls">
+                  <button className="btn btn-sm btn-secondary">📥 Export</button>
+                  <button className="btn btn-sm btn-secondary">🖨️ Print</button>
+                  <select className="sort-select" value={loadSort} onChange={(event) => setLoadSort(event.target.value)}>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="customer">Customer A-Z</option>
+                    <option value="value">Highest Value</option>
+                    <option value="eta">Soonest ETA</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="loads-table-wrap">
+                <table className="loads-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}>
+                        <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAll} />
+                      </th>
+                      <th style={{ width: 100 }}>Load #</th>
+                      <th style={{ width: 150 }}>Customer</th>
+                      <th style={{ width: 120 }}>Driver/Truck</th>
+                      <th style={{ width: 120 }}>Material</th>
+                      <th style={{ width: 110 }}>Status</th>
+                      <th style={{ width: 120 }}>Location</th>
+                      <th style={{ width: 100 }}>Value</th>
+                      <th style={{ width: 160 }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedLoads.map((load) => (
+                      <tr key={load.id} className={`load-row ${load.statusGroup}`}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedLoadIds.includes(load.id)}
+                            onChange={() => toggleLoadSelection(load.id)}
+                          />
+                        </td>
+                        <td>
+                          <strong>{load.id}</strong>
+                          <br />
+                          <small>
+                            {load.dateLabel} • {load.timeLabel}
+                          </small>
+                        </td>
+                        <td>
+                          <strong>{load.customer}</strong>
+                          <br />
+                          <small>{load.project || "—"}</small>
+                        </td>
+                        <td>
+                          <div className={`driver-info ${load.driver === "UNASSIGNED" ? "unassigned" : ""}`}>
+                            <span className="driver">{load.driver}</span>
+                            <br />
+                            <span className="truck">{load.truck || "—"}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="material">{load.material}</span>
+                          {load.materialDetail ? (
+                            <>
+                              <br />
+                              <small>{load.materialDetail}</small>
+                            </>
+                          ) : null}
+                        </td>
+                        <td>
+                          <span className={`status-badge ${load.statusType}`}>{load.status}</span>
+                          <br />
+                          <small>{load.statusNote}</small>
+                        </td>
+                        <td>
+                          <div className="location">
+                            <span className="from">{load.from}</span> →
+                            <br />
+                            <span className="to">{load.to}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <strong>${load.value.toFixed(2)}</strong>
+                          <br />
+                          <small>{load.valueNote}</small>
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            {load.statusGroup === "active" && (
+                              <>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                                  View
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-secondary"
+                                  onClick={() => openLoadModal(load.id, "tracking")}
+                                >
+                                  Track
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-warning"
+                                  onClick={() => {
+                                    openLoadModal(load.id, "overview");
+                                    sendLoadMessage(load.id);
+                                  }}
+                                >
+                                  Msg
+                                </button>
+                                <button className="btn btn-xs btn-success" onClick={() => openLoadModal(load.id, "tickets")}>
+                                  Ticket
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "available" && (
+                              <>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                                  Assign
+                                </button>
+                                <button className="btn btn-xs btn-secondary" onClick={() => openLoadModal(load.id)}>
+                                  Edit
+                                </button>
+                                <button className="btn btn-xs btn-danger" onClick={() => openLoadModal(load.id)}>
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "completed" && (
+                              <>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id, "payment")}>
+                                  Invoice
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-secondary"
+                                  onClick={() => openLoadModal(load.id, "documents")}
+                                >
+                                  Ticket
+                                </button>
+                                <button className="btn btn-xs btn-success" onClick={() => openLoadModal(load.id)}>
+                                  Repeat
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "cancelled" && (
+                              <>
+                                <button className="btn btn-xs btn-secondary" onClick={() => openLoadModal(load.id)}>
+                                  View
+                                </button>
+                                <button className="btn btn-xs btn-success" onClick={() => openLoadModal(load.id)}>
+                                  Repeat
+                                </button>
+                              </>
+                            )}
+                            {load.statusGroup === "detention" && (
+                              <>
+                                <button className="btn btn-xs btn-warning" onClick={() => openLoadModal(load.id, "payment")}>
+                                  Charge
+                                </button>
+                                <button
+                                  className="btn btn-xs btn-secondary"
+                                  onClick={() => openLoadModal(load.id, "tracking")}
+                                >
+                                  Contact
+                                </button>
+                                <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                                  View
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="load-hub-sidebar">
+              <div className="sidebar-create-load">
+                <div className="sidebar-header" onClick={() => setIsQuickCreateOpen((prev) => !prev)}>
+                  <h3>⚡ Quick Create Load</h3>
+                  <span className="toggle-icon">{isQuickCreateOpen ? "▼" : "▲"}</span>
+                </div>
+
+                {isQuickCreateOpen && (
+                  <div className="sidebar-content">
+                    <div className="form-group">
+                      <label>Customer</label>
+                      <select className="customer-select">
+                        <option value="">Select customer...</option>
+                        <option value="jones">Jones Construction</option>
+                        <option value="thompson">Thompson Co</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Material & Quantity</label>
+                      <div className="inline-inputs">
+                        <select className="material-select">
+                          <option>3/4&quot; Gravel</option>
+                          <option>Fill Sand</option>
+                          <option>Road Base</option>
+                        </select>
+                        <input type="number" defaultValue={12} min={1} />
+                        <select className="unit-select">
+                          <option>tons</option>
+                          <option>yards</option>
+                          <option>loads</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Route</label>
+                      <div className="route-inputs">
+                        <select className="pickup-select">
+                          <option>Pit 7</option>
+                          <option>Pit 3</option>
+                          <option>Yard A</option>
+                        </select>
+                        <span className="arrow">→</span>
+                        <input type="text" placeholder="Delivery address..." className="delivery-input" />
+                      </div>
+                    </div>
+
+                    <div className="price-preview">
+                      <div className="price-line">
+                        <span>Estimated Price:</span>
+                        <strong>$855.00</strong>
+                      </div>
+                      <small>Based on customer rate card</small>
+                    </div>
+
+                    <button className="btn btn-primary btn-block">Create Load & Dispatch</button>
+                    <button className="btn btn-secondary btn-block">Save as Template</button>
+                  </div>
+                )}
+              </div>
+
+              <div className="detention-panel">
+                <h3>⏰ Detention Alerts</h3>
+                {detentionAlerts.map((alert) => (
+                  <div key={alert.id} className={`alert-item ${alert.variant === "warning" ? "warning" : ""}`}>
+                    <div className="alert-header">
+                      <strong>{alert.title}</strong>
+                      <span className="alert-time">{alert.time}</span>
+                    </div>
+                    <div className="alert-body">
+                      {alert.details.map((detail) => (
+                        <p key={detail}>{detail}</p>
+                      ))}
+                    </div>
+                    <div className="alert-actions">
+                      {alert.actions.map((action) => (
+                        <button
+                          key={action.label}
+                          className={`btn btn-xs btn-${action.variant}`}
+                          onClick={() => openLoadModal(alert.id, action.tab)}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="load-mobile-view">
+            <h3>📦 Loads Mobile</h3>
+            <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: 8 }}>
+              <strong>Active:</strong> {loadCounts.active} | <strong>Available:</strong> {loadCounts.available}
+            </p>
+            {sortedLoads.slice(0, 3).map((load) => (
+              <div key={load.id} className="mobile-load-card">
+                <strong>
+                  {load.id} • {load.driver || "Unassigned"} • ${load.value.toFixed(0)}
+                </strong>
+                <p style={{ margin: "6px 0" }}>
+                  📍 {load.from} → {load.to} • {load.statusNote}
+                </p>
+                <div className="mobile-load-actions">
+                  <button className="btn btn-xs btn-secondary" onClick={() => openLoadModal(load.id, "tracking")}>
+                    Track
+                  </button>
+                  <button
+                    className="btn btn-xs btn-warning"
+                    onClick={() => {
+                      openLoadModal(load.id, "overview");
+                      sendLoadMessage(load.id);
+                    }}
+                  >
+                    Msg
+                  </button>
+                  <button className="btn btn-xs btn-primary" onClick={() => openLoadModal(load.id)}>
+                    View
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+              <button className="btn btn-primary btn-sm">➕ Quick Create</button>
+              <button className="btn btn-secondary btn-sm" onClick={focusLoadSearch}>
+                🔍 Search
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {selectedLoadId && (
+          <div className="modal-overlay" onClick={() => setSelectedLoadId(null)}>
+            <div className="modal load-details-modal" onClick={(event) => event.stopPropagation()}>
+              <div className="modal-header">
+                <h2>
+                  {selectedLoad.id} - {selectedLoad.customer}
+                </h2>
+                <button className="close-btn" onClick={() => setSelectedLoadId(null)}>
+                  ×
+                </button>
+              </div>
+
+              <div className="modal-tabs">
+                {[
+                  { id: "overview", label: "📋 Overview" },
+                  { id: "documents", label: "📄 Documents" },
+                  { id: "tracking", label: "📍 Tracking" },
+                  { id: "tickets", label: "🎫 Tickets" },
+                  { id: "payment", label: "💰 Payment" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`modal-tab ${activeLoadTab === tab.id ? "active" : ""}`}
+                    onClick={() => setActiveLoadTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="modal-content">
+                <div className={`tab-content ${activeLoadTab === "overview" ? "active" : ""}`}>
+                  <div className="detail-grid">
+                    <div className="detail-column">
+                      <h4>Load Info</h4>
+                      <p>
+                        <strong>Created:</strong> {selectedLoad.dateLabel} {selectedLoad.timeLabel}
+                      </p>
+                      <p>
+                        <strong>Status:</strong>{" "}
+                        <span className={`status-badge ${selectedLoad.statusType}`}>{selectedLoad.status}</span>
+                      </p>
+                      <p>
+                        <strong>Value:</strong> ${selectedLoad.value.toFixed(2)} ({selectedLoad.valueNote})
+                      </p>
+                      <p>
+                        <strong>Priority:</strong> Standard
+                      </p>
+                    </div>
+                    <div className="detail-column">
+                      <h4>Assignment</h4>
+                      <p>
+                        <strong>Driver:</strong> {selectedLoad.driver}
+                      </p>
+                      <p>
+                        <strong>Truck:</strong> {selectedLoad.truck || "—"}
+                      </p>
+                      <p>
+                        <strong>Driver Status:</strong> On duty - 4h 22m available
+                      </p>
+                      <button className="btn btn-xs btn-warning">Reassign</button>
+                    </div>
+                    <div className="detail-column">
+                      <h4>Route</h4>
+                      <p>
+                        <strong>Pickup:</strong> {selectedLoad.from}
+                      </p>
+                      <p>
+                        <strong>Delivery:</strong> {selectedLoad.to}
+                      </p>
+                      <p>
+                        <strong>ETA:</strong> {selectedLoad.statusNote}
+                      </p>
+                      <p>
+                        <strong>Distance:</strong> 8.2 miles
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="action-buttons" style={{ marginTop: 16 }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => setActiveLoadTab("tracking")}>
+                      Live Track
+                    </button>
+                    <button className="btn btn-secondary btn-sm">Message Driver</button>
+                    <button className="btn btn-secondary btn-sm">Edit Load</button>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "documents" ? "active" : ""}`}>
+                  <div className="doc-grid">
+                    <div className="doc-card">
+                      <h4>Scale Ticket</h4>
+                      <p>Uploaded 08:45 AM</p>
+                      <button className="btn btn-xs btn-secondary">View Ticket</button>
+                    </div>
+                    <div className="doc-card">
+                      <h4>Delivery Proof</h4>
+                      <p>Signed by J. Walters</p>
+                      <button className="btn btn-xs btn-secondary">View POD</button>
+                    </div>
+                    <div className="doc-card">
+                      <h4>Photo Evidence</h4>
+                      <p>3 images attached</p>
+                      <button className="btn btn-xs btn-secondary">View Photos</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "tracking" ? "active" : ""}`}>
+                  <div className="tracking-grid">
+                    <div>
+                      <p>
+                        <strong>Current Position:</strong> I‑45 Southbound
+                      </p>
+                      <p>
+                        <strong>Next Update:</strong> 2 min
+                      </p>
+                      <p>
+                        <strong>ETA:</strong> 14 minutes
+                      </p>
+                      <button className="btn btn-xs btn-secondary">Open Live Map</button>
+                    </div>
+                    <div>
+                      <p>
+                        <strong>Status Timeline:</strong>
+                      </p>
+                      <ul>
+                        <li>06:30 AM — Dispatched</li>
+                        <li>07:05 AM — Loaded</li>
+                        <li>07:15 AM — In Transit</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "tickets" ? "active" : ""}`}>
+                  <div className="ticket-panel">
+                    <div>
+                      <p>
+                        <strong>Ticket #:</strong> VTK-77891
+                      </p>
+                      <p>
+                        <strong>Net Weight:</strong> 22.1 tons
+                      </p>
+                      <p>
+                        <strong>Variance:</strong> +1.3% (Within tolerance)
+                      </p>
+                    </div>
+                    <div>
+                      <p>
+                        <strong>Ticket Match:</strong> ✅ Auto matched
+                      </p>
+                      <p>
+                        <strong>AccuriScale Flag:</strong> None
+                      </p>
+                      <button className="btn btn-xs btn-secondary">Open Ticket Details</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`tab-content ${activeLoadTab === "payment" ? "active" : ""}`}>
+                  <div className="payment-grid">
+                    <div className="detail-column">
+                      <p>
+                        <strong>Invoice Status:</strong> Draft
+                      </p>
+                      <p>
+                        <strong>Amount:</strong> ${selectedLoad.value.toFixed(2)}
+                      </p>
+                      <p>
+                        <strong>Terms:</strong> Net 30
+                      </p>
+                    </div>
+                    <div className="detail-column">
+                      <p>
+                        <strong>Customer:</strong> {selectedLoad.customer}
+                      </p>
+                      <p>
+                        <strong>Billing Contact:</strong> ap@{selectedLoad.customer.toLowerCase().replace(/\s+/g, "")}.com
+                      </p>
+                      <p>
+                        <strong>Last Sent:</strong> —
+                      </p>
+                    </div>
+                  </div>
+                  <div className="action-buttons" style={{ marginTop: 16 }}>
+                    <button className="btn btn-primary btn-sm" onClick={createQuickBooksInvoice} disabled={isInvoicing}>
+                      {isInvoicing ? "Creating..." : "Create Invoice"}
+                    </button>
+                    <button className="btn btn-secondary btn-sm">Send Reminder</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
       <section id="solutions" className="reporting-features">
         <div className="container">
           <div className="section-header">
