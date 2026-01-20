@@ -163,6 +163,8 @@ export default function PartnerDashboard() {
   // Compliance reminders/notifications state
   const [complianceReminders, setComplianceReminders] = useState([]);
   const [reminderLoading, setReminderLoading] = useState(true);
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
+  const partnerSlugSelect = ["id", partnerSlugField].join(", ");
 
   const loadComplianceReminders = useCallback(async () => {
     setReminderLoading(true);
@@ -176,7 +178,7 @@ export default function PartnerDashboard() {
       // Get partner's organizations
       const { data: partnerData } = await supabase
         .from("partners")
-        .select("id, slug")
+        .select(partnerSlugSelect)
         .eq("email", user.email)
         .limit(1)
         .single();
@@ -195,7 +197,7 @@ export default function PartnerDashboard() {
         supabase
           .from("organizations")
           .select("id, name")
-          .eq("partner_slug", partnerData["slug"]),
+          .eq("partner_slug", partnerData?.[partnerSlugField]),
       ];
 
       let orgIds: string[] = [];

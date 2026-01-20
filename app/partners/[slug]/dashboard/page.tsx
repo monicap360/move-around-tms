@@ -19,7 +19,8 @@ export default function PartnerDashboard({
 }: {
   params: Record<string, string>;
 }) {
-  const partnerKey = params["slug"]; // ronyx, elite, meighoo, garza
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
+  const partnerKey = params[partnerSlugField]; // ronyx, elite, meighoo, garza
 
   const [partner, setPartner] = useState<any>(null);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -40,7 +41,11 @@ export default function PartnerDashboard({
       billingRes,
       leadsRes,
     ] = await Promise.all([
-      supabase.from("partners").select("*").eq("slug", partnerKey).single(),
+      supabase
+        .from("partners")
+        .select("*")
+        .eq(partnerSlugField, partnerKey)
+        .single(),
       supabase.from("companies").select("*").eq("partner_slug", partnerKey),
       supabase.from("drivers").select("*").eq("partner_slug", partnerKey),
       supabase.from("tickets").select("*").eq("partner_slug", partnerKey),

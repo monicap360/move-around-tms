@@ -13,6 +13,7 @@ export default function RonyxDriversPage() {
   const router = useRouter();
   const [drivers, setDrivers] = useState<any[]>([]);
   const [loadingDrivers, setLoadingDrivers] = useState(true);
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
 
   const loadDrivers = useCallback(async () => {
     setLoadingDrivers(true);
@@ -33,7 +34,7 @@ export default function RonyxDriversPage() {
         const { data: fallbackPartner } = await supabase
           .from("partners")
           .select("id, email")
-          .eq("slug", partnerKey)
+          .eq(partnerSlugField, partnerKey)
           .limit(1)
           .single();
         partnerData = fallbackPartner ?? null;

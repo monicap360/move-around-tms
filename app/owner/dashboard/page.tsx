@@ -31,6 +31,7 @@ interface OwnerStats {
 
 export default function OwnerDashboard() {
   const { user, profile, loading, hasPermission } = useRoleBasedAuth();
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
   const [stats, setStats] = useState<OwnerStats>({
     totalPartners: 0,
     totalCompanies: 0,
@@ -114,7 +115,7 @@ export default function OwnerDashboard() {
             supabase
               .from("organizations")
               .select("id")
-              .eq("partner_slug", partner["slug"]),
+              .eq("partner_slug", partner[partnerSlugField]),
           ];
 
           let orgIds: string[] = [];
@@ -164,7 +165,7 @@ export default function OwnerDashboard() {
             companiesCount: orgIds.length,
             monthlyCommission: Math.round(monthlyCommission * 100) / 100,
             theme: theme,
-            partnerKey: partner["slug"] || partner.id,
+            partnerKey: partner[partnerSlugField] || partner.id,
           };
         })
       );

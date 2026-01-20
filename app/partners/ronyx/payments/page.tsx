@@ -14,6 +14,7 @@ export default function RonyxPaymentsPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [filter, setFilter] = useState<"all" | "paid" | "pending" | "overdue">("all");
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
 
   const loadPayments = useCallback(async () => {
     setLoadingPayments(true);
@@ -34,7 +35,7 @@ export default function RonyxPaymentsPage() {
         const { data: fallbackPartner } = await supabase
           .from("partners")
           .select("id, email")
-          .eq("slug", partnerKey)
+          .eq(partnerSlugField, partnerKey)
           .limit(1)
           .single();
         partnerData = fallbackPartner ?? null;

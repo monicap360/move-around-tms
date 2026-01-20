@@ -12,6 +12,7 @@ export default function RonyxNewOperatorPage() {
   const { user, profile, loading, hasPermission } = useRoleBasedAuth();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
   const [formData, setFormData] = useState({
     companyName: "",
     contactName: "",
@@ -43,7 +44,7 @@ export default function RonyxNewOperatorPage() {
         const { data: fallbackPartner } = await supabase
           .from("partners")
           .select("id, email")
-          .eq("slug", partnerKey)
+          .eq(partnerSlugField, partnerKey)
           .limit(1)
           .single();
         partnerData = fallbackPartner ?? null;

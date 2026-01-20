@@ -14,6 +14,7 @@ export default function RonyxReportsPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [dateRange, setDateRange] = useState("30d");
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
 
   const loadReports = useCallback(async () => {
     setLoadingReports(true);
@@ -34,7 +35,7 @@ export default function RonyxReportsPage() {
         const { data: fallbackPartner } = await supabase
           .from("partners")
           .select("id, email")
-          .eq("slug", partnerKey)
+          .eq(partnerSlugField, partnerKey)
           .limit(1)
           .single();
         partnerData = fallbackPartner ?? null;

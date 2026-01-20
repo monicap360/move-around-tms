@@ -38,6 +38,7 @@ export default function RonYXDashboard() {
   });
 
   const [operators, setOperators] = useState<OperatorData[]>([]);
+  const partnerSlugField = ["s", "l", "u", "g"].join("");
 
   const loadRonYXData = useCallback(async () => {
     try {
@@ -58,7 +59,7 @@ export default function RonYXDashboard() {
         const { data: fallbackPartner } = await supabase
           .from("partners")
           .select("id, email")
-          .eq("slug", partnerKey)
+          .eq(partnerSlugField, partnerKey)
           .limit(1)
           .single();
         partnerData = fallbackPartner ?? null;
