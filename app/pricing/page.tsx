@@ -42,204 +42,162 @@ const comparisonRows = [
   {
     category: "Pricing & Scale",
     feature: "Monthly Price",
-    hauler: "$349 flat (up to 3 trucks) or $129/truck (4–10 trucks)",
-    producer: "$249 base + $85/truck",
-    enterprise: "Custom (starts ~$3k–$5k/mo)",
+    starter: "$50/truck",
+    professional: "$80/truck",
+    enterprise: "$120/truck",
   },
   {
     category: "Pricing & Scale",
-    feature: "Truck / Trailer Units",
-    hauler: "Up to 5",
-    producer: "Up to 25",
+    feature: "Truck Limit",
+    starter: "Up to 5",
+    professional: "Unlimited",
     enterprise: "Unlimited",
   },
   {
-    category: "Pricing & Scale",
-    feature: "User Logins",
-    hauler: "3",
-    producer: "10",
-    enterprise: "Unlimited + Roles",
-  },
-  {
-    category: "Core Dispatch & Tracking",
-    feature: "Live Dispatch Board",
-    hauler: "✅",
-    producer: "✅",
+    category: "Core System",
+    feature: "Dispatch Board",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Core Dispatch & Tracking",
-    feature: "Real-Time GPS Tracking",
-    hauler: "✅",
-    producer: "✅",
-    enterprise: "✅ (+ Geofences)",
-  },
-  {
-    category: "Core Dispatch & Tracking",
-    feature: "Driver Mobile App",
-    hauler: "✅",
-    producer: "✅",
+    category: "Core System",
+    feature: "Digital Load Tickets + e‑Signature",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Core Dispatch & Tracking",
-    feature: "Route History & Stops",
-    hauler: "✅",
-    producer: "✅",
+    category: "Core System",
+    feature: "Driver Mobile App (Load → Haul → Dump → Return)",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Aggregate Load Mgmt",
-    feature: "Digital Ticket + e-Signature",
-    hauler: "✅",
-    producer: "✅",
+    category: "Core System",
+    feature: "Ticket Management + Ready‑to‑Invoice",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Aggregate Load Mgmt",
-    feature: "Material Library",
-    hauler: "✅ (10)",
-    producer: "✅ (Unlimited)",
-    enterprise: "✅ (Unlimited + Custom)",
-  },
-  {
-    category: "Aggregate Load Mgmt",
-    feature: "Tonnage / Cubic Yards",
-    hauler: "✅ (Manual)",
-    producer: "✅ (Auto via density)",
-    enterprise: "✅ (Auto + Scale*)",
-  },
-  {
-    category: "Aggregate Load Mgmt",
-    feature: "Pits / Jobsites",
-    hauler: "✅ (15)",
-    producer: "✅ (Unlimited)",
-    enterprise: "✅ (Unlimited + Notes)",
-  },
-  {
-    category: "Aggregate Load Mgmt",
-    feature: "Multi-Job Scheduling",
-    hauler: "❌",
-    producer: "✅",
+    category: "Core System",
+    feature: "Basic Invoicing (PDF, Email, Mark Paid)",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Aggregate Load Mgmt",
-    feature: "Job Costing",
-    hauler: "❌",
-    producer: "✅ (Basic)",
-    enterprise: "✅ (Advanced P&L)",
-  },
-  {
-    category: "Ops & Compliance",
-    feature: "Basic IFTA",
-    hauler: "✅",
-    producer: "✅",
+    category: "Core System",
+    feature: "Customer & Driver Directory",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Ops & Compliance",
-    feature: "Document Storage",
-    hauler: "✅ (1 GB)",
-    producer: "✅ (10 GB)",
-    enterprise: "✅ (Unlimited)",
-  },
-  {
-    category: "Ops & Compliance",
-    feature: "Maintenance Tracking",
-    hauler: "✅",
-    producer: "✅",
+    category: "Core System",
+    feature: "Dashboard (Hauls, Revenue, Trucks)",
+    starter: "✅",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Ops & Compliance",
-    feature: "Permit Tracking",
-    hauler: "❌",
-    producer: "✅ (Manual)",
-    enterprise: "✅ (Alerts)",
-  },
-  {
-    category: "Ops & Compliance",
-    feature: "Sub-hauler Portal",
-    hauler: "❌",
-    producer: "❌",
+    category: "Included Modules",
+    feature: "Accounting Integration",
+    starter: "—",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "Safety",
-    feature: "DVIR & Safety Forms",
-    hauler: "❌",
-    producer: "✅",
+    category: "Included Modules",
+    feature: "IFTA Reporting",
+    starter: "—",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "BI & Integrations",
-    feature: "Standard Reports",
-    hauler: "✅",
-    producer: "✅",
+    category: "Included Modules",
+    feature: "Vehicle Maintenance",
+    starter: "—",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "BI & Integrations",
-    feature: "Aggregate Analytics",
-    hauler: "❌",
-    producer: "✅",
-    enterprise: "✅ (Custom Dashboards)",
-  },
-  {
-    category: "BI & Integrations",
-    feature: "Accounting Sync",
-    hauler: "❌",
-    producer: "✅",
+    category: "Included Modules",
+    feature: "Customer Portal",
+    starter: "—",
+    professional: "✅",
     enterprise: "✅",
   },
   {
-    category: "BI & Integrations",
-    feature: "Telematics / ELD",
-    hauler: "❌",
-    producer: "✅ (1)",
-    enterprise: "✅ (Unlimited)",
+    category: "Included Modules",
+    feature: "Driver Payroll",
+    starter: "—",
+    professional: "Add‑On",
+    enterprise: "✅",
   },
   {
-    category: "BI & Integrations",
+    category: "Included Modules",
+    feature: "ELD Integration",
+    starter: "—",
+    professional: "Add‑On",
+    enterprise: "✅",
+  },
+  {
+    category: "Included Modules",
+    feature: "Advanced Dispatching",
+    starter: "—",
+    professional: "Add‑On",
+    enterprise: "✅",
+  },
+  {
+    category: "Included Modules",
+    feature: "Material Inventory",
+    starter: "—",
+    professional: "Add‑On",
+    enterprise: "✅",
+  },
+  {
+    category: "Included Modules",
+    feature: "Document Scanning (Rock Box)",
+    starter: "Add‑On",
+    professional: "Add‑On",
+    enterprise: "✅",
+  },
+  {
+    category: "Enterprise",
+    feature: "Custom Reporting",
+    starter: "—",
+    professional: "—",
+    enterprise: "✅",
+  },
+  {
+    category: "Enterprise",
     feature: "API Access",
-    hauler: "❌",
-    producer: "❌",
+    starter: "—",
+    professional: "—",
     enterprise: "✅",
   },
   {
-    category: "Onboarding & Support",
-    feature: "Training",
-    hauler: "Self-Serve",
-    producer: "Guided",
-    enterprise: "White-Glove + On-Site",
-  },
-  {
-    category: "Onboarding & Support",
-    feature: "Support",
-    hauler: "Email/Chat",
-    producer: "Priority Phone/Chat",
+    category: "Support",
+    feature: "Support Level",
+    starter: "Email",
+    professional: "Phone",
     enterprise: "Dedicated AM",
   },
 ];
 
 const addOns = [
-  {
-    name: "Scale Ticket Integration (Enterprise add-on)",
-    price: "$500–$1,500/mo",
-  },
-  {
-    name: "Fast Scan OCR",
-    price: "$350–$900/mo",
-  },
-  {
-    name: "Accounting Sync",
-    price: "$200–$500/mo",
-  },
-  {
-    name: "Telematics / ELD",
-    price: "$250/mo per connection + setup",
-  },
+  { name: "Accounting Integration", price: "+$50–100/month" },
+  { name: "IFTA Reporting", price: "+$10–20/truck/month" },
+  { name: "Document Scanning (Rock Box)", price: "+$30–50/month" },
+  { name: "Vehicle Maintenance", price: "+$10–20/truck/month" },
+  { name: "Driver Payroll", price: "+$5–10/driver/month" },
+  { name: "ELD Integration", price: "+$10–20/truck/month" },
+  { name: "Customer Portal", price: "+$50–200/month" },
+  { name: "Advanced Dispatching", price: "+$30–100/month" },
+  { name: "Material Inventory", price: "+$50–150/month" },
 ];
 
 const competitiveRows = [
@@ -378,10 +336,10 @@ export default function PricingPage() {
               ) : (
                 <Button
                   className="w-full"
-                  disabled={plan === t.name || saving}
-                  onClick={() => upgrade(t.name as any)}
+                  disabled={plan === t.id || saving}
+                  onClick={() => upgrade(t.id as any)}
                 >
-                  {plan === t.name ? "Current Plan" : t.cta}
+                  {plan === t.id ? "Current Plan" : t.cta}
                 </Button>
               )}
             </CardContent>
@@ -390,9 +348,7 @@ export default function PricingPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Plan Comparison for Dirt, Sand & Aggregate Haulers
-        </h2>
+        <h2 className="text-2xl font-semibold text-gray-800">Tier Comparison</h2>
         <div className="overflow-x-auto border rounded-lg">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50">
@@ -401,10 +357,10 @@ export default function PricingPage() {
                   Feature
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">
-                  Hauler
+                  Starter
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">
-                  Producer
+                  Professional
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">
                   Enterprise
@@ -425,8 +381,8 @@ export default function PricingPage() {
                       {row.feature}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{row.hauler}</td>
-                  <td className="px-4 py-3 text-gray-700">{row.producer}</td>
+                  <td className="px-4 py-3 text-gray-700">{row.starter}</td>
+                  <td className="px-4 py-3 text-gray-700">{row.professional}</td>
                   <td className="px-4 py-3 text-gray-700">{row.enterprise}</td>
                 </tr>
               ))}
@@ -449,10 +405,41 @@ export default function PricingPage() {
             </Card>
           ))}
         </div>
-        <p className="text-xs text-gray-500">
-          Scale Ticket Integration is available as an Enterprise add-on.
-        </p>
+        <p className="text-xs text-gray-500">Add-ons can be layered on any tier.</p>
       </div>
+
+      <section className="space-y-6">
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold text-gray-800">Onboarding Strategy</h2>
+          <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+            <li>30‑day free trial: Core system only</li>
+            <li>Week 3: “Here’s how Accounting Integration would save you ~2 hours/week.”</li>
+            <li>Month 2: Offer the first module at 50% off for 3 months</li>
+            <li>Month 4–6: Recommend the next logical module based on usage</li>
+          </ul>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold text-gray-800">Retention Strategy</h2>
+          <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+            <li>Modules create stickiness (QuickBooks connection is hard to leave)</li>
+            <li>Each module adds new value threads across the operation</li>
+            <li>Annual contracts: 2 months free with yearly commitment</li>
+          </ul>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold text-gray-800">Market Reality Check</h2>
+          <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+            <li>New companies (1–3 trucks): start with core</li>
+            <li>Growing companies (3–10 trucks): core + 2–4 modules</li>
+            <li>
+              Established companies switching from paper/spreadsheets: bundle tiers and
+              enterprise support to make switching painless
+            </li>
+          </ul>
+        </div>
+      </section>
 
       <section className="space-y-6">
         <div className="space-y-2">
