@@ -154,6 +154,18 @@ export default function RonyxDriversPage() {
   });
   const [docMessage, setDocMessage] = useState("");
   const [assignedLoad, setAssignedLoad] = useState<any | null>(null);
+  const [payRates, setPayRates] = useState<any[]>([]);
+  const [rateForm, setRateForm] = useState({
+    rate_name: "",
+    rate_type: "PER_TON",
+    rate_value: "",
+    material_type: "",
+    customer_id: "",
+    job_id: "",
+    equipment_type: "",
+    is_default: false,
+    effective_date: "",
+  });
 
   useEffect(() => {
     void loadDrivers();
@@ -164,6 +176,7 @@ export default function RonyxDriversPage() {
     void loadProfile(selectedDriverId);
     void loadDocuments(selectedDriverId);
     void loadAssignedLoad();
+    void loadPayRates(selectedDriverId);
   }, [selectedDriverId, loadAssignedLoad]);
 
   const loadDrivers = useCallback(async () => {
@@ -219,6 +232,88 @@ export default function RonyxDriversPage() {
       setAssignedLoad(null);
     }
   }, [profile.full_name]);
+
+  async function loadPayRates(driverId: string) {
+    try {
+      const res = await fetch(`/api/ronyx/drivers/${driverId}/pay-rates`);
+      const data = await res.json();
+      setPayRates(data.rates || []);
+    } catch (err) {
+      console.error("Failed to load pay rates", err);
+      setPayRates([]);
+    }
+  }
+
+  async function savePayRate() {
+    if (!selectedDriverId) return;
+    if (!rateForm.rate_name || !rateForm.rate_value) {
+      setStatusMessage("Rate name and value are required.");
+      return;
+    }
+    const payload = {
+      ...rateForm,
+      rate_value: Number(rateForm.rate_value),
+      customer_id: rateForm.customer_id || null,
+      job_id: rateForm.job_id || null,
+      material_type: rateForm.material_type || null,
+      equipment_type: rateForm.equipment_type || null,
+      effective_date: rateForm.effective_date || new Date().toISOString().slice(0, 10),
+    };
+    const res = await fetch(`/api/ronyx/drivers/${selectedDriverId}/pay-rates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      setStatusMessage("Failed to save pay rate.");
+      return;
+    }
+    setRateForm({
+      rate_name: "",
+      rate_type: "PER_TON",
+      rate_value: "",
+      material_type: "",
+      customer_id: "",
+      job_id: "",
+      equipment_type: "",
+      is_default: false,
+      effective_date: "",
+    });
+    setStatusMessage("Pay rate saved.");
+    void loadPayRates(selectedDriverId);
+  }
+
+  async function setDefaultRate(rateId: string) {
+    if (!selectedDriverId) return;
+    const res = await fetch(
+      `/api/ronyx/drivers/${selectedDriverId}/pay-rates/${rateId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_default: true }),
+      },
+    );
+    if (!res.ok) {
+      setStatusMessage("Failed to update default rate.");
+      return;
+    }
+    setStatusMessage("Default rate updated.");
+    void loadPayRates(selectedDriverId);
+  }
+
+  async function deleteRate(rateId: string) {
+    if (!selectedDriverId) return;
+    const res = await fetch(
+      `/api/ronyx/drivers/${selectedDriverId}/pay-rates/${rateId}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      setStatusMessage("Failed to delete rate.");
+      return;
+    }
+    setStatusMessage("Pay rate removed.");
+    void loadPayRates(selectedDriverId);
+  }
 
   async function uploadDocument() {
     if (!selectedDriverId || !docUpload.doc_type) return;
@@ -840,6 +935,162 @@ export default function RonyxDriversPage() {
   D --> E["Driver Notified\\nPayslip Available in App"]
   E --> F["Bank Processes\\nDirect Deposit"]`}
               </pre>
+            </div>
+            <div style={{ marginTop: 16 }} className="ronyx-card">
+              <h3>Pay Rate Management</h3>
+              <div className="ronyx-grid" style={{ rowGap: 16 }}>
+                <div>
+                  <label className="ronyx-label">Rate Name</label>
+                  <input
+                    className="ronyx-input"
+                    value={rateForm.rate_name}
+                    onChange={(e) => setRateForm({ ...rateForm, rate_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Rate Type</label>
+                  <select
+                    className="ronyx-input"
+                    value={rateForm.rate_type}
+                    onChange={(e) => setRateForm({ ...rateForm, rate_type: e.target.value })}
+                  >
+                    <option value="PER_TON">PER_TON</option>
+                    <option value="PER_LOAD">PER_LOAD</option>
+                    <option value="PER_MILE">PER_MILE</option>
+                    <option value="PER_HOUR">PER_HOUR</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="ronyx-label">Rate Value</label>
+                  <input
+                    className="ronyx-input"
+                    type="number"
+                    step="0.01"
+                    value={rateForm.rate_value}
+                    onChange={(e) => setRateForm({ ...rateForm, rate_value: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Material Type</label>
+                  <input
+                    className="ronyx-input"
+                    value={rateForm.material_type}
+                    onChange={(e) => setRateForm({ ...rateForm, material_type: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Customer ID</label>
+                  <input
+                    className="ronyx-input"
+                    value={rateForm.customer_id}
+                    onChange={(e) => setRateForm({ ...rateForm, customer_id: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Job ID</label>
+                  <input
+                    className="ronyx-input"
+                    value={rateForm.job_id}
+                    onChange={(e) => setRateForm({ ...rateForm, job_id: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Equipment Type</label>
+                  <input
+                    className="ronyx-input"
+                    value={rateForm.equipment_type}
+                    onChange={(e) => setRateForm({ ...rateForm, equipment_type: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="ronyx-label">Effective Date</label>
+                  <input
+                    type="date"
+                    className="ronyx-input"
+                    value={rateForm.effective_date}
+                    onChange={(e) => setRateForm({ ...rateForm, effective_date: e.target.value })}
+                  />
+                </div>
+                <div className="ronyx-row">
+                  <span>Default Rate</span>
+                  <input
+                    type="checkbox"
+                    checked={rateForm.is_default}
+                    onChange={(e) => setRateForm({ ...rateForm, is_default: e.target.checked })}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                <button className="ronyx-action" onClick={savePayRate}>
+                  Save Rate
+                </button>
+                <button
+                  className="ronyx-action"
+                  onClick={() =>
+                    setRateForm({
+                      rate_name: "",
+                      rate_type: "PER_TON",
+                      rate_value: "",
+                      material_type: "",
+                      customer_id: "",
+                      job_id: "",
+                      equipment_type: "",
+                      is_default: false,
+                      effective_date: "",
+                    })
+                  }
+                >
+                  Clear
+                </button>
+              </div>
+              <div style={{ marginTop: 16, overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(15,23,42,0.12)" }}>
+                      <th style={{ padding: "8px 6px" }}>Name</th>
+                      <th style={{ padding: "8px 6px" }}>Type</th>
+                      <th style={{ padding: "8px 6px" }}>Value</th>
+                      <th style={{ padding: "8px 6px" }}>Material</th>
+                      <th style={{ padding: "8px 6px" }}>Customer</th>
+                      <th style={{ padding: "8px 6px" }}>Job</th>
+                      <th style={{ padding: "8px 6px" }}>Equipment</th>
+                      <th style={{ padding: "8px 6px" }}>Default</th>
+                      <th style={{ padding: "8px 6px" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payRates.length === 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ padding: "10px 6px" }}>
+                          No pay rates yet.
+                        </td>
+                      </tr>
+                    )}
+                    {payRates.map((rate) => (
+                      <tr key={rate.id} style={{ borderBottom: "1px solid rgba(15,23,42,0.08)" }}>
+                        <td style={{ padding: "8px 6px" }}>{rate.rate_name}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.rate_type}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.rate_value}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.material_type || "--"}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.customer_id || "--"}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.job_id || "--"}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.equipment_type || "--"}</td>
+                        <td style={{ padding: "8px 6px" }}>{rate.is_default ? "✅" : "--"}</td>
+                        <td style={{ padding: "8px 6px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {!rate.is_default && (
+                            <button className="btn-sm btn-secondary" onClick={() => setDefaultRate(rate.id)}>
+                              Set Default
+                            </button>
+                          )}
+                          <button className="btn-sm btn-warning" onClick={() => deleteRate(rate.id)}>
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
         )}
