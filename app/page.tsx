@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { useI18n } from "./lib/i18n/context";
 
 export default function LandingPage() {
   return (
@@ -15,7 +16,10 @@ export default function LandingPage() {
 function LandingPageContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState("all");
-  const [language, setLanguage] = useState<"en" | "es">("en");
+  const { locale, setLocale } = useI18n();
+  const language = locale;
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [profitLeakOpen, setProfitLeakOpen] = useState(false);
   const [profitLeakInputs, setProfitLeakInputs] = useState({
@@ -146,23 +150,17 @@ function LandingPageContent() {
 
   useEffect(() => {
     const paramLang = searchParams.get("lang");
-    const storedLang =
-      typeof window !== "undefined"
-        ? (window.localStorage.getItem("sales_lang") as "en" | "es" | null)
-        : null;
-    const nextLang = paramLang === "en" || paramLang === "es" ? paramLang : storedLang;
-    if (nextLang && nextLang !== language) {
-      setLanguage(nextLang);
+    if ((paramLang === "en" || paramLang === "es") && paramLang !== locale) {
+      setLocale(paramLang);
     }
-  }, [searchParams, language]);
+  }, [searchParams, locale, setLocale]);
 
   const setLanguageAndPersist = (next: "en" | "es") => {
-    setLanguage(next);
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("sales_lang", next);
-    const url = new URL(window.location.href);
-    url.searchParams.set("lang", next);
-    window.history.replaceState({}, "", url.toString());
+    setLocale(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("lang", next);
+    const nextUrl = `${pathname}?${params.toString()}`;
+    router.replace(nextUrl, { scroll: false });
   };
   const demoMenuOptions =
     language === "es"
@@ -2389,8 +2387,8 @@ function LandingPageContent() {
           </button>
 
           <div className={`nav-links ${menuOpen ? "active" : ""}`}>
-            <a href="#pits" className="nav-link" onClick={() => setMenuOpen(false)}>
-              {t("navPits")}
+            <a href="#pit-to-pay" className="nav-link" onClick={() => setMenuOpen(false)}>
+              {t("navPitToPay")}
             </a>
             <a href="#dump-truck" className="nav-link" onClick={() => setMenuOpen(false)}>
               {t("navDump")}
@@ -2512,7 +2510,7 @@ function LandingPageContent() {
                 <i className="fas fa-chart-line"></i>
                 {t("heroCtaPrimary")}
               </a>
-              <a href="#pits" className="btn btn-secondary">
+              <a href="#pit-to-pay" className="btn btn-secondary">
                 <i className="fas fa-industry"></i>
                 {t("heroCtaSecondary")}
               </a>
@@ -4033,7 +4031,7 @@ function LandingPageContent() {
         </div>
       )}
 
-      <section id="pits" className="switch-benefits">
+      <section id="pit-to-pay" className="switch-benefits">
         <div className="container">
           <div className="section-header">
             <h2>
