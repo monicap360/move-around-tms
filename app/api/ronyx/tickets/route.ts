@@ -5,6 +5,7 @@ import {
   calculateDistanceMiles,
   calculateWaitingMinutes,
 } from "@/lib/ronyx/phase1/ticketGenerator";
+import { logValidations, validateTicket } from "@/lib/ronyx/aiValidationEngine";
 
 export const dynamic = "force-dynamic";
 
@@ -163,6 +164,33 @@ export async function POST(request: NextRequest) {
   const { data, error } = await supabase.from("aggregate_tickets").insert(payload).select().single();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  try {
+    const validations = await validateTicket({
+      ticket_id: data.ticket_id,
+      project_id: data.project_id,
+      customer_id: data.customer_id,
+      truck_id: data.truck_id,
+      driver_id: data.driver_id,
+      material_type: data.material_type,
+      load_weight: data.load_weight,
+      cubic_yards: data.cubic_yards,
+      calculated_distance: data.calculated_distance,
+      pickup_gps_lat: data.pickup_gps_lat,
+      pickup_gps_lon: data.pickup_gps_lon,
+      dump_gps_lat: data.dump_gps_lat,
+      dump_gps_lon: data.dump_gps_lon,
+      load_time: data.load_time,
+      dump_time: data.dump_time,
+      waiting_minutes: data.waiting_minutes,
+      has_photo: data.has_photo,
+      has_signature: data.has_signature,
+      weight_ticket_verified: data.weight_ticket_verified,
+    });
+    await logValidations(data.ticket_id, validations);
+  } catch (validationError) {
+    console.warn("Ticket validation failed:", validationError);
   }
 
   return NextResponse.json({ ticket: data });
