@@ -2659,59 +2659,147 @@ function LandingPageContent() {
         <div className="container">
           <div className="section-header">
             <h2>
-              Selling Modules: <span className="speed-gradient">Choose What You Need</span>
+              Dump Truck TMS: <span className="speed-gradient">Core vs. Add‑Ons</span>
             </h2>
             <p style={{ color: "var(--hyper-yellow)", fontWeight: 600 }}>
-              Mix and match modules based on your operational requirements
+              Start with the core ticket‑to‑invoice system. Add only what you need.
             </p>
           </div>
 
+          <div className="modules-grid" style={{ marginBottom: 28 }}>
+            <div className="module-card">
+              <div className="module-icon">
+                <i className="fa-solid fa-layer-group" />
+              </div>
+              <div className="module-title">Core System (Absolute Minimum)</div>
+              <div className="module-desc">
+                The foundation only handles the digital load ticket lifecycle — nothing more.
+              </div>
+              <ul className="module-list">
+                <li>Dispatch board: assign loads, view truck status</li>
+                <li>Digital load tickets (customer, material, source, destination)</li>
+                <li>Driver mobile app: Load → Haul → Dump → Return</li>
+                <li>Ticket management: ready‑to‑invoice workflow</li>
+                <li>Basic invoicing: PDF, email, mark paid</li>
+                <li>Customer & driver directory (name, phone, email)</li>
+                <li>Dashboard: today’s hauls, revenue, trucks working</li>
+              </ul>
+              <div className="module-target">Typical core pricing: $25–50/truck/month</div>
+            </div>
+          </div>
+
+          <h3 style={{ marginBottom: 12, fontSize: "1.2rem", fontWeight: 700 }}>
+            Add‑On Modules (pay only for what you need)
+          </h3>
           <div className="modules-grid">
             {[
               {
+                icon: "fa-calculator",
+                price: "+$50–100/month",
+                title: "Accounting Integration",
+                desc: "Connects TMS to QuickBooks/Xero with bi‑directional sync.",
+                features: [
+                  "Auto‑create invoices from tickets",
+                  "Sync customer/vendor lists",
+                  "Payments reflected in either system",
+                ],
+                target: "Anyone tired of double entry",
+              },
+              {
+                icon: "fa-gas-pump",
+                price: "+$10–20/truck/month",
+                title: "IFTA Reporting",
+                desc: "Automatic fuel tax calculations for multi‑state fleets.",
+                features: [
+                  "GPS miles by state/province",
+                  "Fuel card or manual fuel entry",
+                  "Quarterly IFTA reports",
+                ],
+                target: "Fleets crossing state lines",
+              },
+              {
                 icon: "fa-bolt",
-                price: "Sell Separately: $599/month",
-                title: "TicketFlash OCR Module",
-                desc: "Process paper tickets at 99.97% accuracy with AI-powered optical character recognition.",
+                price: "+$30–50/month",
+                title: "Document Scanning (Rock Box)",
+                desc: "Read paper scale tickets automatically.",
                 features: [
-                  "2-second ticket processing",
-                  "Handwriting recognition",
-                  "Multi-language support",
-                  "Learning AI improves over time",
+                  "Scan tickets with phone camera",
+                  "OCR reads ticket numbers/weights",
+                  "Auto‑attach to the correct haul",
                 ],
-                target: "Companies with paper-based processes, manual data entry",
-                href: "/ticketflash-ocr",
-                cta: "Subscribe for $599/mo",
+                target: "Quarries still using paper tickets",
               },
               {
-                icon: "fa-weight-hanging",
-                price: "Sell Separately: $799/month",
-                title: "AccuriScale Module",
-                desc: "Real-time scale validation with fraud detection and automated billing verification.",
+                icon: "fa-wrench",
+                price: "+$10–20/truck/month",
+                title: "Vehicle Maintenance",
+                desc: "Track repairs and schedule service to prevent breakdowns.",
                 features: [
-                  "150+ validation rules",
-                  "Anomaly detection algorithms",
-                  "Cross-reference verification",
-                  "Automated dispute evidence",
+                  "Repair history per truck",
+                  "Scheduled maintenance reminders",
+                  "Parts and cost tracking",
                 ],
-                target: "Aggregate haulers, quarries, bulk material transport",
+                target: "Fleets with 3+ trucks",
               },
               {
-                icon: "fa-tachometer-alt",
-                price: "Sell Separately: $1,499/month",
-                title: "TMS Operations Platform",
-                desc: "Complete fleet management system with dispatch, compliance, and real-time tracking.",
+                icon: "fa-money-check-dollar",
+                price: "+$5–10/driver/month",
+                title: "Driver Payroll",
+                desc: "Auto‑calculate driver pay per load or ton.",
                 features: [
-                  "Real-time dispatch & tracking",
-                  "Automated compliance monitoring",
-                  "Integrated billing & payroll",
-                  "Advanced reporting suite",
+                  "Pay rules by load/ton/hour",
+                  "Automatic settlement totals",
+                  "Export to payroll services",
                 ],
-                target: "All fleet operations needing complete management",
+                target: "Companies paying by load (most)",
+              },
+              {
+                icon: "fa-clock",
+                price: "+$10–20/truck/month",
+                title: "ELD Integration",
+                desc: "Sync hours of service directly into dispatch.",
+                features: [
+                  "See HOS inside TMS",
+                  "Prevent over‑hours assignments",
+                  "One less driver app",
+                ],
+                target: "Fleets running ELDs",
+              },
+              {
+                icon: "fa-user-circle",
+                price: "+$50–200/month",
+                title: "Customer Portal",
+                desc: "Give customers real‑time visibility and self‑service access.",
+                features: [
+                  "Scheduled haul visibility",
+                  "Live truck tracking",
+                  "Invoice history downloads",
+                ],
+                target: "Companies reducing phone calls",
+              },
+              {
+                icon: "fa-route",
+                price: "+$30–100/month",
+                title: "Advanced Dispatching",
+                desc: "Smarter load assignment for complex schedules.",
+                features: [
+                  "Auto‑assign by location",
+                  "Best truck per job",
+                  "Route optimization between sites",
+                ],
+                target: "10+ trucks with complex routing",
+              },
+              {
+                icon: "fa-boxes-stacked",
+                price: "+$50–150/month",
+                title: "Material Inventory",
+                desc: "Track inventory at pits and reconcile what’s moved.",
+                features: ["Inventory at pits/stockpiles", "Sold vs moved reconciliation"],
+                target: "Suppliers who own materials",
               },
               {
                 icon: "fa-chart-line",
-                price: "Sell Separately: Contact for pricing",
+                price: "Contact for pricing",
                 title: "AI Financial Intelligence",
                 desc: "AI-powered financial intelligence platform specifically optimized for dump truck operations, delivering unprecedented cash flow visibility, predictive insights, and automated optimization that no competitor can match.",
                 features: [
@@ -2721,97 +2809,6 @@ function LandingPageContent() {
                   "Executive financial dashboard",
                 ],
                 target: "Dump truck operations seeking predictive cash flow control",
-              },
-              {
-                icon: "fa-route",
-                price: "Sell Separately: $299/month",
-                title: "Route Optimization",
-                desc: "Smart routing suggestions that reduce fuel and improve on-time performance.",
-                features: [
-                  "Multi-stop optimization",
-                  "Fuel-efficient routing",
-                  "Load sequencing",
-                  "Real-time route adjustments",
-                ],
-                target: "Dispatch teams optimizing daily routes",
-              },
-              {
-                icon: "fa-file-invoice-dollar",
-                price: "Sell Separately: $599/month",
-                title: "Revenue Shield",
-                desc: "Automated reconciliation and revenue leakage prevention.",
-                features: [
-                  "Invoice matching",
-                  "Exception detection",
-                  "Detention claims",
-                  "Evidence packet generator",
-                ],
-                target: "Companies losing revenue to missed accessorials",
-              },
-              {
-                icon: "fa-file-excel",
-                price: "Sell Separately: $699/month",
-                title: "Excel & Plant Invoice Reconciliation",
-                desc: "Upload Excel tickets and auto-reconcile against CSV invoices from material plants.",
-                features: [
-                  "Excel import with schema detection",
-                  "Auto error scanning and variance flags",
-                  "CSV invoice matching by load, date, and tonnage",
-                  "Exception queue with audit trail",
-                ],
-                target: "Aggregate and materials haulers reconciling plant invoices",
-              },
-              {
-                icon: "fa-clipboard-check",
-                price: "Sell Separately: $349/month",
-                title: "Module 1: Excel-to-Ticket Reconciliation Validation Checklist",
-                desc: "Step-by-step validation that auto-flags mismatches before they hit billing.",
-                features: [
-                  "Ticket #, date, and material checks",
-                  "Gross/tare/net validation rules",
-                  "Auto-flag short loads and duplicates",
-                  "Audit-ready exception log",
-                ],
-                target: "Teams standardizing Excel-to-ticket reconciliation",
-              },
-              {
-                icon: "fa-user-check",
-                price: "Sell Separately: $399/month",
-                title: "Module 3: Payroll (Ticket-to-Driver) Validation Checklist",
-                desc: "Validate pay rules and driver tickets before payroll closes.",
-                features: [
-                  "Driver/ticket match validation",
-                  "Rate type & unit checks",
-                  "Auto-flag missing PODs",
-                  "Exception-ready payroll audit log",
-                ],
-                target: "Ops teams preventing payroll disputes",
-              },
-              {
-                icon: "fa-globe",
-                price: "Sell Separately: $399/month",
-                title: "Cross-Border Mexico",
-                desc: "Automated customs documentation and compliance monitoring.",
-                features: [
-                  "CFDI 4.0 + Carta Porte",
-                  "Customs status tracking",
-                  "Multi-currency invoicing",
-                  "Compliance audit trails",
-                ],
-                target: "Cross-border carriers and 3PLs",
-              },
-              {
-                icon: "fa-file-lines",
-                price: "Sell Separately: $349/month",
-                title: "DocPulse Documentation",
-                desc: "Centralized document vault with audit trails and dispute-ready evidence packets.",
-                features: [
-                  "Auto-organized tickets and invoices",
-                  "Immutable audit trails",
-                  "One-click evidence packets",
-                  "Compliance-ready exports",
-                ],
-                target: "Teams managing high-volume ticket and invoice documentation",
               },
             ].map((module) => (
               <div className="module-card" key={module.title}>
@@ -2871,18 +2868,29 @@ function LandingPageContent() {
                     {module.target}
                   </div>
                 </div>
-                {module.href && (
-                  <Link
-                    href={module.href}
-                    prefetch={false}
-                    className="btn btn-primary"
-                    style={{ marginTop: 20, width: "100%", justifyContent: "center" }}
-                  >
-                    {module.cta || "Learn More"}
-                  </Link>
-                )}
               </div>
             ))}
+          </div>
+
+          <div className="module-footer" style={{ marginTop: 24 }}>
+            <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: 8 }}>
+              Typical setups
+            </h3>
+            <ul className="module-list">
+              <li>Owner‑operator (1–3 trucks): Core + Payroll → ~$100–200/mo</li>
+              <li>
+                Growing (5–10 trucks): Core + Accounting + IFTA + Maintenance + Payroll →
+                ~$400–800/mo
+              </li>
+              <li>
+                Established (15+ trucks): Core + most modules (Portal + Advanced Dispatch) →
+                ~$1,200–2,500/mo
+              </li>
+            </ul>
+            <p className="ronyx-muted" style={{ marginTop: 8 }}>
+              Start with the core, use it for a month, and add the one module that removes your
+              biggest time drain.
+            </p>
           </div>
         </div>
       </section>
