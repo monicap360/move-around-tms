@@ -76,7 +76,8 @@ export async function POST(req: Request) {
       return scoreB - scoreA; // Highest score first
     });
 
-    const assignedCount = 0;
+    let assignedCount = 0;
+    const assignmentFailures: Array<{ loadId: string; error: string }> = [];
     const driverPool = [...sortedDrivers];
 
     // Assign loads to drivers
@@ -113,29 +114,56 @@ export async function POST(req: Request) {
         driverPool.splice(driverIndex, 1);
       }
 
+      const driverIdentifier = bestDriver.driver_uuid || bestDriver.id;
+      const loadUpdate: Record<string, string> = {
+        driver_id: driverIdentifier,
+        status: "assigned",
+        assigned_at: new Date().toISOString(),
+      };
+      if (bestDriver.driver_uuid) {
+        loadUpdate.driver_uuid = bestDriver.driver_uuid;
+      }
+
       // Update load assignment
-      await supabase
+      const { error: loadUpdateError } = await supabase
         .from("loads")
-        .update({
-          driver_id: bestDriver.driver_uuid || bestDriver.id,
-          driver_uuid: bestDriver.driver_uuid || bestDriver.id,
-          status: "assigned",
-          assigned_at: new Date().toISOString(),
-        })
+        .update(loadUpdate)
         .eq("id", load.id)
         .eq("organization_id", organizationId);
 
+      if (loadUpdateError) {
+        assignmentFailures.push({
+          loadId: load.id,
+          error: loadUpdateError.message,
+        });
+        continue;
+      }
+
+      const driverIdColumn = bestDriver.driver_uuid ? "driver_uuid" : "id";
+
       // Update driver's active load
-      await supabase
+      const { error: driverUpdateError } = await supabase
         .from("drivers")
         .update({ active_load: load.id, status: "assigned" })
-        .eq("driver_uuid", bestDriver.driver_uuid || bestDriver.id)
+        .eq(driverIdColumn, driverIdentifier)
         .eq("organization_id", organizationId);
+
+      if (driverUpdateError) {
+        assignmentFailures.push({
+          loadId: load.id,
+          error: driverUpdateError.message,
+        });
+        continue;
+      }
+
+      assignedCount += 1;
     }
 
     return NextResponse.json({
       success: true,
-      assigned: (loads || []).length - driverPool.length,
+      assigned: assignedCount,
+      failed: assignmentFailures.length,
+      failures: assignmentFailures,
       total_loads: (loads || []).length,
       total_drivers: sortedDrivers.length,
     });

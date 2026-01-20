@@ -3,41 +3,144 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest, { params }: any) {
   const supabase = createServerAdmin();
-  const org = params.org;
+  const organizationId = params?.["org"];
 
-  // Fetch all unassigned loads
-  const { data: loads } = await supabase
-    .from("loads")
-    .select("*")
-    .eq("organization_id", org)
-    .is("driver_id", null);
-
-  // Fetch all available drivers
-  const { data: drivers } = await supabase
-    .from("drivers")
-    .select("*")
-    .eq("organization_id", org)
-    .is("active_load", null)
-    .eq("status", "available");
-
-  // Simple AI: assign nearest available driver to each load
-  for (const load of loads || []) {
-    // Find best driver (placeholder: first available)
-    const bestDriver = drivers?.shift();
-    if (!bestDriver) break;
-    await supabase
-      .from("loads")
-      .update({ driver_id: bestDriver.driver_uuid, status: "assigned" })
-      .eq("id", load.id)
-      .eq("organization_id", org);
-    await supabase
-      .from("drivers")
-      .update({ active_load: load.id })
-      .eq("driver_uuid", bestDriver.driver_uuid)
-      .eq("organization_id", org);
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: "Missing organization id" },
+      { status: 400 },
+    );
   }
 
-  return NextResponse.json({ success: true });
+  // Fetch all unassigned loads
+  const { data: loads, error: loadsError } = await supabase
+    .from("loads")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .is("driver_id", null)
+    .in("status", ["unassigned", "pending", "created"]);
+
+  if (loadsError) {
+    return NextResponse.json(
+      { error: loadsError.message },
+      { status: 500 },
+    );
+  }
+
+  // Fetch all available drivers
+  const { data: drivers, error: driversError } = await supabase
+    .from("drivers")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .is("active_load", null)
+    .in("status", ["available", "Active", "active"]);
+
+  if (driversError) {
+    return NextResponse.json(
+      { error: driversError.message },
+      { status: 500 },
+    );
+  }
+
+  if (!loads?.length || !drivers?.length) {
+    return NextResponse.json({
+      success: true,
+      assigned: 0,
+      total_loads: loads?.length || 0,
+      total_drivers: drivers?.length || 0,
+    });
+  }
+
+  const sortedDrivers = [...drivers].sort((a: any, b: any) => {
+    const scoreA = (a.safety_score || 0) + (a.performance_score || 0);
+    const scoreB = (b.safety_score || 0) + (b.performance_score || 0);
+    return scoreB - scoreA;
+  });
+
+  let assignedCount = 0;
+  const assignmentFailures: Array<{ loadId: string; error: string }> = [];
+  const driverPool = [...sortedDrivers];
+
+  // Assign loads to drivers
+  for (const load of loads || []) {
+    if (driverPool.length === 0) break;
+
+    let bestDriver = driverPool.find((driver: any) => {
+      if (load.required_endorsements) {
+        const required = Array.isArray(load.required_endorsements)
+          ? load.required_endorsements
+          : [load.required_endorsements];
+        const driverEndorsements = Array.isArray(driver.endorsements)
+          ? driver.endorsements
+          : driver.endorsements
+            ? [driver.endorsements]
+            : [];
+        return required.every((req: string) =>
+          driverEndorsements.includes(req),
+        );
+      }
+      return true;
+    });
+
+    if (!bestDriver) {
+      bestDriver = driverPool[0];
+    }
+
+    const driverIndex = driverPool.indexOf(bestDriver);
+    if (driverIndex > -1) {
+      driverPool.splice(driverIndex, 1);
+    }
+
+    const driverIdentifier = bestDriver.driver_uuid || bestDriver.id;
+    const loadUpdate: Record<string, string> = {
+      driver_id: driverIdentifier,
+      status: "assigned",
+      assigned_at: new Date().toISOString(),
+    };
+    if (bestDriver.driver_uuid) {
+      loadUpdate.driver_uuid = bestDriver.driver_uuid;
+    }
+
+    const { error: loadUpdateError } = await supabase
+      .from("loads")
+      .update(loadUpdate)
+      .eq("id", load.id)
+      .eq("organization_id", organizationId);
+
+    if (loadUpdateError) {
+      assignmentFailures.push({
+        loadId: load.id,
+        error: loadUpdateError.message,
+      });
+      continue;
+    }
+
+    const driverIdColumn = bestDriver.driver_uuid ? "driver_uuid" : "id";
+    const { error: driverUpdateError } = await supabase
+      .from("drivers")
+      .update({ active_load: load.id, status: "assigned" })
+      .eq(driverIdColumn, driverIdentifier)
+      .eq("organization_id", organizationId);
+
+    if (driverUpdateError) {
+      assignmentFailures.push({
+        loadId: load.id,
+        error: driverUpdateError.message,
+      });
+      continue;
+    }
+
+    assignedCount += 1;
+  }
+
+  return NextResponse.json({
+    success: true,
+    assigned: assignedCount,
+    failed: assignmentFailures.length,
+    failures: assignmentFailures,
+    total_loads: loads?.length || 0,
+    total_drivers: drivers?.length || 0,
+  });
 }
 
 function createServerAdmin() {

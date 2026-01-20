@@ -29,8 +29,6 @@ export async function submitDispatcherRating(
       return { success: false, error: "Invalid input parameters" };
     }
 
-    // Insert rating into dispatcher_ratings table (or create if doesn't exist)
-    // If the table doesn't exist, we'll handle it gracefully
     const { data, error } = await supabase
       .from("dispatcher_ratings")
       .insert({
@@ -43,11 +41,7 @@ export async function submitDispatcherRating(
       .single();
 
     if (error) {
-      // If table doesn't exist, log warning but don't fail
-      // In production, you'd want to create the table via migration
-      console.warn("Dispatcher ratings table may not exist:", error.message);
-      // For now, we'll still return success since this is optional feedback
-      return { success: true, warning: "Rating table not available" };
+      return { success: false, error: error.message };
     }
 
     return { success: true, rating: data };
