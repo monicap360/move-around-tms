@@ -157,13 +157,13 @@ export default function AuthTestPage() {
       <div className="mt-8 p-4 bg-gray-100 rounded">
         <h3 className="font-bold mb-2">Instructions:</h3>
         <ol className="list-decimal list-inside space-y-1 text-sm">
-          <li>First, try "Test Get Session" to see current auth state</li>
+          <li>First, try &quot;Test Get Session&quot; to see current auth state</li>
           <li>
-            If not logged in, try "Test Email Login" (use actual credentials)
+            If not logged in, try &quot;Test Email Login&quot; (use actual credentials)
           </li>
           <li>Check browser console for detailed logs</li>
           <li>Verify middleware logs in terminal</li>
-          <li>"Test Sign Out" to clear session</li>
+          <li>&quot;Test Sign Out&quot; to clear session</li>
         </ol>
       </div>
     </div>
