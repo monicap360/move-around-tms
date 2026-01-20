@@ -382,7 +382,7 @@ export default function FuelManagementPage() {
               <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>Loading...</div>
             ) : purchases.length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
-                No fuel purchases recorded yet. Click "Add Fuel Purchase" to get started.
+                No fuel purchases recorded yet. Click &quot;Add Fuel Purchase&quot; to get started.
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>

@@ -108,21 +108,21 @@ export default function ELDIntegrationsPage() {
             <div className="rounded border border-space-border bg-space-surface p-3 text-xs text-text-primary">
               {"{"}
               <br />
-              &nbsp;&nbsp;"provider": "samsara",
+              &nbsp;&nbsp;&quot;provider&quot;: &quot;samsara&quot;,
               <br />
-              &nbsp;&nbsp;"device_id": "device-123",
+              &nbsp;&nbsp;&quot;device_id&quot;: &quot;device-123&quot;,
               <br />
-              &nbsp;&nbsp;"driver_id": "uuid",
+              &nbsp;&nbsp;&quot;driver_id&quot;: &quot;uuid&quot;,
               <br />
-              &nbsp;&nbsp;"truck_id": "uuid",
+              &nbsp;&nbsp;&quot;truck_id&quot;: &quot;uuid&quot;,
               <br />
-              &nbsp;&nbsp;"latitude": 32.78,
+              &nbsp;&nbsp;&quot;latitude&quot;: 32.78,
               <br />
-              &nbsp;&nbsp;"longitude": -96.8,
+              &nbsp;&nbsp;&quot;longitude&quot;: -96.8,
               <br />
-              &nbsp;&nbsp;"status": "In Transit",
+              &nbsp;&nbsp;&quot;status&quot;: &quot;In Transit&quot;,
               <br />
-              &nbsp;&nbsp;"timestamp": "2026-01-15T18:05:00Z"
+              &nbsp;&nbsp;&quot;timestamp&quot;: &quot;2026-01-15T18:05:00Z&quot;
               <br />
               {"}"}
             </div>
