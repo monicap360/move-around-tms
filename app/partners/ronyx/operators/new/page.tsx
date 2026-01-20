@@ -31,12 +31,23 @@ export default function RonyxNewOperatorPage() {
       }
 
       // Get partner info
-      const { data: partnerData } = await supabase
+      const partnerKey = "ronyx";
+      let { data: partnerData } = await supabase
         .from("partners")
-        .select("id")
-        .or(`email.eq.${partnerEmail},slug.eq.ronyx`)
+        .select("id, email")
+        .eq("email", partnerEmail)
         .limit(1)
         .single();
+
+      if (!partnerData) {
+        const { data: fallbackPartner } = await supabase
+          .from("partners")
+          .select("id, email")
+          .eq("slug", partnerKey)
+          .limit(1)
+          .single();
+        partnerData = fallbackPartner ?? null;
+      }
 
       if (!partnerData) {
         alert("Partner not found");

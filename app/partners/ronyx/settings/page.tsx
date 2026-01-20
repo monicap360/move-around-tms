@@ -25,12 +25,23 @@ export default function RonyxSettingsPage() {
       if (!partnerEmail) return;
 
       // Get partner info
-      const { data: partnerData } = await supabase
+      const partnerKey = "ronyx";
+      let { data: partnerData } = await supabase
         .from("partners")
         .select("*")
-        .or(`email.eq.${partnerEmail},slug.eq.ronyx`)
+        .eq("email", partnerEmail)
         .limit(1)
         .single();
+
+      if (!partnerData) {
+        const { data: fallbackPartner } = await supabase
+          .from("partners")
+          .select("*")
+          .eq("slug", partnerKey)
+          .limit(1)
+          .single();
+        partnerData = fallbackPartner ?? null;
+      }
 
       if (partnerData) {
         setSettings({
@@ -58,12 +69,23 @@ export default function RonyxSettingsPage() {
       if (!partnerEmail) return;
 
       // Update partner settings
-      const { data: partnerData } = await supabase
+      const partnerKey = "ronyx";
+      let { data: partnerData } = await supabase
         .from("partners")
-        .select("id")
-        .or(`email.eq.${partnerEmail},slug.eq.ronyx`)
+        .select("id, email")
+        .eq("email", partnerEmail)
         .limit(1)
         .single();
+
+      if (!partnerData) {
+        const { data: fallbackPartner } = await supabase
+          .from("partners")
+          .select("id, email")
+          .eq("slug", partnerKey)
+          .limit(1)
+          .single();
+        partnerData = fallbackPartner ?? null;
+      }
 
       if (partnerData) {
         const { error } = await supabase
