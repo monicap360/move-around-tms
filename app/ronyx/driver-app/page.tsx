@@ -66,6 +66,23 @@ export default function RonyxDriverAppPage() {
     });
   }
 
+  async function sendDriverEvent(event: Record<string, any>) {
+    try {
+      await fetch("/api/driver-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          driver_id: driverName || "unknown",
+          truck_id: "truck_12",
+          timestamp: new Date().toISOString(),
+          ...event,
+        }),
+      });
+    } catch {
+      // Best-effort event logging for now.
+    }
+  }
+
   async function handleQuickAction(action: string, load?: AssignedLoad) {
     if (!driverName.trim()) {
       setMessage("Enter your name to use quick actions.");
@@ -73,6 +90,12 @@ export default function RonyxDriverAppPage() {
     }
     setStatus(action);
     await submitUpdate(load?.ticket_id || null);
+    await sendDriverEvent({
+      event_type: "STATUS_UPDATE",
+      load_id: load?.id,
+      status_code: action.toUpperCase().replace(/\s+/g, "_"),
+      note: notes || null,
+    });
     setLastSynced("Just now");
     setOfflineQueue((prev) => prev.filter((item) => item !== action));
   }
@@ -109,6 +132,16 @@ export default function RonyxDriverAppPage() {
 
       if (uploadData.path) {
         await submitUpdate(ticketId);
+        await sendDriverEvent({
+          event_type: "PIT_CHECK_IN",
+          load_id: ticketData.ticket?.load_id || null,
+          payload: {
+            ticket_id: ticketId,
+            ticket_number: ticketNumber || null,
+            ticket_image_url: uploadData.path,
+            material_verified: true,
+          },
+        });
         setMessage("Ticket uploaded and driver update sent.");
       } else {
         setMessage("Upload failed.");
@@ -123,6 +156,11 @@ export default function RonyxDriverAppPage() {
 
   async function handleSubmit() {
     await submitUpdate();
+    await sendDriverEvent({
+      event_type: "STATUS_UPDATE",
+      status_code: status.toUpperCase().replace(/\s+/g, "_"),
+      note: notes || null,
+    });
     setMessage("Status update sent.");
   }
 
@@ -135,6 +173,12 @@ export default function RonyxDriverAppPage() {
     setNotes("Fuel receipt captured");
     setStatus("Fuel Logged");
     await submitUpdate();
+    await sendDriverEvent({
+      event_type: "FUEL_LOG",
+      payload: {
+        receipt_filename: file.name,
+      },
+    });
     setLastSynced("Just now");
     setMessage("Fuel receipt logged.");
   }
@@ -184,6 +228,14 @@ export default function RonyxDriverAppPage() {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: load.id, pod_url: uploadData.path }),
+          });
+          await sendDriverEvent({
+            event_type: "DELIVERY_CONFIRMATION",
+            load_id: load.id,
+            payload: {
+              pod_url: uploadData.path,
+              signature_name: signature || null,
+            },
           });
         }
       }
