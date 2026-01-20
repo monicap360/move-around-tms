@@ -1547,7 +1547,7 @@ export default function FleetPage() {
                       </tr>
                       <tr>
                         <td>#DT-4817</td>
-                        <td>3/4" Gravel</td>
+                        <td>3/4&quot; Gravel</td>
                         <td>Gravel Pit → Residential</td>
                         <td>$2,650</td>
                         <td>$1,820</td>
