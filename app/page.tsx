@@ -2710,6 +2710,19 @@ function LandingPageContent() {
                 target: "All fleet operations needing complete management",
               },
               {
+                icon: "fa-chart-line",
+                price: "Sell Separately: Contact for pricing",
+                title: "AI Financial Intelligence",
+                desc: "AI-powered financial intelligence platform specifically optimized for dump truck operations, delivering unprecedented cash flow visibility, predictive insights, and automated optimization that no competitor can match.",
+                features: [
+                  "Cash flow forecasting + risk alerts",
+                  "Predictive dispute prevention",
+                  "Automated invoice optimization",
+                  "Executive financial dashboard",
+                ],
+                target: "Dump truck operations seeking predictive cash flow control",
+              },
+              {
                 icon: "fa-route",
                 price: "Sell Separately: $299/month",
                 title: "Route Optimization",

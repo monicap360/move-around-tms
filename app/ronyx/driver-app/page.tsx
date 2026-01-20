@@ -26,6 +26,9 @@ export default function RonyxDriverAppPage() {
   const [signature, setSignature] = useState("");
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [gpsMessage, setGpsMessage] = useState("");
+  const [pickupGps, setPickupGps] = useState<{ lat: number; lon: number } | null>(null);
+  const [dumpGps, setDumpGps] = useState<{ lat: number; lon: number } | null>(null);
   const [assignedLoads, setAssignedLoads] = useState<AssignedLoad[]>([]);
   const [loadMessage, setLoadMessage] = useState("");
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
@@ -83,6 +86,25 @@ export default function RonyxDriverAppPage() {
     }
   }
 
+  async function captureLocation() {
+    if (!navigator.geolocation) {
+      setGpsMessage("GPS not available on this device.");
+      return null;
+    }
+    return new Promise<{ lat: number; lon: number } | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        },
+        () => {
+          setGpsMessage("Unable to capture GPS location.");
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    });
+  }
+
   async function handleQuickAction(action: string, load?: AssignedLoad) {
     if (!driverName.trim()) {
       setMessage("Enter your name to use quick actions.");
@@ -90,12 +112,26 @@ export default function RonyxDriverAppPage() {
     }
     setStatus(action);
     await submitUpdate(load?.ticket_id || null);
+    const location = await captureLocation();
     await sendDriverEvent({
       event_type: "STATUS_UPDATE",
       load_id: load?.id,
       status_code: action.toUpperCase().replace(/\s+/g, "_"),
       note: notes || null,
+      location: location ? { lat: location.lat, lng: location.lon } : null,
     });
+    if (location && action.toLowerCase().includes("on site") && load?.ticket_id) {
+      setDumpGps({ lat: location.lat, lon: location.lon });
+      await fetch(`/api/ronyx/tickets/${load.ticket_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dump_gps_lat: location.lat,
+          dump_gps_lon: location.lon,
+          dump_location: load.job_site || load.customer_name || null,
+        }),
+      });
+    }
     setLastSynced("Just now");
     setOfflineQueue((prev) => prev.filter((item) => item !== action));
   }
@@ -108,10 +144,20 @@ export default function RonyxDriverAppPage() {
     setUploading(true);
     setMessage("");
     try {
+      const location = await captureLocation();
+      if (location) {
+        setPickupGps({ lat: location.lat, lon: location.lon });
+      }
       const ticketRes = await fetch("/api/ronyx/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket_number: ticketNumber || undefined, driver_name: driverName, status: "pending" }),
+        body: JSON.stringify({
+          ticket_number: ticketNumber || undefined,
+          driver_name: driverName,
+          status: "pending",
+          pickup_gps_lat: location?.lat || null,
+          pickup_gps_lon: location?.lon || null,
+        }),
       });
       const ticketData = await ticketRes.json();
       const ticketId = ticketData.ticket?.id;
@@ -141,6 +187,7 @@ export default function RonyxDriverAppPage() {
             ticket_image_url: uploadData.path,
             material_verified: true,
           },
+          location: location ? { lat: location.lat, lng: location.lon } : null,
         });
         if (ticketData.ticket?.driver_id) {
           await fetch(`/api/ronyx/drivers/${ticketData.ticket.driver_id}/process-ticket`, {
@@ -231,6 +278,10 @@ export default function RonyxDriverAppPage() {
   async function completeLoad(load: AssignedLoad) {
     setLoadMessage("");
     try {
+      const location = await captureLocation();
+      if (location) {
+        setDumpGps({ lat: location.lat, lon: location.lon });
+      }
       const res = await fetch("/api/ronyx/loads", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -259,6 +310,18 @@ export default function RonyxDriverAppPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: load.id, pod_url: uploadData.path }),
           });
+          if (location) {
+            await fetch(`/api/ronyx/tickets/${ticketId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                dump_gps_lat: location.lat,
+                dump_gps_lon: location.lon,
+                dump_location: load.job_site || load.customer_name || null,
+                has_signature: Boolean(signature),
+              }),
+            });
+          }
           await sendDriverEvent({
             event_type: "DELIVERY_CONFIRMATION",
             load_id: load.id,
@@ -266,6 +329,7 @@ export default function RonyxDriverAppPage() {
               pod_url: uploadData.path,
               signature_name: signature || null,
             },
+            location: location ? { lat: location.lat, lng: location.lon } : null,
           });
         }
       }
@@ -432,6 +496,11 @@ export default function RonyxDriverAppPage() {
                   {message}
                 </div>
               )}
+            {gpsMessage && (
+              <div style={{ marginTop: 6, fontSize: "0.85rem", color: "rgba(15,23,42,0.65)" }}>
+                {gpsMessage}
+              </div>
+            )}
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="ronyx-action" onClick={() => handleQuickAction("On Duty")}>

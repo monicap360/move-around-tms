@@ -63,6 +63,10 @@ const navigationSections = [
       { name: "Documents", path: "/documents", icon: FileText },
       { name: "Ticket Templates", path: "/ticket-templates", icon: FileText },
       { name: "Payroll", path: "/payroll", icon: DollarSign },
+      { name: "Ronyx Customers", path: "/ronyx/customers", icon: Users },
+      { name: "Ronyx Projects", path: "/ronyx/projects", icon: ClipboardList },
+      { name: "Validation Rules", path: "/ronyx/validation-rules", icon: ShieldCheck },
+      { name: "Geofences", path: "/ronyx/geofences", icon: ShieldCheck },
     ],
   },
   {

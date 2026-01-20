@@ -51,3 +51,24 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ customer: data });
 }
+
+export async function PUT(request: Request) {
+  const payload = await request.json();
+  if (!payload?.id) {
+    return NextResponse.json({ error: "Missing customer id" }, { status: 400 });
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("ronyx_customers")
+    .update(payload)
+    .eq("id", payload.id)
+    .select("*")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ customer: data });
+}
