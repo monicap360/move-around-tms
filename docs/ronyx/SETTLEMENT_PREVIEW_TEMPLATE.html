@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Settlement Preview - {{driver_name}} - {{week_end_date}}</title>
+  </head>
+  <body>
+    <h1>RONYX LOGISTICS - DRIVER SETTLEMENT</h1>
+    <h2>
+      {{driver_name}} | Truck #{{truck_number}} | Week Ending: {{week_end_date}}
+    </h2>
+
+    <table border="1" cellpadding="8" style="width: 100%">
+      <tr>
+        <th>Date</th>
+        <th>Ticket #</th>
+        <th>Load #</th>
+        <th>Material</th>
+        <th>Tons</th>
+        <th>Rate</th>
+        <th>Amount</th>
+      </tr>
+      {{#each loads}}
+      <tr>
+        <td>{{this.date}}</td>
+        <td>{{this.ticket_number}}</td>
+        <td>#{{this.load_id}}</td>
+        <td>{{this.material_type}}</td>
+        <td>{{this.quantity}}</td>
+        <td>${{this.rate_value}}/{{this.rate_type}}</td>
+        <td>${{this.calculated_amount}}</td>
+      </tr>
+      {{/each}}
+    </table>
+
+    <h3>Adjustments</h3>
+    <table border="1" cellpadding="8" style="width: 100%">
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Amount</th>
+      </tr>
+      {{#each adjustments}}
+      <tr>
+        <td>{{this.date}}</td>
+        <td>{{this.type}}</td>
+        <td>{{this.notes}}</td>
+        <td>${{this.amount}}</td>
+      </tr>
+      {{/each}}
+    </table>
+
+    <h2>SETTLEMENT SUMMARY</h2>
+    <p>Total Haul Earnings: <strong>${{total_haul}}</strong></p>
+    <p>Total Bonuses: <strong>${{total_bonus}}</strong></p>
+    <p>Total Deductions: <strong>-${{total_deduction}}</strong></p>
+    <hr />
+    <h3>NET PAY (ESTIMATED): ${{net_pay}}</h3>
+
+    <p style="color: #666; font-size: 12px">
+      *This is a preview. Final amount may change if tickets are added or
+      disputed before Friday 9AM.<br />
+      **Payroll will be processed on {{week_end_date}} and deposited according
+      to your selected method.
+    </p>
+
+    <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px">
+      <p>
+        Driver Acknowledgment: I have reviewed the loads and adjustments above.
+      </p>
+      <p>Signature: ___________________________ Date: _______________</p>
+      <p style="font-size: 10px">
+        (Optional - Can be signed digitally in the app)
+      </p>
+    </div>
+  </body>
+</html>
