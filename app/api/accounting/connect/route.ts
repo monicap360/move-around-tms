@@ -76,7 +76,7 @@ async function exchangeXeroToken(authCode: string) {
 
   const connections = await connectionsRes.json();
   if (!connectionsRes.ok || !Array.isArray(connections) || connections.length === 0) {
-    throw new Error("Unable to fetch Xero tenant.");
+    throw new Error("Unable to fetch Xero company.");
   }
 
   return { ...payload, tenant_id: connections[0]?.tenantId };
@@ -243,3 +243,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: err.message || "Failed to get connection status" }, { status: 500 });
   }
 }
+

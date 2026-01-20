@@ -5,13 +5,13 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export async function GET() {
   try {
     // Get organization_id for move-around-tms
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: company, error: orgError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "move-around-tms")
       .single();
 
-    if (orgError || !org) {
+    if (orgError || !company) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
@@ -22,7 +22,7 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
       .from("hr_records")
       .select("*")
-      .eq("organization_id", org.id)
+      .eq("organization_id", company.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -57,13 +57,13 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Get organization_id for move-around-tms
-    const { data: org, error: orgError } = await supabaseAdmin
+    const { data: company, error: orgError } = await supabaseAdmin
       .from("organizations")
       .select("id")
       .eq("organization_code", "move-around-tms")
       .single();
 
-    if (orgError || !org) {
+    if (orgError || !company) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       .from("hr_records")
       .insert({
         ...body,
-        organization_id: org.id,
+        organization_id: company.id,
       })
       .select()
       .single();
@@ -108,3 +108,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

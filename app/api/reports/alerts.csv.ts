@@ -4,9 +4,9 @@ import { getAlertEvents } from "@/src/alerts/history/alert.event.store";
 import { toCSV } from "@/src/reports/csv.util";
 
 function getOrganizationId(req: NextRequest): string {
-  const org = req.headers.get("x-organization-id");
-  if (!org) throw new Error("Missing organization context");
-  return org;
+  const company = req.headers.get("x-organization-id");
+  if (!company) throw new Error("Missing organization context");
+  return company;
 }
 
 export async function GET(req: NextRequest) {
@@ -63,3 +63,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

@@ -32,13 +32,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify user belongs to organization
-    const { data: org } = await supabase
+    const { data: company } = await supabase
       .from('organizations')
       .select('id')
       .eq('id', organizationId)
       .single();
 
-    if (!org) {
+    if (!company) {
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 }
@@ -147,3 +147,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

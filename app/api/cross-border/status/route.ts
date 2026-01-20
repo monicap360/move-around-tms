@@ -55,15 +55,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    const { data: org } = await supabase
+    const { data: company } = await supabase
       .from("organizations")
       .select("enable_mexican_compliance, updated_at")
       .eq("id", organizationId)
       .single();
 
     return NextResponse.json({
-      enabled: Boolean(org?.enable_mexican_compliance),
-      lastUpdated: org?.updated_at || null,
+      enabled: Boolean(company?.enable_mexican_compliance),
+      lastUpdated: company?.updated_at || null,
     });
   } catch (error: any) {
     console.error("Cross-border status error:", error);
@@ -117,3 +117,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

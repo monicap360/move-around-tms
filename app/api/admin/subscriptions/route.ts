@@ -25,17 +25,18 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Flatten subscriptions for easier UI
-  const result = (data || []).map((org: any) => ({
-    id: org.id,
-    name: org.name,
-    plan_tier: org.plan_tier,
-    created_at: org.created_at,
-    status: org.status,
-    payment_status: org.payment_status,
-    admin_override: org.subscriptions?.admin_override || false,
-    override_expires_at: org.subscriptions?.override_expires_at || null,
-    subscription_status: org.subscriptions?.status || null,
+  const result = (data || []).map((company: any) => ({
+    id: company.id,
+    name: company.name,
+    plan_tier: company.plan_tier,
+    created_at: company.created_at,
+    status: company.status,
+    payment_status: company.payment_status,
+    admin_override: company.subscriptions?.admin_override || false,
+    override_expires_at: company.subscriptions?.override_expires_at || null,
+    subscription_status: company.subscriptions?.status || null,
   }));
 
   return NextResponse.json(result);
 }
+

@@ -10,12 +10,12 @@ import {
 import { SYSTEM_ALERT_DEFINITIONS } from "@/src/alerts/alerting.definitions";
 import { evaluateAlerts } from "@/src/alerts/alerting.engine";
 
-// Example: resolve org from auth/session.
+// Example: resolve company from auth/session.
 // Replace with your real auth integration.
 function getOrganizationId(req: NextRequest): string {
-  const org = req.headers.get("x-organization-id");
-  if (!org) throw new Error("Missing organization context");
-  return org;
+  const company = req.headers.get("x-organization-id");
+  if (!company) throw new Error("Missing organization context");
+  return company;
 }
 
 export async function GET(req: NextRequest) {
@@ -46,3 +46,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
