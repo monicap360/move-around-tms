@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const quickActions = [
   { title: "+ Create Load", href: "/ronyx/loads" },
@@ -32,7 +32,7 @@ export default function RonyxDashboard() {
     },
   ]);
 
-  const liveLoads = [
+  const [liveLoads, setLiveLoads] = useState([
     {
       id: "14287",
       driver: "J. Smith",
@@ -74,19 +74,64 @@ export default function RonyxDashboard() {
       invoiceReady: false,
     },
   ];
-
-  const filteredLoads =
-    filter === "All"
-      ? liveLoads
-      : liveLoads.filter((load) => load.status.replace(" ", "_") === filter);
-
-  const pulseCards = [
+  const [pulseCards, setPulseCards] = useState([
     { label: "Today's Pulse", value: "Live", note: "Real-time command center" },
     { label: "Trucks Active", value: "18/24", note: "6 in staging" },
     { label: "Est. Revenue", value: "$42,180", note: "Updates with ticket OCR" },
     { label: "Loads Today", value: "142/150", note: "8 remaining" },
     { label: "Avg. Cycle", value: "3.8h", note: "From En Route → Delivered" },
-  ];
+  ]);
+  const filteredLoads =
+    filter === "All"
+      ? liveLoads
+      : liveLoads.filter((load) => load.status.replace(" ", "_") === filter);
+
+  useEffect(() => {
+    async function loadSnapshot() {
+      try {
+        const res = await fetch("/api/dashboard-snapshot", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.summary_metrics) {
+          const summary = data.summary_metrics;
+          setPulseCards([
+            { label: "Today's Pulse", value: "Live", note: "Real-time command center" },
+            { label: "Trucks Active", value: `${summary.active_trucks}/${summary.total_trucks}`, note: "Live fleet status" },
+            { label: "Est. Revenue", value: `$${summary.estimated_revenue.toLocaleString()}`, note: "Updates with ticket OCR" },
+            { label: "Loads Today", value: `${summary.loads_completed}/${summary.loads_planned}`, note: "Progress today" },
+            { label: "Avg. Cycle", value: `${(summary.avg_cycle_time_minutes / 60).toFixed(1)}h`, note: "En Route → Delivered" },
+          ]);
+        }
+        if (Array.isArray(data?.live_loads)) {
+          setLiveLoads(
+            data.live_loads.map((load: any) => ({
+              id: load.load_id,
+              driver: load.driver_name,
+              status: load.status.replace("_", " "),
+              location: load.status === "AT_PIT" ? load.source : load.destination || load.source,
+              tons: load.net_tons?.toString() || "--",
+              ticket: Boolean(load.attachments?.ticket_image),
+              pod: Boolean(load.attachments?.delivery_proof && load.attachments?.signature),
+              invoiceReady: Boolean(load.invoice_ready),
+            })),
+          );
+        }
+        if (Array.isArray(data?.active_exceptions)) {
+          setExceptions(
+            data.active_exceptions.map((item: any) => ({
+              id: `${item.type}-${item.load_id}`,
+              title: item.message,
+              detail: item.timestamp,
+            })),
+          );
+        }
+      } catch {
+        // Keep fallback data if snapshot fails.
+      }
+    }
+
+    void loadSnapshot();
+  }, []);
 
   return (
     <div className="ronyx-shell">

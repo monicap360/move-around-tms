@@ -1,0 +1,107 @@
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({
+    summary_metrics: {
+      active_trucks: 18,
+      total_trucks: 24,
+      estimated_revenue: 42180,
+      loads_completed: 142,
+      loads_planned: 150,
+      avg_cycle_time_minutes: 228,
+    },
+    live_loads: [
+      {
+        load_id: "14287",
+        driver_name: "J. Smith",
+        status: "AT_PIT",
+        status_display: "✅ At Pit",
+        source: "Vulcan Quarry",
+        destination: "Oak Street Subdivision",
+        material: "#57 Gravel",
+        net_tons: 22.0,
+        attachments: {
+          ticket_image: "https://storage.ronyx.com/tickets/load_14287.jpg",
+          delivery_proof: null,
+          signature: null,
+        },
+        actions_available: ["MESSAGE_DRIVER"],
+        invoice_ready: false,
+      },
+      {
+        load_id: "14288",
+        driver_name: "M. Jones",
+        status: "EN_ROUTE",
+        status_display: "🚛 En Route",
+        source: "Central Pit",
+        destination: "Highway 10 Project",
+        material: "Fill Sand",
+        net_tons: 18.5,
+        attachments: {
+          ticket_image: null,
+          delivery_proof: null,
+          signature: null,
+        },
+        actions_available: ["TRACK"],
+        invoice_ready: false,
+      },
+      {
+        load_id: "14289",
+        driver_name: "R. Garcia",
+        status: "DELIVERING",
+        status_display: "📦 Delivering",
+        source: "Vulcan Quarry",
+        destination: "Oak Street Subdivision",
+        material: "#57 Gravel",
+        net_tons: 24.0,
+        attachments: {
+          ticket_image: "https://storage.ronyx.com/tickets/load_14289.jpg",
+          delivery_proof: "https://storage.ronyx.com/pod/load_14289.jpg",
+          signature: "https://storage.ronyx.com/pod/sig_14289.png",
+        },
+        actions_available: ["GENERATE_INVOICE", "VIEW_POD"],
+        invoice_ready: true,
+      },
+      {
+        load_id: "14290",
+        driver_name: "T. Chen",
+        status: "LOADING",
+        status_display: "⚠️ Loading",
+        source: "Central Pit",
+        destination: "Hwy 8",
+        material: "Topsoil",
+        net_tons: 20.0,
+        attachments: {
+          ticket_image: null,
+          delivery_proof: null,
+          signature: null,
+        },
+        actions_available: ["MONITOR"],
+        invoice_ready: false,
+      },
+    ],
+    active_exceptions: [
+      {
+        type: "SITE_DELAY",
+        load_id: "14287",
+        driver_id: "driver_245",
+        message: "Site Delay reported at Oak Street (45m)",
+        timestamp: "2024-01-20T10:42:00Z",
+      },
+      {
+        type: "TICKET_UNCLEAR",
+        load_id: "14288",
+        driver_id: "driver_238",
+        message: "Scale ticket unclear - needs review",
+        timestamp: "2024-01-20T09:18:00Z",
+      },
+      {
+        type: "PIT_QUEUE",
+        load_id: "14290",
+        driver_id: "driver_251",
+        message: "Vulcan Pit - Heavy queue (25m avg)",
+        timestamp: "2024-01-20T08:40:00Z",
+      },
+    ],
+  });
+}
