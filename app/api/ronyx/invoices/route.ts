@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateInvoiceFromTickets } from "@/lib/ronyx/phase1/invoiceEngine";
 
 function buildInvoiceNumber() {
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -81,6 +82,22 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ invoices: created });
+  }
+
+  if (action === "generate_phase1_invoice") {
+    const ticketIds = payload?.ticket_ids as string[] | undefined;
+    if (!ticketIds || ticketIds.length === 0) {
+      return NextResponse.json({ error: "ticket_ids required" }, { status: 400 });
+    }
+    try {
+      const invoice = await generateInvoiceFromTickets(ticketIds);
+      return NextResponse.json({ invoice });
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: error?.message || "Invoice generation failed" },
+        { status: 500 },
+      );
+    }
   }
 
   const { data, error } = await supabase.from("ronyx_invoices").insert(payload).select("*").single();

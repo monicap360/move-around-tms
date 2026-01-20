@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  buildTicketId,
+  calculateDistanceMiles,
+  calculateWaitingMinutes,
+} from "@/lib/ronyx/phase1/ticketGenerator";
 
 export const dynamic = "force-dynamic";
 
@@ -50,9 +55,17 @@ export async function POST(request: NextRequest) {
   const supabase = createSupabaseServerClient();
   const body = await request.json();
 
+  let ticket_id = body.ticket_id as string | undefined;
+  if (!ticket_id) {
+    const projectCode =
+      (body.project_code as string | undefined) ||
+      body.project_id ||
+      "TMS";
+    ticket_id = await buildTicketId(projectCode);
+  }
+
   const ticket_number =
-    (body.ticket_number as string | undefined) ||
-    `RNYX-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    (body.ticket_number as string | undefined) || ticket_id;
 
   const unit_type = ALLOWED_UNITS.includes(body.unit_type) ? body.unit_type : "Load";
   const ticket_date = body.ticket_date || new Date().toISOString().slice(0, 10);
@@ -70,9 +83,27 @@ export async function POST(request: NextRequest) {
         ? Number(gross_weight) - Number(tare_weight)
         : null;
 
+  const calculated_distance =
+    body.pickup_gps_lat && body.pickup_gps_lon && body.dump_gps_lat && body.dump_gps_lon
+      ? calculateDistanceMiles(
+          { lat: Number(body.pickup_gps_lat), lon: Number(body.pickup_gps_lon) },
+          { lat: Number(body.dump_gps_lat), lon: Number(body.dump_gps_lon) },
+        )
+      : body.calculated_distance
+        ? Number(body.calculated_distance)
+        : null;
+
+  const waiting_minutes =
+    body.waiting_minutes !== undefined && body.waiting_minutes !== null
+      ? Number(body.waiting_minutes)
+      : calculateWaitingMinutes(body.load_time, body.dump_time);
+
   const payload = {
+    ticket_id,
     ticket_number,
     ticket_date,
+    project_id: body.project_id || null,
+    customer_id: body.customer_id || null,
     driver_id: body.driver_id || null,
     driver_name: body.driver_name || null,
     truck_id: body.truck_id || null,
@@ -91,6 +122,12 @@ export async function POST(request: NextRequest) {
     pickup_location: body.pickup_location || null,
     delivery_location: body.delivery_location || null,
     delivery_site: body.delivery_location || body.delivery_site || null,
+    dump_location: body.dump_location || body.delivery_location || null,
+    pickup_gps_lat: body.pickup_gps_lat || null,
+    pickup_gps_lon: body.pickup_gps_lon || null,
+    dump_gps_lat: body.dump_gps_lat || null,
+    dump_gps_lon: body.dump_gps_lon || null,
+    calculated_distance,
     status: normalizeStatus(body.status),
     payment_status: normalizePayment(body.payment_status),
     invoice_number: body.invoice_number || null,
@@ -107,6 +144,16 @@ export async function POST(request: NextRequest) {
     gross_weight,
     tare_weight,
     net_weight,
+    load_weight: body.load_weight ?? net_weight ?? null,
+    cubic_yards: body.cubic_yards || null,
+    load_count: body.load_count || null,
+    weight_ticket_number: body.weight_ticket_number || null,
+    load_time: body.load_time || null,
+    dump_time: body.dump_time || null,
+    waiting_minutes,
+    has_photo: body.has_photo ?? Boolean(body.ticket_image_url || body.delivery_receipt_url),
+    has_signature: body.has_signature ?? Boolean(body.digital_signature || body.signature_name),
+    weight_ticket_verified: body.weight_ticket_verified ?? false,
     uom: body.uom || unit_type,
     ticket_image_url: body.ticket_image_url || null,
     delivery_receipt_url: body.delivery_receipt_url || null,
