@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // Shared components
@@ -19,7 +19,7 @@ export default function PartnerDashboard({
 }: {
   params: Record<string, string>;
 }) {
-  const partnerSlug = params["slug"]; // ronyx, elite, meighoo, garza
+  const partnerKey = params["slug"]; // ronyx, elite, meighoo, garza
 
   const [partner, setPartner] = useState<any>(null);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -29,11 +29,7 @@ export default function PartnerDashboard({
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPartnerPortal();
-  }, [partnerSlug]);
-
-  async function loadPartnerPortal() {
+  const loadPartnerPortal = useCallback(async () => {
     setLoading(true);
 
     const [
@@ -44,12 +40,12 @@ export default function PartnerDashboard({
       billingRes,
       leadsRes,
     ] = await Promise.all([
-      supabase.from("partners").select("*").eq("slug", partnerSlug).single(),
-      supabase.from("companies").select("*").eq("partner_slug", partnerSlug),
-      supabase.from("drivers").select("*").eq("partner_slug", partnerSlug),
-      supabase.from("tickets").select("*").eq("partner_slug", partnerSlug),
-      supabase.from("billing").select("*").eq("partner_slug", partnerSlug),
-      supabase.from("agent_leads").select("*").eq("partner_slug", partnerSlug),
+      supabase.from("partners").select("*").eq("slug", partnerKey).single(),
+      supabase.from("companies").select("*").eq("partner_slug", partnerKey),
+      supabase.from("drivers").select("*").eq("partner_slug", partnerKey),
+      supabase.from("tickets").select("*").eq("partner_slug", partnerKey),
+      supabase.from("billing").select("*").eq("partner_slug", partnerKey),
+      supabase.from("agent_leads").select("*").eq("partner_slug", partnerKey),
     ]);
 
     setPartner(partnerRes.data || null);
@@ -60,7 +56,11 @@ export default function PartnerDashboard({
     setLeads(leadsRes.data || []);
 
     setLoading(false);
-  }
+  }, [partnerKey]);
+
+  useEffect(() => {
+    loadPartnerPortal();
+  }, [loadPartnerPortal]);
 
   if (loading || !partner) {
     return (
@@ -78,7 +78,7 @@ export default function PartnerDashboard({
         subtitle="Partner Operations • Revenue • Companies • Drivers"
         userName={partner.owner_name}
         userRole="Partner"
-        view={partnerSlug}
+        view={partnerKey}
         onViewChange={() => {}}
       />
 

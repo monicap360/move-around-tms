@@ -9,7 +9,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/link";
 import {
@@ -96,27 +96,7 @@ export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("30");
   const [reportType, setReportType] = useState("overview");
 
-  useEffect(() => {
-    loadReportData();
-  }, [selectedPeriod]);
-
-  async function loadReportData() {
-    setLoading(true);
-    try {
-      // Load current metrics
-      await Promise.all([
-        loadFleetMetrics(),
-        loadTrendData(),
-        loadDriverRankings(),
-      ]);
-    } catch (err) {
-      console.error("Error loading report data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadFleetMetrics() {
+  const loadFleetMetrics = useCallback(async () => {
     // Get fleet overview metrics
     const { data: drivers } = await supabase
       .from("driver_performance_summary")
@@ -215,9 +195,9 @@ export default function ReportsPage() {
       goalCompletionRate:
         totalGoals > 0 ? (achievedGoals / totalGoals) * 100 : 0,
     });
-  }
+  }, []);
 
-  async function loadTrendData() {
+  const loadTrendData = useCallback(async () => {
     // Simulate trend data - in production, this would come from historical tables
     const mockTrends: TrendData[] = [];
     const days = parseInt(selectedPeriod);
@@ -234,9 +214,9 @@ export default function ReportsPage() {
     }
 
     setTrendData(mockTrends);
-  }
+  }, [selectedPeriod]);
 
-  async function loadDriverRankings() {
+  const loadDriverRankings = useCallback(async () => {
     const { data: performance } = await supabase
       .from("driver_performance_summary")
       .select("*")
@@ -259,7 +239,27 @@ export default function ReportsPage() {
 
     setTopPerformers(rankings.slice(0, 10));
     setBottomPerformers(rankings.slice(-5).reverse());
-  }
+  }, []);
+
+  const loadReportData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Load current metrics
+      await Promise.all([
+        loadFleetMetrics(),
+        loadTrendData(),
+        loadDriverRankings(),
+      ]);
+    } catch (err) {
+      console.error("Error loading report data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadDriverRankings, loadFleetMetrics, loadTrendData]);
+
+  useEffect(() => {
+    loadReportData();
+  }, [loadReportData]);
 
   async function exportReport(format: string) {
     // In production, this would generate and download actual reports

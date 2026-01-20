@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,11 +36,7 @@ export default function InvoicesPage() {
   });
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
-  useEffect(() => {
-    loadInvoices();
-  }, []);
-
-  async function loadInvoices() {
+  const loadInvoices = useCallback(async () => {
     try {
       setLoading(true);
       if (demoMode) {
@@ -86,7 +82,11 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [demoMode]);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
 
   async function handleCreateInvoice(e: React.FormEvent) {
     e.preventDefault();

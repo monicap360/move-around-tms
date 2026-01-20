@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,43 +39,7 @@ export function useRoleBasedAuth() {
   const [partnerInfo, setPartnerInfo] = useState<PartnerInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        loadUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
-        setPartnerInfo(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function checkUser() {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        await loadUserProfile(user.id);
-      }
-    } catch (error) {
-      console.error("Error checking user:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadUserProfile(userId: string) {
+  const loadUserProfile = useCallback(async (userId: string) => {
     try {
       // Load user profile
       const { data: profileData, error: profileError } = await supabase
@@ -101,9 +65,45 @@ export function useRoleBasedAuth() {
     } catch (error) {
       console.error("Error loading profile:", error);
     }
-  }
+  }, []);
 
-  function getRedirectPath(): string {
+  const checkUser = useCallback(async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        await loadUserProfile(user.id);
+      }
+    } catch (error) {
+      console.error("Error checking user:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadUserProfile]);
+
+  useEffect(() => {
+    checkUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setPartnerInfo(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkUser, loadUserProfile]);
+
+  const getRedirectPath = useCallback((): string => {
     if (!profile) return "/auth";
 
     // Special case for RonYX partner - Veronica Butanda
@@ -124,7 +124,7 @@ export function useRoleBasedAuth() {
       default:
         return "/dashboard"; // Regular user dashboard
     }
-  }
+  }, [profile, user?.email]);
 
   function hasPermission(requiredRole: string): boolean {
     if (!profile) return false;
@@ -174,7 +174,7 @@ export function RoleBasedRedirect() {
         window.location.href = redirectPath;
       }
     }
-  }, [profile, loading]);
+  }, [getRedirectPath, loading, profile]);
 
   if (loading) {
     return (

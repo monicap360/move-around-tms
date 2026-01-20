@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
 import { exportNodeAsPng } from "../../maintenance/dvir-dashboard/exportAsImage";
 import { createClient } from "@/lib/supabase/client";
@@ -164,7 +164,7 @@ export default function PartnerDashboard() {
   const [complianceReminders, setComplianceReminders] = useState([]);
   const [reminderLoading, setReminderLoading] = useState(true);
 
-  async function loadComplianceReminders() {
+  const loadComplianceReminders = useCallback(async () => {
     setReminderLoading(true);
     try {
       if (!user?.email) {
@@ -253,9 +253,9 @@ export default function PartnerDashboard() {
     } finally {
       setReminderLoading(false);
     }
-  }
+  }, [user?.email]);
 
-  async function loadRonYXTheme() {
+  const loadRonYXTheme = useCallback(async () => {
     try {
       const response = await fetch("/partners/ronyx/theme.json");
       const themeData = await response.json();
@@ -263,7 +263,7 @@ export default function PartnerDashboard() {
     } catch (error) {
       console.error("Error loading theme:", error);
     }
-  }
+  }, []);
 
   const loadPartnerStats = useCallback(async () => {
     try {

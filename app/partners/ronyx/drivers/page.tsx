@@ -21,12 +21,23 @@ export default function RonyxDriversPage() {
       if (!partnerEmail) return;
 
       // Get partner info
-      const { data: partnerData } = await supabase
+      const partnerKey = "ronyx";
+      let { data: partnerData } = await supabase
         .from("partners")
-        .select("id, slug, email")
-        .or(`email.eq.${partnerEmail},slug.eq.ronyx`)
+        .select("id, email")
+        .eq("email", partnerEmail)
         .limit(1)
         .single();
+
+      if (!partnerData) {
+        const { data: fallbackPartner } = await supabase
+          .from("partners")
+          .select("id, email")
+          .eq("slug", partnerKey)
+          .limit(1)
+          .single();
+        partnerData = fallbackPartner ?? null;
+      }
 
       if (!partnerData) {
         console.error("Partner not found");
@@ -42,7 +53,7 @@ export default function RonyxDriversPage() {
         supabase
           .from("organizations")
           .select("*")
-          .eq("partner_slug", partnerData["slug"] || "ronyx"),
+          .eq("partner_slug", partnerKey),
         supabase
           .from("companies")
           .select("*")
@@ -50,7 +61,7 @@ export default function RonyxDriversPage() {
         supabase
           .from("companies")
           .select("*")
-          .eq("partner_slug", partnerData["slug"] || "ronyx"),
+          .eq("partner_slug", partnerKey),
       ];
 
       let organizationsData: any[] = [];

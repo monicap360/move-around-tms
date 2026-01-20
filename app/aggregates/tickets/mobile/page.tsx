@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import MobileTicketList from "../../../../components/tickets/MobileTicketList";
 import MobileTicketDetail from "../../../../components/tickets/MobileTicketDetail";
@@ -42,7 +42,7 @@ export default function MobileTicketsPage() {
 
   useEffect(() => {
     filterTickets();
-  }, [tickets, searchTerm, statusFilter]);
+  }, [filterTickets]);
 
   async function loadTickets() {
     try {
@@ -114,7 +114,7 @@ export default function MobileTicketsPage() {
     }
   }
 
-  function filterTickets() {
+  const filterTickets = useCallback(() => {
     let filtered = [...tickets];
 
     if (searchTerm) {
@@ -132,7 +132,7 @@ export default function MobileTicketsPage() {
     }
 
     setFilteredTickets(filtered);
-  }
+  }, [searchTerm, statusFilter, tickets]);
 
   async function handleQuickApprove(ticketId: string) {
     try {

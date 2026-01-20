@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import {
@@ -86,13 +86,7 @@ export default function DriverPerformancePage({
   const [goals, setGoals] = useState<PerformanceGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (params.id) {
-      loadDriverPerformance();
-    }
-  }, [params.id]);
-
-  async function loadDriverPerformance() {
+  const loadDriverPerformance = useCallback(async () => {
     try {
       // Load driver performance summary
       const { data: performanceData, error: perfError } = await supabase
@@ -147,7 +141,13 @@ export default function DriverPerformancePage({
     } finally {
       setLoading(false);
     }
-  }
+  }, [params.id]);
+
+  useEffect(() => {
+    if (params.id) {
+      loadDriverPerformance();
+    }
+  }, [params.id, loadDriverPerformance]);
 
   function getSafetyScoreColor(score: number) {
     if (score >= 90) return "text-green-600";

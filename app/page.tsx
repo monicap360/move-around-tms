@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 export default function LandingPage() {
   return (
@@ -250,7 +250,8 @@ function LandingPageContent() {
           },
         ];
 
-  const loadRows = [
+  const loadRows = useMemo(
+    () => [
     {
       id: "LD-4021",
       createdAt: "2025-05-17T07:15:00",
@@ -455,7 +456,9 @@ function LandingPageContent() {
       valueNote: "No charge",
       etaMinutes: null,
     },
-  ];
+    ],
+    [],
+  );
 
   const detentionAlerts = [
     {
@@ -622,7 +625,7 @@ function LandingPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [activeLoadTab, selectedLoadId]);
+  }, [activeLoadTab, loadRows, selectedLoadId]);
 
   const toggleLoadSelection = (loadId: string) => {
     setSelectedLoadIds((prev) =>

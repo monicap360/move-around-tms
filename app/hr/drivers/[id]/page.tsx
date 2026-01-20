@@ -14,7 +14,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/ui/tabs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -118,13 +118,7 @@ export default function DriverProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    if (driverId) {
-      loadDriverProfile();
-    }
-  }, [driverId]);
-
-  async function loadDriverProfile() {
+  const loadDriverProfile = useCallback(async () => {
     try {
       // Load driver profile
       const { data: driverData, error: driverError } = await supabase
@@ -166,7 +160,13 @@ export default function DriverProfilePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [driverId]);
+
+  useEffect(() => {
+    if (driverId) {
+      loadDriverProfile();
+    }
+  }, [driverId, loadDriverProfile]);
 
   function getStatusColor(status: string) {
     switch (status) {

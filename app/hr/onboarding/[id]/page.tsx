@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -76,13 +76,7 @@ export default function OnboardingDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (onboardingId) {
-      loadOnboardingDetails();
-    }
-  }, [onboardingId]);
-
-  async function loadOnboardingDetails() {
+  const loadOnboardingDetails = useCallback(async () => {
     try {
       // Load onboarding summary
       const { data: onboardingData, error: onboardingError } = await supabase
@@ -159,7 +153,13 @@ export default function OnboardingDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [onboardingId]);
+
+  useEffect(() => {
+    if (onboardingId) {
+      loadOnboardingDetails();
+    }
+  }, [onboardingId, loadOnboardingDetails]);
 
   async function updateStepStatus(
     stepId: string,
