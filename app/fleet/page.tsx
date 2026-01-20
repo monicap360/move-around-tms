@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -25,25 +25,26 @@ import {
 type Vehicle = {
   id: string;
   unit_number: string;
-  make: string;
-  model: string;
-  year: number;
-  vin: string;
-  license_plate: string;
-  registration_expiry: string;
-  insurance_expiry: string;
-  dot_inspection_due: string;
-  last_maintenance: string;
-  next_maintenance_due: string;
-  current_mileage: number;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
+  vin?: string | null;
+  license_plate?: string | null;
+  registration_expiry?: string | null;
+  insurance_expiry?: string | null;
+  dot_inspection_due?: string | null;
+  last_maintenance?: string | null;
+  next_maintenance_due?: string | null;
+  current_mileage?: number | null;
   status: 'active' | 'maintenance' | 'out_of_service';
-  driver_assigned?: string;
-  location?: string;
+  driver_assigned?: string | null;
+  location?: string | null;
 };
 
 type MaintenanceRecord = {
   id: string;
   vehicle_id: string;
+  vehicle_label?: string;
   maintenance_type: string;
   description: string;
   cost: number;
@@ -97,27 +98,151 @@ export default function FleetPage() {
     }
   }, [activeTab]);
 
+  const normalizeStatus = (value?: string | null): Vehicle["status"] => {
+    const statusValue = (value || "").toLowerCase();
+    if (statusValue.includes("maintenance")) return "maintenance";
+    if (statusValue.includes("out") || statusValue.includes("inactive") || statusValue.includes("retired")) {
+      return "out_of_service";
+    }
+    return "active";
+  };
+
+  const mapVehicleRow = (row: any): Vehicle => ({
+    id: row.id,
+    unit_number: row.unit_number || row.truck_number || row.unit || row.id,
+    make: row.make || null,
+    model: row.model || null,
+    year: row.year || null,
+    vin: row.vin || null,
+    license_plate: row.license_plate || row.plate_number || null,
+    registration_expiry: row.registration_expiry || row.registration_expiration || null,
+    insurance_expiry: row.insurance_expiry || row.insurance_expiration || null,
+    dot_inspection_due: row.dot_inspection_due || row.inspection_due || null,
+    last_maintenance: row.last_maintenance || row.last_service_date || null,
+    next_maintenance_due: row.next_maintenance_due || null,
+    current_mileage: row.current_mileage || null,
+    status: normalizeStatus(row.status),
+    driver_assigned: row.driver_assigned || row.driver_name || null,
+    location: row.location || null,
+  });
+
+  const mapMaintenanceRow = (row: any): MaintenanceRecord => {
+    const completionDate =
+      row.completed_at || row.submitted_at || row.created_at || "";
+    const statusValue = (row.status || "").toLowerCase();
+    const mappedStatus =
+      statusValue.includes("completed")
+        ? "completed"
+        : statusValue.includes("progress") || statusValue.includes("acknowledged")
+          ? "in_progress"
+          : statusValue.includes("scheduled")
+            ? "scheduled"
+            : "scheduled";
+
+    return {
+      id: row.id,
+      vehicle_id: row.truck_id || row.truck_number || "",
+      vehicle_label: row.truck_number || row.truck_id || "",
+      maintenance_type: row.issue_type || "Maintenance",
+      description: row.description || "",
+      cost: Number(row.actual_cost || row.estimated_cost || 0),
+      date_completed: completionDate
+        ? new Date(completionDate).toISOString().slice(0, 10)
+        : "",
+      mileage_at_service: Number(row.mileage || 0),
+      next_due_date: row.scheduled_date || null,
+      next_due_mileage: undefined,
+      status: mappedStatus,
+    };
+  };
+
   const loadFleetData = async () => {
     try {
       setLoading(true);
 
-      // Load vehicles from Supabase
-      const { data: vehiclesData, error } = await supabase
-        .from('vehicles')
-        .select('*');
-      if (error) throw error;
-      setVehicles(vehiclesData || []);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let organizationId: string | null = null;
+      if (user) {
+        const { data: membership } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .single();
+        organizationId = membership?.organization_id || null;
+      }
+
+      const loadFromTable = async (table: string) => {
+        let query = supabase.from(table).select("*");
+        if (organizationId) {
+          query = query.eq("organization_id", organizationId);
+        }
+        return query;
+      };
+
+      const vehicleSources = ["vehicles", "trucks", "ronyx_trucks"];
+      let vehiclesData: Vehicle[] = [];
+
+      for (const table of vehicleSources) {
+        const { data, error } = await loadFromTable(table);
+        if (error) {
+          const message = error.message?.toLowerCase?.() || "";
+          if (error.code === "42P01" || message.includes("does not exist")) {
+            continue;
+          }
+          throw error;
+        }
+        vehiclesData = (data || []).map(mapVehicleRow);
+        break;
+      }
+
+      setVehicles(vehiclesData);
+
+      const vehicleIdSet = new Set(vehiclesData.map((vehicle) => vehicle.id));
+
+      const { data: maintenanceData, error: maintenanceError } =
+        await supabase
+          .from("maintenance_requests")
+          .select("*")
+          .order("submitted_at", { ascending: false })
+          .limit(200);
+
+      if (!maintenanceError) {
+        const filtered = (maintenanceData || []).filter((row: any) => {
+          if (!row.truck_id) return true;
+          if (vehicleIdSet.size === 0) return true;
+          return vehicleIdSet.has(row.truck_id);
+        });
+        setMaintenanceRecords(filtered.map(mapMaintenanceRow));
+      }
 
       // Calculate statistics
       const today = new Date();
-      const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const thirtyDaysFromNow = new Date(
+        today.getTime() + 30 * 24 * 60 * 60 * 1000,
+      );
 
-      const totalVehicles = vehiclesData?.length || 0;
-      const activeVehicles = vehiclesData?.filter((v: Vehicle) => v.status === 'active').length || 0;
-      const maintenanceVehicles = vehiclesData?.filter((v: Vehicle) => v.status === 'maintenance').length || 0;
-      const overdueInspections = vehiclesData?.filter((v: Vehicle) => new Date(v.dot_inspection_due) < today).length || 0;
-      const expiringRegistrations = vehiclesData?.filter((v: Vehicle) => new Date(v.registration_expiry) < thirtyDaysFromNow).length || 0;
-      const maintenanceAlerts = vehiclesData?.filter((v: Vehicle) => new Date(v.next_maintenance_due) < thirtyDaysFromNow).length || 0;
+      const totalVehicles = vehiclesData.length;
+      const activeVehicles = vehiclesData.filter(
+        (vehicle) => vehicle.status === "active",
+      ).length;
+      const maintenanceVehicles = vehiclesData.filter(
+        (vehicle) => vehicle.status === "maintenance",
+      ).length;
+      const overdueInspections = vehiclesData.filter((vehicle) => {
+        if (!vehicle.dot_inspection_due) return false;
+        return new Date(vehicle.dot_inspection_due) < today;
+      }).length;
+      const expiringRegistrations = vehiclesData.filter((vehicle) => {
+        if (!vehicle.registration_expiry) return false;
+        return new Date(vehicle.registration_expiry) < thirtyDaysFromNow;
+      }).length;
+      const maintenanceAlerts = vehiclesData.filter((vehicle) => {
+        if (!vehicle.next_maintenance_due) return false;
+        return new Date(vehicle.next_maintenance_due) < thirtyDaysFromNow;
+      }).length;
 
       setStats({
         total_vehicles: totalVehicles,
@@ -125,9 +250,8 @@ export default function FleetPage() {
         maintenance_vehicles: maintenanceVehicles,
         overdue_inspections: overdueInspections,
         expiring_registrations: expiringRegistrations,
-        maintenance_alerts: maintenanceAlerts
+        maintenance_alerts: maintenanceAlerts,
       });
-
     } catch (error) {
       console.error("Error loading fleet data:", error);
     } finally {
@@ -148,35 +272,70 @@ export default function FleetPage() {
     }
   };
 
-  const getDaysUntilExpiry = (expiryDate: string) => {
+  const getDaysUntilExpiry = (expiryDate?: string | null) => {
+    if (!expiryDate) return null;
     const today = new Date();
     const expiry = new Date(expiryDate);
+    if (Number.isNaN(expiry.getTime())) return null;
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
 
-  const getExpiryBadge = (expiryDate: string) => {
+  const getExpiryBadge = (expiryDate?: string | null) => {
     const daysUntil = getDaysUntilExpiry(expiryDate);
-    
+
+    if (daysUntil === null) {
+      return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
+    }
     if (daysUntil < 0) {
       return <Badge className="bg-red-100 text-red-800">Expired</Badge>;
-    } else if (daysUntil <= 30) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Expiring Soon</Badge>;
-    } else {
-      return <Badge className="bg-green-100 text-green-800">Current</Badge>;
     }
+    if (daysUntil <= 30) {
+      return <Badge className="bg-yellow-100 text-yellow-800">Expiring Soon</Badge>;
+    }
+    return <Badge className="bg-green-100 text-green-800">Current</Badge>;
   };
 
-  const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = vehicle.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.model.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || vehicle.status === filterStatus;
-    
+  const filteredVehicles = vehicles.filter((vehicle) => {
+    const unit = vehicle.unit_number?.toLowerCase() || "";
+    const make = vehicle.make?.toLowerCase() || "";
+    const model = vehicle.model?.toLowerCase() || "";
+    const term = searchTerm.toLowerCase();
+
+    const matchesSearch =
+      unit.includes(term) || make.includes(term) || model.includes(term);
+
+    const matchesFilter = filterStatus === "all" || vehicle.status === filterStatus;
+
     return matchesSearch && matchesFilter;
   });
+
+  const inspectionRows = useMemo(
+    () =>
+      vehicles
+        .filter((vehicle) => vehicle.dot_inspection_due)
+        .map((vehicle) => ({
+          id: vehicle.id,
+          unit_number: vehicle.unit_number,
+          due_date: vehicle.dot_inspection_due as string,
+          mileage: vehicle.current_mileage || 0,
+        })),
+    [vehicles],
+  );
+
+  const renewalRows = useMemo(
+    () =>
+      vehicles
+        .filter((vehicle) => vehicle.registration_expiry)
+        .map((vehicle) => ({
+          id: vehicle.id,
+          unit_number: vehicle.unit_number,
+          due_date: vehicle.registration_expiry as string,
+          mileage: vehicle.current_mileage || 0,
+        })),
+    [vehicles],
+  );
 
   if (loading) {
     return (
@@ -410,16 +569,24 @@ export default function FleetPage() {
                   {filteredVehicles.map((vehicle) => (
                     <tr key={vehicle.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 font-medium">{vehicle.unit_number}</td>
-                      <td className="p-3">{vehicle.make} {vehicle.model}</td>
-                      <td className="p-3">{vehicle.year}</td>
+                      <td className="p-3">
+                        {[vehicle.make, vehicle.model].filter(Boolean).join(" ") || "--"}
+                      </td>
+                      <td className="p-3">{vehicle.year || "--"}</td>
                       <td className="p-3">{getStatusBadge(vehicle.status)}</td>
                       <td className="p-3">{vehicle.driver_assigned || 'Unassigned'}</td>
-                      <td className="p-3">{vehicle.current_mileage?.toLocaleString()}</td>
+                      <td className="p-3">
+                        {vehicle.current_mileage !== null && vehicle.current_mileage !== undefined
+                          ? vehicle.current_mileage.toLocaleString()
+                          : "--"}
+                      </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           {getExpiryBadge(vehicle.registration_expiry)}
                           <span className="text-sm text-gray-600">
-                            {new Date(vehicle.registration_expiry).toLocaleDateString()}
+                            {vehicle.registration_expiry
+                              ? new Date(vehicle.registration_expiry).toLocaleDateString()
+                              : "--"}
                           </span>
                         </div>
                       </td>
@@ -427,7 +594,9 @@ export default function FleetPage() {
                         <div className="flex items-center gap-2">
                           {getExpiryBadge(vehicle.dot_inspection_due)}
                           <span className="text-sm text-gray-600">
-                            {new Date(vehicle.dot_inspection_due).toLocaleDateString()}
+                            {vehicle.dot_inspection_due
+                              ? new Date(vehicle.dot_inspection_due).toLocaleDateString()
+                              : "--"}
                           </span>
                         </div>
                       </td>
@@ -453,26 +622,9 @@ export default function FleetPage() {
           <CardContent>
             <div className="flex justify-between items-center mb-4">
               <div className="font-semibold">All Maintenance Records</div>
-              <Button onClick={() => {
-                // Add a new sample record (in-memory)
-                setMaintenanceRecords(prev => [
-                  ...prev,
-                  {
-                    id: (prev.length + 1).toString(),
-                    vehicle_id: vehicles[0]?.id || '1',
-                    maintenance_type: 'Oil Change',
-                    description: 'Changed oil and filter',
-                    cost: 250,
-                    date_completed: new Date().toISOString().slice(0,10),
-                    mileage_at_service: vehicles[0]?.current_mileage || 0,
-                    next_due_date: '',
-                    next_due_mileage: (vehicles[0]?.current_mileage || 0) + 10000,
-                    status: 'completed',
-                  }
-                ]);
-              }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Record
-              </Button>
+              <span className="text-sm text-gray-500">
+                Updates sync from driver maintenance requests.
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm border">
@@ -491,10 +643,14 @@ export default function FleetPage() {
                   {maintenanceRecords.length === 0 ? (
                     <tr><td colSpan={7} className="text-center py-4 text-gray-400">No maintenance records yet.</td></tr>
                   ) : maintenanceRecords.map(rec => {
-                    const vehicle = vehicles.find(v => v.id === rec.vehicle_id);
+                    const vehicle = vehicles.find(
+                      v => v.id === rec.vehicle_id || v.unit_number === rec.vehicle_id,
+                    );
                     return (
                       <tr key={rec.id} className="border-b">
-                        <td className="px-2 py-1">{vehicle?.unit_number || rec.vehicle_id}</td>
+                        <td className="px-2 py-1">
+                          {rec.vehicle_label || vehicle?.unit_number || rec.vehicle_id}
+                        </td>
                         <td className="px-2 py-1">{rec.maintenance_type}</td>
                         <td className="px-2 py-1">{rec.description}</td>
                         <td className="px-2 py-1">{rec.date_completed}</td>
@@ -519,57 +675,41 @@ export default function FleetPage() {
           <CardContent>
             <div className="flex justify-between items-center mb-4">
               <div className="font-semibold">All Inspections</div>
-              <Button onClick={() => {
-                // Add a new sample inspection (in-memory)
-                setMaintenanceRecords(prev => [
-                  ...prev,
-                  {
-                    id: (prev.length + 1001).toString(),
-                    vehicle_id: vehicles[0]?.id || '1',
-                    maintenance_type: 'DOT Inspection',
-                    description: 'Annual DOT inspection completed',
-                    cost: 150,
-                    date_completed: new Date().toISOString().slice(0,10),
-                    mileage_at_service: vehicles[0]?.current_mileage || 0,
-                    next_due_date: '',
-                    next_due_mileage: undefined,
-                    status: 'completed',
-                  }
-                ]);
-              }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Inspection
-              </Button>
+              <span className="text-sm text-gray-500">
+                Upcoming inspections are derived from vehicle records.
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="px-2 py-1 border">Vehicle</th>
-                    <th className="px-2 py-1 border">Type</th>
-                    <th className="px-2 py-1 border">Description</th>
-                    <th className="px-2 py-1 border">Date</th>
-                    <th className="px-2 py-1 border">Mileage</th>
-                    <th className="px-2 py-1 border">Cost</th>
+                    <th className="px-2 py-1 border">Due Date</th>
                     <th className="px-2 py-1 border">Status</th>
+                    <th className="px-2 py-1 border">Mileage</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {maintenanceRecords.filter(r => r.maintenance_type === 'DOT Inspection').length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-4 text-gray-400">No inspections yet.</td></tr>
-                  ) : maintenanceRecords.filter(r => r.maintenance_type === 'DOT Inspection').map(rec => {
-                    const vehicle = vehicles.find(v => v.id === rec.vehicle_id);
-                    return (
-                      <tr key={rec.id} className="border-b">
-                        <td className="px-2 py-1">{vehicle?.unit_number || rec.vehicle_id}</td>
-                        <td className="px-2 py-1">{rec.maintenance_type}</td>
-                        <td className="px-2 py-1">{rec.description}</td>
-                        <td className="px-2 py-1">{rec.date_completed}</td>
-                        <td className="px-2 py-1">{rec.mileage_at_service}</td>
-                        <td className="px-2 py-1">${rec.cost}</td>
-                        <td className="px-2 py-1">{rec.status}</td>
+                  {inspectionRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-4 text-gray-400">
+                        No inspections due yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    inspectionRows.map((row) => (
+                      <tr key={row.id} className="border-b">
+                        <td className="px-2 py-1">{row.unit_number}</td>
+                        <td className="px-2 py-1">
+                          {new Date(row.due_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-2 py-1">
+                          {getExpiryBadge(row.due_date)}
+                        </td>
+                        <td className="px-2 py-1">{row.mileage}</td>
                       </tr>
-                    );
-                  })}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -585,57 +725,41 @@ export default function FleetPage() {
           <CardContent>
             <div className="flex justify-between items-center mb-4">
               <div className="font-semibold">All Renewals</div>
-              <Button onClick={() => {
-                // Add a new sample renewal (in-memory)
-                setMaintenanceRecords(prev => [
-                  ...prev,
-                  {
-                    id: (prev.length + 2001).toString(),
-                    vehicle_id: vehicles[0]?.id || '1',
-                    maintenance_type: 'Registration Renewal',
-                    description: 'Annual registration renewed',
-                    cost: 120,
-                    date_completed: new Date().toISOString().slice(0,10),
-                    mileage_at_service: vehicles[0]?.current_mileage || 0,
-                    next_due_date: '',
-                    next_due_mileage: undefined,
-                    status: 'completed',
-                  }
-                ]);
-              }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Renewal
-              </Button>
+              <span className="text-sm text-gray-500">
+                Registration renewals sync from compliance data.
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="px-2 py-1 border">Vehicle</th>
-                    <th className="px-2 py-1 border">Type</th>
-                    <th className="px-2 py-1 border">Description</th>
-                    <th className="px-2 py-1 border">Date</th>
-                    <th className="px-2 py-1 border">Mileage</th>
-                    <th className="px-2 py-1 border">Cost</th>
+                    <th className="px-2 py-1 border">Due Date</th>
                     <th className="px-2 py-1 border">Status</th>
+                    <th className="px-2 py-1 border">Mileage</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {maintenanceRecords.filter(r => r.maintenance_type === 'Registration Renewal').length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-4 text-gray-400">No renewals yet.</td></tr>
-                  ) : maintenanceRecords.filter(r => r.maintenance_type === 'Registration Renewal').map(rec => {
-                    const vehicle = vehicles.find(v => v.id === rec.vehicle_id);
-                    return (
-                      <tr key={rec.id} className="border-b">
-                        <td className="px-2 py-1">{vehicle?.unit_number || rec.vehicle_id}</td>
-                        <td className="px-2 py-1">{rec.maintenance_type}</td>
-                        <td className="px-2 py-1">{rec.description}</td>
-                        <td className="px-2 py-1">{rec.date_completed}</td>
-                        <td className="px-2 py-1">{rec.mileage_at_service}</td>
-                        <td className="px-2 py-1">${rec.cost}</td>
-                        <td className="px-2 py-1">{rec.status}</td>
+                  {renewalRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-4 text-gray-400">
+                        No renewals due yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    renewalRows.map((row) => (
+                      <tr key={row.id} className="border-b">
+                        <td className="px-2 py-1">{row.unit_number}</td>
+                        <td className="px-2 py-1">
+                          {new Date(row.due_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-2 py-1">
+                          {getExpiryBadge(row.due_date)}
+                        </td>
+                        <td className="px-2 py-1">{row.mileage}</td>
                       </tr>
-                    );
-                  })}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

@@ -14,13 +14,18 @@ interface Scan {
   driverId?: string;
   truckId?: string;
   material?: string;
-  netWeight?: string;
+  netWeight?: number | string;
   customer?: string;
   job?: string;
   timestamp?: string;
   pitName?: string;
   notes?: string;
   referenceNumber?: string;
+  totalBill?: number;
+  totalPay?: number;
+  totalProfit?: number;
+  billRate?: number;
+  payRate?: number;
 }
 
 export default function FastScanAnalyticsDashboard() {
@@ -34,7 +39,43 @@ export default function FastScanAnalyticsDashboard() {
       try {
         const res = await fetch("/api/fastscan/list");
         const data = await res.json();
-        setScans(Array.isArray(data.scans) ? data.scans : []);
+        const rawScans = Array.isArray(data.scans) ? data.scans : [];
+
+        const normalized = rawScans.map((scan: any) => {
+          const ocr =
+            scan.ocr_result?.extracted_data ||
+            scan.ocr_data?.extracted_data ||
+            scan.ocr_json?.extracted_data ||
+            {};
+
+          return {
+            id: scan.id,
+            organizationId: scan.organization_id || scan.organizationId || "",
+            ticketId: scan.ticket_id || scan.ticketId || scan.id || "",
+            documentId: scan.document_id || scan.documentId || "",
+            createdAt:
+              scan.created_at || scan.uploaded_at || scan.createdAt || new Date().toISOString(),
+            status: scan.status || scan.ocr_result?.status || "pending",
+            resultId: scan.result_id || scan.resultId,
+            driverId: scan.driver_id || scan.driverId || scan.driver_name || ocr.driver_name,
+            truckId: scan.truck_id || scan.truckId || scan.truck_number || ocr.truck_identifier,
+            material: scan.material || ocr.material,
+            netWeight: scan.net_weight || scan.quantity || ocr.quantity,
+            customer: scan.customer || scan.customer_name || ocr.customer_name,
+            job: scan.job || scan.job_name || ocr.job_name,
+            timestamp: scan.timestamp || scan.created_at || scan.uploaded_at,
+            pitName: scan.pit_name || ocr.plant,
+            notes: scan.notes,
+            referenceNumber: scan.reference_number || scan.ticket_number || ocr.ticket_number,
+            totalBill: scan.total_bill || scan.totalBill,
+            totalPay: scan.total_pay || scan.totalPay,
+            totalProfit: scan.total_profit || scan.totalProfit,
+            billRate: scan.bill_rate || scan.billRate,
+            payRate: scan.pay_rate || scan.payRate,
+          } as Scan;
+        });
+
+        setScans(normalized);
       } catch {
         setScans([]);
       }
@@ -70,6 +111,39 @@ export default function FastScanAnalyticsDashboard() {
   }).sort((a, b) => b.tickets - a.tickets);
   const topDrivers = driverStats.slice(0, 3);
 
+  const getScanRevenue = (scan: Scan) => {
+    const totalBill = Number(scan.totalBill || 0);
+    if (totalBill > 0) return totalBill;
+
+    const quantity = Number(scan.netWeight || 0);
+    const billRate = Number(scan.billRate || 0);
+    if (quantity > 0 && billRate > 0) {
+      return quantity * billRate;
+    }
+
+    return 0;
+  };
+
+  const getScanProfit = (scan: Scan) => {
+    const totalProfit = Number(scan.totalProfit || 0);
+    if (totalProfit) return totalProfit;
+
+    const totalBill = Number(scan.totalBill || 0);
+    const totalPay = Number(scan.totalPay || 0);
+    if (totalBill || totalPay) {
+      return totalBill - totalPay;
+    }
+
+    const quantity = Number(scan.netWeight || 0);
+    const billRate = Number(scan.billRate || 0);
+    const payRate = Number(scan.payRate || 0);
+    if (quantity > 0 && (billRate || payRate)) {
+      return quantity * (billRate - payRate);
+    }
+
+    return 0;
+  };
+
   // Top customers (by tickets)
   const customerStatsArr = scans.length
     ? Array.from(new Set(scans.map((s) => s.customer || "Unknown")))
@@ -78,7 +152,7 @@ export default function FastScanAnalyticsDashboard() {
           return {
             customer,
             tickets: custTickets.length,
-            revenue: custTickets.length * 250,
+            revenue: custTickets.reduce((sum, scan) => sum + getScanRevenue(scan), 0),
             violations: custTickets.filter((s) => s.status === "violation" || s.status === "failed").length,
           };
         })
@@ -94,7 +168,7 @@ export default function FastScanAnalyticsDashboard() {
           return {
             job,
             tickets: jobTickets.length,
-            revenue: jobTickets.length * 250,
+            revenue: jobTickets.reduce((sum, scan) => sum + getScanRevenue(scan), 0),
             violations: jobTickets.filter((s) => s.status === "violation" || s.status === "failed").length,
           };
         })
@@ -111,7 +185,7 @@ export default function FastScanAnalyticsDashboard() {
   // (Optional: implement if needed for dashboard UI)
   const totalDrivers = new Set(scans.map((s) => s.driverId)).size;
   const totalNetWeight = scans.reduce(
-    (sum, s) => sum + (parseFloat(s.netWeight || "0") || 0),
+    (sum, s) => sum + (Number(s.netWeight || 0) || 0),
     0,
   );
   const violations = scans.filter(
@@ -124,13 +198,14 @@ export default function FastScanAnalyticsDashboard() {
     (s) => s.status === "clear" || s.status === "processed",
   ).length;
 
-  // Revenue/profit summary (calculated from real tickets)
-  // TODO: Replace with actual revenue/cost fields if available in Scan
   const totalRevenue = scans.reduce(
-    (sum, s) => sum + (parseFloat(s.netWeight || "0") * 1.0 || 250),
+    (sum, s) => sum + getScanRevenue(s),
     0,
-  ); // fallback $250 if no netWeight
-  const totalProfit = totalRevenue - totalTickets * 50; // Placeholder: $50 cost per ticket, update if real cost data available
+  );
+  const totalProfit = scans.reduce(
+    (sum, s) => sum + getScanProfit(s),
+    0,
+  );
 
   // Driver performance
 

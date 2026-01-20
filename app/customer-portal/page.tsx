@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { 
+import {
   Package, 
   MapPin, 
   Calendar,
@@ -24,7 +24,7 @@ import {
   PlusCircle,
   Search
 } from "lucide-react";
-// import LoadRequestForm from './components/LoadRequestForm';
+import LoadRequestForm from "./components/LoadRequestForm";
 
 interface LoadRequest {
   id: string;
@@ -87,150 +87,220 @@ export default function CustomerPortal() {
   const [loadRequests, setLoadRequests] = useState<LoadRequest[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [showLoadRequestForm, setShowLoadRequestForm] = useState(false);
   const [features, setFeatures] = useState<{ [key: string]: boolean }>({});
   const [selectedLoad, setSelectedLoad] = useState<LoadRequest | null>(null);
   const [showLoadDetails, setShowLoadDetails] = useState(false);
-  const [accountInfo, setAccountInfo] = useState({ primaryContact: 'John Smith', phone: '(555) 123-4567', email: 'john.smith@abcmfg.com' });
+  const [accountInfo, setAccountInfo] = useState({
+    primaryContact: "",
+    phone: "",
+    email: "",
+  });
 
-  // Mock data
-  useEffect(() => {
-    // If not onboarded, redirect to onboarding
-    if (typeof window !== 'undefined' && !localStorage.getItem('onboarded')) {
-      window.location.href = '/onboarding';
-      return;
-    }
-    // Feature gating: check user's approved payments for upgrades
-    (async () => {
-      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
-      if (!user) return;
-      const { data } = await supabase.from("payments").select("addons, status").eq("user_id", user.id).eq("status", "active");
-      const unlocked: { [key: string]: boolean } = {};
-      (data || []).forEach((p: any) => {
-        (p.addons || []).forEach((a: string) => { unlocked[a] = true; });
-      });
-      setFeatures(unlocked);
-    })();
-    // Initialize with sample data
-    const mockLoadRequests: LoadRequest[] = [
-      {
-        id: 'LR-2024-001',
-        status: 'in_transit',
-        origin: {
-          address: '1234 Industrial Blvd',
-          city: 'Houston',
-          state: 'TX',
-          zipCode: '77001'
-        },
-        destination: {
-          address: '5678 Commerce St',
-          city: 'Atlanta',
-          state: 'GA',
-          zipCode: '30301'
-        },
-        pickupDate: '2025-11-01',
-        deliveryDate: '2025-11-03',
-        commodity: 'Electronics Equipment',
-        weight: 45000,
-        equipment: 'van',
-        estimatedRate: 2800,
-        finalRate: 2850,
-        createdAt: '2025-10-28T10:00:00Z',
-        tracking: {
-          currentLocation: 'Birmingham, AL',
-          estimatedDelivery: '2025-11-03T14:00:00Z',
-          updates: [
-            {
-              timestamp: '2025-11-01T08:00:00Z',
-              status: 'Picked up',
-              location: 'Houston, TX',
-              notes: 'Loaded and secured, departed on schedule'
-            },
-            {
-              timestamp: '2025-11-01T18:30:00Z',
-              status: 'In transit',
-              location: 'Shreveport, LA',
-              notes: 'Completed required rest break'
-            },
-            {
-              timestamp: '2025-11-02T14:15:00Z',
-              status: 'In transit',
-              location: 'Birmingham, AL',
-              notes: 'On schedule for delivery tomorrow'
-            }
-          ]
-        }
+  const normalizeStatus = (status: string) => {
+    const value = status?.toLowerCase?.() || "pending";
+    if (value.includes("in_transit")) return "in_transit";
+    if (value.includes("delivered")) return "delivered";
+    if (value.includes("invoiced")) return "invoiced";
+    if (value.includes("quoted")) return "quoted";
+    if (value.includes("booked")) return "booked";
+    return value as LoadRequest["status"];
+  };
+
+  const mapTrackingUpdates = (updates: any[]) => {
+    const sorted = [...updates].sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.created_at || 0).getTime();
+      const timeB = new Date(b.timestamp || b.created_at || 0).getTime();
+      return timeB - timeA;
+    });
+
+    return sorted.map((update) => ({
+      timestamp: update.timestamp || update.created_at,
+      status: update.status,
+      location: update.location,
+      notes: update.notes,
+    }));
+  };
+
+  const mapLoadRequest = (row: any): LoadRequest => {
+    const updates = mapTrackingUpdates(row.tracking_updates || []);
+    return {
+      id: row.id,
+      status: normalizeStatus(row.status || "pending"),
+      origin: {
+        address: row.origin_address || "",
+        city: row.origin_city || "",
+        state: row.origin_state || "",
+        zipCode: row.origin_zip_code || "",
       },
-      {
-        id: 'LR-2024-002',
-        status: 'quoted',
-        origin: {
-          address: '9876 Manufacturing Way',
-          city: 'Dallas',
-          state: 'TX',
-          zipCode: '75201'
-        },
-        destination: {
-          address: '4321 Distribution Dr',
-          city: 'Phoenix',
-          state: 'AZ',
-          zipCode: '85001'
-        },
-        pickupDate: '2025-11-05',
-        commodity: 'Industrial Machinery',
-        weight: 52000,
-        equipment: 'flatbed',
-        specialRequirements: 'Tarps required, oversize permits needed',
-        estimatedRate: 3200,
-        createdAt: '2025-10-30T15:30:00Z'
-      }
-    ];
+      destination: {
+        address: row.destination_address || "",
+        city: row.destination_city || "",
+        state: row.destination_state || "",
+        zipCode: row.destination_zip_code || "",
+      },
+      pickupDate: row.pickup_date,
+      deliveryDate: row.delivery_date || undefined,
+      commodity: row.commodity || "",
+      weight: Number(row.weight || 0),
+      equipment: row.equipment_type || row.equipment || "van",
+      specialRequirements: row.special_requirements || undefined,
+      estimatedRate: row.estimated_rate || undefined,
+      finalRate: row.final_rate || row.actual_rate || undefined,
+      createdAt: row.created_at,
+      tracking:
+        updates.length > 0
+          ? {
+              currentLocation: updates[0]?.location || "Unknown",
+              estimatedDelivery: row.delivery_date || undefined,
+              updates,
+            }
+          : undefined,
+    };
+  };
 
-    const mockInvoices: Invoice[] = [
-      {
-        id: 'INV-2024-156',
-        loadRequestId: 'LR-2024-001',
-        amount: 2850,
-        status: 'sent',
-        dueDate: '2025-11-15',
-        downloadUrl: '#'
-      }
-    ];
+  async function fetchLoadRequests(id: string) {
+    const res = await fetch(`/api/customer/load-requests?customerId=${id}`);
+    if (!res.ok) {
+      throw new Error("Failed to load load requests");
+    }
+    const data = await res.json();
+    const mapped = Array.isArray(data) ? data.map(mapLoadRequest) : [];
+    setLoadRequests(mapped);
+  }
 
-    // Only set mock data if we don't have real data (fallback)
-    if (loadRequests.length === 0) {
-      setLoadRequests(mockLoadRequests);
+  async function fetchInvoices(id: string) {
+    const res = await fetch(`/api/customer/invoices?customerId=${id}`);
+    if (!res.ok) {
+      throw new Error("Failed to load invoices");
     }
-    if (invoices.length === 0) {
-      setInvoices(mockInvoices);
+    const data = await res.json();
+    const mapped = Array.isArray(data)
+      ? data.map((invoice: any) => ({
+          id: invoice.id,
+          loadRequestId: invoice.loadRequestId,
+          amount: invoice.amount,
+          status: invoice.status,
+          dueDate: invoice.dueDate,
+          paidDate: invoice.paidDate,
+          downloadUrl: invoice.downloadUrl,
+        }))
+      : [];
+    setInvoices(mapped);
+  }
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function initialize() {
+      if (typeof window !== "undefined" && !localStorage.getItem("onboarded")) {
+        window.location.href = "/onboarding";
+        return;
+      }
+
+      setDataLoading(true);
+      setDataError(null);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setDataLoading(false);
+        return;
+      }
+
+      if (!ignore) {
+        setCustomerId(user.id);
+        setAccountInfo({
+          primaryContact: user.user_metadata?.full_name || user.email || "",
+          phone: user.user_metadata?.phone || "",
+          email: user.email || "",
+        });
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .single();
+
+      if (!ignore && profile) {
+        setAccountInfo({
+          primaryContact:
+            profile.full_name || user.user_metadata?.full_name || user.email || "",
+          phone: profile.phone || user.user_metadata?.phone || "",
+          email: user.email || "",
+        });
+      }
+
+      const { data: payments } = await supabase
+        .from("payments")
+        .select("addons, status")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (!ignore) {
+        const unlocked: { [key: string]: boolean } = {};
+        (payments || []).forEach((payment: any) => {
+          (payment.addons || []).forEach((addon: string) => {
+            unlocked[addon] = true;
+          });
+        });
+        setFeatures(unlocked);
+      }
+
+      try {
+        await Promise.all([fetchLoadRequests(user.id), fetchInvoices(user.id)]);
+      } catch (err: any) {
+        if (!ignore) {
+          setDataError(err.message || "Failed to load portal data");
+        }
+      } finally {
+        if (!ignore) {
+          setDataLoading(false);
+        }
+      }
     }
-  }, [loadRequests.length, invoices.length]);
+
+    initialize();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleLoadRequestSubmit = async (formData: any) => {
     try {
       setLoading(true);
-      // Here you would make an API call to submit the load request
-      console.log('Submitting load request:', formData);
-      
-      // For demo purposes, add to local state
-      const newLoadRequest: LoadRequest = {
-        id: `LR-2024-${String(loadRequests.length + 1).padStart(3, '0')}`,
-        status: 'pending',
-        origin: formData.origin,
-        destination: formData.destination,
-        pickupDate: formData.pickupDate,
-        deliveryDate: formData.deliveryDate,
-        commodity: formData.commodity,
-        weight: formData.weight,
-        equipment: formData.equipment as 'van' | 'flatbed' | 'reefer' | 'tanker',
-        specialRequirements: formData.specialRequirements,
-        createdAt: new Date().toISOString()
-      };
-      
-      setLoadRequests(prev => [newLoadRequest, ...prev]);
+      if (!customerId) {
+        throw new Error("Customer account not found.");
+      }
+
+      const response = await fetch("/api/customer/load-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId,
+          ...formData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit load request.");
+      }
+
+      const data = await response.json();
+      const mapped = mapLoadRequest(data);
+      setLoadRequests((prev) => [mapped, ...prev]);
       setShowLoadRequestForm(false);
+      alert("Load request submitted successfully!");
     } catch (error) {
       console.error('Error submitting load request:', error);
+      alert('Failed to submit load request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -241,12 +311,37 @@ export default function CustomerPortal() {
     setShowLoadDetails(true);
   };
 
-  const handleTrackShipment = (load: LoadRequest) => {
-    setActiveTab('tracking');
-    // Scroll to the tracking section for this load if needed
+  const handleTrackShipment = async (load: LoadRequest) => {
+    setActiveTab("tracking");
+
+    try {
+      const response = await fetch(
+        `/api/customer/tracking?loadRequestId=${load.id}`,
+      );
+      if (response.ok) {
+        const trackingData = await response.json();
+        setLoadRequests((prev) =>
+          prev.map((item) =>
+            item.id === load.id
+              ? {
+                  ...item,
+                  tracking: {
+                    currentLocation: trackingData.currentLocation,
+                    estimatedDelivery: trackingData.estimatedDelivery,
+                    updates: trackingData.updates || [],
+                  },
+                }
+              : item,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Error loading tracking data:", error);
+    }
+
     setTimeout(() => {
       const element = document.getElementById(`tracking-${load.id}`);
-      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      element?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
 
@@ -304,14 +399,29 @@ export default function CustomerPortal() {
       // Redirect to payment page or open payment modal
       const confirmPay = confirm(`Pay invoice ${invoice.id} for $${invoice.amount.toLocaleString()}?`);
       if (confirmPay) {
-        // Here you would integrate with payment gateway
-        // For now, update status locally
-        setInvoices(prev => prev.map(inv => 
-          inv.id === invoice.id 
-            ? { ...inv, status: 'paid' as const, paidDate: new Date().toISOString() }
-            : inv
-        ));
-        alert('Payment processed successfully! (This is a demo - no actual payment was processed)');
+        const response = await fetch("/api/customer/invoices", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            invoiceId: invoice.id,
+            status: "paid",
+            paidDate: new Date().toISOString(),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update invoice status");
+        }
+
+        setInvoices((prev) =>
+          prev.map((inv) =>
+            inv.id === invoice.id
+              ? { ...inv, status: "paid", paidDate: new Date().toISOString() }
+              : inv,
+          ),
+        );
+
+        alert("Payment processed successfully!");
       }
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -371,6 +481,14 @@ export default function CustomerPortal() {
     }
   };
 
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading customer portal...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b shadow-sm">
@@ -382,8 +500,12 @@ export default function CustomerPortal() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right text-sm">
-                <p className="font-medium">ABC Manufacturing Corp</p>
-                <p className="text-gray-500">Customer #12345</p>
+                <p className="font-medium">
+                  {accountInfo.primaryContact || "Customer"}
+                </p>
+                <p className="text-gray-500">
+                  {customerId ? `Customer #${customerId.slice(0, 8)}` : "Customer"}
+                </p>
               </div>
               <Button onClick={() => setShowLoadRequestForm(true)}>
                 <PlusCircle className="w-4 h-4 mr-2" />
@@ -394,6 +516,11 @@ export default function CustomerPortal() {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-6 py-4">
+        {dataError && (
+          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {dataError}
+          </div>
+        )}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="loads">Loads</TabsTrigger>
@@ -637,15 +764,18 @@ export default function CustomerPortal() {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Company Name</label>
-                    <Input value="ABC Manufacturing Corp" readOnly />
+                    <Input
+                      value={accountInfo.primaryContact || "Customer"}
+                      readOnly
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Customer ID</label>
-                    <Input value="12345" readOnly />
+                    <Input value={customerId ? customerId.slice(0, 8) : ""} readOnly />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Account Manager</label>
-                    <Input value="Sarah Johnson" readOnly />
+                    <Input value={accountInfo.primaryContact || ""} readOnly />
                   </div>
                 </CardContent>
               </Card>
@@ -685,15 +815,12 @@ export default function CustomerPortal() {
           </TabsContent>
         </Tabs>
 
-        {/* Load Request Form Modal - Temporarily Disabled */}
+        {/* Load Request Form Modal */}
         {showLoadRequestForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-md">
-              <h2 className="text-lg font-bold mb-4">Load Request Form</h2>
-              <p className="mb-4">Load request form temporarily disabled during build optimization.</p>
-              <Button onClick={() => setShowLoadRequestForm(false)}>Close</Button>
-            </div>
-          </div>
+          <LoadRequestForm
+            onSubmit={handleLoadRequestSubmit}
+            onCancel={() => setShowLoadRequestForm(false)}
+          />
         )}
 
         {/* Load Details Modal */}

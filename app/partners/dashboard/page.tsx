@@ -7,32 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import ComplianceCalendar from "./ComplianceCalendar";
 // Supabase client for compliance reminders/notifications
 const supabase = createClient();
-// Mock compliance reminders (replace with Supabase query)
-function generateComplianceReminders() {
-  return [
-    {
-      id: 1,
-      company: "ABC Transport Co.",
-      type: "Document Expiry",
-      due: "2026-01-15",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      company: "XYZ Logistics",
-      type: "Driver Medical",
-      due: "2026-01-20",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      company: "Elite Hauling",
-      type: "Insurance Renewal",
-      due: "2026-01-25",
-      status: "Sent",
-    },
-  ];
-}
 // Compliance analytics data loader
 async function loadComplianceTrends(supabaseClient: ReturnType<typeof createClient>, orgIds: string[]) {
   const today = new Date();

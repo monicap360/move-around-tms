@@ -1,6 +1,20 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import jsPDF from "jspdf";
 import { supabase } from '../../lib/supabaseClient';
+
+const TAX_RATES: { [key: string]: number } = {
+  TX: 0.2,
+  OK: 0.17,
+  NM: 0.189,
+  AR: 0.279,
+  LA: 0.2,
+  CO: 0.25,
+  KS: 0.26,
+  MO: 0.224,
+  NE: 0.288,
+  IA: 0.329,
+};
 
 // Types for records
 type FuelReceipt = {
@@ -69,19 +83,20 @@ function IFTAReportsTab() {
   const [mileageError, setMileageError] = useState('');
   const [fuelUploading, setFuelUploading] = useState(false);
   const [mileageUploading, setMileageUploading] = useState(false);
-
-  const taxRates: { [key: string]: number } = {
-    'TX': 0.20,
-    'OK': 0.17,
-    'NM': 0.189,
-    'AR': 0.279,
-    'LA': 0.20,
-    'CO': 0.25,
-    'KS': 0.26,
-    'MO': 0.224,
-    'NE': 0.288,
-    'IA': 0.329,
-  };
+  const [filingId, setFilingId] = useState<string | null>(null);
+  const [filingForm, setFilingForm] = useState<ComplianceRecord>({
+    id: "",
+    period: "",
+    submission_date: "",
+    filed_by: "",
+    notes: "",
+    return_copy_url: "",
+    audit_log: "",
+  });
+  const [filingLoading, setFilingLoading] = useState(false);
+  const [filingSaving, setFilingSaving] = useState(false);
+  const [filingMessage, setFilingMessage] = useState("");
+  const [returnCopyUploading, setReturnCopyUploading] = useState(false);
 
   function getQuarter(date: string): string {
     const d = new Date(date);
@@ -99,12 +114,33 @@ function IFTAReportsTab() {
       setLoading(true);
       try {
         // Load fuel receipts
-        const { data: fuelData } = await supabase.from('fuel_receipts').select('*').order('upload_date', { ascending: false });
+        const { data: fuelData } = await supabase
+          .from('fuel_receipts')
+          .select('*')
+          .order('upload_date', { ascending: false });
         if (fuelData) setFuelReceipts(fuelData as FuelReceipt[]);
 
         // Load mileage logs
-        const { data: mileageData } = await supabase.from('mileage_logs').select('*').order('upload_date', { ascending: false });
+        const { data: mileageData } = await supabase
+          .from('mileage_logs')
+          .select('*')
+          .order('upload_date', { ascending: false });
         if (mileageData) setMileageLogs(mileageData as MileageLog[]);
+
+        if (!quarter) {
+          const quarters = Array.from(
+            new Set(
+              [...(fuelData || []), ...(mileageData || [])]
+                .map((row: any) => getQuarter(row.upload_date))
+                .filter(Boolean),
+            ),
+          )
+            .sort()
+            .reverse();
+          if (quarters.length > 0) {
+            setQuarter(quarters[0]);
+          }
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -147,7 +183,7 @@ function IFTAReportsTab() {
     Object.keys(stateMiles).forEach(state => {
       const gallons = stateGallons[state] || 0;
       const miles = stateMiles[state] || 0;
-      const rate = taxRates[state] || 0;
+      const rate = TAX_RATES[state] || 0;
       stateTax[state] = (miles / (gallons || 1)) * rate * gallons;
     });
 
@@ -160,6 +196,350 @@ function IFTAReportsTab() {
       stateTax
     });
   }, [quarter, fuelReceipts, mileageLogs]);
+
+  const quarterFuelReceipts = useMemo(
+    () =>
+      quarter
+        ? fuelReceipts.filter((receipt) => getQuarter(receipt.upload_date) === quarter)
+        : [],
+    [quarter, fuelReceipts],
+  );
+
+  const quarterMileageLogs = useMemo(
+    () =>
+      quarter
+        ? mileageLogs.filter((log) => getQuarter(log.upload_date) === quarter)
+        : [],
+    [quarter, mileageLogs],
+  );
+
+  function parseQuarter(period: string) {
+    const match = period.match(/Q([1-4])\s+(\d{4})/i);
+    if (!match) return null;
+    return { quarter: Number(match[1]), year: Number(match[2]) };
+  }
+
+  const dueDateInfo = useMemo(() => {
+    const parsed = quarter ? parseQuarter(quarter) : null;
+    if (!parsed) return null;
+    const { quarter: q, year } = parsed;
+    const dueMonth =
+      q === 1 ? 3 : q === 2 ? 6 : q === 3 ? 9 : 0;
+    const dueYear = q === 4 ? year + 1 : year;
+    const dueDate = new Date(dueYear, dueMonth + 1, 0);
+    const daysUntil = Math.ceil(
+      (dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+    );
+    return { dueDate, daysUntil };
+  }, [quarter]);
+
+  const mpgByTruck = useMemo(() => {
+    const totals = new Map<
+      string,
+      { miles: number; gallons: number }
+    >();
+
+    quarterMileageLogs.forEach((log) => {
+      const key = log.truck_number || "Unknown";
+      const entry = totals.get(key) || { miles: 0, gallons: 0 };
+      entry.miles += Number(log.total_miles || 0);
+      totals.set(key, entry);
+    });
+
+    quarterFuelReceipts.forEach((receipt) => {
+      const key = receipt.driver_truck_number || "Unknown";
+      const entry = totals.get(key) || { miles: 0, gallons: 0 };
+      entry.gallons += Number(receipt.gallons || 0);
+      totals.set(key, entry);
+    });
+
+    return Array.from(totals.entries())
+      .map(([truck, data]) => ({
+        truck,
+        miles: data.miles,
+        gallons: data.gallons,
+        mpg:
+          data.gallons > 0
+            ? Number((data.miles / data.gallons).toFixed(2))
+            : 0,
+      }))
+      .sort((a, b) => b.mpg - a.mpg)
+      .slice(0, 8);
+  }, [quarterFuelReceipts, quarterMileageLogs]);
+
+  const dataIssues = useMemo(() => {
+    const issues: { label: string; count: number }[] = [];
+
+    const missingFuelFiles = quarterFuelReceipts.filter(
+      (receipt) => !receipt.file_url,
+    ).length;
+    const missingMileageFiles = quarterMileageLogs.filter(
+      (log) => !log.file_url,
+    ).length;
+    const missingJurisdiction = quarterMileageLogs.filter(
+      (log) => !log.jurisdiction_miles,
+    ).length;
+    const missingVendor = quarterFuelReceipts.filter(
+      (receipt) => !receipt.vendor,
+    ).length;
+
+    if (missingFuelFiles > 0)
+      issues.push({ label: "Fuel receipts missing files", count: missingFuelFiles });
+    if (missingMileageFiles > 0)
+      issues.push({
+        label: "Mileage logs missing files",
+        count: missingMileageFiles,
+      });
+    if (missingJurisdiction > 0)
+      issues.push({
+        label: "Mileage logs missing jurisdiction miles",
+        count: missingJurisdiction,
+      });
+    if (missingVendor > 0)
+      issues.push({
+        label: "Fuel receipts missing vendor info",
+        count: missingVendor,
+      });
+
+    return issues;
+  }, [quarterFuelReceipts, quarterMileageLogs]);
+
+  useEffect(() => {
+    if (!quarter) return;
+    const parsed = parseQuarter(quarter);
+    if (!parsed) return;
+
+    async function loadFiling() {
+      setFilingLoading(true);
+      setFilingMessage("");
+      try {
+        const { data, error } = await supabase
+          .from("ifta_quarter_filings")
+          .select("*")
+          .eq("year", parsed.year)
+          .eq("quarter", parsed.quarter)
+          .order("prepared_at", { ascending: false })
+          .limit(1);
+
+        if (error) {
+          throw error;
+        }
+
+        const filing = data?.[0];
+        if (filing) {
+          const summary = filing.summary_json || {};
+          setFilingId(filing.id);
+          setFilingForm({
+            id: filing.id,
+            period: quarter,
+            submission_date:
+              summary.submission_date ||
+              (filing.filed_at
+                ? new Date(filing.filed_at).toISOString().slice(0, 10)
+                : ""),
+            filed_by: summary.filed_by || "",
+            notes: summary.notes || "",
+            return_copy_url: filing.pdf_url || summary.return_copy_url || "",
+            audit_log: summary.audit_log || "",
+          });
+        } else {
+          setFilingId(null);
+          setFilingForm((prev) => ({
+            ...prev,
+            period: quarter,
+          }));
+        }
+      } catch (error: any) {
+        console.error("Error loading IFTA filing:", error);
+        setFilingId(null);
+        setFilingMessage("Unable to load filing records.");
+      } finally {
+        setFilingLoading(false);
+      }
+    }
+
+    loadFiling();
+  }, [quarter]);
+
+  async function handleReturnCopyUpload(file: File) {
+    if (!file) return;
+    setReturnCopyUploading(true);
+    setFilingMessage("");
+    try {
+      const timestamp = Date.now();
+      const filePath = `ifta/filings/${timestamp}_${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("company_assets")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("company_assets")
+        .getPublicUrl(filePath);
+
+      setFilingForm((prev) => ({
+        ...prev,
+        return_copy_url: urlData.publicUrl,
+      }));
+    } catch (error: any) {
+      console.error("Error uploading return copy:", error);
+      setFilingMessage("Unable to upload IFTA return copy.");
+    } finally {
+      setReturnCopyUploading(false);
+    }
+  }
+
+  async function handleSaveFiling() {
+    if (!quarter) return;
+    const parsed = parseQuarter(quarter);
+    if (!parsed) return;
+
+    setFilingSaving(true);
+    setFilingMessage("");
+
+    const summaryJson = {
+      submission_date: filingForm.submission_date,
+      filed_by: filingForm.filed_by,
+      notes: filingForm.notes,
+      return_copy_url: filingForm.return_copy_url,
+      audit_log: filingForm.audit_log,
+      totals: quarterlySummary || null,
+      generated_at: new Date().toISOString(),
+    };
+
+    try {
+      if (filingId) {
+        const { error } = await supabase
+          .from("ifta_quarter_filings")
+          .update({
+            status: "Draft",
+            summary_json: summaryJson,
+            pdf_url: filingForm.return_copy_url || null,
+            filed_at: filingForm.submission_date || null,
+            prepared_at: new Date().toISOString(),
+          })
+          .eq("id", filingId);
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from("ifta_quarter_filings")
+          .insert({
+            year: parsed.year,
+            quarter: parsed.quarter,
+            status: "Draft",
+            summary_json: summaryJson,
+            pdf_url: filingForm.return_copy_url || null,
+            filed_at: filingForm.submission_date || null,
+            prepared_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        setFilingId(data?.id || null);
+      }
+
+      setFilingMessage("Filing saved successfully.");
+      setFilingForm((prev) => ({
+        ...prev,
+        audit_log: prev.audit_log
+          ? `${prev.audit_log}\nSaved on ${new Date().toLocaleString()}`
+          : `Saved on ${new Date().toLocaleString()}`,
+      }));
+    } catch (error: any) {
+      console.error("Error saving filing:", error);
+      setFilingMessage(error.message || "Unable to save filing.");
+    } finally {
+      setFilingSaving(false);
+    }
+  }
+
+  function downloadSummaryCsv() {
+    if (!quarterlySummary) return;
+    const header = [
+      "State",
+      "Miles",
+      "Gallons",
+      "MPG",
+      "Tax Rate",
+      "Tax Due",
+    ];
+    const rows = Object.keys(quarterlySummary.stateMiles || {}).map((state) => {
+      const miles = quarterlySummary.stateMiles[state] || 0;
+      const gallons = quarterlySummary.stateGallons[state] || 0;
+      const mpg = gallons > 0 ? (miles / gallons).toFixed(2) : "0";
+      const rate = TAX_RATES[state] ?? 0;
+      const tax = quarterlySummary.stateTax[state] ?? 0;
+      return [state, miles, gallons, mpg, rate, tax];
+    });
+
+    const csv = [header, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ifta-summary-${quarter || "latest"}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadSummaryPdf() {
+    if (!quarterlySummary) return;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text(`IFTA Summary ${quarter}`, 14, 20);
+    doc.setFontSize(10);
+    doc.text(
+      `Total Miles: ${quarterlySummary.totalMiles}`,
+      14,
+      32,
+    );
+    doc.text(
+      `Total Gallons: ${quarterlySummary.totalGallons}`,
+      14,
+      38,
+    );
+    doc.text(
+      `Average MPG: ${quarterlySummary.avgMPG?.toFixed(2) || "--"}`,
+      14,
+      44,
+    );
+
+    let y = 56;
+    doc.text("State Summary", 14, y);
+    y += 6;
+    Object.keys(quarterlySummary.stateMiles || {}).forEach((state) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      const miles = quarterlySummary.stateMiles[state] || 0;
+      const gallons = quarterlySummary.stateGallons[state] || 0;
+      const tax = quarterlySummary.stateTax[state] || 0;
+      doc.text(
+        `${state}: ${miles} miles, ${gallons.toFixed(2)} gal, $${tax.toFixed(2)} tax`,
+        14,
+        y,
+      );
+      y += 6;
+    });
+
+    doc.save(`ifta-summary-${quarter || "latest"}.pdf`);
+  }
 
   async function handleFuelReceiptUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -485,7 +865,7 @@ function IFTAReportsTab() {
                     <td className="border px-2 py-1">{quarterlySummary.stateMiles[state]}</td>
                     <td className="border px-2 py-1">{quarterlySummary.stateGallons[state]?.toFixed(2)}</td>
                     <td className="border px-2 py-1">{quarterlySummary.stateGallons[state] > 0 ? (quarterlySummary.stateMiles[state] / quarterlySummary.stateGallons[state]).toFixed(2) : '--'}</td>
-                    <td className="border px-2 py-1">${taxRates[state] ? taxRates[state].toFixed(3) : '--'}</td>
+                    <td className="border px-2 py-1">${TAX_RATES[state] ? TAX_RATES[state].toFixed(3) : '--'}</td>
                     <td className="border px-2 py-1">${quarterlySummary.stateTax[state]?.toFixed(2)}</td>
                   </tr>
                 ))
@@ -504,42 +884,200 @@ function IFTAReportsTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block mb-1">Quarterly Filing Period</label>
-            <input type="text" className="w-full border rounded px-2 py-1" />
+            <input
+              type="text"
+              className="w-full border rounded px-2 py-1"
+              value={filingForm.period || quarter}
+              onChange={(e) =>
+                setFilingForm((prev) => ({ ...prev, period: e.target.value }))
+              }
+            />
           </div>
           <div>
             <label className="block mb-1">Submission Date / Confirmation #</label>
-            <input type="text" className="w-full border rounded px-2 py-1" />
+            <input
+              type="date"
+              className="w-full border rounded px-2 py-1"
+              value={filingForm.submission_date}
+              onChange={(e) =>
+                setFilingForm((prev) => ({
+                  ...prev,
+                  submission_date: e.target.value,
+                }))
+              }
+            />
           </div>
           <div>
             <label className="block mb-1">Filed By (Name / Email)</label>
-            <input type="text" className="w-full border rounded px-2 py-1" />
+            <input
+              type="text"
+              className="w-full border rounded px-2 py-1"
+              value={filingForm.filed_by}
+              onChange={(e) =>
+                setFilingForm((prev) => ({ ...prev, filed_by: e.target.value }))
+              }
+            />
           </div>
           <div>
             <label className="block mb-1">Notes / Comments</label>
-            <textarea className="w-full border rounded px-2 py-1" />
+            <textarea
+              className="w-full border rounded px-2 py-1"
+              value={filingForm.notes}
+              onChange={(e) =>
+                setFilingForm((prev) => ({ ...prev, notes: e.target.value }))
+              }
+            />
           </div>
           <div>
             <label className="block mb-1">Upload IFTA Return Copy (PDF)</label>
-            <input type="file" accept="application/pdf" className="mb-2" />
+            <input
+              type="file"
+              accept="application/pdf"
+              className="mb-2"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleReturnCopyUpload(file);
+                }
+              }}
+              disabled={returnCopyUploading}
+            />
+            {filingForm.return_copy_url && (
+              <a
+                href={filingForm.return_copy_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline text-sm"
+              >
+                View uploaded return copy
+              </a>
+            )}
           </div>
         </div>
         <div className="mb-2">
           <label className="block mb-1">Audit Log: Changes, Edits, or Adjustments</label>
-          <textarea className="w-full border rounded px-2 py-1" rows={2} readOnly value="--" />
+          <textarea
+            className="w-full border rounded px-2 py-1"
+            rows={2}
+            value={filingForm.audit_log}
+            onChange={(e) =>
+              setFilingForm((prev) => ({ ...prev, audit_log: e.target.value }))
+            }
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSaveFiling}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-60"
+            disabled={filingSaving || filingLoading}
+          >
+            {filingSaving ? "Saving..." : "Save Filing Record"}
+          </button>
+          {filingMessage && (
+            <span className="text-sm text-gray-600">{filingMessage}</span>
+          )}
         </div>
       </section>
 
       {/* 5. Optional / Advanced Features */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-2">Advanced Features</h2>
-        <ul className="list-disc ml-6 space-y-1">
-          <li><a href="https://comptroller.texas.gov/taxes/ifta/" target="_blank" rel="noopener" className="text-blue-600 underline">Direct Link: Texas IFTA Portal</a></li>
-          <li>Generate IFTA Report PDF / Excel Export (coming soon)</li>
-          <li>Fuel Card Import (EFS, Comdata, WEX, etc.) (coming soon)</li>
-          <li>Auto MPG Calculation per Truck or Driver (coming soon)</li>
-          <li>Reminder Alerts (Quarterly IFTA due dates) (coming soon)</li>
-          <li>Error Checker: Flags missing fuel receipts or mileage logs (coming soon)</li>
-        </ul>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="font-semibold">Exports</div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={downloadSummaryCsv}
+                className="bg-gray-900 text-white px-3 py-2 rounded"
+              >
+                Download CSV
+              </button>
+              <button
+                type="button"
+                onClick={downloadSummaryPdf}
+                className="bg-gray-900 text-white px-3 py-2 rounded"
+              >
+                Download PDF
+              </button>
+              <a
+                href="https://comptroller.texas.gov/taxes/ifta/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded border border-gray-300 text-gray-700"
+              >
+                Texas IFTA Portal
+              </a>
+            </div>
+            {dueDateInfo && (
+              <div className="text-sm text-gray-600">
+                Next filing due:{" "}
+                <span className="font-semibold">
+                  {dueDateInfo.dueDate.toLocaleDateString()}
+                </span>{" "}
+                {dueDateInfo.daysUntil <= 30 ? (
+                  <span className="text-red-600">
+                    ({dueDateInfo.daysUntil} days remaining)
+                  </span>
+                ) : (
+                  <span>({dueDateInfo.daysUntil} days remaining)</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-semibold">Data Quality Checks</div>
+            {dataIssues.length === 0 ? (
+              <div className="text-sm text-green-700">
+                No missing data detected for this quarter.
+              </div>
+            ) : (
+              <ul className="list-disc ml-5 text-sm text-red-700 space-y-1">
+                {dataIssues.map((issue) => (
+                  <li key={issue.label}>
+                    {issue.label} ({issue.count})
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="font-semibold mb-2">Top MPG by Truck</div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm border">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2 py-1 text-left">Truck</th>
+                  <th className="border px-2 py-1 text-left">Miles</th>
+                  <th className="border px-2 py-1 text-left">Gallons</th>
+                  <th className="border px-2 py-1 text-left">MPG</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mpgByTruck.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-3 text-gray-400">
+                      No MPG data available for this quarter.
+                    </td>
+                  </tr>
+                ) : (
+                  mpgByTruck.map((row) => (
+                    <tr key={row.truck}>
+                      <td className="border px-2 py-1">{row.truck}</td>
+                      <td className="border px-2 py-1">{row.miles}</td>
+                      <td className="border px-2 py-1">{row.gallons.toFixed(2)}</td>
+                      <td className="border px-2 py-1">{row.mpg}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 interface PartnerTheme {
   brand: string;
@@ -76,15 +79,102 @@ export default function PartnerDashboard() {
   }
 
   async function loadPartnerStats() {
-    // Mock data for now - replace with real Supabase queries
-    setStats({
-      companiesOnboarded: 12,
-      activeDrivers: 48,
-      hrUploads: 156,
-      monthlyCommission: 2850.0,
-      totalReferrals: 15,
-      pendingApprovals: 3,
-    });
+    try {
+      if (!user?.id) {
+        setStats({
+          companiesOnboarded: 0,
+          activeDrivers: 0,
+          hrUploads: 0,
+          monthlyCommission: 0,
+          totalReferrals: 0,
+          pendingApprovals: 0,
+        });
+        return;
+      }
+
+      const filters: string[] = [];
+      if (partnerInfo?.id) {
+        filters.push(`partner_id.eq.${partnerInfo.id}`);
+      }
+      filters.push(`created_by.eq.${user.id}`);
+
+      let orgQuery = supabase.from("organizations").select("id, name");
+      if (filters.length > 0) {
+        orgQuery = orgQuery.or(filters.join(","));
+      }
+
+      const { data: orgs, error: orgError } = await orgQuery;
+      if (orgError) throw orgError;
+
+      const organizationIds = orgs?.map((organization) => organization.id) || [];
+
+      let activeDrivers = 0;
+      if (organizationIds.length > 0) {
+        const { count: driverCount } = await supabase
+          .from("drivers")
+          .select("id", { count: "exact", head: true })
+          .in("organization_id", organizationIds)
+          .eq("status", "active");
+        activeDrivers = driverCount || 0;
+      }
+
+      let hrUploads = 0;
+      if (organizationIds.length > 0) {
+        const { count: docCount } = await supabase
+          .from("driver_documents")
+          .select("id", { count: "exact", head: true })
+          .in("organization_id", organizationIds);
+        hrUploads = docCount || 0;
+      }
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: commissions } = await supabase
+        .from("commission_events")
+        .select("amount")
+        .eq("agent_id", user.id)
+        .gte("created_at", thirtyDaysAgo.toISOString());
+
+      const monthlyCommission = (commissions || []).reduce(
+        (sum: number, event: any) => sum + (Number(event.amount) || 0),
+        0,
+      );
+
+      const { count: referralCount } = await supabase
+        .from("agent_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("agent_id", user.id);
+
+      let pendingApprovals = 0;
+      if (organizationIds.length > 0) {
+        const { count: pendingCount } = await supabase
+          .from("billing_payments")
+          .select("id", { count: "exact", head: true })
+          .in("org_id", organizationIds)
+          .eq("status", "pending");
+        pendingApprovals = pendingCount || 0;
+      }
+
+      setStats({
+        companiesOnboarded: organizationIds.length,
+        activeDrivers,
+        hrUploads,
+        monthlyCommission,
+        totalReferrals: referralCount || 0,
+        pendingApprovals,
+      });
+    } catch (error) {
+      console.error("Error loading partner stats:", error);
+      setStats({
+        companiesOnboarded: 0,
+        activeDrivers: 0,
+        hrUploads: 0,
+        monthlyCommission: 0,
+        totalReferrals: 0,
+        pendingApprovals: 0,
+      });
+    }
   }
 
   if (loading) {

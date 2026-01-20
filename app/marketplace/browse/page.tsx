@@ -5,7 +5,6 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getComplianceRules } from "@/lib/complianceRules";
 
 const supabase = createClient();
 
@@ -13,6 +12,98 @@ export default function MarketplaceBrowse() {
   const [role, setRole] = useState("broker");
   const [loads, setLoads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function resolveOrganization() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (mounted) {
+        setCurrentUserId(user.id);
+      }
+
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (mounted) {
+        setOrganizationId(membership?.organization_id || null);
+      }
+    }
+
+    resolveOrganization();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function checkOrganizationCompliance() {
+    if (!organizationId) {
+      return { compliant: true, issues: [] as string[] };
+    }
+
+    const issues: string[] = [];
+
+    try {
+      const { count: alertCount, error: alertError } = await supabase
+        .from("compliance_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("resolved", false);
+
+      if (!alertError && alertCount && alertCount > 0) {
+        issues.push(`${alertCount} unresolved compliance alerts`);
+      }
+    } catch (err) {
+      console.error("Compliance notifications error:", err);
+    }
+
+    try {
+      const { data: docs, error: docsError } = await supabase
+        .from("driver_documents")
+        .select("expiration_date, status")
+        .eq("organization_id", organizationId);
+
+      if (!docsError && docs) {
+        const today = new Date();
+        const expiredCount = docs.filter((doc: any) => {
+          if (doc.status === "expired" || doc.status === "rejected") return true;
+          if (!doc.expiration_date) return false;
+          return new Date(doc.expiration_date) < today;
+        }).length;
+        if (expiredCount > 0) {
+          issues.push(`${expiredCount} expired driver documents`);
+        }
+      }
+    } catch (err) {
+      console.error("Driver documents error:", err);
+    }
+
+    return { compliant: issues.length === 0, issues };
+  }
+
+  async function logComplianceViolation(action: string, reason: string) {
+    await supabase
+      .from("compliance_violations")
+      .insert([
+        {
+          action,
+          reason,
+          timestamp: new Date().toISOString(),
+          user_id: currentUserId,
+          organization_id: organizationId,
+        },
+      ]);
+  }
 
   useEffect(() => {
     async function fetchLoads() {
@@ -79,26 +170,36 @@ export default function MarketplaceBrowse() {
                     <button
                       className="bg-green-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
-                        // Compliance check: block if hauler not compliant (stub)
-                        const haulerCompliant = true; // TODO: Replace with real compliance check
-                        if (!haulerCompliant) {
-                          alert("You are not compliant to bid on this load.");
-                          await supabase
-                            .from("compliance_violations")
-                            .insert([
-                              {
-                                action: "bid_load",
-                                reason: "Hauler not compliant",
-                                timestamp: new Date().toISOString(),
-                              },
-                            ]);
+                        const compliance = await checkOrganizationCompliance();
+                        if (!compliance.compliant) {
+                          alert(
+                            `You are not compliant to bid: ${compliance.issues.join(", ")}`,
+                          );
+                          await logComplianceViolation(
+                            "bid_load",
+                            compliance.issues.join("; "),
+                          );
                           return;
                         }
+
                         await supabase
                           .from("loads")
-                          .update({ status: "bid" })
+                          .update({
+                            status: "bid",
+                            updated_at: new Date().toISOString(),
+                          })
                           .eq("id", load.id);
-                        // TODO: Insert bid record, notify shipper
+
+                        await supabase
+                          .from("load_bids")
+                          .insert([
+                            {
+                              load_id: load.id,
+                              bidder_id: currentUserId,
+                              organization_id: organizationId,
+                              created_at: new Date().toISOString(),
+                            },
+                          ]);
                       }}
                     >
                       Bid
@@ -108,54 +209,36 @@ export default function MarketplaceBrowse() {
                     <button
                       className="bg-yellow-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
-                        // Compliance check: block if broker, hauler, or load not compliant (stub)
-                        const brokerCompliant = true; // TODO: Replace with real compliance check
-                        const haulerCompliant = true; // TODO: Replace with real compliance check
-                        const loadCompliant = true; // TODO: Replace with real compliance check
-                        if (!brokerCompliant) {
-                          alert("Broker is not compliant to match this load.");
-                          await supabase
-                            .from("compliance_violations")
-                            .insert([
-                              {
-                                action: "match_load",
-                                reason: "Broker not compliant",
-                                timestamp: new Date().toISOString(),
-                              },
-                            ]);
+                        const compliance = await checkOrganizationCompliance();
+                        if (!compliance.compliant) {
+                          alert(
+                            `Broker is not compliant: ${compliance.issues.join(", ")}`,
+                          );
+                          await logComplianceViolation(
+                            "match_load",
+                            compliance.issues.join("; "),
+                          );
                           return;
                         }
-                        if (!haulerCompliant) {
-                          alert("Selected hauler is not compliant.");
-                          await supabase
-                            .from("compliance_violations")
-                            .insert([
-                              {
-                                action: "match_load",
-                                reason: "Hauler not compliant",
-                                timestamp: new Date().toISOString(),
-                              },
-                            ]);
-                          return;
-                        }
-                        if (!loadCompliant) {
-                          alert("Load is not compliant for matching.");
-                          await supabase
-                            .from("compliance_violations")
-                            .insert([
-                              {
-                                action: "match_load",
-                                reason: "Load not compliant",
-                                timestamp: new Date().toISOString(),
-                              },
-                            ]);
-                          return;
-                        }
+
                         await supabase
                           .from("loads")
-                          .update({ status: "matched" })
+                          .update({
+                            status: "matched",
+                            updated_at: new Date().toISOString(),
+                          })
                           .eq("id", load.id);
-                        // TODO: Assign hauler, notify both parties
+
+                        await supabase
+                          .from("load_matches")
+                          .insert([
+                            {
+                              load_id: load.id,
+                              broker_id: currentUserId,
+                              organization_id: organizationId,
+                              created_at: new Date().toISOString(),
+                            },
+                          ]);
                       }}
                     >
                       Match
@@ -165,8 +248,31 @@ export default function MarketplaceBrowse() {
                     <button
                       className="bg-blue-600 text-white px-3 py-1 rounded"
                       onClick={async () => {
-                        // TODO: Open edit modal or page
-                        alert("Edit load feature coming soon!");
+                        const newOrigin = window.prompt(
+                          "Update origin",
+                          load.origin || "",
+                        );
+                        if (newOrigin === null) return;
+                        const newDestination = window.prompt(
+                          "Update destination",
+                          load.destination || "",
+                        );
+                        if (newDestination === null) return;
+                        const newWeight = window.prompt(
+                          "Update weight",
+                          String(load.weight || ""),
+                        );
+                        if (newWeight === null) return;
+
+                        await supabase
+                          .from("loads")
+                          .update({
+                            origin: newOrigin,
+                            destination: newDestination,
+                            weight: Number(newWeight),
+                            updated_at: new Date().toISOString(),
+                          })
+                          .eq("id", load.id);
                       }}
                     >
                       Edit

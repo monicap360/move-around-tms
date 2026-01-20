@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// Placeholder for TanStack Table import and supabase client import
-// import { useReactTable, ... } from '@tanstack/react-table';
-// import { createClient } from '@/lib/supabase/client';
+import { supabase } from "../../lib/supabaseClient";
 
 // Define the ticket type for OCR review
 const columns = [
@@ -26,14 +24,65 @@ const columns = [
 ];
 
 export default function TicketsReviewPage() {
-  // Placeholder state for tickets
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Load tickets from supabase (v_tickets_for_review)
-    setLoading(false);
+    async function loadTickets() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("v_tickets_for_review")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setTickets(data);
+      } else {
+        console.error("Error loading tickets:", error);
+        setTickets([]);
+      }
+      setLoading(false);
+    }
+
+    loadTickets();
   }, []);
+
+  const handleFieldChange = (id: string, field: string, value: any) => {
+    setTickets((prev) =>
+      prev.map((ticket) =>
+        ticket.id === id ? { ...ticket, [field]: value } : ticket,
+      ),
+    );
+  };
+
+  const saveTicketField = async (id: string, field: string) => {
+    const ticket = tickets.find((row) => row.id === id);
+    if (!ticket) return;
+
+    setSavingId(id);
+    const { error } = await supabase
+      .from("tickets")
+      .update({
+        [field]: ticket[field],
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating ticket:", error);
+    }
+    setSavingId(null);
+  };
+
+  const getComputedPay = (ticket: any) => {
+    const quantity = Number(ticket.quantity_final ?? ticket.quantity ?? 0);
+    const payRate = Number(ticket.pay_rate ?? 0);
+    const percentage = Number(ticket.pay_percentage ?? 0);
+    if (percentage > 0 && percentage <= 100) {
+      return (quantity * payRate * (percentage / 100)).toFixed(2);
+    }
+    return (quantity * payRate).toFixed(2);
+  };
 
   if (loading) {
     return <div className="p-6">Loading OCR tickets…</div>;
@@ -54,15 +103,58 @@ export default function TicketsReviewPage() {
             </tr>
           </thead>
           <tbody>
-            {/* Placeholder: map tickets here */}
-            <tr>
-              <td
-                colSpan={columns.length}
-                className="p-6 text-center text-gray-500"
-              >
-                No tickets loaded yet
-              </td>
-            </tr>
+            {tickets.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="p-6 text-center text-gray-500"
+                >
+                  No tickets loaded yet
+                </td>
+              </tr>
+            ) : (
+              tickets.map((ticket) => (
+                <tr key={ticket.id} className="border-t">
+                  {columns.map((col) => {
+                    if (col.accessorKey === "computed") {
+                      return (
+                        <td key={col.accessorKey} className="p-2">
+                          ${getComputedPay(ticket)}
+                        </td>
+                      );
+                    }
+
+                    if (!col.editable) {
+                      return (
+                        <td key={col.accessorKey} className="p-2">
+                          {String(ticket[col.accessorKey] ?? "--")}
+                        </td>
+                      );
+                    }
+
+                    return (
+                      <td key={col.accessorKey} className="p-2">
+                        <input
+                          className="w-full border rounded px-2 py-1"
+                          value={ticket[col.accessorKey] ?? ""}
+                          onChange={(event) =>
+                            handleFieldChange(
+                              ticket.id,
+                              col.accessorKey,
+                              event.target.value,
+                            )
+                          }
+                          onBlur={() =>
+                            saveTicketField(ticket.id, col.accessorKey)
+                          }
+                          disabled={savingId === ticket.id}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

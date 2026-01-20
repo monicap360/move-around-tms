@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getComplianceRules } from "@/lib/complianceRules";
 
 const supabase = createClient();
 
@@ -14,6 +13,79 @@ export default function MarketplacePost() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function resolveOrganization() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (isMounted) {
+        setOrganizationId(membership?.organization_id || null);
+      }
+    }
+
+    resolveOrganization();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function checkOrganizationCompliance() {
+    if (!organizationId) {
+      return { compliant: true, issues: [] as string[] };
+    }
+
+    const issues: string[] = [];
+
+    try {
+      const { count: alertCount, error: alertError } = await supabase
+        .from("compliance_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("resolved", false);
+
+      if (!alertError && alertCount && alertCount > 0) {
+        issues.push(`${alertCount} unresolved compliance alerts`);
+      }
+    } catch (err) {
+      console.error("Compliance notifications error:", err);
+    }
+
+    try {
+      const { data: docs, error: docsError } = await supabase
+        .from("driver_documents")
+        .select("expiration_date, status")
+        .eq("organization_id", organizationId);
+
+      if (!docsError && docs) {
+        const today = new Date();
+        const expiredCount = docs.filter((doc: any) => {
+          if (doc.status === "expired" || doc.status === "rejected") return true;
+          if (!doc.expiration_date) return false;
+          return new Date(doc.expiration_date) < today;
+        }).length;
+        if (expiredCount > 0) {
+          issues.push(`${expiredCount} expired driver documents`);
+        }
+      }
+    } catch (err) {
+      console.error("Driver documents error:", err);
+    }
+
+    return { compliant: issues.length === 0, issues };
+  }
 
   async function handlePost(e: any) {
     e.preventDefault();
@@ -44,34 +116,57 @@ export default function MarketplacePost() {
       return;
     }
 
-    // Example: check org compliance (stub, always pass)
-    const orgCompliant = true; // TODO: Replace with real compliance check
-    if (!orgCompliant) {
-      setError("Organization is not compliant for posting loads.");
+    const compliance = await checkOrganizationCompliance();
+    if (!compliance.compliant) {
+      setError(`Organization is not compliant: ${compliance.issues.join(", ")}`);
       setLoading(false);
-      await supabase
-        .from("compliance_violations")
-        .insert([
-          {
-            action: "post_load",
-            reason: "Organization not compliant",
-            timestamp: new Date().toISOString(),
-          },
-        ]);
+      await supabase.from("compliance_violations").insert([
+        {
+          action: "post_load",
+          reason: compliance.issues.join("; "),
+          timestamp: new Date().toISOString(),
+        },
+      ]);
       return;
     }
 
-    const { error } = await supabase.from("loads").insert([
-      {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const basePayload: Record<string, any> = {
+      origin,
+      destination,
+      weight: Number(weight),
+      status,
+      created_at: new Date().toISOString(),
+    };
+
+    if (organizationId) {
+      basePayload.organization_id = organizationId;
+    }
+    if (user) {
+      basePayload.created_by = user.id;
+    }
+
+    let insertError = null;
+    let insertResponse = await supabase.from("loads").insert([basePayload]);
+    insertError = insertResponse.error;
+
+    if (insertError && insertError.message?.includes("column")) {
+      const fallbackPayload = {
         origin,
         destination,
-        weight,
+        weight: Number(weight),
         status,
-      },
-    ]);
+      };
+      insertResponse = await supabase.from("loads").insert([fallbackPayload]);
+      insertError = insertResponse.error;
+    }
+
     setLoading(false);
-    if (error) {
-      setError(error.message);
+    if (insertError) {
+      setError(insertError.message);
     } else {
       setSuccess(true);
       setOrigin("");

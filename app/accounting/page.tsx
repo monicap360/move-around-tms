@@ -1,21 +1,46 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Invoice } from "../../accounting/invoice.types";
-import { fetchInvoicesForUser } from "../../accounting/supabase";
+import { fetchInvoicesForUser, supabase as accountingSupabase } from "../../accounting/supabase";
 
 export default function AccountingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  // TODO: Replace with real user ID from auth context
-  const user_id =
-    typeof window !== "undefined" ? localStorage.getItem("user_id") || "" : "";
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user_id) return;
-    fetchInvoicesForUser(user_id)
+    let active = true;
+
+    async function resolveUser() {
+      const {
+        data: { user },
+      } = await accountingSupabase.auth.getUser();
+      if (active) {
+        setUserId(user?.id || null);
+      }
+    }
+
+    resolveUser();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    fetchInvoicesForUser(userId)
       .then(setInvoices)
+      .catch((error) => {
+        console.error("Error loading invoices:", error);
+        setInvoices([]);
+      })
       .finally(() => setLoading(false));
-  }, [user_id]);
+  }, [userId]);
 
   return (
     <div className="max-w-3xl mx-auto p-8">
