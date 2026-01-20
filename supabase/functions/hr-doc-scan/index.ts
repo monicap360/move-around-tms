@@ -3,6 +3,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import vision from "https://esm.sh/@google-cloud/vision@3.2.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +15,8 @@ interface OcrDetection {
   text: string;
   confidence: number;
 }
+
+const visionClient = new (vision as any).ImageAnnotatorClient();
 
 serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -118,14 +121,26 @@ function json(body: any, status = 200) {
 }
 
 async function performOcr(imageSource: string): Promise<OcrDetection[]> {
-  // TODO: replace with real OCR provider
-  return [
-    { text: "CDL Driver's License", confidence: 0.93 },
-    { text: "Name: John Doe", confidence: 0.9 },
-    { text: "Expiration: 12/31/2026", confidence: 0.88 },
-    { text: "State: NC", confidence: 0.85 },
-    { text: "License: D123-456-7890", confidence: 0.82 },
-  ];
+  try {
+    const isUrl = /^https?:\/\//i.test(imageSource);
+    const content = isUrl
+      ? imageSource
+      : { content: imageSource.replace(/^data:.*;base64,/, "") };
+    const [result] = await visionClient.textDetection(content);
+    const fullText = result?.textAnnotations?.[0]?.description || "";
+    if (!fullText) return [];
+
+    const confidence = result?.fullTextAnnotation ? 0.9 : 0.75;
+    return [
+      {
+        text: fullText,
+        confidence,
+      },
+    ];
+  } catch (error) {
+    console.error("OCR provider error:", error);
+    return [];
+  }
 }
 
 function calculateAverageConfidence(results: OcrDetection[]): number {
