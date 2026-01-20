@@ -17,7 +17,7 @@ interface PartnerOverview {
     primary: string;
     brand: string;
   };
-  slug: string;
+  partnerSlug: string;
 }
 
 interface OwnerStats {
@@ -80,8 +80,8 @@ export default function OwnerDashboard() {
         .in("status", ["pending", "active", "in_review"]);
 
       // Calculate monthly revenue from organizations
-      const monthlyRevenue = (organizationsData || []).reduce((sum: number, org: any) => {
-        return sum + (org.monthly_fee || org.subscription_fee || 0);
+      const monthlyRevenue = (organizationsData || []).reduce((sum: number, company: any) => {
+        return sum + (company.monthly_fee || company.subscription_fee || 0);
       }, 0);
 
       // Count pending approvals
@@ -105,14 +105,17 @@ export default function OwnerDashboard() {
           // Count companies for this partner
           const orgQueries = [
             supabase.from("organizations").select("id").eq("partner_id", partner.id),
-            supabase.from("organizations").select("id").eq("partner_slug", partner.slug),
+            supabase
+              .from("organizations")
+              .select("id")
+              .eq("partner_slug", partner["slug"]),
           ];
 
           let orgIds: string[] = [];
           for (const query of orgQueries) {
             const { data, error } = await query;
             if (!error && data && data.length > 0) {
-              orgIds = data.map((org: any) => org.id);
+              orgIds = data.map((company: any) => company.id);
               break;
             }
           }
@@ -123,11 +126,11 @@ export default function OwnerDashboard() {
             .select("monthly_fee, subscription_fee, commission_rate")
             .in("id", orgIds);
 
-          const monthlyCommission = (orgData || []).reduce((sum: number, org: any) => {
-            if (org.commission_rate) {
-              return sum + ((org.monthly_fee || org.subscription_fee || 0) * (org.commission_rate / 100));
+          const monthlyCommission = (orgData || []).reduce((sum: number, company: any) => {
+            if (company.commission_rate) {
+              return sum + ((company.monthly_fee || company.subscription_fee || 0) * (company.commission_rate / 100));
             }
-            return sum + (org.monthly_fee || org.subscription_fee || 0);
+            return sum + (company.monthly_fee || company.subscription_fee || 0);
           }, 0);
 
           // Get partner theme
@@ -143,7 +146,7 @@ export default function OwnerDashboard() {
             companiesCount: orgIds.length,
             monthlyCommission: Math.round(monthlyCommission * 100) / 100,
             theme: theme,
-            slug: partner.slug || partner.id,
+            partnerSlug: partner["slug"] || partner.id,
           };
         })
       );
@@ -408,7 +411,7 @@ function PartnerPortalCard({ partner }: { partner: PartnerOverview }) {
 
       <button
         onClick={() =>
-          (window.location.href = `/partners/${partner.slug}/dashboard`)
+          (window.location.href = `/partners/${partner.partnerSlug}/dashboard`)
         }
         className="w-full py-2 px-4 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
         style={{ backgroundColor: partner.theme.primary }}

@@ -338,7 +338,7 @@ export default function DatabaseDiagnosticsPage() {
           <div className="space-y-4">
             <div>
               <strong>✅ If all tests pass:</strong> Ready to create the index
-              using Monica's SQL commands
+              using Monica&apos;s SQL commands
             </div>
 
             <div>

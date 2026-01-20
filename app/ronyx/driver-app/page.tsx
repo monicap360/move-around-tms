@@ -698,7 +698,7 @@ export default function RonyxDriverAppPage() {
           </h2>
           <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
             <div className="ronyx-row">
-              <span>Today's Estimated Earnings</span>
+              <span>Today&apos;s Estimated Earnings</span>
               <strong>$177.63</strong>
             </div>
             <div className="ronyx-row">

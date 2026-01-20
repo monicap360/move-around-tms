@@ -31,23 +31,23 @@ export default function FastScanTicketDetails() {
   const router = useRouter();
   const [data, setData] = useState<TicketResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [org, setOrg] = useState<any>(null);
-  const [orgLoading, setOrgLoading] = useState(true);
+  const [company, setCompany] = useState<any>(null);
+  const [companyLoading, setCompanyLoading] = useState(true);
 
-  // Fetch org features
+  // Fetch company features
   useEffect(() => {
     fetch("/api/company/me")
       .then((res) => res.json())
-      .then(setOrg)
-      .finally(() => setOrgLoading(false));
+      .then(setCompany)
+      .finally(() => setCompanyLoading(false));
   }, []);
 
   // Redirect if Fast Scan is not enabled
   useEffect(() => {
-    if (!orgLoading && org && !org.features?.fastscan) {
+    if (!companyLoading && company && !company.features?.fastscan) {
       router.push("/company/billing");
     }
-  }, [orgLoading, org, router]);
+  }, [companyLoading, company, router]);
 
   // Fetch ticket details
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function FastScanTicketDetails() {
       .finally(() => setLoading(false));
   }, [ticket_id]);
 
-  if (orgLoading || loading) {
+  if (companyLoading || loading) {
     return <div className="p-6">Loading ticket…</div>;
   }
 

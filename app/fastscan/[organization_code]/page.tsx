@@ -5,10 +5,10 @@ import { motion } from "framer-motion";
 export default function FastScanPage({ params }) {
   const [code, setCode] = useState("");
   const [driver, setDriver] = useState(null);
-  const org = params.organization_code;
+  const companyCode = params.organization_code;
 
   async function lookupDriver() {
-    const res = await fetch(`/api/fastscan/${org}/lookup`, {
+    const res = await fetch(`/api/fastscan/${companyCode}/lookup`, {
       method: "POST",
       body: JSON.stringify({ driver_uuid: code }),
     });
@@ -67,7 +67,7 @@ export default function FastScanPage({ params }) {
           <button
             className="mt-6 w-full p-3 bg-cyan-600 text-black rounded-xl font-bold"
             onClick={() =>
-              (window.location.href = `/fastscan/${org}/ticket/${driver.driver_uuid}`)
+              (window.location.href = `/fastscan/${companyCode}/ticket/${driver.driver_uuid}`)
             }
           >
             Create Fast Ticket

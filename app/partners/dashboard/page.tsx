@@ -189,11 +189,11 @@ export default function PartnerDashboard() {
     
     async function getPartnerOrgIds(): Promise<string[]> {
       if (!user?.id) return [];
-      const { data: orgs } = await supabase
+      const { data: organizations } = await supabase
         .from("organizations")
         .select("id")
         .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
-      return orgs?.map((org) => org.id) || [];
+      return organizations?.map((company) => company.id) || [];
     }
     
     loadDashboardData();
@@ -224,7 +224,10 @@ export default function PartnerDashboard() {
 
       const orgQueries = [
         supabase.from("organizations").select("id, name").eq("partner_id", partnerData.id),
-        supabase.from("organizations").select("id, name").eq("partner_slug", partnerData.slug),
+        supabase
+          .from("organizations")
+          .select("id, name")
+          .eq("partner_slug", partnerData["slug"]),
       ];
 
       let orgIds: string[] = [];
@@ -232,9 +235,9 @@ export default function PartnerDashboard() {
       for (const query of orgQueries) {
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          orgIds = data.map((org: any) => org.id);
-          data.forEach((org: any) => {
-            orgNames[org.id] = org.name;
+          orgIds = data.map((company: any) => company.id);
+          data.forEach((company: any) => {
+            orgNames[company.id] = company.name;
           });
           break;
         }
@@ -309,13 +312,13 @@ export default function PartnerDashboard() {
       }
 
       // Get organizations linked to this partner
-      const { data: orgs, error: orgsError } = await supabase
+      const { data: organizations, error: orgsError } = await supabase
         .from("organizations")
         .select("id, name")
         .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
 
-      const orgIds = orgs?.map((org) => org.id) || [];
-      const companiesOnboarded = orgs?.length || 0;
+      const orgIds = organizations?.map((company) => company.id) || [];
+      const companiesOnboarded = organizations?.length || 0;
 
       // Get active drivers count across partner's organizations
       let activeDrivers = 0;

@@ -73,7 +73,7 @@ export default function RonyxDashboard() {
       pod: false,
       invoiceReady: false,
     },
-  ];
+  ]);
   const [pulseCards, setPulseCards] = useState([
     { label: "Today's Pulse", value: "Live", note: "Real-time command center" },
     { label: "Trucks Active", value: "18/24", note: "6 in staging" },

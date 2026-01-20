@@ -17,9 +17,9 @@ const supabase = createClient(
 export default function PartnerDashboard({
   params,
 }: {
-  params: { slug: string };
+  params: { [key: string]: string };
 }) {
-  const slug = params.slug; // ronyx, elite, meighoo, garza
+  const partnerSlug = params["slug"]; // ronyx, elite, meighoo, garza
 
   const [partner, setPartner] = useState<any>(null);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -31,7 +31,7 @@ export default function PartnerDashboard({
 
   useEffect(() => {
     loadPartnerPortal();
-  }, [slug]);
+  }, [partnerSlug]);
 
   async function loadPartnerPortal() {
     setLoading(true);
@@ -44,12 +44,12 @@ export default function PartnerDashboard({
       billingRes,
       leadsRes,
     ] = await Promise.all([
-      supabase.from("partners").select("*").eq("slug", slug).single(),
-      supabase.from("companies").select("*").eq("partner_slug", slug),
-      supabase.from("drivers").select("*").eq("partner_slug", slug),
-      supabase.from("tickets").select("*").eq("partner_slug", slug),
-      supabase.from("billing").select("*").eq("partner_slug", slug),
-      supabase.from("agent_leads").select("*").eq("partner_slug", slug),
+      supabase.from("partners").select("*").eq("slug", partnerSlug).single(),
+      supabase.from("companies").select("*").eq("partner_slug", partnerSlug),
+      supabase.from("drivers").select("*").eq("partner_slug", partnerSlug),
+      supabase.from("tickets").select("*").eq("partner_slug", partnerSlug),
+      supabase.from("billing").select("*").eq("partner_slug", partnerSlug),
+      supabase.from("agent_leads").select("*").eq("partner_slug", partnerSlug),
     ]);
 
     setPartner(partnerRes.data || null);
@@ -78,7 +78,7 @@ export default function PartnerDashboard({
         subtitle="Partner Operations • Revenue • Companies • Drivers"
         userName={partner.owner_name}
         userRole="Partner"
-        view={slug}
+        view={partnerSlug}
         onViewChange={() => {}}
       />
 

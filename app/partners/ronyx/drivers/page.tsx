@@ -42,9 +42,15 @@ export default function RonyxDriversPage() {
       // Get organizations/companies for this partner
       const orgQueries = [
         supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
-        supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
+        supabase
+          .from("organizations")
+          .select("*")
+          .eq("partner_slug", partnerData["slug"] || "ronyx"),
         supabase.from("companies").select("*").eq("partner_id", partnerData.id),
-        supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
+        supabase
+          .from("companies")
+          .select("*")
+          .eq("partner_slug", partnerData["slug"] || "ronyx"),
       ];
 
       let organizationsData: any[] = [];
@@ -56,7 +62,7 @@ export default function RonyxDriversPage() {
         }
       }
 
-      const orgIds = organizationsData.map((org: any) => org.id || org.organization_id);
+      const orgIds = organizationsData.map((company: any) => company.id || company.organization_id);
 
       // Fetch drivers for these organizations
       const { data: driversData, error: driversError } = await supabase
