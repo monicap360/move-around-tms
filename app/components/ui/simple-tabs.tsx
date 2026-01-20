@@ -34,7 +34,9 @@ export function SimpleTabs({ tabs, defaultTab, onTabChange }: SimpleTabsProps) {
         ))}
       </div>
       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-        <p className="text-sm text-gray-600">Content for "{activeTab}" tab</p>
+        <p className="text-sm text-gray-600">
+          Content for &quot;{activeTab}&quot; tab
+        </p>
       </div>
     </div>
   );

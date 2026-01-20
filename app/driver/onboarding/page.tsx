@@ -995,7 +995,7 @@ export default function DriverOnboardingPage() {
           </p>
           <ul className="text-sm text-blue-700 mt-1 space-y-1">
             <li>• HR will review your documents within 24-48 hours</li>
-            <li>• You'll receive email confirmation once approved</li>
+            <li>• You&apos;ll receive email confirmation once approved</li>
             <li>• Training materials will be provided</li>
             <li>• Your driver account will be activated</li>
           </ul>

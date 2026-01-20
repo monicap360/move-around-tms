@@ -653,7 +653,7 @@ export default function DriverProfilePage() {
           {todayEntry && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-2">
-                Today's Status
+                Today&apos;s Status
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>

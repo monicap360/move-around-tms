@@ -344,8 +344,8 @@ export default function DatabaseDiagnosticsPage() {
             <div>
               <strong>⚠️ If role/permission errors:</strong>
               <ul className="list-disc list-inside mt-2 ml-4">
-                <li>Switch to 'supabase_admin' role in Supabase SQL Editor</li>
-                <li>Or use 'postgres' role if available</li>
+                <li>Switch to &apos;supabase_admin&apos; role in Supabase SQL Editor</li>
+                <li>Or use &apos;postgres&apos; role if available</li>
                 <li>Try the ownership transfer commands again</li>
               </ul>
             </div>
