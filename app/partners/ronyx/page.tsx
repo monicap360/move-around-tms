@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -39,16 +39,7 @@ export default function RonYXDashboard() {
 
   const [operators, setOperators] = useState<OperatorData[]>([]);
 
-  useEffect(() => {
-    if (
-      profile?.role === "partner" ||
-      user?.email === "melidazvl@outlook.com"
-    ) {
-      loadRonYXData();
-    }
-  }, [profile]);
-
-  async function loadRonYXData() {
+  const loadRonYXData = useCallback(async () => {
     try {
       // Get partner info to identify which organizations belong to this partner
       const partnerEmail = user?.email;
@@ -69,38 +60,38 @@ export default function RonYXDashboard() {
 
       // Get organizations/companies for this partner
       // Try multiple possible field names for partner association
-      const orgQueries = [
+      const companyQueries = [
         supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
         supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
         supabase.from("companies").select("*").eq("partner_id", partnerData.id),
         supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
       ];
 
-      let organizationsData: any[] = [];
-      for (const query of orgQueries) {
+      let companyRecords: any[] = [];
+      for (const query of companyQueries) {
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          organizationsData = data;
+          companyRecords = data;
           break;
         }
       }
 
       // Get truck counts for each organization
       const operatorsWithTrucks = await Promise.all(
-        organizationsData.map(async (org: any) => {
-          const orgId = org.id || org.organization_id;
+        companyRecords.map(async (company: any) => {
+          const companyId = company.id || company.organization_id;
           
           // Get truck count
           const { count: truckCount } = await supabase
             .from("trucks")
             .select("*", { count: "exact", head: true })
-            .eq("organization_id", orgId);
+            .eq("organization_id", companyId);
 
           // Get last payment date (from invoices or payments table)
           const { data: lastPaymentData } = await supabase
             .from("invoices")
             .select("paid_date, created_at")
-            .eq("organization_id", orgId)
+            .eq("organization_id", companyId)
             .not("paid_date", "is", null)
             .order("paid_date", { ascending: false })
             .limit(1)
@@ -116,7 +107,7 @@ export default function RonYXDashboard() {
 
           // Determine status based on payment date or organization status
           let status: "active" | "pending" | "overdue" = "active";
-          if (org.status === "pending" || org.status === "inactive") {
+          if (company.status === "pending" || company.status === "inactive") {
             status = "pending";
           } else if (lastPaymentData?.paid_date) {
             const paymentDate = new Date(lastPaymentData.paid_date);
@@ -127,18 +118,18 @@ export default function RonYXDashboard() {
           }
 
           // Get monthly fee (from subscription or organization settings)
-          const monthlyFee = org.monthly_fee || org.subscription_fee || 0;
+          const monthlyFee = company.monthly_fee || company.subscription_fee || 0;
 
           return {
-            id: org.id,
-            name: org.name || org.company_name || "Unknown",
-            owner: org.contact_name || org.owner_name || org.owner || "N/A",
+            id: company.id,
+            name: company.name || company.company_name || "Unknown",
+            owner: company.contact_name || company.owner_name || company.owner || "N/A",
             monthlyFee: monthlyFee,
             trucks: truckCount || 0,
             lastPayment: lastPayment,
             status: status,
-            email: org.contact_email || org.email || "",
-            phone: org.contact_phone || org.phone || "",
+            email: company.contact_email || company.email || "",
+            phone: company.contact_phone || company.phone || "",
           };
         })
       );
@@ -176,7 +167,16 @@ export default function RonYXDashboard() {
       // Fallback to empty array if database query fails
       setOperators([]);
     }
-  }
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (
+      profile?.role === "partner" ||
+      user?.email === "melidazvl@outlook.com"
+    ) {
+      loadRonYXData();
+    }
+  }, [profile?.role, user?.email, loadRonYXData]);
 
   if (loading) {
     return (

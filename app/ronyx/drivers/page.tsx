@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 type DriverOption = {
   id: string;
@@ -155,16 +155,16 @@ export default function RonyxDriversPage() {
 
   useEffect(() => {
     void loadDrivers();
-  }, []);
+  }, [loadDrivers]);
 
   useEffect(() => {
     if (!selectedDriverId) return;
     void loadProfile(selectedDriverId);
     void loadDocuments(selectedDriverId);
     void loadAssignedLoad();
-  }, [selectedDriverId]);
+  }, [selectedDriverId, loadAssignedLoad]);
 
-  async function loadDrivers() {
+  const loadDrivers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/ronyx/drivers/list");
@@ -179,7 +179,7 @@ export default function RonyxDriversPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedDriverId]);
 
   async function loadProfile(driverId: string) {
     setLoading(true);
@@ -207,7 +207,7 @@ export default function RonyxDriversPage() {
     }
   }
 
-  async function loadAssignedLoad() {
+  const loadAssignedLoad = useCallback(async () => {
     if (!profile.full_name) return;
     try {
       const res = await fetch(`/api/ronyx/loads?driver_name=${encodeURIComponent(profile.full_name)}`, { cache: "no-store" });
@@ -216,7 +216,7 @@ export default function RonyxDriversPage() {
     } catch {
       setAssignedLoad(null);
     }
-  }
+  }, [profile.full_name]);
 
   async function uploadDocument() {
     if (!selectedDriverId || !docUpload.doc_type) return;

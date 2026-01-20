@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import {
   Card,
@@ -45,12 +46,7 @@ export default function SettingsPage() {
   const [savingVertical, setSavingVertical] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadProfile();
-    loadOrganization();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       // Using existing supabase client from lib
       const {
@@ -106,38 +102,43 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadOrganization = async () => {
+  const loadOrganization = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get user's organization
-      const { data: orgMember } = await supabase
+      const { data: organizationMembership } = await supabase
         .from("organization_members")
         .select("organization_id")
         .eq("user_id", user.id)
         .single();
 
-      if (orgMember?.organization_id) {
-        setOrganizationId(orgMember.organization_id);
+      if (organizationMembership?.organization_id) {
+        setOrganizationId(organizationMembership.organization_id);
 
         // Get organization's vertical type
-        const { data: org } = await supabase
+        const { data: organizationRecord } = await supabase
           .from("organizations")
           .select("vertical_type")
-          .eq("id", orgMember.organization_id)
+          .eq("id", organizationMembership.organization_id)
           .single();
 
-        if (org?.vertical_type) {
-          setVerticalType(org.vertical_type as VerticalTypeString);
+        if (organizationRecord?.vertical_type) {
+          setVerticalType(organizationRecord.vertical_type as VerticalTypeString);
         }
       }
     } catch (error) {
       console.error("Error loading organization:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadProfile();
+    loadOrganization();
+  }, [loadProfile, loadOrganization]);
 
   const handleVerticalChange = async (newVertical: VerticalTypeString) => {
     if (!organizationId) {

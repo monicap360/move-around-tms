@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -15,13 +15,7 @@ export default function RonyxPaymentsPage() {
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [filter, setFilter] = useState<"all" | "paid" | "pending" | "overdue">("all");
 
-  useEffect(() => {
-    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
-      loadPayments();
-    }
-  }, [profile, filter]);
-
-  async function loadPayments() {
+  const loadPayments = useCallback(async () => {
     setLoadingPayments(true);
     try {
       const partnerEmail = user?.email;
@@ -41,29 +35,29 @@ export default function RonyxPaymentsPage() {
       }
 
       // Get organizations/companies for this partner
-      const orgQueries = [
+      const companyQueries = [
         supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
         supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
         supabase.from("companies").select("*").eq("partner_id", partnerData.id),
         supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
       ];
 
-      let organizationsData: any[] = [];
-      for (const query of orgQueries) {
+      let companyRecords: any[] = [];
+      for (const query of companyQueries) {
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          organizationsData = data;
+          companyRecords = data;
           break;
         }
       }
 
-      const orgIds = organizationsData.map((org: any) => org.id || org.organization_id);
+      const companyIds = companyRecords.map((company: any) => company.id || company.organization_id);
 
       // Build query
       let invoicesQuery = supabase
         .from("invoices")
         .select("*")
-        .in("organization_id", orgIds.length > 0 ? orgIds : ["null"])
+        .in("organization_id", companyIds.length > 0 ? companyIds : ["null"])
         .order("created_at", { ascending: false });
 
       // Apply filter
@@ -89,7 +83,13 @@ export default function RonyxPaymentsPage() {
     } finally {
       setLoadingPayments(false);
     }
-  }
+  }, [user?.email, filter]);
+
+  useEffect(() => {
+    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
+      loadPayments();
+    }
+  }, [profile?.role, user?.email, loadPayments]);
 
   async function handleSendInvoice(invoiceId: string) {
     try {

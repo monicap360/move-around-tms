@@ -112,7 +112,7 @@ ${step4SQL}`;
     <div className="p-8 max-w-4xl mx-auto">
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Supabase SQL Commands - Monica's Action List</CardTitle>
+          <CardTitle>Supabase SQL Commands - Monica&apos;s Action List</CardTitle>
           <p className="text-sm text-gray-600">
             Run these commands in Supabase SQL Editor to optimize storage
             without fighting permissions
@@ -125,7 +125,7 @@ ${step4SQL}`;
             </h3>
             <ul className="text-sm text-green-700 list-disc list-inside space-y-1">
               <li>No ALTER TABLE or CREATE INDEX on system tables</li>
-              <li>Uses Supabase's existing optimized indexes</li>
+              <li>Uses Supabase&apos;s existing optimized indexes</li>
               <li>Creates user-space objects (function + view)</li>
               <li>Maintains security with RLS policies</li>
               <li>Gives same performance benefits</li>
@@ -181,7 +181,7 @@ ${step4SQL}`;
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
               Creates a view that pre-filters company_assets and adds the
-              user_folder column. Uses Supabase's built-in indexes.
+              user_folder column. Uses Supabase&apos;s built-in indexes.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{step2SQL}</pre>
@@ -235,7 +235,7 @@ ${step4SQL}`;
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">
               Test commands to verify everything is working correctly and check
-              Supabase's built-in indexes.
+              Supabase&apos;s built-in indexes.
             </p>
             <div className="bg-gray-900 text-gray-100 p-4 rounded-lg relative">
               <pre className="text-sm whitespace-pre-wrap">{step4SQL}</pre>

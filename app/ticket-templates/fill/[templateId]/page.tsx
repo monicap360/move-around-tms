@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import {
   Card,
@@ -80,12 +81,12 @@ export default function TicketFormFillPage({
         initializeFormData(parsedTemplate.template_fields || []);
       }
       setLoading(false);
-    } else if (templateId) {
+  } else if (templateId) {
       loadTemplate(templateId);
     }
-  }, [templateId]);
+  }, [templateId, loadTemplate]);
 
-  const loadTemplate = async (id: string) => {
+  const loadTemplate = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/ticket-templates/${id}`);
       if (response.ok) {
@@ -100,7 +101,7 @@ export default function TicketFormFillPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const initializeFormData = (fields: TemplateField[]) => {
     const initialData: FormData = {};

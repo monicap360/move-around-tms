@@ -1,1547 +1,1159 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-const loadTabs = [
-  "Active Loads",
-  "Available Loads",
-  "Completed Loads",
-  "Cancelled Loads",
-  "Load Board Search",
-  "Assigned Drivers",
-];
-
-type Load = {
-  id?: string;
-  load_number: string;
+type LoadRow = {
+  id: string;
+  status: "LOADING" | "IN TRANSIT" | "ON SITE" | "DELAYED";
+  driver: string;
+  driverInitials: string;
   route: string;
-  status: string;
-  driver_name: string;
-  customer_name: string;
-  job_site?: string;
-  material?: string;
-  quantity?: number;
-  unit_type?: string;
-  rate_type?: string;
-  rate_amount?: number;
-  pickup_location?: string;
-  delivery_location?: string;
-  truck_number?: string;
-  ticket_id?: string | null;
-  status_notes?: string;
-  started_at?: string | null;
-  completed_at?: string | null;
+  material: string;
+  weight: string;
+  eta: string;
+  priority?: "high";
+};
+
+type HosDriver = {
+  name: string;
+  hoursLeft: string;
+  pct: number;
+  tone: "safe" | "warning" | "critical";
+};
+
+type FleetCell = {
+  id: number;
+  status: "active" | "maintenance" | "inactive";
+  driver: string;
+  hours?: string;
+  issue?: string;
 };
 
 export default function RonyxLoadsPage() {
-  const [activeTab, setActiveTab] = useState(loadTabs[0]);
-  const [loads, setLoads] = useState<Load[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [newLoad, setNewLoad] = useState({
-    load_number: "",
-    route: "",
-    status: "available",
-    driver_name: "",
-    customer_name: "",
-    job_site: "",
-    material: "",
-    quantity: "",
-    unit_type: "Load",
-    rate_type: "per_load",
-    rate_amount: "",
-    pickup_location: "",
-    delivery_location: "",
-    truck_number: "",
-    status_notes: "",
-  });
-  const rateConInputRef = useRef<HTMLInputElement | null>(null);
-  const [assignment, setAssignment] = useState({
-    load_id: "",
-    driver_name: "",
-    truck_number: "",
-    status_notes: "",
-  });
-  const [showMap, setShowMap] = useState(false);
-  const [leoInsights, setLeoInsights] = useState<
-    { id: string; type: string; message: string; action: string }[]
-  >([]);
+  const [activeFilter, setActiveFilter] = useState("ALL LOADS");
+  const [clock, setClock] = useState("");
+  const [quickDispatchOpen, setQuickDispatchOpen] = useState(false);
+  const [hudMessage, setHudMessage] = useState("");
+  const [lastUpdated, setLastUpdated] = useState(() => new Date());
+  const [emergencyMode, setEmergencyMode] = useState(false);
 
-  const availableLoads = useMemo(() => loads.filter((load) => load.status === "available"), [loads]);
-  const activeLoads = useMemo(() => loads.filter((load) => load.status === "active"), [loads]);
-  const completedLoads = useMemo(() => loads.filter((load) => load.status === "completed"), [loads]);
-  const cancelledLoads = useMemo(() => loads.filter((load) => load.status === "cancelled"), [loads]);
-
-  const seedDispatchCards = [
+  const loadRows: LoadRow[] = [
     {
       id: "LD-4029",
       status: "LOADING",
-      statusClass: "loading",
       driver: "J. Lane",
-      truck: "#24",
-      from: "Pit 3",
-      to: "Katy Site",
+      driverInitials: "JL",
+      route: "Pit 3 → Katy Site",
       material: "12yd Gravel",
-      timer: "12 min",
-      column: "pit",
+      weight: "18.4t",
+      eta: "12m",
     },
     {
       id: "LD-4031",
-      status: "WAITING",
-      statusClass: "waiting",
+      status: "LOADING",
       driver: "S. Grant",
-      truck: "#18",
-      from: "Pit 7",
-      to: "Beltway 8",
+      driverInitials: "SG",
+      route: "Pit 7 → Beltway 8",
       material: "15yd Topsoil",
-      timer: "8 min wait",
-      column: "pit",
+      weight: "20.1t",
+      eta: "8m",
     },
     {
       id: "LD-4021",
-      status: "ON TRACK",
-      statusClass: "ontrack",
+      status: "IN TRANSIT",
       driver: "D. Perez",
-      truck: "#12",
-      from: "Pit 7",
-      to: "I-45 Jobsite",
-      material: "",
-      eta: "14 min",
-      distance: "8.2 mi",
-      column: "transit",
+      driverInitials: "DP",
+      route: "Pit 7 → I-45 Jobsite",
+      material: "14yd Base",
+      weight: "21.0t",
+      eta: "14m",
     },
     {
       id: "LD-4018",
-      status: "DELIVERING",
-      statusClass: "delivering",
+      status: "ON SITE",
       driver: "M. Chen",
-      truck: "#07",
-      from: "",
-      to: "Main St Project",
+      driverInitials: "MC",
+      route: "Pit 1 → Main St Project",
       material: "18yd Road Base",
-      detention: "0 min",
-      column: "site",
+      weight: "23.5t",
+      eta: "Unload",
+    },
+    {
+      id: "LD-4035",
+      status: "IN TRANSIT",
+      driver: "A. Rivers",
+      driverInitials: "AR",
+      route: "Pit 4 → Westside",
+      material: "10yd Sand",
+      weight: "15.2t",
+      eta: "22m",
+    },
+    {
+      id: "LD-4025",
+      status: "DELAYED",
+      driver: "K. Miles",
+      driverInitials: "KM",
+      route: "Pit 3 → Thompson Co",
+      material: "16yd Gravel",
+      weight: "19.9t",
+      eta: "45m",
+      priority: "high",
     },
   ];
 
-  const seedDriverAvailability = [
-    {
-      name: "D. Perez",
-      truck: "#12",
-      status: "available",
-      detail: "4h 22m available",
-      location: "Returning empty from I-45",
-      distance: "3.2 mi from Pit 7",
-      actionLabel: "Assign",
-      actionVariant: "primary",
-    },
-    {
-      name: "J. Lane",
-      truck: "#24",
-      status: "on-break",
-      detail: "On break until 10:30",
-      location: "At Pit 3",
-      distance: "18 min remaining",
-      actionLabel: "On Break",
-      actionVariant: "secondary",
-      disabled: true,
-    },
+  const fleetCells: FleetCell[] = [
+    { id: 1, status: "active", driver: "J. Lane", hours: "9.5/11h" },
+    { id: 2, status: "active", driver: "S. Grant", hours: "7.2/11h" },
+    { id: 3, status: "active", driver: "D. Perez", hours: "5.2/11h" },
+    { id: 4, status: "active", driver: "M. Chen", hours: "10.8/11h" },
+    { id: 5, status: "maintenance", driver: "Truck 18", issue: "Due in 3d" },
+    { id: 6, status: "active", driver: "K. Miles", hours: "6.4/11h" },
+    { id: 7, status: "active", driver: "A. Rivers", hours: "4.8/11h" },
+    { id: 8, status: "inactive", driver: "Available" },
+    { id: 9, status: "inactive", driver: "Available" },
   ];
 
-  const seedBackhaulOpportunities = [
-    {
-      id: "bh001",
-      title: "Pit 3 → Downtown Site",
-      detail: "8yd Fill Sand • 6.5 miles",
-      price: "$185",
-      delta: "+$42 over empty return",
-    },
+  const hosDrivers: HosDriver[] = [
+    { name: "D. Perez", hoursLeft: "4h 22m", pct: 62, tone: "safe" },
+    { name: "S. Grant", hoursLeft: "1h 10m", pct: 18, tone: "warning" },
+    { name: "M. Chen", hoursLeft: "0h 42m", pct: 9, tone: "critical" },
   ];
 
-  const seedDispatchAlerts = [
-    {
-      id: "alert-1",
-      icon: "⛔",
-      title: "Truck 18 - Maintenance Due",
-      body: "Due in 3 days | Last service: 12,542 mi ago",
-      tone: "critical",
-      actions: ["Schedule"],
-    },
-    {
-      id: "alert-2",
-      icon: "⚠️",
-      title: "Load LD-4025 - Detention Timer",
-      body: "45 min free time elapsed | Site: Thompson Co",
-      tone: "warning",
-      actions: ["Charge $75", "Contact Site"],
-    },
-    {
-      id: "alert-3",
-      icon: "ℹ️",
-      title: "Shift Change in 45 min",
-      body: "Evening crew: 4 drivers available",
-      tone: "info",
-      actions: ["View Crew"],
-    },
-  ];
+  const filteredRows = useMemo(() => {
+    if (activeFilter === "ALL LOADS") return loadRows;
+    if (activeFilter === "LOADING") return loadRows.filter((row) => row.status === "LOADING");
+    if (activeFilter === "IN TRANSIT") return loadRows.filter((row) => row.status === "IN TRANSIT");
+    if (activeFilter === "ON SITE") return loadRows.filter((row) => row.status === "ON SITE");
+    if (activeFilter === "DELAYED") return loadRows.filter((row) => row.status === "DELAYED");
+    return loadRows;
+  }, [activeFilter, loadRows]);
 
-  const [dispatchCards, setDispatchCards] = useState(seedDispatchCards);
-  const [driverAvailability, setDriverAvailability] = useState(seedDriverAvailability);
-  const [backhaulOpportunities, setBackhaulOpportunities] = useState(seedBackhaulOpportunities);
-  const [dispatchAlerts, setDispatchAlerts] = useState(seedDispatchAlerts);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [activityLog, setActivityLog] = useState<string[]>([]);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showCreateSidebar, setShowCreateSidebar] = useState(false);
-  const [showDriverPanel, setShowDriverPanel] = useState(true);
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [detailsTab, setDetailsTab] = useState<"comms" | "docs" | "tracking" | "payment">("comms");
-  const [visibleColumns, setVisibleColumns] = useState({
-    pit: true,
-    transit: true,
-    site: true,
-  });
-
-  async function assignLoad() {
-    if (!assignment.load_id) {
-      return;
-    }
-    if (!assignment.driver_name) {
-      return;
-    }
-    await updateLoad(assignment.load_id, {
-      status: "active",
-      driver_name: assignment.driver_name,
-      truck_number: assignment.truck_number || null,
-      status_notes: assignment.status_notes || null,
-    });
-    setAssignment({
-      load_id: "",
-      driver_name: "",
-      truck_number: "",
-      status_notes: "",
-    });
-  }
+  const delayedCount = loadRows.filter((row) => row.status === "DELAYED").length;
 
   useEffect(() => {
-    void loadLoads();
-    void loadLeoInsights();
-    const interval = setInterval(() => setLastUpdated(new Date()), 15000);
+    const updateClock = () => {
+      const now = new Date();
+      setClock(now.toLocaleTimeString("en-US", { hour12: false }));
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  async function loadLeoInsights() {
-    try {
-      const res = await fetch("/api/assistants/leo/insights");
-      const data = await res.json();
-      setLeoInsights(data.insights || []);
-    } catch (err) {
-      console.error("Failed to load Leo insights", err);
-      setLeoInsights([]);
-    }
-  }
+  useEffect(() => {
+    const interval = setInterval(() => setLastUpdated(new Date()), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  async function loadLoads() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/ronyx/loads");
-      const data = await res.json();
-      setLoads(data.loads || []);
-    } catch (err) {
-      console.error("Failed to load loads", err);
-      setLoads([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => {
+    if (!hudMessage) return;
+    const timer = setTimeout(() => setHudMessage(""), 2800);
+    return () => clearTimeout(timer);
+  }, [hudMessage]);
 
-  const statusMap: Record<string, string> = {
-    "Active Loads": "active",
-    "Available Loads": "available",
-    "Completed Loads": "completed",
-    "Cancelled Loads": "cancelled",
-    "Load Board Search": "available",
-    "Assigned Drivers": "active",
-  };
-
-  const filteredLoads = loads.filter((load) => {
-    if (activeTab === "Assigned Drivers") return Boolean(load.driver_name);
-    const target = statusMap[activeTab];
-    return target ? load.status === target : true;
-  });
-
-  async function createLoad() {
-    try {
-      const route =
-        newLoad.route || (newLoad.pickup_location && newLoad.delivery_location
-          ? `${newLoad.pickup_location} → ${newLoad.delivery_location}`
-          : "");
-      const res = await fetch("/api/ronyx/loads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newLoad,
-          route,
-          quantity: newLoad.quantity ? Number(newLoad.quantity) : null,
-          rate_amount: newLoad.rate_amount ? Number(newLoad.rate_amount) : null,
-        }),
-      });
-      const data = await res.json();
-      if (data.load) {
-        setLoads((prev) => [data.load, ...prev]);
-        setNewLoad({
-          load_number: "",
-          route: "",
-          status: "available",
-          driver_name: "",
-          customer_name: "",
-          job_site: "",
-          material: "",
-          quantity: "",
-          unit_type: "Load",
-          rate_type: "per_load",
-          rate_amount: "",
-          pickup_location: "",
-          delivery_location: "",
-          truck_number: "",
-          status_notes: "",
-        });
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA"].includes(target.tagName)) return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        handleForceRefresh();
       }
-    } catch (err) {
-      console.error("Failed to create load", err);
-    }
-  }
-
-  async function updateLoad(loadId: string, updates: Partial<Load> & { action?: string }) {
-    setSavingId(loadId);
-    try {
-      const res = await fetch("/api/ronyx/loads", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: loadId, ...updates }),
-      });
-      const data = await res.json();
-      if (data.load) {
-        setLoads((prev) => prev.map((load) => (load.id === loadId ? data.load : load)));
+      if (event.code === "Escape") {
+        setQuickDispatchOpen(false);
       }
-    } catch (err) {
-      console.error("Failed to update load", err);
-    } finally {
-      setSavingId(null);
-    }
-  }
-
-  const logActivity = (message: string) => {
-    setActivityLog((prev) => [`${new Date().toLocaleTimeString()} • ${message}`, ...prev].slice(0, 6));
-  };
-
-  const handleRateConScan = (file?: File) => {
-    if (!file) return;
-    setNewLoad((prev) => ({
-      ...prev,
-      customer_name: prev.customer_name || "Jones Construction",
-      pickup_location: prev.pickup_location || "Pit 7",
-      delivery_location: prev.delivery_location || "I-45 Jobsite",
-      material: prev.material || "3/4\" Gravel",
-      quantity: prev.quantity || "12",
-      unit_type: prev.unit_type || "Tons",
-      rate_type: prev.rate_type || "per_load",
-      rate_amount: prev.rate_amount || "855",
-    }));
-    logActivity(`Rate confirmation scanned: ${file.name}.`);
-  };
-
-  const updateDispatchCard = (id: string, updates: Partial<(typeof seedDispatchCards)[number]>) => {
-    setDispatchCards((prev) => prev.map((card) => (card.id === id ? { ...card, ...updates } : card)));
-  };
-
-  const handleMessageDriver = (id: string) => {
-    const driverMap: Record<string, { name: string; phone: string }> = {
-      "LD-4029": { name: "J. Lane", phone: "+15551230001" },
-      "LD-4031": { name: "S. Grant", phone: "+15551230002" },
-      "LD-4021": { name: "D. Perez", phone: "+15551230003" },
-      "LD-4018": { name: "M. Chen", phone: "+15551230004" },
+      if (event.ctrlKey && event.code === "KeyD") {
+        event.preventDefault();
+        setQuickDispatchOpen(true);
+      }
+      if (event.ctrlKey && event.code === "KeyB") {
+        event.preventDefault();
+        handleBroadcast();
+      }
     };
-    const target = driverMap[id];
-    if (!target) {
-      logActivity(`No driver contact on file for ${id}.`);
-      return;
-    }
-    fetch("/api/load-hub/sms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: target.phone,
-        message: `Dispatch update for ${id}. Please confirm status.`,
-      }),
-    }).then(() => logActivity(`Message sent to ${target.name} (${id}).`));
-  };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleBroadcast, handleForceRefresh]);
 
-  const handleStatusUpdate = (id: string, status: string, column?: "pit" | "transit" | "site") => {
-    updateDispatchCard(id, { status, column: column ?? undefined });
-    logActivity(`Status updated for ${id} → ${status}.`);
-  };
+  const handleCommand = useCallback((message: string) => {
+    setHudMessage(message);
+  }, []);
 
-  const handleAssignDriver = (loadId: string, driverName: string, truck: string) => {
-    updateDispatchCard(loadId, { driver: driverName, truck });
-    setDriverAvailability((prev) =>
-      prev.map((driver) =>
-        driver.name === driverName ? { ...driver, status: "assigned", actionLabel: "Assigned", actionVariant: "secondary" } : driver,
-      ),
-    );
-    logActivity(`Assigned ${driverName} (${truck}) to ${loadId}.`);
-  };
+  const handleBroadcast = useCallback(() => {
+    const message = window.prompt("Enter broadcast message:");
+    if (!message) return;
+    setHudMessage(`BROADCAST: ${message}`);
+  }, []);
 
-  const handleBackhaulAssign = (backhaulId: string) => {
-    const bh = backhaulOpportunities.find((item) => item.id === backhaulId);
-    if (!bh) return;
-    logActivity(`Backhaul assigned: ${bh.title}.`);
-  };
-
-  const handleAlertAction = (alertId: string, action: string) => {
-    const alert = dispatchAlerts.find((item) => item.id === alertId);
-    if (!alert) return;
-    logActivity(`Alert action: ${alert.title} → ${action}.`);
-  };
-
-  const refreshDispatch = async () => {
-    await Promise.all([loadLoads(), loadLeoInsights()]);
+  const handleForceRefresh = useCallback(() => {
     setLastUpdated(new Date());
-    logActivity("Dispatch data refreshed.");
-  };
+    setHudMessage("Manual refresh complete.");
+  }, []);
 
-  const filteredDispatchCards = dispatchCards.filter((card) => {
-    if (!searchTerm) return true;
-    const needle = searchTerm.toLowerCase();
-    return (
-      card.id.toLowerCase().includes(needle) ||
-      card.driver.toLowerCase().includes(needle) ||
-      card.to.toLowerCase().includes(needle) ||
-      card.from.toLowerCase().includes(needle)
-    );
-  });
+  const handleEmergency = useCallback(() => {
+    const confirmed = window.confirm("Emergency stop - confirm to halt all operations?");
+    if (!confirmed) return;
+    setEmergencyMode(true);
+    setHudMessage("EMERGENCY STOP ACTIVATED");
+    setTimeout(() => setEmergencyMode(false), 6000);
+  }, []);
 
   return (
-    <div className="ronyx-shell">
+    <div className={`ronyx-pro-dispatch ${emergencyMode ? "emergency-mode" : ""}`}>
       <style jsx global>{`
+        @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
+        @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap");
         :root {
-          --ronyx-black: #e2eaf6;
-          --ronyx-carbon: #f8fafc;
-          --ronyx-steel: #dbe5f1;
-          --ronyx-border: rgba(30, 64, 175, 0.18);
-          --ronyx-accent: #1d4ed8;
-          --ronyx-success: #16a34a;
-          --ronyx-warning: #f59e0b;
-          --ronyx-danger: #ef4444;
+          --dispatch-dark: #0a0e17;
+          --dispatch-surface: #141a29;
+          --dispatch-elevated: #1c2438;
+          --dispatch-border: #2a3349;
+          --status-urgent: #ff4757;
+          --status-warning: #ffa502;
+          --status-ok: #2ed573;
+          --status-info: #1e90ff;
+          --status-neutral: #70a1ff;
+          --text-primary: #f8f9fa;
+          --text-secondary: #a4b0be;
+          --text-tertiary: #747d8c;
+          --gradient-urgent: linear-gradient(135deg, #ff3838 0%, #ff4757 100%);
+          --gradient-warning: linear-gradient(135deg, #ff9f1a 0%, #ffa502 100%);
+          --gradient-success: linear-gradient(135deg, #00b894 0%, #2ed573 100%);
+          --gradient-primary: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+          --shadow-command: 0 8px 30px rgba(0, 0, 0, 0.4);
+          --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.25);
+          --shadow-hover: 0 6px 20px rgba(30, 144, 255, 0.15);
+          --radius-sm: 4px;
+          --radius-md: 8px;
+          --radius-lg: 12px;
+          --radius-xl: 16px;
         }
-        .ronyx-shell {
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: "Roboto Mono", "Segoe UI", monospace;
+          background: var(--dispatch-dark);
+          color: var(--text-primary);
+          line-height: 1.5;
+          overflow-x: hidden;
+          font-size: 14px;
+          font-weight: 400;
+          letter-spacing: 0.3px;
+        }
+        .command-grid {
+          display: grid;
+          grid-template-columns: 280px 1fr 320px;
+          grid-template-rows: auto 1fr auto;
+          gap: 16px;
           min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 55%), var(--ronyx-black);
-          color: #0f172a;
-          padding: 32px;
-        }
-        .ronyx-container {
-          max-width: 1200px;
+          padding: 16px;
+          max-width: 2400px;
           margin: 0 auto;
         }
-        .ronyx-card {
-          background: var(--ronyx-carbon);
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 18px;
-          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
-        }
-        .ronyx-grid {
+        .status-bar {
+          grid-column: 1 / -1;
+          background: var(--dispatch-surface);
+          border-radius: var(--radius-lg);
+          padding: 12px 20px;
+          border: 1px solid var(--dispatch-border);
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 16px;
-        }
-        .ronyx-pill {
-          padding: 6px 12px;
-          border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.75);
-          background: rgba(29, 78, 216, 0.08);
-        }
-        .ronyx-row {
-          display: flex;
+          grid-template-columns: auto 1fr auto;
+          gap: 24px;
           align-items: center;
-          justify-content: space-between;
-          padding: 12px 14px;
-          border-radius: 12px;
-          background: #ffffff;
-          border: 1px solid rgba(29, 78, 216, 0.16);
+          box-shadow: var(--shadow-card);
+          backdrop-filter: blur(10px);
+          position: sticky;
+          top: 16px;
+          z-index: 100;
         }
-        .ronyx-action {
-          padding: 8px 14px;
-          border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          color: #0f172a;
-          text-decoration: none;
+        .system-clock {
+          font-family: "Roboto Mono", monospace;
+          font-size: 20px;
           font-weight: 600;
-          background: rgba(29, 78, 216, 0.08);
+          color: var(--text-primary);
+          text-shadow: 0 0 10px rgba(30, 144, 255, 0.3);
         }
-        .ronyx-input {
-          width: 100%;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 12px;
-          padding: 10px 12px;
-          color: #0f172a;
-          box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        .system-clock .ampm {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin-left: 4px;
         }
-        .ronyx-input:focus,
-        .ronyx-input:focus-visible {
-          outline: none;
-          border-color: rgba(29, 78, 216, 0.6);
-          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
-        }
-        .ronyx-tab {
-          padding: 8px 14px;
-          border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          background: transparent;
-          font-weight: 600;
-          color: rgba(15, 23, 42, 0.7);
-          cursor: pointer;
-        }
-        .ronyx-tab.active {
-          background: rgba(29, 78, 216, 0.14);
-          color: #0f172a;
-          border-color: rgba(29, 78, 216, 0.35);
-        }
-        .status {
-          font-size: 0.75rem;
-          font-weight: 700;
-          padding: 4px 10px;
-          border-radius: 999px;
-        }
-        .status.good {
-          color: var(--ronyx-success);
-          background: rgba(22, 163, 74, 0.12);
-        }
-        .status.warn {
-          color: var(--ronyx-warning);
-          background: rgba(245, 158, 11, 0.12);
-        }
-        .status.bad {
-          color: var(--ronyx-danger);
-          background: rgba(239, 68, 68, 0.12);
-        }
-        .dispatch-header {
-          display: grid;
-          gap: 10px;
-          padding: 18px;
-          border-radius: 16px;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
-          margin-bottom: 20px;
-        }
-        .dispatch-header-top {
+        .alert-ticker {
           display: flex;
-          justify-content: space-between;
           align-items: center;
           gap: 16px;
-          flex-wrap: wrap;
-        }
-        .live-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          border-radius: 999px;
-          background: rgba(239, 68, 68, 0.12);
-          color: #b91c1c;
-          font-weight: 700;
-          font-size: 0.8rem;
-        }
-        .dispatch-toolbar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-        .dispatch-toolbar input {
-          min-width: 220px;
-        }
-        .dispatch-btn {
-          padding: 10px 14px;
-          border-radius: 12px;
-          border: 1px solid transparent;
-          font-weight: 700;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .dispatch-btn.primary {
-          background: var(--ronyx-accent);
-          color: #ffffff;
-        }
-        .dispatch-btn.secondary {
-          background: rgba(29, 78, 216, 0.08);
-          border-color: var(--ronyx-border);
-          color: #0f172a;
-        }
-        .dispatch-btn.success {
-          background: rgba(22, 163, 74, 0.16);
-          border-color: rgba(22, 163, 74, 0.4);
-          color: #166534;
-        }
-        .dispatch-btn.warning {
-          background: rgba(245, 158, 11, 0.16);
-          border-color: rgba(245, 158, 11, 0.45);
-          color: #92400e;
-        }
-        .operations-layout {
-          display: grid;
-          grid-template-columns: 2.2fr 1fr;
-          gap: 18px;
-        }
-        .operations-board {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-        }
-        .board-column {
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 12px;
-          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
-        }
-        .column-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-          padding-bottom: 8px;
-          margin-bottom: 12px;
-        }
-        .column-stats {
-          font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.6);
-        }
-        .load-card {
-          background: #f8fafc;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          border-radius: 12px;
-          padding: 12px;
-          display: grid;
-          gap: 8px;
-          margin-bottom: 12px;
-          cursor: pointer;
-          transition: transform 120ms ease, box-shadow 120ms ease;
-        }
-        .load-card:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
-        }
-        .load-card:last-child {
-          margin-bottom: 0;
-        }
-        .card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-weight: 700;
-        }
-        .load-status {
-          font-size: 0.7rem;
-          padding: 4px 8px;
-          border-radius: 999px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-        .load-status.loading {
-          background: rgba(29, 78, 216, 0.14);
-          color: #1d4ed8;
-        }
-        .load-status.waiting {
-          background: rgba(245, 158, 11, 0.16);
-          color: #b45309;
-        }
-        .load-status.ontrack {
-          background: rgba(22, 163, 74, 0.16);
-          color: #15803d;
-        }
-        .load-status.delivering {
-          background: rgba(99, 102, 241, 0.16);
-          color: #4338ca;
-        }
-        .card-actions {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .card-more {
-          margin-left: auto;
-          border: none;
-          background: transparent;
-          font-weight: 800;
-          cursor: pointer;
-          opacity: 0.6;
-        }
-        .card-actions-menu {
-          position: relative;
-        }
-        .card-menu {
-          position: absolute;
-          right: 0;
-          top: 28px;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 12px;
-          padding: 8px;
-          display: grid;
-          gap: 6px;
-          min-width: 180px;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-          z-index: 5;
-        }
-        .card-menu button {
-          text-align: left;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          font-weight: 600;
-        }
-        .mini-map {
-          height: 42px;
-          border-radius: 8px;
-          background: linear-gradient(90deg, rgba(29, 78, 216, 0.2), rgba(14, 116, 144, 0.2));
-          position: relative;
           overflow: hidden;
+          white-space: nowrap;
         }
-        .mini-map .map-dot {
+        .ticker-track {
+          display: inline-flex;
+          align-items: center;
+          gap: 16px;
+          animation: ticker-scroll 18s linear infinite;
+        }
+        .ticker-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          border-radius: var(--radius-md);
+          font-size: 13px;
+        }
+        @keyframes ticker-scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-40%);
+          }
+        }
+        .ticker-urgent {
+          background: rgba(255, 71, 87, 0.1);
+          color: var(--status-urgent);
+          border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+        .ticker-warning {
+          background: rgba(255, 165, 2, 0.1);
+          color: var(--status-warning);
+          border: 1px solid rgba(255, 165, 2, 0.3);
+        }
+        .operations-rail,
+        .intelligence-rail {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .fleet-status,
+        .pit-control,
+        .traffic-intel,
+        .weather-alerts,
+        .hos-monitor {
+          background: var(--dispatch-surface);
+          border-radius: var(--radius-lg);
+          padding: 20px;
+          border: 1px solid var(--dispatch-border);
+          box-shadow: var(--shadow-card);
+        }
+        .fleet-matrix {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-top: 16px;
+        }
+        .fleet-cell {
+          padding: 12px;
+          background: var(--dispatch-elevated);
+          border-radius: var(--radius-md);
+          text-align: center;
+          border: 1px solid transparent;
+          transition: all 0.2s;
+        }
+        .fleet-cell.active {
+          border-color: var(--status-ok);
+          background: rgba(46, 213, 115, 0.05);
+        }
+        .fleet-cell.maintenance {
+          border-color: var(--status-warning);
+          background: rgba(255, 165, 2, 0.05);
+        }
+        .fleet-cell.inactive {
+          border-color: var(--dispatch-border);
+          color: var(--text-tertiary);
+          background: rgba(112, 161, 255, 0.05);
+        }
+        .pit-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          margin-top: 16px;
+        }
+        .pit-slot {
+          padding: 16px;
+          background: var(--dispatch-elevated);
+          border-radius: var(--radius-md);
+          position: relative;
+        }
+        .pit-loading {
+          border-left: 3px solid var(--status-ok);
+        }
+        .pit-waiting {
+          border-left: 3px solid var(--status-warning);
+        }
+        .pit-slot::after {
+          content: "";
           position: absolute;
-          top: 50%;
+          bottom: 0;
+          left: 0;
+          width: var(--progress, 0%);
+          height: 2px;
+          background: var(--status-ok);
+          transition: width 1s linear;
+        }
+        .load-board {
+          grid-column: 2;
+          grid-row: 2;
+          background: var(--dispatch-surface);
+          border-radius: var(--radius-lg);
+          padding: 20px;
+          border: 1px solid var(--dispatch-border);
+          box-shadow: var(--shadow-card);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .board-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--dispatch-border);
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .board-filters {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .filter-btn {
+          padding: 8px 16px;
+          background: var(--dispatch-elevated);
+          border: 1px solid var(--dispatch-border);
+          color: var(--text-secondary);
+          border-radius: var(--radius-md);
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .filter-btn.active {
+          background: var(--gradient-primary);
+          color: white;
+          border-color: transparent;
+        }
+        .load-table {
+          flex: 1;
+          overflow: hidden;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--dispatch-border);
+        }
+        .table-header,
+        .table-row {
+          display: grid;
+          grid-template-columns: 80px 100px 120px 1fr 120px 120px 120px 120px;
+          padding: 12px 16px;
+          align-items: center;
+        }
+        .table-header {
+          background: var(--dispatch-elevated);
+          border-bottom: 1px solid var(--dispatch-border);
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          letter-spacing: 0.5px;
+        }
+        .table-row {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          transition: all 0.2s;
+        }
+        .table-row:hover {
+          background: rgba(30, 144, 255, 0.05);
+          border-left: 2px solid var(--status-info);
+        }
+        .table-row.high-priority {
+          background: rgba(255, 71, 87, 0.05);
+          border-left: 2px solid var(--status-urgent);
+        }
+        .status-indicator {
           width: 8px;
           height: 8px;
           border-radius: 50%;
-          background: #1d4ed8;
-          transform: translateY(-50%);
+          display: inline-block;
+          margin-right: 8px;
         }
-        .mini-map .map-dot.end {
-          right: 12px;
-          background: #16a34a;
+        .status-loading {
+          background: var(--status-ok);
+          box-shadow: 0 0 8px var(--status-ok);
         }
-        .mini-map .map-dot.start {
-          left: 12px;
+        .status-transit {
+          background: var(--status-info);
+          box-shadow: 0 0 8px var(--status-info);
         }
-        .mini-map .map-line {
-          position: absolute;
-          top: 50%;
-          left: 20px;
-          right: 20px;
-          height: 2px;
-          background: rgba(15, 23, 42, 0.2);
-          transform: translateY(-50%);
+        .status-onsite {
+          background: var(--status-neutral);
+          box-shadow: 0 0 8px var(--status-neutral);
         }
-        .driver-sidebar {
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 16px;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-          display: grid;
-          gap: 12px;
+        .status-delayed {
+          background: var(--status-warning);
+          box-shadow: 0 0 8px var(--status-warning);
         }
-        .driver-card {
-          display: grid;
+        .driver-info {
+          display: flex;
+          align-items: center;
           gap: 8px;
-          padding: 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(15, 23, 42, 0.1);
-          background: #f8fafc;
         }
-        .driver-card.available {
-          border-color: rgba(22, 163, 74, 0.4);
+        .driver-badge {
+          width: 24px;
+          height: 24px;
+          background: var(--gradient-primary);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 600;
+          color: white;
         }
-        .driver-card.on-break {
-          border-color: rgba(245, 158, 11, 0.4);
+        .route-display {
+          font-family: "Roboto Mono", monospace;
+          font-size: 13px;
+          color: var(--text-primary);
         }
-        .backhaul-section {
-          margin-top: 6px;
-          border-top: 1px solid rgba(15, 23, 42, 0.12);
-          padding-top: 12px;
+        .eta-warning {
+          color: var(--status-warning);
+          animation: blink 2s infinite;
         }
-        .backhaul-card {
+        @keyframes blink {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+        .action-buttons {
+          display: flex;
+          gap: 4px;
+        }
+        .action-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--dispatch-border);
+          background: var(--dispatch-elevated);
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .action-btn:hover {
+          background: var(--status-info);
+          color: white;
+          border-color: var(--status-info);
+          transform: translateY(-1px);
+        }
+        .route-status-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 16px;
+        }
+        .route-item {
           display: flex;
           justify-content: space-between;
-          gap: 12px;
-          padding: 12px;
-          border-radius: 12px;
-          border: 1px dashed rgba(15, 23, 42, 0.2);
-          background: #f8fafc;
+          align-items: center;
+          padding: 10px 12px;
+          background: var(--dispatch-elevated);
+          border-radius: var(--radius-md);
+          border-left: 3px solid transparent;
         }
-        .map-overlay {
-          margin-top: 18px;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 16px;
+        .route-item.critical {
+          border-left-color: var(--status-urgent);
+        }
+        .route-item.warning {
+          border-left-color: var(--status-warning);
+        }
+        .route-item.clear {
+          border-left-color: var(--status-ok);
+        }
+        .weather-grid {
           display: grid;
+          grid-template-columns: repeat(2, 1fr);
           gap: 12px;
+          margin-top: 16px;
         }
-        .map-container {
-          height: 360px;
-          border-radius: 12px;
-          background: linear-gradient(180deg, rgba(29, 78, 216, 0.1), rgba(14, 116, 144, 0.1));
+        .weather-site {
+          padding: 12px;
+          background: var(--dispatch-elevated);
+          border-radius: var(--radius-md);
         }
-        .map-legend {
+        .hos-progress-container {
+          margin-top: 16px;
+        }
+        .hos-driver {
+          margin-bottom: 12px;
+        }
+        .hos-bar {
+          height: 6px;
+          background: var(--dispatch-border);
+          border-radius: 3px;
+          margin-top: 4px;
+          overflow: hidden;
+        }
+        .hos-progress {
+          height: 100%;
+          border-radius: 3px;
+          transition: width 0.3s;
+        }
+        .hos-safe {
+          background: var(--status-ok);
+        }
+        .hos-warning {
+          background: var(--status-warning);
+        }
+        .hos-critical {
+          background: var(--status-urgent);
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.35);
+          }
+          70% {
+            box-shadow: 0 0 0 6px rgba(255, 71, 87, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+          }
+        }
+        .command-bar {
+          grid-column: 1 / -1;
+          grid-row: 3;
+          background: var(--dispatch-surface);
+          border-radius: var(--radius-lg);
+          padding: 16px 20px;
+          border: 1px solid var(--dispatch-border);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: var(--shadow-card);
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .command-buttons {
           display: flex;
           gap: 12px;
           flex-wrap: wrap;
-          font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.7);
         }
-        .alerts-panel {
-          margin-top: 18px;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 16px;
-          display: grid;
-          gap: 12px;
-        }
-        .alert-item {
+        .command-btn {
+          padding: 10px 20px;
+          background: var(--dispatch-elevated);
+          border: 1px solid var(--dispatch-border);
+          color: var(--text-primary);
+          border-radius: var(--radius-md);
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
           display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          background: #f8fafc;
+          align-items: center;
+          gap: 8px;
         }
-        .alert-item.critical {
-          border-color: rgba(239, 68, 68, 0.45);
+        .command-btn.primary {
+          background: var(--gradient-primary);
+          border-color: transparent;
+          color: white;
         }
-        .alert-item.warning {
-          border-color: rgba(245, 158, 11, 0.45);
+        .command-btn.urgent {
+          background: var(--gradient-urgent);
+          border-color: transparent;
+          color: white;
         }
-        .alert-item.info {
-          border-color: rgba(59, 130, 246, 0.45);
+        .command-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-hover);
         }
-        .leo-panel {
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 16px;
-          margin-bottom: 18px;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-          display: grid;
-          gap: 10px;
+        .emergency-mode .status-indicator {
+          background: var(--status-urgent);
+          box-shadow: 0 0 10px var(--status-urgent);
         }
-        .leo-insight {
-          border-radius: 12px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
-          padding: 12px;
-          background: #f8fafc;
-          display: grid;
-          gap: 6px;
+        .emergency-mode .status-bar {
+          border-color: rgba(255, 71, 87, 0.6);
+          box-shadow: 0 0 24px rgba(255, 71, 87, 0.2);
         }
-        .details-panel {
-          position: sticky;
-          top: 20px;
-          background: #ffffff;
-          border-radius: 16px;
-          border: 1px solid var(--ronyx-border);
-          padding: 16px;
-          display: grid;
-          gap: 10px;
-          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-        }
-        .create-sidebar {
+        .hud-overlay {
           position: fixed;
           top: 0;
+          left: 0;
           right: 0;
-          height: 100vh;
-          width: 360px;
-          background: #ffffff;
-          border-left: 1px solid var(--ronyx-border);
-          padding: 18px;
-          box-shadow: -12px 0 24px rgba(15, 23, 42, 0.12);
-          display: grid;
-          gap: 12px;
-          z-index: 20;
+          bottom: 0;
+          pointer-events: none;
+          z-index: 1000;
+          display: ${hudMessage ? "block" : "none"};
         }
-        .overlay-scrim {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.4);
-          z-index: 15;
-        }
-        .details-modal {
-          position: fixed;
-          inset: 0;
-          display: grid;
-          place-items: center;
-          z-index: 30;
-        }
-        .modal-card {
-          background: #ffffff;
-          border-radius: 16px;
-          padding: 18px;
-          width: min(820px, 92vw);
-          max-height: 85vh;
-          overflow: auto;
-          border: 1px solid var(--ronyx-border);
-          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
-        }
-        .modal-tabs {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          margin: 12px 0;
-        }
-        .modal-tabs button {
-          border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          padding: 6px 10px;
-          background: #f8fafc;
+        .hud-alert {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(255, 71, 87, 0.9);
+          color: white;
+          padding: 24px 48px;
+          border-radius: var(--radius-lg);
+          font-size: 18px;
           font-weight: 600;
+          text-align: center;
+          animation: alert-pulse 1s infinite;
+          backdrop-filter: blur(10px);
+          border: 2px solid white;
         }
-        .modal-tabs button.active {
-          background: rgba(29, 78, 216, 0.12);
-        }
-        .activity-log {
-          display: grid;
-          gap: 6px;
-          font-size: 0.85rem;
-          color: rgba(15, 23, 42, 0.7);
-        }
-        .column-filter {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          margin-bottom: 10px;
-        }
-        @media (max-width: 980px) {
-          .operations-layout {
-            grid-template-columns: 1fr;
+        @keyframes alert-pulse {
+          0%,
+          100% {
+            transform: translate(-50%, -50%) scale(1);
           }
+          50% {
+            transform: translate(-50%, -50%) scale(1.05);
+          }
+        }
+        .quick-dispatch {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: var(--dispatch-surface);
+          border: 1px solid var(--dispatch-border);
+          border-radius: var(--radius-lg);
+          padding: 30px;
+          width: 600px;
+          max-width: 90vw;
+          z-index: 2000;
+          display: ${quickDispatchOpen ? "block" : "none"};
+          box-shadow: var(--shadow-command);
+        }
+        .quick-dispatch-scrim {
+          position: fixed;
+          inset: 0;
+          background: rgba(10, 14, 23, 0.65);
+          border: none;
+          z-index: 1500;
+        }
+        .quick-dispatch input {
+          width: 100%;
+          padding: 12px;
+          background: var(--dispatch-elevated);
+          border: 1px solid var(--dispatch-border);
+          border-radius: var(--radius-md);
+          color: var(--text-primary);
+        }
+        .performance-metrics {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-top: 20px;
+        }
+        .metric-card {
+          background: var(--dispatch-elevated);
+          padding: 16px;
+          border-radius: var(--radius-md);
+          text-align: center;
+          border: 1px solid var(--dispatch-border);
+        }
+        .metric-value {
+          font-size: 24px;
+          font-weight: 700;
+          font-family: "Roboto Mono", monospace;
+          margin: 8px 0;
+        }
+        @media (max-width: 1600px) {
+          .command-grid {
+            grid-template-columns: 240px 1fr 280px;
+          }
+          .table-header,
+          .table-row {
+            grid-template-columns: 70px 90px 100px 1fr 100px 100px 100px 100px;
+            font-size: 12px;
+          }
+        }
+        @media (max-width: 1200px) {
+          .command-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto 1fr auto;
+          }
+          .operations-rail,
+          .intelligence-rail,
+          .load-board {
+            grid-column: 1;
+          }
+          .performance-metrics {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: var(--dispatch-elevated);
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: var(--dispatch-border);
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: var(--status-info);
         }
       `}</style>
 
-      <div className="ronyx-container">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <div>
-            <p className="ronyx-pill">Ronyx TMS</p>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>Loads</h1>
-            <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-              Manage active, available, completed, and cancelled loads with full dispatch detail.
-            </p>
+      <div className="hud-overlay">
+        <div className="hud-alert">{hudMessage || "CRITICAL ALERT"}</div>
+      </div>
+
+      {quickDispatchOpen && (
+        <button
+          type="button"
+          className="quick-dispatch-scrim"
+          onClick={() => setQuickDispatchOpen(false)}
+          aria-label="Close quick dispatch"
+        />
+      )}
+
+      <div className="quick-dispatch">
+        <h3 style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
+          <i className="fas fa-bolt" /> QUICK DISPATCH
+        </h3>
+        <div style={{ marginBottom: 20 }}>
+          <input type="text" placeholder="Load ID or Customer" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+            <input type="text" placeholder="From" />
+            <input type="text" placeholder="To" />
           </div>
-          <Link href="/ronyx" className="ronyx-action">
-            Back to Dashboard
-          </Link>
+        </div>
+        <button
+          className="command-btn primary"
+          style={{ width: "100%", justifyContent: "center" }}
+          onClick={() => {
+            setQuickDispatchOpen(false);
+            handleCommand("Load dispatched successfully.");
+          }}
+        >
+          <i className="fas fa-paper-plane" /> DISPATCH LOAD
+        </button>
+      </div>
+
+      <div className="command-grid">
+        <div className="status-bar">
+          <div className="system-clock">
+            <span>{clock || "00:00:00"}</span>
+            <span className="ampm">EST</span>
+          </div>
+          <div className="alert-ticker">
+            <div className="ticker-track">
+              <div className="ticker-item ticker-urgent">
+                <i className="fas fa-exclamation-triangle" />
+                <span>MAINTENANCE: Truck #18 due in 3 days</span>
+              </div>
+              <div className="ticker-item ticker-warning">
+                <i className="fas fa-clock" />
+                <span>DETENTION: LD-4025 (45 min elapsed)</span>
+              </div>
+              <div className="ticker-item">
+                <i className="fas fa-users" />
+                <span>SHIFT CHANGE: Evening crew in 45 min</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 8, height: 8, background: "var(--status-ok)", borderRadius: "50%" }} />
+              <span style={{ fontSize: 13 }}>SYSTEM: ONLINE</span>
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>94.7% ON-TIME</div>
+          </div>
         </div>
 
-        <section className="dispatch-header">
-          <div className="dispatch-header-top">
-                <div>
-              <h2 style={{ fontSize: "1.6rem", fontWeight: 800 }}>🚛 Dispatch Command Center</h2>
-              <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-                Morning Shift | {activeLoads.length} Active Loads | {availableLoads.length} at pit queue | On-time: 97.4%
-              </p>
-                  </div>
-            <div className="live-pill">🔴 LIVE • Last updated: {lastUpdated.toLocaleTimeString()}</div>
-                </div>
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", color: "rgba(15,23,42,0.7)" }}>
-            <span>Weather: ☀️ Clear</span>
-            <span>Traffic: 🟢 Normal</span>
-            <span>Fuel Price: $3.85/gal (-0.02)</span>
-              </div>
-          <div className="dispatch-toolbar">
-            <input
-              className="ronyx-input"
-              style={{ flex: "1 1 240px" }}
-              placeholder="Search loads, drivers, routes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <button className="dispatch-btn primary" onClick={() => setShowCreateSidebar(true)}>
-              <span className="icon">+</span> Quick Create Load
-            </button>
-            <button className="dispatch-btn primary" onClick={assignLoad}>
-              <span className="icon">👤</span> Assign Driver
-            </button>
-            <button className="dispatch-btn success">
-              <span className="icon">🔄</span> Backhaul Board (3 available)
-            </button>
-            <button className="dispatch-btn secondary" onClick={() => setShowMap((prev) => !prev)}>
-              <span className="icon">🗺️</span> {showMap ? "Return to Board" : "Map View"}
-            </button>
-            <button className="dispatch-btn secondary">
-              <span className="icon">⚡</span> Optimize Routes
-            </button>
-            <button className="dispatch-btn secondary" onClick={refreshDispatch}>
-              <span className="icon">🔄</span> Refresh
-            </button>
-            <button className="dispatch-btn warning">
-              <span className="icon">🔔</span> Alerts ({dispatchAlerts.length})
-            </button>
-          </div>
-        </section>
-
-        <div className="operations-layout">
-          <div className="operations-board">
-            <div className="column-filter">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={visibleColumns.pit}
-                  onChange={() => setVisibleColumns((prev) => ({ ...prev, pit: !prev.pit }))}
-                />{" "}
-                Pit Queue
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={visibleColumns.transit}
-                  onChange={() => setVisibleColumns((prev) => ({ ...prev, transit: !prev.transit }))}
-                />{" "}
-                In Transit
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={visibleColumns.site}
-                  onChange={() => setVisibleColumns((prev) => ({ ...prev, site: !prev.site }))}
-                />{" "}
-                On Site
-              </label>
-            </div>
-
-            {visibleColumns.pit && (
-            <div className="board-column pit-queue">
-              <div className="column-header">
-                <h3>⛏️ Pit Queue (6)</h3>
-                <div className="column-stats">Avg wait: 18 min</div>
-            </div>
-              {filteredDispatchCards
-                .filter((card) => card.column === "pit")
-                .map((card) => (
-                  <div
-                    key={card.id}
-                    className="load-card"
-                    draggable
-                    onClick={() => setSelectedCardId(card.id)}
-                    onDragStart={(e) => e.dataTransfer.setData("text/plain", card.id)}
-                  >
-                    <div className="card-header">
-                      <span className="load-id">{card.id}</span>
-                      <div className="card-actions-menu">
-                        <button
-                          className="card-more"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpenId((prev) => (prev === card.id ? null : card.id));
-                          }}
-                        >
-                          ···
-                        </button>
-                        {menuOpenId === card.id && (
-                          <div className="card-menu">
-                            <button onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
-                            <button onClick={() => handleStatusUpdate(card.id, "LOADED", "transit")}>Update → LOADED</button>
-                            <button onClick={() => { setSelectedCardId(card.id); setShowDetailsModal(true); }}>View Details</button>
-                            <button onClick={() => logActivity(`Note added to ${card.id}.`)}>Add Note</button>
-                            <button onClick={() => logActivity(`Reassign pit for ${card.id}.`)}>Reassign Pit</button>
-                          </div>
-                        )}
-                      </div>
-                      <span className={`load-status ${card.statusClass}`}>{card.status}</span>
-            </div>
-                    <div className="card-body">
-                      <div className="driver-info">
-                        <span className="driver-name">{card.driver}</span>
-                        <span className="truck"> {card.truck}</span>
-            </div>
-                      <div className="route-info">
-                        <span className="from">{card.from}</span> → <span className="to">{card.to}</span>
-            </div>
-                      <div className="load-details">
-                        <span className="material">{card.material}</span>
-                        <span className="timer"> ⏱️ {card.timer}</span>
-            </div>
-          </div>
-                    <div className="card-actions">
-                      <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(card.id)}>MSG</button>
-                      <button className="dispatch-btn warning" onClick={() => handleStatusUpdate(card.id, "UPDATE")}>UPDATE</button>
-                      <button className="dispatch-btn secondary" onClick={() => setMenuOpenId((prev) => (prev === card.id ? null : card.id))}>···</button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-            )}
-
-            {visibleColumns.transit && (
-            <div className="board-column in-transit">
-              <div className="column-header">
-                <h3>🚛 In Transit (24)</h3>
-                <div className="column-stats">Avg speed: 42 mph</div>
-            </div>
-              {filteredDispatchCards
-                .filter((card) => card.column === "transit")
-                .map((card) => (
-                  <div key={card.id} className="load-card" onClick={() => setSelectedCardId(card.id)}>
-                    <div className="card-header">
-                      <span className="load-id">{card.id}</span>
-                      <div className="card-actions-menu">
-                        <button
-                          className="card-more"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpenId((prev) => (prev === card.id ? null : card.id));
-                          }}
-                        >
-                          ···
-                        </button>
-                        {menuOpenId === card.id && (
-                          <div className="card-menu">
-                            <button onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
-                            <button onClick={() => logActivity(`ETA updated for ${card.id}.`)}>Update ETA</button>
-                            <button onClick={() => { setSelectedCardId(card.id); setShowDetailsModal(true); }}>View Details</button>
-                            <button onClick={() => logActivity(`Note added to ${card.id}.`)}>Add Note</button>
-                          </div>
-                        )}
-                      </div>
-                      <span className={`load-status ${card.statusClass}`}>{card.status}</span>
-            </div>
-                    <div className="card-body">
-                      <div className="driver-info">
-                        <span className="driver-name">{card.driver}</span>
-                        <span className="truck"> {card.truck}</span>
-            </div>
-                      <div className="route-info">
-                        <span className="from">{card.from}</span> → <span className="to">{card.to}</span>
-            </div>
-                      <div className="load-details">
-                        <span className="eta">🕐 ETA: {card.eta}</span>
-                        <span className="distance"> 📍 {card.distance}</span>
-            </div>
-                      <div className="mini-map">
-                        <div className="map-dot start"></div>
-                        <div className="map-line"></div>
-                        <div className="map-dot end"></div>
-            </div>
-            </div>
-                    <div className="card-actions">
-                      <button className="dispatch-btn primary" onClick={() => logActivity(`Live tracking opened for ${card.id}.`)}>Live Track</button>
-                      <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(card.id)}>Call</button>
-                      <button className="dispatch-btn secondary" onClick={() => setMenuOpenId((prev) => (prev === card.id ? null : card.id))}>···</button>
-            </div>
-            </div>
-                ))}
-            </div>
-            )}
-
-            {visibleColumns.site && (
-            <div className="board-column on-site">
-              <div className="column-header">
-                <h3>🏗️ On Site (8)</h3>
-                <div className="column-stats">Avg unload: 22 min</div>
-            </div>
-              {filteredDispatchCards
-                .filter((card) => card.column === "site")
-                .map((card) => (
-                  <div key={card.id} className="load-card" onClick={() => setSelectedCardId(card.id)}>
-                    <div className="card-header">
-                      <span className="load-id">{card.id}</span>
-                      <div className="card-actions-menu">
-                        <button
-                          className="card-more"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpenId((prev) => (prev === card.id ? null : card.id));
-                          }}
-                        >
-                          ···
-                        </button>
-                        {menuOpenId === card.id && (
-                          <div className="card-menu">
-                            <button onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
-                            <button onClick={() => handleStatusUpdate(card.id, "DELIVERED", "site")}>Update → Delivered</button>
-                            <button onClick={() => { setSelectedCardId(card.id); setShowDetailsModal(true); }}>View Details</button>
-                            <button onClick={() => logActivity(`Note added to ${card.id}.`)}>Add Note</button>
-                          </div>
-                        )}
-                      </div>
-                      <span className={`load-status ${card.statusClass}`}>{card.status}</span>
-            </div>
-                    <div className="card-body">
-                      <div className="driver-info">
-                        <span className="driver-name">{card.driver}</span>
-                        <span className="truck"> {card.truck}</span>
-            </div>
-                      <div className="route-info">
-                        <span className="to">{card.to}</span>
-            </div>
-                      <div className="load-details">
-                        <span className="material">{card.material}</span>
-                        <span className="detention"> ⏰ Detention: {card.detention}</span>
-            </div>
-                      <div className="site-alert">
-                        <span className="alert-note">⚠️ Site closes at 3 PM</span>
-            </div>
-          </div>
-                    <div className="card-actions">
-                      <button className="dispatch-btn warning" onClick={() => handleStatusUpdate(card.id, "DETENTION")}>Detention</button>
-                      <button className="dispatch-btn success" onClick={() => handleStatusUpdate(card.id, "DELIVERED", "site")}>Delivered</button>
-                      <button className="dispatch-btn secondary" onClick={() => setMenuOpenId((prev) => (prev === card.id ? null : card.id))}>···</button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-            )}
-          </div>
-
-          <div className="driver-sidebar">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3>👥 Available Drivers (8/12)</h3>
-              <button className="dispatch-btn secondary" onClick={() => setShowDriverPanel((prev) => !prev)}>
-                {showDriverPanel ? "Collapse" : "Expand"}
-              </button>
-            </div>
-            {showDriverPanel && driverAvailability.map((driver) => (
-              <div
-                key={driver.name}
-                className={`driver-card ${driver.status}`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  const loadId = e.dataTransfer.getData("text/plain");
-                  if (loadId) handleAssignDriver(loadId, driver.name, driver.truck);
-                }}
-              >
-                <div className="driver-info">
-                  <strong>{driver.name}</strong>
-                  <small>
-                    {" "}
-                    Truck {driver.truck} • {driver.detail}
-                  </small>
-            </div>
-                <div className="driver-location">
-                  <span className="location">{driver.location}</span>
-                  <span className="distance"> {driver.distance}</span>
-          </div>
-                <button
-                  className={`dispatch-btn ${driver.actionVariant}`}
-                  disabled={driver.disabled}
-                  onClick={() =>
-                    selectedCardId ? handleAssignDriver(selectedCardId, driver.name, driver.truck) : logActivity(`Select a load for ${driver.name}.`)
-                  }
+        <div className="operations-rail">
+          <div className="fleet-status">
+            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <i className="fas fa-truck" /> FLEET STATUS
+            </h3>
+            <div className="fleet-matrix">
+              {fleetCells.map((cell) => (
+                <div
+                  key={cell.id}
+                  className={`fleet-cell ${
+                    cell.status === "maintenance" ? "maintenance" : cell.status === "inactive" ? "inactive" : "active"
+                  }`}
                 >
-                  {driver.actionLabel}
-                </button>
-                    </div>
-            ))}
-
-            <div className="backhaul-section">
-              <h4>🔄 Backhaul Opportunities</h4>
-              {backhaulOpportunities.map((bh) => (
-                <div key={bh.id} className="backhaul-card">
-                  <div className="bh-info">
-                    <strong>{bh.title}</strong>
-                    <small> {bh.detail}</small>
-                    </div>
-                  <div className="bh-value">
-                    <span className="price">{bh.price}</span>
-                    <small> {bh.delta}</small>
-                    </div>
-                  <button className="dispatch-btn success" onClick={() => handleBackhaulAssign(bh.id)}>Assign</button>
+                  <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+                    {cell.status === "inactive" ? "—" : cell.id}
                   </div>
-              ))}
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                    {cell.status === "inactive" ? "AVAILABLE" : cell.driver}
                   </div>
-                </div>
-          </div>
-
-        {showMap && (
-          <div className="map-overlay">
-            <div className="dispatch-header-top">
-              <h3>📍 Live Fleet Map</h3>
-              <button className="dispatch-btn secondary" onClick={() => setShowMap(false)}>
-                Return to Board
-              </button>
-          </div>
-            <div className="map-container" />
-            <div className="map-legend">
-              <div className="legend-item">● Loaded</div>
-              <div className="legend-item">● Empty</div>
-              <div className="legend-item">● Pit Location</div>
-              <div className="legend-item">● Job Site</div>
-                </div>
-            </div>
-          )}
-
-        {showCreateSidebar && (
-          <>
-            <div className="overlay-scrim" onClick={() => setShowCreateSidebar(false)} />
-            <aside className="create-sidebar">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3>➕ Create Load</h3>
-                <button className="dispatch-btn secondary" onClick={() => setShowCreateSidebar(false)}>
-                  Close
-                </button>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                <button className="dispatch-btn primary" onClick={() => rateConInputRef.current?.click()}>
-                  📷 Scan Rate Confirmation
-                </button>
-                <span style={{ color: "rgba(15,23,42,0.65)", fontSize: "0.85rem" }}>
-                  Auto-fills customer, route, material, and rate.
-                </span>
-              </div>
-              <input
-                ref={rateConInputRef}
-                type="file"
-                accept="image/*,application/pdf"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  handleRateConScan(e.target.files?.[0]);
-                  if (rateConInputRef.current) rateConInputRef.current.value = "";
-                }}
-              />
-              <label className="ronyx-label">Customer</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.customer_name}
-                onChange={(e) => setNewLoad((prev) => ({ ...prev, customer_name: e.target.value }))}
-                placeholder="Jones Construction"
-              />
-              <label className="ronyx-label">From</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.pickup_location}
-                onChange={(e) => setNewLoad((prev) => ({ ...prev, pickup_location: e.target.value }))}
-                placeholder="Pit 7"
-              />
-              <label className="ronyx-label">To</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.delivery_location}
-                onChange={(e) => setNewLoad((prev) => ({ ...prev, delivery_location: e.target.value }))}
-                placeholder="1500 Main St"
-              />
-              <label className="ronyx-label">Material</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.material}
-                onChange={(e) => setNewLoad((prev) => ({ ...prev, material: e.target.value }))}
-                placeholder="Gravel"
-              />
-              <label className="ronyx-label">Quantity</label>
-              <input
-                className="ronyx-input"
-                value={newLoad.quantity}
-                onChange={(e) => setNewLoad((prev) => ({ ...prev, quantity: e.target.value }))}
-                placeholder="12"
-              />
-              <label className="ronyx-label">Unit</label>
-              <select
-                className="ronyx-input"
-                value={newLoad.unit_type}
-                onChange={(e) => setNewLoad((prev) => ({ ...prev, unit_type: e.target.value }))}
-              >
-                <option value="Load">Load</option>
-                <option value="Tons">Tons</option>
-                <option value="Yards">Yards</option>
-              </select>
-              <div>
-                <label className="ronyx-label">Quick Assign To</label>
-                <div style={{ display: "grid", gap: 6 }}>
-                  {driverAvailability.map((driver) => (
-                    <button
-                      key={driver.name}
-                      className="dispatch-btn secondary"
-                      onClick={() => handleAssignDriver(selectedCardId || "LD-NEW", driver.name, driver.truck)}
-                    >
-                      {driver.name} • {driver.truck}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="dispatch-btn primary" onClick={createLoad}>
-                  Save & Dispatch
-                </button>
-                <button className="dispatch-btn secondary" onClick={createLoad}>
-                  Save
-                </button>
-              </div>
-            </aside>
-          </>
-        )}
-
-        {showDetailsModal && (
-          <div className="details-modal">
-            <div className="overlay-scrim" onClick={() => setShowDetailsModal(false)} />
-            <div className="modal-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong>Load Details • {selectedCardId}</strong>
-                <button className="dispatch-btn secondary" onClick={() => setShowDetailsModal(false)}>
-                  ✕ Close
-                </button>
-              </div>
-              <div className="modal-tabs">
-                <button className={detailsTab === "comms" ? "active" : ""} onClick={() => setDetailsTab("comms")}>📞 Communications</button>
-                <button className={detailsTab === "docs" ? "active" : ""} onClick={() => setDetailsTab("docs")}>📄 Documents</button>
-                <button className={detailsTab === "tracking" ? "active" : ""} onClick={() => setDetailsTab("tracking")}>📍 Tracking</button>
-                <button className={detailsTab === "payment" ? "active" : ""} onClick={() => setDetailsTab("payment")}>💰 Payment</button>
-              </div>
-              {detailsTab === "comms" && (
-                <div>
-                  <div className="ronyx-row">08:30 AM - You (SMS): "ETA still 09:45?"</div>
-                  <div className="ronyx-row">08:31 AM - Driver: "Yes, traffic clear now."</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(selectedCardId || "")}>New Message</button>
-                    <button className="dispatch-btn secondary">Call Driver</button>
-                    <button className="dispatch-btn secondary">Email Customer</button>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      marginTop: 4,
+                      color: cell.status === "maintenance" ? "var(--status-warning)" : "var(--text-secondary)",
+                    }}
+                  >
+                    {cell.issue || cell.hours || ""}
                   </div>
-                </div>
-              )}
-              {detailsTab === "docs" && <div className="ronyx-row">Documents: Rate con, BOL, ticket, invoice.</div>}
-              {detailsTab === "tracking" && <div className="ronyx-row">Tracking timeline + GPS snapshots.</div>}
-              {detailsTab === "payment" && <div className="ronyx-row">Payment status: Net 30 • Invoice draft.</div>}
-            </div>
-          </div>
-        )}
-
-        <div className="alerts-panel">
-          <h3>🔔 Active Alerts</h3>
-          {dispatchAlerts.map((alert) => (
-            <div key={alert.id} className={`alert-item ${alert.tone}`} onClick={() => logActivity(`Opened alert: ${alert.title}`)}>
-              <div className="alert-content">
-                <strong>
-                  {alert.icon} {alert.title}
-                </strong>
-                <p>{alert.body}</p>
-                </div>
-              <div className="alert-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {alert.actions.map((action) => (
-                  <button key={action} className="dispatch-btn secondary" onClick={() => handleAlertAction(alert.id, action)}>
-                    {action}
-                  </button>
-              ))}
-            </div>
                 </div>
               ))}
             </div>
+          </div>
 
-        <div className="leo-panel">
-          <h3>🧠 Leo — Shipment Copilot</h3>
-          {leoInsights.length === 0 ? (
-            <div className="ronyx-row">No insights available.</div>
-          ) : (
-            leoInsights.map((insight) => (
-              <div key={insight.id} className="leo-insight">
-                <strong>{insight.message}</strong>
-                <span style={{ color: "rgba(15,23,42,0.7)" }}>{insight.action}</span>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="dispatch-btn secondary" onClick={() => logActivity(`Leo action applied: ${insight.action}`)}>
-                    Activate
-                  </button>
-                  <button className="dispatch-btn secondary" onClick={() => logActivity(`Leo insight dismissed: ${insight.id}`)}>
-                    Dismiss
-                  </button>
-                </div>
+          <div className="pit-control">
+            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <i className="fas fa-mountain" /> PIT CONTROL
+            </h3>
+            <div className="pit-grid">
+              <div className="pit-slot pit-loading" style={{ ["--progress" as string]: "65%" }}>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 3</div>
+                <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4029</div>
+                <div style={{ fontSize: 12, color: "var(--status-ok)" }}>LOADING • 65%</div>
+              </div>
+              <div className="pit-slot pit-waiting">
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 7</div>
+                <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4031</div>
+                <div style={{ fontSize: 12, color: "var(--status-warning)" }}>WAITING • 8 min</div>
+              </div>
+              <div className="pit-slot">
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 1</div>
+                <div style={{ fontWeight: 600, margin: "4px 0" }}>OPEN</div>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>AVAILABLE</div>
+              </div>
+              <div className="pit-slot">
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 4</div>
+                <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4030</div>
+                <div style={{ fontSize: 12, color: "var(--status-info)" }}>DISPATCHED</div>
+              </div>
             </div>
-            ))
-          )}
-                </div>
+          </div>
 
-        <div className="details-panel">
-          <h3>Load Details</h3>
-          {selectedCardId ? (
-            (() => {
-              const card = dispatchCards.find((item) => item.id === selectedCardId);
-              if (!card) return <div className="ronyx-row">Select a load card to view details.</div>;
-              return (
-                <>
-                  <strong>{card.id}</strong>
-                  <div>{card.from ? `${card.from} → ${card.to}` : card.to}</div>
-                  <div>Driver: {card.driver} {card.truck}</div>
-                  <div>Status: {card.status}</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="dispatch-btn secondary" onClick={() => handleMessageDriver(card.id)}>Message Driver</button>
-                    <button className="dispatch-btn secondary" onClick={() => logActivity(`Opened documents for ${card.id}.`)}>Docs</button>
-                    <button className="dispatch-btn secondary" onClick={() => logActivity(`Opened tracking for ${card.id}.`)}>Tracking</button>
-                  </div>
-                </>
-              );
-            })()
-          ) : (
-            <div className="ronyx-row">Select a load card to view details.</div>
-          )}
-          <div>
-            <h4 style={{ marginTop: 8 }}>Recent Activity</h4>
-            <div className="activity-log">
-              {activityLog.length === 0 ? <span>No activity yet.</span> : activityLog.map((item) => <span key={item}>{item}</span>)}
+          <div
+            style={{
+              background: "var(--dispatch-surface)",
+              borderRadius: "var(--radius-lg)",
+              padding: 20,
+              border: "1px solid var(--dispatch-border)",
+            }}
+          >
+            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <i className="fas fa-chart-line" /> PERFORMANCE
+            </h3>
+            <div className="performance-metrics">
+              {[
+                { label: "UTILIZATION", value: "78%", trend: "+2.4%", tone: "var(--status-ok)" },
+                { label: "AVG LOAD TIME", value: "18m", trend: "+1.2m", tone: "var(--status-warning)" },
+                { label: "IDLE TIME", value: "12%", trend: "-1.8%", tone: "var(--status-ok)" },
+                { label: "REV/LOAD", value: "$485", trend: "+$24", tone: "var(--status-ok)" },
+              ].map((metric) => (
+                <div key={metric.label} className="metric-card">
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{metric.label}</div>
+                  <div className="metric-value">{metric.value}</div>
+                  <div style={{ fontSize: 12, color: metric.tone }}>{metric.trend}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        <section className="ronyx-card" style={{ marginTop: 20 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-            {loadTabs.map((tab) => (
-              <button
-                key={tab}
-                className={`ronyx-tab ${activeTab === tab ? "active" : ""}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
+        <div className="load-board">
+          <div className="board-header">
+            <div>
+              <h2 style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                LOAD BOARD
+                <span
+                  style={{
+                    fontSize: 13,
+                    background: "rgba(30, 144, 255, 0.1)",
+                    color: "var(--status-info)",
+                    padding: "4px 8px",
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                >
+                  {loadRows.length} LOADS • {delayedCount} DELAYED
+                </span>
+              </h2>
+              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 4 }}>
+                Updated every 30 seconds • Last: {lastUpdated.toLocaleTimeString("en-US", { hour12: false })}
+              </div>
+            </div>
+            <div className="board-filters">
+              {["ALL LOADS", "LOADING", "IN TRANSIT", "ON SITE", "DELAYED"].map((label) => (
+                <button
+                  key={label}
+                  className={`filter-btn ${activeFilter === label ? "active" : ""}`}
+                  onClick={() => setActiveFilter(label)}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-            <span className="status good">Active: {activeLoads.length}</span>
-            <span className="status warn">Available: {availableLoads.length}</span>
-            <span className="status good">Completed: {completedLoads.length}</span>
-            <span className="status bad">Cancelled: {cancelledLoads.length}</span>
           </div>
-          {loading ? (
-            <div className="ronyx-row">Loading loads...</div>
-          ) : filteredLoads.length === 0 ? (
-            <div className="ronyx-row">No loads in this view yet.</div>
-          ) : (
-            <div className="ronyx-grid">
-              {filteredLoads.map((load) => (
-                <div key={load.id || load.load_number} className="ronyx-row">
+
+          <div className="load-table">
+            <div className="table-header">
+              <div>LOAD ID</div>
+              <div>STATUS</div>
+              <div>DRIVER</div>
+              <div>ROUTE</div>
+              <div>MATERIAL</div>
+              <div>WEIGHT</div>
+              <div>ETA/STATUS</div>
+              <div>ACTIONS</div>
+            </div>
+            <div className="table-rows">
+              {filteredRows.map((row) => (
+                <div key={row.id} className={`table-row ${row.priority === "high" ? "high-priority" : ""}`}>
+                  <div>{row.id}</div>
                   <div>
-                    <div style={{ fontWeight: 700 }}>{load.load_number} • {load.route}</div>
-                    <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
-                      {load.customer_name} • {load.material || "Material"} • {load.quantity || "—"} {load.unit_type || ""}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "rgba(15,23,42,0.5)" }}>
-                      Driver: {load.driver_name || "Unassigned"} • Truck: {load.truck_number || "TBD"}
-                    </div>
+                    <span
+                      className={`status-indicator ${
+                        row.status === "LOADING"
+                          ? "status-loading"
+                          : row.status === "IN TRANSIT"
+                          ? "status-transit"
+                          : row.status === "ON SITE"
+                          ? "status-onsite"
+                          : "status-delayed"
+                      }`}
+                    />
+                    {row.status}
                   </div>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <span className={`status ${load.status === "completed" ? "good" : "warn"}`}>{load.status}</span>
-                    <button
-                      className="ronyx-action"
-                      onClick={() => updateLoad(load.id, { status: "completed", completed_at: new Date().toISOString() })}
-                      disabled={!load.id || savingId === load.id}
-                    >
-                      Mark Complete
+                  <div className="driver-info">
+                    <div className="driver-badge">{row.driverInitials}</div>
+                    {row.driver}
+                  </div>
+                  <div className="route-display">{row.route}</div>
+                  <div>{row.material}</div>
+                  <div>{row.weight}</div>
+                  <div className={row.status === "DELAYED" ? "eta-warning" : undefined}>{row.eta}</div>
+                  <div className="action-buttons">
+                    <button className="action-btn" onClick={() => handleCommand(`Calling ${row.driver}`)}>
+                      <i className="fas fa-phone" />
                     </button>
+                    <button className="action-btn" onClick={() => handleCommand(`Tracking ${row.id}`)}>
+                      <i className="fas fa-map-marker-alt" />
+                    </button>
+                    <button className="action-btn" onClick={() => handleCommand(`Message sent to ${row.driver}`)}>
+                      <i className="fas fa-message" />
+                    </button>
+                    <button className="action-btn" onClick={() => handleCommand(`Updated ${row.id}`)}>
+                      <i className="fas fa-pen-to-square" />
+                    </button>
+                    {row.status === "IN TRANSIT" || row.status === "DELAYED" ? (
+                      <button className="action-btn" onClick={() => handleCommand(`Reroute queued for ${row.id}`)}>
+                        <i className="fas fa-route" />
+                      </button>
+                    ) : (
+                      <button className="action-btn" onClick={() => handleCommand(`Ticket ready for ${row.id}`)}>
+                        <i className="fas fa-file-invoice" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </section>
+          </div>
+        </div>
 
+        <div className="intelligence-rail">
+          <div className="traffic-intel">
+            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <i className="fas fa-traffic-light" /> TRAFFIC INTELLIGENCE
+            </h3>
+            <div className="route-status-grid">
+              <div className="route-item critical">
+                <span>I-45 NORTH</span>
+                <span style={{ color: "var(--status-urgent)", fontWeight: 600 }}>HEAVY</span>
+              </div>
+              <div className="route-item clear">
+                <span>BELTWAY 8</span>
+                <span style={{ color: "var(--status-ok)", fontWeight: 600 }}>CLEAR</span>
+              </div>
+              <div className="route-item warning">
+                <span>HIGHWAY 290</span>
+                <span style={{ color: "var(--status-warning)", fontWeight: 600 }}>MODERATE</span>
+              </div>
+              <div className="route-item clear">
+                <span>I-10 WEST</span>
+                <span style={{ color: "var(--status-ok)", fontWeight: 600 }}>CLEAR</span>
+              </div>
+            </div>
+          </div>
 
+          <div className="weather-alerts">
+            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <i className="fas fa-cloud-sun" /> WEATHER ALERTS
+            </h3>
+            <div className="weather-grid">
+              <div className="weather-site">
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>MAIN ST PROJECT</div>
+                <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 68°F</div>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>SITE CLOSES 3PM</div>
+              </div>
+              <div className="weather-site">
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>KATY SITE</div>
+                <div style={{ fontSize: 13, color: "var(--status-warning)" }}>RAIN IN 45m</div>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>PREPARE TARPS</div>
+              </div>
+              <div className="weather-site">
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>I-45 JOBSITE</div>
+                <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 72°F</div>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>DRY CONDITIONS</div>
+              </div>
+              <div className="weather-site">
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>WESTSIDE</div>
+                <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 70°F</div>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>NORMAL OPS</div>
+              </div>
+            </div>
+          </div>
 
+          <div className="hos-monitor">
+            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <i className="fas fa-hourglass-half" /> HOS MONITOR
+            </h3>
+            <div className="hos-progress-container">
+              {hosDrivers.map((driver) => (
+                <div key={driver.name} className="hos-driver">
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                    <span>{driver.name}</span>
+                    <span>{driver.hoursLeft}</span>
+                  </div>
+                  <div className="hos-bar">
+                    <div className={`hos-progress hos-${driver.tone}`} style={{ width: `${driver.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-
+        <div className="command-bar">
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 8, height: 8, background: "var(--status-info)", borderRadius: "50%" }} />
+              <span style={{ fontSize: 13 }}>COMM: ACTIVE • 18/24 TRUCKS ONLINE</span>
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>FUEL PRICE: $3.85/gal (-0.02)</div>
+          </div>
+          <div className="command-buttons">
+            <button className="command-btn" onClick={() => setQuickDispatchOpen(true)}>
+              <i className="fas fa-bolt" /> Quick Dispatch
+            </button>
+            <button className="command-btn" onClick={handleBroadcast}>
+              <i className="fas fa-broadcast-tower" /> Broadcast
+            </button>
+            <button className="command-btn primary" onClick={handleForceRefresh}>
+              <i className="fas fa-sync-alt" /> Force Refresh
+            </button>
+            <button className="command-btn urgent" onClick={handleEmergency}>
+              <i className="fas fa-triangle-exclamation" /> Emergency
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -136,34 +136,34 @@ export default function QuickStartWizard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: orgMember } = await supabase
+      const { data: organizationMembership } = await supabase
         .from("organization_members")
         .select("organization_id")
         .eq("user_id", user.id)
         .single();
 
-      if (orgMember?.organization_id) {
-        setOrganizationId(orgMember.organization_id);
+      if (organizationMembership?.organization_id) {
+        setOrganizationId(organizationMembership.organization_id);
         
-        const { data: org } = await supabase
+        const { data: organizationRecord } = await supabase
           .from("organizations")
           .select("*")
-          .eq("id", orgMember.organization_id)
+          .eq("id", organizationMembership.organization_id)
           .single();
 
-        if (org) {
+        if (organizationRecord) {
           setOrgData({
-            name: org.name || "",
-            dot_number: org.dot_number || "",
-            mc_number: org.mc_number || "",
-            address: org.address || "",
-            city: org.city || "",
-            state: org.state || "",
-            zip: org.zip || "",
-            country: org.country || "US",
-            phone: org.phone || "",
-            email: org.email || "",
-            vertical_type: org.vertical_type || "construction_hauling",
+            name: organizationRecord.name || "",
+            dot_number: organizationRecord.dot_number || "",
+            mc_number: organizationRecord.mc_number || "",
+            address: organizationRecord.address || "",
+            city: organizationRecord.city || "",
+            state: organizationRecord.state || "",
+            zip: organizationRecord.zip || "",
+            country: organizationRecord.country || "US",
+            phone: organizationRecord.phone || "",
+            email: organizationRecord.email || "",
+            vertical_type: organizationRecord.vertical_type || "construction_hauling",
           });
         }
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -15,13 +15,7 @@ export default function RonyxReportsPage() {
   const [loadingReports, setLoadingReports] = useState(true);
   const [dateRange, setDateRange] = useState("30d");
 
-  useEffect(() => {
-    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
-      loadReports();
-    }
-  }, [profile, dateRange]);
-
-  async function loadReports() {
+  const loadReports = useCallback(async () => {
     setLoadingReports(true);
     try {
       const partnerEmail = user?.email;
@@ -41,23 +35,23 @@ export default function RonyxReportsPage() {
       }
 
       // Get organizations/companies for this partner
-      const orgQueries = [
+      const companyQueries = [
         supabase.from("organizations").select("*").eq("partner_id", partnerData.id),
         supabase.from("organizations").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
         supabase.from("companies").select("*").eq("partner_id", partnerData.id),
         supabase.from("companies").select("*").eq("partner_slug", partnerData.slug || "ronyx"),
       ];
 
-      let organizationsData: any[] = [];
-      for (const query of orgQueries) {
+      let companyRecords: any[] = [];
+      for (const query of companyQueries) {
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
-          organizationsData = data;
+          companyRecords = data;
           break;
         }
       }
 
-      const orgIds = organizationsData.map((org: any) => org.id || org.organization_id);
+      const companyIds = companyRecords.map((company: any) => company.id || company.organization_id);
 
       // Calculate date range
       const now = new Date();
@@ -68,7 +62,7 @@ export default function RonyxReportsPage() {
       const { data: invoices, error: invoicesError } = await supabase
         .from("invoices")
         .select("*")
-        .in("organization_id", orgIds.length > 0 ? orgIds : ["null"])
+        .in("organization_id", companyIds.length > 0 ? companyIds : ["null"])
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false });
 
@@ -96,7 +90,13 @@ export default function RonyxReportsPage() {
     } finally {
       setLoadingReports(false);
     }
-  }
+  }, [user?.email, dateRange]);
+
+  useEffect(() => {
+    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
+      loadReports();
+    }
+  }, [profile?.role, user?.email, loadReports]);
 
   if (loading) {
     return (

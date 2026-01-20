@@ -194,10 +194,10 @@ export default function WorkflowRulesPage() {
             <div>
               <div className="ronyx-label">THEN take these actions:</div>
               <div className="ronyx-muted">
-                1. Change status → Move ticket to "Flagged" <br />
+                1. Change status → Move ticket to &quot;Flagged&quot; <br />
                 2. Send alert → Dispatcher via In-App & Email <br />
-                3. Create task → Billing Manager: "Review variance" <br />
-                4. Log → "Auto-flagged by weight rule"
+                3. Create task → Billing Manager: &quot;Review variance&quot; <br />
+                4. Log → &quot;Auto-flagged by weight rule&quot;
               </div>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

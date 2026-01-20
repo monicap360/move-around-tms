@@ -15,7 +15,9 @@ export default function Sidebar() {
   useEffect(() => {
     async function loadCompany() {
       const { data: user } = await supabase.auth.getUser();
-      const company = user?.user?.user_metadata?.organization_code;
+      const company =
+        user?.user?.user_metadata?.company_code ||
+        user?.user?.user_metadata?.company;
       if (company) setCompanyCode(company);
     }
     loadCompany();

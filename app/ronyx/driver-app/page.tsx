@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 type AssignedLoad = {
   id: string;
@@ -34,13 +34,24 @@ export default function RonyxDriverAppPage() {
   const [offlineQueue, setOfflineQueue] = useState<string[]>([]);
   const [lastSynced, setLastSynced] = useState("2 min ago");
 
+  const loadAssignedLoads = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/ronyx/loads?driver_name=${encodeURIComponent(driverName)}`);
+      const data = await res.json();
+      setAssignedLoads(data.loads || []);
+    } catch (err) {
+      console.error("Failed to load assigned loads", err);
+      setAssignedLoads([]);
+    }
+  }, [driverName]);
+
   useEffect(() => {
     if (!driverName) {
       setAssignedLoads([]);
       return;
     }
     void loadAssignedLoads();
-  }, [driverName]);
+  }, [driverName, loadAssignedLoads]);
 
   async function submitUpdate(ticketId?: string) {
     await fetch("/api/ronyx/driver-updates", {
@@ -100,17 +111,6 @@ export default function RonyxDriverAppPage() {
   async function handleSubmit() {
     await submitUpdate();
     setMessage("Status update sent.");
-  }
-
-  async function loadAssignedLoads() {
-    try {
-      const res = await fetch(`/api/ronyx/loads?driver_name=${encodeURIComponent(driverName)}`);
-      const data = await res.json();
-      setAssignedLoads(data.loads || []);
-    } catch (err) {
-      console.error("Failed to load assigned loads", err);
-      setAssignedLoads([]);
-    }
   }
 
   async function startLoad(loadId: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../../../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -17,23 +17,17 @@ export default function RonyxOperatorDetailPage() {
   const [loadingOperator, setLoadingOperator] = useState(true);
   const [invoices, setInvoices] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (operatorId && (profile?.role === "partner" || user?.email === "melidazvl@outlook.com")) {
-      loadOperatorData();
-    }
-  }, [operatorId, profile]);
-
-  async function loadOperatorData() {
+  const loadOperatorData = useCallback(async () => {
     setLoadingOperator(true);
     try {
       // Fetch operator/organization data
-      const { data: orgData, error: orgError } = await supabase
+      const { data: organizationRecord, error: organizationError } = await supabase
         .from("organizations")
         .select("*")
         .eq("id", operatorId)
         .single();
 
-      if (orgError || !orgData) {
+      if (organizationError || !organizationRecord) {
         // Try companies table
         const { data: companyData, error: companyError } = await supabase
           .from("companies")
@@ -47,7 +41,7 @@ export default function RonyxOperatorDetailPage() {
         }
         setOperator(companyData);
       } else {
-        setOperator(orgData);
+        setOperator(organizationRecord);
       }
 
       // Fetch invoices for this operator
@@ -72,7 +66,13 @@ export default function RonyxOperatorDetailPage() {
     } finally {
       setLoadingOperator(false);
     }
-  }
+  }, [operatorId]);
+
+  useEffect(() => {
+    if (operatorId && (profile?.role === "partner" || user?.email === "melidazvl@outlook.com")) {
+      loadOperatorData();
+    }
+  }, [operatorId, profile?.role, user?.email, loadOperatorData]);
 
   if (loading || loadingOperator) {
     return (

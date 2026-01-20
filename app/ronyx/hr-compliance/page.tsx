@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 type DriverOption = {
   id: string;
@@ -311,14 +311,14 @@ export default function RonyxHrCompliancePage() {
 
   useEffect(() => {
     void loadDrivers();
-  }, []);
+  }, [loadDrivers]);
 
   useEffect(() => {
     if (!selectedDriverId) return;
     void loadProfile(selectedDriverId);
   }, [selectedDriverId]);
 
-  async function loadDrivers() {
+  const loadDrivers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/ronyx/hr/drivers");
@@ -333,7 +333,7 @@ export default function RonyxHrCompliancePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedDriverId]);
 
   async function loadProfile(driverId: string) {
     setLoading(true);

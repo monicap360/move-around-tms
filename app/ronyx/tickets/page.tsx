@@ -1775,14 +1775,14 @@ export default function RonyxTicketsPage() {
                   <div className="ronyx-card">
                     <div className="ronyx-label">From Pit (What We Loaded)</div>
                     <div>Ticket: #P-7716 | Pit 3</div>
-                    <div>Material: 3/4" Crushed Gravel</div>
+                    <div>Material: 3/4&quot; Crushed Gravel</div>
                     <div>Quantity: 12 Cubic Yards</div>
                     <div>Signature: ✅ Pit scale operator</div>
                   </div>
                   <div className="ronyx-card">
                     <div className="ronyx-label">To Site (What They Signed)</div>
-                    <div>Ticket: Signed by "R. Foreman"</div>
-                    <div>Material: "Gravel"</div>
+                    <div>Ticket: Signed by &quot;R. Foreman&quot;</div>
+                    <div>Material: &quot;Gravel&quot;</div>
                     <div>Quantity: 10 Cubic Yards</div>
                     <div>Signature: ✅ (Quantity disputed)</div>
                   </div>

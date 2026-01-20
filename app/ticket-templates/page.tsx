@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import {
@@ -356,7 +357,7 @@ export default function TicketTemplatesPage() {
                 </p>
                 {uploadedAssets.length > 0 ? (
                   <p className="text-sm text-blue-600">
-                    ← Click "Create Form" on any template asset to get started
+                    ← Click &quot;Create Form&quot; on any template asset to get started
                   </p>
                 ) : (
                   <Button

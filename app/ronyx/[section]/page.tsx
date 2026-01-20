@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 type SectionPageProps = {
   params: { section: string };
@@ -284,11 +284,7 @@ export default function RonyxSectionPage({ params }: SectionPageProps) {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    void loadRows();
-  }, [params.section]);
-
-  async function loadRows() {
+  const loadRows = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
     try {
@@ -302,7 +298,11 @@ export default function RonyxSectionPage({ params }: SectionPageProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [params.section]);
+
+  useEffect(() => {
+    void loadRows();
+  }, [loadRows]);
 
   const config = sectionConfig[params.section] || {
     label: "Module",

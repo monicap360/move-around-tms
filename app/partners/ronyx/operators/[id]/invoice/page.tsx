@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../../../../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -23,30 +23,21 @@ export default function RonyxOperatorInvoicePage() {
     dueDate: "",
   });
 
-  useEffect(() => {
-    if (operatorId && (profile?.role === "partner" || user?.email === "melidazvl@outlook.com")) {
-      loadOperator();
-      if (invoiceId) {
-        loadInvoice();
-      }
-    }
-  }, [operatorId, invoiceId, profile]);
-
-  async function loadOperator() {
+  const loadOperator = useCallback(async () => {
     try {
-      const { data: orgData } = await supabase.from("organizations").select("*").eq("id", operatorId).single();
-      if (!orgData) {
+      const { data: organizationRecord } = await supabase.from("organizations").select("*").eq("id", operatorId).single();
+      if (!organizationRecord) {
         const { data: companyData } = await supabase.from("companies").select("*").eq("id", operatorId).single();
         if (companyData) setOperator(companyData);
       } else {
-        setOperator(orgData);
+        setOperator(organizationRecord);
       }
     } catch (error: any) {
       console.error("Error loading operator:", error);
     }
-  }
+  }, [operatorId]);
 
-  async function loadInvoice() {
+  const loadInvoice = useCallback(async () => {
     try {
       const { data: invoice, error } = await supabase.from("invoices").select("*").eq("id", invoiceId).single();
       if (!error && invoice) {
@@ -59,7 +50,16 @@ export default function RonyxOperatorInvoicePage() {
     } catch (error: any) {
       console.error("Error loading invoice:", error);
     }
-  }
+  }, [invoiceId]);
+
+  useEffect(() => {
+    if (operatorId && (profile?.role === "partner" || user?.email === "melidazvl@outlook.com")) {
+      loadOperator();
+      if (invoiceId) {
+        loadInvoice();
+      }
+    }
+  }, [operatorId, invoiceId, profile?.role, user?.email, loadOperator, loadInvoice]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

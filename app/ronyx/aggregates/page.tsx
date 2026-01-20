@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 type RateCard = {
   id: string;
@@ -96,12 +96,7 @@ export default function RonyxAggregatesPage() {
   const selectedRate = rateCards.find((card) => card.id === selectedRateId);
   const selectedSite = jobSites.find((site) => site.id === selectedSiteId);
 
-  useEffect(() => {
-    void loadRateCards();
-    void loadJobSites();
-  }, []);
-
-  async function loadRateCards() {
+  const loadRateCards = useCallback(async () => {
     try {
       const res = await fetch("/api/ronyx/rate-cards", { cache: "no-store" });
       const data = await res.json();
@@ -111,9 +106,9 @@ export default function RonyxAggregatesPage() {
     } catch {
       setRateCards([]);
     }
-  }
+  }, []);
 
-  async function loadJobSites() {
+  const loadJobSites = useCallback(async () => {
     try {
       const res = await fetch("/api/ronyx/job-sites", { cache: "no-store" });
       const data = await res.json();
@@ -123,7 +118,12 @@ export default function RonyxAggregatesPage() {
     } catch {
       setJobSites([]);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadRateCards();
+    void loadJobSites();
+  }, [loadRateCards, loadJobSites]);
 
   function mapRateCardFromDb(card: any): RateCard {
     return {

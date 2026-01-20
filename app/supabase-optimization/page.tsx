@@ -260,7 +260,7 @@ from storage.objects where bucket_id = 'company_assets';`,
         <CardHeader>
           <CardTitle>Supabase-Friendly Optimization</CardTitle>
           <p className="text-sm text-gray-600">
-            Optimize storage performance using Supabase's built-in capabilities
+            Optimize storage performance using Supabase&apos;s built-in capabilities
             instead of fighting permissions
           </p>
         </CardHeader>

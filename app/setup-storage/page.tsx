@@ -172,8 +172,8 @@ export default function SetupStoragePage() {
               <ol className="text-sm text-orange-700 space-y-1">
                 <li>1. Go to your Supabase Dashboard</li>
                 <li>2. Navigate to Storage section</li>
-                <li>3. Click "Create Bucket"</li>
-                <li>4. Create bucket named "company_assets"</li>
+                <li>3. Click &quot;Create Bucket&quot;</li>
+                <li>4. Create bucket named &quot;company_assets&quot;</li>
                 <li>5. Make it public or set up appropriate RLS policies</li>
                 <li>6. Run this check again to verify</li>
               </ol>

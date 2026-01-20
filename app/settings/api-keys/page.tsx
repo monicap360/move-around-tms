@@ -108,7 +108,7 @@ export default function ApiKeysPage() {
           {newKey && (
             <CardContent className="pt-0">
               <div className="p-3 rounded border border-green-500 bg-green-50 text-green-700 text-sm">
-                New API key (copy now, it won't be shown again): <br />
+                New API key (copy now, it won&apos;t be shown again): <br />
                 <span className="font-mono break-all">{newKey}</span>
               </div>
             </CardContent>

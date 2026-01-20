@@ -432,7 +432,7 @@ export default function DataImportWizard() {
       }
     };
     reader.readAsText(uploadedFile);
-  }, [selectedTypeConfig]);
+  }, [selectedTypeConfig, parseExcel]);
 
   const updateMapping = (sourceColumn: string, targetField: string) => {
     setColumnMappings((prev) => {

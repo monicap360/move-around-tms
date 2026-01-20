@@ -289,18 +289,18 @@ export default function PerformanceTestPage() {
         <CardContent className="text-sm text-blue-700">
           <ol className="list-decimal list-inside space-y-2">
             <li>
-              <strong>Before optimization:</strong> Run tests and "Save as
-              Baseline"
+              <strong>Before optimization:</strong> Run tests and &quot;Save as
+              Baseline&quot;
             </li>
             <li>
-              <strong>Apply Monica's database changes</strong> (the SQL commands
+              <strong>Apply Monica&apos;s database changes</strong> (the SQL commands
               you provided)
             </li>
             <li>
               <strong>After optimization:</strong> Run tests again
             </li>
             <li>
-              <strong>Compare results:</strong> You'll see the performance
+              <strong>Compare results:</strong> You&apos;ll see the performance
               improvement
             </li>
           </ol>

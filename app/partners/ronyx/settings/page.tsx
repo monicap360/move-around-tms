@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -19,13 +19,7 @@ export default function RonyxSettingsPage() {
     monthlyFee: "",
   });
 
-  useEffect(() => {
-    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
-      loadSettings();
-    }
-  }, [profile]);
-
-  async function loadSettings() {
+  const loadSettings = useCallback(async () => {
     try {
       const partnerEmail = user?.email;
       if (!partnerEmail) return;
@@ -49,7 +43,13 @@ export default function RonyxSettingsPage() {
     } catch (error: any) {
       console.error("Error loading settings:", error);
     }
-  }
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
+      loadSettings();
+    }
+  }, [profile?.role, user?.email, loadSettings]);
 
   async function handleSave() {
     setSaving(true);

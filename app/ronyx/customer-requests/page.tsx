@@ -458,7 +458,7 @@ export default function RonyxCustomerRequestsPage() {
                 onChange={(event) => setNewRequest((prev) => ({ ...prev, material_type: event.target.value }))}
               >
                 <option value="">Select material...</option>
-                <option value="gravel_34">3/4" Crushed Gravel</option>
+                <option value="gravel_34">3/4&quot; Crushed Gravel</option>
                 <option value="fill_sand">Fill Sand</option>
                 <option value="road_base">Road Base</option>
                 <option value="topsoil">Topsoil</option>

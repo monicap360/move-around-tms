@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const quarters = ["Q2 2024", "Q1 2024", "Q4 2023", "Q3 2023"];
 
@@ -45,11 +45,7 @@ export default function IftaFuelCompliancePage() {
     fuelUsed: "21.2 gal (6.7 MPG)",
   });
 
-  useEffect(() => {
-    void loadDashboard(activeQuarter);
-  }, [activeQuarter]);
-
-  const loadDashboard = async (quarter: string) => {
+  const loadDashboard = useCallback(async (quarter: string) => {
     const [summaryRes, snapshotRes, mileageRes, queueRes, alertsRes, perfRes] = await Promise.all([
       fetch(`/api/ifta/quarter?quarter=${encodeURIComponent(quarter)}`),
       fetch(`/api/ifta/quarter?quarter=${encodeURIComponent(quarter)}&snapshot=true`),
@@ -73,7 +69,11 @@ export default function IftaFuelCompliancePage() {
     setAlerts(alertsJson.alerts || []);
     setMpgRows(perfJson.mpgRows || []);
     setAnalysisCards(perfJson.analysis || []);
-  };
+  }, [summary, snapshot]);
+
+  useEffect(() => {
+    void loadDashboard(activeQuarter);
+  }, [activeQuarter, loadDashboard]);
 
   const syncFuelCards = async () => {
     await fetch("/api/ifta/fuel-cards/sync", { method: "POST" });
@@ -443,7 +443,7 @@ export default function IftaFuelCompliancePage() {
         </section>
 
         <section className="mobile-capture">
-          <h3>📱 Daily Capture (Driver's Mobile View)</h3>
+          <h3>📱 Daily Capture (Driver&apos;s Mobile View)</h3>
           <div className="capture-card">
             <div className="capture-header">
               <span>⛽</span>
@@ -463,7 +463,7 @@ export default function IftaFuelCompliancePage() {
               ))}
             </div>
             <div className="recent-captures">
-              <h4>Today's Fuel (Truck #12):</h4>
+              <h4>Today&apos;s Fuel (Truck #12):</h4>
               {dailyFuelCaptures.length === 0 ? (
                 <div className="ronyx-row">No fuel captures logged today.</div>
               ) : (
@@ -504,7 +504,7 @@ export default function IftaFuelCompliancePage() {
               </div>
               <div className="daily-summary">
                 <div className="summary-item">
-                  <span>Today's Miles:</span>
+                  <span>Today&apos;s Miles:</span>
                   <strong>{dailyMileage.miles}</strong>
                 </div>
                 <div className="summary-item">

@@ -1052,7 +1052,7 @@ CREATE TRIGGER update_dvir_defects_updated_at
               If Auto Setup Fails:
             </h3>
             <ol className="text-sm text-orange-700 space-y-1">
-              <li>1. Click "Show SQL Statements" button above</li>
+              <li>1. Click &quot;Show SQL Statements&quot; button above</li>
               <li>2. Go to your Supabase Dashboard → SQL Editor</li>
               <li>3. Copy and paste the SQL statements</li>
               <li>4. Run them manually</li>
