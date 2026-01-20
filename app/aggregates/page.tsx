@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -52,10 +53,12 @@ export default async function AggregatesPage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center" }}>
-          <img
+          <Image
             src="/ronyx_logo.png"
             alt="Ronyx Logo"
-            style={{ height: "60px", marginRight: "1rem" }}
+            width={160}
+            height={60}
+            style={{ height: "60px", width: "auto", marginRight: "1rem" }}
           />
           <div>
             <h1 style={{ margin: 0, color: "#F7931E", fontSize: "1.8rem" }}>

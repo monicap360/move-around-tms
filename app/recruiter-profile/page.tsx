@@ -1,9 +1,11 @@
-/* eslint-disable @next/next/no-img-element */
 import React from "react";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getRecruiterProfile, getActiveJobPostings } from "@/lib/recruiter";
 
 // This page is public and SEO-friendly
+const directImageLoader = ({ src }: { src: string }) => src;
+
 export default async function RecruiterProfilePage({
   searchParams,
 }: {
@@ -20,10 +22,14 @@ export default async function RecruiterProfilePage({
   return (
     <main className="max-w-3xl mx-auto py-10 px-4">
       <section className="flex items-center gap-6 mb-8">
-        <img
+        <Image
           src={profile.avatarUrl || "/default-avatar.png"}
           alt={profile.name}
+          width={96}
+          height={96}
           className="w-24 h-24 rounded-full border shadow"
+          loader={directImageLoader}
+          unoptimized={Boolean(profile.avatarUrl)}
         />
         <div>
           <h1 className="text-3xl font-bold mb-1">{profile.name}</h1>

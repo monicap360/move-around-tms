@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabaseClient";
 import {
   Card,
@@ -12,6 +12,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { VERTICAL_PROFILES, VerticalType, type VerticalTypeString } from "@/lib/verticals";
 import { LanguageSwitcher } from "../lib/i18n/context";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 // Simple toast implementation
 const useToast = () => ({
@@ -359,10 +361,14 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center gap-2 mb-4">
               <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center">
                 {profile?.avatar_url ? (
-                  <img
+                  <Image
                     src={profile.avatar_url}
                     alt="Avatar"
+                    width={96}
+                    height={96}
                     className="object-cover w-full h-full"
+                    loader={directImageLoader}
+                    unoptimized
                   />
                 ) : (
                   <span className="text-gray-400">No Avatar</span>

@@ -1,5 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React from "react";
+import Image from "next/image";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export interface TruckLogoBadgeProps {
   logoUrl?: string;
@@ -20,10 +22,14 @@ export const TruckLogoBadge: React.FC<TruckLogoBadgeProps> = ({
       style={{ width: size, height: size }}
     >
       {logoUrl ? (
-        <img
+        <Image
           src={logoUrl}
           alt="Truck logo"
+          width={Math.round(size * 0.75)}
+          height={Math.round(size * 0.75)}
           className="object-contain w-3/4 h-3/4 drop-shadow-lg"
+          loader={directImageLoader}
+          unoptimized
         />
       ) : (
         <span className="text-cyan-100 text-2xl font-bold opacity-60">🚚</span>

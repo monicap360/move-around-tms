@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { supabase } from "../../../lib/supabaseClient";
 import {
   Card,
@@ -26,6 +26,8 @@ import {
   Download,
   AlertCircle,
 } from "lucide-react";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 interface TemplateField {
   id: string;
@@ -565,16 +567,20 @@ export default function TemplateEditorPage({
           <Card className="mx-auto w-fit">
             <CardContent className="p-4">
               <div className="relative inline-block">
-                <img
+                <Image
                   ref={imageRef}
                   src={asset.file_url}
                   alt={asset.file_name}
+                  width={1000}
+                  height={1400}
                   className="max-w-full h-auto"
                   style={{
                     transform: `scale(${imageScale})`,
                     transformOrigin: "top left",
                   }}
                   onLoad={handleImageLoad}
+                  loader={directImageLoader}
+                  unoptimized
                 />
 
                 {/* Field Overlay */}

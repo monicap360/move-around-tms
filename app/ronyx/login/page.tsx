@@ -1,7 +1,7 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -39,7 +39,13 @@ export default function RonyxLoginPage() {
     return (
       <div className="ronyx-login">
         <div className="login-box">
-          <img src="/ronyx_logo.png" alt="Ronyx Logo" className="ronyx-logo" />
+          <Image
+            src="/ronyx_logo.png"
+            alt="Ronyx Logo"
+            width={160}
+            height={60}
+            className="ronyx-logo"
+          />
           <h2>Ronyx Fleet Portal</h2>
           <p className="login-tagline">Logins are disabled for demos.</p>
           <div className="space-y-3">
@@ -54,7 +60,13 @@ export default function RonyxLoginPage() {
   return (
     <div className="ronyx-login">
       <div className="login-box">
-        <img src="/ronyx_logo.png" alt="Ronyx Logo" className="ronyx-logo" />
+        <Image
+          src="/ronyx_logo.png"
+          alt="Ronyx Logo"
+          width={160}
+          height={60}
+          className="ronyx-logo"
+        />
         <h2>Welcome to Ronyx Fleet Portal</h2>
         <p className="login-tagline">Powered by Move Around TMS™</p>
 

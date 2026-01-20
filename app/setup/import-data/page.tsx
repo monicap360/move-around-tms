@@ -241,11 +241,12 @@ export default function DataImportWizard() {
     return rows;
   };
 
-  const analyzeData = (
-    headerRow: string[],
-    rows: string[][],
-    formulaCells: number,
-  ): ImportDiagnostics => {
+  const analyzeData = useCallback(
+    (
+      headerRow: string[],
+      rows: string[][],
+      formulaCells: number,
+    ): ImportDiagnostics => {
     const warnings: string[] = [];
     let errorCells = 0;
     let duplicateRows = 0;
@@ -329,9 +330,11 @@ export default function DataImportWizard() {
       futureDates,
       formulaCells,
     };
-  };
+  },
+  [],
+  );
 
-  const parseExcel = async (buffer: ArrayBuffer) => {
+  const parseExcel = useCallback(async (buffer: ArrayBuffer) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer);
     const worksheet = workbook.worksheets[0];
@@ -357,7 +360,7 @@ export default function DataImportWizard() {
     const diagnostics = analyzeData(headerRow, dataRows, formulaCells);
 
     return { headerRow, dataRows, diagnostics };
-  };
+  }, [analyzeData]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];

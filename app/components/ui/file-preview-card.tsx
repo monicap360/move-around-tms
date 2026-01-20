@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
@@ -22,6 +23,8 @@ interface FilePreviewData {
   description: string;
   id: string;
 }
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 interface FilePreviewCardProps {
   fileData: FilePreviewData;
@@ -68,11 +71,15 @@ export default function FilePreviewCard({
             <div className="flex-shrink-0 relative">
               {preview ? (
                 <div className="relative">
-                  <img
+                  <Image
                     src={preview}
                     alt="File preview"
+                    width={80}
+                    height={80}
                     className="w-20 h-20 object-cover rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => setShowFullPreview(true)}
+                    loader={directImageLoader}
+                    unoptimized
                   />
                   <Button
                     size="sm"
@@ -220,11 +227,15 @@ export default function FilePreviewCard({
           onClick={() => setShowFullPreview(false)}
         >
           <div className="relative max-w-4xl max-h-full">
-            <img
+            <Image
               src={preview}
               alt="Full preview"
+              width={1024}
+              height={768}
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
+              loader={directImageLoader}
+              unoptimized
             />
             <Button
               size="sm"

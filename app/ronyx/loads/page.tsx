@@ -37,7 +37,8 @@ export default function RonyxLoadsPage() {
   const [lastUpdated, setLastUpdated] = useState(() => new Date());
   const [emergencyMode, setEmergencyMode] = useState(false);
 
-  const loadRows: LoadRow[] = [
+  const loadRows: LoadRow[] = useMemo(
+    () => [
     {
       id: "LD-4029",
       status: "LOADING",
@@ -99,7 +100,9 @@ export default function RonyxLoadsPage() {
       eta: "45m",
       priority: "high",
     },
-  ];
+    ],
+    [],
+  );
 
   const fleetCells: FleetCell[] = [
     { id: 1, status: "active", driver: "J. Lane", hours: "9.5/11h" },

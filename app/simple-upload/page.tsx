@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabaseClient";
 import {
   Card,
@@ -20,6 +20,8 @@ import {
   Image as ImageIcon,
   X,
 } from "lucide-react";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 interface UploadFile {
   file: File;
@@ -242,10 +244,14 @@ export default function SimpleUploadPage() {
                     {/* Preview */}
                     <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
                       {file.preview ? (
-                        <img
+                        <Image
                           src={file.preview}
                           alt="Preview"
+                          width={64}
+                          height={64}
                           className="w-full h-full object-cover rounded"
+                          loader={directImageLoader}
+                          unoptimized
                         />
                       ) : (
                         <FileText className="w-6 h-6 text-gray-400" />

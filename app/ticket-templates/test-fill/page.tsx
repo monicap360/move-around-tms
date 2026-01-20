@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Card,
   CardHeader,
@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   Download,
 } from "lucide-react";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 interface TemplateField {
   id: string;
@@ -289,10 +291,14 @@ export default function TestFillPage() {
               <CardContent>
                 {template.base_image_url ? (
                   <div className="relative">
-                    <img
+                    <Image
                       src={template.base_image_url}
                       alt="Template"
+                      width={1024}
+                      height={768}
                       className="w-full rounded-lg border"
+                      loader={directImageLoader}
+                      unoptimized
                     />
 
                     {/* Show field values overlaid */}

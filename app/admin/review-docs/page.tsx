@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -29,6 +30,7 @@ export default function ReviewDocsPage() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const directImageLoader = ({ src }: { src: string }) => src;
 
   useEffect(() => {
     if (adminToken) {
@@ -227,10 +229,14 @@ export default function ReviewDocsPage() {
                         return (
                           <>
                             {isImage && (
-                              <img
+                              <Image
                                 src={url}
                                 alt="Document preview"
+                                width={640}
+                                height={160}
                                 className="w-full h-40 object-contain border rounded"
+                                loader={directImageLoader}
+                                unoptimized
                               />
                             )}
                             <a

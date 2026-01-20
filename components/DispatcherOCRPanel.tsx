@@ -1,8 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabaseClient";
 
 export default function DispatcherOCRPanel() {
+  const directImageLoader = ({ src }: { src: string }) => src;
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [ocrData, setOcrData] = useState<any>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -96,11 +97,15 @@ export default function DispatcherOCRPanel() {
             </span>
           </div>
           {imageUrl && (
-            <img
+            <Image
               src={imageUrl}
               alt="Ticket Preview"
+              width={640}
+              height={200}
               className="w-full rounded mb-2"
               style={{ maxHeight: 200, objectFit: "contain" }}
+              loader={directImageLoader}
+              unoptimized
             />
           )}
           {message && (

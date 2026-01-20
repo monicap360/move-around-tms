@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { supabase } from "../../lib/supabaseClient";
 import {
   Card,
@@ -37,6 +38,8 @@ type MaintenanceRequest = {
   photos: string[];
   hours_pending: number;
 };
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default function MaintenanceDashboard() {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
@@ -331,10 +334,14 @@ export default function MaintenanceDashboard() {
                               rel="noopener noreferrer"
                               className="border rounded overflow-hidden"
                             >
-                              <img
+                              <Image
                                 src={photo}
                                 alt={`Issue ${idx + 1}`}
+                                width={80}
+                                height={80}
                                 className="w-20 h-20 object-cover"
+                                loader={directImageLoader}
+                                unoptimized
                               />
                             </a>
                           ))}

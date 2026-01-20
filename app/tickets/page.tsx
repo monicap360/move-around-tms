@@ -1,7 +1,7 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const SignaturePad = dynamic(() => import('../../components/tickets/SignaturePad'), { ssr: false });
@@ -9,6 +9,8 @@ const QRCodeScan = dynamic(() => import('../../components/tickets/QRCodeScan'), 
 const GPSCapture = dynamic(() => import('../../components/tickets/GPSCapture'), { ssr: false });
 import { sendTicketEmail } from '../../components/tickets/EmailNotification';
 import { generateInvoiceForTicket } from '../../components/tickets/AutoInvoice';
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default function TicketsPage() {
   const inputStyle = {
@@ -255,7 +257,24 @@ export default function TicketsPage() {
               <GPSCapture onCapture={setGps} />
               <div style={{ marginTop: 8 }}>
                 <SignaturePad onSave={setSignature} />
-                {signature && <div style={{ marginTop: 4 }}><img src={signature} alt="Signature preview" style={{ maxWidth: 200, border: '1px solid #cbd5e1', borderRadius: 4 }} /></div>}
+                {signature && (
+                  <div style={{ marginTop: 4 }}>
+                    <Image
+                      src={signature}
+                      alt="Signature preview"
+                      width={200}
+                      height={80}
+                      style={{
+                        maxWidth: 200,
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 4,
+                        height: "auto",
+                      }}
+                      loader={directImageLoader}
+                      unoptimized
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div style={{ fontSize: 20, fontWeight: 600, color: '#1e293b', marginTop: 16 }}>Driver / Truck Info</div>

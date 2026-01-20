@@ -1,8 +1,10 @@
 "use client";
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { Button } from "../../components/ui/button";
 
 export default function WhiteLabelSettings() {
+  const directImageLoader = ({ src }: { src: string }) => src;
   const [logo, setLogo] = useState<string | null>(null);
   const [theme, setTheme] = useState("default");
   const [domain, setDomain] = useState("");
@@ -34,7 +36,17 @@ export default function WhiteLabelSettings() {
             onChange={handleLogoUpload}
             className="border rounded px-3 py-2"
           />
-          {logo && <img src={logo} alt="Logo preview" className="mt-2 h-12" />}
+          {logo && (
+            <Image
+              src={logo}
+              alt="Logo preview"
+              width={160}
+              height={48}
+              className="mt-2 h-12 w-auto"
+              loader={directImageLoader}
+              unoptimized
+            />
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Theme</label>

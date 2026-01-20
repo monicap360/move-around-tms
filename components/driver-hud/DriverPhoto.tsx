@@ -1,5 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React from "react";
+import Image from "next/image";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export interface DriverPhotoProps {
   photoUrl?: string;
@@ -22,10 +24,14 @@ export const DriverPhoto: React.FC<DriverPhotoProps> = ({
       style={{ width: size, height: size }}
     >
       {photoUrl ? (
-        <img
+        <Image
           src={photoUrl}
           alt={name || "Driver photo"}
+          width={size}
+          height={size}
           className="object-cover w-full h-full"
+          loader={directImageLoader}
+          unoptimized
         />
       ) : (
         <span className="text-cyan-300 text-4xl font-bold opacity-60">

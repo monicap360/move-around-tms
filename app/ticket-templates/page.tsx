@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabaseClient";
 import {
   Card,
@@ -24,6 +24,8 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 interface TemplateAsset {
   id: string;
@@ -281,10 +283,14 @@ export default function TicketTemplatesPage() {
                       {/* Preview */}
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                         {asset.file_type.startsWith("image/") ? (
-                          <img
+                          <Image
                             src={asset.file_url}
                             alt={asset.file_name}
+                            width={64}
+                            height={64}
                             className="w-full h-full object-cover"
+                            loader={directImageLoader}
+                            unoptimized
                           />
                         ) : (
                           <FileText className="w-6 h-6 text-gray-400" />

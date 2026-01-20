@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoleBasedAuth } from "../../../lib/role-auth";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -14,13 +14,7 @@ export default function RonyxDriversPage() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [loadingDrivers, setLoadingDrivers] = useState(true);
 
-  useEffect(() => {
-    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
-      loadDrivers();
-    }
-  }, [profile]);
-
-  async function loadDrivers() {
+  const loadDrivers = useCallback(async () => {
     setLoadingDrivers(true);
     try {
       const partnerEmail = user?.email;
@@ -92,7 +86,13 @@ export default function RonyxDriversPage() {
     } finally {
       setLoadingDrivers(false);
     }
-  }
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (profile?.role === "partner" || user?.email === "melidazvl@outlook.com") {
+      loadDrivers();
+    }
+  }, [loadDrivers, profile?.role, user?.email]);
 
   if (loading) {
     return (

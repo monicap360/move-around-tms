@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import { supabase } from "../lib/supabaseClient";
 import {
   Card,
@@ -55,6 +55,8 @@ interface UploadProgress {
   status: "uploading" | "processing" | "success" | "error";
   message?: string;
 }
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default function AssetUploadPage() {
   const [files, setFiles] = useState<FilePreview[]>([]);
@@ -445,10 +447,14 @@ export default function AssetUploadPage() {
                       {/* Preview */}
                       <div className="flex-shrink-0">
                         {filePreview.preview ? (
-                          <img
+                          <Image
                             src={filePreview.preview}
                             alt="Preview"
+                            width={80}
+                            height={80}
                             className="w-20 h-20 object-cover rounded-lg border"
+                            loader={directImageLoader}
+                            unoptimized
                           />
                         ) : (
                           <div className="w-20 h-20 bg-gray-200 rounded-lg border flex items-center justify-center">

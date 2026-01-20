@@ -12,6 +12,8 @@ import MaintenanceAlerts from "./components/MaintenanceAlerts";
 import DriverAI from "./components/DriverAI";
 import { supabase } from "../../lib/supabaseClient";
 
+const directImageLoader = ({ src }: { src: string }) => src;
+
 export default function DriverHUD() {
   const [driver, setDriver] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -148,7 +150,15 @@ export default function DriverHUD() {
       <div className="w-full max-w-md rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 p-4 mb-4 flex items-center gap-4 shadow-lg">
         <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold border-4 border-blue-400">
           {driver && driver.photo_url ? (
-            <img src={driver.photo_url} alt="Driver" className="w-16 h-16 rounded-full object-cover" />
+            <Image
+              src={driver.photo_url}
+              alt="Driver"
+              width={64}
+              height={64}
+              className="w-16 h-16 rounded-full object-cover"
+              loader={directImageLoader}
+              unoptimized
+            />
           ) : (
             driver && driver.name ? driver.name.split(" ").map((n: string) => n[0]).join("") : "DR"
           )}

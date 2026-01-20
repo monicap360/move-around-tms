@@ -1,6 +1,9 @@
 import React from "react";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getDriverResume } from "@/lib/driver";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default async function DriverResumePage({
   params,
@@ -14,10 +17,14 @@ export default async function DriverResumePage({
   return (
     <main className="max-w-2xl mx-auto py-10 px-4">
       <section className="flex items-center gap-6 mb-8">
-        <img
+        <Image
           src={resume.avatarUrl || "/default-avatar.png"}
           alt={resume.name}
+          width={96}
+          height={96}
           className="w-24 h-24 rounded-full border shadow"
+          loader={directImageLoader}
+          unoptimized={Boolean(resume.avatarUrl)}
         />
         <div>
           <h1 className="text-3xl font-bold mb-1">{resume.name}</h1>

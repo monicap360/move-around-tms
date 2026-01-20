@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Upload, Image, FileText } from "lucide-react";
+import { Upload, Image as ImageIcon, FileText } from "lucide-react";
 
 interface CompanyAssetUploaderProps {
   assetType: "company_logo" | "ticket_template";
@@ -95,7 +95,7 @@ const CompanyAssetUploader = ({
 
   const getIcon = () => {
     return assetType === "company_logo" ? (
-      <Image className="w-6 h-6" />
+      <ImageIcon className="w-6 h-6" />
     ) : (
       <FileText className="w-6 h-6" />
     );

@@ -164,41 +164,6 @@ export default function PartnerDashboard() {
   const [complianceReminders, setComplianceReminders] = useState([]);
   const [reminderLoading, setReminderLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      if (partnerInfo?.theme) {
-        setTheme(partnerInfo.theme as PartnerTheme);
-        loadPartnerStats();
-        loadComplianceReminders();
-        
-        // Load compliance trends with real data
-        const orgIds = await getPartnerOrgIds();
-        const trends = await loadComplianceTrends(supabase, orgIds);
-        setComplianceTrends(trends as any);
-      } else if (profile?.role === "partner") {
-        // Load default RonYX theme for Veronica
-        loadRonYXTheme();
-        loadComplianceReminders();
-        
-        // Load compliance trends with real data
-        const orgIds = await getPartnerOrgIds();
-        const trends = await loadComplianceTrends(supabase, orgIds);
-        setComplianceTrends(trends as any);
-      }
-    }
-    
-    async function getPartnerOrgIds(): Promise<string[]> {
-      if (!user?.id) return [];
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("id")
-        .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
-      return orgs?.map((organization) => organization.id) || [];
-    }
-    
-    loadDashboardData();
-  }, [partnerInfo, profile, user]);
-
   async function loadComplianceReminders() {
     setReminderLoading(true);
     try {
@@ -300,7 +265,7 @@ export default function PartnerDashboard() {
     }
   }
 
-  async function loadPartnerStats() {
+  const loadPartnerStats = useCallback(async () => {
     try {
       if (!user?.id) {
         setStats({
@@ -397,7 +362,49 @@ export default function PartnerDashboard() {
         pendingApprovals: 0,
       });
     }
-  }
+  }, [user?.id]);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      if (partnerInfo?.theme) {
+        setTheme(partnerInfo.theme as PartnerTheme);
+        loadPartnerStats();
+        loadComplianceReminders();
+
+        // Load compliance trends with real data
+        const orgIds = await getPartnerOrgIds();
+        const trends = await loadComplianceTrends(supabase, orgIds);
+        setComplianceTrends(trends as any);
+      } else if (profile?.role === "partner") {
+        // Load default RonYX theme for Veronica
+        loadRonYXTheme();
+        loadComplianceReminders();
+
+        // Load compliance trends with real data
+        const orgIds = await getPartnerOrgIds();
+        const trends = await loadComplianceTrends(supabase, orgIds);
+        setComplianceTrends(trends as any);
+      }
+    }
+
+    async function getPartnerOrgIds(): Promise<string[]> {
+      if (!user?.id) return [];
+      const { data: orgs } = await supabase
+        .from("organizations")
+        .select("id")
+        .or(`partner_id.eq.${user.id},created_by.eq.${user.id}`);
+      return orgs?.map((organization) => organization.id) || [];
+    }
+
+    loadDashboardData();
+  }, [
+    loadComplianceReminders,
+    loadPartnerStats,
+    loadRonYXTheme,
+    partnerInfo,
+    profile?.role,
+    user?.id,
+  ]);
 
   if (loading) {
     return (

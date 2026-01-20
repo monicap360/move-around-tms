@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 const SKINS = [
   { name: "Matte Black", value: "matte-black", color: "#222" },
   { name: "Chrome", value: "chrome", color: "#e5e5e5" },
@@ -10,6 +11,8 @@ const SKINS = [
   { name: "Cybertruck Silver", value: "cyber-silver", color: "#bfc6c7" },
   { name: "Pearl White", value: "pearl-white", color: "#f8fafc" },
 ];
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default function TruckSkinSelector({ params }) {
   const [selected, setSelected] = useState("");
@@ -201,10 +204,14 @@ export default function TruckSkinSelector({ params }) {
             </div>
             {(logoPreview || logoUrl) && (
               <div className="mt-2 flex items-center gap-2">
-                <img
+                <Image
                   src={logoPreview || logoUrl}
                   alt="Logo preview"
+                  width={80}
+                  height={48}
                   className="w-20 h-12 object-contain rounded shadow border border-cyan-700 bg-white"
+                  loader={directImageLoader}
+                  unoptimized
                 />
                 <button
                   className="text-xs text-red-400 hover:underline"

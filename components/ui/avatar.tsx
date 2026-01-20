@@ -1,7 +1,9 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import React, { useState } from "react";
+import Image from "next/image";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -40,13 +42,17 @@ const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
     }
 
     return (
-      <img
+      <Image
         ref={ref}
         src={src}
-        alt={alt}
+        alt={alt ?? ""}
+        width={40}
+        height={40}
         className={`aspect-square h-full w-full object-cover ${imageLoaded ? "opacity-100" : "opacity-0"} transition-opacity ${className}`}
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageError(true)}
+        loader={directImageLoader}
+        unoptimized
         {...props}
       />
     );

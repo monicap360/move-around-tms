@@ -1,7 +1,7 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Card,
   CardHeader,
@@ -34,12 +34,15 @@ interface RelatedDocumentsPreviewProps {
   ticketNumber?: string;
 }
 
+const directImageLoader = ({ src }: { src: string }) => src;
+
 export default function RelatedDocumentsPreview({
   ticketId,
   ticketNumber,
 }: RelatedDocumentsPreviewProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const loadDocuments = useCallback(async () => {
     try {
@@ -148,24 +151,20 @@ export default function RelatedDocumentsPreview({
             >
               {/* Thumbnail */}
               <div className="mb-3">
-                {doc.thumbnail_url || isImage(doc.url) ? (
+                {((doc.thumbnail_url || isImage(doc.url)) &&
+                  !imageErrors[doc.id]) ? (
                   <div className="relative aspect-video bg-gray-100 rounded overflow-hidden">
-                    <img
+                    <Image
                       src={doc.thumbnail_url || doc.url}
                       alt={doc.name || doc.type}
+                      width={640}
+                      height={360}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback to icon if image fails to load
-                        (e.target as HTMLImageElement).style.display = "none";
-                        const parent = (e.target as HTMLImageElement).parentElement;
-                        if (parent) {
-                          parent.innerHTML = `
-                            <div class="w-full h-full flex items-center justify-center">
-                              ${getDocumentIcon(doc.type).props.children ? `<div class="text-gray-400">${getDocumentIcon(doc.type)}</div>` : ""}
-                            </div>
-                          `;
-                        }
-                      }}
+                      onError={() =>
+                        setImageErrors((prev) => ({ ...prev, [doc.id]: true }))
+                      }
+                      loader={directImageLoader}
+                      unoptimized
                     />
                   </div>
                 ) : (

@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import "./styles.css";
+import Image from "next/image";
 
 export const metadata = {
   title: "ROnyx Manager Dashboard | Move Around TMS",
@@ -13,9 +13,11 @@ export default function VeronicaLayout({
   return (
     <div className="veronica-dashboard">
       <header className="header">
-        <img
+        <Image
           src="/veronica_logo.png"
           alt="ROnyx Fleet"
+          width={160}
+          height={60}
           className="header-logo"
         />
         <h1>ROnyx Manager Dashboard</h1>

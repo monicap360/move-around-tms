@@ -1,6 +1,9 @@
 import supabaseAdmin from "../../lib/supabaseAdmin";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default async function HRDashboardPage() {
   const { data, error } = await supabaseAdmin
@@ -67,10 +70,14 @@ export default async function HRDashboardPage() {
                     {url ? (
                       <div className="flex items-center gap-2">
                         {isImage && (
-                          <img
+                          <Image
                             src={url}
                             alt="preview"
-                            className="h-12 w-auto object-contain border rounded"
+                            width={48}
+                            height={48}
+                            className="h-12 w-12 object-contain border rounded"
+                            loader={directImageLoader}
+                            unoptimized
                           />
                         )}
                         <a

@@ -1,5 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
+
+const directImageLoader = ({ src }: { src: string }) => src;
 
 export default function TruckBrandingPage({ params }) {
   const [driver, setDriver] = useState(null);
@@ -74,16 +77,22 @@ export default function TruckBrandingPage({ params }) {
       <p className="opacity-60">{driver.full_name}</p>
       {/* Truck Preview */}
       <div className="mt-6 p-4 bg-gray-900 rounded-xl text-center">
-        <img
+        <Image
           src={`/truck-skins/${truckSkin}.png`}
           alt="Truck Preview"
+          width={640}
+          height={320}
           className="w-full max-w-md mx-auto"
         />
         {logoUrl && (
-          <img
+          <Image
             src={logoUrl}
             className="w-24 h-24 mx-auto mt-4 opacity-90"
             alt="Custom Logo"
+            width={96}
+            height={96}
+            loader={directImageLoader}
+            unoptimized
           />
         )}
       </div>
