@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ronyx-web
+  namespace: ronyx
+  labels:
+    app: ronyx-web
+    tenant: ronyx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ronyx-web
+      tenant: ronyx
+  template:
+    metadata:
+      labels:
+        app: ronyx-web
+        tenant: ronyx
+    spec:
+      containers:
+        - name: ronyx-web
+          image: ronyx.movearoundtms.com/web:latest
+          env:
+            - name: TENANT_ID
+              value: "ronyx"
+            - name: DOMAIN
+              value: "ronyx.movearoundtms.com"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ronyx-secrets
+                  key: database-url
+          ports:
+            - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /ronyx/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10

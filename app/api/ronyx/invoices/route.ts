@@ -8,9 +8,40 @@ function buildInvoiceNumber() {
   return `RNYX-INV-${stamp}-${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.from("ronyx_invoices").select("*").order("created_at", { ascending: false });
+  const { searchParams } = new URL(request.url);
+  const projectId = searchParams.get("project_id");
+  const customerId = searchParams.get("customer_id");
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!profile?.organization_id) {
+    return NextResponse.json({ error: "User organization not found" }, { status: 400 });
+  }
+
+  let invoicesQuery = supabase
+    .from("ronyx_invoices")
+    .select("*")
+    .eq("organization_id", profile.organization_id)
+    .order("created_at", { ascending: false });
+
+  if (projectId) {
+    invoicesQuery = invoicesQuery.eq("project_id", projectId);
+  }
+  if (customerId) {
+    invoicesQuery = invoicesQuery.eq("customer_id", customerId);
+  }
+
+  const { data, error } = await invoicesQuery;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,16 +53,42 @@ export async function GET() {
 export async function POST(request: Request) {
   const payload = await request.json();
   const action = payload?.action;
+  const projectId = payload?.project_id;
+  const customerId = payload?.customer_id;
   const supabase = createSupabaseServerClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!profile?.organization_id) {
+    return NextResponse.json({ error: "User organization not found" }, { status: 400 });
+  }
 
   if (action === "generate_from_tickets") {
-    const { data: tickets, error: ticketsError } = await supabase
+    let ticketsQuery = supabase
       .from("aggregate_tickets")
       .select(
         "id, customer_name, quantity, bill_rate, status, payment_status, material, ticket_number, unit_type",
       )
+      .eq("organization_id", profile.organization_id)
       .eq("status", "approved")
       .neq("payment_status", "paid");
+
+    if (projectId) {
+      ticketsQuery = ticketsQuery.eq("project_id", projectId);
+    }
+    if (customerId) {
+      ticketsQuery = ticketsQuery.eq("customer_id", customerId);
+    }
+
+    const { data: tickets, error: ticketsError } = await ticketsQuery;
 
     if (ticketsError) {
       return NextResponse.json({ error: ticketsError.message }, { status: 500 });
@@ -64,6 +121,7 @@ export async function POST(request: Request) {
           due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
           total_amount: total,
           ticket_ids: items.map((t) => t.id),
+          organization_id: profile.organization_id,
         })
         .select("*")
         .single();
@@ -124,7 +182,11 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data, error } = await supabase.from("ronyx_invoices").insert(payload).select("*").single();
+  const { data, error } = await supabase
+    .from("ronyx_invoices")
+    .insert({ ...payload, organization_id: profile.organization_id })
+    .select("*")
+    .single();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -141,10 +203,26 @@ export async function PUT(request: Request) {
   }
 
   const supabase = createSupabaseServerClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!profile?.organization_id) {
+    return NextResponse.json({ error: "User organization not found" }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("ronyx_invoices")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", id)
+    .eq("organization_id", profile.organization_id)
     .select("*")
     .single();
 

@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/ronyx"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("RONYX_DATABASE_URL")
+  schema   = "ronyx"
+}
+
+model RonyxMaterial {
+  id               String   @id @default(cuid())
+  tenantId         String   @default("ronyx")
+  materialCode     String   @unique
+  materialType     String
+  description      String?
+  supplier         String?
+  stockpileLocation String?
+  currentInventory Decimal?
+  unit             String
+  baseRate         Decimal?
+
+  @@map("ronyx_materials")
+  @@unique([tenantId, materialCode])
+}
+
+model RonyxTicket {
+  id           String   @id @default(cuid())
+  tenantId     String   @default("ronyx")
+  ticketNumber String   @unique
+  driverId     String
+  truckId      String
+  materialId   String
+  grossWeight  Decimal
+  tareWeight   Decimal
+  netWeight    Decimal  @default(0)
+  rateType     String
+  rateAmount   Decimal
+  totalAmount  Decimal
+  status       String   @default("pending")
+
+  @@map("ronyx_tickets")
+  @@index([tenantId, ticketNumber])
+  @@index([tenantId, driverId])
+}
+
+model RonyxDriver {
+  id            String   @id @default(cuid())
+  tenantId      String   @default("ronyx")
+  firstName     String
+  lastName      String
+  licenseNumber String   @unique
+  licenseState  String
+  licenseExpiry DateTime?
+  medicalExpiry DateTime?
+  status        String   @default("active")
+
+  @@map("ronyx_drivers")
+  @@unique([tenantId, licenseNumber])
+}

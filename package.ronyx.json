@@ -1,0 +1,8 @@
+{
+  "name": "ronyx-movearoundtms",
+  "private": true,
+  "scripts": {
+    "build:ronyx": "next build",
+    "start:ronyx": "next start"
+  }
+}

@@ -8,7 +8,7 @@ const mainNav = [
   { label: "Dashboard", href: "/ronyx" },
   { label: "Fleet", href: "/ronyx/fleet" },
   { label: "Jobs", href: "/ronyx/jobs" },
-  { label: "Dispatch", href: "/ronyx/loads" },
+  { label: "Dispatch", href: "/ronyx/dispatch" },
   { label: "Billing", href: "/ronyx/billing" },
   { label: "Reports", href: "/ronyx/reports" },
 ];
@@ -20,8 +20,8 @@ const fleetNav = [
 ];
 
 const dispatchNav = [
-  { label: "Load Board", href: "/ronyx/loads" },
-  { label: "Route Planning", href: "/ronyx/dispatch" },
+  { label: "Load Board", href: "/ronyx/dispatch/board" },
+  { label: "Route Planning", href: "/ronyx/dispatch/map" },
   { label: "Assignment", href: "/ronyx/dispatch" },
 ];
 
@@ -37,7 +37,19 @@ const adminNav = [
   { label: "Admin", href: "/ronyx/accounting" },
 ];
 
-export default function RonyxLayout({ children }: { children: React.ReactNode }) {
+type RonyxUser = {
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+};
+
+export default function RonyxShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: RonyxUser;
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -294,10 +306,7 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
 
       <aside className="ronyx-side-nav">
         <div className="ronyx-logo">Move Around TMS</div>
-        <button
-          className="ronyx-stat-pill"
-          onClick={() => setCollapsed((prev) => !prev)}
-        >
+        <button className="ronyx-stat-pill" onClick={() => setCollapsed((prev) => !prev)}>
           {collapsed ? "Expand Nav" : "Collapse Nav"}
         </button>
         <div>
@@ -368,7 +377,11 @@ export default function RonyxLayout({ children }: { children: React.ReactNode })
           <span className="ronyx-stat-pill">{now.toLocaleTimeString()}</span>
           <button className="ronyx-stat-pill">Help</button>
           <button className="ronyx-stat-pill">Notifications</button>
-          <button className="ronyx-stat-pill">Profile</button>
+          <button className="ronyx-stat-pill">
+            {user.first_name || user.last_name
+              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+              : user.email || "Profile"}
+          </button>
           <button className="ronyx-stat-pill">Apps</button>
           <input
             ref={scanInputRef}

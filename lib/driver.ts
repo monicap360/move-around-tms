@@ -6,6 +6,12 @@ const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
+const supabaseAdmin = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false } },
+);
+
 export async function getDriverResume(driver_uuid: string) {
   const { data, error } = await supabase
     .from("drivers")
@@ -29,12 +35,17 @@ export async function submitDispatcherRating(
       return { success: false, error: "Invalid input parameters" };
     }
 
-    // Insert rating into dispatcher_ratings table (or create if doesn't exist)
-    // If the table doesn't exist, we'll handle it gracefully
-    const { data, error } = await supabase
+    const { data: driverRow } = await supabaseAdmin
+      .from("drivers")
+      .select("id, organization_id, driver_uuid")
+      .or(`id.eq.${driver_uuid},driver_uuid.eq.${driver_uuid}`)
+      .maybeSingle();
+
+    const { data, error } = await supabaseAdmin
       .from("dispatcher_ratings")
       .insert({
         driver_uuid: driver_uuid,
+        organization_id: driverRow?.organization_id ?? null,
         score: score,
         feedback: feedback || null,
         created_at: new Date().toISOString(),
@@ -43,11 +54,7 @@ export async function submitDispatcherRating(
       .single();
 
     if (error) {
-      // If table doesn't exist, log warning but don't fail
-      // In production, you'd want to create the table via migration
-      console.warn("Dispatcher ratings table may not exist:", error.message);
-      // For now, we'll still return success since this is optional feedback
-      return { success: true, warning: "Rating table not available" };
+      return { success: false, error: error.message };
     }
 
     return { success: true, rating: data };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchMockTrackingData } from "@/app/tracking/trackingDataProvider";
+import { fetchTrackingData } from "@/app/tracking/trackingDataProvider";
 
 // IMPORTANT: Replace with your Mapbox access token
 const MAPBOX_TOKEN = "YOUR_MAPBOX_ACCESS_TOKEN";
@@ -10,7 +10,7 @@ export default function MapView() {
   const [trucks, setTrucks] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchMockTrackingData().then(setTrucks);
+    fetchTrackingData().then(setTrucks);
   }, []);
 
   useEffect(() => {

@@ -50,6 +50,9 @@ const navigationSections = [
     name: "Operations",
     items: [
       { name: "Aggregates", path: "/aggregates", icon: ClipboardList },
+      { name: "Dispatch Center", path: "/dispatch", icon: Truck },
+      { name: "Dispatch Board", path: "/dispatch/board", icon: Truck },
+      { name: "Dispatch Map", path: "/dispatch/map", icon: Truck },
       {
         name: "Aggregate Tickets",
         path: "/aggregates/tickets",
@@ -131,7 +134,7 @@ export default function ClientLayoutWrapper({
   const isPublic =
     pathname === "/" ||
     pathname === "/app" ||
-    pathname === "/ronyx" ||
+    pathname?.startsWith("/ronyx") ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup") ||
     pathname?.startsWith("/reset-password") ||

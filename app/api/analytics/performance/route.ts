@@ -7,9 +7,28 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "30d";
-    const organizationId = searchParams.get("organization_id");
+    const organizationIdParam = searchParams.get("organization_id");
+    const projectId = searchParams.get("project_id");
+    const customerId = searchParams.get("customer_id");
 
     const supabase = createSupabaseServerClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+    let organizationId = organizationIdParam || null;
+    if (authData?.user) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("organization_id")
+        .eq("id", authData.user.id)
+        .single();
+      if (profile?.organization_id) {
+        organizationId = profile.organization_id;
+      }
+    }
+
+    if (!organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const getRangeStart = (rangeValue: string) => {
       const now = new Date();
@@ -36,6 +55,12 @@ export async function GET(req: NextRequest) {
 
     if (organizationId) {
       ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
+    }
+    if (projectId) {
+      ticketsQuery = ticketsQuery.eq("project_id", projectId);
+    }
+    if (customerId) {
+      ticketsQuery = ticketsQuery.eq("customer_id", customerId);
     }
 
     const { data: tickets } = await ticketsQuery;

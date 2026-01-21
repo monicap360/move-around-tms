@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseLoadRequest } from "@/lib/assistants/loadRequestParser";
 
 export const dynamic = "force-dynamic";
 
@@ -9,18 +10,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing content." }, { status: 400 });
     }
 
-    return NextResponse.json({
-      ok: true,
-      extracted: {
-        company_name: "Thompson Contractors",
-        material_type: "fill_sand",
-        quantity: 12,
-        unit: "yards",
-        pickup_location: "Pit 3",
-        delivery_location: "Oakridge Site",
-        rate_type: "per_ton",
-      },
-    });
+    const extracted = await parseLoadRequest(content);
+    return NextResponse.json({ ok: true, extracted });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Parse failed." }, { status: 500 });
   }

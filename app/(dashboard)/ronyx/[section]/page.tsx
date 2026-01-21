@@ -238,6 +238,32 @@ const sectionConfig: Record<
       { title: "LD-5087", subtitle: "Waiting to load", status: "Loading" },
     ],
   },
+  materials: {
+    label: "Materials",
+    description: "Material rates, inventory, and pricing controls.",
+    actions: [
+      { label: "Aggregates Hub", href: "/ronyx/aggregates" },
+      { label: "Project Pricing", href: "/ronyx/projects" },
+    ],
+    rows: [
+      { title: "Crushed Stone", subtitle: "Base rate $32/ton • Inventory: 4,200T", status: "Active" },
+      { title: "Sand & Gravel", subtitle: "Base rate $28/ton • Inventory: 2,750T", status: "Watch" },
+      { title: "Topsoil", subtitle: "Base rate $24/yard • Inventory: 1,980Y", status: "Active" },
+    ],
+  },
+  hr: {
+    label: "HR & Compliance",
+    description: "Driver qualifications, onboarding, and compliance readiness.",
+    actions: [
+      { label: "Compliance Center", href: "/ronyx/hr-compliance" },
+      { label: "Payroll", href: "/ronyx/payroll" },
+    ],
+    rows: [
+      { title: "Driver Onboarding", subtitle: "3 new hires waiting on docs", status: "In Progress" },
+      { title: "Compliance Alerts", subtitle: "5 expiring CDL / medical cards", status: "Review" },
+      { title: "Payroll Prep", subtitle: "Week 03 tickets pending", status: "Ready" },
+    ],
+  },
   payroll: {
     label: "Payroll",
     description: "Driver settlements and ticket-based pay.",

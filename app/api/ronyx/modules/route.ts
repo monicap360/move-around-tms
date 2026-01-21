@@ -88,6 +88,16 @@ const DEFAULT_ROWS: Record<string, { title: string; subtitle: string; status: st
     { title: "LD-5084", subtitle: "At pit queue 12 mins", status: "Queued" },
     { title: "LD-5087", subtitle: "Waiting to load", status: "Loading" },
   ],
+  materials: [
+    { title: "Crushed Stone", subtitle: "Base rate $32/ton • Inventory: 4,200T", status: "Active" },
+    { title: "Sand & Gravel", subtitle: "Base rate $28/ton • Inventory: 2,750T", status: "Watch" },
+    { title: "Topsoil", subtitle: "Base rate $24/yard • Inventory: 1,980Y", status: "Active" },
+  ],
+  hr: [
+    { title: "Driver Onboarding", subtitle: "3 new hires waiting on docs", status: "In Progress" },
+    { title: "Compliance Alerts", subtitle: "5 expiring CDL / medical cards", status: "Review" },
+    { title: "Payroll Prep", subtitle: "Week 03 tickets pending", status: "Ready" },
+  ],
   payroll: [
     { title: "Pay Run • Week 03", subtitle: "12 drivers • $48,220", status: "Processing" },
     { title: "D. Perez", subtitle: "28 tickets • $3,420", status: "Ready" },

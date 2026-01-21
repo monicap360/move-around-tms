@@ -2714,8 +2714,91 @@ function LandingPageContent() {
           <h3 style={{ marginBottom: 12, fontSize: "1.2rem", fontWeight: 700 }}>
             Add‑On Modules (pay only for what you need)
           </h3>
+          <p style={{ color: "rgba(255, 255, 255, 0.7)", marginBottom: 16 }}>
+            Best‑selling modules for dump truck fleets
+          </p>
           <div className="modules-grid">
             {[
+              {
+                icon: "fa-route",
+                price: "+$30–100/month",
+                title: "Advanced Dispatching",
+                desc: "Smarter load assignment for complex schedules.",
+                features: [
+                  "Auto‑assign by location",
+                  "Best truck per job",
+                  "Route optimization between sites",
+                ],
+                target: "10+ trucks with complex routing",
+                href: "/ronyx/dispatch",
+              },
+              {
+                icon: "fa-bolt",
+                price: "+$30–50/month",
+                title: "TicketFlash OCR + AI Validation",
+                desc: "Scan paper scale tickets and auto‑validate weights, photos, and GPS.",
+                features: [
+                  "Scan tickets with phone camera",
+                  "OCR reads ticket numbers/weights",
+                  "AI validation: photo + GPS + weight match",
+                ],
+                target: "Fleets chasing faster approvals",
+                href: "/ticketflash-ocr",
+              },
+              {
+                icon: "fa-mobile-screen-button",
+                price: "+$10–20/driver/month",
+                title: "Mobile Driver App",
+                desc: "Digital ticket approval workflow with GPS capture.",
+                features: [
+                  "Load → Haul → Dump → Return status",
+                  "GPS pickup/dropoff timestamps",
+                  "Digital signatures + POD",
+                ],
+                target: "Teams eliminating paper workflows",
+                href: "/ronyx/driver-app",
+              },
+              {
+                icon: "fa-money-check-dollar",
+                price: "+$25–75/month",
+                title: "Billing + Collections Automation",
+                desc: "Invoice automation with predictive payment scoring.",
+                features: [
+                  "Predictive payment risk scoring",
+                  "Automated collections workflows",
+                  "Auto‑invoice on approval",
+                ],
+                target: "Teams tightening cash conversion",
+                href: "/ronyx/billing",
+              },
+              {
+                icon: "fa-chart-line",
+                price: "Contact for pricing",
+                title: "AI Financial Intelligence + Super Agents",
+                desc: "Financial engineering flow with super‑agent automation.",
+                features: [
+                  "Cash flow forecasting + risk alerts",
+                  "Super‑agents for margin & cost optimization",
+                  "Predictive payment scoring + automated collections",
+                  "Automated lien management + industry benchmarking",
+                  "Executive decision dashboards",
+                ],
+                target: "Dump fleets seeking enterprise insight",
+                href: "/ronyx/finance",
+              },
+              {
+                icon: "fa-location-dot",
+                price: "+$10–20/truck/month",
+                title: "ELD + Live Tracking",
+                desc: "Real‑time truck visibility inside dispatch.",
+                features: [
+                  "Samsara + Motive + Geotab ready",
+                  "HOS alerts before assignment",
+                  "Live load ETAs for customers",
+                ],
+                target: "Fleets running ELDs",
+                href: "/ronyx/tracking",
+              },
               {
                 icon: "fa-calculator",
                 price: "+$50–100/month",
@@ -2727,6 +2810,7 @@ function LandingPageContent() {
                   "Payments reflected in either system",
                 ],
                 target: "Anyone tired of double entry",
+                href: "/accounting",
               },
               {
                 icon: "fa-gas-pump",
@@ -2739,18 +2823,7 @@ function LandingPageContent() {
                   "Quarterly IFTA reports",
                 ],
                 target: "Fleets crossing state lines",
-              },
-              {
-                icon: "fa-bolt",
-                price: "+$30–50/month",
-                title: "Document Scanning (Rock Box)",
-                desc: "Read paper scale tickets automatically.",
-                features: [
-                  "Scan tickets with phone camera",
-                  "OCR reads ticket numbers/weights",
-                  "Auto‑attach to the correct haul",
-                ],
-                target: "Quarries still using paper tickets",
+                href: "/ronyx/ifta-fuel",
               },
               {
                 icon: "fa-wrench",
@@ -2763,30 +2836,7 @@ function LandingPageContent() {
                   "Parts and cost tracking",
                 ],
                 target: "Fleets with 3+ trucks",
-              },
-              {
-                icon: "fa-money-check-dollar",
-                price: "+$5–10/driver/month",
-                title: "Driver Payroll",
-                desc: "Auto‑calculate driver pay per load or ton.",
-                features: [
-                  "Pay rules by load/ton/hour",
-                  "Automatic settlement totals",
-                  "Export to payroll services",
-                ],
-                target: "Companies paying by load (most)",
-              },
-              {
-                icon: "fa-clock",
-                price: "+$10–20/truck/month",
-                title: "ELD Integration",
-                desc: "Sync hours of service directly into dispatch.",
-                features: [
-                  "See HOS inside TMS",
-                  "Prevent over‑hours assignments",
-                  "One less driver app",
-                ],
-                target: "Fleets running ELDs",
+                href: "/ronyx/fleet",
               },
               {
                 icon: "fa-user-circle",
@@ -2799,39 +2849,20 @@ function LandingPageContent() {
                   "Invoice history downloads",
                 ],
                 target: "Companies reducing phone calls",
+                href: "/customer-portal",
               },
               {
-                icon: "fa-route",
-                price: "+$30–100/month",
-                title: "Advanced Dispatching",
-                desc: "Smarter load assignment for complex schedules.",
+                icon: "fa-receipt",
+                price: "+$5–10/driver/month",
+                title: "Driver Payroll",
+                desc: "Auto‑calculate driver pay per load or ton.",
                 features: [
-                  "Auto‑assign by location",
-                  "Best truck per job",
-                  "Route optimization between sites",
+                  "Pay rules by load/ton/hour",
+                  "Automatic settlement totals",
+                  "Export to payroll services",
                 ],
-                target: "10+ trucks with complex routing",
-              },
-              {
-                icon: "fa-boxes-stacked",
-                price: "+$50–150/month",
-                title: "Material Inventory",
-                desc: "Track inventory at pits and reconcile what’s moved.",
-                features: ["Inventory at pits/stockpiles", "Sold vs moved reconciliation"],
-                target: "Suppliers who own materials",
-              },
-              {
-                icon: "fa-chart-line",
-                price: "Contact for pricing",
-                title: "AI Financial Intelligence",
-                desc: "AI-powered financial intelligence platform specifically optimized for dump truck operations, delivering unprecedented cash flow visibility, predictive insights, and automated optimization that no competitor can match.",
-                features: [
-                  "Cash flow forecasting + risk alerts",
-                  "Predictive dispute prevention",
-                  "Automated invoice optimization",
-                  "Executive financial dashboard",
-                ],
-                target: "Dump truck operations seeking predictive cash flow control",
+                target: "Companies paying by load (most)",
+                href: "/ronyx/payroll",
               },
             ].map((module) => (
               <div className="module-card" key={module.title}>
@@ -2891,6 +2922,156 @@ function LandingPageContent() {
                     {module.target}
                   </div>
                 </div>
+                {module.href && (
+                  <div style={{ marginTop: 16 }}>
+                    <Link
+                      href={module.href}
+                      className="btn btn-secondary"
+                      style={{ width: "auto", maxWidth: 220, padding: "10px 16px", fontSize: "0.9rem" }}
+                    >
+                      View module
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{ margin: "28px 0 12px", fontSize: "1.1rem", fontWeight: 700 }}>
+            Pits & Quarries Modules (separate from dump truck ops)
+          </h3>
+          <p style={{ color: "rgba(255, 255, 255, 0.7)", marginBottom: 16 }}>
+            Scale house, material inventory, and pit‑to‑pay workflows.
+          </p>
+          <div className="modules-grid">
+            {[
+              {
+                icon: "fa-scale-balanced",
+                price: "+$30–60/month",
+                title: "AccuriScale Integration",
+                desc: "Real‑time scale ticket capture for pits/quarries.",
+                features: [
+                  "Scale house ticket ingestion",
+                  "Weight validation + audit trail",
+                  "Automated pit‑to‑pay reconciliation",
+                ],
+                target: "Aggregates with in‑house scales",
+                href: "/pit-to-pay",
+              },
+              {
+                icon: "fa-boxes-stacked",
+                price: "+$50–150/month",
+                title: "Material Inventory",
+                desc: "Track inventory at pits and reconcile what’s moved.",
+                features: ["Inventory at pits/stockpiles", "Sold vs moved reconciliation"],
+                target: "Suppliers who own materials",
+                href: "/ronyx/materials",
+              },
+              {
+                icon: "fa-clipboard-check",
+                price: "+$20–40/month",
+                title: "Three‑Way Reconciliation",
+                desc: "Dispatch → scale ticket → invoice matching.",
+                features: ["Variance detection", "Exception queue", "Dispute resolution workflows"],
+                target: "Operations fighting ticket disputes",
+                href: "/reconciliation/upload-csv",
+              },
+              {
+                icon: "fa-gears",
+                price: "+$20–40/month",
+                title: "Contract + Rate Compliance",
+                desc: "Enforce rate tables, geofences, and approval rules.",
+                features: ["Contract compliance layer", "Geofence validation", "Approval escalation"],
+                target: "Quarries with strict contract terms",
+                href: "/ronyx/validation-rules",
+              },
+              {
+                icon: "fa-truck-fast",
+                price: "+$20–50/month",
+                title: "Load Management Hub",
+                desc: "Unified hub for pit supply, routing, and dispatch.",
+                features: ["Hub view of active loads", "Queue visibility", "Capacity planning"],
+                target: "Multi‑pit operations",
+                href: "#load-hub",
+              },
+              {
+                icon: "fa-map-location-dot",
+                price: "+$20–40/month",
+                title: "GPS + Geofence Proof",
+                desc: "Validate pit entries, exits, and delivery times.",
+                features: ["GPS distance capture", "Geofence entry logs", "Auto proof of delivery"],
+                target: "Compliance‑heavy pit operations",
+                href: "/ronyx/geofences",
+              },
+            ].map((module) => (
+              <div className="module-card" key={module.title}>
+                <div className="module-icon">
+                  <i className={`fas ${module.icon}`}></i>
+                </div>
+                <span className="module-badge">{module.price}</span>
+                <h3>{module.title}</h3>
+                <p>
+                  <strong>{module.desc}</strong>
+                </p>
+
+                <div style={{ marginTop: 30 }}>
+                  <h4 style={{ color: "var(--hyper-yellow)", marginBottom: 15 }}>
+                    Key Selling Features:
+                  </h4>
+                  <ul
+                    style={{
+                      color: "rgba(255, 255, 255, 0.8)",
+                      fontSize: "0.95rem",
+                      paddingLeft: 20,
+                      marginBottom: 25,
+                    }}
+                  >
+                    {module.features.map((feature) => (
+                      <li key={feature} style={{ marginBottom: 8 }}>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div
+                  style={{
+                    background: "rgba(255, 215, 0, 0.05)",
+                    padding: 20,
+                    borderRadius: 8,
+                    border: "1px solid rgba(255, 215, 0, 0.2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "rgba(255, 255, 255, 0.7)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    TARGET CUSTOMERS:
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--hyper-yellow)",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    {module.target}
+                  </div>
+                </div>
+                {module.href && (
+                  <div style={{ marginTop: 16 }}>
+                    <Link
+                      href={module.href}
+                      className="btn btn-secondary"
+                      style={{ width: "auto", maxWidth: 220, padding: "10px 16px", fontSize: "0.9rem" }}
+                    >
+                      View module
+                    </Link>
+                  </div>
+                )}
               </div>
             ))}
           </div>
