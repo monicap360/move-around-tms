@@ -5,9 +5,9 @@ import RonyxLoadBoard from "@/components/ronyx/loads/load-board";
 import RonyxDispatchSheet from "@/components/ronyx/loads/dispatch-sheet";
 
 export default function RonyxLoadsPage() {
-  const { tenant } = useRonyxTenant();
+  const { company } = useRonyxTenant();
 
-  if (tenant.id !== "ronyx") {
+  if (company.id !== "ronyx") {
     return <div>Unauthorized access</div>;
   }
 
@@ -17,7 +17,7 @@ export default function RonyxLoadsPage() {
 
       <section>
         <h2>Active Loads</h2>
-        <RonyxLoadBoard tenant="ronyx" />
+        <RonyxLoadBoard companyId="ronyx" />
       </section>
 
       <section>
@@ -27,11 +27,11 @@ export default function RonyxLoadsPage() {
 
       <section>
         <h2>Dispatch Sheets</h2>
-        <RonyxDispatchSheet tenant="ronyx" />
+        <RonyxDispatchSheet companyId="ronyx" />
       </section>
 
       <div className="ronyx-disabled-module">
-        PIT Module: Not available for Ronyx tenant
+        PIT Module: Not available for this company
       </div>
     </div>
   );

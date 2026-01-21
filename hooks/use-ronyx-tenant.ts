@@ -10,7 +10,7 @@ export function useRonyxTenant() {
   );
 
   return {
-    tenant: { id: context.tenant.id, name: context.tenant.name },
+    company: { id: context.tenant.id, name: context.tenant.name },
     features,
     modules: context.modules,
     compliance: context.compliance,

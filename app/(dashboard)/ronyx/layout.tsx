@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 
 import RonyxShell from "./RonyxShell";
 
+export const dynamic = "force-dynamic";
+
 export default async function RonyxLayout({ children }: { children: React.ReactNode }) {
   const supabase = createServerComponentClient({ cookies });
 

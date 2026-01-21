@@ -319,17 +319,16 @@ export default function FleetPage({
     }
   }, [activeTab]);
 
-  const rangeByPeriod: Record<typeof financialPeriod, string> = {
-    today: '7d',
-    week: '7d',
-    month: '30d',
-    quarter: '90d',
-  };
-
-  const loadFinancialData = async () => {
+  const loadFinancialData = useCallback(async () => {
     setFinancialLoading(true);
     setFinancialError(null);
     try {
+      const rangeByPeriod: Record<typeof financialPeriod, string> = {
+        today: '7d',
+        week: '7d',
+        month: '30d',
+        quarter: '90d',
+      };
       const range = rangeByPeriod[financialPeriod];
       const scopedParams = new URLSearchParams({ range });
       if (projectId) scopedParams.set("project_id", projectId);
@@ -439,12 +438,12 @@ export default function FleetPage({
     } finally {
       setFinancialLoading(false);
     }
-  };
+  }, [financialPeriod, projectId, customerId]);
 
   useEffect(() => {
     if (activeTab !== 'financial') return;
     void loadFinancialData();
-  }, [activeTab, financialPeriod, projectId, customerId]);
+  }, [activeTab, loadFinancialData]);
 
   useEffect(() => {
     if (activeTab !== 'financial') return;

@@ -18,7 +18,7 @@ ronyxRouter.use("/tickets", require("./tickets").default);
 ronyxRouter.all("/pit/*", (req, res) => {
   res.status(403).json({
     error: "PIT module not available for Ronyx tenant",
-    tenant: "ronyx",
+    company: "ronyx",
     message: "This feature is disabled for your account",
   });
 });
@@ -27,7 +27,7 @@ ronyxRouter.all("/pit/*", (req, res) => {
 ronyxRouter.get("/health", (req, res) => {
   res.json({
     status: "healthy",
-    tenant: "ronyx",
+    company: "ronyx",
     domain: "ronyx.movearoundtms.com",
     modules: {
       loads: "enabled",

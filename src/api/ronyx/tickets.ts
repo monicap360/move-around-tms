@@ -14,7 +14,7 @@ ticketRouter.post("/upload", async (req, res) => {
 
     res.json({
       success: true,
-      tenant: "ronyx",
+      company: "ronyx",
       ticketId: result.ticketId,
       status: "processed",
       reconciliationNeeded: result.needsReconciliation,
@@ -22,7 +22,7 @@ ticketRouter.post("/upload", async (req, res) => {
   } catch (error: any) {
     res.status(400).json({
       error: "Ticket processing failed",
-      tenant: "ronyx",
+      company: "ronyx",
       details: error.message,
     });
   }
@@ -39,7 +39,7 @@ ticketRouter.post("/reconcile", async (req, res) => {
   );
 
   res.json({
-    tenant: "ronyx",
+    company: "ronyx",
     reconciliation,
   });
 });
