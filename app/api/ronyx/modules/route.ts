@@ -115,6 +115,49 @@ const DEFAULT_ROWS: Record<string, { title: string; subtitle: string; status: st
   ],
 };
 
+const normalizeStatus = (value?: string | null) => {
+  if (!value) return "Pending";
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatTicketRow = (ticket: {
+  id?: string;
+  ticket_number?: string | null;
+  material?: string | null;
+  status?: string | null;
+  recon_status?: string | null;
+  net_weight?: number | null;
+  ocr_net?: number | null;
+  recon_net?: number | null;
+  ocr_weight?: number | null;
+  driver?: { first_name?: string | null; last_name?: string | null } | null;
+  materials?: { material_type?: string | null; material_code?: string | null } | null;
+  drivers?: { first_name?: string | null; last_name?: string | null } | null;
+}) => {
+  const ticketNumber = ticket.ticket_number || ticket.id?.slice(0, 8) || "Ticket";
+  const driverInfo = ticket.driver || ticket.drivers;
+  const driverName = [driverInfo?.first_name, driverInfo?.last_name].filter(Boolean).join(" ");
+  const material =
+    ticket.material ||
+    ticket.materials?.material_type ||
+    ticket.materials?.material_code ||
+    "Material";
+  const net =
+    ticket.net_weight ??
+    ticket.recon_net ??
+    ticket.ocr_net ??
+    ticket.ocr_weight;
+  const netLabel = typeof net === "number" ? `${net.toFixed(1)}T` : "Net --";
+
+  return {
+    title: `T-${ticketNumber} • ${material}`,
+    subtitle: `${driverName ? `Driver: ${driverName} • ` : ""}${netLabel}`,
+    status: normalizeStatus(ticket.status || ticket.recon_status),
+  };
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get("section");
@@ -124,6 +167,59 @@ export async function GET(request: Request) {
   }
 
   const supabase = createSupabaseServerClient();
+  if (section === "tickets") {
+    const ronyxTickets = await supabase
+      .from("ronyx.tickets")
+      .select(
+        "id, ticket_number, status, ticket_date, net_weight, drivers:driver_id(first_name,last_name), materials:material_id(material_type,material_code)",
+      )
+      .order("ticket_date", { ascending: false })
+      .limit(25);
+
+    if (!ronyxTickets.error && (ronyxTickets.data || []).length > 0) {
+      return NextResponse.json({ rows: (ronyxTickets.data || []).map(formatTicketRow) });
+    }
+
+    const envOrgId =
+      process.env.RONYX_ORGANIZATION_ID ||
+      process.env.RONYX_ORG_ID ||
+      process.env.NEXT_PUBLIC_RONYX_ORGANIZATION_ID ||
+      "";
+
+    let organizationId = envOrgId;
+
+    if (!organizationId) {
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("id")
+        .or("organization_code.eq.ronyx-logistics-llc,name.eq.Ronyx Logistics LLC")
+        .limit(1)
+        .maybeSingle();
+
+      organizationId = orgData?.id || "";
+    }
+
+    let aggregateQuery = supabase
+      .from("aggregate_tickets")
+      .select(
+        "id, ticket_number, status, recon_status, material, ocr_net, recon_net, ocr_weight, created_at, driver:driver_id(first_name,last_name)",
+      )
+      .order("created_at", { ascending: false })
+      .limit(25);
+
+    if (organizationId) {
+      aggregateQuery = aggregateQuery.eq("organization_id", organizationId);
+    }
+
+    const aggregateTickets = await aggregateQuery;
+
+    if (aggregateTickets.error) {
+      return NextResponse.json({ error: aggregateTickets.error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ rows: (aggregateTickets.data || []).map(formatTicketRow) });
+  }
+
   const { data, error } = await supabase
     .from("ronyx_module_items")
     .select("*")

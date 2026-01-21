@@ -1418,6 +1418,11 @@ function LandingPageContent() {
           margin-top: 80px;
         }
 
+        .modules-grid.modules-grid-core {
+          grid-template-columns: 1fr;
+          margin-top: 32px;
+        }
+
         .module-card {
           background: linear-gradient(
             145deg,
@@ -1431,6 +1436,55 @@ function LandingPageContent() {
           transition: var(--speed-transition);
           position: relative;
           overflow: hidden;
+        }
+
+        .module-card.module-card-wide {
+          display: grid;
+          grid-template-columns: minmax(120px, 160px) 1fr;
+          gap: 32px;
+          align-items: center;
+          background: linear-gradient(
+            135deg,
+            rgba(255, 215, 0, 0.18),
+            rgba(30, 30, 30, 0.9) 45%,
+            rgba(42, 42, 42, 0.6)
+          );
+          border-color: rgba(255, 215, 0, 0.45);
+        }
+
+        .module-card.module-card-wide .module-icon {
+          margin-bottom: 0;
+          background: rgba(255, 215, 0, 0.2);
+          border-color: rgba(255, 215, 0, 0.45);
+        }
+
+        .module-card.module-card-wide .module-title {
+          font-size: 1.6rem;
+        }
+
+        .module-card.module-card-wide .module-desc {
+          color: rgba(255, 255, 255, 0.82);
+          font-size: 1rem;
+        }
+
+        .module-card.module-card-wide .module-target {
+          font-weight: 700;
+          color: var(--hyper-yellow);
+        }
+
+        .module-card.module-card-wide .core-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(255, 215, 0, 0.14);
+          border: 1px solid rgba(255, 215, 0, 0.35);
+          color: var(--hyper-yellow);
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          margin-bottom: 12px;
         }
 
         .module-card::before {
@@ -2240,6 +2294,9 @@ function LandingPageContent() {
           .benefits-grid {
             grid-template-columns: repeat(2, 1fr);
           }
+          .modules-grid.modules-grid-core {
+            grid-template-columns: 1fr;
+          }
           .onboarding-steps {
             grid-template-columns: 1fr;
           }
@@ -2326,6 +2383,13 @@ function LandingPageContent() {
           }
           .module-card {
             padding: 32px 24px;
+          }
+          .module-card.module-card-wide {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+          .module-card.module-card-wide .module-icon {
+            margin-bottom: 12px;
           }
           .modules-grid,
           .pricing-tiers,
@@ -2689,25 +2753,28 @@ function LandingPageContent() {
             </p>
           </div>
 
-          <div className="modules-grid" style={{ marginBottom: 28 }}>
-            <div className="module-card">
+          <div className="modules-grid modules-grid-core" style={{ marginBottom: 28 }}>
+            <div className="module-card module-card-wide">
               <div className="module-icon">
                 <i className="fa-solid fa-layer-group" />
               </div>
-              <div className="module-title">Core System (Absolute Minimum)</div>
-              <div className="module-desc">
-                The foundation only handles the digital load ticket lifecycle — nothing more.
+              <div className="module-body">
+                <div className="core-badge">Start here</div>
+                <div className="module-title">Core System (Absolute Minimum)</div>
+                <div className="module-desc">
+                  The foundation only handles the digital load ticket lifecycle — nothing more.
+                </div>
+                <ul className="module-list">
+                  <li>Dispatch board: assign loads, view truck status</li>
+                  <li>Digital load tickets (customer, material, source, destination)</li>
+                  <li>Driver mobile app: Load → Haul → Dump → Return</li>
+                  <li>Ticket management: ready‑to‑invoice workflow</li>
+                  <li>Basic invoicing: PDF, email, mark paid</li>
+                  <li>Customer & driver directory (name, phone, email)</li>
+                  <li>Dashboard: today’s hauls, revenue, trucks working</li>
+                </ul>
+                <div className="module-target">Typical core pricing: $25–50/truck/month</div>
               </div>
-              <ul className="module-list">
-                <li>Dispatch board: assign loads, view truck status</li>
-                <li>Digital load tickets (customer, material, source, destination)</li>
-                <li>Driver mobile app: Load → Haul → Dump → Return</li>
-                <li>Ticket management: ready‑to‑invoice workflow</li>
-                <li>Basic invoicing: PDF, email, mark paid</li>
-                <li>Customer & driver directory (name, phone, email)</li>
-                <li>Dashboard: today’s hauls, revenue, trucks working</li>
-              </ul>
-              <div className="module-target">Typical core pricing: $25–50/truck/month</div>
             </div>
           </div>
 
