@@ -69,6 +69,14 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
     odometer: body.odometer || null,
     shift: body.shift || null,
     work_order_number: body.work_order_number || null,
+    company_name: body.company_name || body.company || null,
+    fuel_surcharge_amount: body.fuel_surcharge_amount ?? body.fuel_surcharge ?? null,
+    spread_amount: body.spread_amount ?? null,
+    detention_amount: body.detention_amount ?? null,
+    detention_ref: body.detention_ref ?? null,
+    show_fuel: body.show_fuel ?? Boolean(body.fuel_surcharge_amount || body.fuel_surcharge),
+    show_spread: body.show_spread ?? Boolean(body.spread_amount),
+    show_detention: body.show_detention ?? Boolean(body.detention_amount),
   };
 
   const { data, error } = await supabase

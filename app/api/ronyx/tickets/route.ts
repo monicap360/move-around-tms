@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
     ticket_id,
     ticket_number,
     ticket_date,
+    company_name: body.company_name || body.company || null,
     project_id: body.project_id || null,
     customer_id: body.customer_id || null,
     driver_id: body.driver_id || null,
@@ -159,6 +160,13 @@ export async function POST(request: NextRequest) {
     ticket_image_url: body.ticket_image_url || null,
     delivery_receipt_url: body.delivery_receipt_url || null,
     pod_url: body.pod_url || null,
+    fuel_surcharge_amount: body.fuel_surcharge_amount ?? body.fuel_surcharge ?? null,
+    spread_amount: body.spread_amount ?? null,
+    detention_amount: body.detention_amount ?? null,
+    detention_ref: body.detention_ref ?? null,
+    show_fuel: body.show_fuel ?? Boolean(body.fuel_surcharge_amount || body.fuel_surcharge),
+    show_spread: body.show_spread ?? Boolean(body.spread_amount),
+    show_detention: body.show_detention ?? Boolean(body.detention_amount),
   };
 
   const { data, error } = await supabase.from("aggregate_tickets").insert(payload).select().single();

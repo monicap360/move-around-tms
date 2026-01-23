@@ -7,6 +7,35 @@ type PayRule = {
   pay_rate: number;
 };
 
+function parseCompany(notes?: string | null) {
+  if (!notes) return "Creative";
+  const match = notes.match(/company:\s*([a-z\s]+)/i);
+  return match ? match[1].trim() : "Creative";
+}
+
+function parseExtras(ticket: any) {
+  const fuel = Number(ticket.fuel_surcharge_amount ?? 0);
+  const spread = Number(ticket.spread_amount ?? 0);
+  const detention = Number(ticket.detention_amount ?? 0);
+  if (fuel || spread || detention) {
+    return {
+      fuel: Number.isFinite(fuel) ? fuel : 0,
+      spread: Number.isFinite(spread) ? spread : 0,
+      detention: Number.isFinite(detention) ? detention : 0,
+    };
+  }
+  const notes = ticket.ticket_notes as string | null;
+  if (!notes) return { fuel: 0, spread: 0, detention: 0 };
+  const fuelFromNotes = Number(notes.match(/fuel\s*=\s*([\d.]+)/i)?.[1] || 0);
+  const spreadFromNotes = Number(notes.match(/spread\s*=\s*([\d.]+)/i)?.[1] || 0);
+  const detentionFromNotes = Number(notes.match(/detention\s*=\s*([\d.]+)/i)?.[1] || 0);
+  return {
+    fuel: Number.isFinite(fuelFromNotes) ? fuelFromNotes : 0,
+    spread: Number.isFinite(spreadFromNotes) ? spreadFromNotes : 0,
+    detention: Number.isFinite(detentionFromNotes) ? detentionFromNotes : 0,
+  };
+}
+
 function isMonthlyParking(description?: string | null) {
   if (!description) return false;
   return description.toLowerCase().startsWith("truck parking:");
@@ -39,7 +68,11 @@ function computeGross(payType: string, payRate: number, tickets: any[]) {
       const rate = Number(t.bill_rate || t.rate_amount || 0);
       return sum + qty * rate;
     }, 0);
-    return revenue * (payRate / 100);
+    const extras = tickets.reduce((sum, t) => {
+      const parsed = parseExtras(t);
+      return sum + parsed.fuel + parsed.spread;
+    }, 0);
+    return revenue * (payRate / 100) + extras;
   }
   const quantity = tickets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
   return quantity * payRate;
@@ -48,7 +81,7 @@ function computeGross(payType: string, payRate: number, tickets: any[]) {
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient();
   const body = await req.json();
-  const { start_date, end_date, driver_id } = body || {};
+  const { start_date, end_date, driver_id, company } = body || {};
 
   if (!start_date || !end_date) {
     return NextResponse.json({ error: "start_date and end_date are required" }, { status: 400 });
@@ -81,7 +114,9 @@ export async function POST(req: NextRequest) {
   });
 
   const byDriver = new Map<string, any[]>();
-  (tickets || []).forEach((ticket) => {
+  (tickets || [])
+    .filter((ticket) => (company ? (ticket.company_name || parseCompany(ticket.ticket_notes)) === company : true))
+    .forEach((ticket) => {
     const id = ticket.driver_id || ticket.driver_name;
     if (!id) return;
     const key = ticket.driver_id || ticket.driver_name;

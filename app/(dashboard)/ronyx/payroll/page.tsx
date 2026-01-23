@@ -26,6 +26,7 @@ export default function RonyxPayrollPage() {
   const [periodStart, setPeriodStart] = useState(new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10));
   const [periodEnd, setPeriodEnd] = useState(new Date().toISOString().slice(0, 10));
   const [selectedDriver, setSelectedDriver] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState("Creative");
   const [message, setMessage] = useState("");
   const [runId, setRunId] = useState<string | null>(null);
 
@@ -112,6 +113,7 @@ export default function RonyxPayrollPage() {
         start_date: periodStart,
         end_date: periodEnd,
         driver_id: selectedDriver || undefined,
+        company: selectedCompany || undefined,
       }),
     });
     const data = await res.json();
@@ -322,6 +324,11 @@ export default function RonyxPayrollPage() {
               {drivers.map((driver) => (
                 <option key={driver.id} value={driver.id}>{driver.name}</option>
               ))}
+            </select>
+            <label className="ronyx-label">Company</label>
+            <select className="ronyx-input" value={selectedCompany} onChange={(e) => setSelectedCompany(e.target.value)}>
+              <option value="Creative">Creative</option>
+              <option value="Jacob">Jacob</option>
             </select>
             <button className="ronyx-action primary" onClick={calculatePayroll}>Calculate Payroll</button>
           </div>

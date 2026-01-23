@@ -10,6 +10,22 @@ function parseUploadSource(notes?: string | null) {
   return match ? match[1].trim() : "Office";
 }
 
+function parseCompany(notes?: string | null) {
+  if (!notes) return "Creative";
+  const match = notes.match(/company:\s*([a-z\s]+)/i);
+  return match ? match[1].trim() : "Creative";
+}
+
+function parseExtras(notes?: string | null) {
+  if (!notes) return { fuel: "", spread: "", detention: "", detentionRef: "" };
+  return {
+    fuel: notes.match(/fuel\s*=\s*([\d.]+)/i)?.[1] || "",
+    spread: notes.match(/spread\s*=\s*([\d.]+)/i)?.[1] || "",
+    detention: notes.match(/detention\s*=\s*([\d.]+)/i)?.[1] || "",
+    detentionRef: notes.match(/detention_ref\s*=\s*([a-z0-9\-]+)/i)?.[1] || "",
+  };
+}
+
 export async function GET(request: NextRequest) {
   const supabase = createSupabaseServerClient();
   const { searchParams } = new URL(request.url);
@@ -38,6 +54,7 @@ export async function GET(request: NextRequest) {
     ticket_date: ticket.ticket_date || "",
     driver_name: ticket.driver_name || "",
     driver_id: ticket.driver_id || "",
+    company: ticket.company_name || parseCompany(ticket.ticket_notes),
     upload_source: parseUploadSource(ticket.ticket_notes),
     material: ticket.material || "",
     quantity: ticket.quantity ?? "",
@@ -49,6 +66,10 @@ export async function GET(request: NextRequest) {
     customer_name: ticket.customer_name || "",
     delivery_location: ticket.delivery_location || "",
     status: ticket.status || "",
+    fuel_surcharge: ticket.fuel_surcharge_amount ?? parseExtras(ticket.ticket_notes).fuel,
+    spread_amount: ticket.spread_amount ?? parseExtras(ticket.ticket_notes).spread,
+    detention_amount: ticket.detention_amount ?? parseExtras(ticket.ticket_notes).detention,
+    detention_invoice_ref: ticket.detention_ref ?? parseExtras(ticket.ticket_notes).detentionRef,
   }));
 
   const csv = Papa.unparse(rows);

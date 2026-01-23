@@ -32,6 +32,11 @@ type Ticket = {
   ticket_image_url?: string | null;
   delivery_receipt_url?: string | null;
   pod_url?: string | null;
+  company_name?: string | null;
+  fuel_surcharge_amount?: number | null;
+  spread_amount?: number | null;
+  detention_amount?: number | null;
+  detention_ref?: string | null;
   approved_by?: string | null;
   approved_at?: string | null;
   invoice_number?: string | null;
@@ -76,6 +81,51 @@ const getUploadSource = (notes?: string | null) => {
   if (!notes) return "Office";
   const match = notes.match(/source:\s*([a-z\s]+)/i);
   return match ? match[1].trim() : "Office";
+};
+
+const getCompanyTag = (notes?: string | null) => {
+  if (!notes) return "Creative";
+  const match = notes.match(/company:\s*([a-z\s]+)/i);
+  return match ? match[1].trim() : "Creative";
+};
+
+const withCompanyTag = (notes: string, company: string) => {
+  if (!company) return notes;
+  const existing = notes || "";
+  if (/company:\s*/i.test(existing)) return existing;
+  const prefix = `Company: ${company}`;
+  return existing ? `${prefix} | ${existing}` : prefix;
+};
+
+const parseExtras = (notes?: string | null) => {
+  if (!notes) {
+    return { fuel: "", spread: "", detention: "", detentionRef: "" };
+  }
+  const fuel = notes.match(/fuel\s*=\s*([\d.]+)/i)?.[1] || "";
+  const spread = notes.match(/spread\s*=\s*([\d.]+)/i)?.[1] || "";
+  const detention = notes.match(/detention\s*=\s*([\d.]+)/i)?.[1] || "";
+  const detentionRef = notes.match(/detention_ref\s*=\s*([a-z0-9\-]+)/i)?.[1] || "";
+  return { fuel, spread, detention, detentionRef };
+};
+
+const withExtras = (
+  notes: string,
+  extras: { fuel?: string; spread?: string; detention?: string; detentionRef?: string },
+) => {
+  const existing = notes || "";
+  const cleaned = existing
+    .replace(/\|\s*Extras:.*$/i, "")
+    .replace(/Extras:.*$/i, "")
+    .trim();
+  const parts = [
+    extras.fuel ? `fuel=${extras.fuel}` : null,
+    extras.spread ? `spread=${extras.spread}` : null,
+    extras.detention ? `detention=${extras.detention}` : null,
+    extras.detentionRef ? `detention_ref=${extras.detentionRef}` : null,
+  ].filter(Boolean);
+  if (parts.length === 0) return cleaned;
+  const extrasBlock = `Extras: ${parts.join("; ")}`;
+  return cleaned ? `${cleaned} | ${extrasBlock}` : extrasBlock;
 };
 
 const withUploadSource = (notes: string, source: string) => {
@@ -161,6 +211,11 @@ export default function RonyxTicketsPage() {
     approved_at: "",
     ticket_notes: "",
     upload_source: "Office",
+    company: "Creative",
+    fuel_surcharge: "",
+    spread_amount: "",
+    detention_amount: "",
+    detention_ref: "",
     odometer: "",
     shift: "",
     work_order_number: "",
@@ -174,6 +229,7 @@ export default function RonyxTicketsPage() {
     delivery_receipt_url: "",
     pod_url: "",
   });
+  const [showOwnerExtras, setShowOwnerExtras] = useState(false);
 
   useEffect(() => {
     loadDrivers();
@@ -562,7 +618,23 @@ export default function RonyxTicketsPage() {
         bill_rate: form.bill_rate || form.rate_amount || null,
         status: form.status,
         payment_status: form.payment_status,
-        ticket_notes: withUploadSource(form.ticket_notes, form.upload_source),
+        company_name: form.company,
+        fuel_surcharge_amount: form.fuel_surcharge || null,
+        spread_amount: form.spread_amount || null,
+        detention_amount: form.detention_amount || null,
+        detention_ref: form.detention_ref || (form.ticket_number ? `${form.ticket_number}D` : null),
+        show_fuel: Boolean(form.fuel_surcharge),
+        show_spread: Boolean(form.spread_amount),
+        show_detention: Boolean(form.detention_amount),
+        ticket_notes: withExtras(
+          withCompanyTag(withUploadSource(form.ticket_notes, form.upload_source), form.company),
+          {
+            fuel: form.fuel_surcharge,
+            spread: form.spread_amount,
+            detention: form.detention_amount,
+            detentionRef: form.detention_ref,
+          },
+        ),
       }),
     });
     const data = await res.json();
@@ -591,11 +663,25 @@ export default function RonyxTicketsPage() {
   async function handleSubmit() {
     setLoading(true);
     try {
+      const notesWithCompany = withCompanyTag(withUploadSource(form.ticket_notes, form.upload_source), form.company);
       const payload = {
         ...form,
         net_weight: form.net_weight || calculatedNet,
         bill_rate: form.bill_rate || form.rate_amount,
-        ticket_notes: withUploadSource(form.ticket_notes, form.upload_source),
+        company_name: form.company,
+        fuel_surcharge_amount: form.fuel_surcharge || null,
+        spread_amount: form.spread_amount || null,
+        detention_amount: form.detention_amount || null,
+        detention_ref: form.detention_ref || (form.ticket_number ? `${form.ticket_number}D` : null),
+        show_fuel: Boolean(form.fuel_surcharge),
+        show_spread: Boolean(form.spread_amount),
+        show_detention: Boolean(form.detention_amount),
+        ticket_notes: withExtras(notesWithCompany, {
+          fuel: form.fuel_surcharge,
+          spread: form.spread_amount,
+          detention: form.detention_amount,
+          detentionRef: form.detention_ref,
+        }),
       };
       const res = ticketId
         ? await fetch(`/api/ronyx/tickets/${ticketId}`, {
@@ -650,6 +736,11 @@ export default function RonyxTicketsPage() {
       pod_url: ticket.pod_url || prev.pod_url,
       ticket_notes: ticket.ticket_notes || prev.ticket_notes,
       upload_source: getUploadSource(ticket.ticket_notes),
+      company: ticket.company_name || getCompanyTag(ticket.ticket_notes),
+      fuel_surcharge: ticket.fuel_surcharge_amount?.toString() || parseExtras(ticket.ticket_notes).fuel,
+      spread_amount: ticket.spread_amount?.toString() || parseExtras(ticket.ticket_notes).spread,
+      detention_amount: ticket.detention_amount?.toString() || parseExtras(ticket.ticket_notes).detention,
+      detention_ref: ticket.detention_ref || parseExtras(ticket.ticket_notes).detentionRef,
     }));
   }
 
@@ -1321,6 +1412,17 @@ export default function RonyxTicketsPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="ronyx-label">Company</label>
+                  <select
+                    className="ronyx-input"
+                    value={form.company}
+                    onChange={(e) => setForm({ ...form, company: e.target.value })}
+                  >
+                    <option value="Creative">Creative</option>
+                    <option value="Jacob">Jacob</option>
+                  </select>
+                </div>
+                <div>
                   <label className="ronyx-label">Upload Source</label>
                   <select
                     className="ronyx-input"
@@ -1829,6 +1931,65 @@ export default function RonyxTicketsPage() {
               />
             </div>
           </div>
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4 }}>
+                Owner-Operator Extras (Hidden by Default)
+              </h2>
+              <p className="ronyx-muted">
+                Add Fuel Surcharge, Spread, or Detention only when applicable. Detention is billed separately.
+              </p>
+            </div>
+            <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={() => setShowOwnerExtras((prev) => !prev)}>
+              {showOwnerExtras ? "Hide Extras" : "Show Extras"}
+            </button>
+          </div>
+          {showOwnerExtras && (
+            <div className="ronyx-grid" style={{ rowGap: 20, marginTop: 12 }}>
+              <div>
+                <label className="ronyx-label">Fuel Surcharge (when reconciled)</label>
+                <input
+                  className="ronyx-input"
+                  placeholder="0.00"
+                  value={form.fuel_surcharge}
+                  onChange={(e) => setForm({ ...form, fuel_surcharge: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="ronyx-label">Spread Amount</label>
+                <input
+                  className="ronyx-input"
+                  placeholder="0.00"
+                  value={form.spread_amount}
+                  onChange={(e) => setForm({ ...form, spread_amount: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="ronyx-label">Detention / Diversion (bill separately)</label>
+                <input
+                  className="ronyx-input"
+                  placeholder="0.00"
+                  value={form.detention_amount}
+                  onChange={(e) => setForm({ ...form, detention_amount: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="ronyx-label">Detention Invoice Ref</label>
+                <input
+                  className="ronyx-input"
+                  placeholder="Ticket # + D"
+                  value={form.detention_ref || (form.ticket_number ? `${form.ticket_number}D` : "")}
+                  onChange={(e) => setForm({ ...form, detention_ref: e.target.value })}
+                />
+                <div className="ronyx-muted" style={{ marginTop: 6 }}>
+                  We use the same ticket number plus a "D".
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {focusedTicket && (
@@ -2434,6 +2595,7 @@ export default function RonyxTicketsPage() {
                   <span>Date</span>
                   <span>Ticket #</span>
                   <span>Driver</span>
+                  <span>Company</span>
                   <span>Source</span>
                   <span>Status</span>
                   <span>Action</span>
@@ -2443,6 +2605,7 @@ export default function RonyxTicketsPage() {
                     <span>{ticket.ticket_date || "—"}</span>
                     <span>{ticket.ticket_number || "—"}</span>
                     <span>{ticket.driver_name || "Unassigned"}</span>
+                    <span>{getCompanyTag(ticket.ticket_notes)}</span>
                     <span>{getUploadSource(ticket.ticket_notes)}</span>
                     <span className="ronyx-tag">{ticket.status || "pending"}</span>
                     <span>
