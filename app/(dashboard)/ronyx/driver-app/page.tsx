@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 
@@ -683,7 +684,13 @@ export default function RonyxDriverAppPage() {
               </label>
               {ticketPreviewUrl && (
                 <div className="ticket-preview">
-                  <img src={ticketPreviewUrl} alt="Uploaded ticket preview" />
+                  <Image
+                    src={ticketPreviewUrl}
+                    alt="Uploaded ticket preview"
+                    width={900}
+                    height={1200}
+                    unoptimized
+                  />
                   <div style={{ marginTop: 6, fontSize: "0.75rem", color: "rgba(15,23,42,0.6)" }}>
                     Uploaded ticket preview
                   </div>
@@ -1153,7 +1160,13 @@ TODAY'S LOADS
               />
               {ticketPreviewUrl && (
                 <div className="ticket-preview">
-                  <img src={ticketPreviewUrl} alt="Uploaded ticket preview" />
+                  <Image
+                    src={ticketPreviewUrl}
+                    alt="Uploaded ticket preview"
+                    width={900}
+                    height={1200}
+                    unoptimized
+                  />
                 </div>
               )}
             </div>

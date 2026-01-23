@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -3069,7 +3070,13 @@ function LandingPageContent() {
             </div>
             <div className="ticket-compare-grid">
               <div className="ticket-compare-image">
-                <img src="/ronyx-ticket-sample.svg" alt="Ticket scan preview" />
+                <Image
+                  src="/ronyx-ticket-sample.svg"
+                  alt="Ticket scan preview"
+                  width={900}
+                  height={1200}
+                  unoptimized
+                />
                 <div style={{ marginTop: 10, color: "rgba(255, 255, 255, 0.7)" }}>
                   Original ticket photo (driver upload)
                 </div>

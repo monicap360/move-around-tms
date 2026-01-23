@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clarifier } from "@/lib/tickets/clarifier";
@@ -1501,7 +1502,13 @@ export default function RonyxTicketsPage() {
           </p>
           <div className="ticket-compare-grid">
             <div className="ticket-compare-image">
-              <img src={localPreviewUrl || ticketPreviewUrl} alt="Ticket scan preview" />
+              <Image
+                src={localPreviewUrl || ticketPreviewUrl}
+                alt="Ticket scan preview"
+                width={900}
+                height={1200}
+                unoptimized
+              />
               <div className="ronyx-muted" style={{ marginTop: 8 }}>
                 {localPreviewUrl
                   ? "Uploaded ticket preview"
