@@ -1487,6 +1487,57 @@ function LandingPageContent() {
           margin-bottom: 12px;
         }
 
+        .ticket-compare-panel {
+          margin-top: 36px;
+          background: rgba(18, 18, 18, 0.8);
+          border: 1px solid rgba(255, 215, 0, 0.18);
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: var(--shadow-performance);
+        }
+
+        .ticket-compare-grid {
+          display: grid;
+          grid-template-columns: 1.1fr 0.9fr;
+          gap: 24px;
+          align-items: stretch;
+        }
+
+        .ticket-compare-image {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 215, 0, 0.18);
+          border-radius: 18px;
+          padding: 16px;
+        }
+
+        .ticket-compare-image img {
+          width: 100%;
+          height: auto;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 215, 0, 0.22);
+        }
+
+        .ticket-compare-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .ticket-compare-field {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 215, 0, 0.15);
+          font-weight: 600;
+        }
+
+        .ticket-compare-field span:last-child {
+          color: rgba(255, 255, 255, 0.85);
+        }
+
         .module-card::before {
           content: "";
           position: absolute;
@@ -2294,6 +2345,9 @@ function LandingPageContent() {
           .benefits-grid {
             grid-template-columns: repeat(2, 1fr);
           }
+          .ticket-compare-grid {
+            grid-template-columns: 1fr;
+          }
           .modules-grid.modules-grid-core {
             grid-template-columns: 1fr;
           }
@@ -3002,6 +3056,43 @@ function LandingPageContent() {
                 )}
               </div>
             ))}
+          </div>
+
+          <div className="ticket-compare-panel">
+            <div className="section-header" style={{ marginBottom: 20 }}>
+              <h3 style={{ marginBottom: 8 }}>
+                Ticket Scanner: <span className="speed-gradient">Photo vs. System Data</span>
+              </h3>
+              <p style={{ color: "rgba(255, 255, 255, 0.7)" }}>
+                Every ticket scan shows the original photo next to the captured fields, so dispatch can approve fast.
+              </p>
+            </div>
+            <div className="ticket-compare-grid">
+              <div className="ticket-compare-image">
+                <img src="/ronyx-ticket-sample.svg" alt="Ticket scan preview" />
+                <div style={{ marginTop: 10, color: "rgba(255, 255, 255, 0.7)" }}>
+                  Original ticket photo (driver upload)
+                </div>
+              </div>
+              <div className="ticket-compare-fields">
+                {[
+                  ["Ticket #", "T-20481"],
+                  ["Date", "05/17/2025"],
+                  ["Material", "3/4\" Gravel"],
+                  ["Gross / Tare / Net", "74,200 / 28,300 / 45,900"],
+                  ["Quantity", "12.0 Tons"],
+                  ["Customer", "Ronyx Logistics LLC"],
+                  ["Job", "I-45 Expansion"],
+                  ["Bill Rate", "$85/ton"],
+                  ["Status", "Ready to approve"],
+                ].map(([label, value]) => (
+                  <div className="ticket-compare-field" key={label}>
+                    <span>{label}</span>
+                    <span>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <h3 style={{ margin: "28px 0 12px", fontSize: "1.1rem", fontWeight: 700 }}>

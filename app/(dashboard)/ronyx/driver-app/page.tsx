@@ -36,6 +36,7 @@ export default function RonyxDriverAppPage() {
   const [showIssuePanel, setShowIssuePanel] = useState(false);
   const [offlineQueue, setOfflineQueue] = useState<string[]>([]);
   const [lastSynced, setLastSynced] = useState("2 min ago");
+  const [ticketPreviewUrl, setTicketPreviewUrl] = useState<string | null>(null);
   const fuelInputRef = useRef<HTMLInputElement>(null);
 
   const loadAssignedLoads = useCallback(async () => {
@@ -56,6 +57,17 @@ export default function RonyxDriverAppPage() {
     }
     void loadAssignedLoads();
   }, [driverName, loadAssignedLoads]);
+
+  useEffect(() => {
+    return () => {
+      if (ticketPreviewUrl) URL.revokeObjectURL(ticketPreviewUrl);
+    };
+  }, [ticketPreviewUrl]);
+
+  function setLocalTicketPreview(file: File) {
+    if (ticketPreviewUrl) URL.revokeObjectURL(ticketPreviewUrl);
+    setTicketPreviewUrl(URL.createObjectURL(file));
+  }
 
   async function submitUpdate(ticketId?: string) {
     if (!driverName.trim()) {
@@ -392,6 +404,19 @@ export default function RonyxDriverAppPage() {
           color: #0f172a;
           box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
         }
+        .ticket-preview {
+          margin-top: 12px;
+          padding: 10px;
+          border-radius: 12px;
+          border: 1px solid rgba(29, 78, 216, 0.18);
+          background: #ffffff;
+        }
+        .ticket-preview img {
+          width: 100%;
+          height: auto;
+          border-radius: 10px;
+          border: 1px solid rgba(15, 23, 42, 0.08);
+        }
         .ronyx-label {
           font-size: 0.8rem;
           color: rgba(15, 23, 42, 0.7);
@@ -600,7 +625,10 @@ export default function RonyxDriverAppPage() {
                         style={{ display: "none" }}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) void handleTicketUpload(file);
+                          if (file) {
+                            setLocalTicketPreview(file);
+                            void handleTicketUpload(file);
+                          }
                         }}
                       />
                     </label>
@@ -646,10 +674,21 @@ export default function RonyxDriverAppPage() {
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) void handleTicketUpload(file);
+                    if (file) {
+                      setLocalTicketPreview(file);
+                      void handleTicketUpload(file);
+                    }
                   }}
                 />
               </label>
+              {ticketPreviewUrl && (
+                <div className="ticket-preview">
+                  <img src={ticketPreviewUrl} alt="Uploaded ticket preview" />
+                  <div style={{ marginTop: 6, fontSize: "0.75rem", color: "rgba(15,23,42,0.6)" }}>
+                    Uploaded ticket preview
+                  </div>
+                </div>
+              )}
               <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)", marginTop: 8 }}>
                 Auto-extract: Gross 36.2T | Tare 14.2T | Net 22.0T
               </div>
@@ -1106,9 +1145,17 @@ TODAY'S LOADS
                 type="file"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) void handleTicketUpload(file);
+                  if (file) {
+                    setLocalTicketPreview(file);
+                    void handleTicketUpload(file);
+                  }
                 }}
               />
+              {ticketPreviewUrl && (
+                <div className="ticket-preview">
+                  <img src={ticketPreviewUrl} alt="Uploaded ticket preview" />
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <button className="ronyx-action primary" onClick={handleSubmit} disabled={uploading}>

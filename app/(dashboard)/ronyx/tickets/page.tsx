@@ -68,6 +68,7 @@ type ThreeWayRow = {
 const statusOptions = ["pending", "approved", "rejected", "invoiced", "paid"];
 const paymentOptions = ["unpaid", "processing", "paid"];
 const unitOptions = ["Load", "Yard", "Ton", "Hour"];
+const ticketPreviewFallback = "/ronyx-ticket-sample.svg";
 
 export default function RonyxTicketsPage() {
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
@@ -78,6 +79,8 @@ export default function RonyxTicketsPage() {
   const [activeTab, setActiveTab] = useState<"manage" | "reconcile">("manage");
   const [showFullForm, setShowFullForm] = useState(false);
   const [showReconConfig, setShowReconConfig] = useState(false);
+  const [ticketPreviewUrl, setTicketPreviewUrl] = useState(ticketPreviewFallback);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [inboxFilter, setInboxFilter] = useState<
     "all" | "pending_upload" | "awaiting" | "flagged" | "approved" | "needs_review"
   >("all");
@@ -147,6 +150,51 @@ export default function RonyxTicketsPage() {
     loadReconciliation();
     loadFilters();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPreview() {
+      if (!form.ticket_image_url) {
+        if (active) setTicketPreviewUrl(ticketPreviewFallback);
+        return;
+      }
+
+      if (/^https?:\/\//.test(form.ticket_image_url)) {
+        if (active) setTicketPreviewUrl(form.ticket_image_url);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/ronyx/tickets/signed-url?path=${encodeURIComponent(form.ticket_image_url)}`,
+          { cache: "no-store" },
+        );
+        const data = await res.json();
+        if (active) {
+          setTicketPreviewUrl(data.url || ticketPreviewFallback);
+        }
+      } catch {
+        if (active) setTicketPreviewUrl(ticketPreviewFallback);
+      }
+    }
+
+    loadPreview();
+    return () => {
+      active = false;
+    };
+  }, [form.ticket_image_url]);
+
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  function setLocalPreview(file: File) {
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    setLocalPreviewUrl(URL.createObjectURL(file));
+  }
 
   async function loadDrivers() {
     try {
@@ -770,6 +818,34 @@ export default function RonyxTicketsPage() {
           color: rgba(15, 23, 42, 0.7);
           font-size: 0.9rem;
         }
+        .ticket-compare-grid {
+          display: grid;
+          grid-template-columns: 1.1fr 1fr;
+          gap: 16px;
+          align-items: stretch;
+        }
+        .ticket-compare-image {
+          background: #f8fafc;
+          border: 1px solid var(--ronyx-border);
+          border-radius: 14px;
+          padding: 12px;
+        }
+        .ticket-compare-image img {
+          width: 100%;
+          height: auto;
+          border-radius: 10px;
+          border: 1px solid var(--ronyx-border);
+        }
+        .ticket-compare-field {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid var(--ronyx-border);
+          background: rgba(29, 78, 216, 0.06);
+          font-weight: 600;
+        }
         .btn-primary,
         .btn-secondary,
         .btn-success,
@@ -866,6 +942,9 @@ export default function RonyxTicketsPage() {
           .tickets-reconcile-actions {
             width: 100%;
             margin-left: 0;
+          }
+          .ticket-compare-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
@@ -1342,6 +1421,7 @@ export default function RonyxTicketsPage() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    setLocalPreview(file);
                     const path = await handleUpload(file, "ticket");
                     if (path) {
                       setForm((prev) => ({
@@ -1368,6 +1448,7 @@ export default function RonyxTicketsPage() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    setLocalPreview(file);
                     const path = await handleUpload(file, "ticket");
                     if (path) setForm({ ...form, ticket_image_url: path });
                   }
@@ -1407,6 +1488,47 @@ export default function RonyxTicketsPage() {
                 }}
               />
               {form.pod_url && <div className="ronyx-tag" style={{ marginTop: 8 }}>{form.pod_url}</div>}
+            </div>
+          </div>
+        </section>
+
+        <section className="ronyx-card" style={{ marginBottom: 22 }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 8 }}>
+            Ticket Scan Comparison
+          </h2>
+          <p className="ronyx-muted" style={{ marginBottom: 16 }}>
+            Compare the original photo against the extracted system fields before approval.
+          </p>
+          <div className="ticket-compare-grid">
+            <div className="ticket-compare-image">
+              <img src={localPreviewUrl || ticketPreviewUrl} alt="Ticket scan preview" />
+              <div className="ronyx-muted" style={{ marginTop: 8 }}>
+                {localPreviewUrl
+                  ? "Uploaded ticket preview"
+                  : form.ticket_image_url
+                    ? "Uploaded ticket photo"
+                    : "Sample ticket preview"}
+              </div>
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              {[
+                ["Ticket #", form.ticket_number || "—"],
+                ["Date", form.ticket_date || "—"],
+                ["Customer", form.customer_name || "—"],
+                ["Material", form.material || "—"],
+                [
+                  "Gross / Tare / Net",
+                  `${form.gross_weight || "—"} / ${form.tare_weight || "—"} / ${form.net_weight || calculatedNet || "—"}`,
+                ],
+                ["Quantity", form.quantity || "—"],
+                ["Bill Rate", form.bill_rate || form.rate_amount || "—"],
+                ["Status", form.status || "—"],
+              ].map(([label, value]) => (
+                <div className="ticket-compare-field" key={label}>
+                  <span>{label}</span>
+                  <span>{value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>

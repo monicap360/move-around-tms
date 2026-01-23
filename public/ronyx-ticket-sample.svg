@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+  <rect width="900" height="1200" rx="36" fill="#f8fafc"/>
+  <rect x="48" y="48" width="804" height="1104" rx="28" fill="#ffffff" stroke="#e2e8f0" stroke-width="4"/>
+  <rect x="72" y="88" width="756" height="72" rx="16" fill="#0f172a"/>
+  <text x="96" y="134" fill="#f8fafc" font-family="Arial, sans-serif" font-size="32" font-weight="700">
+    SCALE TICKET
+  </text>
+  <text x="96" y="184" fill="#475569" font-family="Arial, sans-serif" font-size="20">Ticket # T-20481</text>
+  <text x="96" y="214" fill="#475569" font-family="Arial, sans-serif" font-size="20">Date: 05/17/2025</text>
+  <text x="96" y="244" fill="#475569" font-family="Arial, sans-serif" font-size="20">Customer: Ronyx Logistics LLC</text>
+  <line x1="72" y1="280" x2="828" y2="280" stroke="#e2e8f0" stroke-width="3"/>
+
+  <text x="96" y="330" fill="#0f172a" font-family="Arial, sans-serif" font-size="22" font-weight="700">Material</text>
+  <text x="96" y="360" fill="#334155" font-family="Arial, sans-serif" font-size="20">3/4" Gravel</text>
+
+  <text x="96" y="420" fill="#0f172a" font-family="Arial, sans-serif" font-size="22" font-weight="700">Weights</text>
+  <text x="96" y="452" fill="#334155" font-family="Arial, sans-serif" font-size="20">Gross: 74,200 lbs</text>
+  <text x="96" y="482" fill="#334155" font-family="Arial, sans-serif" font-size="20">Tare: 28,300 lbs</text>
+  <text x="96" y="512" fill="#334155" font-family="Arial, sans-serif" font-size="20">Net: 45,900 lbs</text>
+
+  <text x="96" y="572" fill="#0f172a" font-family="Arial, sans-serif" font-size="22" font-weight="700">Job</text>
+  <text x="96" y="602" fill="#334155" font-family="Arial, sans-serif" font-size="20">I-45 Expansion • Pit 7</text>
+
+  <rect x="72" y="656" width="756" height="220" rx="18" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="96" y="706" fill="#0f172a" font-family="Arial, sans-serif" font-size="22" font-weight="700">Driver Notes</text>
+  <text x="96" y="740" fill="#334155" font-family="Arial, sans-serif" font-size="18">
+    Loaded at 07:15 AM. Scale operator signature on file.
+  </text>
+  <text x="96" y="770" fill="#334155" font-family="Arial, sans-serif" font-size="18">
+    Trailer inspected. Weight verified.
+  </text>
+
+  <rect x="72" y="904" width="756" height="120" rx="16" fill="#0f172a"/>
+  <text x="96" y="970" fill="#f8fafc" font-family="Arial, sans-serif" font-size="22">
+    OCR Ready • Photo Evidence Attached
+  </text>
+</svg>
