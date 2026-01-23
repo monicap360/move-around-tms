@@ -167,6 +167,7 @@ export default function RonyxDriverAppPage() {
         body: JSON.stringify({
           ticket_number: ticketNumber || undefined,
           driver_name: driverName,
+          ticket_notes: "Source: Driver",
           status: "pending",
           pickup_gps_lat: location?.lat || null,
           pickup_gps_lon: location?.lon || null,
@@ -697,7 +698,7 @@ export default function RonyxDriverAppPage() {
                 </div>
               )}
               <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)", marginTop: 8 }}>
-                Auto-extract: Gross 36.2T | Tare 14.2T | Net 22.0T
+                Auto-extract: gross/tare/net will appear after OCR completes.
               </div>
               <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)", marginTop: 6 }}>
                 Driver verifies numbers match the physical load.

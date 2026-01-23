@@ -10,7 +10,7 @@ import { logValidations, validateTicket } from "@/lib/ronyx/aiValidationEngine";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_UNITS = ["Load", "Yard", "Ton", "Hour"];
-const ALLOWED_STATUSES = ["pending", "approved", "rejected", "paid", "invoiced"];
+const ALLOWED_STATUSES = ["pending", "approved", "rejected", "paid", "invoiced", "voided"];
 const ALLOWED_PAYMENT = ["unpaid", "processing", "paid"];
 
 function normalizeStatus(status?: string) {

@@ -1,60 +1,128 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const sampleTickets = {
-  handwritten: {
-    icon: "📋",
-    description: "Handwritten scale ticket with smudged ink",
-    data: [
-      { label: "Ticket Number", value: "TX-8842" },
-      { label: "Date", value: "05/17/2024" },
-      { label: "Gross Weight", value: "68,420 lbs" },
-      { label: "Tare Weight", value: "32,150 lbs" },
-      { label: "Net Weight", value: "36,270 lbs" },
-      { label: "Material", value: '3/4" Crushed Gravel' },
-      { label: "Customer", value: "Jones Construction" },
-      { label: "Driver", value: "D. Perez" },
-    ],
-  },
-  printed: {
-    icon: "📰",
-    description: "Printed scale house ticket with barcode",
-    data: [
-      { label: "Ticket Number", value: "PT-7716" },
-      { label: "Date", value: "05/16/2024" },
-      { label: "Gross Weight", value: "72,580 lbs" },
-      { label: "Tare Weight", value: "34,220 lbs" },
-      { label: "Net Weight", value: "38,360 lbs" },
-      { label: "Material", value: "Fill Sand" },
-      { label: "Customer", value: "Thompson Co" },
-      { label: "Driver", value: "S. Grant" },
-    ],
-  },
+type TicketRecord = {
+  id: string;
+  ticket_number?: string | null;
+  ticket_date?: string | null;
+  material?: string | null;
+  quantity?: number | null;
+  unit_type?: string | null;
+  driver_name_ocr?: string | null;
+  image_url?: string | null;
+  ocr_json?: {
+    extracted_data?: {
+      ticketNumber?: string | null;
+      material?: string | null;
+      quantity?: number | null;
+      unitType?: string | null;
+      ticketDate?: string | null;
+      driverName?: string | null;
+    };
+    raw_text?: string | null;
+    lines?: string[] | null;
+  } | null;
+  ocr_processed_at?: string | null;
+  ocr_confidence?: number | null;
+  ocr_raw_text?: string | null;
 };
 
 export default function TicketFlashOcrPage() {
   const [processing, setProcessing] = useState(false);
-  const [ticketPreview, setTicketPreview] = useState<string | null>(null);
+  const [ticketPreviewUrl, setTicketPreviewUrl] = useState<string | null>(null);
   const [ticketMeta, setTicketMeta] = useState<string | null>(null);
-  const [results, setResults] = useState<typeof sampleTickets.handwritten | null>(null);
+  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [ticketData, setTicketData] = useState<TicketRecord | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [subscribeStatus, setSubscribeStatus] = useState("");
 
-  const simulateProcessing = (ticket: typeof sampleTickets.handwritten) => {
-    setProcessing(true);
-    setResults(null);
-    setTimeout(() => {
-      setProcessing(false);
-      setResults(ticket);
-    }, 1600);
+  useEffect(() => {
+    return () => {
+      if (ticketPreviewUrl) URL.revokeObjectURL(ticketPreviewUrl);
+    };
+  }, [ticketPreviewUrl]);
+
+  const createTicket = async () => {
+    const response = await fetch("/api/ronyx/tickets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "pending", unit_type: "Ton", ticket_notes: "Source: Office" }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || "Failed to create ticket");
+    }
+    const payload = await response.json();
+    return payload.ticket as TicketRecord;
   };
 
-  const handleFile = (file?: File) => {
+  const fetchTicket = async (id: string) => {
+    const response = await fetch(`/api/ronyx/tickets/${id}`, { cache: "no-store" });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return payload.ticket as TicketRecord;
+  };
+
+  const pollForOcr = async (id: string) => {
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      const ticket = await fetchTicket(id);
+      if (ticket) {
+        setTicketData(ticket);
+        const hasOcr =
+          Boolean(ticket.ocr_processed_at) ||
+          Boolean(ticket.ocr_json?.extracted_data) ||
+          Boolean(ticket.ocr_raw_text);
+        if (hasOcr) return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  };
+
+  const handleFile = async (file?: File) => {
     if (!file) return;
-    setTicketPreview(file.type.includes("image") ? "📷" : "📄");
+    setErrorMessage("");
+    setStatusMessage("");
+    setTicketData(null);
+    setProcessing(true);
+
+    if (ticketPreviewUrl) URL.revokeObjectURL(ticketPreviewUrl);
+    const nextPreviewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+    setTicketPreviewUrl(nextPreviewUrl);
     setTicketMeta(`${file.name} • ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-    simulateProcessing(sampleTickets.handwritten);
+
+    try {
+      setStatusMessage("Creating ticket...");
+      const ticket = await createTicket();
+      setTicketId(ticket.id);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("ticket_id", ticket.id);
+      formData.append("doc_type", "ticket");
+
+      setStatusMessage("Uploading ticket...");
+      const uploadResponse = await fetch("/api/ronyx/tickets/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const payload = await uploadResponse.json().catch(() => ({}));
+        throw new Error(payload.error || "Upload failed");
+      }
+
+      setStatusMessage("Processing OCR...");
+      await pollForOcr(ticket.id);
+      setStatusMessage("OCR complete.");
+    } catch (error: any) {
+      setErrorMessage(error?.message || "Ticket processing failed.");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -121,6 +189,16 @@ export default function TicketFlashOcrPage() {
           margin-bottom: 18px;
           transition: 0.2s ease;
         }
+        .ticketflash-preview {
+          margin-top: 16px;
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 12px;
+        }
+        .ticketflash-preview img {
+          border-radius: 10px;
+        }
         .ticketflash-upload:hover {
           border-color: var(--ticketflash-yellow);
           background: rgba(255, 215, 0, 0.06);
@@ -153,6 +231,20 @@ export default function TicketFlashOcrPage() {
           border: 1px solid rgba(255, 255, 255, 0.08);
           padding: 12px;
           margin-bottom: 12px;
+        }
+        .ticketflash-result strong {
+          color: #fff;
+        }
+        .ticketflash-raw {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 12px;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.9rem;
+          white-space: pre-wrap;
+          max-height: 240px;
+          overflow: auto;
         }
         .ticketflash-stat {
           font-size: 1.4rem;
@@ -232,7 +324,7 @@ export default function TicketFlashOcrPage() {
               Upload a photo or scan of your paper ticket. Our AI extracts data in under 2 seconds.
             </p>
             <div className="ticketflash-upload">
-              <div style={{ fontSize: "2.5rem" }}>{ticketPreview || "📄"}</div>
+              <div style={{ fontSize: "2.5rem" }}>{ticketPreviewUrl ? "🧾" : "📄"}</div>
               <div style={{ color: "rgba(255,255,255,0.7)" }}>
                 {ticketMeta || "Drag & drop your ticket image here"}
               </div>
@@ -240,20 +332,34 @@ export default function TicketFlashOcrPage() {
                 Select Ticket Image
                 <input
                   type="file"
-                  accept=".jpg,.jpeg,.png,.pdf"
+                  accept=".jpg,.jpeg,.png,.webp"
                   style={{ display: "none" }}
                   onChange={(e) => handleFile(e.target.files?.[0])}
                 />
               </label>
             </div>
-            <div className="ticketflash-actions">
-              <button className="ticketflash-btn secondary" onClick={() => simulateProcessing(sampleTickets.handwritten)}>
-                Handwritten Ticket
-              </button>
-              <button className="ticketflash-btn secondary" onClick={() => simulateProcessing(sampleTickets.printed)}>
-                Printed Ticket
-              </button>
-            </div>
+            {ticketPreviewUrl && (
+              <div className="ticketflash-preview">
+                <Image
+                  src={ticketPreviewUrl}
+                  alt="Uploaded ticket preview"
+                  width={520}
+                  height={360}
+                  style={{ width: "100%", height: "auto", objectFit: "contain" }}
+                  unoptimized
+                />
+              </div>
+            )}
+            {statusMessage && (
+              <div className="ticketflash-result" style={{ textAlign: "center" }}>
+                {statusMessage}
+              </div>
+            )}
+            {errorMessage && (
+              <div className="ticketflash-result" style={{ textAlign: "center", color: "#ff7a7a" }}>
+                {errorMessage}
+              </div>
+            )}
           </div>
 
           <div className="ticketflash-card">
@@ -264,18 +370,89 @@ export default function TicketFlashOcrPage() {
                 <div style={{ color: "rgba(255,255,255,0.7)" }}>Average processing time: 1.8 seconds</div>
               </div>
             )}
-            {!processing && !results && (
+            {!processing && !ticketData && (
               <div className="ticketflash-result" style={{ textAlign: "center" }}>
                 Upload a ticket to see OCR extraction.
               </div>
             )}
-            {!processing &&
-              results?.data.map((field) => (
-                <div className="ticketflash-result" key={field.label}>
-                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>{field.label}</div>
-                  <div className="ticketflash-stat">{field.value}</div>
+            {!processing && ticketData && (
+              <>
+                <div className="ticketflash-result" style={{ borderColor: "rgba(0, 255, 157, 0.35)" }}>
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>
+                    Parsed Fields (from OCR)
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.78rem" }}>
+                    Use the raw OCR text below to verify every field.
+                  </div>
                 </div>
-              ))}
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Ticket ID</div>
+                  <div className="ticketflash-stat">{ticketId || ticketData.id}</div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Ticket Number</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_json?.extracted_data?.ticketNumber ||
+                      ticketData.ticket_number ||
+                      "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Date</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_json?.extracted_data?.ticketDate ||
+                      ticketData.ticket_date ||
+                      "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Material</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_json?.extracted_data?.material ||
+                      ticketData.material ||
+                      "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Quantity</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_json?.extracted_data?.quantity ??
+                      ticketData.quantity ??
+                      "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Unit</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_json?.extracted_data?.unitType ||
+                      ticketData.unit_type ||
+                      "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Driver</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_json?.extracted_data?.driverName ||
+                      ticketData.driver_name_ocr ||
+                      "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>OCR Confidence</div>
+                  <div className="ticketflash-stat">
+                    {ticketData.ocr_confidence ? `${ticketData.ocr_confidence}%` : "Pending"}
+                  </div>
+                </div>
+                <div className="ticketflash-result">
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>Raw OCR Text (Full)</div>
+                  <div className="ticketflash-raw">
+                    {ticketData.ocr_json?.raw_text ||
+                      ticketData.ocr_raw_text ||
+                      "OCR text will appear here after processing."}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

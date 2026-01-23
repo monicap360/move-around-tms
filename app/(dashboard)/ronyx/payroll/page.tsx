@@ -30,7 +30,12 @@ export default function RonyxPayrollPage() {
   const [runId, setRunId] = useState<string | null>(null);
 
   const [ruleForm, setRuleForm] = useState({ driver_id: "", pay_type: "per_ton", pay_rate: "" });
-  const [deductionForm, setDeductionForm] = useState({ driver_id: "", description: "", amount: "" });
+  const [deductionForm, setDeductionForm] = useState({
+    driver_id: "",
+    deduction_type: "Loan Repayment",
+    description: "",
+    amount: "",
+  });
 
   useEffect(() => {
     void loadDrivers();
@@ -79,9 +84,10 @@ export default function RonyxPayrollPage() {
   }
 
   async function saveDeduction() {
+    const prefix = deductionForm.deduction_type ? `${deductionForm.deduction_type}: ` : "";
     const payload = {
       driver_id: deductionForm.driver_id,
-      description: deductionForm.description,
+      description: `${prefix}${deductionForm.description}`.trim(),
       amount: Number(deductionForm.amount || 0),
       is_active: true,
     };
@@ -93,7 +99,7 @@ export default function RonyxPayrollPage() {
     const data = await res.json();
     if (data.deduction) {
       setDeductions((prev) => [data.deduction, ...prev]);
-      setDeductionForm({ driver_id: "", description: "", amount: "" });
+      setDeductionForm({ driver_id: "", deduction_type: "Loan Repayment", description: "", amount: "" });
     }
   }
 
@@ -243,7 +249,10 @@ export default function RonyxPayrollPage() {
             </select>
             <select className="ronyx-input" value={ruleForm.pay_type} onChange={(e) => setRuleForm({ ...ruleForm, pay_type: e.target.value })}>
               <option value="per_ton">$/Ton</option>
-              <option value="per_hour">$/Hour</option>
+              <option value="per_yard">$/Yard (Owner-Operator)</option>
+              <option value="per_hour">$/Hour (Load Hours)</option>
+              <option value="hourly">Hourly (RONYX Employee)</option>
+              <option value="percentage">% of Ticket (Owner-Operator)</option>
               <option value="per_load">$/Load</option>
             </select>
             <input className="ronyx-input" type="number" placeholder="Rate" value={ruleForm.pay_rate} onChange={(e) => setRuleForm({ ...ruleForm, pay_rate: e.target.value })} />
@@ -253,7 +262,12 @@ export default function RonyxPayrollPage() {
             {rules.map((rule) => (
               <div key={rule.id} className="ronyx-row">
                 <span>{drivers.find((d) => d.id === rule.driver_id)?.name || "Driver"}</span>
-                <span>{rule.pay_type} @ ${Number(rule.pay_rate || 0).toFixed(2)}</span>
+                <span>
+                  {rule.pay_type === "percentage"
+                    ? `${rule.pay_type} @ ${Number(rule.pay_rate || 0).toFixed(2)}%`
+                    : `${rule.pay_type} @ $${Number(rule.pay_rate || 0).toFixed(2)}`}
+                  {rule.pay_type === "hourly" ? " • RONYX Employee" : " • Owner-Operator"}
+                </span>
               </div>
             ))}
           </div>
@@ -261,12 +275,25 @@ export default function RonyxPayrollPage() {
 
         <section className="ronyx-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>Recurring Deductions</h2>
+          <p style={{ color: "rgba(15,23,42,0.7)", marginBottom: 12 }}>
+            Truck Parking deductions are applied monthly based on the payroll period.
+          </p>
           <div style={{ display: "grid", gap: 12 }}>
             <select className="ronyx-input" value={deductionForm.driver_id} onChange={(e) => setDeductionForm({ ...deductionForm, driver_id: e.target.value })}>
               <option value="">Select driver</option>
               {drivers.map((driver) => (
                 <option key={driver.id} value={driver.id}>{driver.name}</option>
               ))}
+            </select>
+            <select
+              className="ronyx-input"
+              value={deductionForm.deduction_type}
+              onChange={(e) => setDeductionForm({ ...deductionForm, deduction_type: e.target.value })}
+            >
+              <option value="Loan Repayment">Loan Repayment</option>
+              <option value="Truck Parking">Truck Parking</option>
+              <option value="Fuel Advance">Fuel Advance</option>
+              <option value="Other">Other</option>
             </select>
             <input className="ronyx-input" placeholder="Deduction description" value={deductionForm.description} onChange={(e) => setDeductionForm({ ...deductionForm, description: e.target.value })} />
             <input className="ronyx-input" type="number" placeholder="Amount" value={deductionForm.amount} onChange={(e) => setDeductionForm({ ...deductionForm, amount: e.target.value })} />
@@ -306,6 +333,16 @@ export default function RonyxPayrollPage() {
                   <div style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>
                     Tickets: {result.ticket_ids.length} • Gross ${result.gross_pay.toFixed(2)}
                   </div>
+                  {result.tickets?.length > 0 && (
+                    <div style={{ marginTop: 6, fontSize: "0.75rem", color: "rgba(15,23,42,0.6)" }}>
+                      {result.tickets.slice(0, 5).map((ticket: any) => (
+                        <div key={ticket.id}>
+                          #{ticket.ticket_number || "Ticket"} • {ticket.quantity ?? "—"} {ticket.unit_type || ""}
+                        </div>
+                      ))}
+                      {result.tickets.length > 5 ? `+${result.tickets.length - 5} more` : null}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 700 }}>Net ${result.net_pay.toFixed(2)}</div>

@@ -15,6 +15,7 @@ type Ticket = {
   ticket_number: string;
   ticket_date: string;
   driver_name?: string | null;
+  ticket_notes?: string | null;
   truck_number?: string | null;
   trailer_number?: string | null;
   material?: string | null;
@@ -66,10 +67,24 @@ type ThreeWayRow = {
   variance?: string;
 };
 
-const statusOptions = ["pending", "approved", "rejected", "invoiced", "paid"];
+const statusOptions = ["pending", "approved", "rejected", "invoiced", "paid", "voided"];
 const paymentOptions = ["unpaid", "processing", "paid"];
 const unitOptions = ["Load", "Yard", "Ton", "Hour"];
 const ticketPreviewFallback = "/ronyx-ticket-sample.svg";
+
+const getUploadSource = (notes?: string | null) => {
+  if (!notes) return "Office";
+  const match = notes.match(/source:\s*([a-z\s]+)/i);
+  return match ? match[1].trim() : "Office";
+};
+
+const withUploadSource = (notes: string, source: string) => {
+  if (!source) return notes;
+  const existing = notes || "";
+  if (/source:\s*/i.test(existing)) return existing;
+  const prefix = `Source: ${source}`;
+  return existing ? `${prefix} | ${existing}` : prefix;
+};
 
 export default function RonyxTicketsPage() {
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
@@ -83,7 +98,7 @@ export default function RonyxTicketsPage() {
   const [ticketPreviewUrl, setTicketPreviewUrl] = useState(ticketPreviewFallback);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [inboxFilter, setInboxFilter] = useState<
-    "all" | "pending_upload" | "awaiting" | "flagged" | "approved" | "needs_review"
+    "all" | "pending_upload" | "awaiting" | "flagged" | "approved" | "needs_review" | "voided"
   >("all");
   const [filters, setFilters] = useState<{ id: string; name: string }[]>([]);
   const [actionMessage, setActionMessage] = useState("");
@@ -96,6 +111,20 @@ export default function RonyxTicketsPage() {
   const [threeWayRows, setThreeWayRows] = useState<ThreeWayRow[]>([]);
   const [comparisonTicket, setComparisonTicket] = useState<ThreeWayRow | null>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
+  const [exportStart, setExportStart] = useState(
+    new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10),
+  );
+  const [exportEnd, setExportEnd] = useState(new Date().toISOString().slice(0, 10));
+  const [csvUploadBusy, setCsvUploadBusy] = useState(false);
+  const [csvUploadError, setCsvUploadError] = useState("");
+  const [csvUploadSummary, setCsvUploadSummary] = useState<{
+    total: number;
+    matched: number;
+    mismatched: number;
+    missing: number;
+  } | null>(null);
+  const [csvUploadRows, setCsvUploadRows] = useState<any[]>([]);
+  const [csvCorrected, setCsvCorrected] = useState<string>("");
   const [thresholds, setThresholds] = useState({
     scaleTolerancePct: "2",
     moistureTolerancePct: "1",
@@ -131,6 +160,7 @@ export default function RonyxTicketsPage() {
     approved_by: "",
     approved_at: "",
     ticket_notes: "",
+    upload_source: "Office",
     odometer: "",
     shift: "",
     work_order_number: "",
@@ -267,6 +297,47 @@ export default function RonyxTicketsPage() {
     }
   }
 
+  async function handleCsvUpload(file?: File) {
+    if (!file) return;
+    setCsvUploadError("");
+    setCsvUploadSummary(null);
+    setCsvUploadRows([]);
+    setCsvCorrected("");
+    setCsvUploadBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/ronyx/tickets/reconcile-upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to process CSV");
+      }
+      setCsvUploadSummary(data.summary || null);
+      setCsvUploadRows(data.rows || []);
+      setCsvCorrected(data.correctedCsv || "");
+    } catch (error: any) {
+      setCsvUploadError(error?.message || "CSV upload failed.");
+    } finally {
+      setCsvUploadBusy(false);
+    }
+  }
+
+  function downloadCorrectedCsv() {
+    if (!csvCorrected) return;
+    const blob = new Blob([csvCorrected], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ronyx-reconciled-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   const calculatedNet = useMemo(() => {
     const gross = Number(form.gross_weight || 0);
     const tare = Number(form.tare_weight || 0);
@@ -388,6 +459,7 @@ export default function RonyxTicketsPage() {
     const awaitingApproval: Ticket[] = [];
     const flagged: Ticket[] = [];
     const approved: Ticket[] = [];
+    const voided: Ticket[] = [];
     const needsReview: Ticket[] = [];
 
     tickets.forEach((ticket) => {
@@ -397,7 +469,9 @@ export default function RonyxTicketsPage() {
         ticket.validation_status === "error" || ticket.status === "in_review";
       if (isFlagged) flagged.push(ticket);
       if (hasValidationError) needsReview.push(ticket);
-      if (ticket.status === "approved" || ticket.status === "paid") {
+      if (ticket.status === "voided") {
+        voided.push(ticket);
+      } else if (ticket.status === "approved" || ticket.status === "paid") {
         approved.push(ticket);
       } else if (ticket.status === "pending") {
         awaitingApproval.push(ticket);
@@ -405,7 +479,7 @@ export default function RonyxTicketsPage() {
       if (!ticket.ticket_image_url) pendingUpload.push(ticket);
     });
 
-    return { pendingUpload, awaitingApproval, flagged, approved, needsReview };
+    return { pendingUpload, awaitingApproval, flagged, approved, needsReview, voided };
   }, [tickets, reconByTicket]);
 
   const inboxTickets = useMemo(() => {
@@ -416,6 +490,7 @@ export default function RonyxTicketsPage() {
       const pendingUpload = !ticket.ticket_image_url;
       const awaitingApproval = ticket.status === "pending";
       const approved = ticket.status === "approved" || ticket.status === "paid";
+      const voided = ticket.status === "voided";
       const priority = flagged ? "red" : pendingUpload || awaitingApproval ? "yellow" : "green";
       const amount = (Number(ticket.quantity || 0) * Number(ticket.bill_rate || 0)).toFixed(2);
       const inlineAlert = flagged
@@ -431,6 +506,8 @@ export default function RonyxTicketsPage() {
         ? "Upload POD"
         : flagged
           ? "Review"
+          : voided
+            ? "View"
           : awaitingApproval
             ? "Add Details"
             : "View";
@@ -441,6 +518,7 @@ export default function RonyxTicketsPage() {
         awaitingApproval,
         approved,
         needsReview,
+        voided,
         priority,
         amount,
         inlineAlert,
@@ -459,6 +537,8 @@ export default function RonyxTicketsPage() {
         return base.filter((item) => item.needsReview);
       case "approved":
         return base.filter((item) => item.approved);
+      case "voided":
+        return base.filter((item) => item.voided);
       default:
         return base;
     }
@@ -482,6 +562,7 @@ export default function RonyxTicketsPage() {
         bill_rate: form.bill_rate || form.rate_amount || null,
         status: form.status,
         payment_status: form.payment_status,
+        ticket_notes: withUploadSource(form.ticket_notes, form.upload_source),
       }),
     });
     const data = await res.json();
@@ -514,6 +595,7 @@ export default function RonyxTicketsPage() {
         ...form,
         net_weight: form.net_weight || calculatedNet,
         bill_rate: form.bill_rate || form.rate_amount,
+        ticket_notes: withUploadSource(form.ticket_notes, form.upload_source),
       };
       const res = ticketId
         ? await fetch(`/api/ronyx/tickets/${ticketId}`, {
@@ -566,6 +648,8 @@ export default function RonyxTicketsPage() {
       ticket_image_url: ticket.ticket_image_url || prev.ticket_image_url,
       delivery_receipt_url: ticket.delivery_receipt_url || prev.delivery_receipt_url,
       pod_url: ticket.pod_url || prev.pod_url,
+      ticket_notes: ticket.ticket_notes || prev.ticket_notes,
+      upload_source: getUploadSource(ticket.ticket_notes),
     }));
   }
 
@@ -644,6 +728,10 @@ export default function RonyxTicketsPage() {
 
   async function approveTicket() {
     if (!ticketId) return;
+    if (!form.driver_id && !form.driver_name) {
+      setActionMessage("Assign a driver before approving the ticket.");
+      return;
+    }
     if (focusedTicket?.validation_status === "error") {
       setActionMessage("AI validation errors must be resolved before approval.");
       return;
@@ -654,11 +742,51 @@ export default function RonyxTicketsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: "approved",
+        payment_status: "processing",
         approved_by: "Dispatcher",
         approved_at: approvedAt,
       }),
     });
-    setForm((prev) => ({ ...prev, status: "approved", approved_by: "Dispatcher", approved_at: approvedAt }));
+    setForm((prev) => ({
+      ...prev,
+      status: "approved",
+      payment_status: "processing",
+      approved_by: "Dispatcher",
+      approved_at: approvedAt,
+    }));
+    await loadTickets();
+  }
+
+  async function reassignDriver() {
+    if (!ticketId) return;
+    if (!form.driver_id && !form.driver_name) {
+      setActionMessage("Select a driver to reassign.");
+      return;
+    }
+    await fetch(`/api/ronyx/tickets/${ticketId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        driver_id: form.driver_id || null,
+        driver_name: form.driver_name || null,
+      }),
+    });
+    setActionMessage("Driver reassigned.");
+    await loadTickets();
+  }
+
+  async function voidTicket() {
+    if (!ticketId) return;
+    await fetch(`/api/ronyx/tickets/${ticketId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "voided",
+        payment_status: "unpaid",
+      }),
+    });
+    setForm((prev) => ({ ...prev, status: "voided", payment_status: "unpaid" }));
+    setActionMessage("Ticket voided. It remains visible in the Voided bucket.");
     await loadTickets();
   }
 
@@ -1018,6 +1146,44 @@ export default function RonyxTicketsPage() {
           </div>
         </section>
 
+        <section className="ronyx-card" style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: 4 }}>Export Tickets for Reconciliation</h2>
+              <p className="ronyx-muted">Download ticket data to compare with pit/material plant CSV invoices.</p>
+            </div>
+            <button
+              className="ronyx-btn"
+              onClick={() => {
+                const params = new URLSearchParams({ start: exportStart, end: exportEnd });
+                window.location.href = `/api/ronyx/tickets/export-csv?${params.toString()}`;
+              }}
+            >
+              Download CSV
+            </button>
+          </div>
+          <div className="ronyx-grid" style={{ marginTop: 12 }}>
+            <div>
+              <label className="ronyx-label">Start Date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={exportStart}
+                onChange={(e) => setExportStart(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="ronyx-label">End Date</label>
+              <input
+                type="date"
+                className="ronyx-input"
+                value={exportEnd}
+                onChange={(e) => setExportEnd(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
         {activeTab === "manage" && (
           <>
             <section className="ronyx-card" style={{ marginBottom: 18 }}>
@@ -1046,6 +1212,9 @@ export default function RonyxTicketsPage() {
                 <button className={`ronyx-tab ${inboxFilter === "approved" ? "active" : ""}`} onClick={() => setInboxFilter("approved")}>
                   ✅ Approved ({ticketQueue.approved.length})
                 </button>
+                <button className={`ronyx-tab ${inboxFilter === "voided" ? "active" : ""}`} onClick={() => setInboxFilter("voided")}>
+                  🗑️ Voided ({ticketQueue.voided.length})
+                </button>
                 <button className={`ronyx-tab ${inboxFilter === "all" ? "active" : ""}`} onClick={() => setInboxFilter("all")}>
                   All ({tickets.length})
                 </button>
@@ -1061,6 +1230,7 @@ export default function RonyxTicketsPage() {
                   <span>Date</span>
                   <span>Ticket #</span>
                   <span>Driver / Truck</span>
+                  <span>Source</span>
                   <span>Customer</span>
                   <span>Amount</span>
                 </div>
@@ -1073,6 +1243,7 @@ export default function RonyxTicketsPage() {
                       {item.ticket.driver_name || "Unassigned"} {item.ticket.truck_number ? `- #${item.ticket.truck_number}` : ""}
                       {item.inlineAlert && <span className="ronyx-tag" style={{ marginLeft: 8 }}>{item.inlineAlert}</span>}
                     </span>
+                    <span>{getUploadSource(item.ticket.ticket_notes)}</span>
                     <span>{item.ticket.customer_name || "—"}</span>
                     <span>
                       ${item.amount}
@@ -1147,6 +1318,18 @@ export default function RonyxTicketsPage() {
                         {driver.full_name}
                       </option>
                     ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="ronyx-label">Upload Source</label>
+                  <select
+                    className="ronyx-input"
+                    value={form.upload_source}
+                    onChange={(e) => setForm({ ...form, upload_source: e.target.value })}
+                  >
+                    <option value="Driver">Driver (Mobile)</option>
+                    <option value="Office">Office Staff</option>
+                    <option value="Owner/Manager">Owner/Manager (Manual)</option>
                   </select>
                 </div>
                 <div>
@@ -1428,12 +1611,6 @@ export default function RonyxTicketsPage() {
                       setForm((prev) => ({
                         ...prev,
                         ticket_image_url: path,
-                        ticket_number: prev.ticket_number || `T-${Math.floor(100000 + Math.random() * 900000)}`,
-                        gross_weight: prev.gross_weight || "74200",
-                        tare_weight: prev.tare_weight || "28300",
-                        net_weight: prev.net_weight || "45900",
-                        material: prev.material || "3/4\" Gravel",
-                        ticket_date: prev.ticket_date || new Date().toISOString().slice(0, 10),
                       }));
                     }
                   }
@@ -1551,8 +1728,19 @@ export default function RonyxTicketsPage() {
               >
                 ✔ Approve Ticket
               </button>
+              <button
+                className="ronyx-btn"
+                onClick={reassignDriver}
+                disabled={!ticketId}
+                style={{ background: "#0f172a" }}
+              >
+                ⇄ Reassign Driver
+              </button>
               <button className="ronyx-btn" onClick={markTicketPaid} disabled={!ticketId} style={{ background: "#0f172a" }}>
                 💰 Mark Paid
+              </button>
+              <button className="ronyx-btn" onClick={voidTicket} disabled={!ticketId} style={{ background: "#ef4444" }}>
+                🗑️ Void Ticket
               </button>
               {!ticketId && <span className="ronyx-muted">Save the ticket first to enable actions.</span>}
             </div>
@@ -1751,6 +1939,80 @@ export default function RonyxTicketsPage() {
 
         {activeTab === "reconcile" && (
           <>
+            <section className="ronyx-card" style={{ marginBottom: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4 }}>
+                    Excel Upload Reconciliation
+                  </h2>
+                  <p className="ronyx-muted">
+                    Upload the office Excel export (CSV) to match against system tickets and download a corrected file.
+                  </p>
+                </div>
+                <label className="ronyx-btn" style={{ cursor: "pointer" }}>
+                  Upload CSV
+                  <input
+                    type="file"
+                    accept=".csv"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleCsvUpload(file);
+                      if (e.currentTarget) e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              {csvUploadBusy && <p className="ronyx-muted" style={{ marginTop: 12 }}>Processing file...</p>}
+              {csvUploadError && (
+                <p style={{ marginTop: 12, color: "var(--danger)", fontWeight: 600 }}>{csvUploadError}</p>
+              )}
+              {csvUploadSummary && (
+                <div style={{ marginTop: 12, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                  <span className="ronyx-tag">Total: {csvUploadSummary.total}</span>
+                  <span className="ronyx-tag">Matched: {csvUploadSummary.matched}</span>
+                  <span className="ronyx-tag">Mismatched: {csvUploadSummary.mismatched}</span>
+                  <span className="ronyx-tag">Missing: {csvUploadSummary.missing}</span>
+                  <button className="ronyx-btn" onClick={downloadCorrectedCsv} disabled={!csvCorrected}>
+                    Download Corrected CSV
+                  </button>
+                </div>
+              )}
+              {csvUploadRows.length > 0 && (
+                <div className="ronyx-card" style={{ marginTop: 16 }}>
+                  <div className="ronyx-row" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                    <span>#</span>
+                    <span>Ticket #</span>
+                    <span>Status</span>
+                    <span>Issues</span>
+                  </div>
+                  {csvUploadRows.slice(0, 20).map((row) => {
+                    const ticketNumber = row.input?.ticket_number || row.input?.ticket_# || row.input?.ticket || "—";
+                    const status = row.matched ? (row.differences?.length ? "Mismatch" : "Matched") : "Missing";
+                    return (
+                      <div key={`${row.index}-${ticketNumber}`} className="ronyx-row" style={{ alignItems: "center", marginTop: 10 }}>
+                        <span>{row.index + 1}</span>
+                        <span>{ticketNumber}</span>
+                        <span className="ronyx-tag">{status}</span>
+                        <span style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.7)" }}>
+                          {row.differences?.length
+                            ? row.differences.map((diff: any) => `${diff.field}: "${diff.input}" → "${diff.system}"`).join(" | ")
+                            : row.matched
+                              ? "No issues"
+                              : "Ticket not found in system"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {csvUploadRows.length > 20 && (
+                    <div className="ronyx-muted" style={{ marginTop: 10 }}>
+                      Showing 20 of {csvUploadRows.length} rows.
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
             <section className="ronyx-card" style={{ marginBottom: 22 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
                 <div>
@@ -2153,6 +2415,49 @@ export default function RonyxTicketsPage() {
                 </div>
               </div>
             </div>
+          </section>
+        )}
+
+        {activeTab === "manage" && (
+          <section className="ronyx-card" style={{ marginBottom: 22 }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>All Uploads</h2>
+            <p className="ronyx-muted" style={{ marginBottom: 12 }}>
+              Every ticket uploaded into the system, regardless of source.
+            </p>
+            {loading ? (
+              <p>Loading tickets...</p>
+            ) : tickets.length === 0 ? (
+              <p style={{ color: "rgba(15,23,42,0.7)" }}>No uploads yet.</p>
+            ) : (
+              <div>
+                <div className="ronyx-row" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                  <span>Date</span>
+                  <span>Ticket #</span>
+                  <span>Driver</span>
+                  <span>Source</span>
+                  <span>Status</span>
+                  <span>Action</span>
+                </div>
+                {tickets.slice(0, 50).map((ticket) => (
+                  <div key={ticket.id} className="ronyx-row" style={{ alignItems: "center", marginTop: 10 }}>
+                    <span>{ticket.ticket_date || "—"}</span>
+                    <span>{ticket.ticket_number || "—"}</span>
+                    <span>{ticket.driver_name || "Unassigned"}</span>
+                    <span>{getUploadSource(ticket.ticket_notes)}</span>
+                    <span className="ronyx-tag">{ticket.status || "pending"}</span>
+                    <span>
+                      <button
+                        className="ronyx-btn"
+                        style={{ padding: "6px 12px", fontSize: "0.75rem" }}
+                        onClick={() => selectTicket(ticket)}
+                      >
+                        Open
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 

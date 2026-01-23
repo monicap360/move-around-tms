@@ -48,6 +48,10 @@ serve(async (req) => {
       fileUrl || { content: imageBase64 },
     );
     const rawText = result?.textAnnotations?.[0]?.description ?? "";
+    const rawLines = rawText
+      .split("\n")
+      .map((line: string) => line.trim())
+      .filter(Boolean);
 
     // Dispatch by kind or inference
     if (kind === "detention") {
@@ -255,6 +259,9 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
         success: true,
         extracted_data: ticketData,
         rates: { pay_rate: finalPayRate, bill_rate: finalBillRate },
+        raw_text: rawText,
+        lines: rawLines,
+        source: "google-vision",
       },
     };
 
@@ -310,6 +317,14 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
         ocr_raw_text: rawText,
         ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
         ocr_processed_at: new Date().toISOString(),
+        ocr_json: {
+          success: true,
+          extracted_data: ticketData,
+          rates: { pay_rate: finalPayRate, bill_rate: finalBillRate },
+          raw_text: rawText,
+          lines: rawLines,
+          source: "google-vision",
+        },
         image_url: fileUrl || null,
       })
       .select()
@@ -350,6 +365,8 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
       : null,
     extracted_data: ticketData,
     rates: { pay_rate: finalPayRate, bill_rate: finalBillRate },
+    raw_text: rawText,
+    lines: rawLines,
   };
 }
 

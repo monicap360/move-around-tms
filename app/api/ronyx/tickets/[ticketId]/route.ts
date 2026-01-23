@@ -3,6 +3,22 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+export async function GET(_request: NextRequest, { params }: { params: { ticketId: string } }) {
+  const supabase = createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("aggregate_tickets")
+    .select("*")
+    .eq("id", params.ticketId)
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ticket: data });
+}
+
 export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createSupabaseServerClient();
   const body = await request.json();

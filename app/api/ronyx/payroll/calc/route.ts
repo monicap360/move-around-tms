@@ -7,13 +7,39 @@ type PayRule = {
   pay_rate: number;
 };
 
+function isMonthlyParking(description?: string | null) {
+  if (!description) return false;
+  return description.toLowerCase().startsWith("truck parking:");
+}
+
+function monthCountInRange(start: string, end: string) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 1;
+  const startMonth = startDate.getFullYear() * 12 + startDate.getMonth();
+  const endMonth = endDate.getFullYear() * 12 + endDate.getMonth();
+  return Math.max(1, endMonth - startMonth + 1);
+}
+
 function computeGross(payType: string, payRate: number, tickets: any[]) {
   if (payType === "per_load") {
     return tickets.length * payRate;
   }
-  if (payType === "per_hour") {
+  if (payType === "per_hour" || payType === "hourly") {
     const hours = tickets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
     return hours * payRate;
+  }
+  if (payType === "per_yard") {
+    const yards = tickets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
+    return yards * payRate;
+  }
+  if (payType === "percentage") {
+    const revenue = tickets.reduce((sum, t) => {
+      const qty = Number(t.quantity || 0);
+      const rate = Number(t.bill_rate || t.rate_amount || 0);
+      return sum + qty * rate;
+    }, 0);
+    return revenue * (payRate / 100);
   }
   const quantity = tickets.reduce((sum, t) => sum + Number(t.quantity || 0), 0);
   return quantity * payRate;
@@ -46,9 +72,12 @@ export async function POST(req: NextRequest) {
   const driverMap = new Map((drivers || []).map((d) => [d.id, d]));
   const rulesMap = new Map((rules || []).map((r: PayRule) => [r.driver_id, r]));
   const deductionsByDriver = new Map<string, number>();
+  const monthsInPeriod = monthCountInRange(start_date, end_date);
   (deductions || []).forEach((ded) => {
     const current = deductionsByDriver.get(ded.driver_id) || 0;
-    deductionsByDriver.set(ded.driver_id, current + Number(ded.amount || 0));
+    const amount = Number(ded.amount || 0);
+    const total = isMonthlyParking(ded.description) ? amount * monthsInPeriod : amount;
+    deductionsByDriver.set(ded.driver_id, current + total);
   });
 
   const byDriver = new Map<string, any[]>();
