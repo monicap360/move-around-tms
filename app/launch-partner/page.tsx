@@ -41,7 +41,7 @@ export default function LaunchPartnerPage() {
         </Link>
         <h1 style={{ marginTop: 24 }}>Launch Partner Application</h1>
         <p style={{ color: "rgba(255,255,255,0.75)", maxWidth: 720 }}>
-          Apply to run the 90‑day evaluation. If we hit your success metrics, you’ll receive a launch partner rate
+          Apply to run the 90‑day evaluation. If we hit your success metrics, you'll receive a launch partner rate
           (30% below public pricing) for your first contract term.
         </p>
 

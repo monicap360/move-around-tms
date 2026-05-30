@@ -495,7 +495,7 @@ export default function TicketFlashOcrPage() {
           <div className="ticketflash-price">Sell Separately: $599/month</div>
           <h2>Subscribe to TicketFlash OCR</h2>
           <p style={{ color: "rgba(255,255,255,0.7)" }}>
-            Sign up to start processing tickets immediately. We’ll activate your account in under 1 business day.
+            Sign up to start processing tickets immediately. We'll activate your account in under 1 business day.
           </p>
           <div className="ticketflash-form">
             <input placeholder="Company name" />

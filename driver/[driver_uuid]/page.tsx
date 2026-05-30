@@ -107,7 +107,7 @@ export default function DriverHUD() {
 
       {/* DAILY SUMMARY */}
       <section className="glass-panel p-6" style={{ borderRadius: 20 }}>
-        <h2 className="text-xl font-semibold mb-4">Today’s Summary</h2>
+        <h2 className="text-xl font-semibold mb-4">Today's Summary</h2>
         <div className="grid grid-cols-3 gap-4">
           <SummaryTile label="Earnings" value={summary.earnings ? `$${summary.earnings}` : "$0"} />
           <SummaryTile label="Loads" value={summary.loads || 0} />
@@ -123,9 +123,9 @@ export default function DriverHUD() {
         <DriverAI />
       </div>
 
-      {/* TODAY’S TICKETS */}
+      {/* TODAY'S TICKETS */}
       <section className="glass-panel p-6" style={{ borderRadius: 20 }}>
-        <h2 className="text-xl font-semibold mb-4">Today’s Tickets</h2>
+        <h2 className="text-xl font-semibold mb-4">Today's Tickets</h2>
 
         <Link
           href="./upload"

@@ -99,7 +99,7 @@ export default function LiveTelemetry({ driver }: any) {
     <section className="glass-panel p-5 rounded-2xl flex flex-col gap-6">
       {/* EARNINGS BATTERY */}
       <div>
-        <p className="text-sm opacity-70 mb-1">Today’s Earnings</p>
+        <p className="text-sm opacity-70 mb-1">Today's Earnings</p>
         <div className="w-full h-5 bg-black/20 rounded-lg overflow-hidden">
           <div
             style={{

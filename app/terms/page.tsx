@@ -31,7 +31,7 @@ export default function TermsPage() {
           </p>
           <h3>6. Disclaimers</h3>
           <p>
-            The platform is provided “as is.” We do not warrant uninterrupted or error-free service.
+            The platform is provided "as is." We do not warrant uninterrupted or error-free service.
           </p>
           <h3>7. Limitation of Liability</h3>
           <p>

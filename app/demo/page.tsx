@@ -59,16 +59,17 @@ export default function SalesDemoPage() {
 
       <main style={{ padding: "2rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div
-            style={{
-              background: "rgba(0, 0, 0, 0.8)",
-              padding: "2rem",
-              borderRadius: "15px",
-              boxShadow: "0 0 25px rgba(247, 147, 30, 0.3)",
-              marginBottom: "2rem",
-              border: "1px solid #F7931E",
-            }}
-          >
+            <div
+              style={{
+                background: "rgba(0, 0, 0, 0.8)",
+                padding: "2rem",
+                borderRadius: "15px",
+                boxShadow: "0 0 25px rgba(247, 147, 30, 0.3)",
+                marginBottom: "2rem",
+                border: "1px solid #F7931E",
+                minWidth: 0,
+              }}
+            >
             <h2 style={{ color: "#F7931E", marginBottom: "0.75rem" }}>
               Sales Demo
             </h2>
@@ -80,6 +81,7 @@ export default function SalesDemoPage() {
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                 gap: 16,
+                minWidth: 0,
               }}
             >
               <NavButton href="/aggregates" label="Aggregates Home" />
@@ -144,6 +146,7 @@ function NavButton({ href, label }: { href: string; label: string }) {
         alignItems: "center",
         justifyContent: "center",
         height: 60,
+        width: "100%",
         background: "transparent",
         color: "#F7931E",
         borderRadius: 8,
@@ -152,6 +155,7 @@ function NavButton({ href, label }: { href: string; label: string }) {
         textDecoration: "none",
         border: "1px solid #F7931E",
         boxShadow: "0 0 12px rgba(247, 147, 30, 0.25)",
+        minWidth: 0,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = "#F7931E";

@@ -649,7 +649,7 @@ export default function RonyxDriverAppPage() {
                       En Route to Site
                     </button>
                     <button className="ronyx-action" onClick={() => handleQuickAction("On Site", load)}>
-                      I’m On Site
+                      I'm On Site
                     </button>
                     <a className="ronyx-action" href="tel:+15550123">
                       Call Dispatch
@@ -710,7 +710,7 @@ export default function RonyxDriverAppPage() {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="ronyx-action" onClick={() => handleQuickAction("On Site")}>
-                  I’m On Site (Geo-Stamp)
+                  I'm On Site (Geo-Stamp)
                 </button>
                 <label className="ronyx-action" style={{ cursor: "pointer" }}>
                   📸 Photo of Pile (Required)
@@ -769,9 +769,9 @@ export default function RonyxDriverAppPage() {
             Office KPI Sync (Auto)
           </h2>
           <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)", fontSize: "0.9rem" }}>
-            <li>Capture Pit Ticket → Updates “Tons Hauled Today” and “Job Progress”.</li>
-            <li>Truck Down → Appears in the office “Critical Action Queue”.</li>
-            <li>Signed Delivery → Moves the load to “Ready to Invoice”.</li>
+            <li>Capture Pit Ticket → Updates "Tons Hauled Today" and "Job Progress".</li>
+            <li>Truck Down → Appears in the office "Critical Action Queue".</li>
+            <li>Signed Delivery → Moves the load to "Ready to Invoice".</li>
           </ul>
         </section>
 

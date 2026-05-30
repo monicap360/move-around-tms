@@ -1281,7 +1281,7 @@ export default function RonyxTicketsPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div>
                   <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: 4 }}>Ticket Inbox</h2>
-                  <p className="ronyx-muted">Filter by status and clear today’s worklist.</p>
+                  <p className="ronyx-muted">Filter by status and clear today's worklist.</p>
                 </div>
                 <button className="ronyx-btn" style={{ background: "#0f172a" }} onClick={handleCreateFilter}>
                   Create Filter
@@ -2148,7 +2148,7 @@ export default function RonyxTicketsPage() {
                     <span>Issues</span>
                   </div>
                   {csvUploadRows.slice(0, 20).map((row) => {
-                    const ticketNumber = row.input?.ticket_number || row.input?.ticket_# || row.input?.ticket || "—";
+                    const ticketNumber = row.input?.ticket_number || row.input?.["ticket_#"] || row.input?.ticket || "—";
                     const status = row.matched ? (row.differences?.length ? "Mismatch" : "Matched") : "Missing";
                     return (
                       <div key={`${row.index}-${ticketNumber}`} className="ronyx-row" style={{ alignItems: "center", marginTop: 10 }}>

@@ -40,13 +40,13 @@ const ROLE_PITCH = {
   },
   accounting: {
     pitch:
-      "Fast Scan eliminates manual ticket entry errors and mismatched loads, so payroll is always based on verified, reconciled tickets. You’ll dramatically reduce corrections, disputes, and rework—saving hours every week and ensuring every driver is paid exactly what they earned.",
+      "Fast Scan eliminates manual ticket entry errors and mismatched loads, so payroll is always based on verified, reconciled tickets. You'll dramatically reduce corrections, disputes, and rework—saving hours every week and ensuring every driver is paid exactly what they earned.",
     subtext:
       "Ensures payroll is calculated only from verified, reconciled tickets—no more manual mistakes.",
   },
   ops: {
     pitch:
-      "Fast Scan streamlines your ticket process and prevents payroll errors by auto-matching driver, truck, material, and time. You’ll catch issues before payroll runs, reduce admin labor, and keep drivers happy with accurate, dispute-free pay.",
+      "Fast Scan streamlines your ticket process and prevents payroll errors by auto-matching driver, truck, material, and time. You'll catch issues before payroll runs, reduce admin labor, and keep drivers happy with accurate, dispute-free pay.",
     subtext:
       "Reduces admin work and catches ticket issues before payroll—drivers get paid right, every time.",
   },
@@ -244,7 +244,7 @@ export default function FastScanPage() {
         </ol>
         <p className="text-sm text-blue-700">
           Fast Scan is built to replace manual spreadsheet reconciliation with
-          automated, error-proof matching. You’ll save hours and catch mistakes
+          automated, error-proof matching. You'll save hours and catch mistakes
           before they cost you money.
         </p>
       </div>

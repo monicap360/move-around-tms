@@ -1675,7 +1675,7 @@ export default function RonyxHrCompliancePage() {
               />
             </div>
             <div className="ronyx-row">
-              <span>Medical examiner’s certificate uploaded</span>
+              <span>Medical examiner's certificate uploaded</span>
               <input
                 type="checkbox"
                 checked={profile.medical_certificate_uploaded}

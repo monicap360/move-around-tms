@@ -453,7 +453,7 @@ export default function RonyxDashboard() {
         <section className="ronyx-grid">
           <div className="ronyx-card" style={{ gridColumn: "span 2" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h3>Today’s Loads & Action Queue</h3>
+              <h3>Today's Loads & Action Queue</h3>
               <Link href="/ronyx/loads" className="ronyx-action">
                 View all
               </Link>

@@ -41,14 +41,14 @@ export default function FastScanPricing() {
           <li>Audit-ready reports and compliance checks</li>
         </ol>
         <p className="text-base mb-2">
-          We’ll run the first week with you to validate results.
+          We'll run the first week with you to validate results.
         </p>
       </div>
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Why Fast Scan?</h2>
         <ul className="list-disc pl-6 text-base">
           <li>Works faster than manual entry</li>
-          <li>Doesn’t get tired or mis-key numbers</li>
+          <li>Doesn't get tired or mis-key numbers</li>
           <li>Catches violations and mistakes before payroll runs</li>
           <li>Fits seamlessly inside MoveAround TMS</li>
         </ul>

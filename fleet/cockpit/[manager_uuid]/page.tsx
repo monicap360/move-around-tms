@@ -15,11 +15,25 @@ import FleetAlerts from "@/components/fleet/FleetAlerts";
 const ResponsiveGridLayout = WidthProvider(GridLayout);
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-  const [manager, setManager] = useState(null);
-  const [layout, setLayout] = useState([]);
+const defaultLayout = [
+  { i: "map", x: 0, y: 0, w: 6, h: 4 },
+  { i: "comms", x: 6, y: 0, w: 3, h: 2 },
+  { i: "maintenance", x: 6, y: 2, w: 3, h: 2 },
+  { i: "kpis", x: 0, y: 4, w: 3, h: 2 },
+  { i: "dispatch", x: 3, y: 4, w: 3, h: 2 },
+  { i: "alerts", x: 6, y: 4, w: 3, h: 2 },
+];
+
+export default function FleetCockpit({
+  params,
+}: {
+  params: { manager_uuid: string };
+}) {
+  const [manager, setManager] = useState<any>(null);
+  const [layout, setLayout] = useState<any[]>([]);
   const [party, setParty] = useState(false);
   const [highlight, setHighlight] = useState("");
   const confettiRef = useRef(null);
@@ -37,21 +51,19 @@ const supabase = createClient(
     setManager(data);
   }
 
-  // default layout positions
-  const defaultLayout = [
-    { i: "map", x: 0, y: 0, w: 6, h: 4 },
-    { i: "comms", x: 6, y: 0, w: 3, h: 2 },
-    { i: "maintenance", x: 6, y: 2, w: 3, h: 2 },
-    { i: "kpis", x: 0, y: 4, w: 3, h: 2 },
-    { i: "dispatch", x: 3, y: 4, w: 3, h: 2 },
-    { i: "alerts", x: 6, y: 4, w: 3, h: 2 }
-  ];
-
   return (
     <div className="min-h-screen bg-black text-white p-4 relative">
-      {party && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={400} ref={confettiRef} />}
+      {party && (
+        <Confetti
+          width={typeof window !== "undefined" ? window.innerWidth : 1200}
+          height={typeof window !== "undefined" ? window.innerHeight : 800}
+          recycle={false}
+          numberOfPieces={400}
+          ref={confettiRef}
+        />
+      )}
       <h1 className="text-3xl font-bold mb-4">
-        Fleet Manager Cockpit — {manager?.full_name}
+        Fleet Manager Cockpit &mdash; {manager?.full_name}
       </h1>
       <button
         className="mb-4 px-4 py-2 bg-pink-600 rounded-lg font-bold shadow hover:bg-pink-500 transition"
@@ -60,7 +72,7 @@ const supabase = createClient(
           setTimeout(() => setParty(false), 2500);
         }}
       >
-        🎉 Party Mode
+        Party Mode
       </button>
       <ResponsiveGridLayout
         className="layout"
@@ -74,75 +86,29 @@ const supabase = createClient(
         isDraggable={true}
         useCSSTransforms={true}
         compactType="vertical"
-        onDragStart={(_, item) => setHighlight(item.i)}
+        onDragStart={(_: any, item: any) => setHighlight(item.i)}
         onDragStop={() => setHighlight("")}
       >
-        <motion.div
-          key="map"
-          className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === "map" ? "bg-blue-700" : "bg-gray-900"}`}
-          layout
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 1.05, rotate: 2 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
-          <FleetLiveMap manager={manager} />
-        </motion.div>
-        <motion.div
-          key="comms"
-          className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === "comms" ? "bg-pink-700" : "bg-gray-900"}`}
-          layout
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 1.05, rotate: -2 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
-          <FleetComms manager={manager} />
-        </motion.div>
-        <motion.div
-          key="maintenance"
-          className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === "maintenance" ? "bg-yellow-700" : "bg-gray-900"}`}
-          layout
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 1.05, rotate: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
-          <FleetMaintenance manager={manager} />
-        </motion.div>
-        <motion.div
-          key="kpis"
-          className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === "kpis" ? "bg-green-700" : "bg-gray-900"}`}
-          layout
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 1.05, rotate: -1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
-          <FleetKPIs manager={manager} />
-        </motion.div>
-        <motion.div
-          key="dispatch"
-          className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === "dispatch" ? "bg-purple-700" : "bg-gray-900"}`}
-          layout
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 1.05, rotate: 3 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
-          <FleetDispatchBoard manager={manager} />
-        </motion.div>
-        <motion.div
-          key="alerts"
-          className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === "alerts" ? "bg-red-700" : "bg-gray-900"}`}
-          layout
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 1.05, rotate: -3 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">⇅ Move</div>
-          <FleetAlerts manager={manager} />
-        </motion.div>
+        {[
+          { key: "map", color: "blue", Component: FleetLiveMap, rotate: 2 },
+          { key: "comms", color: "pink", Component: FleetComms, rotate: -2 },
+          { key: "maintenance", color: "yellow", Component: FleetMaintenance, rotate: 1 },
+          { key: "kpis", color: "green", Component: FleetKPIs, rotate: -1 },
+          { key: "dispatch", color: "purple", Component: FleetDispatchBoard, rotate: 3 },
+          { key: "alerts", color: "red", Component: FleetAlerts, rotate: -3 },
+        ].map(({ key, color, Component, rotate }) => (
+          <motion.div
+            key={key}
+            className={`p-4 rounded-xl shadow-lg transition-colors duration-200 ${highlight === key ? `bg-${color}-700` : "bg-gray-900"}`}
+            layout
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 1.05, rotate }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            <div className="drag-handle cursor-move mb-2 text-xs text-gray-400">Move</div>
+            <Component manager={manager} />
+          </motion.div>
+        ))}
       </ResponsiveGridLayout>
     </div>
   );

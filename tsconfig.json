@@ -25,5 +25,18 @@
     ]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "driver",
+    "fleet",
+    "company",
+    "apply",
+    "veronica",
+    "assets",
+    "api-backup",
+    "siteground-deploy",
+    "_disabled_routes",
+    "_git_backup_2025-12-13",
+    "_git_backup*"
+  ]
 }

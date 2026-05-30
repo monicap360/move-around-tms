@@ -172,7 +172,7 @@ export default function CrossBorderDemo() {
               {[
                 {
                   title: "Problem",
-                  body: "Truck stuck at Laredo with “Status Unknown” and endless broker calls.",
+                  body: 'Truck stuck at Laredo with "Status Unknown" and endless broker calls.',
                 },
                 {
                   title: "Solution",
@@ -211,7 +211,7 @@ export default function CrossBorderDemo() {
               {[
                 {
                   title: "Problem",
-                  body: "Spreadsheets for USD/MXN, exchange rates, and “Paid?” chaos.",
+                  body: 'Spreadsheets for USD/MXN, exchange rates, and "Paid?" chaos.',
                 },
                 {
                   title: "Solution",
@@ -244,7 +244,7 @@ export default function CrossBorderDemo() {
             Schedule Your Cross‑Border Strategy Briefing
           </h2>
           <p className="mt-3 text-sm text-white/70">
-            We’ll audit your compliance workflow, map US‑MX handoffs, and deliver a custom risk‑reduction report.
+            We'll audit your compliance workflow, map US‑MX handoffs, and deliver a custom risk‑reduction report.
           </p>
           <a
             href="mailto:sales@movearoundtms.com"

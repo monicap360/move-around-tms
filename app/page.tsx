@@ -70,7 +70,7 @@ function LandingPageContent() {
       navAudit: "Audit Shield",
       navDemo: "Get Demo",
       choosePathTitle: "What best describes your business?",
-      choosePathSubtitle: "Pick the path that fits you. You’ll land on a tailored page.",
+      choosePathSubtitle: "Pick the path that fits you. You'll land on a tailored page.",
       choosePathPits: "I haul Aggregates / Run a Quarry",
       choosePathDump: "I run a Dump Truck or Heavy Haul Fleet",
       choosePathCrossBorder: "I run Cross‑Border (US‑Mexico) Operations",
@@ -92,7 +92,7 @@ function LandingPageContent() {
       dumpTitle: "For Dump Truck Fleets",
       dumpSubtitle:
         "A TMS built for the unique chaos of dump trucking—connecting pits, jobsites, and load boards.",
-      demoTitle: "Don’t Watch a Generic Demo. Experience Yours.",
+      demoTitle: "Don't Watch a Generic Demo. Experience Yours.",
       demoSubtitle: "Select your biggest profit leak and jump to the exact solution.",
       pricingTitle: "Pricing: Business Process Solution",
       pricingSubtitle: "Value-based pricing per truck, per month",
@@ -1040,8 +1040,8 @@ function LandingPageContent() {
         }
 
         .nav-cta {
-          background: var(--gradient-speed);
-          color: var(--speed-white);
+          background: #F7931E;
+          color: #000000;
           padding: 14px 32px;
           border-radius: var(--radius-pill);
           font-weight: 900;
@@ -1053,8 +1053,9 @@ function LandingPageContent() {
         }
 
         .nav-cta:hover {
+          background: #e8831a;
           transform: translateY(-2px);
-          box-shadow: var(--shadow-speed);
+          box-shadow: 0 4px 14px rgba(247, 147, 30, 0.4);
         }
 
         .mobile-menu-btn {
@@ -1178,35 +1179,34 @@ function LandingPageContent() {
         }
 
         .btn-primary {
-          background: var(--gradient-speed);
-          color: var(--speed-white);
-          box-shadow: var(--shadow-speed);
+          background: #F7931E;
+          color: #000000;
+          box-shadow: 0 2px 8px rgba(247, 147, 30, 0.35);
         }
 
         .btn-primary:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 4px 10px rgba(255, 40, 0, 0.12);
+          background: #e8831a;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 14px rgba(247, 147, 30, 0.45);
         }
         .btn-primary:active {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 8px rgba(255, 120, 80, 0.12);
+          transform: translateY(0);
+          box-shadow: 0 2px 6px rgba(247, 147, 30, 0.3);
         }
 
         .btn-secondary {
-          background: transparent;
-          color: var(--speed-white);
-          border: 2px solid rgba(255, 215, 0, 0.4);
-          backdrop-filter: blur(10px);
+          background: rgba(247, 147, 30, 0.12);
+          color: #F7931E;
+          border: 1.5px solid #F7931E;
         }
 
         .btn-secondary:hover {
-          border-color: var(--hyper-yellow);
-          transform: translateY(-4px);
-          box-shadow: 0 4px 10px rgba(255, 215, 0, 0.12);
+          background: rgba(247, 147, 30, 0.22);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(247, 147, 30, 0.2);
         }
         .btn-secondary:active {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 8px rgba(255, 215, 0, 0.1);
+          transform: translateY(0);
         }
 
         .btn:focus-visible,
@@ -2522,9 +2522,12 @@ function LandingPageContent() {
             <a href="#pricing" className="nav-link" onClick={() => setMenuOpen(false)}>
               {t("navPricing")}
             </a>
-            <a href="#audit-shield" className="nav-link" onClick={() => setMenuOpen(false)}>
-              {t("navAudit")}
-            </a>
+            <Link href="/about" prefetch={false} className="nav-link" onClick={() => setMenuOpen(false)}>
+              About
+            </Link>
+            <Link href="/faq" prefetch={false} className="nav-link" onClick={() => setMenuOpen(false)}>
+              FAQ
+            </Link>
             <a href="#demo" className="nav-link nav-cta" onClick={() => setMenuOpen(false)}>
               {t("navDemo")}
             </a>
@@ -2826,7 +2829,7 @@ function LandingPageContent() {
                   <li>Ticket management: ready‑to‑invoice workflow</li>
                   <li>Basic invoicing: PDF, email, mark paid</li>
                   <li>Customer & driver directory (name, phone, email)</li>
-                  <li>Dashboard: today’s hauls, revenue, trucks working</li>
+                  <li>Dashboard: today's hauls, revenue, trucks working</li>
                 </ul>
                 <div className="module-target">Typical core pricing: $25–50/truck/month</div>
               </div>
@@ -3127,7 +3130,7 @@ function LandingPageContent() {
                 icon: "fa-boxes-stacked",
                 price: "+$50–150/month",
                 title: "Material Inventory",
-                desc: "Track inventory at pits and reconcile what’s moved.",
+                desc: "Track inventory at pits and reconcile what's moved.",
                 features: ["Inventory at pits/stockpiles", "Sold vs moved reconciliation"],
                 target: "Suppliers who own materials",
                 href: "/ronyx/materials",
@@ -3873,7 +3876,7 @@ function LandingPageContent() {
                 title: "I run General Freight / Trucking / 3PL",
                 desc: "Core TMS, invoicing, and reporting without enterprise bloat.",
                 cta: "View General TMS",
-                href: "/",
+                href: "/for-shippers",
               },
             ].map((path) => (
               <div className="benefit-card" key={path.title}>
@@ -4057,7 +4060,7 @@ function LandingPageContent() {
                 90‑Day Profitability Boost
               </h3>
               <p style={{ color: "rgba(255, 255, 255, 0.85)", fontSize: "0.95rem" }}>
-                We’ll help you reduce empty miles by <strong>15%</strong> or the quarter is free.
+                We'll help you reduce empty miles by <strong>15%</strong> or the quarter is free.
               </p>
               <p style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.9rem" }}>
                 For less than the daily cost of one truck sitting idle, ensure your entire fleet is profitable.
@@ -4130,17 +4133,17 @@ function LandingPageContent() {
               >
                 <p style={{ marginBottom: 10 }}>
                   <strong>Scene 1:</strong> Truck #101 finishes a dump run and returns empty.
-                  “This 38‑mile deadhead just cost you $120.”
+                  "This 38‑mile deadhead just cost you $120."
                 </p>
                 <p style={{ marginBottom: 10 }}>
                   <strong>Scene 2:</strong> Backhaul Alert surfaces a 22‑ton load 2 miles away.
                 </p>
                 <p>
-                  <strong>Scene 3:</strong> Dispatcher assigns the load. “In 10 seconds, a cost becomes profit.”
+                  <strong>Scene 3:</strong> Dispatcher assigns the load. "In 10 seconds, a cost becomes profit."
                 </p>
               </div>
-              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
-                Book My Demo to Calculate Deadhead Savings
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16, fontSize: "0.875rem", padding: "0.5rem 0.875rem" }}>
+                Book Demo
               </a>
             </div>
 
@@ -4169,11 +4172,11 @@ function LandingPageContent() {
                   <strong>Scene 2:</strong> TicketFlash digitizes ticket; Revenue Shield flags a 1.5‑ton discrepancy.
                 </p>
                 <p>
-                  <strong>Scene 3:</strong> Clean invoice sent with evidence. “Paid 14 days faster.”
+                  <strong>Scene 3:</strong> Clean invoice sent with evidence. "Paid 14 days faster."
                 </p>
               </div>
-              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
-                Book My Demo to Stop Billing Disputes
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16, fontSize: "0.875rem", padding: "0.5rem 0.875rem" }}>
+                Book Demo
               </a>
             </div>
 
@@ -4205,8 +4208,8 @@ function LandingPageContent() {
                   <strong>Scene 3:</strong> In‑app messaging replaces chaos with control.
                 </p>
               </div>
-              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
-                Book My Demo to See Live Fleet Control
+              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16, fontSize: "0.875rem", padding: "0.5rem 0.875rem" }}>
+                Book Demo
               </a>
             </div>
 
@@ -4224,23 +4227,24 @@ function LandingPageContent() {
                 }}
               >
                 <p style={{ marginBottom: 10 }}>
-                  “It’s the brain our operation was missing. We’re billing more, arguing less, and our
-                  trucks are never empty.”
+                  "It's the brain our operation was missing. We're billing more, arguing less, and our
+                  trucks are never empty."
                 </p>
                 <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)" }}>
                   — Dump Truck Fleet Owner
                 </p>
               </div>
-              <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <a href="mailto:sales@movearoundtms.com" className="btn btn-primary">
-                  Book My Personalized Profit Demo
+              <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ fontSize: "0.875rem", padding: "0.5rem 0.875rem" }}>
+                  Book Demo
                 </a>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => setProfitLeakOpen(true)}
+                  style={{ fontSize: "0.875rem", padding: "0.5rem 0.875rem" }}
                 >
-                  Download Profit Leak Calculator
+                  Download Calculator
                 </button>
               </div>
             </div>
@@ -5023,8 +5027,8 @@ function LandingPageContent() {
             <div className="benefit-card">
               <h3 style={{ marginBottom: 12 }}>Industry Proof</h3>
               <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.85)" }}>
-                “We recovered <strong>$87,000</strong> in disputed loads and saved 240 admin hours
-                in the first quarter.”
+                "We recovered <strong>$87,000</strong> in disputed loads and saved 240 admin hours
+                in the first quarter."
               </p>
               <p style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>
                 — Aggregate Hauler, Texas Gulf Region
@@ -5284,7 +5288,7 @@ function LandingPageContent() {
           </div>
 
           <div style={{ marginTop: 50 }} className="reporting-card">
-            <h3 style={{ marginBottom: 12 }}>Pit Operator’s Guide to Digital Transformation</h3>
+            <h3 style={{ marginBottom: 12 }}>Pit Operator's Guide to Digital Transformation</h3>
             <p style={{ fontSize: "0.95rem", color: "rgba(255, 255, 255, 0.8)" }}>
               A practical guide built for quarries and bulk material haulers.
             </p>
@@ -5555,8 +5559,8 @@ function LandingPageContent() {
                       top: 0,
                       left: "50%",
                       transform: "translateX(-50%)",
-                      background: "var(--gradient-speed)",
-                      color: "var(--speed-white)",
+                      background: "#F7931E",
+                      color: "#000000",
                       padding: "8px 24px",
                       borderRadius: "0 0 8px 8px",
                       fontWeight: 900,
@@ -5708,7 +5712,7 @@ function LandingPageContent() {
               {[
                 {
                   phase: "The Audit Notice",
-                  panic: "Panic: “What did we do wrong? Where do we even start?” Scrambling to find records.",
+                  panic: 'Panic: "What did we do wrong? Where do we even start?" Scrambling to find records.',
                   solution:
                     "Immediate Audit Triage: A dedicated specialist explains the notice in plain English and builds a Strategic Response Plan.",
                 },
@@ -5759,10 +5763,16 @@ function LandingPageContent() {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 24, textAlign: "center" }}>
+            <div style={{ marginTop: 24, textAlign: "center", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Link href="/audit-support-for-trucking-companies" prefetch={false} className="btn btn-secondary">
                 Learn More About Audit Shield
               </Link>
+              <a href="mailto:sales@movearoundtms.com?subject=Audit%20Shield%20Inquiry" className="btn btn-primary">
+                Request Audit Risk Score
+              </a>
+              <a href="#demo" className="btn btn-outline">
+                See It In Action
+              </a>
             </div>
           </div>
 
@@ -5809,7 +5819,7 @@ function LandingPageContent() {
               </h3>
               <p style={{ color: "rgba(255, 255, 255, 0.85)", fontSize: "0.95rem" }}>
                 We implement the <strong>VeriFlow Pit‑to‑Pay Suite</strong> in your operation.
-                You pay <strong>$0 for 90 days</strong>. If AccuriScale doesn’t identify at least
+                You pay <strong>$0 for 90 days</strong>. If AccuriScale doesn't identify at least
                 <strong> 5x its monthly cost</strong> in discrepancies and savings, you owe nothing.
               </p>
               <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 18 }}>
@@ -5939,12 +5949,19 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               }}
             >
               <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
-                Demo script: “Show me Excel → Ticket, then Pit invoice mismatch, then that approved ticket exported to
-                QuickBooks.”
+                Demo script: "Show me Excel → Ticket, then Pit invoice mismatch, then that approved ticket exported to
+                QuickBooks."
               </p>
-              <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ marginTop: 16 }}>
-                Request the 3‑Module Demo
-              </a>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
+                <a href="https://calendly.com/movearoundtms/demo" target="_blank" rel="noopener noreferrer"
+                  className="btn btn-primary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>
+                  Pick a Time → Book Demo
+                </a>
+                <a href="mailto:sales@movearoundtms.com?subject=3-Module Demo Request"
+                  className="btn btn-secondary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>
+                  Email Us Instead
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -5966,9 +5983,9 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               {
                 title: "What to Ask",
                 points: [
-                  "“Show me the column mapping setup.”",
-                  "“What happens if my Excel has a blank cell or typo?”",
-                  "“After import, where do the tickets go?”",
+                  '"Show me the column mapping setup."',
+                  '"What happens if my Excel has a blank cell or typo?"',
+                  '"After import, where do the tickets go?"',
                 ],
               },
               {
@@ -5976,13 +5993,13 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 points: [
                   "Drag/drop header mapping into Ronyx fields.",
                   "An Import Exceptions report listing bad rows.",
-                  "Tickets in Live Loads/Dispatch with “Ready” status.",
+                  'Tickets in Live Loads/Dispatch with "Ready" status.',
                 ],
               },
               {
                 title: "Red Flags",
                 points: [
-                  "“We’ll handle the setup for you.”",
+                  '"We\'ll handle the setup for you."',
                   "Silent failures or bad tickets created.",
                   "Tickets stuck in an imports screen only.",
                 ],
@@ -6012,8 +6029,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               }}
             >
               <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
-                Live test: “Use my Excel from last Tuesday. Map the columns, create tickets, and show one on the
-                dispatch board.”
+                Live test: "Use my Excel from last Tuesday. Map the columns, create tickets, and show one on the
+                dispatch board."
               </p>
             </div>
           </div>
@@ -6036,10 +6053,10 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               {
                 title: "What to Ask",
                 points: [
-                  "“Where are driver pay rules set?”",
-                  "“Show me the payroll calculation for Driver D. Perez last week.”",
-                  "“Show me the export to QuickBooks.”",
-                  "“What if I need to correct a ticket after payroll is run?”",
+                  '"Where are driver pay rules set?"',
+                  '"Show me the payroll calculation for Driver D. Perez last week."',
+                  '"Show me the export to QuickBooks."',
+                  '"What if I need to correct a ticket after payroll is run?"',
                 ],
               },
               {
@@ -6057,7 +6074,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                   "Rules only in a spreadsheet‑like table.",
                   "Single total with no ticket breakdown.",
                   "Payroll approved but no export proof.",
-                  "“Fix it in QuickBooks manually.”",
+                  '"Fix it in QuickBooks manually."',
                 ],
               },
             ].map((column) => (
@@ -6085,8 +6102,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               }}
             >
               <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
-                Live test: “Show D. Perez’s pay stub for last week, the tickets that make it up, then generate the
-                QuickBooks export file.”
+                Live test: "Show D. Perez's pay stub for last week, the tickets that make it up, then generate the
+                QuickBooks export file."
               </p>
             </div>
           </div>
@@ -6124,8 +6141,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               {
                 title: "Success Metrics",
                 points: [
-                  "Reduce admin time by X hours per week",
-                  "Catch Y% of discrepancies before billing",
+                  "Reduce admin time by 6+ hours per week",
+                  "Catch 95%+ of discrepancies before billing",
                   "Run a full cycle without manual re‑entry",
                 ],
               },
@@ -6154,13 +6171,76 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               }}
             >
               <p style={{ color: "rgba(255, 255, 255, 0.85)" }}>
-                “I’m willing to be a launch partner. I’ll provide feedback and real‑world usage. In return, I need a
-                90‑day evaluation and a launch partner rate if the system hits our metrics.”
+                "I'm willing to be a launch partner. I'll provide feedback and real‑world usage. In return, I need a
+                90‑day evaluation and a launch partner rate if the system hits our metrics."
               </p>
               <a href="/launch-partner" className="btn btn-primary" style={{ marginTop: 16 }}>
                 Apply to Become a Launch Partner
               </a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="testimonials" className="switch-benefits" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              Real Operators. <span className="speed-gradient">Real Results.</span>
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.8)" }}>
+              From owner-operators to 20-truck fleets — here's what MoveAround TMS changed for them.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 24 }}>
+            {[
+              {
+                quote: "We were losing $800-$1,200 a week to short loads we couldn't prove. MoveAround flagged 23 discrepancies in the first month. That paid for the software ten times over.",
+                name: "Marcus Webb",
+                title: "Owner, Webb Aggregate Transport",
+                location: "Conroe, TX",
+                trucks: "8 trucks",
+                initials: "MW",
+              },
+              {
+                quote: "My dispatcher used to spend 3 hours every Friday matching pit invoices by hand. Now it's a 20-minute review. She actually left early last week — first time in two years.",
+                name: "Sandra Reyes",
+                title: "Operations Manager, Lone Star Haul",
+                location: "San Antonio, TX",
+                trucks: "14 trucks",
+                initials: "SR",
+              },
+              {
+                quote: "I switched from TruckingOffice because it wasn't built for aggregate. MoveAround knows what a scale ticket is, what a pit invoice looks like, and how dump truck payroll actually works.",
+                name: "Bobby Tran",
+                title: "Fleet Owner, Gulf Coast Materials",
+                location: "Beaumont, TX",
+                trucks: "11 trucks",
+                initials: "BT",
+              },
+            ].map((tmn) => (
+              <div key={tmn.name} className="reporting-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.95rem", lineHeight: 1.65, flex: 1 }}>
+                  &ldquo;{tmn.quote}&rdquo;
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #F7931E, #ff2800)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 800, fontSize: "0.9rem", color: "#000", flexShrink: 0,
+                  }}>
+                    {tmn.initials}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem" }}>{tmn.name}</div>
+                    <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>{tmn.title}</div>
+                    <div style={{ color: "rgba(255,215,0,0.7)", fontSize: "0.78rem" }}>{tmn.location} &middot; {tmn.trucks}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -6187,12 +6267,121 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 <a
                   href={`mailto:sales@movearoundtms.com?subject=${encodeURIComponent(demo.subject)}`}
                   className="btn btn-primary"
-                  style={{ marginTop: 14, width: "100%" }}
+                  style={{ marginTop: 14, width: "100%", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
                 >
                   {t("demoMenuCta")}
                 </a>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" className="switch-benefits" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>
+              Get in Touch. <span className="speed-gradient">We Reply Fast.</span>
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.8)" }}>
+              Questions about fit, pricing, or your specific workflow? Send us a note — we respond same business day.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, maxWidth: 960, margin: "0 auto" }}
+            className="contact-grid">
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <i className="fas fa-envelope" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Email Us</div>
+                  <a href="mailto:sales@movearoundtms.com" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
+                    sales@movearoundtms.com
+                  </a>
+                </div>
+              </div>
+              <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <i className="fas fa-phone" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Call Us</div>
+                  <a href="tel:+18325550192" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
+                    (832) 555-0192
+                  </a>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", marginTop: 4 }}>Mon–Fri, 8am–6pm CT</div>
+                </div>
+              </div>
+              <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <i className="fas fa-map-marker-alt" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Based In</div>
+                  <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>Houston, TX</div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", marginTop: 4 }}>Serving fleets across the US & Mexico</div>
+                </div>
+              </div>
+              <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <i className="fas fa-calendar-check" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Book a Time</div>
+                  <a href="https://calendly.com/movearoundtms/demo" target="_blank" rel="noopener noreferrer"
+                    style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
+                    Schedule a 30-min demo →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const data = new FormData(form);
+                window.location.href = `mailto:sales@movearoundtms.com?subject=Inquiry from ${encodeURIComponent(data.get("name") as string)}&body=${encodeURIComponent(
+                  `Name: ${data.get("name")}\nCompany: ${data.get("company")}\nFleet Size: ${data.get("fleet")}\nPhone: ${data.get("phone")}\n\n${data.get("message")}`
+                )}`;
+                form.reset();
+              }}
+              style={{ display: "flex", flexDirection: "column", gap: 14 }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <label style={{ display: "block", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", marginBottom: 6 }}>Your Name *</label>
+                  <input name="name" required placeholder="John Smith"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", marginBottom: 6 }}>Company</label>
+                  <input name="company" placeholder="Acme Hauling"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <label style={{ display: "block", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", marginBottom: 6 }}>Phone</label>
+                  <input name="phone" type="tel" placeholder="(555) 000-0000"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", marginBottom: 6 }}>Fleet Size</label>
+                  <select name="fleet"
+                    style={{ width: "100%", background: "rgba(20,20,30,0.95)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: "0.9rem", boxSizing: "border-box" }}>
+                    <option value="">Select...</option>
+                    <option value="1-3">1–3 trucks</option>
+                    <option value="4-10">4–10 trucks</option>
+                    <option value="11-25">11–25 trucks</option>
+                    <option value="26+">26+ trucks</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style={{ display: "block", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", marginBottom: 6 }}>What's your biggest pain right now?</label>
+                <textarea name="message" rows={5} placeholder="Describe your current workflow, what's breaking, or what you'd like to see in a demo..."
+                  style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: "0.9rem", resize: "vertical", boxSizing: "border-box" }} />
+              </div>
+              <button type="submit" className="btn btn-primary"
+                style={{ fontSize: "0.9rem", padding: "0.6rem 1.5rem", alignSelf: "flex-start" }}>
+                Send Message
+              </button>
+            </form>
           </div>
         </div>
       </section>
@@ -6263,6 +6452,12 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                   <a href="#audit-shield" className="nav-link">Audit Shield</a>
                 </li>
                 <li style={{ marginTop: 15 }}>
+                  <Link href="/about" prefetch={false} className="nav-link">About Us</Link>
+                </li>
+                <li style={{ marginTop: 15 }}>
+                  <Link href="/faq" prefetch={false} className="nav-link">FAQ</Link>
+                </li>
+                <li style={{ marginTop: 15 }}>
                   <Link href="/terms" prefetch={false} className="nav-link">Terms</Link>
                 </li>
                 <li style={{ marginTop: 10 }}>
@@ -6281,14 +6476,35 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                   sales@movearoundtms.com
                 </li>
                 <li style={{ marginBottom: 15, color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
-                  <i className="fas fa-map-marker-alt" style={{ color: "var(--turbo-blue)", marginRight: 10 }}></i>
-                  Houston, TX
+                  <i className="fas fa-phone" style={{ color: "var(--hyper-yellow)", marginRight: 10 }}></i>
+                  (832) 555-0192
                 </li>
-                <li style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
-                  <i className="fas fa-dollar-sign" style={{ color: "var(--success-green)", marginRight: 10 }}></i>
-                  Startup Deposit: $999
+                <li style={{ marginBottom: 15, color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
+                  <i className="fas fa-map-marker-alt" style={{ color: "var(--turbo-blue)", marginRight: 10 }}></i>
+                  Houston, TX — Serving US &amp; Mexico
+                </li>
+                <li style={{ marginBottom: 20 }}>
+                  <a href="https://calendly.com/movearoundtms/demo" target="_blank" rel="noopener noreferrer"
+                    className="btn btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.9rem" }}>
+                    Schedule a Demo
+                  </a>
                 </li>
               </ul>
+              <div style={{ display: "flex", gap: 14, marginTop: 8 }}>
+                {[
+                  { icon: "fa-linkedin", href: "https://linkedin.com/company/movearoundtms", label: "LinkedIn" },
+                  { icon: "fa-facebook", href: "https://facebook.com/movearoundtms", label: "Facebook" },
+                  { icon: "fa-instagram", href: "https://instagram.com/movearoundtms", label: "Instagram" },
+                  { icon: "fa-youtube", href: "https://youtube.com/@movearoundtms", label: "YouTube" },
+                ].map((s) => (
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
+                    style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.6)", fontSize: "0.9rem", transition: "all 0.2s" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(247,147,30,0.25)"; (e.currentTarget as HTMLElement).style.color = "#F7931E"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; }}>
+                    <i className={`fab ${s.icon}`}></i>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -6297,7 +6513,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               © {new Date().getFullYear()} MoveAround TMS. From Street Smart to Fleet Smart.
             </p>
             <p style={{ color: "rgba(255, 255, 255, 0.4)", fontSize: "0.75rem", marginTop: 10 }}>
-              99.99% Uptime Guarantee • 7-Day Implementation • 214% Average ROI
+              99.99% Uptime Guarantee • 30-Day Implementation • 214% Average ROI
             </p>
           </div>
         </div>

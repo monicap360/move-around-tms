@@ -53,7 +53,7 @@ export default function FMCSAClearinghouseTab() {
             </Link>
           </li>
           <li style={{ marginBottom: 12 }}>
-            <b>Click “Register”</b> and choose <b>Driver</b> as your user type.
+            <b>Click "Register"</b> and choose <b>Driver</b> as your user type.
           </li>
           <li style={{ marginBottom: 12 }}>
             <b>Create or log in to your Login.gov account:</b> Use your existing
