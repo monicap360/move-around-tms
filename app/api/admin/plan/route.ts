@@ -9,6 +9,9 @@ function authorize(req: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  if (!supabaseAdmin)
+    return NextResponse.json({ plan: "Basic" });
+
   const { data, error } = await supabaseAdmin
     .from("account_plan")
     .select("plan, updated_at")
@@ -16,7 +19,7 @@ export async function GET(request: NextRequest) {
     .single();
 
   if (error)
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ plan: "Basic" });
   return NextResponse.json({
     plan: data?.plan || "Basic",
     updated_at: data?.updated_at,
@@ -27,6 +30,9 @@ export async function POST(request: NextRequest) {
   if (!authorize(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  if (!supabaseAdmin)
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
 
   const body = await request.json();
   const { plan } = body as { plan: "Basic" | "Pro" | "Enterprise" };

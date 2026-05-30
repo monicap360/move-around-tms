@@ -345,9 +345,14 @@ export default function PricingPage() {
 
   useEffect(() => {
     (async () => {
-      const res = await fetch("/api/admin/plan");
-      const json = await res.json();
-      if (json.plan) setPlan(json.plan);
+      try {
+        const res = await fetch("/api/admin/plan");
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.plan) setPlan(json.plan);
+      } catch {
+        // API unavailable — default plan stays set
+      }
     })();
   }, []);
 
