@@ -31,13 +31,13 @@ export default async function RonyxLayout({ children }: { children: React.ReactN
     const session = data?.session ?? null;
 
     if (error || !session) {
-      redirect("/ronyx/login");
+      redirect("/ronyx-login");
     }
 
     const userEmail = session.user?.email;
 
     if (!userEmail) {
-      redirect("/ronyx/login");
+      redirect("/ronyx-login");
     }
 
     const { data: userProfile, error: profileError } = await supabase
@@ -47,7 +47,7 @@ export default async function RonyxLayout({ children }: { children: React.ReactN
       .single();
 
     if (profileError || !userProfile) {
-      redirect("/ronyx/login");
+      redirect("/ronyx-login");
     }
 
     return (
@@ -62,6 +62,6 @@ export default async function RonyxLayout({ children }: { children: React.ReactN
       </RonyxShell>
     );
   } catch {
-    redirect("/ronyx/login");
+    redirect("/ronyx-login");
   }
 }
