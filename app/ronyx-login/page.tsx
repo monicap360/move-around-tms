@@ -32,16 +32,7 @@ export default function RonyxLoginPage() {
       return;
     }
 
-    const role = data.user?.user_metadata?.role;
-    const userEmail = data.user?.email;
-
-    if (userEmail === "melidazvl@outlook.com" || role === "manager") {
-      router.push("/veronica");
-    } else if (role === "admin") {
-      router.push("/dashboard");
-    } else {
-      router.push("/home");
-    }
+    router.push("/ronyx");
   }
 
   if (demoMode) {
