@@ -1,7 +1,17 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-// 🚀 Lightweight middleware - Security headers only, no payment/auth blocking
+function applySecurityHeaders(res: NextResponse) {
+  res.headers.set("X-Frame-Options", "SAMEORIGIN");
+  res.headers.set("X-Content-Type-Options", "nosniff");
+  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Force all subresource requests to HTTPS, eliminating mixed-content warnings
+  res.headers.set("Content-Security-Policy", "upgrade-insecure-requests");
+  // Tell browsers to only use HTTPS for this domain for 1 year
+  res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  return res;
+}
+
 export async function middleware(req: NextRequest) {
   try {
     const url = req.nextUrl.clone();
@@ -20,25 +30,11 @@ export async function middleware(req: NextRequest) {
     // Route subdomain traffic to the Ronyx dashboard paths
     if (host.startsWith("ronyx.") && !pathname.startsWith("/ronyx") && !isPublicAsset) {
       url.pathname = `/ronyx${pathname === "/" ? "" : pathname}`;
-      const res = NextResponse.rewrite(url);
-
-      res.headers.set("X-Frame-Options", "SAMEORIGIN");
-      res.headers.set("X-Content-Type-Options", "nosniff");
-      res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-
-      return res;
+      return applySecurityHeaders(NextResponse.rewrite(url));
     }
 
-    const res = NextResponse.next();
-    
-    // Security headers
-    res.headers.set("X-Frame-Options", "SAMEORIGIN");
-    res.headers.set("X-Content-Type-Options", "nosniff");
-    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-
-    return res;
-  } catch (error) {
-    // Fallback - allow all traffic
+    return applySecurityHeaders(NextResponse.next());
+  } catch {
     return NextResponse.next();
   }
 }
