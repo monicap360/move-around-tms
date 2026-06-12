@@ -27,6 +27,12 @@ export async function middleware(req: NextRequest) {
       pathname.startsWith("/_next/") ||
       pathname === "/favicon.ico";
 
+    // Redirect www.ronyx.* → ronyx.* (www on a subdomain is invalid for SSL)
+    if (host.startsWith("www.ronyx.")) {
+      const canonicalHost = host.replace("www.ronyx.", "ronyx.");
+      return NextResponse.redirect(`https://${canonicalHost}${pathname}`, 301);
+    }
+
     // Route subdomain traffic to the Ronyx dashboard paths
     if (host.startsWith("ronyx.") && !pathname.startsWith("/ronyx") && !isPublicAsset) {
       url.pathname = `/ronyx${pathname === "/" ? "" : pathname}`;
