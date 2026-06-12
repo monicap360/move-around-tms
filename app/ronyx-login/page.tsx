@@ -104,14 +104,19 @@ export default function RonyxLoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative", width: "100%", marginBottom: "1rem" }}>
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: "100%", paddingRight: "2.5rem", boxSizing: "border-box" }}
+              style={{
+                width: "100%",
+                paddingRight: "2.75rem",
+                marginBottom: 0,
+                boxSizing: "border-box",
+              }}
             />
             <button
               type="button"
