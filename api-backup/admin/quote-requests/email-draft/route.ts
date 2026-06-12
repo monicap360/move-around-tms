@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     `• Estimated tonnage or loads`,
     `• Desired timeline and any special requirements`,
     "",
-    `Once we have those details, we’ll send a formal quote the same day.`,
+    `Once we have those details, we'll send a formal quote the same day.`,
     "",
     `Best regards,`,
     `Ronyx Logistics LLC`,
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     <li>Estimated tonnage or loads</li>
     <li>Desired timeline and any special requirements</li>
   </ul>
-  <p>Once we have those details, we’ll send a formal quote the same day.</p>
+  <p>Once we have those details, we'll send a formal quote the same day.</p>
   <p>Best regards,<br/>Ronyx Logistics LLC<br/>quotes@ronyxlogistics.com</p>
   `;
 
