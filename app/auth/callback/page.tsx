@@ -87,17 +87,14 @@ export default function AuthCallback() {
     }
     setStatus("loading");
 
-    // Confirm session is still active before updating
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setMessage("Session expired. Please request a new password reset link.");
-      setStatus("error");
-      return;
-    }
-
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      setMessage(error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("session") || msg.includes("auth") || msg.includes("token")) {
+        setMessage("Reset link expired. Please go back and request a new one.");
+      } else {
+        setMessage(error.message);
+      }
       setStatus("error");
     } else {
       setStatus("success");
