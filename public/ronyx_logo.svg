@@ -1,85 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 560">
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="40" cy="40" r="35" fill="#F7931E" stroke="#FFFFFF" stroke-width="2"/>
 
-  <g fill="none" stroke="#C8A84A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- "R" letter -->
+  <text x="25" y="55" font-family="Arial Black, sans-serif" font-size="42" font-weight="900" fill="#FFFFFF">R</text>
 
-    <!-- MANE - outer sweep (leftmost) -->
-    <path d="M 195,88 C 162,66 128,76 112,114 C 95,154 108,202 136,236 C 158,266 192,286 220,308 C 230,316 240,324 247,334"/>
-
-    <!-- MANE - middle stroke -->
-    <path d="M 220,72 C 192,54 162,64 148,98 C 132,134 146,176 170,206 C 186,228 208,246 222,260"/>
-
-    <!-- MANE - inner stroke -->
-    <path d="M 250,60 C 226,46 202,58 192,86 C 181,116 196,152 218,174 C 232,190 248,202 258,212"/>
-
-    <!-- HEAD - top arc from mane to ear -->
-    <path d="M 275,50 C 287,28 314,22 334,40"/>
-
-    <!-- EAR -->
-    <path d="M 334,40 C 350,26 370,36 370,56 C 370,68 360,80 347,84"/>
-
-    <!-- HEAD - right side, ear to cheek -->
-    <path d="M 347,84 C 374,96 392,128 393,163 C 394,196 378,225 360,242"/>
-
-    <!-- EYE -->
-    <path d="M 332,118 C 339,108 355,111 358,122 C 362,133 355,143 345,142 C 335,141 328,132 332,118"/>
-    <!-- Brow ridge -->
-    <path d="M 327,110 C 339,101 357,104 364,116"/>
-
-    <!-- NOSE BRIDGE - cheek to nose -->
-    <path d="M 360,242 C 366,263 370,288 365,308 C 362,320 356,328 348,332"/>
-
-    <!-- NOSE tip -->
-    <path d="M 364,304 C 372,312 377,325 370,338"/>
-
-    <!-- UPPER LIP / jaw hinge -->
-    <path d="M 348,332 C 358,338 370,336 376,326 C 381,316 378,303 371,296"/>
-
-    <!-- UPPER TEETH front edge -->
-    <path d="M 370,338 C 366,354 358,368 348,380"/>
-
-    <!-- FANG (large canine) -->
-    <path d="M 348,380 C 353,392 350,406 342,412"/>
-
-    <!-- Gap and lower tooth row -->
-    <path d="M 342,412 C 334,418 324,416 316,410"/>
-
-    <!-- LOWER JAW outer curve -->
-    <path d="M 316,410 C 296,402 272,386 256,366 C 242,348 238,326 244,308"/>
-
-    <!-- CHIN -->
-    <path d="M 244,308 C 237,292 237,274 246,260"/>
-
-    <!-- THROAT - left side (from mane base) -->
-    <path d="M 247,334 C 250,354 252,372 250,390 C 248,404 242,416 234,424"/>
-
-    <!-- THROAT - right side -->
-    <path d="M 246,260 C 239,276 235,295 233,314 C 231,334 233,354 235,372 C 237,386 238,400 237,412"/>
-
-    <!-- CHEST / body base -->
-    <path d="M 234,424 C 222,432 208,436 194,433"/>
-    <path d="M 237,412 C 230,424 220,432 210,436"/>
-
-  </g>
-
-  <!-- RONYX -->
-  <text
-    x="252"
-    y="480"
-    text-anchor="middle"
-    font-family="'Times New Roman', Times, Georgia, serif"
-    font-size="94"
-    font-weight="bold"
-    fill="#C8A84A"
-    letter-spacing="5">RONYX</text>
-
-  <!-- LOGISTICS LLC -->
-  <text
-    x="252"
-    y="538"
-    text-anchor="middle"
-    font-family="'Times New Roman', Times, Georgia, serif"
-    font-size="27"
-    fill="#C8A84A"
-    letter-spacing="13">LOGISTICS LLC</text>
-
+  <!-- Company text -->
+  <text x="85" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#F7931E">RONYX</text>
+  <text x="85" y="55" font-family="Arial, sans-serif" font-size="14" font-weight="400" fill="#FFFFFF">FLEET MANAGEMENT</text>
 </svg>
