@@ -4,53 +4,73 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 
+function EyeOpen() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+function EyeOff() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  );
+}
+
 export default function AuthCallback() {
   const router = useRouter();
   const [isRecovery, setIsRecovery] = useState(false);
   const [checking, setChecking] = useState(true);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    // Listen for auth state change FIRST so we catch the event after code exchange
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+    async function handleCallback() {
+      // PKCE flow: Supabase puts a one-time code in ?code=
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          setMessage("This reset link is invalid or has expired. Please request a new one.");
+          setStatus("error");
+          setChecking(false);
+          return;
+        }
+        // Exchange succeeded — session is now active in the client
         setIsRecovery(true);
         setChecking(false);
-      } else if (event === "SIGNED_IN") {
-        // Normal sign-in (email confirm, magic link) — send to dashboard
-        setChecking(false);
-        router.replace("/ronyx");
+        return;
       }
-    });
 
-    // PKCE flow — Supabase puts the one-time code in ?code= query param
-    const code = new URLSearchParams(window.location.search).get("code");
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).catch(() => {
-        setMessage("This reset link is invalid or has expired. Request a new one.");
-        setStatus("error");
+      // Implicit flow fallback: token in URL hash
+      const hash = window.location.hash;
+      if (hash.includes("type=recovery")) {
+        setIsRecovery(true);
         setChecking(false);
-      });
-      // onAuthStateChange will fire PASSWORD_RECOVERY after exchange succeeds
-      return () => subscription.unsubscribe();
-    }
+        return;
+      }
 
-    // Implicit flow fallback — token in URL hash (older Supabase email templates)
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
-      setIsRecovery(true);
+      // Normal callback (email confirmation, magic link)
+      const { data: { session } } = await supabase.auth.getSession();
       setChecking(false);
-      return () => subscription.unsubscribe();
+      if (session) {
+        router.replace("/ronyx");
+      } else {
+        router.replace("/ronyx-login");
+      }
     }
 
-    // No code, no hash — shouldn't land here normally
-    setChecking(false);
-    router.replace("/ronyx-login");
-
-    return () => subscription.unsubscribe();
+    handleCallback();
   }, [router]);
 
   async function handlePasswordUpdate(e: React.FormEvent) {
@@ -66,6 +86,15 @@ export default function AuthCallback() {
       return;
     }
     setStatus("loading");
+
+    // Confirm session is still active before updating
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setMessage("Session expired. Please request a new password reset link.");
+      setStatus("error");
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
       setMessage(error.message);
@@ -78,7 +107,7 @@ export default function AuthCallback() {
     }
   }
 
-  // ── Loading state ──────────────────────────────────────────────────────────
+  // Loading
   if (checking) {
     return (
       <div style={outerStyle}>
@@ -89,29 +118,23 @@ export default function AuthCallback() {
     );
   }
 
-  // ── Error / non-recovery redirect state ───────────────────────────────────
+  // Error / non-recovery
   if (!isRecovery) {
     return (
       <div style={outerStyle}>
         {status === "error" ? (
           <div style={{ textAlign: "center" }}>
-            <p style={{ color: "#ff6b6b", fontFamily: "sans-serif", marginBottom: "1rem" }}>
-              {message}
-            </p>
-            <a href="/ronyx-login" style={{ color: "#F7931E", fontFamily: "sans-serif" }}>
-              Back to Login
-            </a>
+            <p style={{ color: "#ff6b6b", fontFamily: "sans-serif", marginBottom: "1rem" }}>{message}</p>
+            <a href="/ronyx-login" style={{ color: "#F7931E", fontFamily: "sans-serif" }}>Back to Login</a>
           </div>
         ) : (
-          <p style={{ color: "rgba(255,255,255,0.7)", fontFamily: "sans-serif" }}>
-            Redirecting…
-          </p>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontFamily: "sans-serif" }}>Redirecting…</p>
         )}
       </div>
     );
   }
 
-  // ── Password update form ───────────────────────────────────────────────────
+  // Password update form
   return (
     <div style={outerStyle}>
       <div style={cardStyle}>
@@ -122,38 +145,43 @@ export default function AuthCallback() {
           Enter your new password below.
         </p>
 
-        <form onSubmit={handlePasswordUpdate} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input
-            type="password"
-            placeholder="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <button
-            type="submit"
-            disabled={status === "loading" || status === "success"}
-            style={btnStyle}
-          >
+        <form onSubmit={handlePasswordUpdate} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ ...inputStyle, paddingRight: "2.75rem", width: "100%", boxSizing: "border-box" }}
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} style={eyeBtnStyle} aria-label="Toggle password visibility">
+              {showPassword ? <EyeOff /> : <EyeOpen />}
+            </button>
+          </div>
+
+          <div style={{ position: "relative" }}>
+            <input
+              type={showConfirm ? "text" : "password"}
+              placeholder="Confirm new password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              style={{ ...inputStyle, paddingRight: "2.75rem", width: "100%", boxSizing: "border-box" }}
+            />
+            <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={eyeBtnStyle} aria-label="Toggle confirm password visibility">
+              {showConfirm ? <EyeOff /> : <EyeOpen />}
+            </button>
+          </div>
+
+          <button type="submit" disabled={status === "loading" || status === "success"} style={btnStyle}>
             {status === "loading" ? "Updating…" : "Update Password"}
           </button>
         </form>
 
         {message && (
-          <p style={{
-            marginTop: 12,
-            fontSize: "0.85rem",
-            color: status === "error" ? "#ff6b6b" : "#00ff9d",
-          }}>
+          <p style={{ marginTop: 12, fontSize: "0.85rem", color: status === "error" ? "#ff6b6b" : "#00ff9d" }}>
             {message}
           </p>
         )}
@@ -162,7 +190,6 @@ export default function AuthCallback() {
   );
 }
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
 const outerStyle: React.CSSProperties = {
   minHeight: "100vh",
   display: "flex",
@@ -202,4 +229,18 @@ const btnStyle: React.CSSProperties = {
   fontSize: "0.9rem",
   cursor: "pointer",
   marginTop: 4,
+};
+
+const eyeBtnStyle: React.CSSProperties = {
+  position: "absolute",
+  right: 10,
+  top: "50%",
+  transform: "translateY(-50%)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: 0,
+  color: "rgba(255,255,255,0.45)",
+  display: "flex",
+  alignItems: "center",
 };
