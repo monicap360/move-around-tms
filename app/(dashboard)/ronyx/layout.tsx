@@ -1,4 +1,4 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -26,36 +26,37 @@ export default async function RonyxLayout({ children }: { children: React.ReactN
   }
 
   try {
-    const supabase = createServerComponentClient({ cookies });
-    const { data, error } = await supabase.auth.getSession();
-    const session = data?.session ?? null;
+    const cookieStore = cookies();
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {}
+        },
+      },
+    });
 
-    if (error || !session) {
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
       redirect("/ronyx-login");
     }
 
-    const userEmail = session.user?.email;
-
-    if (!userEmail) {
-      redirect("/ronyx-login");
-    }
-
-    const { data: userProfile, error: profileError } = await supabase
-      .from("ronyx.drivers")
-      .select("*")
-      .eq("email", userEmail)
-      .single();
-
-    if (profileError || !userProfile) {
-      redirect("/ronyx-login");
-    }
+    const firstName = (user.user_metadata?.first_name as string) || user.email?.split("@")[0] || "User";
+    const lastName = (user.user_metadata?.last_name as string) || "";
 
     return (
       <RonyxShell
         user={{
-          first_name: userProfile.first_name,
-          last_name: userProfile.last_name,
-          email: userEmail,
+          first_name: firstName,
+          last_name: lastName,
+          email: user.email || "",
         }}
       >
         {children}
