@@ -56,7 +56,7 @@ export default function RonyxLoginPage() {
     return (
       <div className="ronyx-login">
         <div className="login-box">
-          <img src="/ronyx_logo.png" alt="RONYX Logo" className="ronyx-logo" />
+          <img src="/ronyx_logo.svg" alt="RONYX Logo" className="ronyx-logo" />
           <h2>RONYX Fleet Portal</h2>
           <p className="login-tagline">Logins are disabled for demos.</p>
           <div className="space-y-3">
@@ -72,7 +72,7 @@ export default function RonyxLoginPage() {
   return (
     <div className="ronyx-login">
       <div className="login-box">
-        <img src="/ronyx_logo.png" alt="RONYX Logo" className="ronyx-logo" />
+        <img src="/ronyx_logo.svg" alt="RONYX Logo" className="ronyx-logo" />
         <h2>Welcome to RONYX Fleet Portal</h2>
         <p className="login-tagline">Powered by Move Around TMS™</p>
 

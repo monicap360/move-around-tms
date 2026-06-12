@@ -176,7 +176,10 @@
 }
 
 .ronyx-logo {
-  max-height: 80px;
+  max-width: 220px;
+  max-height: 140px;
+  width: auto;
+  height: auto;
   margin-bottom: 1rem;
   filter: drop-shadow(0 0 8px #f7931e);
 }
