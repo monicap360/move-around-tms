@@ -309,15 +309,6 @@ export default function RonyxHrCompliancePage() {
     cameraInputRef.current?.click();
   };
 
-  useEffect(() => {
-    void loadDrivers();
-  }, [loadDrivers]);
-
-  useEffect(() => {
-    if (!selectedDriverId) return;
-    void loadProfile(selectedDriverId);
-  }, [selectedDriverId]);
-
   const loadDrivers = useCallback(async () => {
     setLoading(true);
     try {
@@ -333,6 +324,15 @@ export default function RonyxHrCompliancePage() {
     } finally {
       setLoading(false);
     }
+  }, [selectedDriverId]);
+
+  useEffect(() => {
+    void loadDrivers();
+  }, [loadDrivers]);
+
+  useEffect(() => {
+    if (!selectedDriverId) return;
+    void loadProfile(selectedDriverId);
   }, [selectedDriverId]);
 
   async function loadProfile(driverId: string) {
