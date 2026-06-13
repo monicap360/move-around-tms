@@ -7,7 +7,7 @@ import RonyxShell from "./RonyxShell";
 export const dynamic = "force-dynamic";
 
 export default async function RonyxLayout({ children }: { children: React.ReactNode }) {
-  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const demoMode = true; // auth bypassed temporarily — re-enable when login is stable
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

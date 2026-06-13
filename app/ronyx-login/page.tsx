@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – CSS side-effect import, no type declarations needed
@@ -53,20 +52,8 @@ export default function RonyxLoginPage() {
   }
 
   if (demoMode) {
-    return (
-      <div className="ronyx-login">
-        <div className="login-box">
-          <img src="/ronyx_logo.svg" alt="RONYX Logo" className="ronyx-logo" />
-          <h2>RONYX Fleet Portal</h2>
-          <p className="login-tagline">Logins are disabled for demos.</p>
-          <div className="space-y-3">
-            <Link href="/veronica">Go to RONYX Portal</Link>
-            <br />
-            <Link href="/demo">Open Sales Demo</Link>
-          </div>
-        </div>
-      </div>
-    );
+    router.replace("/ronyx");
+    return null;
   }
 
   return (
