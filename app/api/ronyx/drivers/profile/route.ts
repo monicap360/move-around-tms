@@ -36,15 +36,13 @@ export async function POST(request: Request) {
 
   const supabase = createSupabaseServerClient();
 
-  // 1. Insert core driver row
+  // 1. Insert core driver row — only columns that exist in the base drivers table
   const { data: driver, error: driverErr } = await supabase
     .from("drivers")
     .insert({
-      name:      payload.full_name,
-      full_name: payload.full_name,
-      phone:     payload.phone     || null,
-      email:     payload.email     || null,
-      status:    payload.status    || "active",
+      name:  payload.full_name,
+      phone: payload.phone || null,
+      email: payload.email || null,
     })
     .select("id, organization_id")
     .single();

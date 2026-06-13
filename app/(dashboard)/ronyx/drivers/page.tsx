@@ -198,16 +198,28 @@ export default function RonyxDriversPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(addForm),
       });
-      if (!res.ok) throw new Error("Save failed");
+      const json = await res.json();
+      if (!res.ok) {
+        setStatusMsg(`Error: ${json.error || "Save failed"}`);
+        return;
+      }
       setShowAddForm(false);
       setAddForm(EMPTY_DRIVER);
-      setStatusMsg("Driver added.");
+      setStatusMsg("Driver added. Sending roster update to admin…");
       void loadDrivers();
-    } catch {
-      setStatusMsg("Failed to add driver.");
+      // Fire-and-forget: generate updated Excel roster and email it to admin
+      fetch("/api/ronyx/drivers/notify-excel", { method: "POST" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok) setStatusMsg("Driver added. Roster emailed to admin.");
+          else setStatusMsg(`Driver added. (Email note: ${d.error})`);
+        })
+        .catch(() => setStatusMsg("Driver added. (Email could not be sent)"));
+    } catch (e: any) {
+      setStatusMsg(`Error: ${e?.message || "Unexpected failure"}`);
     } finally {
       setSaving(false);
-      setTimeout(() => setStatusMsg(""), 3000);
+      setTimeout(() => setStatusMsg(""), 6000);
     }
   }
 
@@ -359,7 +371,11 @@ export default function RonyxDriversPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            {statusMsg && <span style={{ fontSize: "0.8rem", color: "#10b981" }}>{statusMsg}</span>}
+            {statusMsg && (
+              <span style={{ fontSize: "0.8rem", color: statusMsg.startsWith("Error") ? "#ef4444" : "#10b981", fontWeight: 600 }}>
+                {statusMsg}
+              </span>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1px solid rgba(30,64,175,0.2)", borderRadius: 8, padding: "4px 10px" }}>
               <span style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600 }}>Demo role:</span>
               <select
