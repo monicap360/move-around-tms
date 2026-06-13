@@ -125,15 +125,15 @@ export default function RonyxLoginPage() {
                 position: "absolute",
                 right: 12,
                 top: "50%",
-                transform: "translateY(-60%)",
+                transform: "translateY(-50%)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                padding: "4px",
+                padding: 0,
                 color: "rgba(255,255,255,0.5)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                pointerEvents: "auto",
               }}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
