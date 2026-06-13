@@ -92,22 +92,32 @@ export default function AuthCallback() {
     }
     setStatus("loading");
 
-    // Re-apply the session tokens before updating — cookies may not have persisted
-    if (recoverySession) {
-      await supabase.auth.setSession({
-        access_token: recoverySession.access_token,
-        refresh_token: recoverySession.refresh_token,
-      });
+    if (!recoverySession) {
+      setMessage("Reset link expired. Please request a new one.");
+      setStatus("error");
+      return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password });
+    // Call the Supabase REST API directly with the access token — avoids
+    // client-side session persistence issues with @supabase/ssr cookies
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${recoverySession.access_token}`,
+        "apikey": supabaseAnonKey,
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    const json = await res.json();
+    const error = res.ok ? null : json;
+
     if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes("session") || msg.includes("auth") || msg.includes("token")) {
-        setMessage("Reset link expired. Please go back and request a new one.");
-      } else {
-        setMessage(error.message);
-      }
+      setMessage(json.msg || json.message || "Failed to update password. Please try again.");
       setStatus("error");
     } else {
       setStatus("success");
