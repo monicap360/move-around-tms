@@ -213,19 +213,24 @@
   padding-right: 42px;
 }
 
-.password-eye {
+.login-box .password-eye {
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
+  background: none !important;
+  background-color: transparent !important;
   border: none;
   cursor: pointer;
-  padding: 0;
-  color: rgba(255, 255, 255, 0.45);
+  padding: 0 !important;
+  width: auto !important;
+  color: rgba(255, 255, 255, 0.45) !important;
   display: flex;
   align-items: center;
   z-index: 2;
+  border-radius: 0;
+  font-weight: normal;
+  transition: none;
 }
 
 .login-box button {
