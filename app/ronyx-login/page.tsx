@@ -113,7 +113,7 @@ export default function RonyxLoginPage() {
               required
               style={{
                 width: "100%",
-                paddingRight: "2.75rem",
+                paddingRight: "3rem",
                 marginBottom: 0,
                 boxSizing: "border-box",
               }}
@@ -123,16 +123,17 @@ export default function RonyxLoginPage() {
               onClick={() => setShowPassword(!showPassword)}
               style={{
                 position: "absolute",
-                right: 10,
+                right: 12,
                 top: "50%",
-                transform: "translateY(-50%)",
+                transform: "translateY(-60%)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                padding: 0,
-                color: "rgba(255,255,255,0.45)",
+                padding: "4px",
+                color: "rgba(255,255,255,0.5)",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
               }}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
