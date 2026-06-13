@@ -137,38 +137,60 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
   );
 }
 
+/* ─── Shared modal styles ───────────────────────────────── */
+const mlbl: React.CSSProperties = { display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 };
+const minp: React.CSSProperties = { width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", boxSizing: "border-box", fontWeight: 600 };
+const moverlay: React.CSSProperties = { position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" };
+const mbox = (w = 420): React.CSSProperties => ({ background: "#fff", borderRadius: 20, padding: 28, width: w, maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" });
+const mbtn = (primary = true): React.CSSProperties => primary
+  ? { flex: 1, background: "#1e40af", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontWeight: 800, cursor: "pointer", fontSize: 14 }
+  : { padding: "10px 18px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 700, cursor: "pointer", color: "#475569", background: "#fff", fontSize: 14 };
+
 /* ─── Assign modal ──────────────────────────────────────── */
-function AssignModal({ truck, onClose, onSave, showToast }: {
-  truck: Truck;
+function AssignModal({ allTrucks, truck, onClose, onSave, showToast }: {
+  allTrucks: Truck[];
+  truck: Truck | null;   // null = show truck picker
   onClose: () => void;
   onSave: (id: string, driver: string, trailer: string) => void;
   showToast: (msg: string) => void;
 }) {
-  const [driver, setDriver]   = useState(truck.assignedDriver);
-  const [trailer, setTrailer] = useState(truck.assignedTrailer);
-  const lbl: React.CSSProperties = { display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 };
-  const inp: React.CSSProperties = { width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", boxSizing: "border-box", fontWeight: 600, marginBottom: 2 };
+  const [selectedId, setSelectedId] = useState(truck?.id ?? "");
+  const [driver, setDriver]         = useState(truck?.assignedDriver ?? "");
+  const [trailer, setTrailer]       = useState(truck?.assignedTrailer ?? "");
+  const resolved = truck ?? allTrucks.find((t) => t.id === selectedId) ?? null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    onSave(truck.id, driver, trailer);
-    showToast(`${truck.unit} assigned to ${driver || "unassigned"}.`);
+    if (!resolved) { showToast("Select a truck first."); return; }
+    onSave(resolved.id, driver, trailer);
+    showToast(`${resolved.unit} assigned to ${driver || "unassigned"}.`);
     onClose();
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: 420, maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
+    <div style={moverlay}>
+      <div style={mbox()}>
         <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>Assign Driver &amp; Trailer</h2>
-        <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: 13 }}>{truck.unit} · {truck.year} {truck.make} {truck.model}</p>
+        <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: 13 }}>
+          {resolved ? `${resolved.unit} · ${resolved.year} ${resolved.make} ${resolved.model}` : "Select a truck to assign."}
+        </p>
         <form onSubmit={submit}>
-          <label style={lbl}>Driver</label>
-          <input value={driver} onChange={(e) => setDriver(e.target.value)} style={inp} placeholder="Driver name" />
-          <label style={{ ...lbl, marginTop: 12 }}>Trailer</label>
-          <input value={trailer} onChange={(e) => setTrailer(e.target.value)} style={inp} placeholder="Trailer unit" />
+          {!truck && (
+            <>
+              <label style={mlbl}>Truck</label>
+              <select value={selectedId} onChange={(e) => { const t = allTrucks.find((x) => x.id === e.target.value); setSelectedId(e.target.value); setDriver(t?.assignedDriver ?? ""); setTrailer(t?.assignedTrailer ?? ""); }} style={{ ...minp, marginBottom: 14 }}>
+                <option value="">Select truck…</option>
+                {allTrucks.map((t) => <option key={t.id} value={t.id}>{t.unit} — {t.year} {t.make} {t.model}</option>)}
+              </select>
+            </>
+          )}
+          <label style={mlbl}>Driver</label>
+          <input value={driver} onChange={(e) => setDriver(e.target.value)} style={{ ...minp, marginBottom: 14 }} placeholder="Driver name" />
+          <label style={mlbl}>Trailer</label>
+          <input value={trailer} onChange={(e) => setTrailer(e.target.value)} style={{ ...minp }} placeholder="Trailer unit" />
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <button type="submit" style={{ flex: 1, background: "#1e40af", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontWeight: 800, cursor: "pointer" }}>Save Assignment</button>
-            <button type="button" onClick={onClose} style={{ padding: "10px 18px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 700, cursor: "pointer", color: "#475569", background: "#fff" }}>Cancel</button>
+            <button type="submit" style={mbtn(true)}>Save Assignment</button>
+            <button type="button" onClick={onClose} style={mbtn(false)}>Cancel</button>
           </div>
         </form>
       </div>
@@ -177,35 +199,173 @@ function AssignModal({ truck, onClose, onSave, showToast }: {
 }
 
 /* ─── Service modal ─────────────────────────────────────── */
-function ServiceModal({ truck, onClose, showToast }: {
-  truck: Truck;
+function ServiceModal({ allTrucks, truck, title = "Schedule Service", onClose, showToast }: {
+  allTrucks: Truck[];
+  truck: Truck | null;   // null = show truck picker
+  title?: string;
   onClose: () => void;
   showToast: (msg: string) => void;
 }) {
-  const [date, setDate]  = useState("");
+  const [selectedId, setSelectedId] = useState(truck?.id ?? "");
+  const [date, setDate]   = useState("");
   const [notes, setNotes] = useState("");
-  const lbl: React.CSSProperties = { display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 };
-  const inp: React.CSSProperties = { width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", boxSizing: "border-box", fontWeight: 600 };
+  const resolved = truck ?? allTrucks.find((t) => t.id === selectedId) ?? null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    showToast(`Service scheduled for ${truck.unit}${date ? " on " + date : ""}.`);
+    if (!resolved) { showToast("Select a truck first."); return; }
+    showToast(`${title} confirmed for ${resolved.unit}${date ? " on " + date : ""}.`);
     onClose();
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: 420, maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>Schedule Service</h2>
-        <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: 13 }}>{truck.unit} · Next due: {truck.nextService}</p>
+    <div style={moverlay}>
+      <div style={mbox()}>
+        <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>{title}</h2>
+        <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: 13 }}>
+          {resolved ? `${resolved.unit} · Next due: ${resolved.nextService}` : "Select a truck to schedule service."}
+        </p>
         <form onSubmit={submit}>
-          <label style={lbl}>Service Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...inp, marginBottom: 14 }} />
-          <label style={lbl}>Notes (optional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...inp, minHeight: 80, resize: "vertical" }} placeholder="Oil change, brake inspection, tire rotation…" />
+          {!truck && (
+            <>
+              <label style={mlbl}>Truck</label>
+              <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={{ ...minp, marginBottom: 14 }}>
+                <option value="">Select truck…</option>
+                {allTrucks.map((t) => <option key={t.id} value={t.id}>{t.unit} — {t.year} {t.make} {t.model}</option>)}
+              </select>
+            </>
+          )}
+          <label style={mlbl}>Date</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...minp, marginBottom: 14 }} />
+          <label style={mlbl}>Notes (optional)</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...minp, minHeight: 76, resize: "vertical" }} placeholder="Oil change, brake inspection, tire rotation…" />
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <button type="submit" style={{ flex: 1, background: "#1e40af", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontWeight: 800, cursor: "pointer" }}>Schedule</button>
-            <button type="button" onClick={onClose} style={{ padding: "10px 18px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 700, cursor: "pointer", color: "#475569", background: "#fff" }}>Cancel</button>
+            <button type="submit" style={mbtn(true)}>Confirm</button>
+            <button type="button" onClick={onClose} style={mbtn(false)}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Add truck modal ───────────────────────────────────── */
+function AddTruckModal({ onClose, onAdd, showToast }: {
+  onClose: () => void;
+  onAdd: (truck: Truck) => void;
+  showToast: (msg: string) => void;
+}) {
+  const [f, setF] = useState({ unit: "", year: new Date().getFullYear().toString(), make: "", model: "", type: "Dump Truck", plate: "", vin: "", odometer: "0" });
+  function set(k: keyof typeof f, v: string) { setF((p) => ({ ...p, [k]: v })); }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!f.unit.trim()) { showToast("Unit number is required."); return; }
+    if (!f.make.trim()) { showToast("Make is required."); return; }
+    const truck: Truck = {
+      id: `TRK-${Date.now()}`, unit: f.unit, year: f.year, make: f.make, model: f.model,
+      type: f.type, plate: f.plate, vin: f.vin, status: "Available",
+      assignedDriver: "—", assignedTrailer: "—", currentLoad: "Unassigned",
+      location: "Yard", odometer: f.odometer, engineHours: "0", fuelMpg: "—",
+      revenueWeek: "$0", costPerMile: "—", readinessScore: 100, healthScore: 100,
+      maintenanceRisk: "Low", nextService: "5,000 miles",
+      inspectionExp: "—", insuranceExp: "—", registrationExp: "—", lastMaintenance: "—",
+    };
+    onAdd(truck);
+    showToast(`${f.unit} added to fleet.`);
+    onClose();
+  }
+
+  return (
+    <div style={moverlay}>
+      <div style={mbox(500)}>
+        <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>Add New Truck</h2>
+        <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: 13 }}>Enter basic information to register the unit in the fleet.</p>
+        <form onSubmit={submit}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px" }}>
+            {([["Unit #", "unit", "Unit 214"], ["Year", "year", "2023"], ["Make", "make", "Kenworth"], ["Model", "model", "T880"], ["Plate", "plate", "TX-00000"], ["Odometer", "odometer", "0"]] as [string, keyof typeof f, string][]).map(([lbl, key, ph]) => (
+              <div key={key}>
+                <label style={mlbl}>{lbl}{key === "unit" || key === "make" ? " *" : ""}</label>
+                <input value={f[key]} onChange={(e) => set(key, e.target.value)} style={minp} placeholder={ph} />
+              </div>
+            ))}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={mlbl}>Truck Type</label>
+              <select value={f.type} onChange={(e) => set("type", e.target.value)} style={minp}>
+                {["Dump Truck", "Aggregate Hauler", "Flatbed", "End Dump", "Belly Dump", "Tanker", "Owner Operator Truck", "Other"].map((t) => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={mlbl}>VIN (optional)</label>
+              <input value={f.vin} onChange={(e) => set("vin", e.target.value)} style={minp} placeholder="17-character VIN" />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button type="submit" style={mbtn(true)}>Add to Fleet</button>
+            <button type="button" onClick={onClose} style={mbtn(false)}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Maintenance ticket modal ──────────────────────────── */
+const TICKET_TYPES = ["Oil Change", "Brake Inspection", "Tire Rotation / Replacement", "Annual DOT Inspection", "Engine Diagnostic", "Transmission Service", "Electrical Issue", "Coolant / Fluid Service", "Bodywork / Damage", "Other"];
+
+function MaintenanceTicketModal({ allTrucks, onClose, showToast }: {
+  allTrucks: Truck[];
+  onClose: () => void;
+  showToast: (msg: string) => void;
+}) {
+  const [truckId, setTruckId]   = useState("");
+  const [ticketType, setType]   = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [notes, setNotes]       = useState("");
+  const [dueDate, setDueDate]   = useState("");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!truckId)    { showToast("Select a truck."); return; }
+    if (!ticketType) { showToast("Select a ticket type."); return; }
+    const unit = allTrucks.find((t) => t.id === truckId)?.unit ?? truckId;
+    showToast(`Maintenance ticket created for ${unit}: ${ticketType}.`);
+    onClose();
+  }
+
+  return (
+    <div style={moverlay}>
+      <div style={mbox(480)}>
+        <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>Create Maintenance Ticket</h2>
+        <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: 13 }}>Log a service issue or scheduled maintenance for any fleet unit.</p>
+        <form onSubmit={submit}>
+          <label style={mlbl}>Truck</label>
+          <select value={truckId} onChange={(e) => setTruckId(e.target.value)} style={{ ...minp, marginBottom: 14 }}>
+            <option value="">Select truck…</option>
+            {allTrucks.map((t) => <option key={t.id} value={t.id}>{t.unit} — {t.year} {t.make} {t.model}</option>)}
+          </select>
+          <label style={mlbl}>Ticket Type</label>
+          <select value={ticketType} onChange={(e) => setType(e.target.value)} style={{ ...minp, marginBottom: 14 }}>
+            <option value="">Select type…</option>
+            {TICKET_TYPES.map((t) => <option key={t}>{t}</option>)}
+          </select>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px", marginBottom: 14 }}>
+            <div>
+              <label style={mlbl}>Priority</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} style={minp}>
+                {["Low", "Medium", "High", "Critical"].map((p) => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={mlbl}>Due Date</label>
+              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={minp} />
+            </div>
+          </div>
+          <label style={mlbl}>Notes</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...minp, minHeight: 72, resize: "vertical" }} placeholder="Describe the issue or work needed…" />
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button type="submit" style={mbtn(true)}>Create Ticket</button>
+            <button type="button" onClick={onClose} style={mbtn(false)}>Cancel</button>
           </div>
         </form>
       </div>
@@ -275,10 +435,13 @@ export default function TrucksPage() {
   const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [riskFilter, setRiskFilter]   = useState("All Risks");
-  const [toast, setToast]             = useState("");
-  const [assignTarget, setAssignTarget] = useState<Truck | null>(null);
-  const [serviceTarget, setServiceTarget] = useState<Truck | null>(null);
+  const [toast, setToast]               = useState("");
+  // undefined = closed, null = open with truck picker, Truck = open with preselected
+  const [assignTarget, setAssignTarget]   = useState<Truck | null | undefined>(undefined);
+  const [serviceTarget, setServiceTarget] = useState<Truck | null | undefined>(undefined);
   const [uploadDocType, setUploadDocType] = useState<string | null>(null);
+  const [addTruckOpen, setAddTruckOpen]   = useState(false);
+  const [ticketOpen, setTicketOpen]       = useState(false);
 
   function showToast(msg: string) { setToast(msg); }
 
@@ -333,10 +496,10 @@ export default function TrucksPage() {
           <button className="fleet-button ghost" onClick={() => { exportFleetCSV(filteredTrucks); showToast(`Exported ${filteredTrucks.length} trucks as CSV.`); }}>
             Export Fleet
           </button>
-          <button className="fleet-button dark" onClick={() => setServiceTarget(trucks[0])}>
+          <button className="fleet-button dark" onClick={() => setServiceTarget(null)}>
             Schedule Maintenance
           </button>
-          <button className="fleet-button primary" onClick={() => showToast("Add Truck — coming soon.")}>
+          <button className="fleet-button primary" onClick={() => setAddTruckOpen(true)}>
             + Add Truck
           </button>
         </div>
@@ -496,13 +659,13 @@ export default function TrucksPage() {
             <p className="fleet-eyebrow">Quick Actions</p>
             <h2>Fleet Tools</h2>
             <div className="fleet-quick-list">
-              <button onClick={() => showToast("Add Truck — coming soon.")}>Add New Truck</button>
+              <button onClick={() => setAddTruckOpen(true)}>Add New Truck</button>
               <button onClick={() => setUploadDocType("Registration")}>Upload Registration</button>
               <button onClick={() => setUploadDocType("Insurance Certificate")}>Upload Insurance</button>
-              <button onClick={() => setServiceTarget(trucks[0])}>Schedule Inspection</button>
-              <button onClick={() => setServiceTarget(trucks[0])}>Create Maintenance Ticket</button>
-              <button onClick={() => setAssignTarget(trucks[0])}>Assign Driver</button>
-              <button onClick={() => showToast("Assign trailer — use the Assign button on a truck card.")}>Assign Trailer</button>
+              <button onClick={() => setServiceTarget(null)}>Schedule Inspection</button>
+              <button onClick={() => setTicketOpen(true)}>Create Maintenance Ticket</button>
+              <button onClick={() => setAssignTarget(null)}>Assign Driver</button>
+              <button onClick={() => setAssignTarget(null)}>Assign Trailer</button>
               <Link href="/ronyx/ifta-fuel" style={{ textDecoration: "none" }}>
                 <button style={{ width: "100%" }}>Open Fuel Log</button>
               </Link>
@@ -554,9 +717,21 @@ export default function TrucksPage() {
       </section>
 
       {/* ── Modals ── */}
-      {assignTarget  && <AssignModal truck={assignTarget}  onClose={() => setAssignTarget(null)}  onSave={handleAssignSave} showToast={showToast} />}
-      {serviceTarget && <ServiceModal truck={serviceTarget} onClose={() => setServiceTarget(null)} showToast={showToast} />}
-      {uploadDocType !== null && <UploadDocModal preselectedDoc={uploadDocType || undefined} onClose={() => setUploadDocType(null)} showToast={showToast} />}
+      {assignTarget !== undefined && (
+        <AssignModal allTrucks={trucks} truck={assignTarget} onClose={() => setAssignTarget(undefined)} onSave={handleAssignSave} showToast={showToast} />
+      )}
+      {serviceTarget !== undefined && (
+        <ServiceModal allTrucks={trucks} truck={serviceTarget} onClose={() => setServiceTarget(undefined)} showToast={showToast} />
+      )}
+      {uploadDocType !== null && (
+        <UploadDocModal preselectedDoc={uploadDocType || undefined} onClose={() => setUploadDocType(null)} showToast={showToast} />
+      )}
+      {addTruckOpen && (
+        <AddTruckModal onClose={() => setAddTruckOpen(false)} onAdd={(t) => setTrucks((p) => [...p, t])} showToast={showToast} />
+      )}
+      {ticketOpen && (
+        <MaintenanceTicketModal allTrucks={trucks} onClose={() => setTicketOpen(false)} showToast={showToast} />
+      )}
 
       {/* ── Toast ── */}
       {toast && <Toast msg={toast} onDone={() => setToast("")} />}
