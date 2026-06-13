@@ -16,8 +16,13 @@ export default function DispatchBoard() {
 
   useEffect(() => {
     async function loadData() {
-      const res = await fetch("/api/dispatch/loads");
-      setLoads(await res.json());
+      try {
+        const res = await fetch("/api/dispatch/loads");
+        const data = await res.json();
+        setLoads(Array.isArray(data) ? data : []);
+      } catch {
+        setLoads([]);
+      }
     }
     loadData();
 
@@ -83,8 +88,13 @@ export default function DispatchBoard() {
   const [drivers, setDrivers] = useState<any[]>([]);
   useEffect(() => {
     async function fetchDrivers() {
-      const res = await fetch("/api/hr/drivers");
-      setDrivers(await res.json());
+      try {
+        const res = await fetch("/api/hr/drivers");
+        const data = await res.json();
+        setDrivers(Array.isArray(data) ? data : []);
+      } catch {
+        setDrivers([]);
+      }
     }
     fetchDrivers();
   }, []);
@@ -201,9 +211,11 @@ export default function DispatchBoard() {
           drivers={drivers}
           onClose={async () => {
             setAssignModal(null);
-            // Refresh loads after closing modal
-            const res = await fetch("/api/dispatch/loads");
-            setLoads(await res.json());
+            try {
+              const res = await fetch("/api/dispatch/loads");
+              const data = await res.json();
+              setLoads(Array.isArray(data) ? data : []);
+            } catch { /* keep existing loads */ }
           }}
         />
       )}

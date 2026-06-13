@@ -1,69 +1,36 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type DriverOption = {
+type Driver = {
   id: string;
-  name: string;
-};
-
-type DriverProfile = {
   full_name: string;
-  photo_url: string;
-  date_of_birth: string;
   phone: string;
   email: string;
+  driver_type: string;
+  license_number: string;
+  license_state: string;
+  license_expiration_date: string;
+  mvr_expiration: string;
+  medical_card_expiration: string;
+  assigned_truck_number: string;
+  status: string;
+  rating: number;
+  last_ticket_date: string;
+  hire_date: string;
+  background_check_status: string;
+  drug_test_status: string;
+  photo_url: string;
+  // profile extras
   address: string;
   emergency_contact_name: string;
   emergency_contact_phone: string;
-  license_number: string;
-  license_state: string;
-  license_class: string;
-  license_expiration_date: string;
-  cdl_endorsements: string;
-  cdl_restrictions: string;
-  hire_date: string;
-  status: string;
   position_role: string;
-  supervisor_name: string;
   pay_rate: string;
-  mileage_rate: string;
-  cdl_copy_url: string;
-  medical_card_url: string;
-  work_authorization_url: string;
-  drug_test_results_url: string;
-  background_check_url: string;
-  training_certificates_url: string;
-  assigned_truck_number: string;
-  vehicle_vin: string;
-  license_plate: string;
-  equipment_type: string;
-  maintenance_history: string;
-  hos_logs: string;
-  eld_records: string;
-  inspection_reports: string;
-  violations: string;
+  supervisor_name: string;
   orientation_completed: boolean;
   hazmat_training: boolean;
-  safety_meetings_attendance: string;
-  certification_renewal_dates: string;
-  accidents_summary: string;
-  incident_photos_url: string;
-  incident_resolution: string;
-  dvir_reports: string;
-  repairs_requested_completed: string;
-  preventive_maintenance_schedule: string;
-  miles_driven: string;
-  pay_period_earnings: string;
-  deductions: string;
-  bonuses_reimbursements: string;
   driver_scorecard: string;
-  disciplinary_actions: string;
-  recognition_awards: string;
-  supervisor_notes: string;
-  communication_log: string;
-  hr_dispatch_updates: string;
 };
 
 type DriverDocument = {
@@ -73,1067 +40,749 @@ type DriverDocument = {
   expires_on: string | null;
   uploaded_at: string | null;
   file_url: string | null;
-  verified_by: string | null;
-  verified_at: string | null;
-  notes: string | null;
 };
 
-const emptyProfile: DriverProfile = {
+const EMPTY_DRIVER: Partial<Driver> = {
   full_name: "",
-  photo_url: "",
-  date_of_birth: "",
   phone: "",
   email: "",
+  driver_type: "W2",
+  license_number: "",
+  license_state: "",
+  license_expiration_date: "",
+  mvr_expiration: "",
+  medical_card_expiration: "",
+  assigned_truck_number: "",
+  status: "active",
+  position_role: "company driver",
   address: "",
   emergency_contact_name: "",
   emergency_contact_phone: "",
-  license_number: "",
-  license_state: "",
-  license_class: "",
-  license_expiration_date: "",
-  cdl_endorsements: "",
-  cdl_restrictions: "",
-  hire_date: "",
-  status: "active",
-  position_role: "company driver",
-  supervisor_name: "",
   pay_rate: "",
-  mileage_rate: "",
-  cdl_copy_url: "",
-  medical_card_url: "",
-  work_authorization_url: "",
-  drug_test_results_url: "",
-  background_check_url: "",
-  training_certificates_url: "",
-  assigned_truck_number: "",
-  vehicle_vin: "",
-  license_plate: "",
-  equipment_type: "",
-  maintenance_history: "",
-  hos_logs: "",
-  eld_records: "",
-  inspection_reports: "",
-  violations: "",
+  supervisor_name: "",
   orientation_completed: false,
   hazmat_training: false,
-  safety_meetings_attendance: "",
-  certification_renewal_dates: "",
-  accidents_summary: "",
-  incident_photos_url: "",
-  incident_resolution: "",
-  dvir_reports: "",
-  repairs_requested_completed: "",
-  preventive_maintenance_schedule: "",
-  miles_driven: "",
-  pay_period_earnings: "",
-  deductions: "",
-  bonuses_reimbursements: "",
-  driver_scorecard: "",
-  disciplinary_actions: "",
-  recognition_awards: "",
-  supervisor_notes: "",
-  communication_log: "",
-  hr_dispatch_updates: "",
 };
 
+const STATUS_COLORS: Record<string, string> = {
+  active: "#10b981",
+  available: "#10b981",
+  assigned: "#3b82f6",
+  "off duty": "#f59e0b",
+  suspended: "#ef4444",
+  inactive: "#6b7280",
+};
+
+const DOC_TYPES = [
+  "CDL",
+  "Medical Card",
+  "MVR",
+  "Insurance",
+  "Drug Test",
+  "Background Check",
+  "W9",
+  "W4",
+  "Direct Deposit Form",
+  "Driver Agreement",
+  "Safety Form",
+  "Other",
+];
+
+function daysUntil(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return Math.ceil((d.getTime() - Date.now()) / 86400000);
+}
+
+function docStatusBadge(days: number | null) {
+  if (days === null) return { label: "Missing", color: "#6b7280" };
+  if (days <= 0) return { label: "Expired", color: "#ef4444" };
+  if (days <= 14) return { label: "Expiring Soon", color: "#f59e0b" };
+  return { label: "Valid", color: "#10b981" };
+}
+
 export default function RonyxDriversPage() {
-  const [drivers, setDrivers] = useState<DriverOption[]>([]);
-  const [selectedDriverId, setSelectedDriverId] = useState("");
-  const [profile, setProfile] = useState<DriverProfile>(emptyProfile);
-  const [documents, setDocuments] = useState<DriverDocument[]>([]);
-  const [activeTab, setActiveTab] = useState<
-    "compliance" | "performance" | "financials" | "history"
-  >("compliance");
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [filterDocs, setFilterDocs] = useState("all");
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [profileTab, setProfileTab] = useState<"info" | "docs" | "history">("info");
+  const [documents, setDocuments] = useState<DriverDocument[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState<Partial<Driver>>(EMPTY_DRIVER);
   const [saving, setSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
-  const [docUpload, setDocUpload] = useState({
-    doc_type: "CDL",
-    expires_on: "",
-    file: null as File | null,
-  });
-  const [docMessage, setDocMessage] = useState("");
-  const [assignedLoad, setAssignedLoad] = useState<any | null>(null);
-  const [payRates, setPayRates] = useState<any[]>([]);
-  const [rateForm, setRateForm] = useState({
-    rate_name: "",
-    rate_type: "PER_TON",
-    rate_value: "",
-    material_type: "",
-    customer_id: "",
-    job_id: "",
-    equipment_type: "",
-    is_default: false,
-    effective_date: "",
-  });
+  const [statusMsg, setStatusMsg] = useState("");
+  const [docUpload, setDocUpload] = useState({ doc_type: "CDL", expires_on: "" });
+
+  const loadDrivers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ronyx/drivers/list", { cache: "no-store" });
+      const data = await res.json();
+      setDrivers(data.drivers || []);
+    } catch {
+      setDrivers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadDocuments = useCallback(async (driverId: string) => {
+    try {
+      const res = await fetch(`/api/ronyx/drivers/documents?driverId=${driverId}`, { cache: "no-store" });
+      const data = await res.json();
+      setDocuments(data.documents || []);
+    } catch {
+      setDocuments([]);
+    }
+  }, []);
 
   useEffect(() => {
     void loadDrivers();
   }, [loadDrivers]);
 
   useEffect(() => {
-    if (!selectedDriverId) return;
-    void loadProfile(selectedDriverId);
-    void loadDocuments(selectedDriverId);
-    void loadAssignedLoad();
-    void loadPayRates(selectedDriverId);
-  }, [selectedDriverId, loadAssignedLoad]);
+    if (selectedDriver) {
+      void loadDocuments(selectedDriver.id);
+    }
+  }, [selectedDriver, loadDocuments]);
 
-  const loadDrivers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/ronyx/drivers/list");
-      const data = await res.json();
-      const list = data.drivers || [];
-      setDrivers(list);
-      if (list.length && !selectedDriverId) {
-        setSelectedDriverId(list[0].id);
+  const expiringDrivers = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + 7);
+    return drivers.filter((d) => {
+      const fields = [d.mvr_expiration, d.medical_card_expiration, d.license_expiration_date];
+      return fields.some((f) => {
+        if (!f) return false;
+        const dt = new Date(f);
+        return dt <= cutoff;
+      });
+    });
+  }, [drivers]);
+
+  const filtered = useMemo(() => {
+    return drivers.filter((d) => {
+      if (search && !d.full_name?.toLowerCase().includes(search.toLowerCase()) &&
+        !d.email?.toLowerCase().includes(search.toLowerCase()) &&
+        !d.assigned_truck_number?.includes(search)) return false;
+      if (filterStatus !== "all" && d.status !== filterStatus) return false;
+      if (filterType !== "all" && d.driver_type !== filterType) return false;
+      if (filterDocs === "expiring") {
+        const days = Math.min(
+          ...[d.mvr_expiration, d.medical_card_expiration, d.license_expiration_date]
+            .map((f) => daysUntil(f) ?? 9999),
+        );
+        if (days > 14) return false;
+      } else if (filterDocs === "missing") {
+        const hasMissing = !d.license_number || !d.mvr_expiration || !d.medical_card_expiration;
+        if (!hasMissing) return false;
       }
-    } catch (err) {
-      console.error("Failed to load drivers", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedDriverId]);
-
-  async function loadProfile(driverId: string) {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/ronyx/drivers/profile?driverId=${driverId}`);
-      const data = await res.json();
-      const merged = { ...emptyProfile, ...(data.profile || {}) };
-      setProfile(merged);
-    } catch (err) {
-      console.error("Failed to load driver profile", err);
-      setProfile(emptyProfile);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadDocuments(driverId: string) {
-    try {
-      const res = await fetch(`/api/ronyx/drivers/documents?driverId=${driverId}`, { cache: "no-store" });
-      const data = await res.json();
-      setDocuments(data.documents || []);
-    } catch (err) {
-      console.error("Failed to load driver documents", err);
-      setDocuments([]);
-    }
-  }
-
-  const loadAssignedLoad = useCallback(async () => {
-    if (!profile.full_name) return;
-    try {
-      const res = await fetch(`/api/ronyx/loads?driver_name=${encodeURIComponent(profile.full_name)}`, { cache: "no-store" });
-      const data = await res.json();
-      setAssignedLoad(data.loads?.[0] || null);
-    } catch {
-      setAssignedLoad(null);
-    }
-  }, [profile.full_name]);
-
-  async function loadPayRates(driverId: string) {
-    try {
-      const res = await fetch(`/api/ronyx/drivers/${driverId}/pay-rates`);
-      const data = await res.json();
-      setPayRates(data.rates || []);
-    } catch (err) {
-      console.error("Failed to load pay rates", err);
-      setPayRates([]);
-    }
-  }
-
-  async function savePayRate() {
-    if (!selectedDriverId) return;
-    if (!rateForm.rate_name || !rateForm.rate_value) {
-      setStatusMessage("Rate name and value are required.");
-      return;
-    }
-    const payload = {
-      ...rateForm,
-      rate_value: Number(rateForm.rate_value),
-      customer_id: rateForm.customer_id || null,
-      job_id: rateForm.job_id || null,
-      material_type: rateForm.material_type || null,
-      equipment_type: rateForm.equipment_type || null,
-      effective_date: rateForm.effective_date || new Date().toISOString().slice(0, 10),
-    };
-    const res = await fetch(`/api/ronyx/drivers/${selectedDriverId}/pay-rates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      return true;
     });
-    if (!res.ok) {
-      setStatusMessage("Failed to save pay rate.");
-      return;
-    }
-    setRateForm({
-      rate_name: "",
-      rate_type: "PER_TON",
-      rate_value: "",
-      material_type: "",
-      customer_id: "",
-      job_id: "",
-      equipment_type: "",
-      is_default: false,
-      effective_date: "",
-    });
-    setStatusMessage("Pay rate saved.");
-    void loadPayRates(selectedDriverId);
-  }
+  }, [drivers, search, filterStatus, filterType, filterDocs]);
 
-  async function setDefaultRate(rateId: string) {
-    if (!selectedDriverId) return;
-    const res = await fetch(
-      `/api/ronyx/drivers/${selectedDriverId}/pay-rates/${rateId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_default: true }),
-      },
-    );
-    if (!res.ok) {
-      setStatusMessage("Failed to update default rate.");
-      return;
-    }
-    setStatusMessage("Default rate updated.");
-    void loadPayRates(selectedDriverId);
-  }
-
-  async function deleteRate(rateId: string) {
-    if (!selectedDriverId) return;
-    const res = await fetch(
-      `/api/ronyx/drivers/${selectedDriverId}/pay-rates/${rateId}`,
-      { method: "DELETE" },
-    );
-    if (!res.ok) {
-      setStatusMessage("Failed to delete rate.");
-      return;
-    }
-    setStatusMessage("Pay rate removed.");
-    void loadPayRates(selectedDriverId);
-  }
-
-  async function uploadDocument() {
-    if (!selectedDriverId || !docUpload.doc_type) return;
-    setDocMessage("");
-    const payload = {
-      driver_id: selectedDriverId,
-      doc_type: docUpload.doc_type,
-      status: "pending",
-      expires_on: docUpload.expires_on || null,
-      file_url: docUpload.file ? docUpload.file.name : null,
-    };
-    const res = await fetch("/api/ronyx/drivers/documents", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      setDocMessage("Upload failed.");
-      return;
-    }
-    const data = await res.json();
-    setDocuments((prev) => [data.document, ...prev]);
-    setDocMessage("Document uploaded.");
-  }
-
-  async function saveProfile() {
-    if (!selectedDriverId) return;
+  async function saveDriver() {
     setSaving(true);
-    setStatusMessage("");
+    setStatusMsg("");
     try {
-      const res = await fetch(`/api/ronyx/drivers/profile?driverId=${selectedDriverId}`, {
-        method: "PUT",
+      const res = await fetch("/api/ronyx/drivers/profile", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body: JSON.stringify(addForm),
       });
       if (!res.ok) throw new Error("Save failed");
-      const data = await res.json();
-      setProfile({ ...emptyProfile, ...(data.profile || {}) });
-      setStatusMessage("Saved");
-    } catch (err) {
-      console.error("Failed to save driver profile", err);
-      setStatusMessage("Save failed. Try again.");
+      setShowAddForm(false);
+      setAddForm(EMPTY_DRIVER);
+      setStatusMsg("Driver added.");
+      void loadDrivers();
+    } catch {
+      setStatusMsg("Failed to add driver.");
     } finally {
       setSaving(false);
-      setTimeout(() => setStatusMessage(""), 3000);
+      setTimeout(() => setStatusMsg(""), 3000);
     }
   }
 
-  const updateField = (field: keyof DriverProfile, value: string | boolean) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+  async function updateDriver(field: keyof Driver, value: string | boolean) {
+    if (!selectedDriver) return;
+    const updated = { ...selectedDriver, [field]: value };
+    setSelectedDriver(updated as Driver);
+    try {
+      await fetch(`/api/ronyx/drivers/profile?driverId=${selectedDriver.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+      setDrivers((prev) => prev.map((d) => d.id === selectedDriver.id ? updated as Driver : d));
+    } catch {
+      setStatusMsg("Save failed.");
+    }
+  }
+
+  async function uploadDoc() {
+    if (!selectedDriver) return;
+    try {
+      const res = await fetch("/api/ronyx/drivers/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          driver_id: selectedDriver.id,
+          doc_type: docUpload.doc_type,
+          status: "pending",
+          expires_on: docUpload.expires_on || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments((prev) => [data.document, ...prev]);
+        setStatusMsg("Document uploaded.");
+      }
+    } catch {
+      setStatusMsg("Upload failed.");
+    }
+  }
+
+  const shell: React.CSSProperties = {
+    minHeight: "100vh",
+    background: "radial-gradient(circle at top, rgba(37,99,235,0.12), transparent 55%), #e2eaf6",
+    color: "#0f172a",
+    padding: 32,
+    fontFamily: "'Poppins', sans-serif",
   };
 
-  const documentAlerts = useMemo(() => {
-    const now = new Date();
-    const alerts: string[] = [];
-    documents.forEach((doc) => {
-      if (!doc.expires_on) return;
-      const expires = new Date(doc.expires_on);
-      const diffDays = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 0) {
-        alerts.push(`${doc.doc_type} expired TODAY`);
-      } else if (diffDays <= 14) {
-        alerts.push(`${doc.doc_type} expires in ${diffDays} days`);
-      }
-    });
-    return alerts;
-  }, [documents]);
+  const card: React.CSSProperties = {
+    background: "#f8fafc",
+    border: "1px solid rgba(30,64,175,0.18)",
+    borderRadius: 16,
+    padding: 20,
+    boxShadow: "0 14px 28px rgba(15,23,42,0.08)",
+    marginBottom: 20,
+  };
 
-  const requiredDocs = ["CDL", "Medical Card", "Drug Test", "Insurance", "Background Check"];
-  const getDocForType = (type: string) => documents.find((doc) => doc.doc_type === type);
+  const input: React.CSSProperties = {
+    background: "#fff",
+    border: "1px solid rgba(30,64,175,0.2)",
+    borderRadius: 10,
+    padding: "9px 12px",
+    color: "#0f172a",
+    fontSize: "0.875rem",
+    width: "100%",
+    boxSizing: "border-box",
+  };
+
+  const btn = (color = "#1d4ed8"): React.CSSProperties => ({
+    background: color,
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    padding: "8px 16px",
+    fontWeight: 700,
+    fontSize: "0.82rem",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  });
+
+  const badge = (color: string): React.CSSProperties => ({
+    display: "inline-block",
+    background: color + "22",
+    color,
+    border: `1px solid ${color}44`,
+    borderRadius: 999,
+    padding: "2px 10px",
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    whiteSpace: "nowrap",
+  });
+
+  const label: React.CSSProperties = {
+    fontSize: "0.75rem",
+    color: "rgba(15,23,42,0.6)",
+    marginBottom: 4,
+    display: "block",
+  };
 
   return (
-    <div className="ronyx-shell">
-      <style jsx global>{`
-        :root {
-          --ronyx-black: #e2eaf6;
-          --ronyx-carbon: #f8fafc;
-          --ronyx-steel: #dbe5f1;
-          --ronyx-border: rgba(30, 64, 175, 0.18);
-          --ronyx-accent: #1d4ed8;
-          --primary: #0ea5e9;
-          --danger: #ef4444;
-          --success: #10b981;
-          --warning: #f59e0b;
-          --secondary: #6b7280;
-        }
-        .ronyx-shell {
-          min-height: 100vh;
-          background: radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 55%), var(--ronyx-black);
-          color: #0f172a;
-          padding: 32px;
-        }
-        .ronyx-container {
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-        .ronyx-card {
-          background: var(--ronyx-carbon);
-          border: 1px solid var(--ronyx-border);
-          border-radius: 16px;
-          padding: 18px;
-          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
-        }
-        .ronyx-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 16px;
-        }
-        .ronyx-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 14px;
-          border-radius: 12px;
-          background: #ffffff;
-          border: 1px solid rgba(29, 78, 216, 0.16);
-        }
-        .ronyx-action {
-          padding: 8px 14px;
-          border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          color: #0f172a;
-          text-decoration: none;
-          font-weight: 600;
-          background: rgba(29, 78, 216, 0.08);
-        }
-        .ronyx-action.primary {
-          background: var(--ronyx-accent);
-          color: #ffffff;
-          border-color: transparent;
-        }
-        .ronyx-input {
-          width: 100%;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 12px;
-          padding: 10px 12px;
-          color: #0f172a;
-          box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
-        }
-        .ronyx-input:focus,
-        .ronyx-input:focus-visible {
-          outline: none;
-          border-color: rgba(29, 78, 216, 0.6);
-          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
-        }
-        .ronyx-label {
-          font-size: 0.8rem;
-          color: rgba(15, 23, 42, 0.7);
-          margin-bottom: 6px;
-          display: inline-block;
-        }
-        .ronyx-textarea {
-          width: 100%;
-          min-height: 90px;
-          background: #ffffff;
-          border: 1px solid var(--ronyx-border);
-          border-radius: 12px;
-          padding: 10px 12px;
-          color: #0f172a;
-          resize: vertical;
-        }
-        .ronyx-tab {
-          border-radius: 999px;
-          border: 1px solid var(--ronyx-border);
-          background: rgba(29, 78, 216, 0.06);
-          padding: 8px 16px;
-          font-weight: 600;
-        }
-        .ronyx-tab.active {
-          background: var(--ronyx-accent);
-          color: #fff;
-        }
-        .ronyx-muted {
-          color: rgba(15, 23, 42, 0.7);
-          font-size: 0.9rem;
-        }
-        .btn-primary,
-        .btn-secondary,
-        .btn-warning,
-        .btn-danger {
-          border-radius: 6px;
-          border: none;
-          padding: 0 16px;
-          height: 36px;
-          font-weight: 700;
-          text-transform: uppercase;
-          cursor: pointer;
-        }
-        .btn-primary {
-          background: var(--primary);
-          color: #ffffff;
-        }
-        .btn-secondary {
-          background: var(--secondary);
-          color: #ffffff;
-        }
-        .btn-warning {
-          background: var(--warning);
-          color: #ffffff;
-        }
-        .btn-danger {
-          background: var(--danger);
-          color: #ffffff;
-        }
-      `}</style>
+    <div style={shell}>
+      <div style={{ maxWidth: 1300, margin: "0 auto" }}>
 
-      <div className="ronyx-container">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 16, flexWrap: "wrap" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
           <div>
-            <p className="ronyx-pill">Ronyx TMS</p>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, marginTop: 8 }}>
-              Fleet Productivity Hub
-            </h1>
-            <p style={{ color: "rgba(15,23,42,0.7)", marginTop: 6 }}>
-              Actionable compliance, performance, financials, and history for each driver.
+            <p style={{ fontSize: "0.75rem", color: "#1d4ed8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Ronyx TMS</p>
+            <h1 style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: 4 }}>Driver Management</h1>
+            <p style={{ color: "rgba(15,23,42,0.6)", marginTop: 4, fontSize: "0.9rem" }}>
+              Compliance, payroll, documents, and assignments for all drivers.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <select
-              className="ronyx-input"
-              style={{ minWidth: 220 }}
-              value={selectedDriverId}
-              onChange={(e) => setSelectedDriverId(e.target.value)}
-              disabled={loading}
-            >
-              {drivers.length === 0 && <option value="">No drivers found</option>}
-              {drivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>
-                  {driver.name}
-                </option>
-              ))}
-            </select>
-            <button className="ronyx-action primary" onClick={saveProfile} disabled={saving || !selectedDriverId}>
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-            <span style={{ fontSize: "0.8rem", color: "rgba(15,23,42,0.6)" }}>{statusMessage}</span>
-            <Link href="/ronyx" className="ronyx-action">
-              Back to Dashboard
-            </Link>
+            {statusMsg && <span style={{ fontSize: "0.8rem", color: "#10b981" }}>{statusMsg}</span>}
+            <button style={btn()} onClick={() => setShowAddForm(true)}>+ Add Driver</button>
+            <button style={btn("#6b7280")} onClick={() => setStatusMsg("Exported (demo)")}>Export</button>
           </div>
         </div>
 
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-            <span className="ronyx-pill">
-              Hire: {profile.hire_date || "05/15/2018"}
-            </span>
-            <span className="ronyx-pill">
-              Status: {profile.status ? profile.status.toUpperCase() : "ACTIVE"}
-            </span>
-            <span className="ronyx-pill">
-              Score: {profile.driver_scorecard || "92/100"}
-            </span>
-            <span className="ronyx-pill">
-              2024 Miles: {profile.miles_driven || "14,287"}
-            </span>
-            <span className="ronyx-pill">
-              Driver: {profile.full_name || "Jimmy \"Bull\" Hauler"} #{profile.assigned_truck_number || "245"}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-            <Link href="/ronyx/loads" className="ronyx-action">
-              Assign Load
-            </Link>
-            {profile.email ? (
-              <a className="ronyx-action" href={`mailto:${profile.email}`}>
-                Send Message
-              </a>
-            ) : (
-              <button className="ronyx-action" onClick={() => setStatusMessage("Message queued (demo)")}>
-                Send Message
-              </button>
-            )}
-            <button className="ronyx-action" onClick={() => setStatusMessage("Incident logged (demo)")}>
-              Log Incident
-            </button>
-            <Link href="/ronyx/payroll" className="ronyx-action">
-              Run Settlement
-            </Link>
-            <button className="ronyx-action" onClick={() => setStatusMessage("Export queued (demo)")}>
-              Export Profile
-            </button>
-          </div>
-          {statusMessage && (
-            <div style={{ marginTop: 8, color: "rgba(15,23,42,0.6)", fontSize: "0.85rem" }}>
-              {statusMessage}
+        {/* Expiring Documents Alert */}
+        {expiringDrivers.length > 0 && (
+          <div style={{ ...card, borderLeft: "4px solid #f59e0b", background: "#fffbeb" }}>
+            <div style={{ fontWeight: 700, color: "#92400e", marginBottom: 10 }}>
+              ⚠️ Expiring MVRs / Documents — Next 7 Days ({expiringDrivers.length} driver{expiringDrivers.length > 1 ? "s" : ""})
             </div>
-          )}
-        </section>
-
-        <section className="ronyx-card" style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {[
-              { id: "compliance", label: "Compliance & Safety" },
-              { id: "performance", label: "Assignment & Performance" },
-              { id: "financials", label: "Financials" },
-              { id: "history", label: "Full History" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                className={`ronyx-tab ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {expiringDrivers.map((d) => {
+                const mvrDays = daysUntil(d.mvr_expiration);
+                const medDays = daysUntil(d.medical_card_expiration);
+                const cdlDays = daysUntil(d.license_expiration_date);
+                return (
+                  <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 600, minWidth: 160 }}>{d.full_name || "Unknown"}</span>
+                    {mvrDays !== null && mvrDays <= 7 && (
+                      <span style={badge(mvrDays <= 0 ? "#ef4444" : "#f59e0b")}>
+                        MVR {mvrDays <= 0 ? "EXPIRED" : `expires in ${mvrDays}d`}
+                      </span>
+                    )}
+                    {medDays !== null && medDays <= 7 && (
+                      <span style={badge(medDays <= 0 ? "#ef4444" : "#f59e0b")}>
+                        Medical {medDays <= 0 ? "EXPIRED" : `expires in ${medDays}d`}
+                      </span>
+                    )}
+                    {cdlDays !== null && cdlDays <= 7 && (
+                      <span style={badge(cdlDays <= 0 ? "#ef4444" : "#f59e0b")}>
+                        CDL {cdlDays <= 0 ? "EXPIRED" : `expires in ${cdlDays}d`}
+                      </span>
+                    )}
+                    <button style={{ ...btn("#1d4ed8"), fontSize: "0.75rem", padding: "4px 10px" }} onClick={() => setSelectedDriver(d)}>
+                      View Profile
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </section>
-
-        {activeTab === "compliance" && (
-          <section className="ronyx-card" style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
-              Compliance & Safety
-            </h2>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>Critical Alerts</div>
-              <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
-                <li>
-                  ⚠️ Medical card expires in 14 days (05/30/2024){" "}
-                  <button className="btn-sm btn-warning">Upload Renewal</button>
-                </li>
-                <li>
-                  ⚠️ Tanker endorsement renewal due in 30 days{" "}
-                  <button className="btn-sm btn-warning">Schedule Training</button>
-                </li>
-                <li>✅ All other documents are current.</li>
-              </ul>
-            </div>
-            <div className="ronyx-grid" style={{ rowGap: 14 }}>
-              <div className="ronyx-card">
-                <h3>Live Compliance Metrics</h3>
-                <p className="ronyx-muted">HOS Current Week: 38/70 hrs</p>
-                <p className="ronyx-muted">34‑Hr Restart: Complete</p>
-                <p className="ronyx-muted">7‑Day CSA Score: 72 (↓2)</p>
-                <p className="ronyx-muted">Last DVIR: 05/16/2024 • Repaired ✅</p>
-              </div>
-              <div className="ronyx-card">
-                <h3>Document Vault</h3>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {[
-                    { label: "CDL Copy", url: profile.cdl_copy_url },
-                    { label: "Medical Card", url: profile.medical_card_url },
-                    { label: "Drug Test", url: profile.drug_test_results_url },
-                    { label: "MVR Report", url: profile.background_check_url },
-                    { label: "Training Certs", url: profile.training_certificates_url },
-                  ].map((doc) =>
-                    doc.url ? (
-                      <a key={doc.label} className="ronyx-action" href={doc.url} target="_blank" rel="noreferrer">
-                        {doc.label}
-                      </a>
-                    ) : (
-                      <button key={doc.label} className="ronyx-action" onClick={() => setStatusMessage("No file on record")}>
-                        {doc.label}
-                      </button>
-                    ),
-                  )}
-                </div>
-                <p className="ronyx-muted" style={{ marginTop: 10 }}>
-                  Documents are OCR-searchable and auto-tagged with expiry dates.
-                </p>
-              </div>
-            </div>
-          </section>
         )}
 
-        {activeTab === "performance" && (
-          <section className="ronyx-card" style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
-              Assignment & Performance
-            </h2>
-            <div className="ronyx-grid" style={{ rowGap: 14 }}>
-              <div className="ronyx-card">
-                <h3>Current Assignment & Equipment</h3>
-                <p className="ronyx-muted">
-                  Assigned Truck: {profile.assigned_truck_number || "245"} • {profile.equipment_type || "Dump Trailer"}
-                </p>
-                <p className="ronyx-muted">
-                  Status: {assignedLoad?.status || "AT PIT"} • Load {assignedLoad?.load_number || "#14287"}
-                </p>
-                <p className="ronyx-muted">
-                  Material: {assignedLoad?.material || "#57 Gravel"} • Job Site: {assignedLoad?.job_site || "Oak Street"}
-                </p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  <Link href="/ronyx/tracking" className="ronyx-action">
-                    View Live Location
-                  </Link>
-                  <Link href="/ronyx/loads" className="ronyx-action">
-                    View Load Details
-                  </Link>
-                </div>
-              </div>
-              <div className="ronyx-card">
-                <h3>Performance (Last 30 Days)</h3>
-                <p className="ronyx-muted">Loads Completed: 42 • Avg Tons/Load: 21.5</p>
-                <p className="ronyx-muted">Avg Cycle Time: 3.9h • On‑Time %: 96.7%</p>
-                <p className="ronyx-muted">Deadhead %: 12 • Fuel Efficiency: 6.2 MPG</p>
-                <p className="ronyx-muted">Scorecard: {profile.driver_scorecard || "92/100"} • Rank #3/24</p>
-              </div>
-              <div className="ronyx-card">
-                <h3>Training & Coaching Queue</h3>
-                <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
-                  <li>Scheduled: Monthly Safety Meeting (06/01/2024)</li>
-                  <li>Recommended: Defensive Driving Refresher</li>
-                </ul>
-                <button className="ronyx-action" onClick={() => setStatusMessage("Training assigned (demo)")}>
-                  Assign Training Module
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Search & Filters */}
+        <div style={{ ...card, padding: 16 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              style={{ ...input, maxWidth: 260 }}
+              placeholder="Search name, email, truck..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select style={{ ...input, width: "auto" }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="available">Available</option>
+              <option value="assigned">Assigned</option>
+              <option value="off duty">Off Duty</option>
+              <option value="suspended">Suspended</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select style={{ ...input, width: "auto" }} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="all">All Types</option>
+              <option value="W2">W2</option>
+              <option value="1099">1099</option>
+              <option value="Owner Operator">Owner Operator</option>
+            </select>
+            <select style={{ ...input, width: "auto" }} value={filterDocs} onChange={(e) => setFilterDocs(e.target.value)}>
+              <option value="all">All Documents</option>
+              <option value="expiring">Expiring Docs</option>
+              <option value="missing">Missing Docs</option>
+            </select>
+          </div>
+        </div>
 
-        {activeTab === "financials" && (
-          <section className="ronyx-card" style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
-              Financials
-            </h2>
-            <div className="ronyx-grid" style={{ rowGap: 14 }}>
-              <div className="ronyx-card">
-                <h3>Current Pay Period (05/01 - 05/15)</h3>
-                <p className="ronyx-muted">Miles: {profile.miles_driven || "1,842"} • Loads: 21 • Tonnage: 451.5</p>
-                <p className="ronyx-muted">
-                  Gross: {profile.pay_period_earnings || "$6,528.75"} • Deductions: {profile.deductions || "$1,305.75"}
-                </p>
-                <p className="ronyx-muted">Net Pay: $4,723.00</p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Link href="/ronyx/payroll" className="ronyx-action">
-                    Preview Settlement
-                  </Link>
-                  <Link href="/ronyx/payroll" className="ronyx-action">
-                    Export for Payroll
-                  </Link>
-                </div>
-              </div>
-              <div className="ronyx-card">
-                <h3>Cost & Reimbursement Tracker</h3>
-                <p className="ronyx-muted">Fuel Spend: $2,112 • Avg MPG: 6.2</p>
-                <p className="ronyx-muted">Tolls: $84.50 • Permits: $150</p>
-                <p className="ronyx-muted">Pending Reimbursements: $47.25</p>
-                <button className="ronyx-action" onClick={() => setStatusMessage("Reimbursement processed (demo)")}>
-                  Process Reimbursement
-                </button>
-              </div>
-            </div>
-            <div style={{ marginTop: 16 }} className="ronyx-card">
-              <h3>Settlement Week: May 20-24, 2024</h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 8 }}>
-                <span className="ronyx-pill">WTD Haul Pay: $1,428.50</span>
-                <span className="ronyx-pill">WTD Tons: 312.5</span>
-                <span className="ronyx-pill">Avg Rate/Ton: $4.57</span>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                <button className="ronyx-action" onClick={() => setStatusMessage("Bonus added (demo)")}>
-                  Add Bonus
-                </button>
-                <button className="ronyx-action" onClick={() => setStatusMessage("Deduction added (demo)")}>
-                  Add Deduction
-                </button>
-                <button className="ronyx-action" onClick={() => setStatusMessage("Week locked (demo)")}>
-                  Lock Week
-                </button>
-                <Link href="/ronyx/payroll" className="ronyx-action">
-                  Run Payroll
-                </Link>
-                <button className="ronyx-action" onClick={() => setStatusMessage("Exported settlement (demo)")}>
-                  Export
-                </button>
-              </div>
-              <div style={{ overflowX: "auto", marginTop: 8 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
-                  <thead>
-                    <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(15,23,42,0.12)" }}>
-                      <th style={{ padding: "8px 6px" }}>Date</th>
-                      <th style={{ padding: "8px 6px" }}>Ticket #</th>
-                      <th style={{ padding: "8px 6px" }}>Load #</th>
-                      <th style={{ padding: "8px 6px" }}>Material</th>
-                      <th style={{ padding: "8px 6px" }}>Net Tons</th>
-                      <th style={{ padding: "8px 6px" }}>Rate</th>
-                      <th style={{ padding: "8px 6px" }}>Amount</th>
-                      <th style={{ padding: "8px 6px" }}>Status</th>
-                      <th style={{ padding: "8px 6px" }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      {
-                        date: "05/20/2024",
-                        ticket: "VTK77891",
-                        load: "#14287",
-                        material: "#57 Gravel",
-                        tons: "22.0",
-                        rate: "$4.50/Ton",
-                        amount: "$99.00",
-                        status: "VERIFIED",
-                        action: "View Ticket",
-                      },
-                      {
-                        date: "05/20/2024",
-                        ticket: "VTK77894",
-                        load: "#14288",
-                        material: "Fill Sand",
-                        tons: "18.5",
-                        rate: "$4.25/Ton",
-                        amount: "$78.63",
-                        status: "VERIFIED",
-                        action: "View Ticket",
-                      },
-                      {
-                        date: "05/21/2024",
-                        ticket: "VTK77902",
-                        load: "#14290",
-                        material: "Crushed Rock",
-                        tons: "24.0",
-                        rate: "$5.00/Ton",
-                        amount: "$120.00",
-                        status: "VERIFIED",
-                        action: "Adjust Rate",
-                      },
-                      {
-                        date: "05/22/2024",
-                        ticket: "--------",
-                        load: "#14295",
-                        material: "Topsoil",
-                        tons: "--",
-                        rate: "$4.75/Ton",
-                        amount: "--",
-                        status: "NO TICKET",
-                        action: "Send Reminder",
-                      },
-                    ].map((row) => (
-                      <tr key={`${row.ticket}-${row.load}`} style={{ borderBottom: "1px solid rgba(15,23,42,0.08)" }}>
-                        <td style={{ padding: "8px 6px" }}>{row.date}</td>
-                        <td style={{ padding: "8px 6px" }}>{row.ticket}</td>
-                        <td style={{ padding: "8px 6px" }}>{row.load}</td>
-                        <td style={{ padding: "8px 6px" }}>{row.material}</td>
-                        <td style={{ padding: "8px 6px" }}>{row.tons}</td>
-                        <td style={{ padding: "8px 6px" }}>{row.rate}</td>
-                        <td style={{ padding: "8px 6px" }}>{row.amount}</td>
-                        <td style={{ padding: "8px 6px", fontWeight: 600 }}>{row.status}</td>
-                        <td style={{ padding: "8px 6px" }}>
-                          <button
-                            className="btn-sm btn-secondary"
-                            onClick={() => setStatusMessage(`${row.action} (demo)`)}
-                          >
-                            {row.action}
-                          </button>
+        {/* Driver Table */}
+        <div style={card}>
+          <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12 }}>
+            All Drivers ({filtered.length})
+          </div>
+          {loading ? (
+            <p style={{ color: "rgba(15,23,42,0.5)", textAlign: "center", padding: 32 }}>Loading drivers…</p>
+          ) : filtered.length === 0 ? (
+            <p style={{ color: "rgba(15,23,42,0.5)", textAlign: "center", padding: 32 }}>
+              No drivers found. Add one above.
+            </p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid rgba(30,64,175,0.15)" }}>
+                    {["Driver", "Phone", "Type", "CDL #", "CDL Exp", "MVR Exp", "Medical Exp", "Truck", "Status", "Rating", "Actions"].map((h) => (
+                      <th key={h} style={{ padding: "10px 8px", color: "#1d4ed8", fontWeight: 700, whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((d) => {
+                    const mvrDays = daysUntil(d.mvr_expiration);
+                    const medDays = daysUntil(d.medical_card_expiration);
+                    const cdlDays = daysUntil(d.license_expiration_date);
+                    const statusColor = STATUS_COLORS[d.status?.toLowerCase() || "active"] || "#6b7280";
+                    return (
+                      <tr key={d.id} style={{ borderBottom: "1px solid rgba(15,23,42,0.07)" }}>
+                        <td style={{ padding: "10px 8px", fontWeight: 600 }}>
+                          {d.full_name || "—"}
+                          {d.email && <div style={{ color: "rgba(15,23,42,0.5)", fontWeight: 400, fontSize: "0.75rem" }}>{d.email}</div>}
+                        </td>
+                        <td style={{ padding: "10px 8px", color: "rgba(15,23,42,0.7)" }}>{d.phone || "—"}</td>
+                        <td style={{ padding: "10px 8px" }}>
+                          <span style={badge("#1d4ed8")}>{d.driver_type || "W2"}</span>
+                        </td>
+                        <td style={{ padding: "10px 8px", fontFamily: "monospace" }}>{d.license_number || "—"}</td>
+                        <td style={{ padding: "10px 8px" }}>
+                          {d.license_expiration_date ? (
+                            <span style={{ color: cdlDays !== null && cdlDays <= 30 ? "#ef4444" : "inherit" }}>
+                              {d.license_expiration_date}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>
+                          {d.mvr_expiration ? (
+                            <span style={badge(mvrDays !== null && mvrDays <= 14 ? (mvrDays <= 0 ? "#ef4444" : "#f59e0b") : "#10b981")}>
+                              {d.mvr_expiration}
+                            </span>
+                          ) : <span style={badge("#6b7280")}>Missing</span>}
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>
+                          {d.medical_card_expiration ? (
+                            <span style={badge(medDays !== null && medDays <= 14 ? (medDays <= 0 ? "#ef4444" : "#f59e0b") : "#10b981")}>
+                              {d.medical_card_expiration}
+                            </span>
+                          ) : <span style={badge("#6b7280")}>Missing</span>}
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>{d.assigned_truck_number || "—"}</td>
+                        <td style={{ padding: "10px 8px" }}>
+                          <span style={badge(statusColor)}>{d.status || "active"}</span>
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>
+                          {"⭐".repeat(Math.min(Math.round(d.rating || 0), 5)) || "—"}
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            <button style={{ ...btn(), fontSize: "0.72rem", padding: "4px 8px" }} onClick={() => { setSelectedDriver(d); setProfileTab("info"); }}>
+                              View
+                            </button>
+                            <button style={{ ...btn("#6b7280"), fontSize: "0.72rem", padding: "4px 8px" }} onClick={() => { setSelectedDriver(d); setProfileTab("docs"); }}>
+                              Docs
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Adjustment added (demo)")}>
-                  Add Adjustment
-                </button>
-                <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Exported weekly settlement (demo)")}>
-                  Export This Week
-                </button>
-                <button className="btn-sm btn-primary" onClick={() => setStatusMessage("Settlement locked and finalized (demo)")}>
-                  Lock & Finalize
-                </button>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Weekly Adjustments</div>
-                <ul style={{ paddingLeft: 18, color: "rgba(15,23,42,0.75)" }}>
-                  <li>05/21: Safety Bonus - $50.00 (Perfect DVIR week)</li>
-                  <li>05/22: Deduction - $15.00 (Reimbursed toll)</li>
-                </ul>
-                <div style={{ marginTop: 6, fontWeight: 700 }}>
-                  Weekly Total (Current): $1,582.13
-                </div>
-                <div className="ronyx-muted">Breakdown: Haul $1,297.63 + Bonus $50 - Deduct $15</div>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div style={{ marginTop: 16 }} className="ronyx-card">
-              <h3>Ticket → Settlement Flow</h3>
-              <pre
-                style={{
-                  background: "rgba(15, 23, 42, 0.06)",
-                  borderRadius: 12,
-                  padding: 16,
-                  fontSize: "0.85rem",
-                  color: "rgba(15,23,42,0.8)",
-                  overflowX: "auto",
-                }}
-              >
-{`flowchart TD
-  A["Driver Captures Scale Ticket Photo"] --> B{"System Processes Image via OCR and Validation"}
-  B --> C["Data Posted to Office Dashboard Load Queue"]
-  B --> D["Data Logged to Driver Settlement Record"]
+          )}
+        </div>
 
-  C --> E["Office Generates Customer Invoice"]
-  D --> F["Friday Auto-Generate Driver Settlement"]
-
-  E --> G["Faster Customer Payment"]
-  F --> H["Accurate, Undisputed Driver Pay"]`}
-              </pre>
-            </div>
-            <div style={{ marginTop: 16 }} className="ronyx-card">
-              <h3>Friday Payroll Execution Flow</h3>
-              <pre
-                style={{
-                  background: "rgba(15, 23, 42, 0.06)",
-                  borderRadius: 12,
-                  padding: 16,
-                  fontSize: "0.85rem",
-                  color: "rgba(15,23,42,0.8)",
-                  overflowX: "auto",
-                }}
-              >
-{`flowchart TD
-  A["Thursday EOD\\nSystem Generates\\nSettlement Previews"] --> B["Friday 8 AM\\nOffice Reviews and\\nResolves Disputes"]
-
-  B --> C{"For Each Driver\\nClick 'LOCK & PAY'"}
-  C --> D["System Locks Items\\nCreates ACH/Check File\\nPosts to Accounting"]
-
-  D --> E["Driver Notified\\nPayslip Available in App"]
-  E --> F["Bank Processes\\nDirect Deposit"]`}
-              </pre>
-            </div>
-            <div style={{ marginTop: 16 }} className="ronyx-card">
-              <h3>Pay Rate Management</h3>
-              <div className="ronyx-grid" style={{ rowGap: 16 }}>
+        {/* Add Driver Modal */}
+        {showAddForm && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+            <div style={{ background: "#f8fafc", borderRadius: 20, padding: 28, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <h2 style={{ fontWeight: 800, fontSize: "1.2rem" }}>Add Driver</h2>
+                <button style={{ ...btn("#ef4444"), padding: "6px 14px" }} onClick={() => setShowAddForm(false)}>✕</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {[
+                  ["Full Name", "full_name", "text"],
+                  ["Phone", "phone", "tel"],
+                  ["Email", "email", "email"],
+                  ["Address", "address", "text"],
+                  ["CDL Number", "license_number", "text"],
+                  ["CDL State", "license_state", "text"],
+                  ["CDL Expiration", "license_expiration_date", "date"],
+                  ["MVR Expiration", "mvr_expiration", "date"],
+                  ["Medical Card Exp", "medical_card_expiration", "date"],
+                  ["Truck #", "assigned_truck_number", "text"],
+                  ["Hire Date", "hire_date", "date"],
+                  ["Supervisor", "supervisor_name", "text"],
+                  ["Emergency Contact", "emergency_contact_name", "text"],
+                  ["Emergency Phone", "emergency_contact_phone", "tel"],
+                ].map(([l, k, t]) => (
+                  <div key={k}>
+                    <span style={label}>{l}</span>
+                    <input
+                      style={input}
+                      type={t}
+                      value={(addForm as any)[k] || ""}
+                      onChange={(e) => setAddForm({ ...addForm, [k]: e.target.value })}
+                    />
+                  </div>
+                ))}
                 <div>
-                  <label className="ronyx-label">Rate Name</label>
-                  <input
-                    className="ronyx-input"
-                    value={rateForm.rate_name}
-                    onChange={(e) => setRateForm({ ...rateForm, rate_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="ronyx-label">Rate Type</label>
-                  <select
-                    className="ronyx-input"
-                    value={rateForm.rate_type}
-                    onChange={(e) => setRateForm({ ...rateForm, rate_type: e.target.value })}
-                  >
-                    <option value="PER_TON">PER_TON</option>
-                    <option value="PER_LOAD">PER_LOAD</option>
-                    <option value="PER_MILE">PER_MILE</option>
-                    <option value="PER_HOUR">PER_HOUR</option>
+                  <span style={label}>Driver Type</span>
+                  <select style={input} value={addForm.driver_type || "W2"} onChange={(e) => setAddForm({ ...addForm, driver_type: e.target.value })}>
+                    <option value="W2">W2</option>
+                    <option value="1099">1099</option>
+                    <option value="Owner Operator">Owner Operator</option>
                   </select>
                 </div>
                 <div>
-                  <label className="ronyx-label">Rate Value</label>
-                  <input
-                    className="ronyx-input"
-                    type="number"
-                    step="0.01"
-                    value={rateForm.rate_value}
-                    onChange={(e) => setRateForm({ ...rateForm, rate_value: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="ronyx-label">Material Type</label>
-                  <input
-                    className="ronyx-input"
-                    value={rateForm.material_type}
-                    onChange={(e) => setRateForm({ ...rateForm, material_type: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="ronyx-label">Customer ID</label>
-                  <input
-                    className="ronyx-input"
-                    value={rateForm.customer_id}
-                    onChange={(e) => setRateForm({ ...rateForm, customer_id: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="ronyx-label">Job ID</label>
-                  <input
-                    className="ronyx-input"
-                    value={rateForm.job_id}
-                    onChange={(e) => setRateForm({ ...rateForm, job_id: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="ronyx-label">Equipment Type</label>
-                  <input
-                    className="ronyx-input"
-                    value={rateForm.equipment_type}
-                    onChange={(e) => setRateForm({ ...rateForm, equipment_type: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="ronyx-label">Effective Date</label>
-                  <input
-                    type="date"
-                    className="ronyx-input"
-                    value={rateForm.effective_date}
-                    onChange={(e) => setRateForm({ ...rateForm, effective_date: e.target.value })}
-                  />
-                </div>
-                <div className="ronyx-row">
-                  <span>Default Rate</span>
-                  <input
-                    type="checkbox"
-                    checked={rateForm.is_default}
-                    onChange={(e) => setRateForm({ ...rateForm, is_default: e.target.checked })}
-                  />
+                  <span style={label}>Status</span>
+                  <select style={input} value={addForm.status || "active"} onChange={(e) => setAddForm({ ...addForm, status: e.target.value })}>
+                    <option value="active">Active</option>
+                    <option value="available">Available</option>
+                    <option value="off duty">Off Duty</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                <button className="ronyx-action" onClick={savePayRate}>
-                  Save Rate
+              <div style={{ display: "flex", gap: 10, marginTop: 20, justifyContent: "flex-end" }}>
+                <button style={btn("#6b7280")} onClick={() => setShowAddForm(false)}>Cancel</button>
+                <button style={btn()} onClick={saveDriver} disabled={saving}>
+                  {saving ? "Saving…" : "Save Driver"}
                 </button>
-                <button
-                  className="ronyx-action"
-                  onClick={() =>
-                    setRateForm({
-                      rate_name: "",
-                      rate_type: "PER_TON",
-                      rate_value: "",
-                      material_type: "",
-                      customer_id: "",
-                      job_id: "",
-                      equipment_type: "",
-                      is_default: false,
-                      effective_date: "",
-                    })
-                  }
-                >
-                  Clear
-                </button>
-              </div>
-              <div style={{ marginTop: 16, overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
-                  <thead>
-                    <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(15,23,42,0.12)" }}>
-                      <th style={{ padding: "8px 6px" }}>Name</th>
-                      <th style={{ padding: "8px 6px" }}>Type</th>
-                      <th style={{ padding: "8px 6px" }}>Value</th>
-                      <th style={{ padding: "8px 6px" }}>Material</th>
-                      <th style={{ padding: "8px 6px" }}>Customer</th>
-                      <th style={{ padding: "8px 6px" }}>Job</th>
-                      <th style={{ padding: "8px 6px" }}>Equipment</th>
-                      <th style={{ padding: "8px 6px" }}>Default</th>
-                      <th style={{ padding: "8px 6px" }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payRates.length === 0 && (
-                      <tr>
-                        <td colSpan={9} style={{ padding: "10px 6px" }}>
-                          No pay rates yet.
-                        </td>
-                      </tr>
-                    )}
-                    {payRates.map((rate) => (
-                      <tr key={rate.id} style={{ borderBottom: "1px solid rgba(15,23,42,0.08)" }}>
-                        <td style={{ padding: "8px 6px" }}>{rate.rate_name}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.rate_type}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.rate_value}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.material_type || "--"}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.customer_id || "--"}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.job_id || "--"}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.equipment_type || "--"}</td>
-                        <td style={{ padding: "8px 6px" }}>{rate.is_default ? "✅" : "--"}</td>
-                        <td style={{ padding: "8px 6px", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {!rate.is_default && (
-                            <button className="btn-sm btn-secondary" onClick={() => setDefaultRate(rate.id)}>
-                              Set Default
-                            </button>
-                          )}
-                          <button className="btn-sm btn-warning" onClick={() => deleteRate(rate.id)}>
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
-          </section>
+          </div>
         )}
 
-        {activeTab === "history" && (
-          <section className="ronyx-card">
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 12 }}>
-              Full History & Notes
-            </h2>
-            <div style={{ display: "grid", gap: 12 }}>
-              {[
-                "05/16/2024 07:15 • DVIR Submitted - Minor: Marker light out. Repaired 05/17.",
-                "05/10/2024 • Performance Review - Score 92/100. Excellent customer feedback.",
-                "04/22/2024 • Incident Report #442 - Minor backing incident. Coaching completed.",
-                "03/15/2024 • Training Completed - Winter Driving Safety.",
-              ].map((row) => (
-                <div key={row} className="ronyx-row">
-                  {row}
+        {/* Driver Profile Drawer */}
+        {selectedDriver && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", justifyContent: "flex-end", zIndex: 100 }}>
+            <div style={{ background: "#f8fafc", width: "100%", maxWidth: 640, overflowY: "auto", padding: 28, boxShadow: "-8px 0 40px rgba(0,0,0,0.2)" }}>
+              {/* Drawer Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontSize: "0.75rem", color: "#1d4ed8", fontWeight: 700, textTransform: "uppercase" }}>Driver Profile</div>
+                  <h2 style={{ fontWeight: 800, fontSize: "1.4rem", marginTop: 2 }}>{selectedDriver.full_name || "Unknown Driver"}</h2>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                    <span style={badge(STATUS_COLORS[selectedDriver.status?.toLowerCase() || "active"] || "#6b7280")}>
+                      {selectedDriver.status || "active"}
+                    </span>
+                    <span style={badge("#1d4ed8")}>{selectedDriver.driver_type || "W2"}</span>
+                    {selectedDriver.assigned_truck_number && (
+                      <span style={badge("#6b7280")}>Truck #{selectedDriver.assigned_truck_number}</span>
+                    )}
+                  </div>
                 </div>
-              ))}
-              <div className="ronyx-row" style={{ alignItems: "flex-start" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Supervisor Notes</div>
-                  <div className="ronyx-muted">{profile.supervisor_notes || "No notes yet."}</div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Note added (demo)")}>
-                    Add New Note
-                  </button>
-                  <button className="btn-sm btn-secondary" onClick={() => setStatusMessage("Call logged (demo)")}>
-                    Log Phone Call
-                  </button>
-                </div>
+                <button style={{ ...btn("#ef4444"), padding: "6px 14px" }} onClick={() => setSelectedDriver(null)}>✕ Close</button>
               </div>
-              <div className="ronyx-row" style={{ alignItems: "flex-start" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Comms Log</div>
-                  <div className="ronyx-muted">{profile.communication_log || "No recent communications."}</div>
-                </div>
+
+              {/* Quick Actions */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+                {[
+                  ["Mark Available", "#10b981"],
+                  ["Mark Off Duty", "#f59e0b"],
+                  ["Suspend", "#ef4444"],
+                  ["Send Login Invite", "#1d4ed8"],
+                  ["View Pay Summary", "#6b7280"],
+                  ["Assign Load", "#0ea5e9"],
+                ].map(([label, color]) => (
+                  <button key={label} style={{ ...btn(color), fontSize: "0.75rem", padding: "5px 12px" }}
+                    onClick={() => setStatusMsg(`${label} (demo)`)}>
+                    {label}
+                  </button>
+                ))}
               </div>
+
+              {statusMsg && <div style={{ color: "#10b981", fontSize: "0.85rem", marginBottom: 12 }}>{statusMsg}</div>}
+
+              {/* Tabs */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+                {(["info", "docs", "history"] as const).map((t) => (
+                  <button key={t} onClick={() => setProfileTab(t)} style={{
+                    padding: "8px 18px", borderRadius: 999, border: "1px solid rgba(30,64,175,0.2)",
+                    background: profileTab === t ? "#1d4ed8" : "rgba(29,78,216,0.06)",
+                    color: profileTab === t ? "#fff" : "#0f172a",
+                    fontWeight: 700, cursor: "pointer", textTransform: "capitalize",
+                  }}>{t === "info" ? "Info & Compliance" : t === "docs" ? "Documents" : "History"}</button>
+                ))}
+              </div>
+
+              {/* Tab: Info */}
+              {profileTab === "info" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  {/* Contact */}
+                  <div style={{ gridColumn: "1 / -1", fontWeight: 700, fontSize: "0.85rem", color: "#1d4ed8", marginTop: 4 }}>Contact</div>
+                  {([
+                    ["Phone", "phone"],
+                    ["Email", "email"],
+                    ["Address", "address"],
+                    ["Emergency Contact", "emergency_contact_name"],
+                    ["Emergency Phone", "emergency_contact_phone"],
+                  ] as [string, keyof Driver][]).map(([l, k]) => (
+                    <div key={k}>
+                      <span style={label}>{l}</span>
+                      <input style={input} value={(selectedDriver as any)[k] || ""} onChange={(e) => updateDriver(k, e.target.value)} />
+                    </div>
+                  ))}
+
+                  {/* Employment */}
+                  <div style={{ gridColumn: "1 / -1", fontWeight: 700, fontSize: "0.85rem", color: "#1d4ed8", marginTop: 8 }}>Employment</div>
+                  <div>
+                    <span style={label}>Driver Type</span>
+                    <select style={input} value={selectedDriver.driver_type || "W2"} onChange={(e) => updateDriver("driver_type", e.target.value)}>
+                      <option value="W2">W2</option>
+                      <option value="1099">1099</option>
+                      <option value="Owner Operator">Owner Operator</option>
+                    </select>
+                  </div>
+                  <div>
+                    <span style={label}>Status</span>
+                    <select style={input} value={selectedDriver.status || "active"} onChange={(e) => updateDriver("status", e.target.value)}>
+                      <option value="active">Active</option>
+                      <option value="available">Available</option>
+                      <option value="assigned">Assigned</option>
+                      <option value="off duty">Off Duty</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  {([
+                    ["Hire Date", "hire_date"],
+                    ["Role", "position_role"],
+                    ["Supervisor", "supervisor_name"],
+                    ["Pay Rate", "pay_rate"],
+                    ["Truck #", "assigned_truck_number"],
+                  ] as [string, keyof Driver][]).map(([l, k]) => (
+                    <div key={k}>
+                      <span style={label}>{l}</span>
+                      <input style={input} value={(selectedDriver as any)[k] || ""} onChange={(e) => updateDriver(k, e.target.value)} />
+                    </div>
+                  ))}
+
+                  {/* Compliance */}
+                  <div style={{ gridColumn: "1 / -1", fontWeight: 700, fontSize: "0.85rem", color: "#1d4ed8", marginTop: 8 }}>CDL & Compliance</div>
+                  {([
+                    ["CDL Number", "license_number"],
+                    ["CDL State", "license_state"],
+                    ["CDL Expiration", "license_expiration_date"],
+                    ["MVR Expiration", "mvr_expiration"],
+                    ["Medical Card Exp", "medical_card_expiration"],
+                  ] as [string, keyof Driver][]).map(([l, k]) => (
+                    <div key={k}>
+                      <span style={label}>{l}</span>
+                      <input style={input} value={(selectedDriver as any)[k] || ""} onChange={(e) => updateDriver(k, e.target.value)} />
+                    </div>
+                  ))}
+                  <div>
+                    <span style={label}>Background Check</span>
+                    <select style={input} value={selectedDriver.background_check_status || "pending"} onChange={(e) => updateDriver("background_check_status", e.target.value)}>
+                      <option value="clear">Clear</option>
+                      <option value="pending">Pending</option>
+                      <option value="failed">Failed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <span style={label}>Drug Test</span>
+                    <select style={input} value={selectedDriver.drug_test_status || "pending"} onChange={(e) => updateDriver("drug_test_status", e.target.value)}>
+                      <option value="pass">Pass</option>
+                      <option value="pending">Pending</option>
+                      <option value="fail">Fail</option>
+                    </select>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" checked={!!selectedDriver.orientation_completed} onChange={(e) => updateDriver("orientation_completed", e.target.checked)} />
+                    <span style={label}>Orientation Completed</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" checked={!!selectedDriver.hazmat_training} onChange={(e) => updateDriver("hazmat_training", e.target.checked)} />
+                    <span style={label}>Hazmat Training</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Documents */}
+              {profileTab === "docs" && (
+                <div>
+                  <div style={{ background: "#fff", border: "1px solid rgba(30,64,175,0.15)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 10 }}>Upload Document</div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+                      <div style={{ flex: 1, minWidth: 140 }}>
+                        <span style={label}>Document Type</span>
+                        <select style={input} value={docUpload.doc_type} onChange={(e) => setDocUpload({ ...docUpload, doc_type: e.target.value })}>
+                          {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 140 }}>
+                        <span style={label}>Expiration Date</span>
+                        <input type="date" style={input} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
+                      </div>
+                      <button style={btn()} onClick={uploadDoc}>Upload</button>
+                    </div>
+                  </div>
+
+                  {/* Required Docs Checklist */}
+                  <div style={{ fontWeight: 700, marginBottom: 8 }}>Required Document Checklist</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                    {["CDL", "Medical Card", "MVR", "Drug Test", "Background Check", "Insurance"].map((type) => {
+                      const doc = documents.find((d) => d.doc_type === type);
+                      const days = daysUntil(doc?.expires_on);
+                      const { label: bLabel, color } = docStatusBadge(doc ? days : null);
+                      return (
+                        <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid rgba(30,64,175,0.12)", borderRadius: 10, padding: "10px 14px" }}>
+                          <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>{type}</span>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            {doc?.expires_on && <span style={{ fontSize: "0.75rem", color: "rgba(15,23,42,0.5)" }}>Exp: {doc.expires_on}</span>}
+                            <span style={badge(color)}>{bLabel}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* All uploaded docs */}
+                  {documents.length > 0 && (
+                    <>
+                      <div style={{ fontWeight: 700, marginBottom: 8 }}>Uploaded Documents</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {documents.map((doc) => {
+                          const days = daysUntil(doc.expires_on);
+                          const { label: bLabel, color } = docStatusBadge(days);
+                          return (
+                            <div key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid rgba(30,64,175,0.1)", borderRadius: 10, padding: "8px 14px" }}>
+                              <div>
+                                <span style={{ fontWeight: 600, fontSize: "0.82rem" }}>{doc.doc_type}</span>
+                                {doc.uploaded_at && <span style={{ color: "rgba(15,23,42,0.4)", fontSize: "0.72rem", marginLeft: 8 }}>Uploaded {doc.uploaded_at.slice(0, 10)}</span>}
+                              </div>
+                              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                {doc.expires_on && <span style={{ fontSize: "0.72rem", color: "rgba(15,23,42,0.5)" }}>Exp: {doc.expires_on}</span>}
+                                <span style={badge(color)}>{bLabel}</span>
+                                {doc.file_url && (
+                                  <a href={doc.file_url} target="_blank" rel="noreferrer" style={{ ...btn("#1d4ed8"), fontSize: "0.72rem", padding: "3px 8px", textDecoration: "none" }}>View</a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Tab: History */}
+              {profileTab === "history" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Driver Notes & Activity Log</div>
+                  {[
+                    { date: "—", text: "Profile created in MoveAround TMS." },
+                    { date: "—", text: "Document upload required: MVR, Medical Card." },
+                  ].map((item, i) => (
+                    <div key={i} style={{ background: "#fff", border: "1px solid rgba(30,64,175,0.1)", borderRadius: 10, padding: "10px 14px", fontSize: "0.85rem", color: "rgba(15,23,42,0.75)" }}>
+                      <span style={{ fontWeight: 600, marginRight: 8 }}>{item.date}</span>{item.text}
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button style={{ ...btn("#6b7280"), fontSize: "0.78rem" }} onClick={() => setStatusMsg("Note added (demo)")}>Add Note</button>
+                    <button style={{ ...btn("#6b7280"), fontSize: "0.78rem" }} onClick={() => setStatusMsg("Call logged (demo)")}>Log Call</button>
+                    <button style={{ ...btn("#6b7280"), fontSize: "0.78rem" }} onClick={() => setStatusMsg("Exported (demo)")}>Export History</button>
+                  </div>
+                </div>
+              )}
             </div>
-          </section>
+          </div>
         )}
+
       </div>
     </div>
   );

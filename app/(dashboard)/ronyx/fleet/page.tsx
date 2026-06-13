@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import FleetPage from "@/app/fleet/FleetView";
 
 export default function RonyxFleetPage() {
@@ -78,7 +79,9 @@ export default function RonyxFleetPage() {
         }
       `}</style>
       <div className="ronyx-fleet-content">
-        <FleetPage defaultTab="financial" showOnlyFinancial />
+        <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>Loading fleet data…</div>}>
+          <FleetPage defaultTab="financial" showOnlyFinancial />
+        </Suspense>
       </div>
     </div>
   );
