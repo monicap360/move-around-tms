@@ -112,6 +112,7 @@ export default function CompanyDriversPage({
   const [saving, setSaving]           = useState(false);
   const [msg, setMsg]                 = useState("");
   const [docUpload, setDocUpload]     = useState({ doc_type: "CDL", expires_on: "" });
+  const [docFile, setDocFile]         = useState<File | null>(null);
   const [userRole, setUserRole]       = useState<UserRole>("super_admin");
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 3000); };
@@ -200,15 +201,29 @@ export default function CompanyDriversPage({
   async function uploadDoc() {
     if (!selected) return;
     try {
-      const res = await fetch("/api/ronyx/drivers/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ driver_id: selected.id, doc_type: docUpload.doc_type, status: "pending", expires_on: docUpload.expires_on || null }),
-      });
+      let res: Response;
+      if (docFile) {
+        const fd = new FormData();
+        fd.append("file",       docFile);
+        fd.append("driver_id",  selected.id);
+        fd.append("doc_type",   docUpload.doc_type);
+        fd.append("expires_on", docUpload.expires_on || "");
+        res = await fetch("/api/ronyx/drivers/documents", { method: "POST", body: fd });
+      } else {
+        res = await fetch("/api/ronyx/drivers/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ driver_id: selected.id, doc_type: docUpload.doc_type, status: "pending", expires_on: docUpload.expires_on || null }),
+        });
+      }
       if (res.ok) {
         const d = await res.json();
         setDocs((prev) => [d.document, ...prev]);
-        flash("Document logged.");
+        setDocFile(null);
+        flash("Document saved.");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        flash(err.error || "Upload failed.");
       }
     } catch { flash("Upload failed."); }
   }
@@ -613,7 +628,7 @@ export default function CompanyDriversPage({
                 {/* Upload */}
                 {can(userRole, "upload_docs") && (
                   <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-                    <p style={{ fontWeight: 700, marginBottom: 10 }}>Log / Upload Document</p>
+                    <p style={{ fontWeight: 700, marginBottom: 10 }}>Upload Document</p>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
                       <div style={{ flex: 1, minWidth: 140 }}>
                         <span style={lbl}>Type</span>
@@ -625,7 +640,19 @@ export default function CompanyDriversPage({
                         <span style={lbl}>Expiration Date</span>
                         <input type="date" style={inp} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
                       </div>
-                      <button style={btn()} onClick={uploadDoc}>Log Document</button>
+                      <div style={{ flex: "2 1 200px" }}>
+                        <span style={lbl}>File (PDF, JPG, PNG)</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.webp"
+                          style={{ ...inp, padding: "6px 8px" }}
+                          onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                        />
+                        {docFile && <span style={{ fontSize: "0.7rem", color: "#16a34a", marginTop: 2, display: "block" }}>{docFile.name}</span>}
+                      </div>
+                      <button style={btn()} onClick={uploadDoc}>
+                        {docFile ? "Upload File" : "Log Entry"}
+                      </button>
                     </div>
                   </div>
                 )}

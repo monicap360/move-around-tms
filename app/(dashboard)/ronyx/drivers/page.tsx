@@ -118,6 +118,7 @@ export default function RonyxDriversPage() {
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [docUpload, setDocUpload] = useState({ doc_type: "CDL", expires_on: "" });
+  const [docFile, setDocFile] = useState<File | null>(null);
   const [userRole, setUserRole] = useState<UserRole>("super_admin");
 
   const loadDrivers = useCallback(async () => {
@@ -229,20 +230,34 @@ export default function RonyxDriversPage() {
   async function uploadDoc() {
     if (!selectedDriver) return;
     try {
-      const res = await fetch("/api/ronyx/drivers/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          driver_id: selectedDriver.id,
-          doc_type: docUpload.doc_type,
-          status: "pending",
-          expires_on: docUpload.expires_on || null,
-        }),
-      });
+      let res: Response;
+      if (docFile) {
+        const fd = new FormData();
+        fd.append("file",       docFile);
+        fd.append("driver_id",  selectedDriver.id);
+        fd.append("doc_type",   docUpload.doc_type);
+        fd.append("expires_on", docUpload.expires_on || "");
+        res = await fetch("/api/ronyx/drivers/documents", { method: "POST", body: fd });
+      } else {
+        res = await fetch("/api/ronyx/drivers/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            driver_id: selectedDriver.id,
+            doc_type:  docUpload.doc_type,
+            status:    "pending",
+            expires_on: docUpload.expires_on || null,
+          }),
+        });
+      }
       if (res.ok) {
         const data = await res.json();
         setDocuments((prev) => [data.document, ...prev]);
-        setStatusMsg("Document uploaded.");
+        setDocFile(null);
+        setStatusMsg("Document saved.");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStatusMsg(err.error || "Upload failed.");
       }
     } catch {
       setStatusMsg("Upload failed.");
@@ -735,7 +750,19 @@ export default function RonyxDriversPage() {
                           <span style={label}>Expiration Date</span>
                           <input type="date" style={input} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
                         </div>
-                        <button style={btn()} onClick={uploadDoc}>Upload</button>
+                        <div style={{ flex: "2 1 200px" }}>
+                          <span style={label}>File (PDF, JPG, PNG)</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp"
+                            style={{ ...input, padding: "6px 8px" }}
+                            onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                          />
+                          {docFile && <span style={{ fontSize: "0.72rem", color: "#10b981", marginTop: 2, display: "block" }}>{docFile.name}</span>}
+                        </div>
+                        <button style={btn()} onClick={uploadDoc}>
+                          {docFile ? "Upload File" : "Log Entry"}
+                        </button>
                       </div>
                     </div>
                   )}
