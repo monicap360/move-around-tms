@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { can, driverSeesAll, UserRole, ROLE_LABELS } from "@/lib/driverPermissions";
 
 type Driver = {
   id: string;
@@ -111,6 +112,7 @@ export default function CompanyDriversPage({
   const [saving, setSaving]           = useState(false);
   const [msg, setMsg]                 = useState("");
   const [docUpload, setDocUpload]     = useState({ doc_type: "CDL", expires_on: "" });
+  const [userRole, setUserRole]       = useState<UserRole>("super_admin");
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 3000); };
 
@@ -151,17 +153,20 @@ export default function CompanyDriversPage({
     );
   }, [drivers]);
 
-  const filtered = useMemo(() => drivers.filter((d) => {
-    if (search && !`${d.full_name} ${d.email} ${d.assigned_truck_number}`.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterStatus !== "all" && d.status !== filterStatus) return false;
-    if (filterType   !== "all" && d.driver_type !== filterType) return false;
-    if (filterDocs === "expiring") {
-      const min = Math.min(...[d.mvr_expiration, d.medical_card_expiration, d.license_expiration_date].map((f) => daysUntil(f) ?? 9999));
-      if (min > 14) return false;
-    }
-    if (filterDocs === "missing" && d.license_number && d.mvr_expiration && d.medical_card_expiration) return false;
-    return true;
-  }), [drivers, search, filterStatus, filterType, filterDocs]);
+  const filtered = useMemo(() => {
+    if (!driverSeesAll(userRole)) return [];
+    return drivers.filter((d) => {
+      if (search && !`${d.full_name} ${d.email} ${d.assigned_truck_number}`.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterStatus !== "all" && d.status !== filterStatus) return false;
+      if (filterType   !== "all" && d.driver_type !== filterType) return false;
+      if (filterDocs === "expiring") {
+        const min = Math.min(...[d.mvr_expiration, d.medical_card_expiration, d.license_expiration_date].map((f) => daysUntil(f) ?? 9999));
+        if (min > 14) return false;
+      }
+      if (filterDocs === "missing" && d.license_number && d.mvr_expiration && d.medical_card_expiration) return false;
+      return true;
+    });
+  }, [drivers, search, filterStatus, filterType, filterDocs, userRole]);
 
   async function saveDriver() {
     setSaving(true);
@@ -257,8 +262,24 @@ export default function CompanyDriversPage({
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {msg && <span style={{ fontSize: "0.8rem", color: "#16a34a", fontWeight: 600 }}>{msg}</span>}
-          <button style={btn()} onClick={() => setShowAdd(true)}>+ Add Driver</button>
-          <button style={btn("#6b7280")} onClick={() => flash("Export queued")}>Export CSV</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, padding: "4px 10px" }}>
+            <span style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600 }}>Demo role:</span>
+            <select
+              style={{ border: "none", fontSize: "0.8rem", fontWeight: 700, color: "#2563eb", background: "transparent", cursor: "pointer" }}
+              value={userRole}
+              onChange={(e) => setUserRole(e.target.value as UserRole)}
+            >
+              {(Object.entries(ROLE_LABELS) as [UserRole, string][]).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          {can(userRole, "add_driver") && (
+            <button style={btn()} onClick={() => setShowAdd(true)}>+ Add Driver</button>
+          )}
+          {can(userRole, "export_drivers") && (
+            <button style={btn("#6b7280")} onClick={() => flash("Export queued")}>Export CSV</button>
+          )}
         </div>
       </div>
 
@@ -321,7 +342,11 @@ export default function CompanyDriversPage({
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
           <span style={{ fontWeight: 700 }}>All Drivers ({filtered.length})</span>
         </div>
-        {loading ? (
+        {!driverSeesAll(userRole) ? (
+          <p style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>
+            Drivers can only view their own profile. In production, your record would appear here.
+          </p>
+        ) : loading ? (
           <p style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>Loading…</p>
         ) : filtered.length === 0 ? (
           <p style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>No drivers found. Add one above.</p>
@@ -480,17 +505,19 @@ export default function CompanyDriversPage({
             {/* Quick actions */}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
               {([
-                ["Mark Available", "#10b981"],
-                ["Mark Off Duty", "#f59e0b"],
-                ["Suspend", "#ef4444"],
-                ["Send Login Invite", "#2563eb"],
-                ["Assign Load", "#0ea5e9"],
-                ["View Pay Summary", "#6b7280"],
-              ] as [string, string][]).map(([l, c]) => (
-                <button key={l} style={{ ...btn(c), fontSize: "0.72rem", padding: "5px 12px" }} onClick={() => flash(`${l} (demo)`)}>
-                  {l}
-                </button>
-              ))}
+                ["Mark Available",    "#10b981", "edit_driver"],
+                ["Mark Off Duty",     "#f59e0b", "edit_driver"],
+                ["Suspend",           "#ef4444", "suspend_driver"],
+                ["Send Login Invite", "#2563eb", "send_login_invite"],
+                ["Assign Load",       "#0ea5e9", "assign_load"],
+                ["View Pay Summary",  "#6b7280", "view_pay_summary"],
+              ] as [string, string, string][])
+                .filter(([, , action]) => can(userRole, action))
+                .map(([l, c]) => (
+                  <button key={l} style={{ ...btn(c), fontSize: "0.72rem", padding: "5px 12px" }} onClick={() => flash(`${l} (demo)`)}>
+                    {l}
+                  </button>
+                ))}
             </div>
 
             {msg && <p style={{ color: "#16a34a", fontSize: "0.82rem", marginBottom: 10 }}>{msg}</p>}
@@ -524,7 +551,7 @@ export default function CompanyDriversPage({
                   ["Hire Date", "hire_date"],
                   ["Role", "position_role"],
                   ["Supervisor", "supervisor_name"],
-                  ["Pay Rate", "pay_rate"],
+                  ...(can(userRole, "view_pay_rate") ? [["Pay Rate", "pay_rate"]] : []),
                   ["Truck #", "assigned_truck_number"],
                   ["section", "CDL & Compliance"],
                   ["CDL Number", "license_number"],
@@ -584,22 +611,24 @@ export default function CompanyDriversPage({
             {tab === "docs" && (
               <div>
                 {/* Upload */}
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-                  <p style={{ fontWeight: 700, marginBottom: 10 }}>Log / Upload Document</p>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                      <span style={lbl}>Type</span>
-                      <select style={inp} value={docUpload.doc_type} onChange={(e) => setDocUpload({ ...docUpload, doc_type: e.target.value })}>
-                        {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                {can(userRole, "upload_docs") && (
+                  <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                    <p style={{ fontWeight: 700, marginBottom: 10 }}>Log / Upload Document</p>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+                      <div style={{ flex: 1, minWidth: 140 }}>
+                        <span style={lbl}>Type</span>
+                        <select style={inp} value={docUpload.doc_type} onChange={(e) => setDocUpload({ ...docUpload, doc_type: e.target.value })}>
+                          {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 140 }}>
+                        <span style={lbl}>Expiration Date</span>
+                        <input type="date" style={inp} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
+                      </div>
+                      <button style={btn()} onClick={uploadDoc}>Log Document</button>
                     </div>
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                      <span style={lbl}>Expiration Date</span>
-                      <input type="date" style={inp} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
-                    </div>
-                    <button style={btn()} onClick={uploadDoc}>Log Document</button>
                   </div>
-                </div>
+                )}
 
                 {/* Required checklist */}
                 <p style={{ fontWeight: 700, marginBottom: 8 }}>Required Document Checklist</p>

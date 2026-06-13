@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { can, driverSeesAll, UserRole, ROLE_LABELS } from "@/lib/driverPermissions";
 
 type Driver = {
   id: string;
@@ -117,6 +118,7 @@ export default function RonyxDriversPage() {
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [docUpload, setDocUpload] = useState({ doc_type: "CDL", expires_on: "" });
+  const [userRole, setUserRole] = useState<UserRole>("super_admin");
 
   const loadDrivers = useCallback(async () => {
     setLoading(true);
@@ -165,6 +167,7 @@ export default function RonyxDriversPage() {
   }, [drivers]);
 
   const filtered = useMemo(() => {
+    if (!driverSeesAll(userRole)) return [];
     return drivers.filter((d) => {
       if (search && !d.full_name?.toLowerCase().includes(search.toLowerCase()) &&
         !d.email?.toLowerCase().includes(search.toLowerCase()) &&
@@ -183,7 +186,7 @@ export default function RonyxDriversPage() {
       }
       return true;
     });
-  }, [drivers, search, filterStatus, filterType, filterDocs]);
+  }, [drivers, search, filterStatus, filterType, filterDocs, userRole]);
 
   async function saveDriver() {
     setSaving(true);
@@ -321,8 +324,24 @@ export default function RonyxDriversPage() {
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             {statusMsg && <span style={{ fontSize: "0.8rem", color: "#10b981" }}>{statusMsg}</span>}
-            <button style={btn()} onClick={() => setShowAddForm(true)}>+ Add Driver</button>
-            <button style={btn("#6b7280")} onClick={() => setStatusMsg("Exported (demo)")}>Export</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1px solid rgba(30,64,175,0.2)", borderRadius: 8, padding: "4px 10px" }}>
+              <span style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600 }}>Demo role:</span>
+              <select
+                style={{ border: "none", fontSize: "0.8rem", fontWeight: 700, color: "#1d4ed8", background: "transparent", cursor: "pointer" }}
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value as UserRole)}
+              >
+                {(Object.entries(ROLE_LABELS) as [UserRole, string][]).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            {can(userRole, "add_driver") && (
+              <button style={btn()} onClick={() => setShowAddForm(true)}>+ Add Driver</button>
+            )}
+            {can(userRole, "export_drivers") && (
+              <button style={btn("#6b7280")} onClick={() => setStatusMsg("Exported (demo)")}>Export</button>
+            )}
           </div>
         </div>
 
@@ -402,7 +421,11 @@ export default function RonyxDriversPage() {
           <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12 }}>
             All Drivers ({filtered.length})
           </div>
-          {loading ? (
+          {!driverSeesAll(userRole) ? (
+            <p style={{ color: "rgba(15,23,42,0.5)", textAlign: "center", padding: 32 }}>
+              Drivers can only view their own profile. In production, your record would appear here.
+            </p>
+          ) : loading ? (
             <p style={{ color: "rgba(15,23,42,0.5)", textAlign: "center", padding: 32 }}>Loading drivers…</p>
           ) : filtered.length === 0 ? (
             <p style={{ color: "rgba(15,23,42,0.5)", textAlign: "center", padding: 32 }}>
@@ -569,19 +592,21 @@ export default function RonyxDriversPage() {
 
               {/* Quick Actions */}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-                {[
-                  ["Mark Available", "#10b981"],
-                  ["Mark Off Duty", "#f59e0b"],
-                  ["Suspend", "#ef4444"],
-                  ["Send Login Invite", "#1d4ed8"],
-                  ["View Pay Summary", "#6b7280"],
-                  ["Assign Load", "#0ea5e9"],
-                ].map(([label, color]) => (
-                  <button key={label} style={{ ...btn(color), fontSize: "0.75rem", padding: "5px 12px" }}
-                    onClick={() => setStatusMsg(`${label} (demo)`)}>
-                    {label}
-                  </button>
-                ))}
+                {([
+                  ["Mark Available",    "#10b981", "edit_driver"],
+                  ["Mark Off Duty",     "#f59e0b", "edit_driver"],
+                  ["Suspend",           "#ef4444", "suspend_driver"],
+                  ["Send Login Invite", "#1d4ed8", "send_login_invite"],
+                  ["View Pay Summary",  "#6b7280", "view_pay_summary"],
+                  ["Assign Load",       "#0ea5e9", "assign_load"],
+                ] as [string, string, string][])
+                  .filter(([, , action]) => can(userRole, action))
+                  .map(([lbl, color]) => (
+                    <button key={lbl} style={{ ...btn(color), fontSize: "0.75rem", padding: "5px 12px" }}
+                      onClick={() => setStatusMsg(`${lbl} (demo)`)}>
+                      {lbl}
+                    </button>
+                  ))}
               </div>
 
               {statusMsg && <div style={{ color: "#10b981", fontSize: "0.85rem", marginBottom: 12 }}>{statusMsg}</div>}
@@ -638,17 +663,19 @@ export default function RonyxDriversPage() {
                     </select>
                   </div>
                   {([
-                    ["Hire Date", "hire_date"],
-                    ["Role", "position_role"],
-                    ["Supervisor", "supervisor_name"],
-                    ["Pay Rate", "pay_rate"],
-                    ["Truck #", "assigned_truck_number"],
-                  ] as [string, keyof Driver][]).map(([l, k]) => (
-                    <div key={k}>
-                      <span style={label}>{l}</span>
-                      <input style={input} value={(selectedDriver as any)[k] || ""} onChange={(e) => updateDriver(k, e.target.value)} />
-                    </div>
-                  ))}
+                    ["Hire Date",  "hire_date",              null],
+                    ["Role",       "position_role",          null],
+                    ["Supervisor", "supervisor_name",        null],
+                    ["Pay Rate",   "pay_rate",               "view_pay_rate"],
+                    ["Truck #",    "assigned_truck_number",  null],
+                  ] as [string, keyof Driver, string | null][])
+                    .filter(([, , perm]) => !perm || can(userRole, perm))
+                    .map(([l, k]) => (
+                      <div key={k}>
+                        <span style={label}>{l}</span>
+                        <input style={input} value={(selectedDriver as any)[k] || ""} onChange={(e) => updateDriver(k, e.target.value)} />
+                      </div>
+                    ))}
 
                   {/* Compliance */}
                   <div style={{ gridColumn: "1 / -1", fontWeight: 700, fontSize: "0.85rem", color: "#1d4ed8", marginTop: 8 }}>CDL & Compliance</div>
@@ -694,22 +721,24 @@ export default function RonyxDriversPage() {
               {/* Tab: Documents */}
               {profileTab === "docs" && (
                 <div>
-                  <div style={{ background: "#fff", border: "1px solid rgba(30,64,175,0.15)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 10 }}>Upload Document</div>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
-                      <div style={{ flex: 1, minWidth: 140 }}>
-                        <span style={label}>Document Type</span>
-                        <select style={input} value={docUpload.doc_type} onChange={(e) => setDocUpload({ ...docUpload, doc_type: e.target.value })}>
-                          {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                        </select>
+                  {can(userRole, "upload_docs") && (
+                    <div style={{ background: "#fff", border: "1px solid rgba(30,64,175,0.15)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 10 }}>Upload Document</div>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+                        <div style={{ flex: 1, minWidth: 140 }}>
+                          <span style={label}>Document Type</span>
+                          <select style={input} value={docUpload.doc_type} onChange={(e) => setDocUpload({ ...docUpload, doc_type: e.target.value })}>
+                            {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 140 }}>
+                          <span style={label}>Expiration Date</span>
+                          <input type="date" style={input} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
+                        </div>
+                        <button style={btn()} onClick={uploadDoc}>Upload</button>
                       </div>
-                      <div style={{ flex: 1, minWidth: 140 }}>
-                        <span style={label}>Expiration Date</span>
-                        <input type="date" style={input} value={docUpload.expires_on} onChange={(e) => setDocUpload({ ...docUpload, expires_on: e.target.value })} />
-                      </div>
-                      <button style={btn()} onClick={uploadDoc}>Upload</button>
                     </div>
-                  </div>
+                  )}
 
                   {/* Required Docs Checklist */}
                   <div style={{ fontWeight: 700, marginBottom: 8 }}>Required Document Checklist</div>
