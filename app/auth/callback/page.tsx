@@ -27,6 +27,7 @@ export default function AuthCallback() {
   const router = useRouter();
   const [isRecovery, setIsRecovery] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [recoverySession, setRecoverySession] = useState<{ access_token: string; refresh_token: string } | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,14 +40,18 @@ export default function AuthCallback() {
       // PKCE flow: Supabase puts a one-time code in ?code=
       const code = new URLSearchParams(window.location.search).get("code");
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error || !data.session) {
           setMessage("This reset link is invalid or has expired. Please request a new one.");
           setStatus("error");
           setChecking(false);
           return;
         }
-        // Exchange succeeded — session is now active in the client
+        // Save tokens so we can re-apply the session right before updateUser
+        setRecoverySession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
         setIsRecovery(true);
         setChecking(false);
         return;
@@ -86,6 +91,14 @@ export default function AuthCallback() {
       return;
     }
     setStatus("loading");
+
+    // Re-apply the session tokens before updating — cookies may not have persisted
+    if (recoverySession) {
+      await supabase.auth.setSession({
+        access_token: recoverySession.access_token,
+        refresh_token: recoverySession.refresh_token,
+      });
+    }
 
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
