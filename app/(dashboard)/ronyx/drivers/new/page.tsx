@@ -100,16 +100,25 @@ export default function NewDriverPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to save driver.");
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        setError(`Server error (status ${res.status}). Check the API logs.`);
         return;
       }
+
+      if (!res.ok) {
+        setError(data.error || `Save failed (${res.status}).`);
+        return;
+      }
+
       // Fire-and-forget Excel email to admin
       fetch("/api/ronyx/drivers/notify-excel", { method: "POST" }).catch(() => {});
       router.push(`/ronyx/drivers/${data.driver.id}?new=1`);
     } catch (e: any) {
-      setError(e?.message || "Unexpected error. Please try again.");
+      setError(e?.message || "Network error. Please try again.");
     } finally {
       setSaving(false);
     }
