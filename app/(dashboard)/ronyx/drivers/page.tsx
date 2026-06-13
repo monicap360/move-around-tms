@@ -1,278 +1,423 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+type DriverStatus = "Active" | "Available" | "Assigned" | "Inactive" | "Suspended";
+type DocumentStatus = "Good" | "Expiring" | "Expired" | "Missing";
 
 type Driver = {
   id: string;
-  full_name: string;
-  phone: string | null;
-  email: string | null;
-  status: string;
-  assigned_truck_number: string | null;
-  license_number: string | null;
-  mvr_expiration: string | null;
-  medical_card_expiration: string | null;
-  license_expiration_date: string | null;
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+  location: string;
+  truck: string;
+  trailer: string;
+  status: DriverStatus;
+  driverType: "W2" | "1099" | "Owner Operator";
+  cdl: string;
+  cdlState: string;
+  cdlExp: string;
+  mvrExp: string;
+  medicalExp: string;
+  docs: DocumentStatus;
+  rating: number;
+  safetyScore: number;
+  onTime: number;
+  lastLoad: string;
+  revenueWeek: string;
 };
 
-function daysUntil(dateStr: string | null): number | null {
-  if (!dateStr) return null;
-  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+type ComplianceAlert = {
+  title: string;
+  driver: string;
+  detail: string;
+  level: "critical" | "warning";
+};
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-function expiryBadge(dateStr: string | null) {
-  const days = daysUntil(dateStr);
-  if (days === null) return <span style={{ color: "#cbd5e1" }}>—</span>;
-  if (days < 0)
-    return (
-      <span style={{ color: "#dc2626", fontWeight: 700 }}>
-        {dateStr} <span style={{ fontSize: "0.75rem" }}>EXPIRED</span>
-      </span>
-    );
-  if (days <= 30)
-    return (
-      <span style={{ color: "#d97706", fontWeight: 700 }}>
-        {dateStr} <span style={{ fontSize: "0.75rem" }}>({days}d)</span>
-      </span>
-    );
-  return <span style={{ color: "#15803d" }}>{dateStr}</span>;
+function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return Math.ceil((d.getTime() - Date.now()) / 86_400_000);
 }
 
-function statusChip(status: string) {
-  const map: Record<string, { bg: string; text: string }> = {
-    active:    { bg: "#dcfce7", text: "#15803d" },
-    inactive:  { bg: "#f1f5f9", text: "#64748b" },
-    suspended: { bg: "#fee2e2", text: "#dc2626" },
+function computeDocStatus(fields: { cdlExp: string; mvrExp: string; medicalExp: string }): DocumentStatus {
+  const dates = [fields.cdlExp, fields.mvrExp, fields.medicalExp];
+  const days = dates.map(daysUntil);
+
+  // Any missing
+  if (days.some((d) => d === null)) return "Missing";
+  // Any expired
+  if (days.some((d) => d !== null && d < 0)) return "Expired";
+  // Any expiring within 30 days
+  if (days.some((d) => d !== null && d <= 30)) return "Expiring";
+  return "Good";
+}
+
+function normalizeStatus(raw: string): DriverStatus {
+  const s = (raw || "").toLowerCase();
+  if (s === "suspended") return "Suspended";
+  if (s === "inactive")  return "Inactive";
+  if (s === "assigned")  return "Assigned";
+  if (s === "available") return "Available";
+  return "Active";
+}
+
+function normalizeDrType(raw: string): "W2" | "1099" | "Owner Operator" {
+  const s = (raw || "").toLowerCase();
+  if (s === "1099") return "1099";
+  if (s.includes("owner")) return "Owner Operator";
+  return "W2";
+}
+
+function mapApiDriver(d: any): Driver {
+  const cdlExp     = fmtDate(d.license_expiration_date);
+  const mvrExp     = fmtDate(d.mvr_expiration);
+  const medicalExp = fmtDate(d.medical_card_expiration);
+
+  return {
+    id:          d.id,
+    name:        d.full_name || d.name || "Unknown",
+    role:        d.position_role || "Driver",
+    phone:       d.phone || "—",
+    email:       d.email || "—",
+    location:    d.address ? d.address.split(",").slice(-2).join(",").trim() : "—",
+    truck:       d.assigned_truck_number || "—",
+    trailer:     "—",
+    status:      normalizeStatus(d.status),
+    driverType:  normalizeDrType(d.driver_type),
+    cdl:         d.license_number || "—",
+    cdlState:    d.license_state  || "—",
+    cdlExp,
+    mvrExp,
+    medicalExp,
+    docs:        computeDocStatus({ cdlExp: d.license_expiration_date, mvrExp: d.mvr_expiration, medicalExp: d.medical_card_expiration }),
+    rating:      Number(d.rating) || 0,
+    safetyScore: 100,
+    onTime:      100,
+    lastLoad:    "—",
+    revenueWeek: "—",
   };
-  const s = map[status] ?? map.inactive;
-  return (
-    <span style={{ background: s.bg, color: s.text, padding: "2px 10px", borderRadius: 20, fontWeight: 700, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-      {status}
-    </span>
-  );
 }
 
-const PAGE_SIZE = 25;
+function buildAlerts(drivers: Driver[]): ComplianceAlert[] {
+  const alerts: ComplianceAlert[] = [];
+  for (const d of drivers) {
+    if (d.docs === "Expired") {
+      alerts.push({ title: "Expired Documents", driver: d.name, detail: "One or more compliance docs are expired", level: "critical" });
+    } else if (d.docs === "Expiring") {
+      alerts.push({ title: "Documents Expiring Soon", driver: d.name, detail: "Docs expire within 30 days — action required", level: "warning" });
+    } else if (d.docs === "Missing") {
+      alerts.push({ title: "Missing Documents", driver: d.name, detail: "CDL, MVR, or medical card date not on file", level: "warning" });
+    }
+  }
+  return alerts.slice(0, 6);
+}
 
-export default function DriversListPage() {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [docsFilter, setDocsFilter] = useState("all");
-  const [page, setPage] = useState(0);
+function StatusBadge({ status }: { status: DriverStatus | DocumentStatus }) {
+  const cls =
+    status === "Available" || status === "Good" || status === "Active"
+      ? "premium-badge green"
+      : status === "Assigned"
+      ? "premium-badge blue"
+      : status === "Expiring"
+      ? "premium-badge amber"
+      : "premium-badge red";
+  return <span className={cls}>{status}</span>;
+}
+
+export default function DriversPage() {
+  const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState("");
+  const [statusFilter, setStatus]   = useState("All Statuses");
+  const [docFilter, setDoc]         = useState("All Docs");
 
   useEffect(() => {
     fetch("/api/ronyx/drivers/list")
       .then((r) => r.json())
-      .then((d) => setDrivers(d.drivers || []))
+      .then((data) => {
+        setAllDrivers((data.drivers || []).map(mapApiDriver));
+      })
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(() => {
-    let list = drivers;
-
-    if (statusFilter !== "all") {
-      list = list.filter((d) => d.status === statusFilter);
-    }
-
-    if (docsFilter === "expiring") {
-      list = list.filter((d) => {
-        const days = [
-          daysUntil(d.mvr_expiration),
-          daysUntil(d.medical_card_expiration),
-          daysUntil(d.license_expiration_date),
-        ];
-        return days.some((n) => n !== null && n <= 30);
-      });
-    }
-
-    if (search.trim()) {
+  const filteredDrivers = useMemo(() => {
+    return allDrivers.filter((d) => {
       const q = search.toLowerCase();
-      list = list.filter(
-        (d) =>
-          d.full_name?.toLowerCase().includes(q) ||
-          d.phone?.includes(q) ||
-          d.email?.toLowerCase().includes(q) ||
-          d.license_number?.toLowerCase().includes(q),
-      );
-    }
+      const matchSearch =
+        !q ||
+        d.name.toLowerCase().includes(q)  ||
+        d.phone.toLowerCase().includes(q) ||
+        d.email.toLowerCase().includes(q) ||
+        d.truck.toLowerCase().includes(q) ||
+        d.cdl.toLowerCase().includes(q);
 
-    return list;
-  }, [drivers, search, statusFilter, docsFilter]);
+      const matchStatus =
+        statusFilter === "All Statuses" || d.status === statusFilter;
 
-  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+      const matchDoc =
+        docFilter === "All Docs" ||
+        d.docs === docFilter ||
+        (docFilter === "Needs Attention" && ["Expiring", "Expired", "Missing"].includes(d.docs));
+
+      return matchSearch && matchStatus && matchDoc;
+    });
+  }, [allDrivers, search, statusFilter, docFilter]);
+
+  const complianceAlerts = useMemo(() => buildAlerts(allDrivers), [allDrivers]);
+
+  const activeDrivers   = allDrivers.filter((d) => d.status !== "Inactive").length;
+  const availableDrivers = allDrivers.filter((d) => d.status === "Available").length;
+  const assignedDrivers  = allDrivers.filter((d) => d.status === "Assigned").length;
+  const documentIssues   = allDrivers.filter((d) => ["Expiring", "Expired", "Missing"].includes(d.docs)).length;
+
+  const topDriver = useMemo(
+    () => [...allDrivers].sort((a, b) => b.rating - a.rating)[0] ?? null,
+    [allDrivers]
+  );
 
   return (
-    <div style={{ maxWidth: 1200 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+    <main className="premium-page">
+      <section className="premium-hero">
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#0f172a" }}>Drivers</h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.85rem" }}>
-            {loading ? "Loading…" : `${filtered.length} driver${filtered.length !== 1 ? "s" : ""}`}
+          <p className="premium-eyebrow">Fleet Command / Drivers</p>
+          <h1>Driver Management</h1>
+          <p>
+            Manage driver profiles, compliance, MVRs, CDL records, medical cards,
+            assignments, ratings, documents, and weekly performance from one command center.
           </p>
         </div>
-        <Link href="/ronyx/drivers/new" style={addBtnStyle}>+ Add Driver</Link>
-      </div>
-
-      {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <input
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          placeholder="Search name, phone, email, license…"
-          style={{ flex: "1 1 260px", padding: "8px 14px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.85rem", outline: "none" }}
-        />
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} style={selectStyle}>
-          <option value="all">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="suspended">Suspended</option>
-        </select>
-        <select value={docsFilter} onChange={(e) => { setDocsFilter(e.target.value); setPage(0); }} style={selectStyle}>
-          <option value="all">All Docs</option>
-          <option value="expiring">Expiring ≤ 30 days</option>
-        </select>
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>Loading drivers…</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>
-          {drivers.length === 0 ? (
-            <>
-              <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>👤</div>
-              <div style={{ fontWeight: 600, marginBottom: 8, color: "#475569", fontSize: "1rem" }}>No drivers yet</div>
-              <Link href="/ronyx/drivers/new" style={{ color: "#1e40af", fontWeight: 600 }}>Add your first driver →</Link>
-            </>
-          ) : (
-            <div>No drivers match the current filters. <button onClick={() => { setSearch(""); setStatusFilter("all"); setDocsFilter("all"); }} style={{ color: "#1e40af", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "inherit" }}>Clear filters</button></div>
-          )}
+        <div className="premium-hero-actions">
+          <button className="premium-button ghost">Export Drivers</button>
+          <button className="premium-button dark">Upload Documents</button>
+          <Link href="/ronyx/drivers/new" className="premium-button primary">
+            + Add Driver
+          </Link>
         </div>
-      ) : (
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
-              <thead>
-                <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                  <th style={th}>Name</th>
-                  <th style={th}>Status</th>
-                  <th style={th}>Phone</th>
-                  <th style={th}>Truck</th>
-                  <th style={th}>Active Load</th>
-                  <th style={th}>MVR Expiry</th>
-                  <th style={th}>Medical Card</th>
-                  <th style={th}>CDL Expiry</th>
-                  <th style={th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginated.map((driver, i) => (
-                  <tr
-                    key={driver.id}
-                    style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#fafafa" }}
-                  >
-                    <td style={td}>
-                      <Link href={`/ronyx/drivers/${driver.id}`} style={{ fontWeight: 700, color: "#0f172a", textDecoration: "none" }}>
-                        {driver.full_name || "—"}
-                      </Link>
-                      {driver.email && <div style={{ color: "#94a3b8", fontSize: "0.75rem", marginTop: 2 }}>{driver.email}</div>}
-                    </td>
-                    <td style={td}>{statusChip(driver.status || "active")}</td>
-                    <td style={td}>{driver.phone || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
-                    <td style={td}>
-                      {driver.assigned_truck_number
-                        ? <span style={{ fontWeight: 600, color: "#0f172a" }}>{driver.assigned_truck_number}</span>
-                        : <span style={{ color: "#cbd5e1", fontSize: "0.8rem" }}>Unassigned</span>}
-                    </td>
-                    <td style={td}><span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>None</span></td>
-                    <td style={td}>{expiryBadge(driver.mvr_expiration)}</td>
-                    <td style={td}>{expiryBadge(driver.medical_card_expiration)}</td>
-                    <td style={td}>{expiryBadge(driver.license_expiration_date)}</td>
-                    <td style={td}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <Link href={`/ronyx/drivers/${driver.id}`} style={actionBtn}>View</Link>
-                        <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ ...actionBtn, color: "#475569" }}>Docs</Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      </section>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: "1px solid #f1f5f9", fontSize: "0.82rem", color: "#64748b" }}>
-              <span>
-                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
-              </span>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} style={{ ...paginBtn, opacity: page === 0 ? 0.4 : 1 }}>← Prev</button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button key={i} onClick={() => setPage(i)} style={{ ...paginBtn, background: i === page ? "#1e40af" : "#fff", color: i === page ? "#fff" : "#475569" }}>{i + 1}</button>
+      <section className="premium-kpi-grid">
+        <div className="premium-kpi">
+          <span>Total Drivers</span>
+          <strong>{loading ? "…" : allDrivers.length}</strong>
+          <p>In Ronyx system</p>
+        </div>
+        <div className="premium-kpi">
+          <span>Active Drivers</span>
+          <strong>{loading ? "…" : activeDrivers}</strong>
+          <p>Ready or currently assigned</p>
+        </div>
+        <div className="premium-kpi success">
+          <span>Available Now</span>
+          <strong>{loading ? "…" : availableDrivers}</strong>
+          <p>Ready for dispatch</p>
+        </div>
+        <div className="premium-kpi blue">
+          <span>Assigned</span>
+          <strong>{loading ? "…" : assignedDrivers}</strong>
+          <p>Currently on load</p>
+        </div>
+        <div className="premium-kpi danger">
+          <span>Compliance Issues</span>
+          <strong>{loading ? "…" : documentIssues}</strong>
+          <p>Expired or expiring docs</p>
+        </div>
+      </section>
+
+      <section className="premium-layout">
+        <div className="premium-main-column">
+          {complianceAlerts.length > 0 && (
+            <div className="premium-panel">
+              <div className="premium-panel-header">
+                <div>
+                  <p className="premium-eyebrow">Compliance Watch</p>
+                  <h2>Expiring MVRs &amp; Documents</h2>
+                  <span>Priority alerts for safety, HR, and dispatch visibility.</span>
+                </div>
+                <button className="premium-button ghost">Review All</button>
+              </div>
+              <div className="premium-alert-grid">
+                {complianceAlerts.map((alert, i) => (
+                  <div
+                    key={i}
+                    className={alert.level === "critical" ? "premium-alert critical" : "premium-alert warning"}
+                  >
+                    <div>
+                      <strong>{alert.title}</strong>
+                      <p>{alert.driver}</p>
+                      <span>{alert.detail}</span>
+                    </div>
+                    <button>Open</button>
+                  </div>
                 ))}
-                <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1} style={{ ...paginBtn, opacity: page === totalPages - 1 ? 0.4 : 1 }}>Next →</button>
               </div>
             </div>
           )}
+
+          <div className="premium-panel">
+            <div className="premium-panel-header">
+              <div>
+                <p className="premium-eyebrow">Driver Directory</p>
+                <h2>All Drivers</h2>
+                <span>Search, filter, assign, suspend, and manage driver records.</span>
+              </div>
+            </div>
+
+            <div className="premium-filter-bar">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, phone, CDL, email, or truck..."
+              />
+              <select value={statusFilter} onChange={(e) => setStatus(e.target.value)}>
+                <option>All Statuses</option>
+                <option>Active</option>
+                <option>Available</option>
+                <option>Assigned</option>
+                <option>Inactive</option>
+                <option>Suspended</option>
+              </select>
+              <select value={docFilter} onChange={(e) => setDoc(e.target.value)}>
+                <option>All Docs</option>
+                <option>Good</option>
+                <option>Expiring</option>
+                <option>Expired</option>
+                <option>Missing</option>
+                <option>Needs Attention</option>
+              </select>
+            </div>
+
+            {loading ? (
+              <div style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>Loading drivers…</div>
+            ) : filteredDrivers.length === 0 ? (
+              <div style={{ padding: "48px", textAlign: "center", color: "#94a3b8" }}>
+                {allDrivers.length === 0
+                  ? "No drivers yet. Click \"+ Add Driver\" to get started."
+                  : "No drivers match your filters."}
+              </div>
+            ) : (
+              <div className="premium-driver-list">
+                {filteredDrivers.map((driver) => (
+                  <article className="premium-driver-card" key={driver.id}>
+                    <div className="driver-identity">
+                      <div className="driver-avatar">
+                        {driver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <h3>{driver.name}</h3>
+                        <p>{driver.role}</p>
+                        <span>{driver.location}</span>
+                      </div>
+                    </div>
+
+                    <div className="driver-data-grid">
+                      <div><span>Phone</span><strong>{driver.phone}</strong></div>
+                      <div><span>Type</span><strong>{driver.driverType}</strong></div>
+                      <div><span>Truck</span><strong>{driver.truck}</strong></div>
+                      <div><span>Trailer</span><strong>{driver.trailer}</strong></div>
+                      <div><span>CDL</span><strong>{driver.cdl}</strong></div>
+                      <div>
+                        <span>MVR Exp.</span>
+                        <strong className={driver.mvrExp === "Expired" ? "danger-text" : ""}>{driver.mvrExp}</strong>
+                      </div>
+                      <div>
+                        <span>Medical</span>
+                        <strong className={driver.medicalExp === "Expired" ? "danger-text" : ""}>{driver.medicalExp}</strong>
+                      </div>
+                      <div><span>Revenue Week</span><strong>{driver.revenueWeek}</strong></div>
+                    </div>
+
+                    <div className="driver-score-strip">
+                      <div><span>Rating</span><strong>{driver.rating > 0 ? `★ ${driver.rating}` : "—"}</strong></div>
+                      <div><span>Safety</span><strong>{driver.safetyScore}%</strong></div>
+                      <div><span>On-Time</span><strong>{driver.onTime}%</strong></div>
+                      <div><span>Last Load</span><strong>{driver.lastLoad}</strong></div>
+                    </div>
+
+                    <div className="driver-card-footer">
+                      <div className="badge-row">
+                        <StatusBadge status={driver.status} />
+                        <StatusBadge status={driver.docs} />
+                      </div>
+                      <div className="driver-actions">
+                        <Link href={`/ronyx/drivers/${driver.id}`}>
+                          <button>Profile</button>
+                        </Link>
+                        <Link href={`/ronyx/drivers/${driver.id}?tab=documents`}>
+                          <button>Documents</button>
+                        </Link>
+                        <button>Assign</button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
-    </div>
+
+        <aside className="premium-side-column">
+          <div className="premium-panel">
+            <p className="premium-eyebrow">Quick Actions</p>
+            <h2>Driver Tools</h2>
+            <div className="quick-action-list">
+              <Link href="/ronyx/drivers/new" style={{ textDecoration: "none" }}>
+                <button style={{ width: "100%" }}>Add New Driver</button>
+              </Link>
+              <button>Send Login Invite</button>
+              <button>Upload MVR</button>
+              <button>Upload Medical Card</button>
+              <button>Assign Truck</button>
+              <button>Create Driver Resume</button>
+              <Link href="/ronyx/payroll" style={{ textDecoration: "none" }}>
+                <button style={{ width: "100%" }}>Open Payroll Summary</button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="premium-panel dark-panel">
+            <p className="premium-eyebrow">AI Dispatch Insight</p>
+            <h2>Recommended Actions</h2>
+            <p>
+              {documentIssues > 0
+                ? `${documentIssues} driver${documentIssues > 1 ? "s have" : " has"} compliance docs that need attention before next dispatch.`
+                : "All driver compliance docs are current. Fleet is ready for dispatch."}
+            </p>
+            <Link href="/ronyx/hr-compliance" style={{ textDecoration: "none" }}>
+              <button className="premium-button primary full">Run Compliance Review</button>
+            </Link>
+          </div>
+
+          {topDriver && (
+            <div className="premium-panel">
+              <p className="premium-eyebrow">Driver Performance</p>
+              <h2>Top Driver</h2>
+              <div className="top-driver-box">
+                <div className="driver-avatar large">
+                  {topDriver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+                </div>
+                <h3>{topDriver.name}</h3>
+                <p>
+                  {topDriver.rating > 0 ? `★ ${topDriver.rating} rating` : "No rating yet"} · {topDriver.truck}
+                </p>
+                <StatusBadge status={topDriver.docs} />
+              </div>
+            </div>
+          )}
+        </aside>
+      </section>
+    </main>
   );
 }
-
-const th: React.CSSProperties = {
-  padding: "10px 14px",
-  textAlign: "left",
-  fontSize: "0.72rem",
-  fontWeight: 700,
-  color: "#475569",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  whiteSpace: "nowrap",
-};
-const td: React.CSSProperties = { padding: "11px 14px", verticalAlign: "middle" };
-const addBtnStyle: React.CSSProperties = {
-  background: "#1e40af",
-  color: "#fff",
-  padding: "9px 20px",
-  borderRadius: 8,
-  fontWeight: 700,
-  fontSize: "0.85rem",
-  textDecoration: "none",
-  display: "inline-block",
-};
-const selectStyle: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: 8,
-  fontSize: "0.85rem",
-  background: "#fff",
-  outline: "none",
-};
-const actionBtn: React.CSSProperties = {
-  padding: "4px 10px",
-  background: "#eff6ff",
-  border: "none",
-  borderRadius: 6,
-  fontSize: "0.78rem",
-  fontWeight: 600,
-  color: "#1e40af",
-  textDecoration: "none",
-  cursor: "pointer",
-  display: "inline-block",
-};
-const paginBtn: React.CSSProperties = {
-  padding: "5px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: 6,
-  background: "#fff",
-  cursor: "pointer",
-  fontSize: "0.82rem",
-  fontWeight: 500,
-};
