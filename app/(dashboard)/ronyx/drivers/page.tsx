@@ -264,6 +264,27 @@ export default function RonyxDriversPage() {
     }
   }
 
+  async function attachDocFile(docType: string, file: File) {
+    if (!selectedDriver) return;
+    const fd = new FormData();
+    fd.append("file",      file);
+    fd.append("driver_id", selectedDriver.id);
+    fd.append("doc_type",  docType);
+    try {
+      const res = await fetch("/api/ronyx/drivers/documents", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments((prev) => [data.document, ...prev.filter((d) => d.doc_type !== docType)]);
+        setStatusMsg(`${docType} attached.`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStatusMsg(err.error || "Upload failed.");
+      }
+    } catch {
+      setStatusMsg("Upload failed.");
+    }
+  }
+
   const shell: React.CSSProperties = {
     minHeight: "100vh",
     background: "radial-gradient(circle at top, rgba(37,99,235,0.12), transparent 55%), #e2eaf6",
@@ -768,18 +789,39 @@ export default function RonyxDriversPage() {
                   )}
 
                   {/* Required Docs Checklist */}
-                  <div style={{ fontWeight: 700, marginBottom: 8 }}>Required Document Checklist</div>
+                  <div style={{ fontWeight: 700, marginBottom: 8 }}>Required Documents</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
                     {["CDL", "Medical Card", "MVR", "Drug Test", "Background Check", "Insurance"].map((type) => {
                       const doc = documents.find((d) => d.doc_type === type);
                       const days = daysUntil(doc?.expires_on);
                       const { label: bLabel, color } = docStatusBadge(doc ? days : null);
                       return (
-                        <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid rgba(30,64,175,0.12)", borderRadius: 10, padding: "10px 14px" }}>
-                          <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>{type}</span>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid rgba(30,64,175,0.12)", borderRadius: 10, padding: "10px 14px", flexWrap: "wrap", gap: 8 }}>
+                          <span style={{ fontWeight: 600, fontSize: "0.85rem", minWidth: 130 }}>{type}</span>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                             {doc?.expires_on && <span style={{ fontSize: "0.75rem", color: "rgba(15,23,42,0.5)" }}>Exp: {doc.expires_on}</span>}
                             <span style={badge(color)}>{bLabel}</span>
+                            {doc?.file_url && (
+                              <a href={doc.file_url} target="_blank" rel="noreferrer"
+                                style={{ ...btn("#1d4ed8"), fontSize: "0.72rem", padding: "4px 10px", textDecoration: "none" }}>
+                                View
+                              </a>
+                            )}
+                            {can(userRole, "upload_docs") && (
+                              <label style={{ ...btn(doc?.file_url ? "#6b7280" : "#1d4ed8"), fontSize: "0.72rem", padding: "4px 10px", cursor: "pointer" }}>
+                                {doc?.file_url ? "Replace" : "Attach File"}
+                                <input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                  style={{ display: "none" }}
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    if (f) void attachDocFile(type, f);
+                                    e.target.value = "";
+                                  }}
+                                />
+                              </label>
+                            )}
                           </div>
                         </div>
                       );

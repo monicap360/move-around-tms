@@ -2,39 +2,50 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-const mainNav = [
-  { label: "Dashboard", href: "/ronyx" },
-  { label: "Fleet", href: "/ronyx/fleet" },
-  { label: "Jobs", href: "/ronyx/jobs" },
-  { label: "Dispatch", href: "/ronyx/dispatch" },
-  { label: "Billing", href: "/ronyx/billing" },
-  { label: "Reports", href: "/ronyx/reports" },
-];
-
-const fleetNav = [
-  { label: "Truck Tracking", href: "/ronyx/trucks" },
-  { label: "Driver Management", href: "/ronyx/drivers" },
-  { label: "Maintenance", href: "/ronyx/maintenance" },
-];
-
-const dispatchNav = [
-  { label: "Load Board", href: "/ronyx/dispatch/board" },
-  { label: "Route Planning", href: "/ronyx/dispatch/map" },
-  { label: "Assignment", href: "/ronyx/dispatch" },
-];
-
-const aiNav = [
-  { label: "Route Optimization", href: "/ronyx/dispatch" },
-  { label: "Load Planning", href: "/ronyx/loads" },
-  { label: "Analytics", href: "/ronyx/reports" },
-];
-
-const adminNav = [
-  { label: "Settings", href: "/ronyx/settings" },
-  { label: "Integrations", href: "/ronyx/integrations" },
-  { label: "Admin", href: "/ronyx/accounting" },
+const NAV_GROUPS = [
+  {
+    section: "Operations",
+    items: [
+      { label: "Dashboard",      href: "/ronyx" },
+      { label: "Dispatch Board", href: "/ronyx/dispatch/board" },
+      { label: "Loads",          href: "/ronyx/loads" },
+      { label: "Tickets",        href: "/ronyx/tickets" },
+    ],
+  },
+  {
+    section: "Fleet",
+    items: [
+      { label: "Drivers",        href: "/ronyx/drivers" },
+      { label: "Trucks",         href: "/ronyx/fleet" },
+      { label: "Tracking",       href: "/ronyx/tracking" },
+      { label: "Maintenance",    href: "/ronyx/maintenance" },
+    ],
+  },
+  {
+    section: "Finance",
+    items: [
+      { label: "Payroll",        href: "/ronyx/payroll" },
+      { label: "Billing",        href: "/ronyx/billing" },
+      { label: "Accounts Rec.",  href: "/ronyx/accounts-receivable" },
+      { label: "IFTA / Fuel",   href: "/ronyx/ifta-fuel" },
+    ],
+  },
+  {
+    section: "People",
+    items: [
+      { label: "HR & Compliance",href: "/ronyx/hr-compliance" },
+      { label: "Customers",      href: "/ronyx/customers" },
+    ],
+  },
+  {
+    section: "System",
+    items: [
+      { label: "Integrations",   href: "/ronyx/integrations" },
+      { label: "Settings",       href: "/ronyx/settings" },
+    ],
+  },
 ];
 
 type RonyxUser = {
@@ -51,352 +62,344 @@ export default function RonyxShell({
   user: RonyxUser;
 }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [now, setNow] = useState(new Date());
-  const scanInputRef = useRef<HTMLInputElement | null>(null);
-  const [scanMessage, setScanMessage] = useState("");
-  const [metrics, setMetrics] = useState({
-    fleet: { active: 18, total: 24, moving: 12, idle: 4 },
-    deliveries: { today: 142, completed: 128, in_progress: 14, on_time_rate: 94.7 },
-    alerts: { total: 3, critical: 1, warning: 2, unread: 3 },
-    efficiency: { fuel_avg: 5.8, mileage_today: 8420, driver_hours: 142 },
-    last_updated: new Date().toISOString(),
-    data_freshness: "just now",
-  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifCount] = useState(3);
+  const [now, setNow] = useState<string>("");
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
+    const tick = () => setNow(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
   }, []);
 
-  const handleGlobalScan = (file?: File) => {
-    if (!file) return;
-    setScanMessage(`Scan ready: ${file.name}`);
-    setTimeout(() => setScanMessage(""), 4000);
-  };
+  const displayName =
+    user.first_name || user.last_name
+      ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+      : user.email?.split("@")[0] ?? "Account";
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchMetrics = async () => {
-      try {
-        const res = await fetch("/api/ronyx/metrics", { cache: "no-store" });
-        const data = await res.json();
-        if (isMounted && data?.metrics) {
-          setMetrics(data.metrics);
-        }
-      } catch {
-        // keep last known metrics
-      }
-    };
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
+  function isActive(href: string) {
+    if (href === "/ronyx") return pathname === "/ronyx";
+    return pathname.startsWith(href);
+  }
 
   return (
-    <div className={`ronyx-app ${collapsed ? "collapsed" : ""} ${mobileNavOpen ? "mobile-open" : ""}`}>
-      <style jsx global>{`
-        .ronyx-app {
-          display: grid;
-          grid-template-columns: 260px 1fr;
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        a { text-decoration: none; }
+
+        /* ── Sidebar ─────────────────────────────────────── */
+        .tms-sidebar {
+          width: 220px;
           min-height: 100vh;
-          background: #eef2ff;
-        }
-        .ronyx-app.collapsed {
-          grid-template-columns: 88px 1fr;
-        }
-        .ronyx-top-nav {
-          grid-column: 2 / -1;
+          background: #0f172a;
+          color: #cbd5e1;
+          display: flex;
+          flex-direction: column;
+          flex-shrink: 0;
           position: sticky;
           top: 0;
-          z-index: 40;
+          height: 100vh;
+          overflow-y: auto;
+          z-index: 30;
+        }
+        .tms-sidebar-brand {
+          padding: 20px 18px 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .tms-sidebar-brand-name {
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: -0.3px;
+        }
+        .tms-sidebar-brand-sub {
+          font-size: 0.68rem;
+          color: #64748b;
+          margin-top: 2px;
+        }
+        .tms-nav-group {
+          padding: 14px 10px 4px;
+        }
+        .tms-nav-section {
+          font-size: 0.62rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #475569;
+          padding: 0 8px 6px;
+        }
+        .tms-nav-item {
+          display: block;
+          padding: 8px 10px;
+          border-radius: 8px;
+          color: #94a3b8;
+          font-size: 0.83rem;
+          font-weight: 500;
+          margin-bottom: 2px;
+          transition: background 120ms, color 120ms;
+        }
+        .tms-nav-item:hover {
+          background: rgba(255,255,255,0.06);
+          color: #e2e8f0;
+        }
+        .tms-nav-item.active {
+          background: #1e40af;
+          color: #fff;
+          font-weight: 600;
+        }
+        .tms-sidebar-footer {
+          margin-top: auto;
+          padding: 12px 14px;
+          border-top: 1px solid rgba(255,255,255,0.07);
+          font-size: 0.72rem;
+          color: #334155;
+        }
+
+        /* ── Main area ──────────────────────────────────── */
+        .tms-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          background: #f1f5f9;
+          min-width: 0;
+        }
+
+        /* ── Top bar ────────────────────────────────────── */
+        .tms-topbar {
+          height: 56px;
+          background: #fff;
+          border-bottom: 1px solid #e2e8f0;
           display: flex;
           align-items: center;
           justify-content: space-between;
+          padding: 0 24px;
+          position: sticky;
+          top: 0;
+          z-index: 20;
           gap: 16px;
-          padding: 12px 20px;
-          background: #f8fafc;
-          color: #0f172a;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.4);
         }
-        .ronyx-top-group {
+        .tms-topbar-left {
           display: flex;
           align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
+          gap: 12px;
         }
-        .ronyx-search {
-          background: #ffffff;
-          border: 1px solid rgba(148, 163, 184, 0.4);
-          color: #0f172a;
-          padding: 8px 12px;
-          border-radius: 12px;
-          min-width: 240px;
-        }
-        .ronyx-stat-pill {
-          background: rgba(148, 163, 184, 0.2);
-          padding: 6px 10px;
-          border-radius: 999px;
-          font-size: 0.8rem;
-        }
-        .ronyx-side-nav {
-          grid-row: 1 / span 2;
-          background: #ffffff;
-          color: #0f172a;
-          padding: 18px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .ronyx-mobile-toggle {
+        .tms-menu-btn {
           display: none;
-          background: rgba(148, 163, 184, 0.2);
+          background: none;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 6px 10px;
+          cursor: pointer;
+          font-size: 1.1rem;
+          color: #475569;
+        }
+        .tms-breadcrumb {
+          font-size: 0.82rem;
+          color: #64748b;
+          font-weight: 500;
+        }
+        .tms-breadcrumb span {
           color: #0f172a;
-          border: 1px solid rgba(148, 163, 184, 0.4);
-          padding: 8px 12px;
-          border-radius: 10px;
-          font-weight: 600;
+          font-weight: 700;
         }
-        .ronyx-side-nav .section-title {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: rgba(71, 85, 105, 0.7);
+        .tms-topbar-search {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 7px 14px;
+          font-size: 0.82rem;
+          color: #0f172a;
+          width: 240px;
+          outline: none;
         }
-        .ronyx-side-nav a {
+        .tms-topbar-search:focus {
+          border-color: #2563eb;
+        }
+        .tms-topbar-right {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 8px 10px;
-          border-radius: 10px;
-          color: inherit;
-          text-decoration: none;
+          gap: 8px;
         }
-        .ronyx-side-nav a.active {
-          background: rgba(59, 130, 246, 0.18);
-          color: #0f172a;
-        }
-        .ronyx-content {
-          grid-column: 2 / -1;
-          padding: 16px 20px 40px;
-        }
-        .ronyx-logo {
-          font-weight: 800;
+        .tms-icon-btn {
+          position: relative;
+          background: #f1f5f9;
+          border: none;
+          border-radius: 8px;
+          padding: 7px 10px;
+          cursor: pointer;
           font-size: 1rem;
+          color: #475569;
         }
-        .ronyx-status {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.8rem;
-        }
-        .ronyx-status-dot {
+        .tms-notif-badge {
+          position: absolute;
+          top: 4px;
+          right: 4px;
           width: 8px;
           height: 8px;
-          border-radius: 999px;
-          background: #22c55e;
+          border-radius: 50%;
+          background: #ef4444;
+          border: 1.5px solid #fff;
         }
-        @media (max-width: 1024px) {
-          .ronyx-app {
-            grid-template-columns: 1fr;
-          }
-          .ronyx-top-nav {
-            grid-column: 1 / -1;
-          }
-          .ronyx-side-nav {
+        .tms-user-chip {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #f1f5f9;
+          border: none;
+          border-radius: 8px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #0f172a;
+        }
+        .tms-user-avatar {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: #1e40af;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.72rem;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .tms-time {
+          font-size: 0.75rem;
+          color: #94a3b8;
+          font-weight: 500;
+        }
+
+        /* ── Content ────────────────────────────────────── */
+        .tms-content {
+          flex: 1;
+          padding: 24px;
+        }
+
+        /* ── Mobile ─────────────────────────────────────── */
+        @media (max-width: 900px) {
+          .tms-sidebar {
             position: fixed;
-            top: 0;
             left: 0;
+            top: 0;
             bottom: 0;
-            width: 280px;
             transform: translateX(-100%);
-            transition: transform 160ms ease;
-            z-index: 40;
+            transition: transform 200ms ease;
+            z-index: 50;
           }
-          .ronyx-app.mobile-open .ronyx-side-nav {
+          .tms-sidebar.open {
             transform: translateX(0);
           }
-          .ronyx-app.mobile-open::after {
-            content: "";
+          .tms-overlay {
+            display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.45);
-            z-index: 35;
+            background: rgba(15,23,42,0.5);
+            z-index: 45;
           }
-          .ronyx-content {
-            grid-column: 1 / -1;
-          }
-          .ronyx-mobile-toggle {
-            display: inline-flex;
-          }
-        }
-        @media (max-width: 768px) {
-          .ronyx-top-nav {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 14px;
-          }
-          .ronyx-top-group {
-            width: 100%;
-            justify-content: space-between;
-          }
-          .ronyx-search {
-            width: 100%;
-            min-width: unset;
-          }
-          .ronyx-content {
-            padding: 12px 12px 28px;
-          }
-          .ronyx-stat-pill {
-            font-size: 0.75rem;
-          }
-          .ronyx-shell {
-            padding: 16px !important;
-          }
-          .ronyx-container {
-            padding: 0 4px;
-          }
-          .ronyx-card {
-            padding: 14px;
-          }
-          .ronyx-grid {
-            grid-template-columns: 1fr !important;
-            gap: 12px;
-          }
-          .ronyx-row {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-          }
-          table {
+          .tms-overlay.open {
             display: block;
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
           }
-          thead,
-          tbody,
-          tr,
-          th,
-          td {
-            white-space: nowrap;
+          .tms-menu-btn {
+            display: flex;
           }
-          .ronyx-input,
-          .ronyx-action,
-          .ronyx-btn {
-            width: 100%;
+          .tms-topbar-search {
+            width: 160px;
+          }
+          .tms-content {
+            padding: 16px;
           }
         }
-        @media (max-width: 540px) {
-          .ronyx-top-group {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          .ronyx-stat-pill {
-            width: 100%;
-            text-align: left;
-          }
+        @media (max-width: 600px) {
+          .tms-topbar-search { display: none; }
+          .tms-time { display: none; }
         }
       `}</style>
 
-      <aside className="ronyx-side-nav">
-        <div className="ronyx-logo">Move Around TMS</div>
-        <button className="ronyx-stat-pill" onClick={() => setCollapsed((prev) => !prev)}>
-          {collapsed ? "Expand Nav" : "Collapse Nav"}
-        </button>
-        <div>
-          <div className="section-title">Main Modules</div>
-          {mainNav.map((item) => (
-            <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>
-              {item.label}
-            </Link>
-          ))}
+      {/* Sidebar */}
+      <aside className={`tms-sidebar${mobileOpen ? " open" : ""}`}>
+        <div className="tms-sidebar-brand">
+          <div className="tms-sidebar-brand-name">MoveAround TMS</div>
+          <div className="tms-sidebar-brand-sub">Ronyx Logistics Portal</div>
         </div>
-        <div>
-          <div className="section-title">Fleet Management</div>
-          {fleetNav.map((item) => (
-            <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div>
-          <div className="section-title">Dispatch Center</div>
-          {dispatchNav.map((item) => (
-            <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div>
-          <div className="section-title">AI Tools</div>
-          {aiNav.map((item) => (
-            <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div>
-          <div className="section-title">Settings / Admin</div>
-          {adminNav.map((item) => (
-            <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>
-              {item.label}
-            </Link>
-          ))}
+
+        {NAV_GROUPS.map((group) => (
+          <div key={group.section} className="tms-nav-group">
+            <div className="tms-nav-section">{group.section}</div>
+            {group.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`tms-nav-item${isActive(item.href) ? " active" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        ))}
+
+        <div className="tms-sidebar-footer">
+          MoveAround TMS · IGOTTA Technologies
         </div>
       </aside>
 
-      <header className="ronyx-top-nav">
-        <div className="ronyx-top-group">
-          <button className="ronyx-mobile-toggle" onClick={() => setMobileNavOpen((prev) => !prev)}>
-            {mobileNavOpen ? "Close Menu" : "Menu"}
-          </button>
-          <span className="ronyx-logo">Ronyx Logistics</span>
-          <span className="ronyx-stat-pill">
-            {metrics.fleet.active}/{metrics.fleet.total} Trucks Active
-          </span>
-          <span className="ronyx-stat-pill">Deliveries Today: {metrics.deliveries.today}</span>
-          <span className="ronyx-stat-pill">Alerts: {metrics.alerts.total}</span>
-          <span className="ronyx-stat-pill">On-time: {metrics.deliveries.on_time_rate}%</span>
-        </div>
-        <div className="ronyx-top-group">
-          <input className="ronyx-search" placeholder="Search trucks, loads, drivers..." />
-          <button className="ronyx-stat-pill" onClick={() => scanInputRef.current?.click()}>
-            📷 Scan
-          </button>
-          {scanMessage && <span className="ronyx-stat-pill">{scanMessage}</span>}
-          <span className="ronyx-status">
-            <span className="ronyx-status-dot" /> System Online
-          </span>
-          <span className="ronyx-stat-pill">{metrics.data_freshness}</span>
-          <span className="ronyx-stat-pill">{now.toLocaleTimeString()}</span>
-          <button className="ronyx-stat-pill">Help</button>
-          <button className="ronyx-stat-pill">Notifications</button>
-          <button className="ronyx-stat-pill">
-            {user.first_name || user.last_name
-              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-              : user.email || "Profile"}
-          </button>
-          <button className="ronyx-stat-pill">Apps</button>
-          <input
-            ref={scanInputRef}
-            type="file"
-            accept="image/*,application/pdf"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              handleGlobalScan(e.target.files?.[0]);
-              if (scanInputRef.current) scanInputRef.current.value = "";
-            }}
-          />
-        </div>
-      </header>
+      {/* Mobile overlay */}
+      <div
+        className={`tms-overlay${mobileOpen ? " open" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      />
 
-      <main className="ronyx-content">{children}</main>
+      {/* Main */}
+      <div className="tms-main">
+
+        {/* Top bar */}
+        <header className="tms-topbar">
+          <div className="tms-topbar-left">
+            <button
+              className="tms-menu-btn"
+              onClick={() => setMobileOpen((p) => !p)}
+              aria-label="Toggle menu"
+            >
+              ☰
+            </button>
+            <input
+              className="tms-topbar-search"
+              placeholder="Search drivers, loads, tickets…"
+            />
+          </div>
+
+          <div className="tms-topbar-right">
+            <span className="tms-time">{now}</span>
+
+            <button className="tms-icon-btn" aria-label="Notifications">
+              🔔
+              {notifCount > 0 && <span className="tms-notif-badge" />}
+            </button>
+
+            <button className="tms-icon-btn" aria-label="Help">
+              ?
+            </button>
+
+            <button className="tms-user-chip">
+              <div className="tms-user-avatar">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              {displayName}
+            </button>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="tms-content">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
