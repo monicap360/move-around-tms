@@ -1336,15 +1336,21 @@ export default function RonyxTicketsPage() {
                     </span>
                     <span>{getUploadSource(item.ticket.ticket_notes)}</span>
                     <span>{item.ticket.customer_name || "—"}</span>
-                    <span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       ${item.amount}
                       <button
                         className="ronyx-btn"
-                        style={{ marginLeft: 10, padding: "6px 12px", fontSize: "0.75rem" }}
+                        style={{ padding: "6px 12px", fontSize: "0.75rem" }}
                         onClick={() => handleInboxAction(item)}
                       >
                         {item.actionLabel}
                       </button>
+                      <Link
+                        href={`/ronyx/tickets/${item.ticket.id}`}
+                        style={{ padding: "6px 12px", fontSize: "0.75rem", background: "#eff6ff", color: "#1e40af", borderRadius: 6, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}
+                      >
+                        Review →
+                      </Link>
                     </span>
                   </div>
                 ))}
