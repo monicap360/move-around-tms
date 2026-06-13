@@ -104,37 +104,18 @@ export default function RonyxLoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <div style={{ position: "relative", width: "100%", marginBottom: "1rem" }}>
+          <div className="password-wrapper">
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{
-                width: "100%",
-                paddingRight: "3rem",
-                marginBottom: 0,
-                boxSizing: "border-box",
-              }}
             />
             <button
               type="button"
+              className="password-eye"
               onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: "absolute",
-                right: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                color: "rgba(255,255,255,0.5)",
-                display: "flex",
-                alignItems: "center",
-                pointerEvents: "auto",
-              }}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff /> : <EyeOpen />}
