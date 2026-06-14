@@ -295,10 +295,10 @@ export default function InspectionsPage() {
       {activeTab === "fleet-health" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-            <div style={{ background: fleetScore>=90?"#f0fdf4":"fleetScore>=70?#fff7ed":"#fff1f2", border: "1px solid #e2e8f0", borderRadius: 14, padding: "16px 24px", textAlign: "center" }}>
+            <div style={{ background: fleetScore>=90?"#f0fdf4":fleetScore>=70?"#fff7ed":"#fff1f2", border: "1px solid #e2e8f0", borderRadius: 14, padding: "16px 24px", textAlign: "center" }}>
               <div style={eyebrow}>Fleet Health Score</div>
               <div style={{ fontSize: "3rem", fontWeight: 900, color: fleetScore>=90?"#15803d":fleetScore>=70?"#d97706":"#dc2626", lineHeight: 1.1 }}>{fleetScore}%</div>
-              <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: 4 }}>{fleetScore>=90?"Excellent":"fleetScore>=70?Needs attention":"Action required"}</div>
+              <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: 4 }}>{fleetScore>=90?"Excellent":fleetScore>=70?"Needs attention":"Action required"}</div>
             </div>
             <div style={{ flex: 1, fontSize: "0.85rem", color: "#475569", lineHeight: 1.6 }}>
               Fleet health score is calculated from open defects and unresolved failed inspections. Resolve defects to improve the score. Grounded trucks should not be dispatched.
