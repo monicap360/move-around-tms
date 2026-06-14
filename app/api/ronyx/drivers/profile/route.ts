@@ -80,6 +80,8 @@ export async function POST(request: Request) {
     if (payload.medical_card_expiration)  extra097.medical_card_expiration  = payload.medical_card_expiration;
     if (payload.background_check_status)  extra097.background_check_status  = payload.background_check_status;
     if (payload.drug_test_status)         extra097.drug_test_status         = payload.drug_test_status;
+    if (payload.company_name)             extra097.company_name             = payload.company_name;
+    if (payload.pay_basis)                extra097.pay_basis                = payload.pay_basis;
 
     const { data: profile, error: profileErr } = await supabase
       .from("driver_profiles")

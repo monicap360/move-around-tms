@@ -17,10 +17,11 @@ const NAV_GROUPS = [
   {
     section: "Fleet",
     items: [
-      { label: "Drivers",        href: "/ronyx/drivers" },
-      { label: "Trucks",         href: "/ronyx/fleet" },
-      { label: "Tracking",       href: "/ronyx/tracking" },
-      { label: "Maintenance",    href: "/ronyx/maintenance" },
+      { label: "Drivers",          href: "/ronyx/drivers" },
+      { label: "Trucks",           href: "/ronyx/fleet" },
+      { label: "Owner Operators",  href: "/ronyx/owner-operators" },
+      { label: "Tracking",         href: "/ronyx/tracking" },
+      { label: "Maintenance",      href: "/ronyx/maintenance" },
     ],
   },
   {

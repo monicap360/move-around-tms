@@ -23,6 +23,16 @@ const EMPTY = {
   emergency_contact_name: "",
   emergency_contact_phone: "",
   supervisor_name: "",
+  // Company assignment
+  company_name: "",
+  pay_basis: "hourly",
+  // Owner operator business details
+  oo_business_name: "",
+  oo_business_address: "",
+  oo_business_email: "",
+  oo_business_phone: "",
+  oo_mc_number: "",
+  oo_ein: "",
 };
 
 type Form = typeof EMPTY;
@@ -178,12 +188,22 @@ export default function NewDriverPage() {
           </Field>
         </Section>
 
-        <Section title="Employment">
+        <Section title="Employment & Company Assignment">
           <Field label="Driver Type">
             <select value={form.driver_type} onChange={(e) => set("driver_type", e.target.value)} style={sel}>
               <option value="W2">W2 Employee</option>
               <option value="1099">1099 Contractor</option>
               <option value="owner_operator">Owner Operator</option>
+            </select>
+          </Field>
+          <Field label="Company / Carrier Name">
+            <input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} style={inp} placeholder="Ronyx Logistics, ABC Hauling…" />
+          </Field>
+          <Field label="Pay Basis">
+            <select value={form.pay_basis} onChange={(e) => set("pay_basis", e.target.value)} style={sel}>
+              <option value="hourly">Hourly</option>
+              <option value="per_load">Per Load</option>
+              <option value="per_mile">Per Mile</option>
             </select>
           </Field>
           <Field label="Position / Role">
@@ -199,6 +219,34 @@ export default function NewDriverPage() {
             <input value={form.assigned_truck_number} onChange={(e) => set("assigned_truck_number", e.target.value)} style={inp} placeholder="Unit 214" />
           </Field>
         </Section>
+
+        {form.driver_type === "owner_operator" && (
+          <Section title="Owner Operator Business Details">
+            <Field label="Business / Company Name" fullWidth>
+              <input value={form.oo_business_name} onChange={(e) => set("oo_business_name", e.target.value)} style={inp} placeholder="Smith Trucking LLC" />
+            </Field>
+            <Field label="MC Number">
+              <input value={form.oo_mc_number} onChange={(e) => set("oo_mc_number", e.target.value)} style={inp} placeholder="MC-123456" />
+            </Field>
+            <Field label="EIN / Tax ID">
+              <input value={form.oo_ein} onChange={(e) => set("oo_ein", e.target.value)} style={inp} placeholder="XX-XXXXXXX" />
+            </Field>
+            <Field label="Business Email">
+              <input value={form.oo_business_email} onChange={(e) => set("oo_business_email", e.target.value)} style={inp} type="email" placeholder="dispatch@smithtrucking.com" />
+            </Field>
+            <Field label="Business Phone">
+              <input value={form.oo_business_phone} onChange={(e) => set("oo_business_phone", e.target.value)} style={inp} type="tel" placeholder="(555) 000-0000" />
+            </Field>
+            <Field label="Business Address" fullWidth>
+              <input value={form.oo_business_address} onChange={(e) => set("oo_business_address", e.target.value)} style={inp} placeholder="Street, City, State ZIP" />
+            </Field>
+            <div style={{ gridColumn: "1 / -1", padding: "10px 0 0" }}>
+              <div style={{ fontSize: "0.72rem", fontWeight: 600, color: "#64748b", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "8px 14px" }}>
+                ✅ To manage this owner operator's full fleet, trucks, all drivers, and insurance certificate, go to <strong>Owner Operators</strong> in the navigation after saving.
+              </div>
+            </div>
+          </Section>
+        )}
 
         <Section title="License & Compliance">
           <Field label="CDL Number">

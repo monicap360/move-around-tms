@@ -25,6 +25,8 @@ type Profile = {
   medical_card_expiration?: string;
   assigned_truck_number?: string;
   pay_rate?: number | string;
+  company_name?: string;
+  pay_basis?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   background_check_status?: string;
@@ -791,8 +793,10 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
             {saving && <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Saving…</span>}
           </div>
           <div style={{ marginTop: 4, fontSize: "0.83rem", color: "#64748b" }}>
+            {profile.company_name  && <span style={{ fontWeight: 700, color: "#1e40af" }}>{profile.company_name} · </span>}
             {profile.position_role && <span>{profile.position_role} · </span>}
             {profile.driver_type   && <span>{profile.driver_type} · </span>}
+            {profile.pay_basis     && <span style={{ fontWeight: 600 }}>Paid {profile.pay_basis.replace("_", " ")} · </span>}
             {profile.license_class && <span>CDL {profile.license_class} · </span>}
             {endorsements.length > 0 && <span>{endorsements.map(e => e.split(" — ")[0]).join(", ")} · </span>}
             {profile.assigned_truck_number && <span>🚛 {profile.assigned_truck_number} · </span>}
@@ -900,10 +904,12 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
             <EditField label="Address"   value={profile.address}    field="address"    onSave={saveField} />
           </Card>
           <Card title="Employment">
-            <EditField label="Driver Type"     value={profile.driver_type}    field="driver_type"    options={["W2","1099","owner_operator"]} onSave={saveField} />
-            <EditField label="Position / Role" value={profile.position_role}  field="position_role"  onSave={saveField} />
-            <EditField label="Hire Date"       value={profile.hire_date}      field="hire_date"      type="date" onSave={saveField} />
-            <EditField label="Supervisor"      value={profile.supervisor_name} field="supervisor_name" onSave={saveField} />
+            <EditField label="Company / Carrier" value={profile.company_name}    field="company_name"   onSave={saveField} />
+            <EditField label="Driver Type"       value={profile.driver_type}    field="driver_type"    options={["W2","1099","owner_operator"]} onSave={saveField} />
+            <EditField label="Pay Basis"         value={profile.pay_basis}      field="pay_basis"      options={["hourly","per_load","per_mile"]} onSave={saveField} />
+            <EditField label="Position / Role"   value={profile.position_role}  field="position_role"  onSave={saveField} />
+            <EditField label="Hire Date"         value={profile.hire_date}      field="hire_date"      type="date" onSave={saveField} />
+            <EditField label="Supervisor"        value={profile.supervisor_name} field="supervisor_name" onSave={saveField} />
           </Card>
           <Card title="License & Compliance">
             <EditField label="CDL Number"       value={profile.license_number}          field="license_number"          onSave={saveField} />
@@ -987,8 +993,10 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
       {activeTab === "Compensation" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Card title="Pay Setup">
-            <EditField label="Driver Type" value={profile.driver_type} field="driver_type" options={["W2","1099","owner_operator"]} onSave={saveField} />
-            <EditField label="Pay Rate ($/hr or $/mile)" value={profile.pay_rate} field="pay_rate" type="number" onSave={saveField} />
+            <EditField label="Company / Carrier" value={profile.company_name}   field="company_name"  onSave={saveField} />
+            <EditField label="Driver Type"        value={profile.driver_type}   field="driver_type"   options={["W2","1099","owner_operator"]} onSave={saveField} />
+            <EditField label="Pay Basis"          value={profile.pay_basis}     field="pay_basis"     options={["hourly","per_load","per_mile"]} onSave={saveField} />
+            <EditField label="Pay Rate"           value={profile.pay_rate}      field="pay_rate"      type="number" onSave={saveField} />
           </Card>
           <Card title="Compliance Checks">
             <EditField label="Background Check" value={profile.background_check_status} field="background_check_status" options={["pending","cleared","failed"]} onSave={saveField} />
