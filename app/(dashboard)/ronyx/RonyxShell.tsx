@@ -12,7 +12,16 @@ const NAV_GROUPS = [
       { label: "Dispatch Board",     href: "/ronyx/dispatch/board" },
       { label: "Operations Center",  href: "/ronyx/operations-center" },
       { label: "Loads",              href: "/ronyx/loads" },
+    ],
+  },
+  {
+    section: "Tickets",
+    items: [
       { label: "Tickets",            href: "/ronyx/tickets" },
+      { label: "FastScan",           href: "/ronyx/fast-scan" },
+      { label: "CrossCheck",         href: "/ronyx/crosscheck" },
+      { label: "Ticket Audit",       href: "/ronyx/ticket-audit" },
+      { label: "Exception Center",   href: "/ronyx/exception-center" },
     ],
   },
   {
