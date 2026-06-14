@@ -73,11 +73,20 @@ type OOCompany = {
   changes_log?: ChangeEntry[];
 };
 
-/* ─── localStorage ───────────────────────────────────── */
-const LS_KEY = "ronyx_owner_operators";
-function load(): OOCompany[] { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } }
-function save(data: OOCompany[]) { try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {} }
+/* ─── helpers ────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2, 10); }
+
+async function apiPost(path: string, body: unknown) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
+async function apiPut(path: string, body: unknown) {
+  const r = await fetch(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
+async function apiDelete(path: string) {
+  return fetch(path, { method: "DELETE" });
+}
 
 /* ─── Date / calc helpers ─────────────────────────────── */
 function daysUntil(d?: string) {
@@ -339,54 +348,81 @@ export default function OwnerOperatorsPage() {
   const pendingDocRef = useRef<string>("");
 
   useEffect(() => {
-    const stored = load();
-    setCompanies(stored.length > 0 ? stored : DEMO);
-    if (stored.length === 0) save(DEMO);
+    fetch("/api/ronyx/owner-operators")
+      .then(r => r.json())
+      .then(({ companies: data }) => {
+        if (data && data.length > 0) {
+          setCompanies(data);
+        } else {
+          setCompanies(DEMO);
+        }
+      })
+      .catch(() => setCompanies(DEMO));
   }, []);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
-  function persist(updated: OOCompany[]) { setCompanies(updated); save(updated); }
-  function updateSelected(oo: OOCompany) { setSelected(oo); persist(companies.map(c => c.id === oo.id ? oo : c)); }
+  function persist(updated: OOCompany[]) { setCompanies(updated); }
+  function updateLocalState(oo: OOCompany) { setSelected(oo); setCompanies(prev => prev.map(c => c.id === oo.id ? oo : c)); }
+  function updateSelected(oo: OOCompany) {
+    updateLocalState(oo);
+    // Sync scalar / JSONB fields to DB (fire-and-forget)
+    apiPut(`/api/ronyx/owner-operators/${oo.id}`, {
+      notes: oo.notes, last_contact_date: oo.last_contact_date,
+      insurance_agent_name: oo.insurance_agent_name, insurance_agent_email: oo.insurance_agent_email, insurance_agent_phone: oo.insurance_agent_phone,
+      reminder_log: oo.reminder_log, compliance_history: oo.compliance_history, changes_log: oo.changes_log,
+    });
+  }
   function openOO(oo: OOCompany) { setSelected(oo); setView("detail"); setActiveTab("overview"); }
 
   // Add company
-  function addCompany() {
+  async function addCompany() {
     if (!newCompanyForm.company_name.trim()) { flash("Company name is required."); return; }
-    const oo: OOCompany = { id: uid(), ...newCompanyForm, drivers:[], trucks:[], documents:[], jobs:[] };
-    persist([oo, ...companies]);
+    const { company, error } = await apiPost("/api/ronyx/owner-operators", newCompanyForm);
+    if (error) { flash(`Error: ${error}`); return; }
+    persist([company, ...companies]);
     setShowAddCompany(false); setNewCompanyForm({ ...EMPTY_COMPANY });
-    flash(`${oo.company_name} added.`);
+    flash(`${company.company_name} added.`);
   }
 
   // Driver CRUD
-  function addDriver() {
+  async function addDriver() {
     if (!selected || !addDriverForm.name.trim()) { flash("Driver name required."); return; }
-    updateSelected({ ...selected, drivers: [...selected.drivers, { id: uid(), ...addDriverForm }] });
+    const { driver, error } = await apiPost(`/api/ronyx/owner-operators/${selected.id}/drivers`, addDriverForm);
+    if (error) { flash(`Error: ${error}`); return; }
+    const d: OODriver = { id: driver.id, name: driver.name, cdl_number: driver.cdl_number||"", cdl_state: driver.cdl_state||"TX", cdl_expiration: driver.cdl_expiration||"", med_card_expiration: driver.med_card_expiration||"", phone: driver.phone||"" };
+    updateLocalState({ ...selected, drivers: [...selected.drivers, d] });
     setAddDriverForm({ name:"", cdl_number:"", cdl_state:"TX", cdl_expiration:"", med_card_expiration:"", phone:"" });
     setShowAddDriver(false); flash("Driver added.");
   }
-  function removeDriver(id: string) {
+  async function removeDriver(driverId: string) {
     if (!selected || !confirm("Remove driver?")) return;
-    updateSelected({ ...selected, drivers: selected.drivers.filter(d => d.id !== id) });
+    await apiDelete(`/api/ronyx/owner-operators/${selected.id}/drivers/${driverId}`);
+    updateLocalState({ ...selected, drivers: selected.drivers.filter(d => d.id !== driverId) });
   }
 
   // Truck CRUD
-  function addTruck() {
+  async function addTruck() {
     if (!selected || !addTruckForm.truck_number.trim()) { flash("Truck # required."); return; }
-    updateSelected({ ...selected, trucks: [...selected.trucks, { id: uid(), ...addTruckForm }] });
+    const { truck, error } = await apiPost(`/api/ronyx/owner-operators/${selected.id}/trucks`, addTruckForm);
+    if (error) { flash(`Error: ${error}`); return; }
+    const t: OOTruck = { id: truck.id, truck_number: truck.truck_number, year: truck.year||"", make: truck.make||"", model: truck.model||"", vin: truck.vin||"", last_inspection: truck.last_inspection||"", inspection_result: truck.inspection_result };
+    updateLocalState({ ...selected, trucks: [...selected.trucks, t] });
     setAddTruckForm({ truck_number:"", year:"", make:"", model:"", vin:"", last_inspection:"", inspection_result:"Pass" });
     setShowAddTruck(false); flash("Truck added.");
   }
-  function removeTruck(id: string) {
+  async function removeTruck(truckId: string) {
     if (!selected || !confirm("Remove truck?")) return;
-    updateSelected({ ...selected, trucks: selected.trucks.filter(t => t.id !== id) });
+    await apiDelete(`/api/ronyx/owner-operators/${selected.id}/trucks/${truckId}`);
+    updateLocalState({ ...selected, trucks: selected.trucks.filter(t => t.id !== truckId) });
   }
 
   // Job CRUD
-  function addJob() {
+  async function addJob() {
     if (!selected || !addJobForm.project_number.trim() || !addJobForm.load_date) { flash("Project # and date required."); return; }
     const margin = (addJobForm.gross_revenue || 0) - (addJobForm.oo_rate || 0);
-    updateSelected({ ...selected, jobs: [...selected.jobs, { id: uid(), ...addJobForm, margin }] });
+    const { job, error } = await apiPost(`/api/ronyx/owner-operators/${selected.id}/jobs`, { ...addJobForm, margin });
+    if (error) { flash(`Error: ${error}`); return; }
+    updateLocalState({ ...selected, jobs: [...selected.jobs, job] });
     setAddJobForm({ project_name:"Domino Project", project_number:"", load_date:"", truck_number:"", driver_name:"", origin:"", destination:"", material:"", tons:0, gross_revenue:0, oo_rate:0, margin:0, ticket_status:"Verified", settlement_status:"Pending" });
     setShowAddJob(false); flash("Load added.");
   }
@@ -396,6 +432,7 @@ export default function OwnerOperatorsPage() {
     const updated = { ...oo, jobs: oo.jobs.map(j => j.id === jobId ? { ...j, settlement_status: status } : j) };
     if (selected?.id === ooId) setSelected(updated);
     persist(companies.map(c => c.id === ooId ? updated : c));
+    apiPut(`/api/ronyx/owner-operators/${ooId}/jobs`, { job_id: jobId, settlement_status: status });
     flash(`Settlement: ${status}.`);
   }
   function setTicketStatus(ooId: string, jobId: string, status: OOJob["ticket_status"]) {
@@ -404,14 +441,16 @@ export default function OwnerOperatorsPage() {
     const updated = { ...oo, jobs: oo.jobs.map(j => j.id === jobId ? { ...j, ticket_status: status } : j) };
     if (selected?.id === ooId) setSelected(updated);
     persist(companies.map(c => c.id === ooId ? updated : c));
+    apiPut(`/api/ronyx/owner-operators/${ooId}/jobs`, { job_id: jobId, ticket_status: status });
   }
 
   // Doc upload
-  function handleDocUpload(docType: string, file: File) {
+  async function handleDocUpload(docType: string, file: File) {
     if (!selected) return;
     const expiresInput = ["Insurance Certificate","Contract"].includes(docType) ? prompt(`${docType} expiration date (YYYY-MM-DD):`, "") || undefined : undefined;
+    await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: docType, file_name: file.name, expires_on: expiresInput || null });
     const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput };
-    updateSelected({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== docType)] });
+    updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== docType)] });
     flash(`${docType} uploaded.`);
   }
 
@@ -487,7 +526,10 @@ export default function OwnerOperatorsPage() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-          <button onClick={() => setShowAddCompany(s=>!s)} style={primaryBtn}>+ Add Owner Operator</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a href="/ronyx/owner-operators/import" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📋 Bulk Import</a>
+            <button onClick={() => setShowAddCompany(s=>!s)} style={primaryBtn}>+ Add Owner Operator</button>
+          </div>
         </div>
 
         {showAddCompany && (
@@ -686,19 +728,14 @@ export default function OwnerOperatorsPage() {
           return (
             <label key={type} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", border: `1px solid ${onFile ? "#86efac" : "#e2e8f0"}`, borderRadius: 8, fontSize: "0.75rem", fontWeight: 700, color: onFile ? "#15803d" : "#475569", background: onFile ? "#f0fdf4" : "#f8fafc", cursor: "pointer", whiteSpace: "nowrap" }}>
               {onFile ? "✓ " : ""}{label}
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={e => {
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
                 const f = e.target.files?.[0];
                 if (f) {
-                  if (hasExpiry) {
-                    const exp = prompt(`${type} expiration date (YYYY-MM-DD):`) || undefined;
-                    const doc: OODoc = { type, uploaded_at: new Date().toISOString(), file_name: f.name, expires_on: exp };
-                    const change: ChangeEntry = { date: new Date().toISOString().slice(0,10), type: "Document Added", detail: `${type} uploaded` };
-                    updateSelected({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== type)], changes_log: [change, ...(selected.changes_log||[])] });
-                  } else {
-                    const doc: OODoc = { type, uploaded_at: new Date().toISOString(), file_name: f.name };
-                    const change: ChangeEntry = { date: new Date().toISOString().slice(0,10), type: "Document Added", detail: `${type} uploaded` };
-                    updateSelected({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== type)], changes_log: [change, ...(selected.changes_log||[])] });
-                  }
+                  const exp = hasExpiry ? (prompt(`${type} expiration date (YYYY-MM-DD):`) || undefined) : undefined;
+                  await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: type, file_name: f.name, expires_on: exp || null });
+                  const doc: OODoc = { type, uploaded_at: new Date().toISOString(), file_name: f.name, expires_on: exp };
+                  const change: ChangeEntry = { date: new Date().toISOString().slice(0,10), type: "Document Added", detail: `${type} uploaded` };
+                  updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== type)], changes_log: [change, ...(selected.changes_log||[])] });
                   flash(`${type} uploaded.`);
                 }
                 e.target.value = "";
@@ -1244,7 +1281,7 @@ export default function OwnerOperatorsPage() {
                           ) : (
                             <label style={{ background:"#1e40af", color:"#fff", padding:"4px 10px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, cursor:"pointer", display:"inline-block" }}>
                               🪪 Upload CDL
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`CDL expiration date (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateSelected({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL uploaded for ${d.name}.`); } e.target.value=""; }} />
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`CDL expiration date (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:cdlKey,file_name:f.name,expires_on:exp||null}); await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{cdl_state:state.toUpperCase()||d.cdl_state,cdl_expiration:exp||d.cdl_expiration}); const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL uploaded for ${d.name}.`); } e.target.value=""; }} />
                             </label>
                           )}
                         </td>
@@ -1254,7 +1291,7 @@ export default function OwnerOperatorsPage() {
                           <div style={{ display:"flex", gap:6 }}>
                             {cdlDoc && <label style={{ background:"#f1f5f9", color:"#475569", padding:"3px 8px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", border:"1px solid #e2e8f0" }}>
                               Replace CDL
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`New CDL expiration (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateSelected({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL replaced for ${d.name}.`); } e.target.value=""; }} />
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`New CDL expiration (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:cdlKey,file_name:f.name,expires_on:exp||null}); await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{cdl_state:state.toUpperCase()||d.cdl_state,cdl_expiration:exp||d.cdl_expiration}); const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL replaced for ${d.name}.`); } e.target.value=""; }} />
                             </label>}
                             <button onClick={() => removeDriver(d.id)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
                           </div>
@@ -1403,7 +1440,7 @@ export default function OwnerOperatorsPage() {
                   )}
                   <label style={{ display:"inline-block", marginTop:6, ...primaryBtn, fontSize:"0.72rem", padding:"5px 12px", cursor:"pointer" }}>
                     {existing?"Replace":"Upload"}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ if(hasExpiry){ const exp=prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined; const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateSelected({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } else handleDocUpload(docType,f); } e.target.value=""; }} />
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const exp=hasExpiry?(prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined):undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:docType,file_name:f.name,expires_on:exp||null}); const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateLocalState({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } e.target.value=""; }} />
                   </label>
                 </div>
               );
@@ -1440,7 +1477,7 @@ export default function OwnerOperatorsPage() {
                   )}
                   <label style={{ display:"inline-block", marginTop:6, ...primaryBtn, fontSize:"0.72rem", padding:"5px 12px", cursor:"pointer" }}>
                     {existing?"Replace":"Upload"}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ if(hasExpiry){ const exp=prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined; const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateSelected({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } else handleDocUpload(docType,f); } e.target.value=""; }} />
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const exp=hasExpiry?(prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined):undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:docType,file_name:f.name,expires_on:exp||null}); const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateLocalState({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } e.target.value=""; }} />
                   </label>
                 </div>
               );
@@ -1454,16 +1491,12 @@ export default function OwnerOperatorsPage() {
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
               {selected.drivers.map(d => {
-                function driverDocUpload(docLabel: string, f: File, hasExp: boolean) {
+                async function driverDocUpload(docLabel: string, f: File, hasExp: boolean) {
                   const key = `[${d.name}] ${docLabel}`;
-                  if (hasExp) {
-                    const exp = prompt(`${docLabel} expiration date for ${d.name} (YYYY-MM-DD):`) || undefined;
-                    const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name, expires_on:exp };
-                    updateSelected({...selected, documents:[doc,...selected.documents.filter(x=>x.type!==key)]});
-                  } else {
-                    const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name };
-                    updateSelected({...selected, documents:[doc,...selected.documents.filter(x=>x.type!==key)]});
-                  }
+                  const exp = hasExp ? (prompt(`${docLabel} expiration date for ${d.name} (YYYY-MM-DD):`) || undefined) : undefined;
+                  await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:key,file_name:f.name,expires_on:exp||null});
+                  const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name, expires_on:exp };
+                  updateLocalState({...selected, documents:[doc,...selected.documents.filter(x=>x.type!==key)]});
                   flash(`${docLabel} uploaded for ${d.name}.`);
                 }
                 return (
@@ -1532,7 +1565,7 @@ export default function OwnerOperatorsPage() {
                             ) : <span style={{ color:"#94a3b8", fontSize:"0.72rem" }}>—</span>}
                           </td>
                           <td style={{ padding:"9px 14px" }}>
-                            <button onClick={()=>{ updateSelected({...selected,documents:selected.documents.filter((_,j)=>j!==i)}); flash("Document removed."); }} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
+                            <button onClick={async ()=>{ await fetch(`/api/ronyx/owner-operators/${selected.id}/documents`,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({doc_type:doc.type})}); updateLocalState({...selected,documents:selected.documents.filter((_,j)=>j!==i)}); flash("Document removed."); }} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
                           </td>
                         </tr>
                       );
@@ -1566,7 +1599,7 @@ export default function OwnerOperatorsPage() {
               {["All","Pending","Approved","Processing","Paid","Hold"].map(s=><option key={s}>{s}</option>)}
             </select>
             <button onClick={() => setShowAddJob(s=>!s)} style={primaryBtn}>+ Add Load</button>
-            {pendingCount>0 && <button onClick={() => { const oo={...selected,jobs:selected.jobs.map(j=>filteredJobs.find(f=>f.id===j.id&&j.settlement_status==="Pending")?{...j,settlement_status:"Approved" as const}:j)}; updateSelected(oo); flash(`${pendingCount} approved.`); }} style={{ ...primaryBtn, background:"#15803d" }}>✓ Approve All Pending</button>}
+            {pendingCount>0 && <button onClick={() => { const oo={...selected,jobs:selected.jobs.map(j=>filteredJobs.find(f=>f.id===j.id&&j.settlement_status==="Pending")?{...j,settlement_status:"Approved" as const}:j)}; updateLocalState(oo); filteredJobs.filter(j=>j.settlement_status==="Pending").forEach(j=>apiPut(`/api/ronyx/owner-operators/${selected.id}/jobs`,{job_id:j.id,settlement_status:"Approved"})); flash(`${pendingCount} approved.`); }} style={{ ...primaryBtn, background:"#15803d" }}>✓ Approve All Pending</button>}
             <button onClick={() => {
               const h=["Date","Project #","Project Name","Truck","Driver","Origin","Destination","Material","Tons","Revenue","OO Pay","Margin","Ticket","Settlement"];
               const rows=filteredJobs.map(j=>[j.load_date,j.project_number,j.project_name,j.truck_number,j.driver_name,j.origin,j.destination,j.material,j.tons,j.gross_revenue,j.oo_rate,j.margin,j.ticket_status||"Verified",j.settlement_status]);
@@ -1693,7 +1726,7 @@ export default function OwnerOperatorsPage() {
             <div style={{ background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:14, padding:"14px 18px", marginBottom:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                 <div style={{ fontWeight:800, color:"#1e40af" }}>Ready to Settle — ${settlementReady.toLocaleString()}</div>
-                <button onClick={() => { const oo={...selected,jobs:selected.jobs.map(j=>j.settlement_status==="Approved"?{...j,settlement_status:"Paid" as const}:j)}; updateSelected(oo); flash(`All settlements marked Paid.`); }} style={primaryBtn}>✓ Mark All Paid</button>
+                <button onClick={() => { const oo={...selected,jobs:selected.jobs.map(j=>j.settlement_status==="Approved"?{...j,settlement_status:"Paid" as const}:j)}; updateLocalState(oo); selected.jobs.filter(j=>j.settlement_status==="Approved").forEach(j=>apiPut(`/api/ronyx/owner-operators/${selected.id}/jobs`,{job_id:j.id,settlement_status:"Paid"})); flash(`All settlements marked Paid.`); }} style={primaryBtn}>✓ Mark All Paid</button>
               </div>
               {selected.jobs.filter(j=>j.settlement_status==="Approved").map(j => (
                 <div key={j.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #bfdbfe50" }}>
