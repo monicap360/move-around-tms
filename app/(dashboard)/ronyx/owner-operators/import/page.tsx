@@ -206,7 +206,7 @@ export default function BulkImportPage() {
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em" }}>Owner Operators / Bulk Import</div>
         <h1 style={{ margin: "6px 0 4px", fontSize: "1.5rem", fontWeight: 900, color: "#0f172a" }}>Bulk Driver Import</h1>
-        <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Import drivers from a <strong>CSV</strong>, <strong>PDF</strong>, or <strong>TSV</strong> file — or paste directly from Excel. Data is saved securely to the database.</p>
+        <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Import drivers from an <strong>Excel</strong>, <strong>CSV</strong>, <strong>PDF</strong>, or <strong>TSV</strong> file — or paste directly from Excel. Data is saved securely to the database.</p>
       </div>
 
       {/* Steps */}
@@ -225,18 +225,18 @@ export default function BulkImportPage() {
       {/* Step 1: Paste / Upload */}
       {step === "paste" && (
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "24px 28px" }}>
-          <h3 style={{ margin: "0 0 12px", fontWeight: 800 }}>Step 1 — Upload CSV, PDF, or Paste Data</h3>
-          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "0.85rem" }}>Upload a <strong>CSV</strong> (best), <strong>PDF spreadsheet</strong>, or <strong>TSV</strong> file — or copy rows from Excel/Google Sheets and paste below. The first row must be column headers.</p>
+          <h3 style={{ margin: "0 0 12px", fontWeight: 800 }}>Step 1 — Upload Your Spreadsheet</h3>
+          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "0.85rem" }}>Upload <strong>Excel (.xlsx)</strong>, <strong>CSV</strong>, <strong>PDF</strong>, or <strong>TSV</strong> — or copy rows from Excel/Google Sheets and paste below. The first row must be column headers.</p>
 
           {/* File upload area */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
-            <input ref={fileRef} type="file" accept=".tsv,.csv,.txt,.pdf" style={{ display: "none" }} onChange={handleFile} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
             {[
-              { icon: "📊", label: "Upload CSV", desc: "Comma-separated export from Excel / Google Sheets", ext: ".csv" },
-              { icon: "📄", label: "Upload PDF", desc: "Spreadsheet exported as PDF", ext: ".pdf" },
-              { icon: "📋", label: "Upload TSV", desc: "Tab-separated text file", ext: ".tsv,.txt" },
-            ].map(({ icon, label, desc, ext }) => (
-              <label key={ext} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "20px 14px", border: "2px dashed #e2e8f0", borderRadius: 12, cursor: "pointer", textAlign: "center", background: "#fafafa" }}>
+              { icon: "🟩", label: "Upload Excel", desc: ".xlsx or .xls — best for spreadsheets", ext: ".xlsx,.xls,.xlsm", highlight: true },
+              { icon: "📊", label: "Upload CSV",   desc: "Comma-separated export from Excel", ext: ".csv" },
+              { icon: "📄", label: "Upload PDF",   desc: "Spreadsheet exported as PDF", ext: ".pdf" },
+              { icon: "📋", label: "Upload TSV",   desc: "Tab-separated text file", ext: ".tsv,.txt" },
+            ].map(({ icon, label, desc, ext, highlight }) => (
+              <label key={ext} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "20px 14px", border: `2px dashed ${highlight ? "#86efac" : "#e2e8f0"}`, borderRadius: 12, cursor: "pointer", textAlign: "center", background: highlight ? "#f0fdf4" : "#fafafa" }}>
                 <div style={{ fontSize: "1.8rem" }}>{icon}</div>
                 <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#0f172a" }}>{label}</div>
                 <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>{desc}</div>
@@ -271,8 +271,8 @@ export default function BulkImportPage() {
           </div>
 
           {/* PDF tip */}
-          <div style={{ marginTop: 16, background: "#fefce8", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 14px", fontSize: "0.78rem", color: "#92400e" }}>
-            <strong>💡 PDF tip:</strong> If the PDF parser can't read the columns correctly, open the spreadsheet in Excel → File → Save As → CSV, then upload the CSV instead. CSV always gives the cleanest results.
+          <div style={{ marginTop: 16, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "10px 14px", fontSize: "0.78rem", color: "#166534" }}>
+            <strong>💡 Best results:</strong> Upload the Excel file directly — dates are read automatically and columns are exact. CSV is second best. If you only have a PDF and columns look wrong, open it in Excel → Save As → .xlsx first.
           </div>
         </div>
       )}

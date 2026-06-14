@@ -71,6 +71,7 @@ type OOCompany = {
   reminder_log?: ReminderEntry[];
   compliance_history?: HistoryEntry[];
   changes_log?: ChangeEntry[];
+  logo_url?: string;
 };
 
 /* ─── helpers ────────────────────────────────────────── */
@@ -224,7 +225,7 @@ const EMPTY_COMPANY: Omit<OOCompany, "id"> = {
   company_name: "", contact_name: "", contact_phone: "", contact_email: "",
   business_address: "", mc_number: "", dot_number: "", ein: "",
   insurance_agent_name: "", insurance_agent_email: "", insurance_agent_phone: "",
-  drivers: [], trucks: [], documents: [], jobs: [],
+  drivers: [], trucks: [], documents: [], jobs: [], logo_url: undefined,
 };
 
 /* ─── Demo data ──────────────────────────────────────── */
@@ -569,8 +570,8 @@ export default function OwnerOperatorsPage() {
               <div key={oo.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden", cursor: "pointer" }} onClick={() => openOO(oo)}>
                 {/* Header strip */}
                 <div style={{ background: health>=85?"#f0fdf4":health>=70?"#fefce8":"#fff1f2", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: "1px solid #e2e8f0" }}>
-                  <div style={{ width: 46, height: 46, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.1rem", flexShrink: 0 }}>
-                    {oo.company_name.charAt(0)}
+                  <div style={{ width: 46, height: 46, borderRadius: "50%", background: oo.logo_url ? "#fff" : "#1e40af", border: oo.logo_url ? "1px solid #e2e8f0" : "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.1rem", flexShrink: 0, overflow: "hidden" }}>
+                    {oo.logo_url ? <img src={oo.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : oo.company_name.charAt(0)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -676,8 +677,27 @@ export default function OwnerOperatorsPage() {
       {/* Company header */}
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 22px", marginBottom: 12 }}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.3rem", flexShrink: 0 }}>
-            {selected.company_name.charAt(0)}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 14, background: selected.logo_url ? "#fff" : "#1e40af", border: selected.logo_url ? "2px solid #e2e8f0" : "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.5rem", overflow: "hidden" }}>
+              {selected.logo_url
+                ? <img src={selected.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                : selected.company_name.charAt(0)}
+            </div>
+            {/* Logo upload button */}
+            <label style={{ position: "absolute", bottom: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", cursor: "pointer", border: "2px solid #fff", title: "Upload logo" }}>
+              📷
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const fd = new FormData(); fd.append("file", f);
+                const res = await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "POST", body: fd });
+                const { logo_url, error } = await res.json();
+                if (error) { flash(`Logo upload failed: ${error}`); return; }
+                updateLocalState({ ...selected, logo_url });
+                flash("Logo updated.");
+                e.target.value = "";
+              }} />
+            </label>
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ margin: "0 0 4px", fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
@@ -688,6 +708,9 @@ export default function OwnerOperatorsPage() {
               {selected.contact_phone && <span>📞 {selected.contact_phone}</span>}
               {selected.contact_email && <span>✉ {selected.contact_email}</span>}
             </div>
+            {selected.logo_url && (
+              <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ marginTop: 6, background: "none", border: "none", color: "#94a3b8", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
+            )}
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
             <div style={{ textAlign: "center" }}><div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>OO Health</div><ScoreBadge score={health} size="lg" /></div>

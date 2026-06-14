@@ -4,10 +4,10 @@ export const dynamic = "force-dynamic";
 
 /*
   POST /api/ronyx/owner-operators/parse-file
-  multipart/form-data with field "file" (PDF or CSV)
+  multipart/form-data with field "file" (PDF, CSV, TSV, XLS, XLSX)
 
-  Returns { text: string, type: "pdf" | "csv" }
-  The text is TSV-formatted rows that the frontend's existing column mapper can handle.
+  Returns { text: string, type: "pdf"|"csv"|"xlsx"|"tsv" }
+  The text is TSV-formatted rows for the frontend column mapper.
 */
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -17,10 +17,49 @@ export async function POST(req: Request) {
 
   const name = file.name.toLowerCase();
 
+  // ── Excel: XLSX / XLS ───────────────────────────────────────────────
+  if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".xlsm")) {
+    try {
+      const bytes = await file.arrayBuffer();
+      const XLSX = (await import("xlsx")).default;
+      const wb = XLSX.read(bytes, { type: "array", cellDates: true });
+
+      // Use the first sheet
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+
+      // Convert to array-of-arrays
+      const aoa: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+      // Convert to TSV
+      const tsv = aoa
+        .filter((row) => row.some((c) => String(c).trim()))
+        .map((row) =>
+          row
+            .map((c) => {
+              // Format dates properly
+              if (c instanceof Date) {
+                const y = c.getFullYear();
+                const m = String(c.getMonth() + 1).padStart(2, "0");
+                const d = String(c.getDate()).padStart(2, "0");
+                return `${y}-${m}-${d}`;
+              }
+              return String(c ?? "").replace(/\t/g, " ").replace(/\n/g, " ");
+            })
+            .join("\t")
+        )
+        .join("\n");
+
+      return NextResponse.json({ text: tsv, type: "xlsx", sheet: sheetName, sheets: wb.SheetNames });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return NextResponse.json({ error: `Excel parse failed: ${msg}` }, { status: 500 });
+    }
+  }
+
   // ── CSV: convert to TSV ──────────────────────────────────────────────
   if (name.endsWith(".csv")) {
     const text = await file.text();
-    // Use simple CSV→TSV conversion (handles quoted fields)
     const tsv = csvToTsv(text);
     return NextResponse.json({ text: tsv, type: "csv" });
   }
@@ -30,14 +69,9 @@ export async function POST(req: Request) {
     try {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
-      // Dynamic import to avoid SSR issues
       const pdfParse = (await import("pdf-parse")).default;
       const data = await pdfParse(buffer);
-
       const raw = data.text;
-
-      // Try to reconstruct tabular structure from PDF text
       const tsv = pdfTextToTsv(raw);
       return NextResponse.json({ text: tsv, type: "pdf", raw_text: raw });
     } catch (e: unknown) {
@@ -46,7 +80,13 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ error: "Unsupported file type. Use PDF or CSV." }, { status: 400 });
+  // ── TSV / plain text ─────────────────────────────────────────────────
+  if (name.endsWith(".tsv") || name.endsWith(".txt")) {
+    const text = await file.text();
+    return NextResponse.json({ text, type: "tsv" });
+  }
+
+  return NextResponse.json({ error: "Unsupported file type. Use XLSX, CSV, PDF, or TSV." }, { status: 400 });
 }
 
 /* ── CSV → TSV ──────────────────────────────────────────────────────── */
