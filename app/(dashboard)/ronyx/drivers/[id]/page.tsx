@@ -804,6 +804,15 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ ...primaryBtn, fontSize: "0.78rem", cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            🪪 Upload CDL
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} disabled={uploadingDoc} onChange={(e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              const state = prompt("CDL State (e.g. TX):", profile.license_state || "TX") || "";
+              if (state) saveField("license_state", state.toUpperCase());
+              uploadDocument("CDL", f);
+            }} />
+          </label>
           <button onClick={() => exportDOTPacket(profile, documents)} style={{ ...ghostBtn, fontSize: "0.82rem" }}>📋 Export DOT Packet</button>
           <Link href="/ronyx/drivers/new" style={{ ...ghostBtn, textDecoration: "none", fontSize: "0.82rem" }}>+ Add Driver</Link>
         </div>
@@ -932,6 +941,31 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
           <Card title="Emergency Contact">
             <EditField label="Contact Name"  value={profile.emergency_contact_name}  field="emergency_contact_name"  onSave={saveField} />
             <EditField label="Contact Phone" value={profile.emergency_contact_phone} field="emergency_contact_phone" type="tel" onSave={saveField} />
+          </Card>
+          <Card title="Drug & Background Screening">
+            <EditField label="Drug Test Status"       value={profile.drug_test_status}       field="drug_test_status"       options={["pending","cleared","failed","expired"]} onSave={saveField} />
+            <EditField label="Background Check Status" value={profile.background_check_status} field="background_check_status" options={["pending","cleared","failed"]} onSave={saveField} />
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Upload Drug Screen Result</div>
+              <label style={{ ...uploadLabelStyle, cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.6 : 1 }}>
+                Upload Drug Test
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} disabled={uploadingDoc} onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument("Drug Test", f); }} />
+              </label>
+              {documents.find(d => d.doc_type === "Drug Test") && (
+                <span style={{ marginLeft: 10, fontSize: "0.72rem", color: "#15803d", fontWeight: 600 }}>✓ On file</span>
+              )}
+            </div>
+            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { label: "Drug Test Status",  value: profile.drug_test_status,        color: profile.drug_test_status === "cleared" ? "#15803d" : profile.drug_test_status === "failed" ? "#dc2626" : "#d97706" },
+                { label: "Background Check",  value: profile.background_check_status, color: profile.background_check_status === "cleared" ? "#15803d" : profile.background_check_status === "failed" ? "#dc2626" : "#d97706" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px" }}>
+                  <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontWeight: 800, color: value ? color : "#cbd5e1", textTransform: "capitalize" }}>{value || "—"}</div>
+                </div>
+              ))}
+            </div>
           </Card>
         </div>
       )}

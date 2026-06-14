@@ -25,6 +25,41 @@ function normalizePayment(status?: string) {
   return ALLOWED_PAYMENT.includes(lower) ? lower : "unpaid";
 }
 
+function normalizeTicketSource(ticket: any) {
+  return (
+    ticket.ticket_source ||
+    ticket.scan_source ||
+    ticket.source ||
+    ticket.upload_source ||
+    ticket.ticket_notes?.match(/source:\s*([A-Za-z0-9\s]+)/i)?.[1]?.trim() ||
+    "FastScan"
+  );
+}
+
+function deriveProofStatus(ticket: any) {
+  const driverSignature = Boolean(
+    ticket.driver_signature ||
+    ticket.has_driver_signature ||
+    ticket.driver_signed ||
+    ticket.has_signature ||
+    ticket.signature_name ||
+    ticket.digital_signature,
+  );
+  const customerSignature = Boolean(
+    ticket.customer_signature ||
+    ticket.has_customer_signature ||
+    ticket.customer_signed,
+  );
+  const documentsComplete =
+    ticket.documents_complete !== false &&
+    ticket.proof_status?.toString().toLowerCase() !== "missing";
+
+  if (!driverSignature && !customerSignature) return "Missing Required Documents";
+  if (!driverSignature) return "Missing Driver Signature";
+  if (!customerSignature) return "Missing Customer Signature";
+  return documentsComplete ? "Complete" : "Missing Required Documents";
+}
+
 export async function GET(request: NextRequest) {
   const supabase = createSupabaseServerClient();
   const { searchParams } = new URL(request.url);
@@ -49,7 +84,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ tickets: data || [] });
+  const tickets = (data || []).map((ticket) => ({
+    ...ticket,
+    ticket_source: normalizeTicketSource(ticket),
+    proof_status: deriveProofStatus(ticket),
+  }));
+
+  return NextResponse.json({ tickets });
 }
 
 export async function POST(request: NextRequest) {
@@ -143,6 +184,7 @@ export async function POST(request: NextRequest) {
     odometer: body.odometer || null,
     shift: body.shift || null,
     work_order_number: body.work_order_number || null,
+    source: body.source || body.scan_source || "FastScan",
     gross_weight,
     tare_weight,
     net_weight,
@@ -173,6 +215,12 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const newTicket = {
+    ...data,
+    ticket_source: normalizeTicketSource(data),
+    proof_status: deriveProofStatus(data),
+  };
 
   try {
     const validations = await validateTicket({
@@ -223,5 +271,5 @@ export async function POST(request: NextRequest) {
     console.warn("Ticket validation failed:", validationError);
   }
 
-  return NextResponse.json({ ticket: data });
+  return NextResponse.json({ ticket: newTicket });
 }

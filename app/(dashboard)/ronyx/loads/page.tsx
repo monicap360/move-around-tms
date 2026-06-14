@@ -414,16 +414,18 @@ export default function RonyxLoadsPage() {
         }
         .load-table {
           flex: 1;
-          overflow: hidden;
+          overflow-x: auto;
           border-radius: var(--radius-md);
           border: 1px solid var(--dispatch-border);
+          min-width: 0;
         }
         .table-header,
         .table-row {
           display: grid;
-          grid-template-columns: 80px 100px 120px 1fr 120px 120px 120px 120px;
-          padding: 12px 16px;
+          grid-template-columns: 80px 90px 110px minmax(140px, 1fr) 100px 80px 90px 120px;
+          padding: 10px 14px;
           align-items: center;
+          min-width: 820px;
         }
         .table-header {
           background: var(--dispatch-elevated);
@@ -753,15 +755,20 @@ export default function RonyxLoadsPage() {
         @media (max-width: 1200px) {
           .command-grid {
             grid-template-columns: 1fr;
-            grid-template-rows: auto auto 1fr auto;
+            grid-template-rows: auto auto auto auto auto;
           }
           .operations-rail,
           .intelligence-rail,
           .load-board {
             grid-column: 1;
+            grid-row: auto;
           }
           .performance-metrics {
             grid-template-columns: repeat(2, 1fr);
+          }
+          .status-bar {
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto auto;
           }
         }
         ::-webkit-scrollbar {
@@ -839,12 +846,24 @@ export default function RonyxLoadsPage() {
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               <div style={{ width: 8, height: 8, background: "var(--status-ok)", borderRadius: "50%" }} />
               <span style={{ fontSize: 13 }}>SYSTEM: ONLINE</span>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>94.7% ON-TIME</div>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)", flexShrink: 0 }}>94.7% ON-TIME</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginLeft: 8 }}>
+              {["ALL LOADS", "LOADING", "IN TRANSIT", "ON SITE", "DELAYED"].map((label) => (
+                <button
+                  key={label}
+                  className={`filter-btn ${activeFilter === label ? "active" : ""}`}
+                  onClick={() => setActiveFilter(label)}
+                  style={{ padding: "5px 12px", fontSize: 12 }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -958,16 +977,8 @@ export default function RonyxLoadsPage() {
                 Updated every 30 seconds • Last: {lastUpdated.toLocaleTimeString("en-US", { hour12: false })}
               </div>
             </div>
-            <div className="board-filters">
-              {["ALL LOADS", "LOADING", "IN TRANSIT", "ON SITE", "DELAYED"].map((label) => (
-                <button
-                  key={label}
-                  className={`filter-btn ${activeFilter === label ? "active" : ""}`}
-                  onClick={() => setActiveFilter(label)}
-                >
-                  {label}
-                </button>
-              ))}
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+              Filtered: <strong style={{ color: "var(--status-info)" }}>{activeFilter}</strong>
             </div>
           </div>
 

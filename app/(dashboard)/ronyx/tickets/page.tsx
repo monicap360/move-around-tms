@@ -14,6 +14,14 @@ type TicketStatus =
 
 type TicketRisk = "Low" | "Medium" | "High" | "Critical";
 
+type ProofStatus =
+  | "Complete"
+  | "Missing Driver Signature"
+  | "Missing Customer Signature"
+  | "Missing Required Documents";
+
+type CrossCheckStatus = "Matched" | "Conflict" | "No Match" | "Duplicate";
+
 type TicketRecord = {
   id: string;
   ticketNo: string;
@@ -28,13 +36,21 @@ type TicketRecord = {
   rate: number;
   total: number;
   ticketDate: string;
-  scanSource: string;
+  ticketSource: string;
   scanConfidence: number;
   status: TicketStatus;
   risk: TicketRisk;
-  payrollMatched: boolean;
-  billingMatched: boolean;
+  ticketHealthScore: number;
+  proofStatus: ProofStatus;
+  crossCheckStatus: CrossCheckStatus;
+  payrollReady: boolean;
+  billingReady: boolean;
+  exceptionCount: number;
+  weightVariancePct: number;
+  driverVerified: boolean;
+  truckVerified: boolean;
   duplicateRisk: boolean;
+  duplicateMatch?: string;
   missingFields: number;
   lastUpdated: string;
 };
@@ -53,16 +69,48 @@ const STATUS_MAP: Record<string, TicketStatus> = {
 };
 
 function mapApiTicket(t: any, all: any[]): TicketRecord {
-  const isDuplicate = all.filter(
+  const duplicateMatch = all.find(
     (x) => x.ticket_number === t.ticket_number && x.id !== t.id
-  ).length > 0;
+  );
+  const isDuplicate = Boolean(duplicateMatch);
 
   const confidence = t.ocr_confidence != null ? Math.round(t.ocr_confidence * 100) : 85;
+  const hasDriver = Boolean(t.driver_name);
+  const hasTruck = Boolean(t.truck_number || t.unit_number);
+  const dispatchMatch = t.dispatch_match !== false;
+  const weightVariancePct =
+    t.weight_variance_pct != null
+      ? Number(t.weight_variance_pct)
+      : t.weight_variance != null
+      ? Number(t.weight_variance)
+      : t.variance_pct != null
+      ? Number(t.variance_pct)
+      : 0;
+  const weightVerified = Math.abs(weightVariancePct) <= 2;
+
   const missing =
     (t.driver_name ? 0 : 1) +
     (t.truck_number ? 0 : 1) +
     (t.tons || t.quantity ? 0 : 1) +
     (t.ticket_number ? 0 : 1);
+
+  const driverSignature =
+    t.driver_signature || t.has_driver_signature || t.driver_signed || false;
+  const customerSignature =
+    t.customer_signature || t.has_customer_signature || t.customer_signed || false;
+  const documentsComplete =
+    t.documents_complete !== false && t.proof_status !== "missing";
+
+  const proofStatus: ProofStatus = (t.proof_status as ProofStatus) ||
+    (!driverSignature && !customerSignature
+      ? "Missing Required Documents"
+      : !driverSignature
+      ? "Missing Driver Signature"
+      : !customerSignature
+      ? "Missing Customer Signature"
+      : documentsComplete
+      ? "Complete"
+      : "Missing Required Documents");
 
   const risk: TicketRisk =
     isDuplicate || missing >= 3
@@ -75,6 +123,52 @@ function mapApiTicket(t: any, all: any[]): TicketRecord {
 
   const rawStatus = (t.status || "scanned").toLowerCase().replace(/ /g, "_");
   const status: TicketStatus = STATUS_MAP[rawStatus] || "Scanned";
+
+  const payrollReady =
+    t.payroll_hold === false && (status === "Approved" || status === "Sent to Payroll" || !!t.payroll_matched);
+  const billingReady =
+    t.billing_hold === false && (status === "Approved" || status === "Sent to Billing" || !!t.billing_matched);
+
+  const scoreFactors = [
+    hasDriver,
+    hasTruck,
+    dispatchMatch,
+    weightVerified,
+    driverSignature,
+    customerSignature,
+    !isDuplicate,
+    payrollReady,
+  ];
+  const ticketHealthScore = Math.round(
+    (scoreFactors.filter(Boolean).length / scoreFactors.length) * 100,
+  );
+
+  const exceptionCount = [
+    !hasDriver,
+    !hasTruck,
+    !dispatchMatch,
+    !weightVerified,
+    !driverSignature,
+    !customerSignature,
+    isDuplicate,
+    !payrollReady,
+    !billingReady,
+  ].filter(Boolean).length;
+
+  const crossCheckStatus =
+    (t.crosscheck_status || t.cross_check || t.match_status || "No Match")
+      .toString()
+      .toLowerCase() === "matched"
+      ? "Matched"
+      : (t.crosscheck_status || t.cross_check || t.match_status || "No Match")
+          .toString()
+          .toLowerCase() === "conflict"
+      ? "Conflict"
+      : (t.crosscheck_status || t.cross_check || t.match_status || "No Match")
+          .toString()
+          .toLowerCase() === "duplicate"
+      ? "Duplicate"
+      : "No Match";
 
   const tons = parseFloat(t.tons || t.quantity || 0);
   const rate = parseFloat(t.rate || 0);
@@ -93,18 +187,33 @@ function mapApiTicket(t: any, all: any[]): TicketRecord {
     rate,
     total: t.total_amount || (tons * rate) || 0,
     ticketDate: t.ticket_date
-      ? new Date(t.ticket_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      ? new Date(t.ticket_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
       : "—",
-    scanSource: t.scan_source || "Fast Scan",
+    ticketSource: t.ticket_source || t.scan_source || t.source || "FastScan",
     scanConfidence: confidence,
     status,
     risk,
-    payrollMatched: !!t.payroll_matched || status === "Sent to Payroll" || status === "Paid",
-    billingMatched: !!t.billing_matched || status === "Sent to Billing" || status === "Paid",
+    ticketHealthScore,
+    proofStatus,
+    crossCheckStatus,
+    payrollReady,
+    billingReady,
+    exceptionCount,
+    weightVariancePct,
+    driverVerified: t.driver_verified !== false,
+    truckVerified: t.truck_verified !== false,
     duplicateRisk: isDuplicate,
+    duplicateMatch: duplicateMatch?.ticket_number,
     missingFields: missing,
     lastUpdated: t.updated_at
-      ? new Date(t.updated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+      ? new Date(t.updated_at).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })
       : "—",
   };
 }
@@ -145,6 +254,100 @@ function ConfidenceBar({ score }: { score: number }) {
         <div className={`ticket-confidence-fill ${className}`} style={{ width: `${score}%` }} />
       </div>
     </div>
+  );
+}
+
+function TicketHealthBadge({ score }: { score: number }) {
+  const backgroundColor = score >= 90 ? "#047857" : score >= 70 ? "#f59e0b" : score >= 50 ? "#ea580c" : "#dc2626";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        backgroundColor,
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: 12,
+      }}
+    >
+      {score}% Health
+    </span>
+  );
+}
+
+function ProofBadge({ status }: { status: ProofStatus }) {
+  const label =
+    status === "Complete"
+      ? "🟢 Complete"
+      : status === "Missing Driver Signature"
+      ? "🟡 Missing Driver Signature"
+      : status === "Missing Customer Signature"
+      ? "🟡 Missing Customer Signature"
+      : "🔴 Missing Required Documents";
+  const backgroundColor =
+    status === "Complete"
+      ? "#047857"
+      : status === "Missing Driver Signature" || status === "Missing Customer Signature"
+      ? "#f59e0b"
+      : "#dc2626";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        backgroundColor,
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: 12,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function SourceBadge({ source }: { source: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        backgroundColor: "#1f2937",
+        color: "#e5e7eb",
+        fontWeight: 600,
+        fontSize: 12,
+      }}
+    >
+      {source}
+    </span>
+  );
+}
+
+function WeightVarianceChip({ percent }: { percent: number }) {
+  const direction = percent >= 0 ? "+" : "";
+  const backgroundColor =
+    Math.abs(percent) >= 5 ? "#b91c1c" : Math.abs(percent) >= 2 ? "#d97706" : "#047857";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        backgroundColor,
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: 12,
+      }}
+    >
+      {direction}{percent.toFixed(1)}%
+    </span>
   );
 }
 
@@ -244,12 +447,17 @@ export default function TicketsPage() {
     });
   }, [search, statusFilter, riskFilter, tickets]);
 
-  const totalTickets     = tickets.length;
-  const approvedTickets  = tickets.filter((t) => t.status === "Approved").length;
-  const reviewTickets    = tickets.filter((t) => t.status === "Needs Review").length;
+  const totalTickets = tickets.length;
+  const verifiedTickets = tickets.filter((t) => t.ticketHealthScore >= 90).length;
+  const reviewTickets = tickets.filter((t) => t.status === "Needs Review").length;
+  const payrollHolds = tickets.filter((t) => !t.payrollReady).length;
+  const billingHolds = tickets.filter((t) => !t.billingReady).length;
+  const missingProofCount = tickets.filter((t) => t.proofStatus !== "Complete").length;
   const duplicateTickets = tickets.filter((t) => t.duplicateRisk).length;
-  const payrollReady     = tickets.filter((t) => t.payrollMatched).length;
-  const totalTicketValue = tickets.reduce((total, t) => total + t.total, 0);
+  const weightVarianceTickets = tickets.filter((t) => Math.abs(t.weightVariancePct) >= 2).length;
+  const ticketHealthAverage = tickets.length
+    ? Math.round(tickets.reduce((sum, t) => sum + t.ticketHealthScore, 0) / tickets.length)
+    : 0;
 
   return (
     <main className="tickets-page">
@@ -289,32 +497,42 @@ export default function TicketsPage() {
         <div className="tickets-kpi">
           <span>Total Tickets</span>
           <strong>{totalTickets}</strong>
-          <p>Current work queue</p>
+          <p>Current queue</p>
         </div>
         <div className="tickets-kpi success">
-          <span>Approved</span>
-          <strong>{approvedTickets}</strong>
-          <p>Ready for payroll/billing</p>
+          <span>Verified</span>
+          <strong>{verifiedTickets}</strong>
+          <p>High health score</p>
         </div>
         <div className="tickets-kpi warning">
-          <span>Needs Review</span>
+          <span>Review Required</span>
           <strong>{reviewTickets}</strong>
-          <p>Fast Scan exceptions</p>
+          <p>Manual exceptions</p>
         </div>
         <div className="tickets-kpi danger">
-          <span>Duplicates</span>
-          <strong>{duplicateTickets}</strong>
-          <p>Locked from payment</p>
+          <span>Payroll Holds</span>
+          <strong>{payrollHolds}</strong>
+          <p>Action required before pay</p>
         </div>
         <div className="tickets-kpi blue">
-          <span>Payroll Matched</span>
-          <strong>{payrollReady}</strong>
-          <p>Ready for driver pay</p>
+          <span>Billing Holds</span>
+          <strong>{billingHolds}</strong>
+          <p>Action required before invoicing</p>
         </div>
         <div className="tickets-kpi purple">
-          <span>Ticket Value</span>
-          <strong>{money(totalTicketValue)}</strong>
-          <p>Estimated billing value</p>
+          <span>Missing Proof</span>
+          <strong>{missingProofCount}</strong>
+          <p>Signatures or documents</p>
+        </div>
+        <div className="tickets-kpi orange">
+          <span>Duplicates</span>
+          <strong>{duplicateTickets}</strong>
+          <p>Possible duplicate tickets</p>
+        </div>
+        <div className="tickets-kpi teal">
+          <span>Weight Variances</span>
+          <strong>{weightVarianceTickets}</strong>
+          <p>Out-of-tolerance loads</p>
         </div>
       </section>
 
@@ -427,17 +645,26 @@ export default function TicketsPage() {
               ) : (
                 filteredTickets.map((ticket) => (
                   <article className="ticket-card" key={ticket.id}>
-                    <div className="ticket-card-top">
-                      <div>
-                        <p className="tickets-eyebrow">{ticket.id}</p>
-                        <h3>Ticket #{ticket.ticketNo}</h3>
-                        <span>{ticket.customer} · {ticket.plant} → {ticket.jobsite}</span>
-                      </div>
-                      <div className="ticket-badge-row">
-                        <TicketBadge value={ticket.status} />
-                        <TicketBadge value={ticket.risk} />
-                      </div>
+                  {ticket.duplicateRisk && ticket.duplicateMatch && (
+                    <div className="ticket-duplicate-banner">
+                      <strong>POSSIBLE DUPLICATE</strong>
+                      <span>Ticket #{ticket.ticketNo}</span>
+                      <span>Similar to #{ticket.duplicateMatch}</span>
                     </div>
+                  )}
+                  <div className="ticket-card-top">
+                    <div>
+                      <p className="tickets-eyebrow">{ticket.id}</p>
+                      <h3>Ticket #{ticket.ticketNo}</h3>
+                      <span>{ticket.customer} · {ticket.plant} → {ticket.jobsite}</span>
+                    </div>
+                    <div className="ticket-card-meta">
+                      <TicketHealthBadge score={ticket.ticketHealthScore} />
+                      <TicketBadge value={ticket.status} />
+                      <TicketBadge value={ticket.risk} />
+                      <SourceBadge source={ticket.ticketSource} />
+                    </div>
+                  </div>
 
                     <div className="ticket-body">
                       <div className="ticket-preview-box">
@@ -449,33 +676,41 @@ export default function TicketsPage() {
                       </div>
 
                       <div className="ticket-data-grid">
-                        <div><span>Driver</span><strong>{ticket.driver}</strong></div>
-                        <div><span>Truck</span><strong>{ticket.truck}</strong></div>
-                        <div><span>Load</span><strong>{ticket.load}</strong></div>
+                        <div>
+                          <span>Driver</span>
+                          <strong>
+                            {ticket.driver} {ticket.driverVerified ? "✓" : "⚠"}
+                            {!ticket.driverVerified ? " Dispatch Mismatch" : ""}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Truck</span>
+                          <strong>
+                            {ticket.truck} {ticket.truckVerified ? "✓" : "⚠"}
+                            {!ticket.truckVerified ? " Dispatch Mismatch" : ""}
+                          </strong>
+                        </div>
+                        <div><span>Source</span><strong><SourceBadge source={ticket.ticketSource} /></strong></div>
+                        <div><span>CrossCheck</span><strong>{ticket.crossCheckStatus}</strong></div>
                         <div><span>Material</span><strong>{ticket.material}</strong></div>
                         <div><span>Tons</span><strong>{ticket.tons}</strong></div>
-                        <div><span>Rate</span><strong>{money(ticket.rate)}</strong></div>
-                        <div><span>Total</span><strong>{money(ticket.total)}</strong></div>
+                        <div><span>Weight Variance</span><strong><WeightVarianceChip percent={ticket.weightVariancePct} /></strong></div>
                         <div><span>Date</span><strong>{ticket.ticketDate}</strong></div>
                         <div>
-                          <span>Payroll Match</span>
-                          <strong>{ticket.payrollMatched ? "Matched" : "Not Matched"}</strong>
+                          <span>Proof Status</span>
+                          <strong><ProofBadge status={ticket.proofStatus} /></strong>
                         </div>
                         <div>
-                          <span>Billing Match</span>
-                          <strong>{ticket.billingMatched ? "Matched" : "Not Matched"}</strong>
+                          <span>Payroll</span>
+                          <strong>{ticket.payrollReady ? "Payroll Ready" : "Payroll Hold"}</strong>
                         </div>
                         <div>
-                          <span>Missing Fields</span>
-                          <strong className={ticket.missingFields > 0 ? "ticket-danger-text" : ""}>
-                            {ticket.missingFields}
-                          </strong>
+                          <span>Billing</span>
+                          <strong>{ticket.billingReady ? "Billing Ready" : "Billing Hold"}</strong>
                         </div>
                         <div>
-                          <span>Duplicate Risk</span>
-                          <strong className={ticket.duplicateRisk ? "ticket-danger-text" : ""}>
-                            {ticket.duplicateRisk ? "Yes" : "No"}
-                          </strong>
+                          <span>Exceptions</span>
+                          <strong>{ticket.exceptionCount ? `⚠️ ${ticket.exceptionCount} Issues` : "None"}</strong>
                         </div>
                       </div>
                     </div>
@@ -487,8 +722,10 @@ export default function TicketsPage() {
                         <button onClick={() => updateTicketStatus(ticket.id, "matched")}>Open</button>
                         <button onClick={() => updateTicketStatus(ticket.id, "matched")}>Verify</button>
                         <button onClick={() => updateTicketStatus(ticket.id, "matched")}>Match Load</button>
-                        <button onClick={() => updateTicketStatus(ticket.id, "sent_to_payroll")}>Send Payroll</button>
-                        <button onClick={() => updateTicketStatus(ticket.id, "invoiced")}>Send Billing</button>
+                        <button onClick={() => updateTicketStatus(ticket.id, "sent_to_payroll")}>Hold Payroll</button>
+                        <button onClick={() => updateTicketStatus(ticket.id, "invoiced")}>Release Hold</button>
+                        <button onClick={() => showToast(`Open audit for ${ticket.ticketNo}`)}>Open Audit</button>
+                        <button onClick={() => showToast(`Assign ticket ${ticket.ticketNo}`)}>Assign</button>
                       </div>
                       <button
                         className={

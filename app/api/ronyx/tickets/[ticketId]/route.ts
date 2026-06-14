@@ -3,6 +3,41 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+function normalizeTicketSource(ticket: any) {
+  return (
+    ticket.ticket_source ||
+    ticket.scan_source ||
+    ticket.source ||
+    ticket.upload_source ||
+    ticket.ticket_notes?.match(/source:\s*([A-Za-z0-9\s]+)/i)?.[1]?.trim() ||
+    "FastScan"
+  );
+}
+
+function deriveProofStatus(ticket: any) {
+  const driverSignature = Boolean(
+    ticket.driver_signature ||
+    ticket.has_driver_signature ||
+    ticket.driver_signed ||
+    ticket.has_signature ||
+    ticket.signature_name ||
+    ticket.digital_signature,
+  );
+  const customerSignature = Boolean(
+    ticket.customer_signature ||
+    ticket.has_customer_signature ||
+    ticket.customer_signed,
+  );
+  const documentsComplete =
+    ticket.documents_complete !== false &&
+    ticket.proof_status?.toString().toLowerCase() !== "missing";
+
+  if (!driverSignature && !customerSignature) return "Missing Required Documents";
+  if (!driverSignature) return "Missing Driver Signature";
+  if (!customerSignature) return "Missing Customer Signature";
+  return documentsComplete ? "Complete" : "Missing Required Documents";
+}
+
 export async function GET(_request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createSupabaseServerClient();
 
@@ -16,7 +51,13 @@ export async function GET(_request: NextRequest, { params }: { params: { ticketI
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ticket: data });
+  const enriched = {
+    ...data,
+    ticket_source: normalizeTicketSource(data),
+    proof_status: deriveProofStatus(data),
+  };
+
+  return NextResponse.json({ ticket: enriched });
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
@@ -74,6 +115,7 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
     spread_amount: body.spread_amount ?? null,
     detention_amount: body.detention_amount ?? null,
     detention_ref: body.detention_ref ?? null,
+    source: body.source || body.scan_source || null,
     show_fuel: body.show_fuel ?? Boolean(body.fuel_surcharge_amount || body.fuel_surcharge),
     show_spread: body.show_spread ?? Boolean(body.spread_amount),
     show_detention: body.show_detention ?? Boolean(body.detention_amount),
@@ -90,5 +132,11 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ticket: data });
+  const enriched = {
+    ...data,
+    ticket_source: normalizeTicketSource(data),
+    proof_status: deriveProofStatus(data),
+  };
+
+  return NextResponse.json({ ticket: enriched });
 }

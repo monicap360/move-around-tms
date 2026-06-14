@@ -131,24 +131,30 @@ export default function RonyxShell({
           margin-top: 2px;
         }
         .tms-nav-group {
-          padding: 14px 10px 4px;
+          padding: 10px 10px 4px;
         }
         .tms-nav-section {
-          font-size: 0.62rem;
+          font-size: 0.6rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
           color: #475569;
           padding: 0 8px 6px;
         }
+        .tms-nav-items-box {
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 10px;
+          padding: 4px;
+          background: rgba(255,255,255,0.02);
+        }
         .tms-nav-item {
           display: block;
-          padding: 8px 10px;
-          border-radius: 8px;
+          padding: 7px 10px;
+          border-radius: 7px;
           color: #94a3b8;
-          font-size: 0.83rem;
+          font-size: 0.82rem;
           font-weight: 500;
-          margin-bottom: 2px;
+          margin-bottom: 1px;
           transition: background 120ms, color 120ms;
         }
         .tms-nav-item:hover {
@@ -341,16 +347,18 @@ export default function RonyxShell({
         {NAV_GROUPS.map((group) => (
           <div key={group.section} className="tms-nav-group">
             <div className="tms-nav-section">{group.section}</div>
-            {group.items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`tms-nav-item${isActive(item.href) ? " active" : ""}`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <div className="tms-nav-items-box">
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`tms-nav-item${isActive(item.href) ? " active" : ""}`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
         ))}
 

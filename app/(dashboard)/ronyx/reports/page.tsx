@@ -82,7 +82,7 @@ export default function ReportsPage() {
         <div style={eyebrow}>MoveAround TMS / Reports</div>
         <h1 style={{ margin: "6px 0 4px", fontSize: "1.6rem", fontWeight: 900, color: "#0f172a" }}>Reports Center</h1>
         <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>
-          {REPORTS.length} reports for owners and office staff — built to beat Rose Rocket and Axon. Each report shows you exactly what their systems can't.
+          {REPORTS.length} reports for owners and office staff — every report your team needs, available in one place.
         </p>
       </div>
 
@@ -106,13 +106,13 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Competitive edge banner */}
+      {/* Reports banner */}
       <div style={{ background: "linear-gradient(135deg, #1e40af 0%, #7c3aed 100%)", borderRadius: 14, padding: "14px 20px", marginBottom: 20, color: "#fff" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ fontSize: "1.2rem" }}>🏆</div>
+          <div style={{ fontSize: "1.2rem" }}>📊</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: "0.9rem" }}>MoveAround beats Rose Rocket and Axon on every report here</div>
-            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.8)" }}>Hover the "Why Better?" badge on any report to see exactly what the competition is missing.</div>
+            <div style={{ fontWeight: 800, fontSize: "0.9rem" }}>21 reports built for owners and office staff</div>
+            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.8)" }}>Click "Why Better?" on any report to see what makes this report stand out for your operation.</div>
           </div>
         </div>
       </div>
