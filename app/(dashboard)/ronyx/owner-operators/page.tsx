@@ -670,6 +670,45 @@ export default function OwnerOperatorsPage() {
         <KPI label="Trucks"           value={selected.trucks.length} />
       </div>
 
+      {/* Quick Upload Actions */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 16px", marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 4 }}>Quick Upload</span>
+        {[
+          { label: "🛡️ Auto Liability Ins.", type: "Auto Liability Insurance",    hasExpiry: true  },
+          { label: "🛡️ General Liability",   type: "General Liability Insurance", hasExpiry: true  },
+          { label: "📦 Cargo Insurance",      type: "Cargo Insurance",             hasExpiry: true  },
+          { label: "📄 COI",                  type: "Insurance Certificate (COI)", hasExpiry: true  },
+          { label: "📝 Contract",             type: "Contract",                    hasExpiry: true  },
+          { label: "🧾 W-9",                  type: "W-9 / Tax Form",              hasExpiry: false },
+          { label: "🏛️ MC Authority",         type: "MC Authority Letter",         hasExpiry: false },
+        ].map(({ label, type, hasExpiry }) => {
+          const onFile = selected.documents.find(d => d.type === type);
+          return (
+            <label key={type} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", border: `1px solid ${onFile ? "#86efac" : "#e2e8f0"}`, borderRadius: 8, fontSize: "0.75rem", fontWeight: 700, color: onFile ? "#15803d" : "#475569", background: onFile ? "#f0fdf4" : "#f8fafc", cursor: "pointer", whiteSpace: "nowrap" }}>
+              {onFile ? "✓ " : ""}{label}
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={e => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  if (hasExpiry) {
+                    const exp = prompt(`${type} expiration date (YYYY-MM-DD):`) || undefined;
+                    const doc: OODoc = { type, uploaded_at: new Date().toISOString(), file_name: f.name, expires_on: exp };
+                    const change: ChangeEntry = { date: new Date().toISOString().slice(0,10), type: "Document Added", detail: `${type} uploaded` };
+                    updateSelected({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== type)], changes_log: [change, ...(selected.changes_log||[])] });
+                  } else {
+                    const doc: OODoc = { type, uploaded_at: new Date().toISOString(), file_name: f.name };
+                    const change: ChangeEntry = { date: new Date().toISOString().slice(0,10), type: "Document Added", detail: `${type} uploaded` };
+                    updateSelected({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== type)], changes_log: [change, ...(selected.changes_log||[])] });
+                  }
+                  flash(`${type} uploaded.`);
+                }
+                e.target.value = "";
+              }} />
+            </label>
+          );
+        })}
+        <button onClick={() => setActiveTab("documents")} style={{ ...ghostBtn, fontSize: "0.72rem", marginLeft: "auto" }}>All Documents →</button>
+      </div>
+
       {/* Action Required panel */}
       {actions.length > 0 && (
         <div style={{ background: "#fff1f2", border: "1px solid #fda4af", borderRadius: 12, padding: "12px 18px", marginBottom: 14 }}>
