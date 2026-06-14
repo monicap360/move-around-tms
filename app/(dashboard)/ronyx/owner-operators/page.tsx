@@ -305,7 +305,7 @@ export default function OwnerOperatorsPage() {
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);
-  const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement">("overview");
+  const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance">("overview");
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
 
@@ -609,6 +609,7 @@ export default function OwnerOperatorsPage() {
     { key:"documents",  label:"Documents"   },
     { key:"jobs",       label:"Project Jobs"},
     { key:"settlement", label:"Settlement"  },
+    { key:"compliance", label:"Compliance Monitor" },
   ] as const;
 
   return (
@@ -1187,6 +1188,236 @@ export default function OwnerOperatorsPage() {
           </div>
         </div>
       )}
+
+      {/* ── Compliance Monitor Tab ── */}
+      {activeTab === "compliance" && (() => {
+        const insDoc    = selected.documents.find(d => d.type === "Insurance Certificate");
+        const autoIns   = selected.documents.find(d => d.type === "Auto Liability Insurance");
+        const glIns     = selected.documents.find(d => d.type === "General Liability Insurance");
+        const cargoIns  = selected.documents.find(d => d.type === "Cargo Insurance");
+        const contract  = selected.documents.find(d => d.type === "Contract");
+        const w9        = selected.documents.find(d => d.type === "W-9");
+        const [eligible, blockReasons] = ooDispatchEligible(selected);
+
+        function complianceStatus(doc?: OODoc): string {
+          if (!doc) return "Missing";
+          const days = doc.expires_on ? daysUntil(doc.expires_on) : null;
+          if (days === null) return "On File";
+          if (days < 0) return "Expired";
+          if (days <= 30) return "Expiring Soon";
+          return "Valid";
+        }
+        function statusBadge(s: string) {
+          const styles: Record<string, [string, string]> = {
+            "Valid":          ["#f0fdf4","#15803d"],
+            "On File":        ["#f0fdf4","#15803d"],
+            "Expiring Soon":  ["#fefce8","#d97706"],
+            "Expired":        ["#fff1f2","#dc2626"],
+            "Missing":        ["#fff7ed","#c2410c"],
+          };
+          const [bg, color] = styles[s] || ["#f1f5f9","#475569"];
+          return <span style={{ background:bg, color, padding:"3px 10px", borderRadius:20, fontWeight:800, fontSize:"0.72rem" }}>{s}</span>;
+        }
+
+        const insStatus    = complianceStatus(insDoc || autoIns);
+        const rmisStatus   = (!selected.mc_number || !selected.dot_number) ? "Incomplete" : blockReasons.length === 0 ? "Certified" : insStatus === "Expired" ? "Non-Certified" : "Warning";
+        const [rBg, rColor] = rmisStatus==="Certified" ? ["#f0fdf4","#15803d"] : rmisStatus==="Non-Certified" ? ["#fff1f2","#dc2626"] : ["#fefce8","#d97706"];
+
+        const driverIssues = selected.drivers.filter(d => {
+          const cdlDays = daysUntil(d.cdl_expiration);
+          const medDays = daysUntil(d.med_card_expiration);
+          return (cdlDays !== null && cdlDays <= 0) || (medDays !== null && medDays <= 0);
+        });
+
+        return (
+          <div>
+            {/* Compliance Status Banner */}
+            <div style={{ background: rmisStatus==="Non-Certified"?"#1e293b":"#fff", border:`1px solid ${rColor}`, borderRadius:14, padding:"18px 22px", marginBottom:16 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+                <div>
+                  <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>RMIS / Compliance Status</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
+                    <span style={{ background:rBg, color:rColor, padding:"8px 20px", borderRadius:20, fontWeight:900, fontSize:"1rem" }}>{rmisStatus}</span>
+                    <div style={{ fontSize:"0.82rem", color: rmisStatus==="Non-Certified"?"#94a3b8":"#64748b" }}>
+                      MC: {selected.mc_number||"—"} · DOT: {selected.dot_number||"—"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:"0.62rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:4 }}>Dispatch</div>
+                    <span style={{ background:eligible?"#f0fdf4":"#fff1f2", color:eligible?"#15803d":"#dc2626", padding:"6px 14px", borderRadius:20, fontWeight:800, fontSize:"0.85rem" }}>
+                      {eligible ? "✓ Eligible" : "✗ Blocked"}
+                    </span>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:"0.62rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:4 }}>Settlement</div>
+                    <span style={{ background:eligible?"#f0fdf4":"#fff1f2", color:eligible?"#15803d":"#dc2626", padding:"6px 14px", borderRadius:20, fontWeight:800, fontSize:"0.85rem" }}>
+                      {eligible ? "✓ Eligible" : "✗ Hold"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {blockReasons.length > 0 && (
+                <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {blockReasons.map((r,i) => (
+                    <span key={i} style={{ background:"#fff1f2", color:"#dc2626", padding:"4px 10px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, border:"1px solid #fca5a5" }}>✗ {r}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+              {/* Insurance Certifications */}
+              <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"16px 20px" }}>
+                <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:14 }}>Insurance Certifications</div>
+                {[
+                  { label:"Auto Liability",    doc: autoIns || insDoc },
+                  { label:"General Liability", doc: glIns },
+                  { label:"Cargo Insurance",   doc: cargoIns },
+                ].map(({ label, doc }) => {
+                  const days = doc?.expires_on ? daysUntil(doc.expires_on) : null;
+                  const st   = complianceStatus(doc);
+                  return (
+                    <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid #f1f5f9" }}>
+                      <div>
+                        <div style={{ fontWeight:600, color:"#0f172a", fontSize:"0.85rem" }}>{label}</div>
+                        {doc?.expires_on && <div style={{ fontSize:"0.7rem", color:expColor(days), fontWeight:600 }}>Exp: {expLabel(days, doc.expires_on)}</div>}
+                        {!doc && <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>No document on file</div>}
+                      </div>
+                      {statusBadge(st)}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Carrier Documents */}
+              <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"16px 20px" }}>
+                <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:14 }}>Carrier Documents</div>
+                {[
+                  { label:"MC Authority",  val: selected.mc_number ? "On File" : "Missing" },
+                  { label:"DOT #",         val: selected.dot_number ? "On File" : "Missing" },
+                  { label:"EIN / Tax ID",  val: selected.ein ? "On File" : "Missing" },
+                  { label:"Contract",      val: complianceStatus(contract) },
+                  { label:"W-9",           val: complianceStatus(w9) },
+                  { label:"COI",           val: complianceStatus(insDoc) },
+                ].map(({ label, val }) => (
+                  <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #f1f5f9" }}>
+                    <span style={{ fontWeight:600, color:"#0f172a", fontSize:"0.84rem" }}>{label}</span>
+                    {statusBadge(val)}
+                  </div>
+                ))}
+              </div>
+
+              {/* Driver Compliance */}
+              <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"16px 20px" }}>
+                <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:14 }}>Driver Document Compliance</div>
+                {selected.drivers.length === 0 ? (
+                  <div style={{ color:"#94a3b8", fontSize:"0.82rem" }}>No drivers on file.</div>
+                ) : (
+                  <div style={{ overflowX:"auto" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.78rem" }}>
+                      <thead>
+                        <tr>
+                          {["Driver","CDL","CDL Exp.","Med Card","Med Exp.","Status"].map(h=>(
+                            <th key={h} style={{ padding:"6px 10px", fontSize:"0.63rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selected.drivers.map(d => {
+                          const cdlDays = daysUntil(d.cdl_expiration);
+                          const medDays = daysUntil(d.med_card_expiration);
+                          const cdlSt   = cdlDays===null?"Missing":cdlDays<0?"Expired":cdlDays<=30?"Expiring Soon":"Valid";
+                          const medSt   = medDays===null?"Missing":medDays<0?"Expired":medDays<=30?"Expiring Soon":"Valid";
+                          const ok      = cdlSt==="Valid" && medSt==="Valid";
+                          return (
+                            <tr key={d.id} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                              <td style={{ padding:"7px 10px", fontWeight:600, color:"#0f172a" }}>{d.name}</td>
+                              <td style={{ padding:"7px 10px" }}>{statusBadge(cdlSt)}</td>
+                              <td style={{ padding:"7px 10px", color:expColor(cdlDays), fontWeight:600, fontSize:"0.72rem" }}>{expLabel(cdlDays,d.cdl_expiration)}</td>
+                              <td style={{ padding:"7px 10px" }}>{statusBadge(medSt)}</td>
+                              <td style={{ padding:"7px 10px", color:expColor(medDays), fontWeight:600, fontSize:"0.72rem" }}>{expLabel(medDays,d.med_card_expiration)}</td>
+                              <td style={{ padding:"7px 10px" }}><span style={{ color:ok?"#15803d":"#dc2626", fontWeight:700 }}>{ok?"✓ OK":"✗ Action"}</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Office Compliance Assistant */}
+              <div style={{ background:"#0f172a", border:"1px solid #1e293b", borderRadius:14, padding:"16px 20px" }}>
+                <div style={{ fontWeight:800, color:"#f8fafc", marginBottom:12 }}>🤖 Compliance Assistant</div>
+                {rmisStatus === "Non-Certified" ? (
+                  <div>
+                    <div style={{ color:"#fca5a5", fontWeight:700, marginBottom:10, fontSize:"0.85rem" }}>{selected.company_name} is NON-CERTIFIED.</div>
+                    {[
+                      "Dispatch is BLOCKED — do not assign new loads.",
+                      "Settlements are on HOLD until insurance is updated.",
+                      "Request new COI from insurance agent immediately.",
+                      "Do NOT dispatch until status is updated to Certified.",
+                    ].map((s,i)=>(
+                      <div key={i} style={{ color:"#e2e8f0", fontSize:"0.78rem", marginBottom:8, display:"flex", gap:8 }}>
+                        <span style={{ background:"#dc2626", color:"#fff", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.65rem", fontWeight:700, flexShrink:0 }}>{i+1}</span>
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                ) : rmisStatus === "Warning" ? (
+                  <div>
+                    {blockReasons.map((r,i)=>(
+                      <div key={i} style={{ color:"#fde68a", fontSize:"0.78rem", marginBottom:8, display:"flex", gap:8 }}>
+                        <span style={{ background:"#d97706", color:"#fff", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.65rem", fontWeight:700, flexShrink:0 }}>!</span>
+                        {r}
+                      </div>
+                    ))}
+                    {driverIssues.length > 0 && (
+                      <div style={{ marginTop:10, color:"#fda4af", fontWeight:600, fontSize:"0.78rem" }}>
+                        {driverIssues.length} driver{driverIssues.length>1?"s":""} with expired documents: {driverIssues.map(d=>d.name).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ color:"#86efac", fontWeight:700, textAlign:"center", padding:"20px 0" }}>✓ Carrier is Certified — all clear.</div>
+                )}
+                <div style={{ display:"flex", gap:8, marginTop:14, flexWrap:"wrap" }}>
+                  <button onClick={() => { window.open(`https://safer.fmcsa.dot.gov/query.asp?query_param=USDOT&query_string=${selected.dot_number?.replace(/[^0-9]/g,"")||""}`, "_blank"); flash("FMCSA SAFER opened."); }} style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:8, padding:"6px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>FMCSA Verify</button>
+                  <button onClick={() => setActiveTab("documents")} style={{ background:"transparent", color:"#cbd5e1", border:"1px solid #334155", borderRadius:8, padding:"6px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Upload Documents</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Truck Compliance */}
+            {selected.trucks.length > 0 && (
+              <div style={{ marginTop:14, background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"16px 20px" }}>
+                <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:12 }}>Fleet Compliance</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
+                  {selected.trucks.map(t => {
+                    const insDays = null;
+                    const insSt   = "Pending Review";
+                    const inspDays = t.last_inspection ? daysUntil(new Date(new Date(t.last_inspection).getTime() + 365*86400000).toISOString().slice(0,10)) : null;
+                    const inspSt  = inspDays===null?"Missing":inspDays<0?"Expired":inspDays<=30?"Expiring Soon":"Valid";
+                    return (
+                      <div key={t.id} style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:10, padding:"10px 14px" }}>
+                        <div style={{ fontWeight:700, color:"#0f172a", marginBottom:8 }}>🚛 {t.truck_number}</div>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ fontSize:"0.72rem", color:"#64748b" }}>Last Inspection</span>
+                          {statusBadge(inspSt)}
+                        </div>
+                        {t.last_inspection && <div style={{ fontSize:"0.68rem", color:"#94a3b8" }}>Inspected: {fmtDate(t.last_inspection)}</div>}
+                        {t.inspection_result && <div style={{ fontSize:"0.68rem", color: t.inspection_result==="Pass"?"#15803d":t.inspection_result==="Fail"?"#dc2626":"#d97706", fontWeight:700 }}>{t.inspection_result}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

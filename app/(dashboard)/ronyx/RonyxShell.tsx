@@ -29,6 +29,7 @@ const NAV_GROUPS = [
   {
     section: "Compliance",
     items: [
+      { label: "Compliance Monitor", href: "/ronyx/compliance-monitor" },
       { label: "Compliance Center",  href: "/ronyx/compliance" },
       { label: "HR & Compliance",    href: "/ronyx/hr-compliance" },
     ],
