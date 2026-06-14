@@ -733,6 +733,51 @@ export default function OwnerOperatorsPage() {
                 ))}
               </div>
             </Card>
+            <Card title={`Drivers (${selected.drivers.length})`}>
+              {selected.drivers.length === 0 ? (
+                <div style={{ color:"#94a3b8", fontSize:"0.82rem", textAlign:"center", padding:"10px 0" }}>No drivers on file. <button onClick={()=>setActiveTab("drivers")} style={{ background:"none", border:"none", color:"#1e40af", cursor:"pointer", fontWeight:700, fontSize:"0.82rem" }}>+ Add Driver</button></div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {selected.drivers.map(d => {
+                    const cdlD = daysUntil(d.cdl_expiration);
+                    const medD = daysUntil(d.med_card_expiration);
+                    const ok   = (cdlD===null||cdlD>0) && (medD===null||medD>0);
+                    return (
+                      <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f1f5f9" }}>
+                        <div>
+                          <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.85rem" }}>{d.name}</div>
+                          <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>{d.cdl_state} CDL {d.cdl_number||""}</div>
+                        </div>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
+                          <span style={{ background:expBg(cdlD), color:expColor(cdlD), padding:"2px 7px", borderRadius:6, fontSize:"0.68rem", fontWeight:700 }}>CDL {cdlD!==null&&cdlD<0?"EXPIRED":cdlD!==null&&cdlD<=30?cdlD+"d":"OK"}</span>
+                          <span style={{ background:expBg(medD), color:expColor(medD), padding:"2px 7px", borderRadius:6, fontSize:"0.68rem", fontWeight:700 }}>Med {medD!==null&&medD<0?"EXPIRED":medD!==null&&medD<=30?medD+"d":"OK"}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button onClick={()=>setActiveTab("drivers")} style={{ ...ghostBtn, fontSize:"0.75rem", marginTop:4 }}>Manage Drivers →</button>
+                </div>
+              )}
+            </Card>
+            <Card title={`Trucks (${selected.trucks.length})`}>
+              {selected.trucks.length === 0 ? (
+                <div style={{ color:"#94a3b8", fontSize:"0.82rem", textAlign:"center", padding:"10px 0" }}>No trucks on file. <button onClick={()=>setActiveTab("fleet")} style={{ background:"none", border:"none", color:"#1e40af", cursor:"pointer", fontWeight:700, fontSize:"0.82rem" }}>+ Add Truck</button></div>
+              ) : (
+                <div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:8 }}>
+                    {selected.trucks.map(t => {
+                      const inspOK = !t.inspection_result || t.inspection_result==="Pass";
+                      return (
+                        <span key={t.id} style={{ background:inspOK?"#f0fdf4":"#fff1f2", color:inspOK?"#15803d":"#dc2626", border:`1px solid ${inspOK?"#86efac":"#fca5a5"}`, padding:"5px 12px", borderRadius:10, fontSize:"0.78rem", fontWeight:700 }}>
+                          🚛 {t.truck_number}{t.year?" · "+t.year:""}{t.make?" "+t.make:""}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <button onClick={()=>setActiveTab("fleet")} style={{ ...ghostBtn, fontSize:"0.75rem" }}>Manage Fleet →</button>
+                </div>
+              )}
+            </Card>
           </div>
 
           {/* Right panel: Compliance Assistant */}
@@ -833,24 +878,46 @@ export default function OwnerOperatorsPage() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.82rem" }}>
                 <thead>
                   <tr style={{ background:"#f8fafc" }}>
-                    {["Driver","CDL #","State","CDL Expiration","Med Card Exp.","Phone",""].map(h=>(
-                      <th key={h} style={{ padding:"8px 14px", fontSize:"0.68rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left" }}>{h}</th>
+                    {["Driver","CDL #","State","CDL Expiration","CDL File","Med Card Exp.","Phone","Actions"].map(h=>(
+                      <th key={h} style={{ padding:"8px 14px", fontSize:"0.68rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {selected.drivers.map(d => {
-                    const cdlD = daysUntil(d.cdl_expiration);
-                    const medD = daysUntil(d.med_card_expiration);
+                    const cdlD   = daysUntil(d.cdl_expiration);
+                    const medD   = daysUntil(d.med_card_expiration);
+                    const cdlKey = `[${d.name}] CDL License`;
+                    const cdlDoc = selected.documents.find(doc => doc.type === cdlKey);
                     return (
                       <tr key={d.id} style={{ borderBottom:"1px solid #f1f5f9" }}>
                         <td style={{ padding:"10px 14px", fontWeight:700, color:"#0f172a" }}>{d.name}</td>
                         <td style={{ padding:"10px 14px", color:"#475569" }}>{d.cdl_number||"—"}</td>
-                        <td style={{ padding:"10px 14px", color:"#475569" }}>{d.cdl_state}</td>
+                        <td style={{ padding:"10px 14px" }}>
+                          <span style={{ background:"#eff6ff", color:"#1e40af", padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{d.cdl_state||"—"}</span>
+                        </td>
                         <td style={{ padding:"10px 14px" }}><span style={{ background:expBg(cdlD), color:expColor(cdlD), padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{expLabel(cdlD,d.cdl_expiration)}</span></td>
+                        <td style={{ padding:"10px 14px" }}>
+                          {cdlDoc ? (
+                            <span style={{ color:"#15803d", fontSize:"0.72rem", fontWeight:700 }}>✓ On file</span>
+                          ) : (
+                            <label style={{ background:"#1e40af", color:"#fff", padding:"4px 10px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, cursor:"pointer", display:"inline-block" }}>
+                              🪪 Upload CDL
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`CDL expiration date (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateSelected({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL uploaded for ${d.name}.`); } e.target.value=""; }} />
+                            </label>
+                          )}
+                        </td>
                         <td style={{ padding:"10px 14px" }}><span style={{ background:expBg(medD), color:expColor(medD), padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{expLabel(medD,d.med_card_expiration)}</span></td>
                         <td style={{ padding:"10px 14px", color:"#475569" }}>{d.phone||"—"}</td>
-                        <td style={{ padding:"10px 14px" }}><button onClick={() => removeDriver(d.id)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Remove</button></td>
+                        <td style={{ padding:"10px 14px" }}>
+                          <div style={{ display:"flex", gap:6 }}>
+                            {cdlDoc && <label style={{ background:"#f1f5f9", color:"#475569", padding:"3px 8px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", border:"1px solid #e2e8f0" }}>
+                              Replace CDL
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`New CDL expiration (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateSelected({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL replaced for ${d.name}.`); } e.target.value=""; }} />
+                            </label>}
+                            <button onClick={() => removeDriver(d.id)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -966,13 +1033,21 @@ export default function OwnerOperatorsPage() {
             </div>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12 }}>
-            {["Insurance Certificate","Contract","W-9 / Tax Form","MC Authority Letter","Safety Rating","Other"].map(docType => {
+          {/* Insurance Documents */}
+          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10, marginTop:4 }}>🛡️ Insurance Documents</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:20 }}>
+            {[
+              { type:"Auto Liability Insurance",    hasExpiry:true  },
+              { type:"General Liability Insurance", hasExpiry:true  },
+              { type:"Cargo Insurance",             hasExpiry:true  },
+              { type:"Insurance Certificate (COI)", hasExpiry:true  },
+              { type:"Workers Comp Insurance",      hasExpiry:true  },
+            ].map(({ type: docType, hasExpiry }) => {
               const existing = selected.documents.find(d => d.type === docType);
               const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
               return (
                 <div key={docType} style={{ background:existing?"#f0fdf4":"#fafafa", border:`1px solid ${existing?"#86efac":"#e2e8f0"}`, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.85rem", marginBottom:6 }}>{docType}</div>
+                  <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.82rem", marginBottom:6 }}>{docType}</div>
                   {existing ? (
                     <>
                       <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
@@ -987,12 +1062,146 @@ export default function OwnerOperatorsPage() {
                   )}
                   <label style={{ display:"inline-block", marginTop:6, ...primaryBtn, fontSize:"0.72rem", padding:"5px 12px", cursor:"pointer" }}>
                     {existing?"Replace":"Upload"}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ if(hasExpiry){ const exp=prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined; const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateSelected({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } else handleDocUpload(docType,f); } e.target.value=""; }} />
                   </label>
                 </div>
               );
             })}
           </div>
+
+          {/* Business / Legal Documents */}
+          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📋 Business & Legal Documents</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:20 }}>
+            {[
+              { type:"Contract",             hasExpiry:true  },
+              { type:"W-9 / Tax Form",       hasExpiry:false },
+              { type:"MC Authority Letter",  hasExpiry:false },
+              { type:"Safety Rating Letter", hasExpiry:false },
+              { type:"1099 Form",            hasExpiry:false },
+              { type:"Other",                hasExpiry:false },
+            ].map(({ type: docType, hasExpiry }) => {
+              const existing = selected.documents.find(d => d.type === docType);
+              const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
+              return (
+                <div key={docType} style={{ background:existing?"#f0fdf4":"#fafafa", border:`1px solid ${existing?"#86efac":"#e2e8f0"}`, borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.82rem", marginBottom:6 }}>{docType}</div>
+                  {existing ? (
+                    <>
+                      <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
+                      {existing.expires_on && (
+                        <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:4 }}>
+                          {expLabel(expDays, existing.expires_on)}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginBottom:6 }}>Not uploaded</div>
+                  )}
+                  <label style={{ display:"inline-block", marginTop:6, ...primaryBtn, fontSize:"0.72rem", padding:"5px 12px", cursor:"pointer" }}>
+                    {existing?"Replace":"Upload"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ if(hasExpiry){ const exp=prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined; const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateSelected({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } else handleDocUpload(docType,f); } e.target.value=""; }} />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Driver Documents */}
+          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>🪪 Driver Documents</div>
+          {selected.drivers.length === 0 ? (
+            <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:12, padding:"18px", color:"#94a3b8", fontSize:"0.82rem", marginBottom:20 }}>No drivers on file. Add drivers in the Drivers tab first.</div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
+              {selected.drivers.map(d => {
+                const driverDocs = selected.documents.filter(doc => doc.type.startsWith(`[${d.name}]`));
+                function driverDocUpload(docLabel: string, f: File, hasExp: boolean) {
+                  const key = `[${d.name}] ${docLabel}`;
+                  if (hasExp) {
+                    const exp = prompt(`${docLabel} expiration date for ${d.name} (YYYY-MM-DD):`) || undefined;
+                    const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name, expires_on:exp };
+                    updateSelected({...selected, documents:[doc,...selected.documents.filter(x=>x.type!==key)]});
+                  } else {
+                    const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name };
+                    updateSelected({...selected, documents:[doc,...selected.documents.filter(x=>x.type!==key)]});
+                  }
+                  flash(`${docLabel} uploaded for ${d.name}.`);
+                }
+                return (
+                  <div key={d.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"14px 18px" }}>
+                    <div style={{ fontWeight:800, color:"#0f172a", marginBottom:12 }}>🧑‍✈️ {d.name}</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(180px, 1fr))", gap:10 }}>
+                      {[
+                        { label:"CDL License",       hasExp:true  },
+                        { label:"Medical Card",      hasExp:true  },
+                        { label:"MVR Report",        hasExp:false },
+                        { label:"Drug Test",         hasExp:false },
+                        { label:"Background Check",  hasExp:false },
+                      ].map(({ label, hasExp }) => {
+                        const key = `[${d.name}] ${label}`;
+                        const ex  = selected.documents.find(doc => doc.type === key);
+                        const expD = ex?.expires_on ? daysUntil(ex.expires_on) : null;
+                        return (
+                          <div key={label} style={{ background:ex?"#f0fdf4":"#fafafa", border:`1px solid ${ex?"#86efac":"#e2e8f0"}`, borderRadius:10, padding:"10px 12px" }}>
+                            <div style={{ fontWeight:600, color:"#0f172a", fontSize:"0.78rem", marginBottom:4 }}>{label}</div>
+                            {ex ? (
+                              <div>
+                                <div style={{ fontSize:"0.68rem", color:"#15803d", fontWeight:600 }}>✓ On file</div>
+                                {ex.expires_on && <div style={{ background:expBg(expD), color:expColor(expD), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700, display:"inline-block", marginTop:2 }}>{expLabel(expD,ex.expires_on)}</div>}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize:"0.68rem", color:"#94a3b8" }}>Not uploaded</div>
+                            )}
+                            <label style={{ display:"inline-block", marginTop:6, background:"#1e40af", color:"#fff", border:"none", borderRadius:6, padding:"3px 10px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer" }}>
+                              {ex?"Replace":"Upload"}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) driverDocUpload(label,f,hasExp); e.target.value=""; }} />
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* All uploaded documents list */}
+          {selected.documents.length > 0 && (
+            <div>
+              <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📁 All Uploaded Documents</div>
+              <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, overflow:"hidden" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.8rem" }}>
+                  <thead>
+                    <tr style={{ background:"#f8fafc" }}>
+                      {["Document","File Name","Uploaded","Expires",""].map(h=>(
+                        <th key={h} style={{ padding:"8px 14px", fontSize:"0.65rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.documents.map((doc, i) => {
+                      const expD = doc.expires_on ? daysUntil(doc.expires_on) : null;
+                      return (
+                        <tr key={i} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                          <td style={{ padding:"9px 14px", fontWeight:600, color:"#0f172a" }}>{doc.type}</td>
+                          <td style={{ padding:"9px 14px", color:"#64748b", fontSize:"0.75rem" }}>{doc.file_name}</td>
+                          <td style={{ padding:"9px 14px", color:"#94a3b8", fontSize:"0.72rem" }}>{fmtDate(doc.uploaded_at)}</td>
+                          <td style={{ padding:"9px 14px" }}>
+                            {doc.expires_on ? (
+                              <span style={{ background:expBg(expD), color:expColor(expD), padding:"2px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700 }}>{expLabel(expD,doc.expires_on)}</span>
+                            ) : <span style={{ color:"#94a3b8", fontSize:"0.72rem" }}>—</span>}
+                          </td>
+                          <td style={{ padding:"9px 14px" }}>
+                            <button onClick={()=>{ updateSelected({...selected,documents:selected.documents.filter((_,j)=>j!==i)}); flash("Document removed."); }} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
