@@ -25,38 +25,25 @@ export default function Sidebar() {
 
   if (!companyCode) {
     return (
-      <div className="p-4 text-gray-400 text-sm">
-        Loading company navigation…
-      </div>
+      <div style={{padding:16, color:'#B0B6BD'}}>Loading company navigation…</div>
     );
   }
 
   const base = `/company/${companyCode}`;
-
-  const links = [
-    { name: "Dashboard", href: `${base}/dashboard`, icon: "🏠" },
-    { name: "Drivers", href: `${base}/drivers`, icon: "🚚" },
-    { name: "Dispatch", href: `${base}/dispatch`, icon: "🗂️" },
-    { name: "Tickets", href: `${base}/tickets`, icon: "🎫" },
-    { name: "Fleet", href: `${base}/fleet`, icon: "🚛" },
-    { name: "Payroll", href: `${base}/payroll`, icon: "💵" },
-    { name: "Compliance", href: `${base}/compliance`, icon: "📋" },
-    { name: "Settings", href: `${base}/settings`, icon: "⚙️" },
-    { name: "FastScan", href: `/driver/fastscan`, icon: "📲" },
+  const items = [
+    'Dashboard','Dispatch','Tickets','FastScan','CrossCheck','Ticket Audit','Scale Reconciliation','Exception Center','Drivers','Fleet','Payroll','Billing','Reports','Audit Trail','Settings'
   ];
 
   return (
-    <div className="w-64 bg-white shadow h-screen p-5">
-      <h1 className="text-xl font-bold mb-6">MoveAround TMS</h1>
-      <nav className="space-y-2">
-        {links.map((item) => (
-          <Link key={item.name} href={item.href}>
-            <div className="p-3 rounded hover:bg-gray-100 cursor-pointer flex items-center gap-2">
-              <span>{item.icon}</span> {item.name}
-            </div>
+    <aside style={{width:240, backgroundColor:'#121417', color:'#EDEDED', height:'100vh', padding:16, borderRight:'1px solid #343A40'}}>
+      <h1 style={{fontSize:16, fontWeight:800, marginBottom:12}}>RONYX TMS</h1>
+      <nav style={{display:'flex', flexDirection:'column', gap:6}}>
+        {items.map((name) => (
+          <Link key={name} href={`${base}/${name.toLowerCase().replace(/\s+/g,'-')}`}>
+            <div style={{padding:'8px 10px', cursor:'pointer', color:'#EDEDED'}}>{name}</div>
           </Link>
         ))}
       </nav>
-    </div>
+    </aside>
   );
 }

@@ -7,7 +7,7 @@ import { RONYX_CONFIG } from "../../../shared/config/ronyx.config";
 
 /**
  * MAIN RONYX ENTRY POINT
- * Initialize everything for ronyx.movearoundtms.com
+ * Initialize everything for ronyx.movearoundtms.app
  */
 export class RonyxTenantEntry {
   public static initializeRonyxTenant() {
@@ -58,7 +58,7 @@ export class RonyxTenantEntry {
     // 7. Initialize Ronyx-specific services
     this.initializeRonyxServices();
 
-    console.log("✅ Ronyx Tenant Initialized for ronyx.movearoundtms.com");
+    console.log("✅ Ronyx Tenant Initialized for ronyx.movearoundtms.app");
 
     return {
       config,

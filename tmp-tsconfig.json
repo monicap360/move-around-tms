@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types"]
+  },
+  "include": [
+    "lib/supabase/server.ts",
+    "shared/config/ronyx.config.ts",
+    "src/api/ronyx/index.ts",
+    "src/tenant/ronyx/config.ts",
+    "src/tenant/ronyx/entry.ts",
+    "app/api/ronyx/owner-summary/route.ts",
+    "app/(dashboard)/ronyx/fleet/page.tsx",
+    "app/(dashboard)/ronyx/hr-compliance/page.tsx",
+    "app/(dashboard)/ronyx/loads/page.tsx",
+    "app/(dashboard)/ronyx/payroll/page.tsx",
+    "app/(dashboard)/ronyx/tickets/page.tsx"
+  ]
+}

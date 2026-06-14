@@ -2,7 +2,7 @@ export const RONYX_TENANT_CONFIG = {
   // IDENTIFICATION
   tenantId: "ronyx",
   tenantName: "Ronyx Transportation",
-  domain: "ronyx.movearoundtms.com",
+  domain: process.env.RONYX_DOMAIN || "ronyx.movearoundtms.app",
 
   // DATABASE CONFIGURATION
   database: {
@@ -59,6 +59,8 @@ export const RONYX_TENANT_CONFIG = {
     states: ["TX"],
     agencies: ["TXDOT", "FMCSA"],
     requirements: {
+      txdot: true,
+      fmcsa: true,
       drugTesting: true,
       clearinghouse: true,
       medicalCards: true,

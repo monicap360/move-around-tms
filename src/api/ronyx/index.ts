@@ -28,7 +28,7 @@ ronyxRouter.get("/health", (req, res) => {
   res.json({
     status: "healthy",
     company: "ronyx",
-    domain: "ronyx.movearoundtms.com",
+    domain: "ronyx.movearoundtms.app",
     modules: {
       loads: "enabled",
       finance: "enabled",

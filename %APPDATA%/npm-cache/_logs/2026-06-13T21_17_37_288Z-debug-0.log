@@ -1,0 +1,19 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.14.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\mptra\OneDrive\Desktop\move-around-tms\.npmrc
+5 silly config load:file:C:\Users\mptra\.npmrc
+6 silly config load:file:C:\Users\mptra\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm exec tsc --noEmit --pretty false ./lib/supabase/server.ts ./shared/config/ronyx.config.ts ./src/api/ronyx/index.ts ./src/tenant/ronyx/config.ts ./src/tenant/ronyx/entry.ts ./app/api/ronyx/owner-summary/route.ts ./app/(dashboard)/ronyx/fleet/page.tsx ./app/(dashboard)/ronyx/hr-compliance/page.tsx ./app/(dashboard)/ronyx/loads/page.tsx ./app/(dashboard)/ronyx/payroll/page.tsx ./app/(dashboard)/ronyx/tickets/page.tsx
+8 verbose argv "exec" "--" "tsc" "--noEmit" "--pretty" "false" "./lib/supabase/server.ts" "./shared/config/ronyx.config.ts" "./src/api/ronyx/index.ts" "./src/tenant/ronyx/config.ts" "./src/tenant/ronyx/entry.ts" "./app/api/ronyx/owner-summary/route.ts" "./app/(dashboard)/ronyx/fleet/page.tsx" "./app/(dashboard)/ronyx/hr-compliance/page.tsx" "./app/(dashboard)/ronyx/loads/page.tsx" "./app/(dashboard)/ronyx/payroll/page.tsx" "./app/(dashboard)/ronyx/tickets/page.tsx"
+9 verbose logfile logs-max:10 dir:C:\Users\mptra\OneDrive\Desktop\move-around-tms\%APPDATA%\npm-cache\_logs\2026-06-13T21_17_37_288Z-
+10 verbose logfile C:\Users\mptra\OneDrive\Desktop\move-around-tms\%APPDATA%\npm-cache\_logs\2026-06-13T21_17_37_288Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 verbose cwd C:\Users\mptra\OneDrive\Desktop\move-around-tms
+14 verbose os Windows_NT 10.0.26200
+15 verbose node v22.14.0
+16 verbose npm  v10.9.2
+17 verbose exit 2
+18 verbose code 2

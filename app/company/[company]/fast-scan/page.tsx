@@ -221,41 +221,40 @@ export default function FastScanPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      {/* Fast Scan Transition Banner */}
-      <div className="bg-blue-100 border-l-4 border-blue-500 p-4 mb-6 rounded">
-        <h2 className="text-xl font-bold text-blue-700 mb-2">
-          Transition from Manual Excel Reconciliation to Fast Scan
-        </h2>
-        <ol className="list-decimal pl-6 text-base mb-2">
-          <li>
-            Upload your Excel/CSV sheet of tickets from the pit/material plant
-            or your manual entry.
-          </li>
-          <li>Scan or upload ticket images/PDFs as usual.</li>
-          <li>
-            Fast Scan automatically matches, compares, and flags any mismatches,
-            missing tickets, or errors.
-          </li>
-          <li>
-            Review flagged issues and resolve before payroll runs—no more manual
-            cross-checking!
-          </li>
-        </ol>
-        <p className="text-sm text-blue-700">
-          Fast Scan is built to replace manual spreadsheet reconciliation with
-          automated, error-proof matching. You'll save hours and catch mistakes
-          before they cost you money.
-        </p>
-      </div>
-      {/* Pit CSV Upload (trust signal) */}
-      <div className="mb-2">
-        <div className="font-semibold text-primary">Pit CSV Upload</div>
-        <div className="text-xs text-muted-foreground mb-2">
-          Upload the weekly CSV you receive from your pit or material supplier
-          (e.g., Martin Marietta, Vulcan, etc). Fast Scan will group tickets by
-          driver and week, flag issues, and prepare payroll for you. No manual
-          mapping or reformatting required.
+    <div className="p-8 space-y-8" style={{backgroundColor:'#121417', color:'#EDEDED'}}>
+      {/* Page header */}
+      <div>
+        <h1 style={{fontSize:28, fontWeight:700, marginBottom:6}}>FastScan</h1>
+        <div style={{color:'#B0B6BD', marginBottom:12}}>Capture tickets, invoices, proofs, and scale documents with OCR.</div>
+
+        {/* Top Action Bar */}
+        <div style={{display:'flex', gap:10, flexWrap:'wrap', marginBottom:12}}>
+          <button className="px-3 py-2" style={{backgroundColor:'#F5A623', color:'#121417', fontWeight:600}}>Upload Ticket</button>
+          <button className="px-3 py-2" style={{backgroundColor:'#2A2F36', color:'#EDEDED'}}>Open Camera</button>
+          <button className="px-3 py-2" style={{backgroundColor:'#2A2F36', color:'#EDEDED'}}>Batch Scan</button>
+          <button className="px-3 py-2" style={{backgroundColor:'#2A2F36', color:'#EDEDED'}}>Upload Pit Invoice</button>
+          <label style={{display:'inline-block'}}>
+            <input type="file" accept=".xlsx,.xls,.csv" style={{display:'none'}} />
+            <span className="px-3 py-2" style={{backgroundColor:'#2A2F36', color:'#EDEDED', cursor:'pointer'}}>Upload Master Excel</span>
+          </label>
+          <button className="px-3 py-2" style={{backgroundColor:'#2A2F36', color:'#EDEDED'}}>View OCR Queue</button>
+        </div>
+
+        {/* KPI Cards */}
+        <div style={{display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:10}}>
+          {[
+            ['Scans Today', 0],
+            ['Pending OCR', 0],
+            ['Needs Review', 0],
+            ['Verified', 0],
+            ['Missing Signatures', 0],
+            ['Payroll Holds', 0],
+          ].map(([label, value]) => (
+            <div key={label} style={{backgroundColor:'#1A1D21', padding:12, border:'1px solid #343A40', borderRadius:4}}>
+              <div style={{fontSize:18, fontWeight:700, color:'#EDEDED'}}> {value} </div>
+              <div style={{fontSize:12, color:'#B0B6BD'}}>{label}</div>
+            </div>
+          ))}
         </div>
       </div>
       <div className="mb-4 flex flex-col gap-2">

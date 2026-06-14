@@ -30,6 +30,25 @@ type FleetCell = {
   issue?: string;
 };
 
+function mapLoadStatus(s: string): LoadRow["status"] {
+  if (s === "active")    return "IN TRANSIT";
+  if (s === "available") return "LOADING";
+  if (s === "completed") return "ON SITE";
+  return "DELAYED";
+}
+
+function initials(name: string) {
+  return name.split(/[\s.]+/).filter(Boolean).map((p) => p[0].toUpperCase()).join("").slice(0, 2);
+}
+
+const FALLBACK_LOADS: LoadRow[] = [
+  { id: "LD-4029", status: "LOADING", driver: "J. Lane", driverInitials: "JL", route: "Pit 3 → Katy Site", material: "12yd Gravel", weight: "18.4t", eta: "12m" },
+  { id: "LD-4031", status: "LOADING", driver: "S. Grant", driverInitials: "SG", route: "Pit 7 → Beltway 8", material: "15yd Topsoil", weight: "20.1t", eta: "8m" },
+  { id: "LD-4021", status: "IN TRANSIT", driver: "D. Perez", driverInitials: "DP", route: "Pit 7 → I-45 Jobsite", material: "14yd Base", weight: "21.0t", eta: "14m" },
+  { id: "LD-4018", status: "ON SITE", driver: "M. Chen", driverInitials: "MC", route: "Pit 1 → Main St Project", material: "18yd Road Base", weight: "23.5t", eta: "Unload" },
+  { id: "LD-4025", status: "DELAYED", driver: "K. Miles", driverInitials: "KM", route: "Pit 3 → Thompson Co", material: "16yd Gravel", weight: "19.9t", eta: "45m", priority: "high" },
+];
+
 export default function RonyxLoadsPage() {
   const [activeFilter, setActiveFilter] = useState("ALL LOADS");
   const [clock, setClock] = useState("");
@@ -37,70 +56,29 @@ export default function RonyxLoadsPage() {
   const [hudMessage, setHudMessage] = useState("");
   const [lastUpdated, setLastUpdated] = useState(() => new Date());
   const [emergencyMode, setEmergencyMode] = useState(false);
+  const [loadRows, setLoadRows] = useState<LoadRow[]>(FALLBACK_LOADS);
 
-  const loadRows: LoadRow[] = [
-    {
-      id: "LD-4029",
-      status: "LOADING",
-      driver: "J. Lane",
-      driverInitials: "JL",
-      route: "Pit 3 → Katy Site",
-      material: "12yd Gravel",
-      weight: "18.4t",
-      eta: "12m",
-    },
-    {
-      id: "LD-4031",
-      status: "LOADING",
-      driver: "S. Grant",
-      driverInitials: "SG",
-      route: "Pit 7 → Beltway 8",
-      material: "15yd Topsoil",
-      weight: "20.1t",
-      eta: "8m",
-    },
-    {
-      id: "LD-4021",
-      status: "IN TRANSIT",
-      driver: "D. Perez",
-      driverInitials: "DP",
-      route: "Pit 7 → I-45 Jobsite",
-      material: "14yd Base",
-      weight: "21.0t",
-      eta: "14m",
-    },
-    {
-      id: "LD-4018",
-      status: "ON SITE",
-      driver: "M. Chen",
-      driverInitials: "MC",
-      route: "Pit 1 → Main St Project",
-      material: "18yd Road Base",
-      weight: "23.5t",
-      eta: "Unload",
-    },
-    {
-      id: "LD-4035",
-      status: "IN TRANSIT",
-      driver: "A. Rivers",
-      driverInitials: "AR",
-      route: "Pit 4 → Westside",
-      material: "10yd Sand",
-      weight: "15.2t",
-      eta: "22m",
-    },
-    {
-      id: "LD-4025",
-      status: "DELAYED",
-      driver: "K. Miles",
-      driverInitials: "KM",
-      route: "Pit 3 → Thompson Co",
-      material: "16yd Gravel",
-      weight: "19.9t",
-      eta: "45m",
-      priority: "high",
-    },
-  ];
+  useEffect(() => {
+    fetch("/api/ronyx/loads")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.loads) && data.loads.length > 0) {
+          setLoadRows(data.loads.map((l: any) => ({
+            id:             l.load_number || l.id,
+            status:         mapLoadStatus(l.status || ""),
+            driver:         l.driver_name || "Unassigned",
+            driverInitials: initials(l.driver_name || "UA"),
+            route:          l.route || `${l.pickup_location || "?"} → ${l.delivery_location || "?"}`,
+            material:       l.material || "—",
+            weight:         l.weight ? `${l.weight}t` : "—",
+            eta:            l.eta || "—",
+            priority:       l.status === "cancelled" ? "high" : undefined,
+          })));
+          setLastUpdated(new Date());
+        }
+      })
+      .catch(() => {/* keep fallback data */});
+  }, []);
 
   const fleetCells: FleetCell[] = [
     { id: 1, status: "active", driver: "J. Lane", hours: "9.5/11h" },
@@ -152,6 +130,17 @@ export default function RonyxLoadsPage() {
     return () => clearTimeout(timer);
   }, [hudMessage]);
 
+  const handleBroadcast = useCallback(() => {
+    const message = window.prompt("Enter broadcast message:");
+    if (!message) return;
+    setHudMessage(`BROADCAST: ${message}`);
+  }, []);
+
+  const handleForceRefresh = useCallback(() => {
+    setLastUpdated(new Date());
+    setHudMessage("Manual refresh complete.");
+  }, []);
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -180,17 +169,6 @@ export default function RonyxLoadsPage() {
     setHudMessage(message);
   }, []);
 
-  const handleBroadcast = useCallback(() => {
-    const message = window.prompt("Enter broadcast message:");
-    if (!message) return;
-    setHudMessage(`BROADCAST: ${message}`);
-  }, []);
-
-  const handleForceRefresh = useCallback(() => {
-    setLastUpdated(new Date());
-    setHudMessage("Manual refresh complete.");
-  }, []);
-
   const handleEmergency = useCallback(() => {
     const confirmed = window.confirm("Emergency stop - confirm to halt all operations?");
     if (!confirmed) return;
@@ -201,7 +179,7 @@ export default function RonyxLoadsPage() {
 
   return (
     <div className={`ronyx-pro-dispatch ${emergencyMode ? "emergency-mode" : ""}`}>
-      <style jsx global>{`
+      <style>{`
         @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
         @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap");
         :root {

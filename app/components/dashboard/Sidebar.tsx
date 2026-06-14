@@ -28,81 +28,85 @@ export default function Sidebar() {
 
   if (!companyCode) {
     return (
-      <div className="p-4 text-gray-400 text-sm">
+      <div style={{padding:16, color:'#B0B6BD', fontSize:13}}>
         Loading company navigation…
       </div>
     );
   }
 
   const base = `/company/${companyCode}`;
-  // Helper for active link styling (optional: can add usePathname for highlight)
-  const linkClass =
-    "flex items-center px-3 py-2 text-sm rounded transition-colors text-slate-700 hover:bg-gray-100 hover:text-black";
+  const itemStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px 12px',
+    fontSize: 14,
+    color: '#EDEDED',
+    cursor: 'pointer'
+  };
+
+  const sectionTitleStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    color: '#B0B6BD',
+    letterSpacing: 1
+  };
 
   return (
-    <aside className="w-60 bg-white shadow h-screen flex flex-col border-r border-slate-200">
-      <div className="p-4 space-y-6 flex-1">
-        <h1 className="text-xl font-bold mb-6">MoveAround TMS</h1>
-        {/* PRIMARY */}
-        <div className="space-y-1">
+    <aside style={{width:240, backgroundColor:'#121417', height:'100vh', display:'flex', flexDirection:'column', borderRight:'1px solid #343A40'}}>
+      <div style={{padding:16, flex:1, overflow:'auto'}}>
+        <h1 style={{color:'#EDEDED', fontSize:16, fontWeight:700, marginBottom:12}}>RONYX TMS</h1>
+
+        <div style={{display:'grid', gap:6}}>
+          <Link href={`${base}/dashboard`}>
+            <div style={itemStyle}>Dashboard</div>
+          </Link>
+          <Link href={`${base}/dispatch`}>
+            <div style={itemStyle}>Dispatch</div>
+          </Link>
+          <Link href={`${base}/tickets`}>
+            <div style={itemStyle}>Tickets</div>
+          </Link>
           <Link href={`${base}/fast-scan`}>
-            <div className={linkClass}>Fast Scan</div>
+            <div style={itemStyle}>FastScan</div>
           </Link>
-          <Link href={`${base}/dashboards`}>
-            <div className={linkClass}>Dashboard</div>
+          <Link href={`${base}/crosscheck`}>
+            <div style={itemStyle}>CrossCheck</div>
           </Link>
-          <Link href={`${base}/alerts`}>
-            <div className={linkClass}>Alerts</div>
+          <Link href={`${base}/ticket-audit`}>
+            <div style={itemStyle}>Ticket Audit</div>
           </Link>
-        </div>
-
-        {/* ANALYTICS */}
-        <div>
-          <button
-            onClick={() => setShowAnalytics((v) => !v)}
-            className="w-full text-left px-2 py-1 text-[11px] uppercase tracking-wider text-slate-400"
-          >
-            Analytics
-          </button>
-          {showAnalytics && (
-            <div className="mt-1 space-y-1">
-              <Link href={`${base}/dashboards/trends`}>
-                <div className={linkClass}>Trends</div>
-              </Link>
-              <Link href={`${base}/dashboards/sla`}>
-                <div className={linkClass}>SLA</div>
-              </Link>
-              <Link href={`${base}/dashboards/risk`}>
-                <div className={linkClass}>Risk</div>
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* COMPLIANCE */}
-        <div>
-          <button
-            onClick={() => setShowCompliance((v) => !v)}
-            className="w-full text-left px-2 py-1 text-[11px] uppercase tracking-wider text-slate-400"
-          >
-            Compliance
-          </button>
-          {showCompliance && (
-            <div className="mt-1 space-y-1">
-              <Link href={`${base}/compliance`}>
-                <div className={linkClass}>Compliance</div>
-              </Link>
-              <Link href={`${base}/documents`}>
-                <div className={linkClass}>Documents</div>
-              </Link>
-            </div>
-          )}
+          <Link href={`${base}/scale-reconciliation`}>
+            <div style={itemStyle}>Scale Reconciliation</div>
+          </Link>
+          <Link href={`${base}/exception-center`}>
+            <div style={itemStyle}>Exception Center</div>
+          </Link>
+          <Link href={`${base}/drivers`}>
+            <div style={itemStyle}>Drivers</div>
+          </Link>
+          <Link href={`${base}/fleet`}>
+            <div style={itemStyle}>Fleet</div>
+          </Link>
+          <Link href={`${base}/payroll`}>
+            <div style={itemStyle}>Payroll</div>
+          </Link>
+          <Link href={`${base}/billing`}>
+            <div style={itemStyle}>Billing</div>
+          </Link>
+          <Link href={`${base}/reports`}>
+            <div style={itemStyle}>Reports</div>
+          </Link>
+          <Link href={`${base}/audit-trail`}>
+            <div style={itemStyle}>Audit Trail</div>
+          </Link>
+          <div style={{height:8}} />
         </div>
       </div>
-      {/* FOOTER */}
-      <div className="p-4 border-t border-slate-200">
+
+      <div style={{padding:12, borderTop:'1px solid #343A40'}}>
         <Link href={`${base}/settings`}>
-          <div className={linkClass}>Settings</div>
+          <div style={{...itemStyle, color:'#F5A623', fontWeight:600}}>Settings</div>
         </Link>
       </div>
     </aside>

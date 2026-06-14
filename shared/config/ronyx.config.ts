@@ -2,7 +2,7 @@ export const RONYX_CONFIG = {
   // Tenant Identification
   tenantId: "ronyx",
   tenantName: "Ronyx Transportation",
-  domain: "ronyx.movearoundtms.com",
+  domain: process.env.RONYX_DOMAIN || "ronyx.movearoundtms.app",
 
   // Enabled Modules for Ronyx
   enabledModules: {

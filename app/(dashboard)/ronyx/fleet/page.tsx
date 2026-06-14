@@ -84,6 +84,53 @@ const INITIAL_TRUCKS: Truck[] = [
   },
 ];
 
+/* ─── Map API → Truck ───────────────────────────────────── */
+function normalizeRisk(r: string): MaintenanceRisk {
+  const s = (r || "").toLowerCase();
+  if (s === "critical") return "Critical";
+  if (s === "high")     return "High";
+  if (s === "medium")   return "Medium";
+  return "Low";
+}
+function normalizeTruckStatus(s: string): TruckStatus {
+  const v = (s || "").toLowerCase().replace(/_/g, " ");
+  if (v === "assigned")        return "Assigned";
+  if (v === "in maintenance")  return "In Maintenance";
+  if (v === "out of service")  return "Out of Service";
+  if (v === "inactive")        return "Inactive";
+  return "Available";
+}
+function mapApiTruck(d: any): Truck {
+  return {
+    id:               d.id           || d.truck_number,
+    unit:             d.truck_number || d.unit || "Unknown",
+    vin:              d.vin          || "—",
+    plate:            d.plate        || "—",
+    year:             String(d.year  || ""),
+    make:             d.make         || "Unknown",
+    model:            d.model        || "Unknown",
+    type:             d.type         || d.truck_type || "Truck",
+    status:           normalizeTruckStatus(d.status),
+    assignedDriver:   d.assigned_driver   || "—",
+    assignedTrailer:  d.assigned_trailer  || "—",
+    currentLoad:      d.current_load      || "Unassigned",
+    location:         d.location          || "Yard",
+    odometer:         d.odometer          ? Number(d.odometer).toLocaleString() : "—",
+    engineHours:      d.engine_hours      || "—",
+    fuelMpg:          d.fuel_mpg          || "—",
+    revenueWeek:      d.revenue_week      ? `$${Number(d.revenue_week).toLocaleString()}` : "$0",
+    costPerMile:      d.cost_per_mile     ? `$${d.cost_per_mile}` : "—",
+    readinessScore:   Number(d.readiness_score)  || 100,
+    healthScore:      Number(d.health_score)      || 100,
+    maintenanceRisk:  normalizeRisk(d.maintenance_risk),
+    nextService:      d.next_service      || "—",
+    inspectionExp:    d.inspection_exp    || "—",
+    insuranceExp:     d.insurance_exp     || "—",
+    registrationExp:  d.registration_exp  || "—",
+    lastMaintenance:  d.last_maintenance  || "—",
+  };
+}
+
 /* ─── Export CSV ────────────────────────────────────────── */
 function exportFleetCSV(trucks: Truck[]) {
   const headers = ["Unit", "Year", "Make", "Model", "Type", "Status", "Plate", "VIN", "Driver", "Odometer", "MPG", "Cost/Mile", "Revenue Week", "Health", "Readiness", "Risk", "Next Service", "Inspection", "Insurance", "Registration"];
@@ -255,25 +302,40 @@ function AddTruckModal({ onClose, onAdd, showToast }: {
   onAdd: (truck: Truck) => void;
   showToast: (msg: string) => void;
 }) {
-  const [f, setF] = useState({ unit: "", year: new Date().getFullYear().toString(), make: "", model: "", type: "Dump Truck", plate: "", vin: "", odometer: "0" });
+  const [f, setF]     = useState({ unit: "", year: new Date().getFullYear().toString(), make: "", model: "", type: "Dump Truck", plate: "", vin: "", odometer: "0" });
+  const [saving, setSaving] = useState(false);
   function set(k: keyof typeof f, v: string) { setF((p) => ({ ...p, [k]: v })); }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!f.unit.trim()) { showToast("Unit number is required."); return; }
     if (!f.make.trim()) { showToast("Make is required."); return; }
-    const truck: Truck = {
-      id: `TRK-${Date.now()}`, unit: f.unit, year: f.year, make: f.make, model: f.model,
-      type: f.type, plate: f.plate, vin: f.vin, status: "Available",
-      assignedDriver: "—", assignedTrailer: "—", currentLoad: "Unassigned",
-      location: "Yard", odometer: f.odometer, engineHours: "0", fuelMpg: "—",
-      revenueWeek: "$0", costPerMile: "—", readinessScore: 100, healthScore: 100,
-      maintenanceRisk: "Low", nextService: "5,000 miles",
-      inspectionExp: "—", insuranceExp: "—", registrationExp: "—", lastMaintenance: "—",
-    };
-    onAdd(truck);
-    showToast(`${f.unit} added to fleet.`);
-    onClose();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/ronyx/trucks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          truck_number: f.unit,
+          year:         parseInt(f.year, 10) || new Date().getFullYear(),
+          make:         f.make,
+          model:        f.model,
+          type:         f.type,
+          plate:        f.plate || null,
+          vin:          f.vin   || null,
+          status:       "Available",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to add truck");
+      onAdd(mapApiTruck(data.truck ?? data));
+      showToast(`${f.unit} added to fleet.`);
+      onClose();
+    } catch (err: any) {
+      showToast(err.message || "Error saving truck.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -301,7 +363,7 @@ function AddTruckModal({ onClose, onAdd, showToast }: {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <button type="submit" style={mbtn(true)}>Add to Fleet</button>
+            <button type="submit" disabled={saving} style={mbtn(true)}>{saving ? "Saving…" : "Add to Fleet"}</button>
             <button type="button" onClick={onClose} style={mbtn(false)}>Cancel</button>
           </div>
         </form>
@@ -442,6 +504,17 @@ export default function TrucksPage() {
   const [uploadDocType, setUploadDocType] = useState<string | null>(null);
   const [addTruckOpen, setAddTruckOpen]   = useState(false);
   const [ticketOpen, setTicketOpen]       = useState(false);
+
+  useEffect(() => {
+    fetch("/api/ronyx/trucks")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.trucks) && data.trucks.length > 0) {
+          setTrucks(data.trucks.map(mapApiTruck));
+        }
+      })
+      .catch(() => {/* keep demo data on error */});
+  }, []);
 
   function showToast(msg: string) { setToast(msg); }
 
