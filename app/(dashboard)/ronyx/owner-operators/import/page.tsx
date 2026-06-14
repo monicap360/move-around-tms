@@ -28,17 +28,20 @@ const ghostBtn: React.CSSProperties = { padding: "9px 18px", border: "1px solid 
 const lbl: React.CSSProperties = { display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 };
 
 export default function BulkImportPage() {
-  const [step, setStep]         = useState<"paste" | "map" | "preview" | "done">("paste");
-  const [rawText, setRawText]   = useState("");
-  const [headers, setHeaders]   = useState<string[]>([]);
-  const [rows, setRows]         = useState<string[][]>([]);
-  const [mapping, setMapping]   = useState<Record<string, string>>({});
-  const [preview, setPreview]   = useState<Record<string, DriverRow[]>>({});
+  const [step, setStep]             = useState<"paste" | "map" | "preview" | "done">("paste");
+  const [rawText, setRawText]       = useState("");
+  const [headers, setHeaders]       = useState<string[]>([]);
+  const [rows, setRows]             = useState<string[][]>([]);
+  const [mapping, setMapping]       = useState<Record<string, string>>({});
+  const [preview, setPreview]       = useState<Record<string, DriverRow[]>>({});
   const [companyCol, setCompanyCol] = useState("");
   const [defaultCompany, setDefaultCompany] = useState("");
-  const [results, setResults]   = useState<ImportResult[]>([]);
-  const [importing, setImporting] = useState(false);
-  const [toast, setToast]       = useState("");
+  const [results, setResults]       = useState<ImportResult[]>([]);
+  const [importing, setImporting]   = useState(false);
+  const [parsing, setParsing]       = useState(false);
+  const [fileType, setFileType]     = useState<"tsv" | "csv" | "pdf" | "">("");
+  const [rawPdfText, setRawPdfText] = useState("");
+  const [toast, setToast]           = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
@@ -55,15 +58,17 @@ export default function BulkImportPage() {
     { key: "notes",               label: "Notes" },
   ];
 
-  function parseTSV(text: string) {
+  function parseTabText(text: string, type: "tsv" | "csv" | "pdf") {
     const lines = text.trim().split("\n").filter(l => l.trim());
-    if (lines.length < 2) return;
-    const hdrs = lines[0].split("\t").map(h => h.trim());
-    const dataRows = lines.slice(1).map(l => l.split("\t").map(c => c.trim()));
+    if (lines.length < 2) { flash("Could not find enough rows — check the file or paste manually."); return; }
+    const hdrs = lines[0].split("\t").map(h => h.trim().replace(/^["']|["']$/g, ""));
+    const dataRows = lines.slice(1).map(l => l.split("\t").map(c => c.trim().replace(/^["']|["']$/g, "")));
     setHeaders(hdrs);
     setRows(dataRows);
+    setFileType(type);
     // Auto-map: case-insensitive header matching
     const autoMap: Record<string, string> = {};
+    let detectedCompanyCol = "";
     hdrs.forEach((h, i) => {
       const lower = h.toLowerCase().replace(/[\s_\-\/]+/g, "");
       if (lower.includes("name") && !lower.includes("company")) autoMap["name"] = String(i);
@@ -72,25 +77,61 @@ export default function BulkImportPage() {
       if (lower.includes("cdlexp") || (lower.includes("cdl") && lower.includes("exp"))) autoMap["cdl_expiration"] = String(i);
       if (lower.includes("medcard") && lower.includes("number")) autoMap["med_card_number"] = String(i);
       if (lower.includes("medcard") && lower.includes("exp")) autoMap["med_card_expiration"] = String(i);
+      if (lower.includes("medical") && lower.includes("exp")) autoMap["med_card_expiration"] = String(i);
       if (lower.includes("truck")) autoMap["truck_number"] = String(i);
       if (lower.includes("job") || lower.includes("assignment")) autoMap["job_assignment"] = String(i);
       if (lower.includes("note") || lower.includes("comment")) autoMap["notes"] = String(i);
-      if (lower.includes("company")) setCompanyCol(String(i));
+      if (lower.includes("company") || lower.includes("carrier")) detectedCompanyCol = String(i);
     });
+    if (detectedCompanyCol) setCompanyCol(detectedCompanyCol);
     setMapping(autoMap);
     setStep("map");
   }
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const text = ev.target?.result as string;
-      setRawText(text);
-      parseTSV(text);
-    };
-    reader.readAsText(f);
+    const name = f.name.toLowerCase();
+
+    if (name.endsWith(".pdf")) {
+      // Send to server-side PDF parser
+      setParsing(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        const res = await fetch("/api/ronyx/owner-operators/parse-file", { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.error) { flash(`PDF error: ${data.error}`); return; }
+        setRawText(data.text);
+        setRawPdfText(data.raw_text || "");
+        parseTabText(data.text, "pdf");
+      } catch { flash("Failed to parse PDF — try exporting as CSV instead."); }
+      finally { setParsing(false); }
+
+    } else if (name.endsWith(".csv")) {
+      // Send to server for CSV→TSV conversion
+      setParsing(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        const res = await fetch("/api/ronyx/owner-operators/parse-file", { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.error) { flash(`CSV error: ${data.error}`); return; }
+        setRawText(data.text);
+        parseTabText(data.text, "csv");
+      } catch { flash("Failed to parse CSV."); }
+      finally { setParsing(false); }
+
+    } else {
+      // TSV / plain text — read in browser
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const text = ev.target?.result as string;
+        setRawText(text);
+        parseTabText(text, "tsv");
+      };
+      reader.readAsText(f);
+    }
     e.target.value = "";
   }
 
@@ -165,7 +206,7 @@ export default function BulkImportPage() {
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em" }}>Owner Operators / Bulk Import</div>
         <h1 style={{ margin: "6px 0 4px", fontSize: "1.5rem", fontWeight: 900, color: "#0f172a" }}>Bulk Driver Import</h1>
-        <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Import drivers from a spreadsheet (TSV/CSV paste). Data is saved securely to the database.</p>
+        <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Import drivers from a <strong>CSV</strong>, <strong>PDF</strong>, or <strong>TSV</strong> file — or paste directly from Excel. Data is saved securely to the database.</p>
       </div>
 
       {/* Steps */}
@@ -184,25 +225,54 @@ export default function BulkImportPage() {
       {/* Step 1: Paste / Upload */}
       {step === "paste" && (
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "24px 28px" }}>
-          <h3 style={{ margin: "0 0 12px", fontWeight: 800 }}>Step 1 — Upload or Paste Spreadsheet Data</h3>
-          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "0.85rem" }}>Copy rows from Excel/Google Sheets and paste below, OR upload a .tsv / .csv file. The first row must be headers.</p>
+          <h3 style={{ margin: "0 0 12px", fontWeight: 800 }}>Step 1 — Upload CSV, PDF, or Paste Data</h3>
+          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "0.85rem" }}>Upload a <strong>CSV</strong> (best), <strong>PDF spreadsheet</strong>, or <strong>TSV</strong> file — or copy rows from Excel/Google Sheets and paste below. The first row must be column headers.</p>
 
-          <div style={{ marginBottom: 16 }}>
-            <input ref={fileRef} type="file" accept=".tsv,.csv,.txt" style={{ display: "none" }} onChange={handleFile} />
-            <button onClick={() => fileRef.current?.click()} style={ghostBtn}>📁 Upload .TSV / .CSV file</button>
+          {/* File upload area */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+            <input ref={fileRef} type="file" accept=".tsv,.csv,.txt,.pdf" style={{ display: "none" }} onChange={handleFile} />
+            {[
+              { icon: "📊", label: "Upload CSV", desc: "Comma-separated export from Excel / Google Sheets", ext: ".csv" },
+              { icon: "📄", label: "Upload PDF", desc: "Spreadsheet exported as PDF", ext: ".pdf" },
+              { icon: "📋", label: "Upload TSV", desc: "Tab-separated text file", ext: ".tsv,.txt" },
+            ].map(({ icon, label, desc, ext }) => (
+              <label key={ext} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "20px 14px", border: "2px dashed #e2e8f0", borderRadius: 12, cursor: "pointer", textAlign: "center", background: "#fafafa" }}>
+                <div style={{ fontSize: "1.8rem" }}>{icon}</div>
+                <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#0f172a" }}>{label}</div>
+                <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>{desc}</div>
+                <input type="file" accept={ext} style={{ display: "none" }} onChange={handleFile} />
+              </label>
+            ))}
           </div>
 
-          <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Or paste tab-separated data here</label>
+          {parsing && (
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 18px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 16, height: 16, border: "2px solid #1e40af", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <span style={{ fontWeight: 600, color: "#1e40af", fontSize: "0.85rem" }}>Parsing file…</span>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+
+          <div style={{ position: "relative", margin: "16px 0" }}>
+            <div style={{ borderTop: "1px solid #e2e8f0" }} />
+            <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "0 12px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700 }}>OR PASTE DIRECTLY</span>
+          </div>
+
           <textarea
             value={rawText}
             onChange={e => setRawText(e.target.value)}
-            style={{ width: "100%", minHeight: 200, padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.82rem", fontFamily: "monospace", resize: "vertical", boxSizing: "border-box", outline: "none" }}
-            placeholder={"Driver Name\tCDL Number\tCDL State\tCDL Expiration\tTruck Number\tCompany Name\nSmith, John\tTX1234567\tTX\t12/31/2027\tTruck 5\tBAS Equipment LLC"}
+            style={{ width: "100%", minHeight: 160, padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.82rem", fontFamily: "monospace", resize: "vertical", boxSizing: "border-box", outline: "none" }}
+            placeholder={"Driver Name\tCDL Number\tCDL State\tCDL Expiration\tMed Card Exp\tTruck Number\tCompany Name\nSmith, John\tTX1234567\tTX\t12/31/2027\t06/30/2027\tTruck 5\tBAS Equipment LLC"}
           />
 
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            <button onClick={() => parseTSV(rawText)} style={primaryBtn} disabled={!rawText.trim()}>Parse Data →</button>
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <button onClick={() => parseTabText(rawText, "tsv")} style={primaryBtn} disabled={!rawText.trim()}>Parse Pasted Data →</button>
             <a href="/ronyx/owner-operators" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>← Back</a>
+          </div>
+
+          {/* PDF tip */}
+          <div style={{ marginTop: 16, background: "#fefce8", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 14px", fontSize: "0.78rem", color: "#92400e" }}>
+            <strong>💡 PDF tip:</strong> If the PDF parser can't read the columns correctly, open the spreadsheet in Excel → File → Save As → CSV, then upload the CSV instead. CSV always gives the cleanest results.
           </div>
         </div>
       )}
@@ -211,7 +281,19 @@ export default function BulkImportPage() {
       {step === "map" && (
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "24px 28px" }}>
           <h3 style={{ margin: "0 0 4px", fontWeight: 800 }}>Step 2 — Map Columns</h3>
-          <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: "0.85rem" }}>Detected {headers.length} columns and {rows.length} driver rows. Match each field to the correct column.</p>
+          <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: "0.85rem" }}>
+            Detected <strong>{headers.length} columns</strong> and <strong>{rows.length} driver rows</strong>
+            {fileType && <span style={{ marginLeft: 8, background: "#eff6ff", color: "#1e40af", padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>{fileType.toUpperCase()}</span>}.
+            Match each field to the correct column — auto-detection already filled in the obvious ones.
+          </p>
+
+          {/* PDF raw text toggle */}
+          {fileType === "pdf" && rawPdfText && (
+            <details style={{ marginBottom: 16, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px" }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: "0.78rem", color: "#475569" }}>🔍 View raw PDF text (use this if columns look wrong)</summary>
+              <pre style={{ marginTop: 10, fontSize: "0.7rem", color: "#475569", overflowX: "auto", whiteSpace: "pre-wrap", maxHeight: 200, overflow: "auto" }}>{rawPdfText.slice(0, 3000)}{rawPdfText.length > 3000 ? "\n…(truncated)" : ""}</pre>
+            </details>
+          )}
 
           <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
             <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#475569", marginBottom: 8 }}>Company Assignment</div>
