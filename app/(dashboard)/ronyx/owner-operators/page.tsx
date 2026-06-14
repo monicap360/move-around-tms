@@ -45,6 +45,10 @@ type OOJob = {
   ticket_status?: "Verified" | "Needs Review" | "Missing" | "Duplicate";
   settlement_status: "Pending" | "Approved" | "Processing" | "Paid" | "Hold";
 };
+type ReminderEntry = { doc_type: string; sent_at: string; method: string };
+type HistoryEntry  = { date: string; event: string; type: "info"|"warning"|"critical" };
+type ChangeEntry   = { date: string; type: string; detail: string };
+
 type OOCompany = {
   id: string;
   company_name: string;
@@ -62,6 +66,11 @@ type OOCompany = {
   trucks: OOTruck[];
   documents: OODoc[];
   jobs: OOJob[];
+  notes?: string;
+  last_contact_date?: string;
+  reminder_log?: ReminderEntry[];
+  compliance_history?: HistoryEntry[];
+  changes_log?: ChangeEntry[];
 };
 
 /* ─── localStorage ───────────────────────────────────── */
@@ -323,6 +332,8 @@ export default function OwnerOperatorsPage() {
   // Jobs filters
   const [jobFilter,        setJobFilter]        = useState("All Projects");
   const [settlementFilter, setSettlementFilter] = useState("All");
+  const [editingNotes, setEditingNotes]         = useState(false);
+  const [notesValue,   setNotesValue]           = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingDocRef = useRef<string>("");
@@ -681,168 +692,459 @@ export default function OwnerOperatorsPage() {
       </div>
 
       {/* ── Overview ── */}
-      {activeTab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Card title="Business Details">
-              <Row label="Company"     value={selected.company_name} />
-              <Row label="MC Number"   value={selected.mc_number} />
-              <Row label="DOT Number"  value={selected.dot_number} />
-              <Row label="EIN / Tax ID"value={selected.ein} />
-              <Row label="Address"     value={selected.business_address} />
-            </Card>
-            <Card title="Contact">
-              <Row label="Contact" value={selected.contact_name} />
-              <Row label="Phone"   value={selected.contact_phone} />
-              <Row label="Email"   value={selected.contact_email} />
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                {selected.contact_phone && <a href={`tel:${selected.contact_phone}`}  style={{ ...ghostBtn, textDecoration:"none" }}>📞 Call</a>}
-                {selected.contact_email && <a href={`mailto:${selected.contact_email}`} style={{ ...ghostBtn, textDecoration:"none" }}>✉ Email</a>}
-                {selected.contact_phone && <a href={`sms:${selected.contact_phone}`}  style={{ ...ghostBtn, textDecoration:"none" }}>💬 Text</a>}
-              </div>
-            </Card>
-            <Card title="Profitability">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                {[
-                  { label: "Revenue MTD",  value: `$${revMTD.toLocaleString()}`,  color: "#15803d" },
-                  { label: "OO Settlement",value: `$${selected.jobs.reduce((s,j)=>s+j.oo_rate,0).toLocaleString()}`, color: "#1e40af" },
-                  { label: "Margin MTD",   value: `$${marMTD.toLocaleString()}`,  color: "#7c3aed" },
-                  { label: "Total Revenue",value: `$${selected.jobs.reduce((s,j)=>s+j.gross_revenue,0).toLocaleString()}`, color: "#15803d" },
-                  { label: "Total Loads",  value: String(selected.jobs.length) },
-                  { label: "Avg Margin/Load", value: selected.jobs.length>0?`$${Math.round(selected.jobs.reduce((s,j)=>s+j.margin,0)/selected.jobs.length).toLocaleString()}`:"—" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} style={{ textAlign: "center", padding: "10px", background: "#f8fafc", borderRadius: 10 }}>
-                    <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontWeight: 900, fontSize: "1.1rem", color: color || "#0f172a" }}>{value}</div>
+      {activeTab === "overview" && (() => {
+        // ── insurance doc lookups ──
+        const autoIns   = selected.documents.find(d => d.type==="Auto Liability Insurance" || d.type==="Insurance Certificate" || d.type==="Insurance Certificate (COI)");
+        const glIns     = selected.documents.find(d => d.type==="General Liability Insurance");
+        const cargoIns  = selected.documents.find(d => d.type==="Cargo Insurance");
+        const wcIns     = selected.documents.find(d => d.type==="Workers Comp Insurance");
+        const contract  = selected.documents.find(d => d.type==="Contract");
+        const w9        = selected.documents.find(d => d.type==="W-9 / Tax Form");
+
+        // ── compliance score breakdown ──
+        const insTotal = 3;
+        const insOK    = [autoIns, glIns, cargoIns].filter(d => d && (!d.expires_on || (daysUntil(d.expires_on)||0) > 0)).length;
+        const insScore = Math.round((insOK / insTotal) * 100);
+
+        const driversTotal = selected.drivers.length;
+        const driversOK    = selected.drivers.filter(d => {
+          const c = daysUntil(d.cdl_expiration); const m = daysUntil(d.med_card_expiration);
+          return (c===null||c>0) && (m===null||m>0);
+        }).length;
+        const driversScore = driversTotal > 0 ? Math.round((driversOK/driversTotal)*100) : 100;
+
+        const trucksTotal  = selected.trucks.length;
+        const trucksOK     = selected.trucks.filter(t => !t.inspection_result || t.inspection_result==="Pass").length;
+        const fleetScore   = trucksTotal > 0 ? Math.round((trucksOK/trucksTotal)*100) : 100;
+
+        const contractsOK  = (contract ? 1 : 0) + (w9 ? 1 : 0);
+        const contractsScore = Math.round((contractsOK / 2) * 100);
+
+        // ── missing items ──
+        const missingItems: Array<{label: string; docType?: string; hasExpiry?: boolean}> = [];
+        if (!autoIns)  missingItems.push({ label:"Auto Liability Insurance", docType:"Auto Liability Insurance", hasExpiry:true });
+        if (!glIns)    missingItems.push({ label:"General Liability Insurance", docType:"General Liability Insurance", hasExpiry:true });
+        if (!cargoIns) missingItems.push({ label:"Cargo Insurance", docType:"Cargo Insurance", hasExpiry:true });
+        if (!contract) missingItems.push({ label:"Contract", docType:"Contract", hasExpiry:true });
+        if (!w9)       missingItems.push({ label:"W-9 / Tax Form", docType:"W-9 / Tax Form", hasExpiry:false });
+        selected.drivers.forEach(d => {
+          const c = daysUntil(d.cdl_expiration); const m = daysUntil(d.med_card_expiration);
+          if (c!==null && c<=0) missingItems.push({ label:`CDL Expired — ${d.name}` });
+          if (m!==null && m<=0) missingItems.push({ label:`Medical Card Expired — ${d.name}` });
+          const cdlDoc = selected.documents.find(doc=>doc.type===`[${d.name}] CDL License`);
+          const dtDoc  = selected.documents.find(doc=>doc.type===`[${d.name}] Drug Test`);
+          const bgDoc  = selected.documents.find(doc=>doc.type===`[${d.name}] Background Check`);
+          if (!cdlDoc) missingItems.push({ label:`CDL Upload Missing — ${d.name}` });
+          if (!dtDoc)  missingItems.push({ label:`Drug Test Missing — ${d.name}` });
+          if (!bgDoc)  missingItems.push({ label:`Background Check Missing — ${d.name}` });
+        });
+
+        // ── upcoming expirations for reminder center ──
+        const upcoming: Array<{label: string; days: number; docType: string}> = [];
+        [
+          { label:"Auto Liability Insurance", doc: autoIns },
+          { label:"General Liability Insurance", doc: glIns },
+          { label:"Cargo Insurance", doc: cargoIns },
+          { label:"Contract", doc: contract },
+        ].forEach(({ label, doc }) => {
+          const d = doc?.expires_on ? daysUntil(doc.expires_on) : null;
+          if (d !== null && d >= 0 && d <= 90) upcoming.push({ label, days: d, docType: label });
+        });
+        selected.drivers.forEach(d => {
+          const c = daysUntil(d.cdl_expiration); const m = daysUntil(d.med_card_expiration);
+          if (c!==null && c>=0 && c<=90) upcoming.push({ label:`CDL — ${d.name}`, days:c, docType:`CDL_${d.id}` });
+          if (m!==null && m>=0 && m<=90) upcoming.push({ label:`Med Card — ${d.name}`, days:m, docType:`MED_${d.id}` });
+        });
+        upcoming.sort((a,b)=>a.days-b.days);
+
+        // ── settlement state ──
+        const holdCount  = selected.jobs.filter(j=>j.settlement_status==="Hold").length;
+        const holdAmount = selected.jobs.filter(j=>j.settlement_status==="Hold").reduce((s,j)=>s+j.oo_rate,0);
+        const holdReasons = selected.jobs.filter(j=>j.settlement_status==="Hold" && j.ticket_status==="Missing").map(j=>`Missing Ticket ${j.project_number}`).slice(0,2);
+
+        // ── changes since yesterday ──
+        const yesterday  = new Date(Date.now()-86400000).toISOString().slice(0,10);
+        const todayChanges = (selected.changes_log||[]).filter(c=>c.date>=yesterday);
+
+        // ── recommended office actions ──
+        const recommendedActions: string[] = [];
+        cargoIns && daysUntil(cargoIns.expires_on)!==null && (daysUntil(cargoIns.expires_on)||0)<=30 && recommendedActions.push(`Request Cargo Insurance renewal from ${selected.insurance_agent_name||"insurance agent"} — expires ${expLabel(daysUntil(cargoIns.expires_on),cargoIns.expires_on)}`);
+        autoIns && daysUntil(autoIns.expires_on)!==null && (daysUntil(autoIns.expires_on)||0)<=30 && recommendedActions.push(`Request Auto Liability renewal — expires ${expLabel(daysUntil(autoIns.expires_on),autoIns.expires_on)}`);
+        !cargoIns && recommendedActions.push("Upload Cargo Insurance — required for dispatch");
+        !autoIns  && recommendedActions.push("Upload Auto Liability Insurance — required for dispatch");
+        !glIns    && recommendedActions.push("Upload General Liability Insurance");
+        !contract && recommendedActions.push("Upload signed Contract");
+        !w9       && recommendedActions.push("Upload W-9 / Tax Form");
+        selected.drivers.forEach(d => {
+          const c=daysUntil(d.cdl_expiration); const m=daysUntil(d.med_card_expiration);
+          if (c!==null&&c<=14) recommendedActions.push(`${d.name} CDL ${c<0?"EXPIRED":c+"d"} — contact driver immediately`);
+          if (m!==null&&m<=14) recommendedActions.push(`${d.name} Medical Card ${m<0?"EXPIRED":m+"d"} — driver cannot legally operate`);
+        });
+        if (holdCount>0) recommendedActions.push(`${holdCount} settlement${holdCount>1?"s":""} on hold totaling $${holdAmount.toLocaleString()} — review missing tickets`);
+        if (settlementReady>0) recommendedActions.push(`$${settlementReady.toLocaleString()} ready to settle — release payment to ${selected.company_name}`);
+
+        function sendReminder(docType: string, label: string) {
+          const sub = encodeURIComponent(`Document Renewal Required — ${selected.company_name} — ${label}`);
+          const body = encodeURIComponent(`Dear ${selected.contact_name||selected.company_name},\n\nThis is a reminder that the following document requires renewal:\n\n${label}\n\nPlease provide an updated document at your earliest convenience.\n\nMC#: ${selected.mc_number||"—"}\n\nThank you,\nRonyx Logistics Operations`);
+          window.location.href = `mailto:${selected.contact_email||selected.insurance_agent_email||""}?subject=${sub}&body=${body}`;
+          const log: ReminderEntry = { doc_type:docType, sent_at:new Date().toISOString(), method:"email" };
+          const change: ChangeEntry = { date:new Date().toISOString().slice(0,10), type:"Reminder Sent", detail:`${label} reminder emailed` };
+          updateSelected({ ...selected, reminder_log:[log,...(selected.reminder_log||[])], changes_log:[change,...(selected.changes_log||[])] });
+          flash(`Reminder sent for ${label}.`);
+        }
+
+        return (
+          <div>
+            {/* ── #1 Dispatch + Settlement Eligibility Row ── */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+              {/* Dispatch Eligibility Engine */}
+              <div style={{ background:eligible?"#f0fdf4":"#0f172a", border:`2px solid ${eligible?"#86efac":"#dc2626"}`, borderRadius:14, padding:"20px 22px" }}>
+                <div style={{ fontSize:"0.65rem", fontWeight:800, color:eligible?"#15803d":"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Dispatch Eligibility</div>
+                <div style={{ fontSize:"2rem", fontWeight:900, color:eligible?"#15803d":"#ef4444", marginBottom:6 }}>
+                  {eligible ? "🟢 ELIGIBLE" : "🔴 BLOCKED"}
+                </div>
+                {!eligible && blocks.length > 0 && (
+                  <div>
+                    <div style={{ fontSize:"0.72rem", fontWeight:700, color:"#94a3b8", marginBottom:6 }}>REASON{blocks.length>1?"S":""}:</div>
+                    {blocks.map((b,i)=>(
+                      <div key={i} style={{ color:"#fca5a5", fontSize:"0.82rem", fontWeight:600, marginBottom:3 }}>• {b}</div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {eligible && <div style={{ fontSize:"0.78rem", color:"#15803d", fontWeight:600 }}>All compliance checks passed. Ready to dispatch.</div>}
               </div>
-            </Card>
-            <Card title="Ticket Health">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
-                {[
-                  { label: "Verified",     value: tick.verified,     color: "#15803d", bg: "#f0fdf4" },
-                  { label: "Needs Review", value: tick.needsReview,  color: "#d97706", bg: "#fefce8" },
-                  { label: "Missing",      value: tick.missing,      color: "#dc2626", bg: "#fff1f2" },
-                  { label: "Duplicate",    value: tick.duplicate,    color: "#7c3aed", bg: "#f5f3ff" },
-                ].map(({ label, value, color, bg }) => (
-                  <div key={label} style={{ textAlign: "center", background: bg, borderRadius: 10, padding: "10px 6px" }}>
-                    <div style={{ fontSize: "1.6rem", fontWeight: 900, color }}>{value}</div>
-                    <div style={{ fontSize: "0.65rem", fontWeight: 700, color, textTransform: "uppercase" }}>{label}</div>
+
+              {/* Settlement Eligibility */}
+              <div style={{ background:holdCount>0?"#fffbeb":"#f0fdf4", border:`2px solid ${holdCount>0?"#f59e0b":"#86efac"}`, borderRadius:14, padding:"20px 22px" }}>
+                <div style={{ fontSize:"0.65rem", fontWeight:800, color:holdCount>0?"#92400e":"#15803d", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Settlement Status</div>
+                <div style={{ fontSize:"2rem", fontWeight:900, color:holdCount>0?"#d97706":"#15803d", marginBottom:6 }}>
+                  {holdCount>0 ? "🟡 ON HOLD" : settlementReady>0 ? "🟢 READY" : "🟢 CLEAR"}
+                </div>
+                {holdCount>0 ? (
+                  <div>
+                    <div style={{ fontSize:"0.72rem", fontWeight:700, color:"#92400e", marginBottom:4 }}>REASON:</div>
+                    {holdReasons.length>0
+                      ? holdReasons.map((r,i)=><div key={i} style={{ color:"#d97706", fontSize:"0.82rem", fontWeight:600 }}>• {r}</div>)
+                      : <div style={{ color:"#d97706", fontSize:"0.82rem" }}>• {holdCount} load{holdCount>1?"s":""} pending review</div>}
+                    <button onClick={()=>setActiveTab("settlement")} style={{ ...primaryBtn, fontSize:"0.72rem", marginTop:10, background:"#d97706" }}>Review Holds →</button>
                   </div>
-                ))}
+                ) : settlementReady>0 ? (
+                  <div>
+                    <div style={{ fontSize:"0.72rem", fontWeight:700, color:"#15803d", marginBottom:4 }}>AMOUNT READY:</div>
+                    <div style={{ fontSize:"1.3rem", fontWeight:900, color:"#1e40af" }}>${settlementReady.toLocaleString()}</div>
+                    <button onClick={()=>setActiveTab("settlement")} style={{ ...primaryBtn, fontSize:"0.72rem", marginTop:10, background:"#15803d" }}>Release Payment →</button>
+                  </div>
+                ) : (
+                  <div style={{ fontSize:"0.78rem", color:"#15803d", fontWeight:600 }}>No pending settlements.</div>
+                )}
               </div>
-            </Card>
-            <Card title={`Drivers (${selected.drivers.length})`}>
-              {selected.drivers.length === 0 ? (
-                <div style={{ color:"#94a3b8", fontSize:"0.82rem", textAlign:"center", padding:"10px 0" }}>No drivers on file. <button onClick={()=>setActiveTab("drivers")} style={{ background:"none", border:"none", color:"#1e40af", cursor:"pointer", fontWeight:700, fontSize:"0.82rem" }}>+ Add Driver</button></div>
-              ) : (
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  {selected.drivers.map(d => {
-                    const cdlD = daysUntil(d.cdl_expiration);
-                    const medD = daysUntil(d.med_card_expiration);
-                    const ok   = (cdlD===null||cdlD>0) && (medD===null||medD>0);
+            </div>
+
+            {/* ── #10 Missing Items Dashboard ── */}
+            {missingItems.length > 0 && (
+              <div style={{ background:"#fff", border:"1px solid #fda4af", borderRadius:14, padding:"16px 20px", marginBottom:14 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <div style={{ fontWeight:800, color:"#dc2626", fontSize:"0.9rem" }}>🔴 Missing Items ({missingItems.length})</div>
+                  <button onClick={()=>setActiveTab("documents")} style={{ ...ghostBtn, fontSize:"0.72rem" }}>Go to Documents →</button>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:8 }}>
+                  {missingItems.slice(0,8).map((item,i) => (
+                    <div key={i} style={{ background:"#fff1f2", border:"1px solid #fca5a5", borderRadius:10, padding:"8px 12px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:"0.78rem", fontWeight:600, color:"#dc2626" }}>{item.label}</span>
+                      {item.docType && (
+                        <label style={{ background:"#dc2626", color:"#fff", padding:"3px 8px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", flexShrink:0, marginLeft:8 }}>
+                          Upload
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(item.docType!,f); e.target.value=""; }} />
+                        </label>
+                      )}
+                    </div>
+                  ))}
+                  {missingItems.length > 8 && <div style={{ fontSize:"0.75rem", color:"#94a3b8", padding:"8px 12px" }}>+{missingItems.length-8} more — see Documents tab</div>}
+                </div>
+              </div>
+            )}
+
+            {/* ── Main 2-column grid ── */}
+            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:14 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+                {/* ── #12 Revenue & Settlement Snapshot ── */}
+                <Card title="Revenue & Settlement Snapshot">
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                    {[
+                      { label:"Revenue MTD",       value:`$${revMTD.toLocaleString()}`,          color:"#15803d" },
+                      { label:"Pending Settlement", value:settlementReady>0?`$${settlementReady.toLocaleString()}`:"—", color:settlementReady>0?"#1e40af":"#94a3b8" },
+                      { label:"Loads This Month",   value:String(selected.jobs.filter(j=>{ const m=new Date().getMonth(); return new Date(j.load_date).getMonth()===m; }).length) },
+                      { label:"Open Tickets",       value:String(tick.needsReview+tick.missing),  color:tick.needsReview+tick.missing>0?"#d97706":"#15803d" },
+                      { label:"Margin MTD",         value:`$${marMTD.toLocaleString()}`,          color:"#7c3aed" },
+                      { label:"Total Revenue",      value:`$${selected.jobs.reduce((s,j)=>s+j.gross_revenue,0).toLocaleString()}`, color:"#15803d" },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} style={{ textAlign:"center", padding:"10px", background:"#f8fafc", borderRadius:10 }}>
+                        <div style={{ fontSize:"0.62rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:4 }}>{label}</div>
+                        <div style={{ fontWeight:900, fontSize:"1.05rem", color: color||"#0f172a" }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* ── #4 Insurance Expiration Timeline ── */}
+                <Card title="Insurance Expiration Timeline">
+                  {[
+                    { label:"Auto Liability",    doc: autoIns },
+                    { label:"General Liability", doc: glIns },
+                    { label:"Cargo",             doc: cargoIns },
+                    { label:"Workers Comp",      doc: wcIns },
+                  ].map(({ label, doc }) => {
+                    const d = doc?.expires_on ? daysUntil(doc.expires_on) : null;
+                    const pct = d===null ? 0 : Math.max(0, Math.min(100, Math.round((d/365)*100)));
                     return (
-                      <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:"1px solid #f1f5f9" }}>
-                        <div>
-                          <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.85rem" }}>{d.name}</div>
-                          <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>{d.cdl_state} CDL {d.cdl_number||""}</div>
+                      <div key={label} style={{ marginBottom:12 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                          <span style={{ fontWeight:600, color:"#0f172a", fontSize:"0.85rem" }}>{label}</span>
+                          {doc ? (
+                            <span style={{ background:expBg(d), color:expColor(d), padding:"3px 10px", borderRadius:8, fontWeight:800, fontSize:"0.75rem" }}>
+                              {d===null?"On File":d<0?"EXPIRED":d<=14?d+"d ⚠":d+"d"}
+                            </span>
+                          ) : (
+                            <label style={{ background:"#dc2626", color:"#fff", padding:"3px 10px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                              Upload
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ const insLabel=label+" Insurance"; const exp=prompt(`${insLabel} expiration (YYYY-MM-DD):`)||undefined; const doc2:OODoc={type:insLabel,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateSelected({...selected,documents:[doc2,...selected.documents.filter(x=>x.type!==insLabel)]}); flash(`${insLabel} uploaded.`); } e.target.value=""; }} />
+                            </label>
+                          )}
                         </div>
-                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
-                          <span style={{ background:expBg(cdlD), color:expColor(cdlD), padding:"2px 7px", borderRadius:6, fontSize:"0.68rem", fontWeight:700 }}>CDL {cdlD!==null&&cdlD<0?"EXPIRED":cdlD!==null&&cdlD<=30?cdlD+"d":"OK"}</span>
-                          <span style={{ background:expBg(medD), color:expColor(medD), padding:"2px 7px", borderRadius:6, fontSize:"0.68rem", fontWeight:700 }}>Med {medD!==null&&medD<0?"EXPIRED":medD!==null&&medD<=30?medD+"d":"OK"}</span>
+                        {doc?.expires_on && (
+                          <div style={{ height:6, background:"#f1f5f9", borderRadius:3, overflow:"hidden" }}>
+                            <div style={{ height:"100%", width:`${pct}%`, background:expColor(d), borderRadius:3, transition:"width 0.3s" }} />
+                          </div>
+                        )}
+                        {!doc && <div style={{ height:6, background:"#fff1f2", borderRadius:3, border:"1px solid #fca5a5" }} />}
+                      </div>
+                    );
+                  })}
+                </Card>
+
+                {/* ── #9 Compliance Score ── */}
+                <Card title="Compliance Score">
+                  {[
+                    { label:"Insurance",  score:insScore,       detail:`${insOK}/${insTotal} policies valid` },
+                    { label:"Drivers",    score:driversScore,   detail:`${driversOK}/${driversTotal||0} drivers compliant` },
+                    { label:"Fleet",      score:fleetScore,     detail:`${trucksOK}/${trucksTotal||0} trucks passing inspection` },
+                    { label:"Contracts",  score:contractsScore, detail:`${contractsOK}/2 documents on file (Contract, W-9)` },
+                  ].map(({ label, score, detail }) => (
+                    <div key={label} style={{ marginBottom:12, paddingBottom:12, borderBottom:"1px solid #f1f5f9" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                        <div>
+                          <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.85rem" }}>{label}</div>
+                          <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>{detail}</div>
+                        </div>
+                        <span style={{ fontWeight:900, fontSize:"1rem", color:score>=100?"#15803d":score>=70?"#d97706":"#dc2626" }}>{score}%</span>
+                      </div>
+                      <div style={{ height:6, background:"#f1f5f9", borderRadius:3 }}>
+                        <div style={{ height:"100%", width:`${score}%`, background:score>=100?"#15803d":score>=70?"#d97706":"#dc2626", borderRadius:3 }} />
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+
+                {/* ── #5 Driver Roster Preview ── */}
+                <Card title={`Drivers (${selected.drivers.length})`}>
+                  {selected.drivers.length === 0 ? (
+                    <div style={{ color:"#94a3b8", textAlign:"center", padding:"10px 0" }}>
+                      No drivers. <button onClick={()=>setActiveTab("drivers")} style={{ background:"none", border:"none", color:"#1e40af", cursor:"pointer", fontWeight:700 }}>+ Add</button>
+                    </div>
+                  ) : selected.drivers.map(d => {
+                    const c=daysUntil(d.cdl_expiration); const m=daysUntil(d.med_card_expiration);
+                    const warn=(c!==null&&c>=0&&c<=30)||(m!==null&&m>=0&&m<=30);
+                    const compliant=(c===null||c>0)&&(m===null||m>0);
+                    return (
+                      <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #f1f5f9" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize:"1rem" }}>{compliant&&!warn?"✓":warn?"⚠":"✗"}</span>
+                          <div>
+                            <div style={{ fontWeight:700, color:"#0f172a" }}>{d.name}</div>
+                            {!compliant && <div style={{ fontSize:"0.7rem", color:"#dc2626", fontWeight:600 }}>
+                              {c!==null&&c<=0&&"CDL expired "}{m!==null&&m<=0&&"Med card expired"}
+                            </div>}
+                            {compliant&&warn && <div style={{ fontSize:"0.7rem", color:"#d97706", fontWeight:600 }}>
+                              {c!==null&&c<=30&&c>0?`CDL in ${c}d `:""}{m!==null&&m<=30&&m>0?`Med card in ${m}d`:""}
+                            </div>}
+                          </div>
+                        </div>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <span style={{ background:expBg(c), color:expColor(c), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700 }}>CDL {c===null?"—":c<0?"EXP":c+"d"}</span>
+                          <span style={{ background:expBg(m), color:expColor(m), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700 }}>Med {m===null?"—":m<0?"EXP":m+"d"}</span>
                         </div>
                       </div>
                     );
                   })}
-                  <button onClick={()=>setActiveTab("drivers")} style={{ ...ghostBtn, fontSize:"0.75rem", marginTop:4 }}>Manage Drivers →</button>
-                </div>
-              )}
-            </Card>
-            <Card title={`Trucks (${selected.trucks.length})`}>
-              {selected.trucks.length === 0 ? (
-                <div style={{ color:"#94a3b8", fontSize:"0.82rem", textAlign:"center", padding:"10px 0" }}>No trucks on file. <button onClick={()=>setActiveTab("fleet")} style={{ background:"none", border:"none", color:"#1e40af", cursor:"pointer", fontWeight:700, fontSize:"0.82rem" }}>+ Add Truck</button></div>
-              ) : (
-                <div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:8 }}>
-                    {selected.trucks.map(t => {
-                      const inspOK = !t.inspection_result || t.inspection_result==="Pass";
-                      return (
-                        <span key={t.id} style={{ background:inspOK?"#f0fdf4":"#fff1f2", color:inspOK?"#15803d":"#dc2626", border:`1px solid ${inspOK?"#86efac":"#fca5a5"}`, padding:"5px 12px", borderRadius:10, fontSize:"0.78rem", fontWeight:700 }}>
-                          🚛 {t.truck_number}{t.year?" · "+t.year:""}{t.make?" "+t.make:""}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <button onClick={()=>setActiveTab("fleet")} style={{ ...ghostBtn, fontSize:"0.75rem" }}>Manage Fleet →</button>
-                </div>
-              )}
-            </Card>
-          </div>
+                  <button onClick={()=>setActiveTab("drivers")} style={{ ...ghostBtn, fontSize:"0.72rem", marginTop:8 }}>Manage Drivers →</button>
+                </Card>
 
-          {/* Right panel: Compliance Assistant */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Card title="Compliance Assistant" accent="#1e40af">
-              {actions.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "20px 0", color: "#15803d" }}>
-                  <div style={{ fontSize: "2rem" }}>✅</div>
-                  <div style={{ fontWeight: 700, marginTop: 8 }}>All clear</div>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {actions.map((a, i) => (
-                    <div key={i} style={{ background: "#fff1f2", border: "1px solid #fda4af", borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#dc2626", marginBottom: 6 }}>{a}</div>
-                      {a.includes("insurance") && selected.insurance_agent_email && (
-                        <a href={`mailto:${selected.insurance_agent_email}?subject=COI Request — ${selected.company_name}`} style={{ ...primaryBtn, fontSize: "0.72rem", padding: "4px 10px", background: "#dc2626", textDecoration: "none", display: "inline-block" }}>Send Reminder</a>
-                      )}
-                      {a.includes("driver") && a.includes("CDL") && (
-                        <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Contact driver in roster →</span>
-                      )}
+                {/* ── #6 Fleet Roster Preview ── */}
+                <Card title={`Fleet (${selected.trucks.length} Trucks)`}>
+                  {selected.trucks.length === 0 ? (
+                    <div style={{ color:"#94a3b8", textAlign:"center", padding:"10px 0" }}>
+                      No trucks. <button onClick={()=>setActiveTab("fleet")} style={{ background:"none", border:"none", color:"#1e40af", cursor:"pointer", fontWeight:700 }}>+ Add</button>
+                    </div>
+                  ) : selected.trucks.map(t => {
+                    const inspOK = !t.inspection_result || t.inspection_result==="Pass";
+                    const inspWarn = t.inspection_result==="Pass w/ Defects";
+                    return (
+                      <div key={t.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #f1f5f9" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize:"1rem" }}>🚛</span>
+                          <div>
+                            <div style={{ fontWeight:700, color:"#0f172a" }}>{t.truck_number} {t.year&&`· ${t.year}`} {t.make}</div>
+                            {inspWarn && <div style={{ fontSize:"0.7rem", color:"#d97706", fontWeight:600 }}>⚠ Inspection — Pass w/ Defects</div>}
+                            {!inspOK  && <div style={{ fontSize:"0.7rem", color:"#dc2626", fontWeight:600 }}>✗ Inspection FAILED — not eligible</div>}
+                          </div>
+                        </div>
+                        <span style={{ background:inspOK&&!inspWarn?"#f0fdf4":inspWarn?"#fefce8":"#fff1f2", color:inspOK&&!inspWarn?"#15803d":inspWarn?"#d97706":"#dc2626", padding:"3px 8px", borderRadius:8, fontSize:"0.72rem", fontWeight:800 }}>
+                          {inspOK&&!inspWarn?"✓ OK":inspWarn?"⚠ Defects":"✗ Fail"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <button onClick={()=>setActiveTab("fleet")} style={{ ...ghostBtn, fontSize:"0.72rem", marginTop:8 }}>Manage Fleet →</button>
+                </Card>
+
+                {/* ── #13 Compliance History Timeline ── */}
+                {(selected.compliance_history||[]).length > 0 && (
+                  <Card title="Compliance History">
+                    <div style={{ position:"relative", paddingLeft:18 }}>
+                      <div style={{ position:"absolute", left:6, top:0, bottom:0, width:2, background:"#e2e8f0" }} />
+                      {(selected.compliance_history||[]).slice(0,5).map((h,i) => {
+                        const dot = h.type==="critical"?"#dc2626":h.type==="warning"?"#d97706":"#1e40af";
+                        return (
+                          <div key={i} style={{ position:"relative", marginBottom:12 }}>
+                            <div style={{ position:"absolute", left:-18, top:4, width:10, height:10, borderRadius:"50%", background:dot, border:"2px solid #fff" }} />
+                            <div style={{ fontSize:"0.7rem", color:"#94a3b8", marginBottom:2 }}>{h.date}</div>
+                            <div style={{ fontSize:"0.82rem", color:"#0f172a", fontWeight:600 }}>{h.event}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {/* ── Right column ── */}
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+                {/* ── Office Assistant Panel (recommended actions) ── */}
+                <div style={{ background:"#0f172a", border:"1px solid #1e293b", borderRadius:14, padding:"16px 20px" }}>
+                  <div style={{ fontWeight:800, color:"#f8fafc", marginBottom:4 }}>🤖 Office Assistant</div>
+                  <div style={{ fontSize:"0.68rem", color:"#64748b", marginBottom:12, textTransform:"uppercase", letterSpacing:"0.08em" }}>Recommended Actions</div>
+                  {recommendedActions.length === 0 ? (
+                    <div style={{ color:"#86efac", fontWeight:700, textAlign:"center", padding:"16px 0" }}>✅ All clear — no actions needed.</div>
+                  ) : recommendedActions.map((a,i) => (
+                    <div key={i} style={{ color:"#e2e8f0", fontSize:"0.78rem", marginBottom:10, display:"flex", gap:8, alignItems:"flex-start" }}>
+                      <span style={{ background:a.includes("EXPIRED")||a.includes("required")?"#dc2626":"#d97706", color:"#fff", borderRadius:"50%", minWidth:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.62rem", fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                      <span>{a}</span>
                     </div>
                   ))}
+                  <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
+                    {selected.insurance_agent_email && <a href={`mailto:${selected.insurance_agent_email}?subject=Insurance Documents Required — ${selected.company_name}`} style={{ background:"#7c3aed", color:"#fff", padding:"6px 12px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, textDecoration:"none", display:"inline-block" }}>✉ Email Insurance Agent</a>}
+                    {selected.contact_email && <a href={`mailto:${selected.contact_email}?subject=Document Update Required — ${selected.company_name}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Email sent to carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ background:"#1e40af", color:"#fff", padding:"6px 12px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, textDecoration:"none", display:"inline-block" }}>✉ Contact Carrier</a>}
+                  </div>
                 </div>
-              )}
-            </Card>
 
-            <Card title="Document Health">
-              {["Insurance Certificate","Contract","W-9 / Tax Form","MC Authority Letter"].map(docType => {
-                const existing = selected.documents.find(d => d.type === docType);
-                const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
-                return (
-                  <div key={docType} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #f1f5f9" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, fontSize: "0.82rem", color: "#0f172a" }}>{docType}</span>
-                      {existing ? <span style={{ color: "#15803d", fontSize: "0.72rem" }}>✓</span> : <span style={{ color: "#dc2626", fontSize: "0.72rem" }}>✗</span>}
+                {/* ── #11 Reminder Center ── */}
+                <Card title="Reminder Center">
+                  <div style={{ fontSize:"0.65rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:10 }}>Upcoming Expirations</div>
+                  {upcoming.length === 0 ? (
+                    <div style={{ color:"#15803d", fontSize:"0.82rem", textAlign:"center", padding:"10px 0" }}>✓ No expirations in the next 90 days.</div>
+                  ) : upcoming.slice(0,5).map((u,i) => (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #f1f5f9" }}>
+                      <div>
+                        <div style={{ fontWeight:600, fontSize:"0.82rem", color:"#0f172a" }}>{u.label}</div>
+                        <div style={{ fontSize:"0.7rem", color:expColor(u.days), fontWeight:700 }}>{u.days===0?"Today":u.days+"d"}</div>
+                      </div>
+                      <button onClick={()=>sendReminder(u.docType, u.label)} style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:8, padding:"4px 10px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer" }}>Send Reminder</button>
                     </div>
-                    {existing?.expires_on ? (
-                      <span style={{ background: expBg(expDays), color: expColor(expDays), padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 700 }}>{expLabel(expDays, existing.expires_on)}</span>
-                    ) : existing ? (
-                      <span style={{ fontSize: "0.72rem", color: "#15803d" }}>On file</span>
-                    ) : (
-                      <label style={{ ...primaryBtn, fontSize: "0.68rem", padding: "3px 8px", cursor: "pointer" }}>
-                        Upload<input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(docType, f); e.target.value=""; }} />
-                      </label>
+                  ))}
+                  {(selected.reminder_log||[]).length > 0 && (
+                    <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #f1f5f9" }}>
+                      <div style={{ fontSize:"0.65rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:6 }}>Recently Sent</div>
+                      {(selected.reminder_log||[]).slice(0,3).map((r,i) => (
+                        <div key={i} style={{ fontSize:"0.72rem", color:"#64748b", marginBottom:3 }}>✓ {r.doc_type} — {new Date(r.sent_at).toLocaleDateString()}</div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {/* ── #7 Office Notes ── */}
+                <Card title="Office Notes">
+                  {editingNotes ? (
+                    <div>
+                      <textarea value={notesValue} onChange={e=>setNotesValue(e.target.value)} style={{ width:"100%", minHeight:100, padding:"8px", border:"1px solid #e2e8f0", borderRadius:8, fontSize:"0.82rem", resize:"vertical", boxSizing:"border-box" }} placeholder="Add notes for staff — e.g. 'Carrier says new COI coming Friday. Do not dispatch after 6/30 if not received.'" />
+                      <div style={{ display:"flex", gap:8, marginTop:8 }}>
+                        <button onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Notes Updated",detail:"Office notes edited"}; updateSelected({...selected,notes:notesValue,changes_log:[change,...(selected.changes_log||[])]}); setEditingNotes(false); flash("Notes saved."); }} style={{ ...primaryBtn, fontSize:"0.75rem" }}>Save</button>
+                        <button onClick={()=>setEditingNotes(false)} style={{ ...ghostBtn, fontSize:"0.75rem" }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      {selected.notes ? (
+                        <p style={{ fontSize:"0.82rem", color:"#475569", margin:"0 0 10px", whiteSpace:"pre-wrap", lineHeight:1.6 }}>{selected.notes}</p>
+                      ) : (
+                        <p style={{ fontSize:"0.82rem", color:"#94a3b8", margin:"0 0 10px", fontStyle:"italic" }}>No notes yet. Click Edit to add staff notes about this carrier.</p>
+                      )}
+                      <button onClick={()=>{ setNotesValue(selected.notes||""); setEditingNotes(true); }} style={{ ...ghostBtn, fontSize:"0.72rem" }}>✏ Edit Notes</button>
+                    </div>
+                  )}
+                </Card>
+
+                {/* ── #8 Contact Center ── */}
+                <Card title="Contact Center">
+                  <div style={{ marginBottom:10 }}>
+                    <div style={{ fontWeight:700, color:"#0f172a", marginBottom:2 }}>{selected.contact_name||"—"}</div>
+                    <div style={{ fontSize:"0.72rem", color:"#64748b" }}>Primary Contact</div>
+                    {selected.last_contact_date && (
+                      <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:4 }}>
+                        Last contact: {Math.floor((Date.now()-new Date(selected.last_contact_date).getTime())/86400000)} day{Math.floor((Date.now()-new Date(selected.last_contact_date).getTime())/86400000)!==1?"s":""} ago
+                      </div>
                     )}
                   </div>
-                );
-              })}
-            </Card>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    {selected.contact_phone && <a href={`tel:${selected.contact_phone}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Called carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...primaryBtn, textDecoration:"none", fontSize:"0.75rem" }}>📞 Call</a>}
+                    {selected.contact_email && <a href={`mailto:${selected.contact_email}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Emailed carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>✉ Email</a>}
+                    {selected.contact_phone && <a href={`sms:${selected.contact_phone}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Texted carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>💬 Text</a>}
+                  </div>
+                  {selected.insurance_agent_name && (
+                    <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #f1f5f9" }}>
+                      <div style={{ fontWeight:600, color:"#0f172a", fontSize:"0.82rem", marginBottom:4 }}>Insurance Agent: {selected.insurance_agent_name}</div>
+                      <div style={{ display:"flex", gap:6 }}>
+                        {selected.insurance_agent_phone && <a href={`tel:${selected.insurance_agent_phone}`} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem" }}>📞 Agent</a>}
+                        {selected.insurance_agent_email && <a href={`mailto:${selected.insurance_agent_email}`} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem" }}>✉ Agent</a>}
+                      </div>
+                    </div>
+                  )}
+                </Card>
 
-            {selected.insurance_agent_name && (
-              <Card title="Insurance Agent">
-                <Row label="Agent"  value={selected.insurance_agent_name} />
-                <Row label="Phone"  value={selected.insurance_agent_phone} />
-                <Row label="Email"  value={selected.insurance_agent_email} />
-                <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                  {selected.insurance_agent_phone && <a href={`tel:${selected.insurance_agent_phone}`} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>📞</a>}
-                  {selected.insurance_agent_email && <a href={`mailto:${selected.insurance_agent_email}`} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>✉ Email Agent</a>}
-                </div>
-              </Card>
-            )}
+                {/* ── Changes Since Yesterday ── */}
+                <Card title="Changes Since Yesterday">
+                  {todayChanges.length === 0 ? (
+                    <div style={{ color:"#94a3b8", fontSize:"0.82rem", textAlign:"center", padding:"10px 0" }}>No changes logged in the last 24 hours.</div>
+                  ) : (
+                    <div>
+                      {todayChanges.slice(0,6).map((c,i) => (
+                        <div key={i} style={{ display:"flex", gap:8, padding:"6px 0", borderBottom:"1px solid #f1f5f9" }}>
+                          <span style={{ background:"#eff6ff", color:"#1e40af", padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700, flexShrink:0 }}>{c.type}</span>
+                          <span style={{ fontSize:"0.75rem", color:"#475569" }}>{c.detail}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
+                    <button onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Document Added",detail:"Insurance document uploaded"}; updateSelected({...selected,changes_log:[change,...(selected.changes_log||[])]}); flash("Change logged."); }} style={{ ...ghostBtn, fontSize:"0.68rem" }}>+ Log Change</button>
+                  </div>
+                </Card>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Drivers ── */}
       {activeTab === "drivers" && (
@@ -1021,7 +1323,7 @@ export default function OwnerOperatorsPage() {
               <div style={{ fontSize:"0.75rem", color:"#92400e" }}>Confirm the carrier's policy is active and not fraudulent via FMCSA or ACORD database.</div>
             </div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-              <button onClick={() => { const mc = selected.mc_number?.replace(/[^0-9]/g,""); window.open(`https://safer.fmcsa.dot.gov/query.asp?query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${selected.dot_number?.replace(/[^0-9]/g,"")}`, "_blank"); flash("FMCSA SAFER opened — verify carrier registration and insurance."); }} style={{ ...primaryBtn, background:"#c2410c", fontSize:"0.75rem" }}>
+              <button onClick={() => { window.open(`https://safer.fmcsa.dot.gov/query.asp?query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${selected.dot_number?.replace(/[^0-9]/g,"")}`, "_blank"); flash("FMCSA SAFER opened — verify carrier registration and insurance."); }} style={{ ...primaryBtn, background:"#c2410c", fontSize:"0.75rem" }}>
                 FMCSA SAFER Verify
               </button>
               <button onClick={() => { window.open(`https://www.acord.org/`, "_blank"); flash("ACORD certificate verification opened."); }} style={{ ...ghostBtn, fontSize:"0.75rem" }}>
@@ -1113,7 +1415,6 @@ export default function OwnerOperatorsPage() {
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
               {selected.drivers.map(d => {
-                const driverDocs = selected.documents.filter(doc => doc.type.startsWith(`[${d.name}]`));
                 function driverDocUpload(docLabel: string, f: File, hasExp: boolean) {
                   const key = `[${d.name}] ${docLabel}`;
                   if (hasExp) {
@@ -1605,8 +1906,6 @@ export default function OwnerOperatorsPage() {
                 <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:12 }}>Fleet Compliance</div>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
                   {selected.trucks.map(t => {
-                    const insDays = null;
-                    const insSt   = "Pending Review";
                     const inspDays = t.last_inspection ? daysUntil(new Date(new Date(t.last_inspection).getTime() + 365*86400000).toISOString().slice(0,10)) : null;
                     const inspSt  = inspDays===null?"Missing":inspDays<0?"Expired":inspDays<=30?"Expiring Soon":"Valid";
                     return (
