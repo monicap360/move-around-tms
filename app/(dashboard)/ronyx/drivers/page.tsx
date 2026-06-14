@@ -30,6 +30,8 @@ type Driver = {
   onTime: number;
   lastLoad: string;
   revenueWeek: string;
+  drugTestStatus?: string;
+  backgroundCheckStatus?: string;
 };
 
 type ComplianceAlert = {
@@ -564,6 +566,9 @@ export default function DriversPage() {
               </Link>
               <button onClick={() => showToast("Login invite — coming soon.")}>
                 Send Login Invite
+              </button>
+              <button onClick={() => setUploadTarget({ docType: "CDL" })}>
+                Upload CDL
               </button>
               <button onClick={() => setUploadTarget({ docType: "MVR" })}>
                 Upload MVR
