@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import * as XLSX from "xlsx";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type TruckStatus = "Available" | "Assigned" | "In Maintenance" | "Out of Service" | "Inactive";
@@ -491,6 +492,358 @@ function UploadDocModal({ preselectedDoc, onClose, showToast }: {
   );
 }
 
+/* ─── Truck Import ───────────────────────────────────────── */
+type TruckImportRow = {
+  truck_number:            string;
+  make:                    string;
+  model:                   string;
+  year:                    string;
+  vin:                     string;
+  plate:                   string;
+  plate_state:             string;
+  axle_config:             string;
+  axle_count:              string;
+  gvwr:                    string;
+  tare_weight:             string;
+  max_payload_tons:        string;
+  max_payload_lbs:         string;
+  body_type:               string;
+  truck_size:              string;
+  dot_class:               string;
+  bed_capacity_yards:      string;
+  registration_expiration: string;
+  insurance_expiration:    string;
+  status:                  string;
+  notes:                   string;
+  assigned_driver:         string;
+  fuel_type:               string;
+  _isDuplicate: boolean;
+  _action: "import" | "update" | "skip";
+};
+
+const TRUCK_IMPORT_MAP: Record<string, string[]> = {
+  truck_number:            ["truck #", "truck number", "unit", "unit #", "unit number", "truck", "vehicle #", "vehicle number"],
+  make:                    ["make", "manufacturer", "brand"],
+  model:                   ["model"],
+  year:                    ["year", "model year", "yr"],
+  vin:                     ["vin", "vin #", "vin number", "vehicle id", "vehicle identification"],
+  plate:                   ["plate", "plate #", "plate number", "license plate", "tag"],
+  plate_state:             ["plate state", "tag state", "registration state", "state"],
+  axle_config:             ["axle config", "axle configuration", "axle type", "axles", "configuration", "axle setup"],
+  axle_count:              ["axle count", "number of axles", "# axles", "num axles"],
+  gvwr:                    ["gvwr", "gross weight", "gross vehicle weight", "gross vehicle weight rating"],
+  tare_weight:             ["tare weight", "curb weight", "empty weight", "tare"],
+  max_payload_tons:        ["payload tons", "max payload tons", "tons", "max tons", "payload (tons)", "capacity tons"],
+  max_payload_lbs:         ["payload lbs", "max payload lbs", "payload pounds", "max payload"],
+  body_type:               ["body type", "body", "type"],
+  truck_size:              ["truck size", "size", "size class"],
+  dot_class:               ["dot class", "class", "vehicle class", "dot classification"],
+  bed_capacity_yards:      ["cubic yards", "yard capacity", "bed capacity", "yards", "capacity (yds)", "yds"],
+  registration_expiration: ["registration exp", "reg expiration", "registration expiration", "reg exp"],
+  insurance_expiration:    ["insurance exp", "insurance expiration", "ins exp"],
+  status:                  ["status"],
+  notes:                   ["notes", "comments", "remarks"],
+  assigned_driver:         ["driver", "assigned driver", "operator"],
+  fuel_type:               ["fuel", "fuel type"],
+};
+
+function normalizeHeader(h: string): string {
+  return h.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+}
+
+function buildColumnMap(headers: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  headers.forEach((raw, i) => {
+    const h = normalizeHeader(raw);
+    for (const [field, aliases] of Object.entries(TRUCK_IMPORT_MAP)) {
+      if (!(field in map) && aliases.some((a) => h === a || h.includes(a))) {
+        map[field] = i;
+      }
+    }
+  });
+  return map;
+}
+
+function parseTruckFile(file: File, existingNumbers: Set<string>): Promise<TruckImportRow[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const wb   = XLSX.read(data, { type: "array", cellDates: true });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const raw  = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, raw: false, dateNF: "yyyy-mm-dd" });
+
+        if (raw.length < 2) { resolve([]); return; }
+
+        const headers  = (raw[0] as string[]).map(String);
+        const colMap   = buildColumnMap(headers);
+        const get = (row: string[], field: string) => String(row[colMap[field]] ?? "").trim();
+
+        const rows: TruckImportRow[] = [];
+        for (let i = 1; i < raw.length; i++) {
+          const row = raw[i] as string[];
+          if (!row || row.every((c) => !String(c ?? "").trim())) continue;
+          const num = get(row, "truck_number");
+          if (!num) continue;
+          rows.push({
+            truck_number:            num,
+            make:                    get(row, "make"),
+            model:                   get(row, "model"),
+            year:                    get(row, "year"),
+            vin:                     get(row, "vin"),
+            plate:                   get(row, "plate"),
+            plate_state:             get(row, "plate_state"),
+            axle_config:             get(row, "axle_config"),
+            axle_count:              get(row, "axle_count"),
+            gvwr:                    get(row, "gvwr"),
+            tare_weight:             get(row, "tare_weight"),
+            max_payload_tons:        get(row, "max_payload_tons"),
+            max_payload_lbs:         get(row, "max_payload_lbs"),
+            body_type:               get(row, "body_type"),
+            truck_size:              get(row, "truck_size"),
+            dot_class:               get(row, "dot_class"),
+            bed_capacity_yards:      get(row, "bed_capacity_yards"),
+            registration_expiration: get(row, "registration_expiration"),
+            insurance_expiration:    get(row, "insurance_expiration"),
+            status:                  get(row, "status"),
+            notes:                   get(row, "notes"),
+            assigned_driver:         get(row, "assigned_driver"),
+            fuel_type:               get(row, "fuel_type"),
+            _isDuplicate: existingNumbers.has(num.toLowerCase()),
+            _action:      existingNumbers.has(num.toLowerCase()) ? "update" : "import",
+          });
+        }
+        resolve(rows);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function ImportTrucksModal({ existingTrucks, onClose, onImported, showToast }: {
+  existingTrucks: Truck[];
+  onClose: () => void;
+  onImported: () => void;
+  showToast: (msg: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [stage, setStage]     = useState<"idle" | "review" | "done">("idle");
+  const [rows, setRows]       = useState<TruckImportRow[]>([]);
+  const [parsing, setParsing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult]   = useState<{ imported: number; updated: number; skipped: number; failed: number; errors: string[] } | null>(null);
+
+  const existingNumbers = useMemo(
+    () => new Set(existingTrucks.map((t) => (t.unit || t.id).toLowerCase())),
+    [existingTrucks]
+  );
+
+  async function handleFile(file: File) {
+    setParsing(true);
+    try {
+      const parsed = await parseTruckFile(file, existingNumbers);
+      if (!parsed.length) { showToast("No rows found in file."); setParsing(false); return; }
+      setRows(parsed);
+      setStage("review");
+    } catch {
+      showToast("Could not parse file — use Excel (.xlsx) or CSV.");
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  function setAction(idx: number, action: TruckImportRow["_action"]) {
+    setRows((prev) => prev.map((r, i) => i === idx ? { ...r, _action: action } : r));
+  }
+
+  async function runImport() {
+    const toSend = rows; // all rows including skips — API handles skip action server-side
+    setImporting(true);
+    try {
+      const res = await fetch("/api/ronyx/trucks/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: toSend }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      setResult(data);
+      setStage("done");
+      onImported();
+    } catch (err: any) {
+      showToast(err.message || "Import error.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  const toImport  = rows.filter((r) => r._action !== "skip").length;
+  const toSkip    = rows.filter((r) => r._action === "skip").length;
+  const dupCount  = rows.filter((r) => r._isDuplicate).length;
+
+  return (
+    <div style={moverlay}>
+      <div style={{ ...mbox(680), maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>Import Trucks</h2>
+          <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>
+            Upload an Excel or CSV file. Supports: Truck #, Make, Model, Year, VIN, Plate, Plate State, Axle Config, GVWR, Payload, Body Type, and more.
+          </p>
+        </div>
+
+        {/* Stage: idle */}
+        {stage === "idle" && (
+          <div>
+            <div
+              onClick={() => fileRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+              style={{ border: "2px dashed #cbd5e1", borderRadius: 14, padding: 40, textAlign: "center", cursor: "pointer", background: "#f8fafc" }}
+            >
+              {parsing
+                ? <p style={{ color: "#1e40af", fontWeight: 700 }}>Parsing file…</p>
+                : <>
+                    <div style={{ fontSize: 36, marginBottom: 8 }}>📋</div>
+                    <p style={{ fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>Click to upload or drag &amp; drop</p>
+                    <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>Excel (.xlsx) or CSV — first row must be headers</p>
+                  </>
+              }
+            </div>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <button onClick={onClose} style={mbtn(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {/* Stage: review */}
+        {stage === "review" && (
+          <>
+            <div style={{ display: "flex", gap: 12, marginBottom: 12, flexShrink: 0 }}>
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 700, color: "#15803d" }}>
+                {toImport} to import
+              </div>
+              {dupCount > 0 && (
+                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                  {dupCount} duplicate{dupCount > 1 ? "s" : ""} → will update
+                </div>
+              )}
+              {toSkip > 0 && (
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 700, color: "#64748b" }}>
+                  {toSkip} skipped
+                </div>
+              )}
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, borderRadius: 10, border: "1px solid #e2e8f0" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>Truck #</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>Make / Model</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>Plate</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>Axle / Type</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>Status</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: row._action === "skip" ? "#f8fafc" : "white", opacity: row._action === "skip" ? 0.5 : 1 }}>
+                      <td style={{ padding: "7px 12px", fontWeight: 700 }}>{row.truck_number}</td>
+                      <td style={{ padding: "7px 12px", color: "#475569" }}>{row.year} {row.make} {row.model || "—"}</td>
+                      <td style={{ padding: "7px 12px", color: "#475569" }}>{row.plate || "—"}{row.plate_state ? ` (${row.plate_state})` : ""}</td>
+                      <td style={{ padding: "7px 12px", color: "#475569" }}>{row.axle_config || row.body_type || "—"}</td>
+                      <td style={{ padding: "7px 12px" }}>
+                        {row._isDuplicate
+                          ? <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>DUPLICATE</span>
+                          : <span style={{ background: "#f0fdf4", color: "#15803d", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>NEW</span>
+                        }
+                      </td>
+                      <td style={{ padding: "7px 12px" }}>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {row._isDuplicate && (
+                            <button
+                              onClick={() => setAction(i, "update")}
+                              style={{ padding: "3px 8px", borderRadius: 5, border: `1px solid ${row._action === "update" ? "#1d4ed8" : "#e2e8f0"}`, background: row._action === "update" ? "#eff6ff" : "#fff", color: row._action === "update" ? "#1d4ed8" : "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                            >
+                              Update
+                            </button>
+                          )}
+                          {!row._isDuplicate && (
+                            <button
+                              onClick={() => setAction(i, "import")}
+                              style={{ padding: "3px 8px", borderRadius: 5, border: `1px solid ${row._action === "import" ? "#15803d" : "#e2e8f0"}`, background: row._action === "import" ? "#f0fdf4" : "#fff", color: row._action === "import" ? "#15803d" : "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                            >
+                              Import
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setAction(i, "skip")}
+                            style={{ padding: "3px 8px", borderRadius: 5, border: `1px solid ${row._action === "skip" ? "#94a3b8" : "#e2e8f0"}`, background: row._action === "skip" ? "#f1f5f9" : "#fff", color: "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 14, flexShrink: 0 }}>
+              <button
+                onClick={runImport}
+                disabled={importing || toImport === 0}
+                style={{ ...mbtn(true), opacity: toImport === 0 ? 0.5 : 1 }}
+              >
+                {importing ? "Importing…" : `Import ${toImport} Truck${toImport !== 1 ? "s" : ""}`}
+              </button>
+              <button onClick={() => setStage("idle")} style={mbtn(false)}>Back</button>
+              <button onClick={onClose} style={mbtn(false)}>Cancel</button>
+            </div>
+          </>
+        )}
+
+        {/* Stage: done */}
+        {stage === "done" && result && (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+              {[
+                { label: "Imported", value: result.imported, color: "#15803d", bg: "#f0fdf4" },
+                { label: "Updated",  value: result.updated,  color: "#1d4ed8", bg: "#eff6ff" },
+                { label: "Skipped",  value: result.skipped,  color: "#475569", bg: "#f8fafc" },
+                { label: "Failed",   value: result.failed,   color: "#dc2626", bg: "#fef2f2" },
+              ].map((s) => (
+                <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: "14px 18px" }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 12, color: s.color, fontWeight: 600 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {result.errors.length > 0 && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: 12, marginBottom: 14, maxHeight: 120, overflowY: "auto" }}>
+                {result.errors.map((e, i) => <p key={i} style={{ margin: "2px 0", fontSize: 12, color: "#dc2626" }}>{e}</p>)}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={onClose} style={mbtn(true)}>Done</button>
+              <button onClick={() => { setStage("idle"); setRows([]); setResult(null); }} style={mbtn(false)}>Import Another</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main page ─────────────────────────────────────────── */
 export default function TrucksPage() {
   const [trucks, setTrucks]           = useState<Truck[]>(INITIAL_TRUCKS);
@@ -504,6 +857,7 @@ export default function TrucksPage() {
   const [uploadDocType, setUploadDocType] = useState<string | null>(null);
   const [addTruckOpen, setAddTruckOpen]   = useState(false);
   const [ticketOpen, setTicketOpen]       = useState(false);
+  const [importOpen, setImportOpen]       = useState(false);
 
   useEffect(() => {
     fetch("/api/ronyx/trucks")
@@ -644,6 +998,12 @@ export default function TrucksPage() {
                 <option>High</option>
                 <option>Critical</option>
               </select>
+              <button
+                onClick={() => setImportOpen(true)}
+                style={{ padding: "8px 16px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                ⬆ Import Trucks
+              </button>
             </div>
 
             <div className="fleet-truck-list">
@@ -804,6 +1164,20 @@ export default function TrucksPage() {
       )}
       {ticketOpen && (
         <MaintenanceTicketModal allTrucks={trucks} onClose={() => setTicketOpen(false)} showToast={showToast} />
+      )}
+      {importOpen && (
+        <ImportTrucksModal
+          existingTrucks={trucks}
+          onClose={() => setImportOpen(false)}
+          onImported={() => {
+            fetch("/api/ronyx/trucks").then((r) => r.json()).then((data) => {
+              if (Array.isArray(data.trucks) && data.trucks.length > 0) {
+                setTrucks(data.trucks.map(mapApiTruck));
+              }
+            });
+          }}
+          showToast={showToast}
+        />
       )}
 
       {/* ── Toast ── */}
