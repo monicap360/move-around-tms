@@ -37,53 +37,6 @@ type Truck = {
   lastMaintenance: string;
 };
 
-/* ─── Demo data ─────────────────────────────────────────── */
-const INITIAL_TRUCKS: Truck[] = [
-  {
-    id: "TRK-214", unit: "Unit 214", vin: "1HTMMAAM88H123456", plate: "TX-82941C",
-    year: "2021", make: "Peterbilt", model: "567", type: "Dump Truck",
-    status: "Available", assignedDriver: "Carlos Ramirez", assignedTrailer: "End Dump 07",
-    currentLoad: "Unassigned", location: "Galveston Yard",
-    odometer: "184,220", engineHours: "7,842", fuelMpg: "6.8",
-    revenueWeek: "$4,820", costPerMile: "$1.72",
-    readinessScore: 96, healthScore: 94, maintenanceRisk: "Low",
-    nextService: "1,240 miles", inspectionExp: "10/18/2026",
-    insuranceExp: "01/12/2027", registrationExp: "12/31/2026", lastMaintenance: "05/28/2026",
-  },
-  {
-    id: "TRK-118", unit: "Unit 118", vin: "3AKJGLDR9HSHC4412", plate: "TX-66120B",
-    year: "2019", make: "Freightliner", model: "Cascadia", type: "Aggregate Hauler",
-    status: "Assigned", assignedDriver: "Marcus Lee", assignedTrailer: "Belly Dump 03",
-    currentLoad: "LD-1051", location: "Plant B → Jobsite 18",
-    odometer: "231,884", engineHours: "9,551", fuelMpg: "6.1",
-    revenueWeek: "$3,910", costPerMile: "$1.96",
-    readinessScore: 87, healthScore: 82, maintenanceRisk: "Medium",
-    nextService: "420 miles", inspectionExp: "08/20/2026",
-    insuranceExp: "02/18/2027", registrationExp: "11/30/2026", lastMaintenance: "05/12/2026",
-  },
-  {
-    id: "TRK-301", unit: "Unit 301", vin: "1XPBD49X7FD305711", plate: "TX-90218A",
-    year: "2017", make: "Kenworth", model: "T880", type: "Owner Operator Truck",
-    status: "Out of Service", assignedDriver: "Daniel Torres", assignedTrailer: "Flatbed 11",
-    currentLoad: "None", location: "Texas City Yard",
-    odometer: "312,640", engineHours: "12,203", fuelMpg: "5.4",
-    revenueWeek: "$0", costPerMile: "$2.38",
-    readinessScore: 42, healthScore: 38, maintenanceRisk: "Critical",
-    nextService: "Overdue", inspectionExp: "Expired",
-    insuranceExp: "09/14/2026", registrationExp: "Expired", lastMaintenance: "03/02/2026",
-  },
-  {
-    id: "TRK-127", unit: "Unit 127", vin: "1XKZD49X7HJ445829", plate: "TX-55129M",
-    year: "2022", make: "Kenworth", model: "T880", type: "Dump Truck",
-    status: "In Maintenance", assignedDriver: "Jose Martinez", assignedTrailer: "End Dump 12",
-    currentLoad: "None", location: "Maintenance Bay",
-    odometer: "104,992", engineHours: "4,290", fuelMpg: "7.1",
-    revenueWeek: "$5,240", costPerMile: "$1.54",
-    readinessScore: 73, healthScore: 76, maintenanceRisk: "High",
-    nextService: "In progress", inspectionExp: "11/22/2026",
-    insuranceExp: "03/30/2027", registrationExp: "12/31/2026", lastMaintenance: "06/10/2026",
-  },
-];
 
 /* ─── Map API → Truck ───────────────────────────────────── */
 function normalizeRisk(r: string): MaintenanceRisk {
@@ -469,7 +422,7 @@ function UploadDocModal({ preselectedDoc, onClose, showToast }: {
           <label style={lbl}>Truck Unit</label>
           <select value={truckId} onChange={(e) => setTruckId(e.target.value)} style={{ ...inp, marginBottom: 14 }}>
             <option value="">Select truck…</option>
-            {INITIAL_TRUCKS.map((t) => <option key={t.id} value={t.unit}>{t.unit} — {t.year} {t.make} {t.model}</option>)}
+            {/* truck list populated from parent via prop or left empty until trucks load */}
           </select>
           <label style={lbl}>Document Type</label>
           <select value={docType} onChange={(e) => setDocType(e.target.value)} style={{ ...inp, marginBottom: 14 }} disabled={!!preselectedDoc}>
@@ -846,7 +799,7 @@ function ImportTrucksModal({ existingTrucks, onClose, onImported, showToast }: {
 
 /* ─── Main page ─────────────────────────────────────────── */
 export default function TrucksPage() {
-  const [trucks, setTrucks]           = useState<Truck[]>(INITIAL_TRUCKS);
+  const [trucks, setTrucks]           = useState<Truck[]>([]);
   const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [riskFilter, setRiskFilter]   = useState("All Risks");

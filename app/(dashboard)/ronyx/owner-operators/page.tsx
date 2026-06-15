@@ -228,43 +228,7 @@ const EMPTY_COMPANY: Omit<OOCompany, "id"> = {
   drivers: [], trucks: [], documents: [], jobs: [], logo_url: undefined,
 };
 
-/* ─── Demo data ──────────────────────────────────────── */
-const DEMO: OOCompany[] = [
-  {
-    id: "oo-demo-1",
-    company_name: "Smith Hauling LLC",
-    contact_name: "James Smith",
-    contact_phone: "(713) 555-0101",
-    contact_email: "james@smithhauling.com",
-    business_address: "1204 Port Industrial Blvd, Galveston TX 77550",
-    mc_number: "MC-784312",
-    dot_number: "DOT-3821044",
-    ein: "82-4471220",
-    insurance_agent_name: "Rebecca Nguyen",
-    insurance_agent_email: "rnguyen@truckerinsurance.com",
-    insurance_agent_phone: "(713) 555-0301",
-    drivers: [
-      { id: uid(), name: "Carlos Ramirez", cdl_number: "TX1234567", cdl_state: "TX", cdl_expiration: "2025-09-15", med_card_expiration: "2025-07-01", phone: "(713) 555-0201" },
-      { id: uid(), name: "Marcus Lee",     cdl_number: "TX7654321", cdl_state: "TX", cdl_expiration: "2026-03-20", med_card_expiration: "2026-03-20", phone: "(713) 555-0202" },
-      { id: uid(), name: "Daniel Torres",  cdl_number: "TX9988776", cdl_state: "TX", cdl_expiration: "2026-11-10", med_card_expiration: "2026-08-15", phone: "(713) 555-0203" },
-    ],
-    trucks: [
-      { id: uid(), truck_number: "SMT-101", year: "2020", make: "Kenworth",  model: "T880", vin: "1XKYD49X7LJ123401", last_inspection: "2026-06-10", inspection_result: "Pass" },
-      { id: uid(), truck_number: "SMT-102", year: "2019", make: "Peterbilt", model: "567",  vin: "1XPBD49X7FD305711", last_inspection: "2026-06-08", inspection_result: "Pass w/ Defects" },
-    ],
-    documents: [
-      { type: "Insurance Certificate", uploaded_at: new Date(Date.now()-30*86400000).toISOString(), file_name: "insurance_cert_2026.pdf", expires_on: "2026-08-15" },
-      { type: "Contract",              uploaded_at: new Date(Date.now()-60*86400000).toISOString(), file_name: "contract_smith_hauling.pdf", expires_on: "2026-12-31" },
-    ],
-    jobs: [
-      { id: uid(), project_name: "Domino Project", project_number: "DOMINO-2026-001", load_date: "2026-06-12", truck_number: "SMT-101", driver_name: "Carlos Ramirez", origin: "Plant B",     destination: "Jobsite 18", material: "Limestone",   tons: 24.5, gross_revenue: 588, oo_rate: 450, margin: 138, ticket_status: "Verified",    settlement_status: "Approved" },
-      { id: uid(), project_name: "Domino Project", project_number: "DOMINO-2026-001", load_date: "2026-06-13", truck_number: "SMT-102", driver_name: "Marcus Lee",     origin: "Quarry N", destination: "Jobsite 18", material: "Limestone",   tons: 22.1, gross_revenue: 530, oo_rate: 405, margin: 125, ticket_status: "Missing",      settlement_status: "Hold"     },
-      { id: uid(), project_name: "Domino Project", project_number: "DOMINO-2026-001", load_date: "2026-06-13", truck_number: "SMT-101", driver_name: "Daniel Torres",  origin: "Plant B",  destination: "Jobsite 18", material: "Base Rock",   tons: 25.0, gross_revenue: 600, oo_rate: 460, margin: 140, ticket_status: "Verified",    settlement_status: "Pending"  },
-      { id: uid(), project_name: "Domino Project", project_number: "DOMINO-2026-002", load_date: "2026-06-10", truck_number: "SMT-102", driver_name: "Marcus Lee",     origin: "Plant A",  destination: "Jobsite 22", material: "Crushed Rock",tons: 21.8, gross_revenue: 523, oo_rate: 400, margin: 123, ticket_status: "Needs Review", settlement_status: "Pending"  },
-      { id: uid(), project_name: "Domino Project", project_number: "DOMINO-2026-001", load_date: "2026-06-08", truck_number: "SMT-101", driver_name: "Carlos Ramirez", origin: "Plant B",  destination: "Jobsite 18", material: "Limestone",   tons: 23.9, gross_revenue: 574, oo_rate: 440, margin: 134, ticket_status: "Verified",    settlement_status: "Paid"     },
-    ],
-  },
-];
+const DEMO: OOCompany[] = [];
 
 /* ─── Sub-components ─────────────────────────────────── */
 function Card({ title, children, accent }: { title: string; children: React.ReactNode; accent?: string }) {
@@ -351,14 +315,8 @@ export default function OwnerOperatorsPage() {
   useEffect(() => {
     fetch("/api/ronyx/owner-operators")
       .then(r => r.json())
-      .then(({ companies: data }) => {
-        if (data && data.length > 0) {
-          setCompanies(data);
-        } else {
-          setCompanies(DEMO);
-        }
-      })
-      .catch(() => setCompanies(DEMO));
+      .then(({ companies: data }) => { setCompanies(data || []); })
+      .catch(() => setCompanies([]));
   }, []);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }

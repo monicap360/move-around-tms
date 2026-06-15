@@ -96,81 +96,8 @@ function saveAlerts(data: Alert[]) { try { localStorage.setItem(LS_ALERTS, JSON.
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
-/* ─── Demo data ──────────────────────────────────── */
-const DEMO_CARRIERS: Carrier[] = [
-  {
-    id: "c1",
-    company_name: "Smith Hauling LLC",
-    mc_number: "MC-784312",
-    dot_number: "DOT-3821044",
-    status: "Certified",
-    status_changed_date: "2026-05-15",
-    last_rmis_check: "2026-06-14",
-    dispatch_eligible: true,
-    settlement_eligible: true,
-    rmis_status: "Certified",
-    contract_status: "Valid",
-    w9_status: "Valid",
-    authority_status: "Valid",
-    dot_status: "Valid",
-    insurance: [
-      { type: "Auto Liability",    status: "Expiring Soon", policy_number: "AL-9928", expiration_date: "2026-08-15", insurer: "Great West" },
-      { type: "General Liability", status: "Valid",         policy_number: "GL-4412", expiration_date: "2026-12-01", insurer: "Nationwide" },
-      { type: "Cargo",             status: "Valid",         policy_number: "CRG-7701", expiration_date: "2026-11-20", insurer: "Nationwide" },
-    ],
-    drivers: [
-      { driver_id: "d1", driver_name: "Carlos Ramirez", cdl_status: "Expired",      cdl_expiration: "2025-09-15", med_card_status: "Expired",      med_card_expiration: "2025-07-01", mvr_status: "Valid",    drug_test_status: "Valid",    background_status: "Valid"    },
-      { driver_id: "d2", driver_name: "Marcus Lee",     cdl_status: "Valid",         cdl_expiration: "2026-03-20", med_card_status: "Expiring Soon", med_card_expiration: "2026-07-01", mvr_status: "Valid",    drug_test_status: "Valid",    background_status: "Valid"    },
-      { driver_id: "d3", driver_name: "Daniel Torres",  cdl_status: "Valid",         cdl_expiration: "2026-11-10", med_card_status: "Valid",         med_card_expiration: "2026-08-15", mvr_status: "Missing",  drug_test_status: "Pending Review", background_status: "Valid" },
-    ],
-    trucks: [
-      { truck_id: "t1", truck_number: "SMT-101", insurance_status: "Valid",         registration_status: "Valid", inspection_status: "Valid",   eligible: true },
-      { truck_id: "t2", truck_number: "SMT-102", insurance_status: "Expiring Soon", registration_status: "Valid", inspection_status: "Valid",   eligible: true },
-    ],
-    audit_trail: [
-      { id: uid(), ts: "2026-06-14T10:22:00Z", carrier_name: "Smith Hauling LLC", old_status: "Warning", new_status: "Certified", source: "Manual Update", changed_by: "Monica", notes: "Insurance renewed and uploaded.", certification_type: "Auto Liability" },
-      { id: uid(), ts: "2026-05-15T08:00:00Z", carrier_name: "Smith Hauling LLC", old_status: "Certified", new_status: "Warning", source: "RMIS Import", changed_by: "System", notes: "Auto insurance expiring within 90 days.", certification_type: "Auto Liability" },
-    ],
-  },
-  {
-    id: "c2",
-    company_name: "El Shaddai Trucking LLC",
-    mc_number: "MC-912345",
-    dot_number: "DOT-4901233",
-    status: "Non-Certified",
-    status_changed_date: "2026-06-06",
-    status_reason: "Auto, General Liability, and Cargo certifications cancelled.",
-    last_rmis_check: "2026-06-06",
-    dispatch_eligible: false,
-    settlement_eligible: false,
-    rmis_status: "Non-Certified",
-    contract_status: "Valid",
-    w9_status: "Valid",
-    authority_status: "Valid",
-    dot_status: "Valid",
-    insurance: [
-      { type: "Auto Liability",    status: "Cancelled", policy_number: "AL-7711", expiration_date: "2026-06-06", insurer: "Progressive" },
-      { type: "General Liability", status: "Cancelled", policy_number: "GL-3301", expiration_date: "2026-06-06", insurer: "Progressive" },
-      { type: "Cargo",             status: "Cancelled", policy_number: "CRG-9902", expiration_date: "2026-06-06", insurer: "Progressive" },
-    ],
-    drivers: [
-      { driver_id: "d4", driver_name: "Jerome Washington", cdl_status: "Valid", cdl_expiration: "2027-03-01", med_card_status: "Valid", med_card_expiration: "2027-03-01", mvr_status: "Valid", drug_test_status: "Valid", background_status: "Valid" },
-    ],
-    trucks: [
-      { truck_id: "t3", truck_number: "EST-201", insurance_status: "Cancelled", registration_status: "Valid", inspection_status: "Valid", eligible: false },
-    ],
-    audit_trail: [
-      { id: uid(), ts: "2026-06-06T09:15:00Z", carrier_name: "El Shaddai Trucking LLC", old_status: "Certified", new_status: "Non-Certified", source: "RMIS Status Change History", changed_by: "Sylvia", notes: "Auto, General Liability, and Cargo certifications cancelled. Dispatch blocked. Settlements placed on hold.", certification_type: "Auto / GL / Cargo" },
-    ],
-    manager_override: false,
-  },
-];
-
-const DEMO_ALERTS: Alert[] = [
-  { id: uid(), severity: "Critical", title: "Carrier Non-Certified", detail: "El Shaddai Trucking LLC — Auto, GL, and Cargo insurance cancelled. Dispatch blocked.", carrier_id: "c2", carrier_name: "El Shaddai Trucking LLC", ts: "2026-06-06T09:15:00Z", resolved: false },
-  { id: uid(), severity: "Warning",  title: "CDL Expired",           detail: "Carlos Ramirez (Smith Hauling LLC) — CDL expired 2025-09-15. Driver blocked.", carrier_id: "c1", carrier_name: "Smith Hauling LLC", ts: new Date(Date.now()-2*86400000).toISOString(), resolved: false },
-  { id: uid(), severity: "Warning",  title: "Insurance Expiring",    detail: "Smith Hauling LLC — Auto Liability expires 2026-08-15 (62 days). Request updated COI.", carrier_id: "c1", carrier_name: "Smith Hauling LLC", ts: new Date(Date.now()-86400000).toISOString(), resolved: false },
-];
+const DEMO_CARRIERS: Carrier[] = [];
+const DEMO_ALERTS: Alert[] = [];
 
 /* ─── Helpers ────────────────────────────────────── */
 function daysUntil(d?: string) { if (!d) return null; return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000); }
@@ -237,12 +164,8 @@ export default function ComplianceMonitorPage() {
   const [newCarrierForm, setNewCarrierForm] = useState({ company_name:"", mc_number:"", dot_number:"" });
 
   useEffect(() => {
-    const stored = lsLoad();
-    setCarriers(stored.length > 0 ? stored : DEMO_CARRIERS);
-    if (stored.length === 0) lsSave(DEMO_CARRIERS);
-    const storedAlerts = loadAlerts();
-    setAlerts(storedAlerts.length > 0 ? storedAlerts : DEMO_ALERTS);
-    if (storedAlerts.length === 0) saveAlerts(DEMO_ALERTS);
+    setCarriers(lsLoad());
+    setAlerts(loadAlerts());
   }, []);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }

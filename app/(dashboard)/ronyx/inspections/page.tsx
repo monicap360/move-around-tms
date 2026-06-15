@@ -26,13 +26,7 @@ function lss(k: string, v: unknown) { try { localStorage.setItem(k, JSON.stringi
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function fmtDate(d?: string) { if (!d) return "—"; return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 
-const DEMO_INSPECTIONS: Inspection[] = [
-  { id: "ins1", type: "Pre-Trip",  truck: "Truck 18", driver: "Carlos Ramirez", date: "2026-06-14", result: "Pass",             defects: [],                          defects_resolved: true,  odometer: "284,100" },
-  { id: "ins2", type: "Post-Trip", truck: "Truck 22", driver: "Marcus Lee",     date: "2026-06-13", result: "Pass w/ Defects",  defects: ["Low air pressure – rear",  "Cracked mirror – passenger side"], defects_resolved: false, odometer: "211,445" },
-  { id: "ins3", type: "Pre-Trip",  truck: "Truck 31", driver: "Daniel Torres",  date: "2026-06-13", result: "Fail",             defects: ["Brake issue – squeal on decel", "Tail light out – driver side"], defects_resolved: false, odometer: "198,220", notes: "Unit grounded. Do not dispatch until brakes cleared." },
-  { id: "ins4", type: "Annual",    truck: "Truck 18", driver: "Maintenance",    date: "2026-04-01", result: "Pass",             defects: [],                          defects_resolved: true },
-  { id: "ins5", type: "DOT",       truck: "Truck 22", driver: "Officer Nguyen", date: "2026-03-15", result: "Pass",             defects: [],                          defects_resolved: true,  dot_inspection_level: "Level I" },
-];
+const DEMO_INSPECTIONS: Inspection[] = [];
 
 const DEFECT_OPTIONS = [
   "Brake issue", "Tire issue", "Tail light out", "Headlight out", "Mirror damage",

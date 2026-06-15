@@ -46,24 +46,9 @@ function lss(key: string, val: unknown) { try { localStorage.setItem(key, JSON.s
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function fmtDate(d?: string) { if (!d) return "—"; return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 
-const DEMO_EXCEPTIONS: ExceptionItem[] = [
-  { id: "ex1", category: "Payroll Hold",      severity: "critical", title: "Carlos Ramirez — missing rate card",    detail: "No pay rate on file. Cannot process payroll until corrected.", driver: "Carlos Ramirez",     date: "2026-06-12", resolved: false },
-  { id: "ex2", category: "Missing Signature", severity: "warning",  title: "Ticket #TK-2026-4421 — no signature",  detail: "Delivery ticket has no customer signature. Cannot invoice.",                               date: "2026-06-13", resolved: false },
-  { id: "ex3", category: "Billing Hold",      severity: "critical", title: "Invoice #INV-0218 on hold",            detail: "Customer disputed quantity. On billing hold pending resolution.",                          date: "2026-06-11", resolved: false },
-  { id: "ex4", category: "Missing Ticket",    severity: "warning",  title: "Truck 22 — 3 loads missing tickets",   detail: "Loads on 6/12 have no ticket scanned.",                    truck: "Truck 22",             date: "2026-06-12", resolved: false },
-  { id: "ex5", category: "Ticket Exception",  severity: "warning",  title: "Weight mismatch on TK-2026-4409",     detail: "Scale ticket shows 28.1T, manifest shows 25.0T. 3.1T discrepancy.",                        date: "2026-06-10", resolved: false },
-  { id: "ex6", category: "Awaiting Approval", severity: "info",     title: "4 loads awaiting dispatch approval",  detail: "Loads assigned, not yet approved by operations manager.",                                  date: "2026-06-14", resolved: false },
-  { id: "ex7", category: "Open Defect",       severity: "critical", title: "Truck 31 — brake issue reported",     detail: "Driver reported brake noise on post-trip. Unit grounded pending inspection.", truck:"Truck 31",date: "2026-06-13", resolved: false },
-];
-
-const DEMO_ACCIDENTS: Accident[] = [
-  { id: "ac1", date: "2026-05-20", driver: "Marcus Lee", truck: "Truck 18", location: "I-45 Southbound, League City TX", description: "Rear-end collision at low speed. Minor damage to bumper.", severity: "minor", dot_reportable: false, status: "Closed" },
-];
-
-const DEMO_MEETINGS: SafetyMeeting[] = [
-  { id: "sm1", date: "2026-06-07", topic: "Pre-trip inspection procedures", attendees: "All drivers", notes: "Reviewed DVIR form and common defect categories." },
-  { id: "sm2", date: "2026-05-15", topic: "Hours of Service compliance",   attendees: "All drivers", notes: "Reminder on ELD mandate and 11-hour driving limit." },
-];
+const DEMO_EXCEPTIONS: ExceptionItem[] = [];
+const DEMO_ACCIDENTS: Accident[] = [];
+const DEMO_MEETINGS: SafetyMeeting[] = [];
 
 const eyebrow: React.CSSProperties = { fontSize: "0.68rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em" };
 const inp: React.CSSProperties = { width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.85rem", outline: "none", background: "#fff", boxSizing: "border-box" };
@@ -97,17 +82,9 @@ export default function OperationsCenterPage() {
   const [mtgForm, setMtgForm] = useState<Omit<SafetyMeeting,"id">>({ date: "", topic: "", attendees: "", notes: "" });
 
   useEffect(() => {
-    const stored = ls<ExceptionItem[]>(LS_EXCEPTIONS, []);
-    setExceptions(stored.length > 0 ? stored : DEMO_EXCEPTIONS);
-    if (stored.length === 0) lss(LS_EXCEPTIONS, DEMO_EXCEPTIONS);
-
-    const acc = ls<Accident[]>(LS_ACCIDENTS, []);
-    setAccidents(acc.length > 0 ? acc : DEMO_ACCIDENTS);
-    if (acc.length === 0) lss(LS_ACCIDENTS, DEMO_ACCIDENTS);
-
-    const mtg = ls<SafetyMeeting[]>(LS_MEETINGS, []);
-    setMeetings(mtg.length > 0 ? mtg : DEMO_MEETINGS);
-    if (mtg.length === 0) lss(LS_MEETINGS, DEMO_MEETINGS);
+    setExceptions(ls<ExceptionItem[]>(LS_EXCEPTIONS, []));
+    setAccidents(ls<Accident[]>(LS_ACCIDENTS, []));
+    setMeetings(ls<SafetyMeeting[]>(LS_MEETINGS, []));
   }, []);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
