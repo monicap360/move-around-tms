@@ -330,6 +330,26 @@ export default function PayrollPage() {
         </div>
       </section>
 
+      {/* ── Reconciliation Holds Shortcut ───────────────────────────────────── */}
+      {needsReview > 0 && (
+        <section style={{ marginBottom: 20, padding: "16px 24px", borderRadius: 14, background: "#fffbeb", border: "1px solid #fde68a", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: "1.5rem" }}>🔍</span>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#92400e" }}>
+                Tickets Waiting for Payroll Review
+              </div>
+              <div style={{ fontSize: "0.78rem", color: "#b45309", marginTop: 2 }}>
+                {needsReview} driver{needsReview !== 1 ? "s" : ""} blocked · {missingTicketCount} missing ticket{missingTicketCount !== 1 ? "s" : ""} · Only reconciled, approved tickets appear in payroll
+              </div>
+            </div>
+          </div>
+          <Link href="/ronyx/tickets#reconcile" style={{ padding: "9px 18px", borderRadius: 9, background: "#d97706", color: "#fff", fontWeight: 800, fontSize: "0.82rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+            View Reconciliation Holds →
+          </Link>
+        </section>
+      )}
+
       <section className="payroll-layout">
         <div className="payroll-main-column">
           <div className="payroll-panel">
