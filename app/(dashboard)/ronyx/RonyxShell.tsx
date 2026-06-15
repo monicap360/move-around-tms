@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const NAV_GROUPS = [
+type NavChild = { label: string; href: string };
+type NavItem  = { label: string; href: string; children?: NavChild[] };
+type NavGroup = { section: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
   {
     section: "Main",
     items: [
@@ -24,7 +28,18 @@ const NAV_GROUPS = [
   {
     section: "Fleet",
     items: [
-      { label: "Drivers",            href: "/ronyx/drivers" },
+      {
+        label: "Drivers",
+        href: "/ronyx/drivers",
+        children: [
+          { label: "Command Center",  href: "/ronyx/drivers" },
+          { label: "Driver List",     href: "/ronyx/drivers?tab=roster" },
+          { label: "Compliance",      href: "/ronyx/hr-compliance" },
+          { label: "Import Drivers",  href: "/ronyx/drivers?tab=import" },
+          { label: "Backup Data",     href: "/ronyx/drivers?tab=backup" },
+          { label: "Audit Trail",     href: "/ronyx/drivers/audit" },
+        ],
+      },
       { label: "Trucks",             href: "/ronyx/fleet" },
       { label: "Owner Operators",    href: "/ronyx/owner-operators" },
       { label: "Maintenance",        href: "/ronyx/maintenance" },
@@ -160,6 +175,30 @@ export default function RonyxShell({
           background: #1e40af;
           color: #fff;
           font-weight: 600;
+        }
+        .tms-nav-sub {
+          padding: 2px 0 4px 10px;
+          margin-top: 1px;
+          border-left: 1px solid rgba(255,255,255,0.1);
+          margin-left: 10px;
+        }
+        .tms-nav-sub-item {
+          display: block;
+          padding: 5px 10px;
+          border-radius: 6px;
+          color: #64748b;
+          font-size: 0.77rem;
+          font-weight: 500;
+          margin-bottom: 1px;
+          transition: background 120ms, color 120ms;
+        }
+        .tms-nav-sub-item:hover {
+          background: rgba(255,255,255,0.05);
+          color: #cbd5e1;
+        }
+        .tms-nav-sub-item.active {
+          color: #93c5fd;
+          font-weight: 700;
         }
         .tms-sidebar-footer {
           margin-top: auto;
@@ -343,16 +382,37 @@ export default function RonyxShell({
           <div key={group.section} className="tms-nav-group">
             <div className="tms-nav-section">{group.section}</div>
             <div className="tms-nav-items-box">
-              {group.items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`tms-nav-item${isActive(item.href) ? " active" : ""}`}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {group.items.map((item) => {
+                const parentActive = isActive(item.href);
+                const showChildren = item.children && pathname.startsWith(item.href) && item.href !== "/ronyx";
+                return (
+                  <div key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`tms-nav-item${parentActive && !showChildren ? " active" : ""}`}
+                      onClick={() => setMobileOpen(false)}
+                      style={showChildren ? { color: "#e2e8f0", fontWeight: 700, background: "rgba(255,255,255,0.05)" } : {}}
+                    >
+                      {item.label}
+                      {item.children && <span style={{ float: "right", opacity: 0.4, fontSize: "0.7rem" }}>{showChildren ? "▾" : "▸"}</span>}
+                    </Link>
+                    {showChildren && item.children && (
+                      <div className="tms-nav-sub">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`tms-nav-sub-item${pathname === child.href || (child.href !== item.href && pathname.startsWith(child.href)) ? " active" : ""}`}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}

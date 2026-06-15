@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -389,6 +389,7 @@ type BackupDriverRow = {
   payroll_eligible: boolean | null;
   compliance_flags: string[] | null;
   last_updated: string | null;
+  updated_by: string | null;
   notes: string | null;
 };
 
@@ -904,7 +905,8 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
 
 /* ─── Main page ─────────────────────────────────────────── */
 export default function DriversPage() {
-  const router = useRouter();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
   const [allDrivers, setAllDrivers]   = useState<Driver[]>([]);
   const [loading, setLoading]         = useState(true);
   const [search, setSearch]           = useState("");
@@ -914,7 +916,8 @@ export default function DriversPage() {
   const [assignTarget, setAssignTarget] = useState<{ driver: Driver | null } | null>(null);
   const [uploadTarget, setUploadTarget] = useState<{ driver?: Driver; docType?: string } | null>(null);
   const [importOpen, setImportOpen]     = useState(false);
-  const [activeTab, setActiveTab]       = useState<"roster" | "backup">("roster");
+  const urlTab = searchParams.get("tab") as "roster" | "backup" | "import" | null;
+  const [activeTab, setActiveTab]       = useState<"roster" | "backup">(urlTab === "backup" ? "backup" : "roster");
   const [backupRows, setBackupRows]     = useState<BackupDriverRow[]>([]);
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupSearch, setBackupSearch]   = useState("");
@@ -929,6 +932,11 @@ export default function DriversPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (urlTab === "import") setImportOpen(true);
+    if (urlTab === "backup") setActiveTab("backup");
+  }, [urlTab]);
 
   function loadBackupData() {
     setBackupLoading(true);
@@ -1154,7 +1162,7 @@ export default function DriversPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                      {["Driver Name","CDL #","CDL Exp","Truck #","Med Card #","Med Card Exp","Job Assignment","Company","Status","Dispatch","Payroll","Compliance","Last Updated","Notes"].map(h => (
+                      {["Driver Name","CDL #","CDL Exp","Truck #","Med Card #","Med Card Exp","Job Assignment","Company","Status","Dispatch","Payroll","Compliance","Last Updated","Updated By","Notes"].map(h => (
                         <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
@@ -1201,6 +1209,7 @@ export default function DriversPage() {
                               ) : null}
                             </td>
                             <td style={{ padding: "8px 12px", color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(r.last_updated || "") || "—"}</td>
+                            <td style={{ padding: "8px 12px", color: "#64748b", fontSize: "0.72rem", whiteSpace: "nowrap" }}>{r.updated_by || "—"}</td>
                             <td style={{ padding: "8px 12px", color: "#64748b", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes || "—"}</td>
                           </tr>
                         );

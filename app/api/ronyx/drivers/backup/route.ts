@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest) {
   // View not yet created — query drivers directly with available columns
   const { data: raw, error } = await supabase
     .from("drivers")
-    .select("id, full_name, license_number, license_expiration_date, assigned_truck_number, medical_card_expiration, status, dispatch_eligible, payroll_eligible, compliance_flags, updated_at, notes, organization_id")
+    .select("id, full_name, license_number, license_expiration_date, assigned_truck_number, medical_card_expiration, status, dispatch_eligible, payroll_eligible, compliance_flags, updated_at, updated_by, notes, organization_id")
     .order("full_name", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message, drivers: [] }, { status: 500 });
@@ -39,6 +39,7 @@ export async function GET(_req: NextRequest) {
     payroll_eligible:        d.payroll_eligible,
     compliance_flags:        d.compliance_flags,
     last_updated:            d.updated_at,
+    updated_by:              d.updated_by,
     notes:                   d.notes,
     organization_id:         d.organization_id,
   }));

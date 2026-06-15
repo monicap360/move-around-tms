@@ -5,7 +5,8 @@
 ALTER TABLE drivers
   ADD COLUMN IF NOT EXISTS medical_card_number text,
   ADD COLUMN IF NOT EXISTS job_assignment       text,
-  ADD COLUMN IF NOT EXISTS company_name         text;
+  ADD COLUMN IF NOT EXISTS company_name         text,
+  ADD COLUMN IF NOT EXISTS updated_by           text;
 
 -- Enhance driver_import_batches with compliance counts
 ALTER TABLE driver_import_batches
@@ -31,6 +32,7 @@ SELECT
   d.payroll_eligible,
   d.compliance_flags,
   d.updated_at              AS last_updated,
+  d.updated_by,
   d.notes,
   d.organization_id
 FROM drivers d;

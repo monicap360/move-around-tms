@@ -47,9 +47,10 @@ export async function POST(req: NextRequest) {
 
   if (!rows.length) return NextResponse.json({ error: "No rows provided" }, { status: 400 });
 
-  // Resolve org — attempt from active session
+  // Resolve user + org from active session
   const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id ?? null;
+  const userId    = session?.user?.id   ?? null;
+  const userEmail = session?.user?.email ?? body.uploaded_by_email ?? "System Import";
 
   let orgId: string | null = null;
   if (userId) {
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
         import_batch_id:         batchId,
         compliance_flags:        row._issues?.length > 0 ? row._issues : null,
         organization_id:         orgId,
+        updated_by:              userEmail,
       };
 
       if (isDup && dupAction === "update") {
