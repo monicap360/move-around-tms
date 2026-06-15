@@ -3,6 +3,8 @@ services:
     name: move-around-tms
     env: node
     plan: starter
+    runtime: node
+    numInstances: 1
     buildCommand: npm ci && npm run build
     startCommand: npm run start
     autoDeploy: true
@@ -11,7 +13,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_OPTIONS
-        value: "--max-old-space-size=400"
+        value: "--max-old-space-size=460"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
       - key: NEXT_PUBLIC_SUPABASE_URL
