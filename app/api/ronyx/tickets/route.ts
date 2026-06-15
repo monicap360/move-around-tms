@@ -140,13 +140,10 @@ export async function POST(request: NextRequest) {
       ? Number(body.waiting_minutes)
       : calculateWaitingMinutes(body.load_time, body.dump_time);
 
-  const payload = {
-    ticket_id,
+  // Core payload — columns that exist in all migration versions (003 + 069 baseline)
+  const corePayload = {
     ticket_number,
     ticket_date,
-    company_name: body.company_name || body.company || null,
-    project_id: body.project_id || null,
-    customer_id: body.customer_id || null,
     driver_id: body.driver_id || null,
     driver_name: body.driver_name || null,
     truck_id: body.truck_id || null,
@@ -165,18 +162,10 @@ export async function POST(request: NextRequest) {
     pickup_location: body.pickup_location || null,
     delivery_location: body.delivery_location || null,
     delivery_site: body.delivery_location || body.delivery_site || null,
-    dump_location: body.dump_location || body.delivery_location || null,
-    pickup_gps_lat: body.pickup_gps_lat || null,
-    pickup_gps_lon: body.pickup_gps_lon || null,
-    dump_gps_lat: body.dump_gps_lat || null,
-    dump_gps_lon: body.dump_gps_lon || null,
-    calculated_distance,
     status: normalizeStatus(body.status),
     payment_status: normalizePayment(body.payment_status),
     invoice_number: body.invoice_number || null,
     driver_settlement_reference: body.driver_settlement_reference || null,
-    approved_at: body.approved_at || null,
-    approved_by: body.approved_by || null,
     ticket_notes: body.ticket_notes || null,
     digital_signature: body.digital_signature || null,
     signature_name: body.signature_name || null,
@@ -184,10 +173,28 @@ export async function POST(request: NextRequest) {
     odometer: body.odometer || null,
     shift: body.shift || null,
     work_order_number: body.work_order_number || null,
-    source: body.source || body.scan_source || "FastScan",
     gross_weight,
     tare_weight,
     net_weight,
+    uom: body.uom || unit_type,
+    ticket_image_url: body.ticket_image_url || null,
+    delivery_receipt_url: body.delivery_receipt_url || null,
+    pod_url: body.pod_url || null,
+  };
+
+  // Extended payload — columns added by migration 103
+  const extendedPayload = {
+    ticket_id,
+    company_name: body.company_name || body.company || null,
+    project_id: body.project_id || null,
+    customer_id: body.customer_id || null,
+    source: body.source || body.scan_source || "FastScan",
+    dump_location: body.dump_location || body.delivery_location || null,
+    pickup_gps_lat: body.pickup_gps_lat || null,
+    pickup_gps_lon: body.pickup_gps_lon || null,
+    dump_gps_lat: body.dump_gps_lat || null,
+    dump_gps_lon: body.dump_gps_lon || null,
+    calculated_distance,
     load_weight: body.load_weight ?? net_weight ?? null,
     cubic_yards: body.cubic_yards || null,
     load_count: body.load_count || null,
@@ -198,10 +205,6 @@ export async function POST(request: NextRequest) {
     has_photo: body.has_photo ?? Boolean(body.ticket_image_url || body.delivery_receipt_url),
     has_signature: body.has_signature ?? Boolean(body.digital_signature || body.signature_name),
     weight_ticket_verified: body.weight_ticket_verified ?? false,
-    uom: body.uom || unit_type,
-    ticket_image_url: body.ticket_image_url || null,
-    delivery_receipt_url: body.delivery_receipt_url || null,
-    pod_url: body.pod_url || null,
     fuel_surcharge_amount: body.fuel_surcharge_amount ?? body.fuel_surcharge ?? null,
     spread_amount: body.spread_amount ?? null,
     detention_amount: body.detention_amount ?? null,
@@ -211,7 +214,23 @@ export async function POST(request: NextRequest) {
     show_detention: body.show_detention ?? Boolean(body.detention_amount),
   };
 
-  const { data, error } = await supabase.from("aggregate_tickets").insert(payload).select().single();
+  // Try full insert first; fall back to core-only if migration 103 hasn't run yet
+  let insertResult = await supabase
+    .from("aggregate_tickets")
+    .insert({ ...corePayload, ...extendedPayload })
+    .select()
+    .single();
+
+  if (insertResult.error && insertResult.error.message.includes("column")) {
+    // Extended columns don't exist yet — insert core fields only
+    insertResult = await supabase
+      .from("aggregate_tickets")
+      .insert(corePayload)
+      .select()
+      .single();
+  }
+
+  const { data, error } = insertResult;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

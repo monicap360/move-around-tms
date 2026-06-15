@@ -412,22 +412,38 @@ export default function TicketsPage() {
       const createRes = await fetch("/api/ronyx/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "scanned", scan_source: "Fast Scan" }),
+        body: JSON.stringify({ status: "scanned", source: "FastScan" }),
       });
       const createData = await createRes.json();
+      if (!createRes.ok) {
+        showToast(`Ticket creation failed: ${createData.error || createRes.statusText}`);
+        return;
+      }
       const ticketId = createData.ticket?.id || createData.id;
-      if (ticketId) {
-        for (const file of Array.from(files)) {
-          const form = new FormData();
-          form.append("file", file);
-          form.append("ticket_id", ticketId);
-          await fetch("/api/ronyx/tickets/upload", { method: "POST", body: form });
+      if (!ticketId) {
+        showToast("Ticket created but no ID returned — reload to check.");
+        setTimeout(loadTickets, 1000);
+        return;
+      }
+      let uploadError = "";
+      for (const file of Array.from(files)) {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("ticket_id", ticketId);
+        const upRes = await fetch("/api/ronyx/tickets/upload", { method: "POST", body: form });
+        if (!upRes.ok) {
+          const upData = await upRes.json().catch(() => ({}));
+          uploadError = upData.error || upRes.statusText;
         }
       }
-      showToast("Upload complete — processing OCR…");
+      if (uploadError) {
+        showToast(`Ticket saved but file upload failed: ${uploadError}`);
+      } else {
+        showToast("Ticket uploaded — processing OCR…");
+      }
       setTimeout(loadTickets, 2000);
-    } catch {
-      showToast("Upload failed — check connection");
+    } catch (e: any) {
+      showToast(`Upload failed: ${e?.message || "check connection"}`);
     }
   }, [loadTickets, showToast]);
 

@@ -24,6 +24,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing file or ticket_id" }, { status: 400 });
     }
 
+    // Auto-create bucket if it doesn't exist
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.some((b) => b.name === "ticket-uploads")) {
+      await supabase.storage.createBucket("ticket-uploads", {
+        public: false,
+        fileSizeLimit: 10 * 1024 * 1024,
+      });
+    }
+
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 400 });
