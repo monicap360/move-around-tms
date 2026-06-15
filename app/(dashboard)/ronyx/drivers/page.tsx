@@ -814,11 +814,18 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
-                    <button onClick={submitImport} disabled={kpis.ready === 0 && kpis.duplicates === 0}
-                      style={{ padding: "11px 28px", borderRadius: 10, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: "pointer" }}>
-                      ⬆ Import {kpis.ready} Ready Driver{kpis.ready !== 1 ? "s" : ""}
-                      {kpis.duplicates > 0 ? ` + ${Object.values(dupActions).filter(a => a !== "skip").length} Duplicate Actions` : ""}
-                    </button>
+                    {(() => {
+                      const importable = rows.filter(r => {
+                        if (r._importStatus === "duplicate") return (dupActions[r._idx] ?? "update") !== "skip";
+                        return r._importStatus !== "skip";
+                      }).length;
+                      return (
+                        <button onClick={submitImport} disabled={importable === 0}
+                          style={{ padding: "11px 28px", borderRadius: 10, background: importable === 0 ? "#94a3b8" : "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: importable === 0 ? "not-allowed" : "pointer" }}>
+                          ⬆ Import {importable} Driver{importable !== 1 ? "s" : ""}
+                        </button>
+                      );
+                    })()}
                     <button onClick={() => { setStep("upload"); setRows([]); setFileName(""); }}
                       style={{ padding: "11px 18px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontWeight: 600, cursor: "pointer" }}>
                       ← Upload Different File
