@@ -213,5 +213,15 @@ export async function POST(req: NextRequest) {
     }).maybeSingle();
   }
 
-  return NextResponse.json({ imported, updated, skipped, failed, errors, batch_id: batchId });
+  const missing_cdl_count     = rows.filter(r => r._issues?.includes("MISSING_CDL_EXPIRATION")).length;
+  const missing_medical_count = rows.filter(r => r._issues?.includes("MISSING_MEDICAL_CARD")).length;
+  const expired_cdl_count     = rows.filter(r => r._issues?.includes("CDL_EXPIRED")).length;
+  const expired_medical_count = rows.filter(r => r._issues?.includes("MEDICAL_CARD_EXPIRED")).length;
+  const missing_mvr_count     = rows.filter(r => r._issues?.includes("MISSING_MVR")).length;
+  const missing_drug_count    = rows.filter(r => r._issues?.includes("MISSING_DRUG_TEST")).length;
+
+  return NextResponse.json({
+    imported, updated, skipped, failed, errors, batch_id: batchId,
+    compliance: { missing_cdl_count, missing_medical_count, expired_cdl_count, expired_medical_count, missing_mvr_count, missing_drug_count },
+  });
 }

@@ -473,7 +473,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
   const [rows, setRows]           = useState<ImportDriverRow[]>([]);
   const [dupActions, setDupActions] = useState<Record<number, "update" | "skip" | "create">>({});
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported?: number; updated?: number; skipped?: number; failed?: number; errors?: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ imported?: number; updated?: number; skipped?: number; failed?: number; errors?: string[]; compliance?: Record<string, number> } | null>(null);
 
   const kpis = useMemo(() => ({
     total:      rows.length,
@@ -797,12 +797,22 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
                                     <option value="skip">Skip</option>
                                   </select>
                                 ) : (
-                                  <button onClick={() => setRows(prev => prev.map(r => r._idx === row._idx ? { ...r, _importStatus: r._importStatus === "skip" ? "ready" : "skip" } : r))}
-                                    style={{ fontSize: "0.65rem", padding: "3px 8px", borderRadius: 6, border: "1px solid #e2e8f0", cursor: "pointer",
-                                      background: row._importStatus === "skip" ? "#f0fdf4" : "#fff1f2",
-                                      color: row._importStatus === "skip" ? "#15803d" : "#dc2626" }}>
-                                    {row._importStatus === "skip" ? "Include" : "Skip"}
-                                  </button>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    <button
+                                      onClick={() => setRows(prev => prev.map(r => r._idx === row._idx ? { ...r, _importStatus: r._importStatus === "needs_review" ? "needs_review" : "ready" } : r))}
+                                      style={{ fontSize: "0.65rem", padding: "3px 9px", borderRadius: 6, border: `1.5px solid ${row._importStatus !== "skip" ? "#1d4ed8" : "#e2e8f0"}`, cursor: "pointer",
+                                        background: row._importStatus !== "skip" ? "#eff6ff" : "#fff",
+                                        color: row._importStatus !== "skip" ? "#1d4ed8" : "#94a3b8", fontWeight: 700 }}>
+                                      ✓ Upload
+                                    </button>
+                                    <button
+                                      onClick={() => setRows(prev => prev.map(r => r._idx === row._idx ? { ...r, _importStatus: "skip" } : r))}
+                                      style={{ fontSize: "0.65rem", padding: "3px 9px", borderRadius: 6, border: `1.5px solid ${row._importStatus === "skip" ? "#dc2626" : "#e2e8f0"}`, cursor: "pointer",
+                                        background: row._importStatus === "skip" ? "#fff1f2" : "#fff",
+                                        color: row._importStatus === "skip" ? "#dc2626" : "#94a3b8", fontWeight: 700 }}>
+                                      ✕ Skip
+                                    </button>
+                                  </div>
                                 )}
                               </td>
                             </tr>
@@ -822,7 +832,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
                       return (
                         <button onClick={submitImport} disabled={importable === 0}
                           style={{ padding: "11px 28px", borderRadius: 10, background: importable === 0 ? "#94a3b8" : "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: importable === 0 ? "not-allowed" : "pointer" }}>
-                          ⬆ Import {importable} Driver{importable !== 1 ? "s" : ""}
+                          ⬆ Upload {importable} Driver{importable !== 1 ? "s" : ""}
                         </button>
                       );
                     })()}
@@ -881,17 +891,40 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
                   </div>
                 ))}
               </div>
+              {/* Compliance flags saved to system */}
+              {importResult.compliance && Object.values(importResult.compliance).some(v => (v as number) > 0) && (
+                <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, color: "#92400e", marginBottom: 10, fontSize: "0.82rem" }}>⚠ Compliance Issues Saved to System</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
+                    {[
+                      { label: "Missing CDL Expiration",      value: importResult.compliance.missing_cdl_count },
+                      { label: "Missing Medical Card",         value: importResult.compliance.missing_medical_count },
+                      { label: "Expired CDL",                  value: importResult.compliance.expired_cdl_count },
+                      { label: "Expired Medical Card",         value: importResult.compliance.expired_medical_count },
+                      { label: "Missing MVR",                  value: importResult.compliance.missing_mvr_count },
+                      { label: "Missing Drug Test",            value: importResult.compliance.missing_drug_count },
+                    ].filter(item => item.value > 0).map(item => (
+                      <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.76rem" }}>
+                        <span style={{ color: "#92400e" }}>{item.label}</span>
+                        <span style={{ fontWeight: 800, color: "#dc2626", background: "#fee2e2", borderRadius: 6, padding: "1px 7px" }}>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: "0.7rem", color: "#92400e", marginTop: 10, borderTop: "1px solid #fde68a", paddingTop: 8 }}>
+                    These flags are saved on each driver record and visible in Compliance Monitor. Drivers with missing or expired documents are blocked from dispatch.
+                  </div>
+                </div>
+              )}
               {importResult.errors && importResult.errors.length > 0 && (
-                <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 10, padding: 14, marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, color: "#dc2626", marginBottom: 8, fontSize: "0.8rem" }}>Errors</div>
+                <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, color: "#dc2626", marginBottom: 8, fontSize: "0.8rem" }}>Row Errors</div>
                   {importResult.errors.slice(0, 5).map((e, i) => (
                     <div key={i} style={{ fontSize: "0.75rem", color: "#7f1d1d", marginBottom: 4 }}>• {e}</div>
                   ))}
                 </div>
               )}
-              <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 10, padding: 14, marginBottom: 20, fontSize: "0.78rem", color: "#92400e" }}>
-                <strong>Next steps:</strong> Go to Driver Management and verify compliance dates for each imported driver.
-                Set Dispatch Eligible = Yes only after compliance is confirmed.
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 14, marginBottom: 20, fontSize: "0.78rem", color: "#1e40af" }}>
+                <strong>Next steps:</strong> Go to Drivers → Compliance to review flagged drivers and fill in missing dates. Set Dispatch Eligible only after compliance is confirmed.
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: 10, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, cursor: "pointer" }}>
