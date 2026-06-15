@@ -797,310 +797,638 @@ function ImportTrucksModal({ existingTrucks, onClose, onImported, showToast }: {
   );
 }
 
+/* ─── Issue helpers ─────────────────────────────────────────── */
+function daysUntil(dateStr: string): number | null {
+  if (!dateStr || dateStr === "—") return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return Math.ceil((d.getTime() - Date.now()) / 864e5);
+}
+
+type TruckIssue = {
+  truck: Truck;
+  category: "oos" | "critical" | "expiring" | "maint";
+  title: string;
+  detail: string;
+  priority: "critical" | "high" | "medium" | "low";
+};
+
+function computeAllIssues(trucks: Truck[]): TruckIssue[] {
+  const issues: TruckIssue[] = [];
+  const ORDER = ["critical", "high", "medium", "low"] as const;
+  for (const t of trucks) {
+    if (t.status === "Out of Service")
+      issues.push({ truck: t, category: "oos", title: "Out of Service", detail: `Unit ${t.unit} needs return to service`, priority: "critical" });
+    if (t.maintenanceRisk === "Critical")
+      issues.push({ truck: t, category: "critical", title: "Critical Risk", detail: `${t.unit} requires immediate attention`, priority: "critical" });
+    else if (t.maintenanceRisk === "High")
+      issues.push({ truck: t, category: "maint", title: "High Maintenance Risk", detail: `${t.unit} — schedule service before next dispatch`, priority: "high" });
+    for (const [field, label] of [
+      [t.inspectionExp,   "DOT Inspection"],
+      [t.insuranceExp,    "Insurance"],
+      [t.registrationExp, "Registration"],
+    ] as [string, string][]) {
+      const d = daysUntil(field);
+      if (d !== null && d <= 45) {
+        issues.push({
+          truck: t, category: "expiring",
+          title:  `${label} ${d < 0 ? "EXPIRED" : `expiring in ${d}d`}`,
+          detail: `${t.unit} — ${label} ${d < 0 ? "expired" : "expires"} ${field}`,
+          priority: d < 0 ? "critical" : d <= 7 ? "high" : d <= 14 ? "medium" : "low",
+        });
+      }
+    }
+  }
+  return issues.sort((a, b) => ORDER.indexOf(a.priority) - ORDER.indexOf(b.priority));
+}
+
+/* ─── Status modal ───────────────────────────────────────────── */
+function StatusModal({ truck, onClose, onSave, showToast }: {
+  truck: Truck;
+  onClose: () => void;
+  onSave: (id: string, status: TruckStatus) => void;
+  showToast: (msg: string) => void;
+}) {
+  const STATUSES: TruckStatus[] = ["Available", "Assigned", "In Maintenance", "Out of Service", "Inactive"];
+  const [status, setStatus] = useState<TruckStatus>(truck.status);
+  const [notes, setNotes]   = useState("");
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    onSave(truck.id, status);
+    showToast(`${truck.unit} → ${status}`);
+    onClose();
+  }
+  return (
+    <div style={moverlay}>
+      <div style={mbox(420)}>
+        <h2 style={{ margin: "0 0 4px", fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>Change Unit Status</h2>
+        <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: 13 }}>{truck.unit} · {truck.year} {truck.make} {truck.model}</p>
+        <form onSubmit={submit}>
+          <label style={mlbl}>New Status</label>
+          <select value={status} onChange={e => setStatus(e.target.value as TruckStatus)} style={{ ...minp, marginBottom: 14 }}>
+            {STATUSES.map(s => <option key={s}>{s}</option>)}
+          </select>
+          <label style={mlbl}>Notes (optional)</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} style={{ ...minp, minHeight: 68, resize: "vertical" }} placeholder="Reason for status change…" />
+          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            <button type="submit" style={mbtn(true)}>Save Status</button>
+            <button type="button" onClick={onClose} style={mbtn(false)}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Staff Today panel ──────────────────────────────────────── */
+const FLEET_STAFF = [
+  { name: "Mike R.",    role: "Fleet Mgr",    color: "#1e40af" },
+  { name: "Carlos V.", role: "Mechanic",      color: "#065f46" },
+  { name: "Denise L.", role: "Dispatch",      color: "#7c3aed" },
+  { name: "Tony B.",   role: "Driver Coord.", color: "#b45309" },
+];
+
+function StaffTodayPanel({ onOpenTicket }: { onOpenTicket: () => void }) {
+  return (
+    <aside style={{ width: 158, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>Staff Today</div>
+        {FLEET_STAFF.map(s => (
+          <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+              {s.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", lineHeight: 1.2 }}>{s.name}</div>
+              <div style={{ fontSize: 10, color: "#64748b" }}>{s.role}</div>
+            </div>
+          </div>
+        ))}
+        <div style={{ paddingTop: 8, borderTop: "1px solid #f1f5f9" }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", display: "inline-block", marginRight: 5 }} />
+          <span style={{ fontSize: 10, color: "#475569", fontWeight: 600 }}>4 on shift</span>
+        </div>
+      </div>
+      <div style={{ background: "#fff", borderRadius: 14, padding: 12, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Quick Log</div>
+        <button onClick={onOpenTicket} style={{ width: "100%", padding: "8px 0", background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 11, cursor: "pointer", marginBottom: 6 }}>
+          + Maint. Ticket
+        </button>
+        <button style={{ width: "100%", padding: "8px 0", background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 8, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+          Log Fuel Stop
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ─── Fleet Assistant panel ──────────────────────────────────── */
+function FleetAssistantPanel({ kpis, issues, onAddTruck, onSchedule, onAssign, onImport, onUploadDoc }: {
+  kpis: { total: number; available: number; oos: number; criticalRisk: number; avgHealth: number };
+  issues: TruckIssue[];
+  onAddTruck: () => void;
+  onSchedule: () => void;
+  onAssign: () => void;
+  onImport: () => void;
+  onUploadDoc: () => void;
+}) {
+  const critCount = issues.filter(i => i.priority === "critical").length;
+  const insight = critCount > 0
+    ? `${critCount} critical issue${critCount > 1 ? "s" : ""} need immediate action.${kpis.oos > 0 ? ` ${kpis.oos} unit${kpis.oos > 1 ? "s" : ""} out of service.` : ""}`
+    : kpis.available === kpis.total && kpis.total > 0
+    ? "All units available. Fleet ready for dispatch."
+    : kpis.total === 0
+    ? "No fleet data loaded yet. Import or add a truck to get started."
+    : `${kpis.available} of ${kpis.total} units available. Fleet health ${kpis.avgHealth}%.`;
+
+  return (
+    <aside style={{ width: 216, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ background: "#0f172a", borderRadius: 14, padding: 16, color: "#fff" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Fleet Insight</div>
+        <p style={{ margin: "0 0 12px", fontSize: 12, color: "#cbd5e1", lineHeight: 1.5 }}>{insight}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          {[
+            { label: "Available", value: kpis.available, color: "#10b981" },
+            { label: "OOS",       value: kpis.oos,       color: kpis.oos > 0 ? "#ef4444" : "#64748b" },
+            { label: "Avg Health",value: `${kpis.avgHealth}%`, color: "#f59e0b" },
+            { label: "Issues",    value: issues.length,  color: critCount > 0 ? "#ef4444" : "#64748b" },
+          ].map(s => (
+            <div key={s.label} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Quick Actions</div>
+        {[
+          { label: "Add New Truck",     icon: "🚛", fn: onAddTruck },
+          { label: "Assign Driver",     icon: "👤", fn: onAssign },
+          { label: "Schedule Service",  icon: "🔧", fn: onSchedule },
+          { label: "Import Fleet Data", icon: "⬆",  fn: onImport },
+          { label: "Upload Document",   icon: "📄", fn: onUploadDoc },
+        ].map(a => (
+          <button key={a.label} onClick={a.fn} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px", background: "#f8fafc", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 12, color: "#1e293b", cursor: "pointer", marginBottom: 5, textAlign: "left" }}>
+            <span>{a.icon}</span> {a.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Compliance Links</div>
+        <Link href="/ronyx/compliance" style={{ display: "block", padding: "8px 10px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontWeight: 700, fontSize: 12, color: "#1d4ed8", textDecoration: "none", marginBottom: 6 }}>
+          Compliance Center →
+        </Link>
+        <Link href="/ronyx/ifta-fuel" style={{ display: "block", padding: "8px 10px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, fontWeight: 700, fontSize: 12, color: "#15803d", textDecoration: "none" }}>
+          IFTA / Fuel Logs →
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+/* ─── Queue tab ──────────────────────────────────────────────── */
+function QueueTab({ issues, onService, onStatus }: {
+  issues: TruckIssue[];
+  onService: (t: Truck) => void;
+  onStatus: (t: Truck) => void;
+}) {
+  const pColor = (p: string) => p === "critical" ? "#dc2626" : p === "high" ? "#ea580c" : p === "medium" ? "#ca8a04" : "#16a34a";
+  const pBg    = (p: string) => p === "critical" ? "#fef2f2" : p === "high" ? "#fff7ed" : p === "medium" ? "#fefce8" : "#f0fdf4";
+  if (!issues.length) return (
+    <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
+      <div style={{ fontSize: 36, marginBottom: 10 }}>✅</div>
+      <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15, marginBottom: 4 }}>All Clear</div>
+      <div style={{ fontSize: 13 }}>No open fleet issues. All units are healthy.</div>
+    </div>
+  );
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        {(["critical","high","medium","low"] as const).map(p => {
+          const cnt = issues.filter(i => i.priority === p).length;
+          if (!cnt) return null;
+          return <div key={p} style={{ background: pBg(p), border: `1px solid ${pColor(p)}30`, borderRadius: 7, padding: "4px 12px", fontSize: 12, fontWeight: 700, color: pColor(p) }}>{cnt} {p}</div>;
+        })}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {issues.map((item, i) => (
+          <div key={i} style={{ background: "#fff", border: `1px solid ${pColor(item.priority)}25`, borderLeft: `4px solid ${pColor(item.priority)}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ background: pBg(item.priority), borderRadius: 6, padding: "3px 9px", fontSize: 10, fontWeight: 800, color: pColor(item.priority), textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>{item.priority}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{item.title}</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 1 }}>{item.detail}</div>
+            </div>
+            {item.category === "oos" ? (
+              <button onClick={() => onStatus(item.truck)} style={{ padding: "5px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>Return to Service</button>
+            ) : (
+              <button onClick={() => onService(item.truck)} style={{ padding: "5px 12px", background: "#1e40af", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+                {item.category === "expiring" ? "Take Action" : "Schedule Service"}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Expiring tab ───────────────────────────────────────────── */
+function ExpiringTab({ trucks, onService }: { trucks: Truck[]; onService: (t: Truck) => void }) {
+  const rows: { truck: Truck; label: string; date: string; days: number }[] = [];
+  for (const t of trucks) {
+    for (const [field, label] of [[t.inspectionExp,"DOT Inspection"],[t.insuranceExp,"Insurance"],[t.registrationExp,"Registration"]] as [string,string][]) {
+      const d = daysUntil(field);
+      if (d !== null && d <= 60) rows.push({ truck: t, label, date: field, days: d });
+    }
+  }
+  rows.sort((a, b) => a.days - b.days);
+  if (!rows.length) return (
+    <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
+      <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+      <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>All Documents Current</div>
+      <div style={{ fontSize: 13 }}>No documents expiring within 60 days.</div>
+    </div>
+  );
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <thead>
+        <tr style={{ background: "#f8fafc" }}>
+          {["Unit","Make / Model","Document","Expires","Days Left",""].map(h => (
+            <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => {
+          const exp = row.days < 0; const hot = row.days <= 7;
+          return (
+            <tr key={i} style={{ background: exp ? "#fef2f2" : hot ? "#fff7ed" : "#fff", borderBottom: "1px solid #f1f5f9" }}>
+              <td style={{ padding: "10px 14px", fontWeight: 700 }}>{row.truck.unit}</td>
+              <td style={{ padding: "10px 14px", color: "#475569" }}>{row.truck.year} {row.truck.make} {row.truck.model}</td>
+              <td style={{ padding: "10px 14px", fontWeight: 600 }}>{row.label}</td>
+              <td style={{ padding: "10px 14px", color: exp ? "#dc2626" : "#475569", fontWeight: exp ? 700 : 400 }}>{row.date}</td>
+              <td style={{ padding: "10px 14px" }}>
+                <span style={{ background: exp ? "#fef2f2" : hot ? "#fff7ed" : "#f0fdf4", color: exp ? "#dc2626" : hot ? "#ea580c" : "#16a34a", borderRadius: 6, padding: "3px 8px", fontSize: 11, fontWeight: 700 }}>
+                  {exp ? "EXPIRED" : `${row.days}d`}
+                </span>
+              </td>
+              <td style={{ padding: "10px 14px" }}>
+                <button onClick={() => onService(row.truck)} style={{ padding: "4px 10px", background: "#1e40af", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>Renew</button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+/* ─── OOS tab ────────────────────────────────────────────────── */
+function OOSTab({ trucks, onStatus, onService }: { trucks: Truck[]; onStatus: (t: Truck) => void; onService: (t: Truck) => void }) {
+  const oosUnits = trucks.filter(t => t.status === "Out of Service" || t.status === "Inactive");
+  if (!oosUnits.length) return (
+    <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
+      <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
+      <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>No Units Out of Service</div>
+      <div style={{ fontSize: 13 }}>All fleet units are operational.</div>
+    </div>
+  );
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {oosUnits.map(t => (
+        <div key={t.id} style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ fontSize: 26 }}>🚚</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#0f172a" }}>{t.unit}</div>
+            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t.year} {t.make} {t.model} · {t.plate}</div>
+            <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
+              <span style={{ background: "#fef2f2", color: "#dc2626", borderRadius: 5, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{t.status}</span>
+              {t.assignedDriver && t.assignedDriver !== "—" && <span style={{ background: "#f8fafc", color: "#64748b", borderRadius: 5, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>Driver: {t.assignedDriver}</span>}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => onService(t)} style={{ padding: "6px 12px", background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Schedule Repair</button>
+            <button onClick={() => onStatus(t)} style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Return to Service</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Maintenance tab ────────────────────────────────────────── */
+function MaintenanceTab({ trucks, onService, onTicket }: { trucks: Truck[]; onService: (t: Truck) => void; onTicket: () => void }) {
+  const atRisk = trucks.filter(t => ["Critical","High","Medium"].includes(t.maintenanceRisk) || t.status === "In Maintenance");
+  const rColor = (r: MaintenanceRisk) => r === "Critical" ? "#dc2626" : r === "High" ? "#ea580c" : r === "Medium" ? "#ca8a04" : "#16a34a";
+  const rBg    = (r: MaintenanceRisk) => r === "Critical" ? "#fef2f2" : r === "High" ? "#fff7ed" : r === "Medium" ? "#fefce8" : "#f0fdf4";
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ fontSize: 13, color: "#64748b" }}>{atRisk.length} unit{atRisk.length !== 1 ? "s" : ""} need maintenance attention</div>
+        <button onClick={onTicket} style={{ padding: "7px 16px", background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>+ Create Ticket</button>
+      </div>
+      {!atRisk.length ? (
+        <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>🔧</div>
+          <div style={{ fontWeight: 700, color: "#0f172a" }}>No Maintenance Issues</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>All units have low maintenance risk.</div>
+        </div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: "#f8fafc" }}>
+              {["Unit","Make / Model","Risk","Next Service","Last Maint.","Health",""].map(h => (
+                <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {atRisk.map(t => (
+              <tr key={t.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <td style={{ padding: "10px 14px", fontWeight: 700 }}>{t.unit}</td>
+                <td style={{ padding: "10px 14px", color: "#475569" }}>{t.year} {t.make} {t.model}</td>
+                <td style={{ padding: "10px 14px" }}>
+                  <span style={{ background: rBg(t.maintenanceRisk), color: rColor(t.maintenanceRisk), borderRadius: 6, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>{t.maintenanceRisk}</span>
+                </td>
+                <td style={{ padding: "10px 14px", color: t.nextService === "Overdue" ? "#dc2626" : "#475569", fontWeight: t.nextService === "Overdue" ? 700 : 400 }}>{t.nextService}</td>
+                <td style={{ padding: "10px 14px", color: "#475569" }}>{t.lastMaintenance}</td>
+                <td style={{ padding: "10px 14px", fontWeight: 700, color: t.healthScore >= 80 ? "#16a34a" : t.healthScore >= 60 ? "#ca8a04" : "#dc2626" }}>{t.healthScore}%</td>
+                <td style={{ padding: "10px 14px" }}>
+                  <button onClick={() => onService(t)} style={{ padding: "4px 12px", background: "#1e40af", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>Schedule</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/* ─── Reports tab ────────────────────────────────────────────── */
+function ReportsTab({ trucks, onExport }: { trucks: Truck[]; onExport: () => void }) {
+  const byStatus: Record<string, number> = {};
+  const byRisk:   Record<string, number> = {};
+  for (const t of trucks) {
+    byStatus[t.status]          = (byStatus[t.status]          || 0) + 1;
+    byRisk[t.maintenanceRisk]   = (byRisk[t.maintenanceRisk]   || 0) + 1;
+  }
+  const avgH = trucks.length ? Math.round(trucks.reduce((s, t) => s + t.healthScore, 0)    / trucks.length) : 0;
+  const avgR = trucks.length ? Math.round(trucks.reduce((s, t) => s + t.readinessScore, 0) / trucks.length) : 0;
+  const rColor = (k: string) => k === "Critical" ? "#dc2626" : k === "High" ? "#ea580c" : k === "Medium" ? "#ca8a04" : "#16a34a";
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ fontSize: 13, color: "#64748b" }}>Fleet summary and export</div>
+        <button onClick={onExport} style={{ padding: "8px 20px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Export Fleet CSV</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 18, border: "1px solid #e2e8f0" }}>
+          <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 12, fontSize: 13 }}>Status Breakdown</div>
+          {Object.entries(byStatus).map(([k, v]) => (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
+              <span style={{ color: "#475569" }}>{k}</span><strong style={{ color: "#0f172a" }}>{v}</strong>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 18, border: "1px solid #e2e8f0" }}>
+          <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 12, fontSize: 13 }}>Maintenance Risk Distribution</div>
+          {Object.entries(byRisk).map(([k, v]) => (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
+              <span style={{ color: rColor(k) }}>{k}</span><strong style={{ color: rColor(k) }}>{v}</strong>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 18, border: "1px solid #e2e8f0" }}>
+          <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 14, fontSize: 13 }}>Average Fleet Scores</div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <ScoreRing score={avgH} label="Avg Health" />
+            <ScoreRing score={avgR} label="Avg Readiness" />
+          </div>
+        </div>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 18, border: "1px solid #e2e8f0" }}>
+          <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 12, fontSize: 13 }}>Top Revenue Units</div>
+          {[...trucks].sort((a, b) => parseInt(b.revenueWeek.replace(/\D/g,"") || "0") - parseInt(a.revenueWeek.replace(/\D/g,"") || "0")).slice(0, 5).map(t => (
+            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
+              <span style={{ fontWeight: 600, color: "#0f172a" }}>{t.unit}</span>
+              <strong style={{ color: "#16a34a" }}>{t.revenueWeek}/wk</strong>
+            </div>
+          ))}
+          {!trucks.length && <div style={{ color: "#94a3b8", fontSize: 13 }}>No data yet.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main page ─────────────────────────────────────────── */
 export default function TrucksPage() {
-  const [trucks, setTrucks]           = useState<Truck[]>([]);
-  const [search, setSearch]           = useState("");
+  const [trucks, setTrucks]         = useState<Truck[]>([]);
+  const [search, setSearch]         = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
-  const [riskFilter, setRiskFilter]   = useState("All Risks");
-  const [toast, setToast]               = useState("");
-  // undefined = closed, null = open with truck picker, Truck = open with preselected
-  const [assignTarget, setAssignTarget]   = useState<Truck | null | undefined>(undefined);
-  const [serviceTarget, setServiceTarget] = useState<Truck | null | undefined>(undefined);
-  const [uploadDocType, setUploadDocType] = useState<string | null>(null);
-  const [addTruckOpen, setAddTruckOpen]   = useState(false);
-  const [ticketOpen, setTicketOpen]       = useState(false);
-  const [importOpen, setImportOpen]       = useState(false);
+  const [riskFilter, setRiskFilter] = useState("All Risks");
+  const [activeTab, setActiveTab]   = useState<"queue"|"fleet"|"maint"|"expiring"|"oos"|"reports">("queue");
+  const [toast, setToast]           = useState("");
+
+  const [assignTarget,   setAssignTarget]   = useState<Truck | null | undefined>(undefined);
+  const [serviceTarget,  setServiceTarget]  = useState<Truck | null | undefined>(undefined);
+  const [uploadDocType,  setUploadDocType]  = useState<string | null>(null);
+  const [addTruckOpen,   setAddTruckOpen]   = useState(false);
+  const [ticketOpen,     setTicketOpen]     = useState(false);
+  const [importOpen,     setImportOpen]     = useState(false);
+  const [statusTarget,   setStatusTarget]   = useState<Truck | null>(null);
 
   useEffect(() => {
     fetch("/api/ronyx/trucks")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data.trucks) && data.trucks.length > 0) {
-          setTrucks(data.trucks.map(mapApiTruck));
-        }
-      })
-      .catch(() => {/* keep demo data on error */});
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data.trucks) && data.trucks.length > 0) setTrucks(data.trucks.map(mapApiTruck)); })
+      .catch(() => {});
   }, []);
 
   function showToast(msg: string) { setToast(msg); }
 
   function handleAssignSave(id: string, driver: string, trailer: string) {
-    setTrucks((prev) => prev.map((t) => t.id === id ? { ...t, assignedDriver: driver, assignedTrailer: trailer, status: driver ? "Assigned" : "Available" } : t));
+    setTrucks(prev => prev.map(t => t.id === id ? { ...t, assignedDriver: driver, assignedTrailer: trailer, status: (driver ? "Assigned" : "Available") as TruckStatus } : t));
   }
 
-  function toggleOOS(id: string) {
-    setTrucks((prev) => prev.map((t) =>
-      t.id === id ? { ...t, status: t.status === "Out of Service" ? "Available" : "Out of Service" } : t
-    ));
-    const truck = trucks.find((t) => t.id === id);
-    const next  = truck?.status === "Out of Service" ? "Available" : "Out of Service";
-    showToast(`${truck?.unit} marked as ${next}.`);
+  function handleStatusSave(id: string, status: TruckStatus) {
+    setTrucks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
   }
 
-  const filteredTrucks = useMemo(() => trucks.filter((truck) => {
+  const issues = useMemo(() => computeAllIssues(trucks), [trucks]);
+
+  const kpis = useMemo(() => ({
+    total:        trucks.length,
+    available:    trucks.filter(t => t.status === "Available").length,
+    assigned:     trucks.filter(t => t.status === "Assigned").length,
+    inMaint:      trucks.filter(t => t.status === "In Maintenance").length,
+    oos:          trucks.filter(t => t.status === "Out of Service").length,
+    avgHealth:    trucks.length ? Math.round(trucks.reduce((s, t) => s + t.healthScore, 0) / trucks.length) : 0,
+    criticalRisk: trucks.filter(t => t.maintenanceRisk === "Critical" || t.maintenanceRisk === "High").length,
+  }), [trucks]);
+
+  const filteredTrucks = useMemo(() => trucks.filter(truck => {
     const q = search.toLowerCase();
-    const matchSearch = !q || truck.unit.toLowerCase().includes(q) || truck.vin.toLowerCase().includes(q) ||
-      truck.plate.toLowerCase().includes(q) || truck.make.toLowerCase().includes(q) ||
-      truck.model.toLowerCase().includes(q) || truck.assignedDriver.toLowerCase().includes(q);
-    const matchStatus = statusFilter === "All Statuses" || truck.status === statusFilter;
-    const matchRisk   = riskFilter   === "All Risks"    || truck.maintenanceRisk === riskFilter;
-    return matchSearch && matchStatus && matchRisk;
+    const ms = !q || truck.unit.toLowerCase().includes(q) || truck.vin.toLowerCase().includes(q) || truck.plate.toLowerCase().includes(q) || truck.make.toLowerCase().includes(q) || truck.model.toLowerCase().includes(q) || truck.assignedDriver.toLowerCase().includes(q);
+    return ms && (statusFilter === "All Statuses" || truck.status === statusFilter) && (riskFilter === "All Risks" || truck.maintenanceRisk === riskFilter);
   }), [trucks, search, statusFilter, riskFilter]);
 
-  const activeTrucks      = trucks.filter((t) => t.status !== "Inactive").length;
-  const availableTrucks   = trucks.filter((t) => t.status === "Available").length;
-  const assignedTrucks    = trucks.filter((t) => t.status === "Assigned").length;
-  const maintenanceCount  = trucks.filter((t) => t.status === "In Maintenance" || t.status === "Out of Service" || t.maintenanceRisk === "High" || t.maintenanceRisk === "Critical").length;
-  const averageHealth     = Math.round(trucks.reduce((s, t) => s + t.healthScore, 0) / trucks.length);
-
-  const maintenanceAlerts = useMemo(() => [
-    ...trucks.filter((t) => t.maintenanceRisk === "Critical").map((t) => ({ title: "Critical Unit", truck: t, detail: "Requires immediate attention before dispatch.", level: "critical" as const })),
-    ...trucks.filter((t) => t.maintenanceRisk === "High").map((t) => ({ title: "High Risk", truck: t, detail: "Schedule service before next dispatch.", level: "danger" as const })),
-    ...trucks.filter((t) => t.maintenanceRisk === "Medium" && t.nextService !== "Overdue").map((t) => ({ title: "Service Due Soon", truck: t, detail: `Next service: ${t.nextService}`, level: "warning" as const })),
-  ].slice(0, 4), [trucks]);
+  const TABS = [
+    { id: "queue",    label: "Work Queue",     badge: issues.filter(i => i.priority === "critical" || i.priority === "high").length || null },
+    { id: "fleet",    label: "All Fleet",      badge: null },
+    { id: "maint",    label: "Maintenance",    badge: kpis.criticalRisk || null },
+    { id: "expiring", label: "Expiring Docs",  badge: issues.filter(i => i.category === "expiring").length || null },
+    { id: "oos",      label: "Out of Service", badge: kpis.oos || null },
+    { id: "reports",  label: "Reports",        badge: null },
+  ] as const;
 
   return (
-    <main className="fleet-page">
-      {/* ── Hero ── */}
-      <section className="fleet-hero">
-        <div>
-          <p className="fleet-eyebrow">Fleet Command / Trucks</p>
-          <h1>Truck Management</h1>
-          <p>
-            Monitor every truck by readiness, maintenance risk, compliance status,
-            cost per mile, revenue performance, driver assignment, location, and dispatch availability.
-          </p>
-        </div>
-        <div className="fleet-hero-actions">
-          <button className="fleet-button ghost" onClick={() => { exportFleetCSV(filteredTrucks); showToast(`Exported ${filteredTrucks.length} trucks as CSV.`); }}>
-            Export Fleet
-          </button>
-          <button className="fleet-button dark" onClick={() => setServiceTarget(null)}>
-            Schedule Maintenance
-          </button>
-          <button className="fleet-button primary" onClick={() => setAddTruckOpen(true)}>
-            + Add Truck
-          </button>
-        </div>
-      </section>
+    <div style={{ fontFamily: "Inter, system-ui, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
 
-      {/* ── KPIs ── */}
-      <section className="fleet-kpi-grid">
-        <div className="fleet-kpi"><span>Total Trucks</span><strong>{trucks.length}</strong><p>Fleet records</p></div>
-        <div className="fleet-kpi"><span>Active Trucks</span><strong>{activeTrucks}</strong><p>Available or assigned</p></div>
-        <div className="fleet-kpi success"><span>Available Now</span><strong>{availableTrucks}</strong><p>Ready for dispatch</p></div>
-        <div className="fleet-kpi blue"><span>Assigned</span><strong>{assignedTrucks}</strong><p>Currently on load</p></div>
-        <div className="fleet-kpi danger"><span>Maintenance Risk</span><strong>{maintenanceCount}</strong><p>Needs review</p></div>
-        <div className="fleet-kpi purple"><span>Fleet Health</span><strong>{averageHealth}%</strong><p>Average health score</p></div>
-      </section>
-
-      <section className="fleet-layout">
-        <div className="fleet-main-column">
-
-          {/* ── Alerts ── */}
-          {maintenanceAlerts.length > 0 && (
-            <div className="fleet-panel">
-              <div className="fleet-panel-header">
-                <div>
-                  <p className="fleet-eyebrow">Predictive Maintenance</p>
-                  <h2>Fleet Risk Alerts</h2>
-                  <span>AI-style alerts for trucks that may cause downtime, compliance issues, or dispatch delays.</span>
-                </div>
-                <Link href="/ronyx/hr-compliance" className="fleet-button ghost" style={{ textDecoration: "none" }}>Review All</Link>
-              </div>
-              <div className="fleet-alert-grid">
-                {maintenanceAlerts.map((alert, i) => (
-                  <div key={i} className={`fleet-alert ${alert.level}`}>
-                    <div>
-                      <strong>{alert.title}</strong>
-                      <p>{alert.truck.unit}</p>
-                      <span>{alert.detail}</span>
-                    </div>
-                    <button onClick={() => setServiceTarget(alert.truck)}>Open</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Truck directory ── */}
-          <div className="fleet-panel">
-            <div className="fleet-panel-header">
-              <div>
-                <p className="fleet-eyebrow">Fleet Directory</p>
-                <h2>All Trucks</h2>
-                <span>Search, filter, assign, inspect, service, and manage fleet equipment.</span>
-              </div>
-            </div>
-
-            <div className="fleet-filter-bar">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search unit, VIN, plate, make, model, or driver..." />
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option>All Statuses</option>
-                <option>Available</option>
-                <option>Assigned</option>
-                <option>In Maintenance</option>
-                <option>Out of Service</option>
-                <option>Inactive</option>
-              </select>
-              <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)}>
-                <option>All Risks</option>
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-                <option>Critical</option>
-              </select>
-              <button
-                onClick={() => setImportOpen(true)}
-                style={{ padding: "8px 16px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}
-              >
-                ⬆ Import Trucks
-              </button>
-            </div>
-
-            <div className="fleet-truck-list">
-              {filteredTrucks.map((truck) => (
-                <article className="fleet-truck-card" key={truck.id}>
-                  <div className="truck-card-top">
-                    <div className="truck-identity">
-                      <div className="truck-icon">🚚</div>
-                      <div>
-                        <h3>{truck.unit}</h3>
-                        <p>{truck.year} {truck.make} {truck.model}</p>
-                        <span>{truck.type}</span>
-                      </div>
-                    </div>
-                    <div className="truck-badges">
-                      <Badge value={truck.status} />
-                      <Badge value={truck.maintenanceRisk} />
-                    </div>
-                  </div>
-
-                  <div className="truck-card-body">
-                    <div className="truck-score-area">
-                      <ScoreRing score={truck.readinessScore} label="Readiness" />
-                      <ScoreRing score={truck.healthScore}    label="Health"    />
-                    </div>
-
-                    <div className="truck-data-grid">
-                      <div><span>Assigned Driver</span><strong>{truck.assignedDriver}</strong></div>
-                      <div><span>Trailer</span><strong>{truck.assignedTrailer}</strong></div>
-                      <div><span>Current Load</span><strong>{truck.currentLoad}</strong></div>
-                      <div><span>Location</span><strong>{truck.location}</strong></div>
-                      <div><span>Plate</span><strong>{truck.plate}</strong></div>
-                      <div><span>VIN</span><strong style={{ fontSize: 12 }}>{truck.vin}</strong></div>
-                      <div><span>Odometer</span><strong>{truck.odometer}</strong></div>
-                      <div><span>Engine Hours</span><strong>{truck.engineHours}</strong></div>
-                      <div><span>Fuel MPG</span><strong>{truck.fuelMpg}</strong></div>
-                      <div><span>Cost Per Mile</span><strong>{truck.costPerMile}</strong></div>
-                      <div><span>Revenue Week</span><strong>{truck.revenueWeek}</strong></div>
-                      <div>
-                        <span>Next Service</span>
-                        <strong className={truck.nextService === "Overdue" ? "fleet-danger-text" : ""}>{truck.nextService}</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="truck-compliance-strip">
-                    <div>
-                      <span>Inspection</span>
-                      <strong className={truck.inspectionExp === "Expired" ? "fleet-danger-text" : ""}>{truck.inspectionExp}</strong>
-                    </div>
-                    <div><span>Insurance</span><strong>{truck.insuranceExp}</strong></div>
-                    <div>
-                      <span>Registration</span>
-                      <strong className={truck.registrationExp === "Expired" ? "fleet-danger-text" : ""}>{truck.registrationExp}</strong>
-                    </div>
-                    <div><span>Last Maintenance</span><strong>{truck.lastMaintenance}</strong></div>
-                  </div>
-
-                  <div className="truck-card-footer">
-                    <div className="truck-action-group">
-                      <button onClick={() => showToast(`${truck.unit} profile — full detail page coming soon.`)}>Profile</button>
-                      <button onClick={() => setUploadDocType("")}>Documents</button>
-                      <button onClick={() => setAssignTarget(truck)}>Assign</button>
-                      <button onClick={() => setServiceTarget(truck)}>Service</button>
-                    </div>
-                    <button
-                      className={truck.status === "Out of Service" ? "fleet-return-button" : "fleet-danger-button"}
-                      onClick={() => toggleOOS(truck.id)}
-                    >
-                      {truck.status === "Out of Service" ? "Return to Service" : "Mark Out of Service"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-
-              {filteredTrucks.length === 0 && (
-                <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>No trucks match your filters.</div>
-              )}
-            </div>
+      {/* ── Top bar ── */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "18px 28px 0" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Fleet Command</div>
+            <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>Fleet &amp; Equipment Work Center</h1>
+            <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>Manage, track, and maintain all fleet units — assignments, maintenance, compliance, and reporting.</p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+            <button onClick={() => { exportFleetCSV(trucks); showToast(`Exported ${trucks.length} trucks.`); }} style={{ padding: "9px 16px", background: "#f8fafc", color: "#1e293b", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Export CSV</button>
+            <button onClick={() => setImportOpen(true)} style={{ padding: "9px 16px", background: "#f8fafc", color: "#1e293b", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>⬆ Import Trucks</button>
+            <button onClick={() => setAddTruckOpen(true)} style={{ padding: "9px 20px", background: "#1e40af", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>+ Add Truck</button>
           </div>
         </div>
 
-        {/* ── Sidebar ── */}
-        <aside className="fleet-side-column">
-          <div className="fleet-panel">
-            <p className="fleet-eyebrow">Quick Actions</p>
-            <h2>Fleet Tools</h2>
-            <div className="fleet-quick-list">
-              <button onClick={() => setAddTruckOpen(true)}>Add New Truck</button>
-              <button onClick={() => setUploadDocType("Registration")}>Upload Registration</button>
-              <button onClick={() => setUploadDocType("Insurance Certificate")}>Upload Insurance</button>
-              <button onClick={() => setServiceTarget(null)}>Schedule Inspection</button>
-              <button onClick={() => setTicketOpen(true)}>Create Maintenance Ticket</button>
-              <button onClick={() => setAssignTarget(null)}>Assign Driver</button>
-              <button onClick={() => setAssignTarget(null)}>Assign Trailer</button>
-              <Link href="/ronyx/ifta-fuel" style={{ textDecoration: "none" }}>
-                <button style={{ width: "100%" }}>Open Fuel Log</button>
-              </Link>
+        {/* KPI strip */}
+        <div style={{ display: "flex", overflowX: "auto", borderTop: "1px solid #f1f5f9" }}>
+          {[
+            { label: "Total Fleet",    value: kpis.total,          color: "#475569" },
+            { label: "Available",      value: kpis.available,      color: "#16a34a" },
+            { label: "Assigned",       value: kpis.assigned,       color: "#1d4ed8" },
+            { label: "In Maintenance", value: kpis.inMaint,        color: "#b45309" },
+            { label: "Out of Service", value: kpis.oos,            color: kpis.oos > 0 ? "#dc2626" : "#64748b" },
+            { label: "Avg Health",     value: `${kpis.avgHealth}%`, color: kpis.avgHealth >= 80 ? "#16a34a" : kpis.avgHealth >= 60 ? "#b45309" : "#dc2626" },
+            { label: "Open Issues",    value: issues.length,       color: issues.some(i => i.priority === "critical") ? "#dc2626" : "#64748b" },
+            { label: "High Risk",      value: kpis.criticalRisk,   color: kpis.criticalRisk > 0 ? "#ea580c" : "#64748b" },
+          ].map((k, i) => (
+            <div key={i} style={{ padding: "10px 20px", textAlign: "center", borderRight: "1px solid #f1f5f9", minWidth: 88 }}>
+              <div style={{ fontSize: 19, fontWeight: 900, color: k.color }}>{k.value}</div>
+              <div style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 1 }}>{k.label}</div>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className="fleet-panel dark-fleet-panel">
-            <p className="fleet-eyebrow">AI Fleet Insight</p>
-            <h2>Recommended Actions</h2>
-            <p>
-              {maintenanceCount > 0
-                ? `${maintenanceCount} unit${maintenanceCount > 1 ? "s need" : " needs"} immediate attention before next dispatch. Review maintenance risk scores.`
-                : "All units are healthy. Fleet is ready for dispatch."}
-            </p>
-            <button className="fleet-button primary full" onClick={() => showToast("Fleet health review — running analysis…")}>
-              Run Fleet Health Review
+        {/* Tabs */}
+        <div style={{ display: "flex" }}>
+          {TABS.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)} style={{ padding: "11px 16px", background: "transparent", border: "none", borderBottom: `3px solid ${activeTab === tab.id ? "#1e40af" : "transparent"}`, color: activeTab === tab.id ? "#1e40af" : "#64748b", fontWeight: activeTab === tab.id ? 800 : 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              {tab.label}
+              {!!tab.badge && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 10, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>{tab.badge}</span>}
             </button>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="fleet-panel">
-            <p className="fleet-eyebrow">Top Performer</p>
-            <h2>Best Truck This Week</h2>
-            {(() => {
-              const top = [...trucks].sort((a, b) => parseFloat(b.revenueWeek.replace(/\D/g, "")) - parseFloat(a.revenueWeek.replace(/\D/g, "")))[0];
-              return (
-                <div className="fleet-top-box">
-                  <div className="truck-icon large">🚚</div>
-                  <h3>{top.unit}</h3>
-                  <p>{top.revenueWeek} revenue · {top.fuelMpg} MPG · {top.healthScore}% health</p>
-                  <Badge value={top.maintenanceRisk} />
+      {/* ── Body ── */}
+      <div style={{ display: "flex", gap: 14, padding: "16px 24px 24px", alignItems: "flex-start" }}>
+        <StaffTodayPanel onOpenTicket={() => setTicketOpen(true)} />
+
+        {/* Main content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", padding: 20, minHeight: 400 }}>
+            {activeTab === "queue" && (
+              <QueueTab issues={issues} onService={t => setServiceTarget(t)} onStatus={t => setStatusTarget(t)} />
+            )}
+            {activeTab === "fleet" && (
+              <>
+                <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search unit, VIN, plate, make, model, driver…" style={{ flex: "1 1 220px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, outline: "none" }} />
+                  <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#fff" }}>
+                    <option>All Statuses</option>
+                    {(["Available","Assigned","In Maintenance","Out of Service","Inactive"] as TruckStatus[]).map(s => <option key={s}>{s}</option>)}
+                  </select>
+                  <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} style={{ padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#fff" }}>
+                    <option>All Risks</option>
+                    {(["Low","Medium","High","Critical"] as MaintenanceRisk[]).map(r => <option key={r}>{r}</option>)}
+                  </select>
                 </div>
-              );
-            })()}
+                <div className="fleet-truck-list">
+                  {filteredTrucks.map(truck => (
+                    <article className="fleet-truck-card" key={truck.id}>
+                      <div className="truck-card-top">
+                        <div className="truck-identity">
+                          <div className="truck-icon">🚚</div>
+                          <div><h3>{truck.unit}</h3><p>{truck.year} {truck.make} {truck.model}</p><span>{truck.type}</span></div>
+                        </div>
+                        <div className="truck-badges"><Badge value={truck.status} /><Badge value={truck.maintenanceRisk} /></div>
+                      </div>
+                      <div className="truck-card-body">
+                        <div className="truck-score-area">
+                          <ScoreRing score={truck.readinessScore} label="Readiness" />
+                          <ScoreRing score={truck.healthScore}    label="Health" />
+                        </div>
+                        <div className="truck-data-grid">
+                          <div><span>Assigned Driver</span><strong>{truck.assignedDriver}</strong></div>
+                          <div><span>Trailer</span><strong>{truck.assignedTrailer}</strong></div>
+                          <div><span>Current Load</span><strong>{truck.currentLoad}</strong></div>
+                          <div><span>Location</span><strong>{truck.location}</strong></div>
+                          <div><span>Plate</span><strong>{truck.plate}</strong></div>
+                          <div><span>VIN</span><strong style={{ fontSize: 12 }}>{truck.vin}</strong></div>
+                          <div><span>Odometer</span><strong>{truck.odometer}</strong></div>
+                          <div><span>Engine Hours</span><strong>{truck.engineHours}</strong></div>
+                          <div><span>Fuel MPG</span><strong>{truck.fuelMpg}</strong></div>
+                          <div><span>Cost Per Mile</span><strong>{truck.costPerMile}</strong></div>
+                          <div><span>Revenue Week</span><strong>{truck.revenueWeek}</strong></div>
+                          <div><span>Next Service</span><strong className={truck.nextService === "Overdue" ? "fleet-danger-text" : ""}>{truck.nextService}</strong></div>
+                        </div>
+                      </div>
+                      <div className="truck-compliance-strip">
+                        <div><span>Inspection</span><strong className={truck.inspectionExp === "Expired" ? "fleet-danger-text" : ""}>{truck.inspectionExp}</strong></div>
+                        <div><span>Insurance</span><strong>{truck.insuranceExp}</strong></div>
+                        <div><span>Registration</span><strong className={truck.registrationExp === "Expired" ? "fleet-danger-text" : ""}>{truck.registrationExp}</strong></div>
+                        <div><span>Last Maint.</span><strong>{truck.lastMaintenance}</strong></div>
+                      </div>
+                      <div className="truck-card-footer">
+                        <div className="truck-action-group">
+                          <button onClick={() => setAssignTarget(truck)}>Assign</button>
+                          <button onClick={() => setServiceTarget(truck)}>Service</button>
+                          <button onClick={() => setUploadDocType("")}>Documents</button>
+                          <button onClick={() => setStatusTarget(truck)}>Change Status</button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                  {filteredTrucks.length === 0 && <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>No trucks match your filters.</div>}
+                </div>
+              </>
+            )}
+            {activeTab === "maint" && (
+              <MaintenanceTab trucks={trucks} onService={t => setServiceTarget(t)} onTicket={() => setTicketOpen(true)} />
+            )}
+            {activeTab === "expiring" && (
+              <ExpiringTab trucks={trucks} onService={t => setServiceTarget(t)} />
+            )}
+            {activeTab === "oos" && (
+              <OOSTab trucks={trucks} onStatus={t => setStatusTarget(t)} onService={t => setServiceTarget(t)} />
+            )}
+            {activeTab === "reports" && (
+              <ReportsTab trucks={trucks} onExport={() => { exportFleetCSV(trucks); showToast(`Exported ${trucks.length} trucks.`); }} />
+            )}
           </div>
+        </div>
 
-          <div className="fleet-panel">
-            <p className="fleet-eyebrow">Coming Soon</p>
-            <h2>Advanced Features</h2>
-            <ul className="fleet-feature-list">
-              <li>Telematics integration</li>
-              <li>GPS live map</li>
-              <li>Fuel fraud detection</li>
-              <li>AI maintenance forecasting</li>
-              <li>Revenue vs. repair cost analysis</li>
-              <li>DOT audit packet generator</li>
-            </ul>
-          </div>
-        </aside>
-      </section>
+        <FleetAssistantPanel
+          kpis={kpis}
+          issues={issues}
+          onAddTruck={() => setAddTruckOpen(true)}
+          onSchedule={() => setServiceTarget(null)}
+          onAssign={() => setAssignTarget(null)}
+          onImport={() => setImportOpen(true)}
+          onUploadDoc={() => setUploadDocType("")}
+        />
+      </div>
 
       {/* ── Modals ── */}
       {assignTarget !== undefined && (
@@ -1113,7 +1441,7 @@ export default function TrucksPage() {
         <UploadDocModal preselectedDoc={uploadDocType || undefined} onClose={() => setUploadDocType(null)} showToast={showToast} />
       )}
       {addTruckOpen && (
-        <AddTruckModal onClose={() => setAddTruckOpen(false)} onAdd={(t) => setTrucks((p) => [...p, t])} showToast={showToast} />
+        <AddTruckModal onClose={() => setAddTruckOpen(false)} onAdd={t => setTrucks(p => [...p, t])} showToast={showToast} />
       )}
       {ticketOpen && (
         <MaintenanceTicketModal allTrucks={trucks} onClose={() => setTicketOpen(false)} showToast={showToast} />
@@ -1123,18 +1451,18 @@ export default function TrucksPage() {
           existingTrucks={trucks}
           onClose={() => setImportOpen(false)}
           onImported={() => {
-            fetch("/api/ronyx/trucks").then((r) => r.json()).then((data) => {
-              if (Array.isArray(data.trucks) && data.trucks.length > 0) {
-                setTrucks(data.trucks.map(mapApiTruck));
-              }
+            fetch("/api/ronyx/trucks").then(r => r.json()).then(data => {
+              if (Array.isArray(data.trucks) && data.trucks.length > 0) setTrucks(data.trucks.map(mapApiTruck));
             });
           }}
           showToast={showToast}
         />
       )}
+      {statusTarget && (
+        <StatusModal truck={statusTarget} onClose={() => setStatusTarget(null)} onSave={handleStatusSave} showToast={showToast} />
+      )}
 
-      {/* ── Toast ── */}
       {toast && <Toast msg={toast} onDone={() => setToast("")} />}
-    </main>
+    </div>
   );
 }

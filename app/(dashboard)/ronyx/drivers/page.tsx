@@ -970,8 +970,20 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
               <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: 14, marginBottom: 20, fontSize: "0.78rem", color: "#1e40af" }}>
                 <strong>Next steps:</strong> Go to Drivers → Compliance to review flagged drivers and fill in missing dates. Set Dispatch Eligible only after compliance is confirmed.
               </div>
+              {importResult && (importResult.imported ?? 0) === 0 && (importResult.failed ?? 0) > 0 && (
+                <div style={{ background: "#fff1f2", border: "1px solid #fca5a5", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: "0.8rem", color: "#dc2626", fontWeight: 700 }}>
+                  ⚠ All rows failed to insert. Check Row Errors above. Common causes: missing required fields, duplicate CDL numbers, or database column not yet added. Contact admin if errors persist.
+                </div>
+              )}
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: 10, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, cursor: "pointer" }}>
+                <button
+                  onClick={() => {
+                    onImported((importResult?.imported ?? 0) + (importResult?.updated ?? 0));
+                    onClose();
+                    // Navigate to drivers list so user sees their imported drivers
+                    window.location.href = "/ronyx/drivers";
+                  }}
+                  style={{ padding: "10px 24px", borderRadius: 10, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, cursor: "pointer" }}>
                   View Drivers →
                 </button>
                 <button onClick={() => { setStep("upload"); setRows([]); setFileName(""); setImportResult(null); }}
@@ -1237,12 +1249,16 @@ export default function DriversPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason, deleted_by: "admin" }),
       });
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        showToast(`Delete failed: ${body.error || res.statusText}`);
+        return;
+      }
       setAllDrivers(prev => prev.filter(d => d.id !== driver.id));
       loadAlerts();
-      showToast(`${driver.name} deleted — full record saved to Manager Alerts.`);
-    } catch {
-      showToast("Delete failed — try again.");
+      showToast(`${driver.name} removed from drivers list.`);
+    } catch (err: unknown) {
+      showToast(`Delete failed: ${err instanceof Error ? err.message : "network error"}`);
     }
   }
 
@@ -1773,7 +1789,8 @@ export default function DriversPage() {
           existingDrivers={allDrivers}
           onClose={() => { setImportOpen(false); }}
           onImported={count => {
-            showToast(`${count} drivers imported — reloading…`);
+            if (count > 0) showToast(`${count} driver${count > 1 ? "s" : ""} imported — refreshing list.`);
+            // Reload list in background — modal stays open so user sees the done screen
             fetch("/api/ronyx/drivers/list")
               .then(r => r.json())
               .then(data => setAllDrivers((data.drivers || []).map(mapApiDriver)))

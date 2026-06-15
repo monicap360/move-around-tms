@@ -9,7 +9,10 @@ type TicketStatus = "Scanned" | "Needs Review" | "Matched" | "Approved" | "Sent 
 type TicketRisk = "Low" | "Medium" | "High" | "Critical";
 type ProofStatus = "Complete" | "Missing Driver Signature" | "Missing Customer Signature" | "Missing Required Documents";
 type CrossCheckStatus = "Matched" | "Conflict" | "No Match" | "Duplicate";
-type TicketTab = "fastscan" | "all" | "needs_review" | "invoice_match" | "excel_reconcile" | "pit_master" | "payroll_review" | "billing_ready" | "audit_trail";
+type TicketTab = "fastscan" | "all" | "needs_review" | "invoice_match" | "excel_reconcile" | "pit_master" | "payroll_review" | "billing_ready" | "audit_trail" | "owner_dashboard";
+type ErrorSeverity = "Critical" | "High" | "Medium" | "Low" | "Info";
+type ApprovalStatus = "not_required" | "pending" | "approved" | "rejected";
+type DriverRequestType = "none" | "ticket" | "photo" | "signature" | "scale_ticket";
 
 type TicketRecord = {
   id: string; ticketNo: string; driver: string; truck: string; load: string;
@@ -55,6 +58,31 @@ type ReconcileRow = {
   correctedValue: string;
   correctedBy: string;
   correctedAt: string;
+  // Financial intelligence fields
+  error_severity: ErrorSeverity;
+  dollar_impact: number;
+  underbilled_amount: number;
+  overbilled_amount: number;
+  payroll_overpay_risk: number;
+  vendor_overcharge_risk: number;
+  missing_revenue_risk: number;
+  assigned_to_department: string;
+  assigned_to_user: string;
+  approval_required: boolean;
+  approval_status: ApprovalStatus;
+  approved_by: string;
+  approved_at: string;
+  original_value: string;
+  driver_request: DriverRequestType;
+  driver_request_sent_at: string;
+  driver_request_response: string;
+  billing_blocked: boolean;
+  billing_block_reason: string;
+  payroll_blocked: boolean;
+  payroll_block_reason: string;
+  dispatcher_confirmed: boolean;
+  is_duplicate: boolean;
+  dispute_packet_ready: boolean;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -66,15 +94,16 @@ const STATUS_MAP: Record<string, TicketStatus> = {
 };
 
 const TICKET_TABS: { id: TicketTab; label: string; icon: string }[] = [
-  { id: "fastscan",       label: "Fast Scan",         icon: "⚡" },
-  { id: "all",            label: "All Tickets",        icon: "📋" },
-  { id: "needs_review",   label: "Needs Review",       icon: "⚠️" },
-  { id: "invoice_match",  label: "Invoice Match",      icon: "🔍" },
-  { id: "excel_reconcile",label: "Reconciliation Center", icon: "🔍" },
-  { id: "pit_master",     label: "Pit / Vendor Master",icon: "📍" },
-  { id: "payroll_review", label: "Payroll Review",     icon: "💵" },
-  { id: "billing_ready",  label: "Billing Ready",      icon: "🧾" },
-  { id: "audit_trail",    label: "Audit Trail",        icon: "📜" },
+  { id: "fastscan",       label: "Fast Scan",             icon: "⚡" },
+  { id: "all",            label: "All Tickets",            icon: "📋" },
+  { id: "needs_review",   label: "Needs Review",           icon: "⚠️" },
+  { id: "invoice_match",  label: "Invoice Match",          icon: "🔍" },
+  { id: "excel_reconcile",label: "Reconciliation Center",  icon: "🔍" },
+  { id: "pit_master",     label: "Pit / Vendor Master",    icon: "📍" },
+  { id: "payroll_review", label: "Payroll Review",         icon: "💵" },
+  { id: "billing_ready",  label: "Billing Ready",          icon: "🧾" },
+  { id: "audit_trail",    label: "Audit Trail",            icon: "📜" },
+  { id: "owner_dashboard",label: "Owner Dashboard",        icon: "📊" },
 ];
 
 const SCAN_TYPES = [
@@ -582,6 +611,20 @@ export default function TicketsPage() {
             (excelDriver && excelTruck && t.driver.toLowerCase().includes(excelDriver.toLowerCase()) && t.truck === excelTruck)
           );
 
+          const baseRate = matched?.rate || excelRate || 18;
+          const financialDefaults = {
+            error_severity: "Medium" as ErrorSeverity,
+            dollar_impact: 0, underbilled_amount: 0, overbilled_amount: 0,
+            payroll_overpay_risk: 0, vendor_overcharge_risk: 0, missing_revenue_risk: 0,
+            assigned_to_department: "Operations", assigned_to_user: "",
+            approval_required: false, approval_status: "not_required" as ApprovalStatus,
+            approved_by: "", approved_at: "", original_value: "",
+            driver_request: "none" as DriverRequestType, driver_request_sent_at: "", driver_request_response: "",
+            billing_blocked: false, billing_block_reason: "",
+            payroll_blocked: false, payroll_block_reason: "",
+            dispatcher_confirmed: false, is_duplicate: false, dispute_packet_ready: false,
+          };
+
           const rowBase = {
             ticketNo: excelTicketNo || matched?.ticketNo || `Row ${i}`,
             date: excelDate || matched?.ticketDate || "—",
@@ -590,36 +633,79 @@ export default function TicketsPage() {
             material: excelMaterial || matched?.material || "—",
             status: "pending" as const,
             correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "",
+            ...financialDefaults,
           };
 
           if (matched) {
             // Tonnage mismatch
             if (excelTons > 0 && Math.abs(excelTons - matched.tons) > 0.05) {
+              const diff = matched.tons - excelTons; // positive = we have more than Excel shows
+              const impact = Math.abs(diff) * baseRate;
+              const severity: ErrorSeverity = impact > 500 ? "Critical" : impact > 100 ? "High" : impact > 25 ? "Medium" : "Low";
+              const underbilled = diff > 0 ? impact : 0;  // scan > excel = we could bill more
+              const overbilled  = diff < 0 ? impact : 0;  // excel > scan = vendor overcharged
               rows.push({ ...rowBase, id: `${i}-tons`, field: "Net Tons", errorType: "TONNAGE_MISMATCH",
                 excelValue: excelTons.toFixed(2), scannedValue: matched.tons.toFixed(2),
                 invoiceValue: matched.tons.toFixed(2), suggestedValue: matched.tons.toFixed(2),
-                confidence: Math.round(90 - Math.abs(excelTons - matched.tons) * 5) });
+                confidence: Math.round(90 - Math.abs(excelTons - matched.tons) * 5),
+                error_severity: severity, dollar_impact: impact,
+                underbilled_amount: underbilled, overbilled_amount: overbilled,
+                vendor_overcharge_risk: overbilled,
+                missing_revenue_risk: underbilled,
+                approval_required: impact > 100, approval_status: impact > 100 ? "pending" : "not_required",
+                billing_blocked: impact > 50, billing_block_reason: impact > 50 ? `Tonnage variance $${impact.toFixed(2)} requires resolution` : "",
+                payroll_blocked: impact > 100, payroll_block_reason: impact > 100 ? `Tonnage discrepancy affects OO pay by ~$${(impact * 0.9).toFixed(2)}` : "",
+                original_value: excelTons.toFixed(2),
+              });
             }
             // Rate mismatch
             if (excelRate > 0 && Math.abs(excelRate - matched.rate) > 0.01) {
+              const diff = excelRate - matched.rate; // positive = excel charged more than scan rate
+              const impact = Math.abs(diff) * (matched.tons || excelTons || 20);
+              const severity: ErrorSeverity = impact > 500 ? "Critical" : impact > 200 ? "High" : impact > 50 ? "Medium" : "Low";
+              const overcharge = diff > 0 ? impact : 0;
+              const underbilled = diff < 0 ? impact : 0;
               rows.push({ ...rowBase, id: `${i}-rate`, field: "Rate ($/ton)", errorType: "RATE_MISMATCH",
                 excelValue: `$${excelRate.toFixed(2)}`, scannedValue: `$${matched.rate.toFixed(2)}`,
                 invoiceValue: `$${matched.rate.toFixed(2)}`, suggestedValue: `$${matched.rate.toFixed(2)}`,
-                confidence: 88 });
+                confidence: 88,
+                error_severity: severity, dollar_impact: impact,
+                underbilled_amount: underbilled, overbilled_amount: overcharge,
+                vendor_overcharge_risk: overcharge,
+                missing_revenue_risk: underbilled,
+                approval_required: impact > 200, approval_status: impact > 200 ? "pending" : "not_required",
+                assigned_to_department: impact > 500 ? "Owner" : "Operations Manager",
+                billing_blocked: true, billing_block_reason: `Rate variance $${impact.toFixed(2)} must be resolved before billing`,
+                original_value: `$${excelRate.toFixed(2)}`,
+              });
             }
             // Pit mismatch
             if (excelPit && matched.pitName !== "—" && !matched.pitName.toLowerCase().includes(excelPit.toLowerCase()) && !excelPit.toLowerCase().includes(matched.pitName.toLowerCase())) {
               rows.push({ ...rowBase, id: `${i}-pit`, field: "Pit / Yard", errorType: "PIT_MISMATCH",
                 excelValue: excelPit, scannedValue: matched.pitName,
                 invoiceValue: matched.pitName, suggestedValue: matched.pitName,
-                confidence: 75 });
+                confidence: 75,
+                error_severity: "Medium", dollar_impact: 0,
+                billing_blocked: true, billing_block_reason: "Pit/vendor mismatch — verify correct pit for rate table",
+                original_value: excelPit,
+              });
             }
           } else if (excelTicketNo) {
-            // No matching scanned ticket
+            // No matching scanned ticket — missing load = unrecoverable revenue
+            const estTons = 20; const estRate = baseRate;
+            const impact = estTons * estRate;
             rows.push({ ...rowBase, id: `${i}-missing`, field: "Ticket Match", errorType: "MISSING_TICKET",
               excelValue: excelTicketNo, scannedValue: "Not found in Fast Scan",
               invoiceValue: "—", suggestedValue: "Scan ticket or enter manually",
-              confidence: 0 });
+              confidence: 0,
+              error_severity: "Critical", dollar_impact: impact,
+              missing_revenue_risk: impact,
+              approval_required: true, approval_status: "pending",
+              assigned_to_department: "Operations",
+              billing_blocked: true, billing_block_reason: "No scanned ticket proof — cannot bill without documentation",
+              payroll_blocked: true, payroll_block_reason: "Cannot confirm load completion without ticket",
+              driver_request: "ticket",
+            });
           }
         }
 
@@ -1852,17 +1938,25 @@ export default function TicketsPage() {
                 </div>
                 <button onClick={() => {
                   // Demo mode: generate sample mismatches from scanned tickets
+                  const demoFinancial = (impact: number, type: "TONNAGE_MISMATCH"|"RATE_MISMATCH"|"MISSING_TICKET"|"PIT_MISMATCH") => {
+                    const sev: ErrorSeverity = impact > 500 ? "Critical" : impact > 100 ? "High" : impact > 25 ? "Medium" : "Low";
+                    return { error_severity: sev, dollar_impact: impact, underbilled_amount: 0, overbilled_amount: type === "RATE_MISMATCH" ? impact : 0, payroll_overpay_risk: type === "TONNAGE_MISMATCH" ? impact * 0.9 : 0, vendor_overcharge_risk: impact, missing_revenue_risk: type === "MISSING_TICKET" ? impact : 0, assigned_to_department: impact > 200 ? "Ops Manager" : "Operations", assigned_to_user: "", approval_required: impact > 100, approval_status: (impact > 100 ? "pending" : "not_required") as ApprovalStatus, approved_by: "", approved_at: "", original_value: "", driver_request: (type === "MISSING_TICKET" ? "ticket" : "none") as DriverRequestType, driver_request_sent_at: "", driver_request_response: "", billing_blocked: type !== "PIT_MISMATCH" || impact > 0, billing_block_reason: type === "MISSING_TICKET" ? "No scanned ticket — cannot bill" : `${type.replace(/_/g," ")} must be resolved`, payroll_blocked: impact > 100, payroll_block_reason: impact > 100 ? `Discrepancy affects OO pay` : "", dispatcher_confirmed: false, is_duplicate: false, dispute_packet_ready: false };
+                  };
                   const demoRows: ReconcileRow[] = activeTickets.slice(0, 8).flatMap((t, i) => {
                     const out: ReconcileRow[] = [];
                     const base = { ticketNo: t.ticketNo, date: t.ticketDate, driver: t.driver, truck: t.truck, material: t.material, status: "pending" as const, correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" };
-                    if (i % 3 === 0 && t.tons > 0) out.push({ ...base, id: `demo-${i}-tons`, field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: (t.tons * 0.97).toFixed(2), scannedValue: t.tons.toFixed(2), invoiceValue: t.tons.toFixed(2), suggestedValue: t.tons.toFixed(2), confidence: 95 });
-                    if (i % 4 === 1 && t.rate > 0) out.push({ ...base, id: `demo-${i}-rate`, field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: `$${(t.rate - 0.75).toFixed(2)}`, scannedValue: `$${t.rate.toFixed(2)}`, invoiceValue: `$${t.rate.toFixed(2)}`, suggestedValue: `$${t.rate.toFixed(2)}`, confidence: 89 });
+                    if (i % 3 === 0 && t.tons > 0) { const impact = Math.abs(t.tons * 0.03) * (t.rate || 18); out.push({ ...base, ...demoFinancial(impact, "TONNAGE_MISMATCH"), id: `demo-${i}-tons`, field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: (t.tons * 0.97).toFixed(2), scannedValue: t.tons.toFixed(2), invoiceValue: t.tons.toFixed(2), suggestedValue: t.tons.toFixed(2), confidence: 95 }); }
+                    if (i % 4 === 1 && t.rate > 0) { const impact = 0.75 * (t.tons || 20); out.push({ ...base, ...demoFinancial(impact, "RATE_MISMATCH"), id: `demo-${i}-rate`, field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: `$${(t.rate - 0.75).toFixed(2)}`, scannedValue: `$${t.rate.toFixed(2)}`, invoiceValue: `$${t.rate.toFixed(2)}`, suggestedValue: `$${t.rate.toFixed(2)}`, confidence: 89 }); }
                     return out;
                   });
+                  const fd1 = demoFinancial(13.92, "TONNAGE_MISMATCH"); const fd2 = demoFinancial(15.00, "RATE_MISMATCH"); const fd3 = demoFinancial(0, "PIT_MISMATCH"); const fd4 = demoFinancial(370.00, "MISSING_TICKET"); const fd5 = demoFinancial(44.10, "TONNAGE_MISMATCH"); const fd6 = demoFinancial(740.00, "RATE_MISMATCH");
                   const fallback: ReconcileRow[] = [
-                    { id: "demo-1", ticketNo: "123456", date: "Jun 14, 2026", driver: "Jose Martinez", truck: "104", material: "Limestone Base", field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: "23.80", scannedValue: "24.56", invoiceValue: "24.56", suggestedValue: "24.56", confidence: 97, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
-                    { id: "demo-2", ticketNo: "123457", date: "Jun 14, 2026", driver: "Carlos Ruiz", truck: "107", material: "Limestone Base", field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: "$17.75", scannedValue: "$18.50", invoiceValue: "$18.50", suggestedValue: "$18.50", confidence: 91, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
-                    { id: "demo-3", ticketNo: "123458", date: "Jun 14, 2026", driver: "Miguel Torres", truck: "112", material: "Sand", field: "Pit / Yard", errorType: "PIT_MISMATCH", excelValue: "Garwood", scannedValue: "Garwood Sand", invoiceValue: "Garwood Sand & Gravel", suggestedValue: "Garwood Sand & Gravel", confidence: 82, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
+                    { id: "demo-1", ticketNo: "123456", date: "Jun 14, 2026", driver: "Jose Martinez", truck: "104", material: "Limestone Base", field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: "23.80", scannedValue: "24.56", invoiceValue: "24.56", suggestedValue: "24.56", confidence: 97, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "", ...fd1 },
+                    { id: "demo-2", ticketNo: "123457", date: "Jun 14, 2026", driver: "Carlos Ruiz", truck: "107", material: "Limestone Base", field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: "$17.75", scannedValue: "$18.50", invoiceValue: "$18.50", suggestedValue: "$18.50", confidence: 91, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "", ...fd2 },
+                    { id: "demo-3", ticketNo: "123458", date: "Jun 14, 2026", driver: "Miguel Torres", truck: "112", material: "Sand", field: "Pit / Yard", errorType: "PIT_MISMATCH", excelValue: "Garwood", scannedValue: "Garwood Sand", invoiceValue: "Garwood Sand & Gravel", suggestedValue: "Garwood Sand & Gravel", confidence: 82, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "", ...fd3 },
+                    { id: "demo-4", ticketNo: "123459", date: "Jun 14, 2026", driver: "David Hernandez", truck: "119", material: "Crushed Concrete", field: "Ticket Match", errorType: "MISSING_TICKET", excelValue: "123459", scannedValue: "Not found in Fast Scan", invoiceValue: "—", suggestedValue: "Scan ticket or enter manually", confidence: 0, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "", ...fd4 },
+                    { id: "demo-5", ticketNo: "123460", date: "Jun 14, 2026", driver: "Juan Garcia", truck: "105", material: "Limestone Base", field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: "21.50", scannedValue: "23.95", invoiceValue: "23.95", suggestedValue: "23.95", confidence: 96, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "", ...fd5 },
+                    { id: "demo-6", ticketNo: "123461", date: "Jun 14, 2026", driver: "Roberto Santos", truck: "108", material: "Flex Base", field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: "$21.00", scannedValue: "$24.70", invoiceValue: "$24.70", suggestedValue: "$24.70", confidence: 93, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "", ...fd6 },
                   ];
                   setReconRows(demoRows.length > 0 ? demoRows : fallback);
                   setExcelFileName("Demo_Ronyx_Weekly_Tickets.xlsx");
@@ -1935,6 +2029,38 @@ export default function TicketsPage() {
                 <span><strong>Workflow:</strong> Upload Ronyx Excel → System compares to Fast Scan + pit invoices → Approve corrections → Green cells = corrected → Download corrected file → Approved rows unlock Billing &amp; Payroll</span>
               </div>
 
+              {/* Financial impact summary bar */}
+              {reconRows.length > 0 && (() => {
+                const totalImpact = reconRows.reduce((s, r) => s + r.dollar_impact, 0);
+                const critCount   = reconRows.filter(r => r.error_severity === "Critical").length;
+                const pendBill    = reconRows.filter(r => r.billing_blocked && r.status === "pending").length;
+                const pendPayroll = reconRows.filter(r => r.payroll_blocked && r.status === "pending").length;
+                const vendRisk    = reconRows.reduce((s, r) => s + r.vendor_overcharge_risk, 0);
+                const payRisk     = reconRows.reduce((s, r) => s + r.payroll_overpay_risk, 0);
+                const missRev     = reconRows.reduce((s, r) => s + r.missing_revenue_risk, 0);
+                return (
+                  <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Financial Impact — What These Errors Cost</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 14 }}>
+                      {[
+                        { label: "Total $ at Risk", val: `$${totalImpact.toFixed(2)}`, color: "#f87171" },
+                        { label: "Critical Errors", val: critCount.toString(), color: "#f87171" },
+                        { label: "Vendor Overcharge Risk", val: `$${vendRisk.toFixed(2)}`, color: "#fb923c" },
+                        { label: "Missing Revenue Risk", val: `$${missRev.toFixed(2)}`, color: "#fbbf24" },
+                        { label: "Payroll Overpay Risk", val: `$${payRisk.toFixed(2)}`, color: "#facc15" },
+                        { label: "Billing Blocked", val: `${pendBill} tickets`, color: "#fb923c" },
+                      ].map(k => (
+                        <div key={k.label}>
+                          <div style={{ fontSize: "0.62rem", color: "#64748b", marginBottom: 3 }}>{k.label}</div>
+                          <div style={{ fontWeight: 800, fontSize: "1rem", color: k.color }}>{k.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {pendBill > 0 && <div style={{ marginTop: 12, padding: "8px 14px", background: "#dc26261a", borderRadius: 8, fontSize: "0.75rem", color: "#f87171", fontWeight: 600 }}>⛔ {pendBill} billing items and {pendPayroll} payroll items are blocked until errors below are resolved.</div>}
+                  </div>
+                );
+              })()}
+
               {/* Correction table */}
               {reconRows.length === 0 ? (
                 <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "40px 0", textAlign: "center", color: "#16a34a" }}>
@@ -1948,21 +2074,89 @@ export default function TicketsPage() {
                       : row.status === "flagged" ? { bg: "#fefce8", border: "#fde68a", accent: "#d97706" }
                       : row.status === "kept" ? { bg: "#f9fafb", border: "#e5e7eb", accent: "#6b7280" }
                       : { bg: "#fff1f2", border: "#fecdd3", accent: "#dc2626" };
+                    const sevColor = row.error_severity === "Critical" ? "#dc2626" : row.error_severity === "High" ? "#ea580c" : row.error_severity === "Medium" ? "#d97706" : "#6b7280";
+                    const sevBg    = row.error_severity === "Critical" ? "#fee2e2" : row.error_severity === "High" ? "#ffedd5" : row.error_severity === "Medium" ? "#fefce8" : "#f9fafb";
+                    const needsApproval = row.approval_required && row.approval_status === "pending" && row.status === "pending";
 
                     return (
                       <div key={row.id} style={{ background: statusColor.bg, border: `1px solid ${statusColor.border}`, borderRadius: 12, overflow: "hidden" }}>
-                        {/* Row header */}
+                        {/* Row header — dollar impact FIRST */}
                         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${statusColor.border}`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>Ticket #{row.ticketNo}</span>
-                          <span style={{ fontSize: "0.73rem", color: "#64748b" }}>{row.date} · {row.driver} · {row.truck} · {row.material}</span>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>Ticket #{row.ticketNo}</span>
+                            <span style={{ fontSize: "0.72rem", color: "#64748b" }}>{row.date} · {row.driver} · Truck {row.truck} · {row.material}</span>
+                          </div>
                           <SBadge code={row.errorType} />
-                          <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "2px 9px", borderRadius: 99, background: statusColor.border, color: statusColor.accent, marginLeft: "auto" }}>
-                            {row.field} · Confidence: {row.confidence}%
+                          <span style={{ padding: "2px 10px", borderRadius: 99, background: sevBg, color: sevColor, fontWeight: 800, fontSize: "0.72rem", border: `1px solid ${sevColor}33` }}>
+                            {row.error_severity}
                           </span>
+                          {row.billing_blocked && row.status === "pending" && (
+                            <span style={{ padding: "2px 9px", borderRadius: 99, background: "#fff1f2", color: "#dc2626", fontWeight: 700, fontSize: "0.68rem", border: "1px solid #fecdd3" }}>⛔ Billing Blocked</span>
+                          )}
+                          {row.payroll_blocked && row.status === "pending" && (
+                            <span style={{ padding: "2px 9px", borderRadius: 99, background: "#fff7ed", color: "#ea580c", fontWeight: 700, fontSize: "0.68rem", border: "1px solid #fed7aa" }}>⛔ Payroll Blocked</span>
+                          )}
+                          {/* Dollar impact — top right, dominant */}
+                          {row.dollar_impact > 0 && (
+                            <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>$ at Risk</div>
+                              <div style={{ fontWeight: 900, fontSize: "1.25rem", color: row.dollar_impact > 200 ? "#dc2626" : row.dollar_impact > 50 ? "#ea580c" : "#d97706", lineHeight: 1 }}>
+                                ${row.dollar_impact.toFixed(2)}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Comparison grid */}
                         <div style={{ padding: "14px 18px" }}>
+                          {/* Block reason banners */}
+                          {(row.billing_block_reason || row.payroll_block_reason) && row.status === "pending" && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                              {row.billing_block_reason && (
+                                <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 7, padding: "7px 12px", fontSize: "0.72rem", color: "#dc2626", fontWeight: 600 }}>
+                                  ⛔ Billing: {row.billing_block_reason}
+                                </div>
+                              )}
+                              {row.payroll_block_reason && (
+                                <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 7, padding: "7px 12px", fontSize: "0.72rem", color: "#ea580c", fontWeight: 600 }}>
+                                  ⛔ Payroll: {row.payroll_block_reason}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Risk breakdown if any */}
+                          {(row.vendor_overcharge_risk > 0 || row.missing_revenue_risk > 0 || row.payroll_overpay_risk > 0) && (
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                              {row.vendor_overcharge_risk > 0 && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#ffedd5", color: "#ea580c", fontSize: "0.7rem", fontWeight: 700 }}>Vendor Overcharge: ${row.vendor_overcharge_risk.toFixed(2)}</span>}
+                              {row.missing_revenue_risk > 0 && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#fefce8", color: "#ca8a04", fontSize: "0.7rem", fontWeight: 700 }}>Missing Revenue: ${row.missing_revenue_risk.toFixed(2)}</span>}
+                              {row.payroll_overpay_risk > 0 && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#fff7ed", color: "#c2410c", fontSize: "0.7rem", fontWeight: 700 }}>Payroll Overpay Risk: ${row.payroll_overpay_risk.toFixed(2)}</span>}
+                              {row.underbilled_amount > 0 && <span style={{ padding: "3px 10px", borderRadius: 8, background: "#f0fdf4", color: "#15803d", fontSize: "0.7rem", fontWeight: 700 }}>Underbilled: ${row.underbilled_amount.toFixed(2)}</span>}
+                            </div>
+                          )}
+
+                          {/* Approval required banner */}
+                          {needsApproval && (
+                            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "8px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: "0.72rem", color: "#1d4ed8", fontWeight: 700 }}>
+                                🔐 Approval Required — {row.dollar_impact > 500 ? "Owner / Ops Manager" : "Operations Manager"} must approve this correction (impact: ${row.dollar_impact.toFixed(2)})
+                              </span>
+                              <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, approval_status: "approved", approved_by: "manager@ronyx.com", approved_at: new Date().toLocaleString() } : r))}
+                                style={{ marginLeft: "auto", padding: "4px 12px", borderRadius: 7, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                                ✓ Approve
+                              </button>
+                              <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, approval_status: "rejected" } : r))}
+                                style={{ padding: "4px 12px", borderRadius: 7, background: "#fee2e2", color: "#dc2626", border: "none", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                                ✗ Reject
+                              </button>
+                            </div>
+                          )}
+                          {row.approval_status === "approved" && (
+                            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "6px 12px", marginBottom: 12, fontSize: "0.72rem", color: "#15803d", fontWeight: 600 }}>
+                              ✅ Approved by {row.approved_by} · {row.approved_at}
+                            </div>
+                          )}
+
+                          {/* Comparison grid */}
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 14 }}>
                             {[
                               { label: "Original Excel Value", value: row.excelValue, color: "#dc2626", bg: "#fff1f2" },
@@ -1984,10 +2178,22 @@ export default function TicketsPage() {
                             </div>
                           )}
 
+                          {/* Dispatcher confirmed */}
+                          {!row.dispatcher_confirmed && row.status === "pending" && (
+                            <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: "0.72rem", color: "#64748b" }}>Dispatcher cross-check:</span>
+                              <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, dispatcher_confirmed: true } : r))}
+                                style={{ padding: "3px 12px", borderRadius: 7, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 600, fontSize: "0.7rem", cursor: "pointer" }}>
+                                ✓ Confirm truck/driver/date/project match
+                              </button>
+                              {row.dispatcher_confirmed && <span style={{ fontSize: "0.7rem", color: "#16a34a", fontWeight: 700 }}>✅ Confirmed</span>}
+                            </div>
+                          )}
+
                           {/* Action buttons */}
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <button onClick={() => applyCorrection(row.id, "suggested")} disabled={row.status !== "pending"}
-                              style={{ padding: "7px 14px", borderRadius: 8, background: row.status !== "pending" ? "#f1f5f9" : "#16a34a", color: row.status !== "pending" ? "#94a3b8" : "#fff", border: "none", fontWeight: 700, fontSize: "0.75rem", cursor: row.status !== "pending" ? "not-allowed" : "pointer" }}>
+                            <button onClick={() => applyCorrection(row.id, "suggested")} disabled={row.status !== "pending" || (needsApproval && row.approval_status === "pending")}
+                              style={{ padding: "7px 14px", borderRadius: 8, background: row.status !== "pending" || (needsApproval && row.approval_status === "pending") ? "#f1f5f9" : "#16a34a", color: row.status !== "pending" || (needsApproval && row.approval_status === "pending") ? "#94a3b8" : "#fff", border: "none", fontWeight: 700, fontSize: "0.75rem", cursor: row.status !== "pending" || (needsApproval && row.approval_status === "pending") ? "not-allowed" : "pointer" }}>
                               ✅ Update Excel Value
                             </button>
                             <button onClick={() => applyCorrection(row.id, "scan")} disabled={row.status !== "pending"}
@@ -2006,13 +2212,54 @@ export default function TicketsPage() {
                               style={{ padding: "7px 14px", borderRadius: 8, background: row.status !== "pending" ? "#f1f5f9" : "#fefce8", color: row.status !== "pending" ? "#94a3b8" : "#d97706", border: `1px solid ${row.status !== "pending" ? "#e2e8f0" : "#fde68a"}`, fontWeight: 700, fontSize: "0.75rem", cursor: row.status !== "pending" ? "not-allowed" : "pointer" }}>
                               🚩 Flag for Review
                             </button>
+                            {/* Driver request actions */}
+                            {row.status === "pending" && (
+                              <>
+                                {row.errorType === "MISSING_TICKET" && (
+                                  <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, driver_request: "ticket", driver_request_sent_at: new Date().toLocaleString() } : r))}
+                                    style={{ padding: "7px 14px", borderRadius: 8, background: row.driver_request_sent_at ? "#f0fdf4" : "#0f172a", color: row.driver_request_sent_at ? "#16a34a" : "#fff", border: "none", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                                    {row.driver_request_sent_at ? "✅ Ticket Requested" : "📩 Request Ticket From Driver"}
+                                  </button>
+                                )}
+                                {(row.errorType === "TONNAGE_MISMATCH" || row.errorType === "RATE_MISMATCH") && (
+                                  <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, driver_request: "scale_ticket", driver_request_sent_at: new Date().toLocaleString() } : r))}
+                                    style={{ padding: "7px 14px", borderRadius: 8, background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 600, fontSize: "0.72rem", cursor: "pointer" }}>
+                                    {row.driver_request_sent_at ? "✅ Sent" : "⚖️ Request Scale Ticket"}
+                                  </button>
+                                )}
+                                {/* Vendor dispute packet */}
+                                {row.vendor_overcharge_risk > 0 && (
+                                  <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, dispute_packet_ready: true } : r))}
+                                    style={{ padding: "7px 14px", borderRadius: 8, background: row.dispute_packet_ready ? "#f0fdf4" : "#fff7ed", color: row.dispute_packet_ready ? "#16a34a" : "#ea580c", border: `1px solid ${row.dispute_packet_ready ? "#bbf7d0" : "#fed7aa"}`, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                                    {row.dispute_packet_ready ? "✅ Dispute Packet Ready" : "📋 Generate Vendor Dispute Packet"}
+                                  </button>
+                                )}
+                              </>
+                            )}
                             {row.status !== "pending" && (
-                              <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, status: "pending", correctedValue: "", correctionSource: "", correctionNote: "", correctedBy: "", correctedAt: "" } : r))}
+                              <button onClick={() => setReconRows(prev => prev.map(r => r.id === row.id ? { ...r, status: "pending", correctedValue: "", correctionSource: "", correctionNote: "", correctedBy: "", correctedAt: "", approval_status: r.approval_required ? "pending" : "not_required" } : r))}
                                 style={{ padding: "7px 12px", borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", cursor: "pointer", marginLeft: "auto" }}>
                                 Undo
                               </button>
                             )}
                           </div>
+
+                          {/* Dispute packet preview */}
+                          {row.dispute_packet_ready && (
+                            <div style={{ marginTop: 12, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 9, padding: "12px 16px" }}>
+                              <div style={{ fontWeight: 700, fontSize: "0.8rem", color: "#ea580c", marginBottom: 8 }}>📋 Vendor Dispute Packet — Ready to Send</div>
+                              <div style={{ fontSize: "0.72rem", color: "#78350f", lineHeight: 1.7 }}>
+                                <strong>Ticket:</strong> #{row.ticketNo} · <strong>Date:</strong> {row.date} · <strong>Driver:</strong> {row.driver} · <strong>Truck:</strong> {row.truck}<br />
+                                <strong>Field in Dispute:</strong> {row.field} · <strong>Error Type:</strong> {row.errorType}<br />
+                                <strong>Vendor Charged:</strong> {row.excelValue} · <strong>Our Scan Shows:</strong> {row.scannedValue} · <strong>Pit Invoice:</strong> {row.invoiceValue}<br />
+                                <strong>Dollar Overcharge:</strong> <span style={{ color: "#dc2626", fontWeight: 800 }}>${row.vendor_overcharge_risk.toFixed(2)}</span>
+                              </div>
+                              <button onClick={() => showToast(`Dispute packet for ticket #${row.ticketNo} downloaded.`)}
+                                style={{ marginTop: 10, padding: "6px 16px", borderRadius: 7, background: "#ea580c", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>
+                                ⬇ Download Packet (PDF + Excel)
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -2288,6 +2535,229 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          TAB: OWNER DASHBOARD
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === "owner_dashboard" && (() => {
+        const totalScanned   = activeTickets.length;
+        const totalMatched   = activeTickets.filter(t => t.crossCheckStatus === "Matched").length;
+        const totalReview    = needsReviewTickets.length;
+        const totalBilling   = totalBillingReady;
+        const totalPayroll   = totalPayrollReady;
+        const billingCount   = billingReadyTickets.length;
+        const payrollCount   = payrollReadyTickets.length;
+        const totalGross     = activeTickets.reduce((s, t) => s + t.billingAmount, 0);
+        const totalPayD      = activeTickets.reduce((s, t) => s + t.payrollAmount, 0);
+        const grossMargin    = totalGross > 0 ? ((totalGross - totalPayD) / totalGross) * 100 : 0;
+        // Reconcile financials
+        const totalRisk      = reconRows.reduce((s, r) => s + r.dollar_impact, 0);
+        const vendorRisk     = reconRows.reduce((s, r) => s + r.vendor_overcharge_risk, 0);
+        const payRisk        = reconRows.reduce((s, r) => s + r.payroll_overpay_risk, 0);
+        const missRev        = reconRows.reduce((s, r) => s + r.missing_revenue_risk, 0);
+        const dupRisk        = reconRows.filter(r => r.is_duplicate).reduce((s, r) => s + r.dollar_impact, 0);
+        const underbilled    = reconRows.reduce((s, r) => s + r.underbilled_amount, 0);
+        const critErrors     = reconRows.filter(r => r.error_severity === "Critical").length;
+        const highErrors     = reconRows.filter(r => r.error_severity === "High").length;
+        const resolvedErrors = reconRows.filter(r => r.status !== "pending").length;
+        const pendingErrors  = reconRows.filter(r => r.status === "pending").length;
+        const billingBlocked = reconRows.filter(r => r.billing_blocked && r.status === "pending").length;
+        const payrollBlocked = reconRows.filter(r => r.payroll_blocked && r.status === "pending").length;
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {/* Owner header */}
+            <div style={{ background: "#0f172a", borderRadius: 14, padding: "20px 26px", display: "flex", alignItems: "center", gap: 16 }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff" }}>Owner / Operations Summary</div>
+                <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 3 }}>Real-time financial intelligence — what these tickets are worth, what errors cost, and what's blocked</div>
+              </div>
+              <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                <div style={{ fontSize: "0.62rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em" }}>Gross Margin</div>
+                <div style={{ fontWeight: 900, fontSize: "1.8rem", color: grossMargin > 30 ? "#4ade80" : grossMargin > 15 ? "#fbbf24" : "#f87171" }}>{grossMargin.toFixed(1)}%</div>
+              </div>
+            </div>
+
+            {/* Ticket volume KPIs */}
+            <div>
+              <div style={{ fontWeight: 800, fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Ticket Volume</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                {[
+                  { label: "Total Scanned", val: totalScanned, color: "#0f172a", sub: "This period" },
+                  { label: "Matched & Clean", val: totalMatched, color: "#15803d", sub: "No action needed" },
+                  { label: "Needs Review", val: totalReview, color: "#dc2626", sub: "Staff action required" },
+                  { label: "Reconcile Errors", val: reconRows.length, color: reconRows.length > 0 ? "#ea580c" : "#15803d", sub: `${pendingErrors} pending` },
+                ].map(k => (
+                  <div key={k.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{k.label}</div>
+                    <div style={{ fontWeight: 900, fontSize: "1.9rem", color: k.color }}>{k.val}</div>
+                    <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginTop: 4 }}>{k.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Financial summary */}
+            <div>
+              <div style={{ fontWeight: 800, fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Financial Summary</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                {[
+                  { label: "Billing Amount", val: money(totalGross), color: "#1d4ed8", sub: `${billingCount} tickets ready` },
+                  { label: "Payroll Amount", val: money(totalPayD), color: "#15803d", sub: `${payrollCount} ready to pay` },
+                  { label: "Net Revenue", val: money(totalGross - totalPayD), color: "#0f172a", sub: `${grossMargin.toFixed(1)}% margin` },
+                  { label: "Underbilled (OO)", val: money(underbilled), color: underbilled > 0 ? "#15803d" : "#94a3b8", sub: underbilled > 0 ? "Could add to invoice" : "None detected" },
+                ].map(k => (
+                  <div key={k.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{k.label}</div>
+                    <div style={{ fontWeight: 900, fontSize: "1.5rem", color: k.color }}>{k.val}</div>
+                    <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginTop: 4 }}>{k.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Error risk summary — THE STRONGEST FEATURE */}
+            <div style={{ background: "#fff", border: "2px solid #fee2e2", borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ background: "#fff1f2", padding: "14px 22px", borderBottom: "1px solid #fecdd3", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontWeight: 900, fontSize: "1rem", color: "#dc2626" }}>⚠️ Error Cost Analysis</span>
+                <span style={{ fontSize: "0.73rem", color: "#b91c1c" }}>Every error below is blocking billing, payroll, or vendor payment</span>
+                {totalRisk > 0 && <span style={{ marginLeft: "auto", fontWeight: 900, fontSize: "1.25rem", color: "#dc2626" }}>${totalRisk.toFixed(2)} total at risk</span>}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
+                {[
+                  { label: "Vendor Overcharge Risk", val: money(vendorRisk), color: "#ea580c", bg: "#fff7ed", desc: "Vendor billed more than ticket shows", icon: "🏭", action: "Generate dispute packets" },
+                  { label: "Missing Revenue Risk", val: money(missRev), color: "#ca8a04", bg: "#fefce8", desc: "Loads dispatched but no ticket scanned", icon: "❓", action: "Request tickets from drivers" },
+                  { label: "Payroll Overpay Risk", val: money(payRisk), color: "#c2410c", bg: "#fff7ed", desc: "OO may be paid for incorrect tonnage/rate", icon: "💸", action: "Hold payroll until resolved" },
+                ].map((k, idx) => (
+                  <div key={k.label} style={{ padding: "20px 22px", background: k.bg, borderRight: idx < 2 ? "1px solid #fecdd3" : "none" }}>
+                    <div style={{ fontSize: "1.5rem", marginBottom: 6 }}>{k.icon}</div>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{k.label}</div>
+                    <div style={{ fontWeight: 900, fontSize: "1.8rem", color: k.color, marginBottom: 6 }}>{k.val}</div>
+                    <div style={{ fontSize: "0.7rem", color: "#78350f", marginBottom: 10 }}>{k.desc}</div>
+                    <div style={{ fontSize: "0.68rem", fontWeight: 700, color: k.color }}>→ {k.action}</div>
+                  </div>
+                ))}
+              </div>
+              {dupRisk > 0 && (
+                <div style={{ padding: "14px 22px", borderTop: "1px solid #fecdd3", background: "#fdf4ff", display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#7c3aed" }}>⚠️ Duplicate Payment Risk:</span>
+                  <span style={{ fontWeight: 900, fontSize: "1rem", color: "#7c3aed" }}>{money(dupRisk)}</span>
+                  <span style={{ fontSize: "0.72rem", color: "#6b21a8" }}>— Possible double payment on {reconRows.filter(r => r.is_duplicate).length} ticket(s). Review before releasing payroll.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Gates — what's blocked right now */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {/* Billing gate */}
+              <div style={{ background: "#fff", border: `2px solid ${billingBlocked > 0 ? "#fecdd3" : "#bbf7d0"}`, borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ padding: "12px 18px", borderBottom: `1px solid ${billingBlocked > 0 ? "#fecdd3" : "#bbf7d0"}`, background: billingBlocked > 0 ? "#fff1f2" : "#f0fdf4", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontWeight: 800, fontSize: "0.9rem", color: billingBlocked > 0 ? "#dc2626" : "#15803d" }}>🧾 Billing Gate</span>
+                  <span style={{ marginLeft: "auto", fontWeight: 700, fontSize: "0.78rem", color: billingBlocked > 0 ? "#dc2626" : "#15803d" }}>
+                    {billingBlocked > 0 ? `${billingBlocked} blocked` : "All clear"}
+                  </span>
+                </div>
+                <div style={{ padding: "14px 18px" }}>
+                  <div style={{ fontSize: "0.72rem", color: "#475569", lineHeight: 1.9 }}>
+                    {billingCount > 0 ? <span style={{ color: "#15803d", fontWeight: 700 }}>✅ {billingCount} tickets ready for billing ({money(totalBilling)})<br /></span> : null}
+                    {billingBlocked > 0 ? <span style={{ color: "#dc2626", fontWeight: 700 }}>⛔ {billingBlocked} tickets blocked — resolve errors above first<br /></span> : null}
+                    {critErrors > 0 ? <span style={{ color: "#ea580c" }}>⚠️ {critErrors} critical error{critErrors > 1 ? "s" : ""} require owner/ops manager approval<br /></span> : null}
+                  </div>
+                  <button onClick={() => setActiveTab("billing_ready")}
+                    style={{ marginTop: 10, padding: "7px 16px", borderRadius: 8, background: "#0f172a", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>
+                    View Billing Queue →
+                  </button>
+                </div>
+              </div>
+
+              {/* Payroll gate */}
+              <div style={{ background: "#fff", border: `2px solid ${payrollBlocked > 0 ? "#fed7aa" : "#bbf7d0"}`, borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ padding: "12px 18px", borderBottom: `1px solid ${payrollBlocked > 0 ? "#fed7aa" : "#bbf7d0"}`, background: payrollBlocked > 0 ? "#fff7ed" : "#f0fdf4", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontWeight: 800, fontSize: "0.9rem", color: payrollBlocked > 0 ? "#ea580c" : "#15803d" }}>💵 Payroll Gate</span>
+                  <span style={{ marginLeft: "auto", fontWeight: 700, fontSize: "0.78rem", color: payrollBlocked > 0 ? "#ea580c" : "#15803d" }}>
+                    {payrollBlocked > 0 ? `${payrollBlocked} blocked` : "All clear"}
+                  </span>
+                </div>
+                <div style={{ padding: "14px 18px" }}>
+                  <div style={{ fontSize: "0.72rem", color: "#475569", lineHeight: 1.9 }}>
+                    {payrollCount > 0 ? <span style={{ color: "#15803d", fontWeight: 700 }}>✅ {payrollCount} tickets ready for payroll ({money(totalPayroll)})<br /></span> : null}
+                    {payrollBlocked > 0 ? <span style={{ color: "#ea580c", fontWeight: 700 }}>⛔ {payrollBlocked} OO pay items blocked — ton/rate errors unresolved<br /></span> : null}
+                    {payRisk > 0 ? <span style={{ color: "#c2410c" }}>⚠️ {money(payRisk)} overpay risk — do not release until reconciled<br /></span> : null}
+                  </div>
+                  <button onClick={() => setActiveTab("payroll_review")}
+                    style={{ marginTop: 10, padding: "7px 16px", borderRadius: 8, background: "#0f172a", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>
+                    View Payroll Queue →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Reconcile error breakdown table */}
+            {reconRows.length > 0 && (
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ padding: "13px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>Error Breakdown — All Reconciliation Issues</span>
+                  <span style={{ padding: "2px 9px", borderRadius: 99, background: "#fee2e2", color: "#dc2626", fontWeight: 700, fontSize: "0.7rem" }}>{critErrors} Critical</span>
+                  <span style={{ padding: "2px 9px", borderRadius: 99, background: "#ffedd5", color: "#ea580c", fontWeight: 700, fontSize: "0.7rem" }}>{highErrors} High</span>
+                  <button onClick={() => setActiveTab("excel_reconcile")} style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 7, background: "#0f172a", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                    Resolve All →
+                  </button>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.77rem" }}>
+                    <thead><tr style={{ background: "#f8fafc" }}>
+                      {["Ticket #","Driver","Field","Error","Severity","$ Impact","Billing","Payroll","Status"].map(h => <th key={h} style={{ padding: "8px 12px", fontWeight: 700, color: "#475569", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "0.67rem", whiteSpace: "nowrap" }}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {[...reconRows].sort((a, b) => b.dollar_impact - a.dollar_impact).slice(0, 15).map((r, i) => {
+                        const sevC = r.error_severity === "Critical" ? "#dc2626" : r.error_severity === "High" ? "#ea580c" : "#d97706";
+                        const sevB = r.error_severity === "Critical" ? "#fee2e2" : r.error_severity === "High" ? "#ffedd5" : "#fefce8";
+                        return (
+                          <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 800 }}>{r.ticketNo}</td>
+                            <td style={{ padding: "8px 12px", color: "#475569" }}>{r.driver}</td>
+                            <td style={{ padding: "8px 12px", color: "#64748b" }}>{r.field}</td>
+                            <td style={{ padding: "8px 12px" }}><SBadge code={r.errorType} /></td>
+                            <td style={{ padding: "8px 12px" }}><span style={{ padding: "2px 8px", borderRadius: 99, background: sevB, color: sevC, fontWeight: 700, fontSize: "0.68rem" }}>{r.error_severity}</span></td>
+                            <td style={{ padding: "8px 12px", fontWeight: 800, color: r.dollar_impact > 100 ? "#dc2626" : "#ea580c" }}>${r.dollar_impact.toFixed(2)}</td>
+                            <td style={{ padding: "8px 12px" }}>{r.billing_blocked ? <span style={{ color: "#dc2626", fontWeight: 700, fontSize: "0.7rem" }}>⛔ Blocked</span> : <span style={{ color: "#15803d", fontSize: "0.7rem" }}>✅ OK</span>}</td>
+                            <td style={{ padding: "8px 12px" }}>{r.payroll_blocked ? <span style={{ color: "#ea580c", fontWeight: 700, fontSize: "0.7rem" }}>⛔ Blocked</span> : <span style={{ color: "#15803d", fontSize: "0.7rem" }}>✅ OK</span>}</td>
+                            <td style={{ padding: "8px 12px" }}><span style={{ padding: "2px 8px", borderRadius: 99, background: r.status === "pending" ? "#fee2e2" : "#f0fdf4", color: r.status === "pending" ? "#dc2626" : "#15803d", fontWeight: 700, fontSize: "0.68rem", textTransform: "capitalize" }}>{r.status}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {reconRows.length > 15 && (
+                    <div style={{ padding: "10px 20px", fontSize: "0.72rem", color: "#94a3b8", borderTop: "1px solid #f1f5f9" }}>
+                      Showing top 15 by dollar impact. <button onClick={() => setActiveTab("excel_reconcile")} style={{ background: "none", border: "none", color: "#1d4ed8", fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: "0.72rem" }}>View all {reconRows.length} →</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button onClick={() => setActiveTab("excel_reconcile")} style={{ padding: "10px 20px", borderRadius: 9, background: "#dc2626", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer" }}>
+                ⚡ Resolve Reconciliation Errors
+              </button>
+              <button onClick={() => setActiveTab("billing_ready")} style={{ padding: "10px 20px", borderRadius: 9, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer" }}>
+                🧾 Send to Billing
+              </button>
+              <button onClick={() => setActiveTab("payroll_review")} style={{ padding: "10px 20px", borderRadius: 9, background: "#15803d", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer" }}>
+                💵 Release Payroll
+              </button>
+              <button onClick={() => setReconcileOpen(true)} style={{ padding: "10px 20px", borderRadius: 9, background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer" }}>
+                🔄 Run Full Reconcile
+              </button>
+              <button onClick={downloadCorrectedExcel} style={{ padding: "10px 20px", borderRadius: 9, background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer" }}>
+                ⬇ Export Error Report
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════════════════════════════════════
           MODALS

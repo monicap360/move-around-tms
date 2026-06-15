@@ -59,10 +59,17 @@ export default function BulkImportPage() {
   ];
 
   function parseTabText(text: string, type: "tsv" | "csv" | "pdf") {
-    const lines = text.trim().split("\n").filter(l => l.trim());
+    // Normalize line endings (Windows \r\n and old Mac \r)
+    const normalized = text.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = normalized.split("\n").filter(l => l.trim());
     if (lines.length < 2) { flash("Could not find enough rows — check the file or paste manually."); return; }
-    const hdrs = lines[0].split("\t").map(h => h.trim().replace(/^["']|["']$/g, ""));
-    const dataRows = lines.slice(1).map(l => l.split("\t").map(c => c.trim().replace(/^["']|["']$/g, "")));
+    // Auto-detect separator: use tab if more tabs than commas on the first line, else comma
+    const firstLine = lines[0];
+    const tabCount   = (firstLine.match(/\t/g)  || []).length;
+    const commaCount = (firstLine.match(/,/g)   || []).length;
+    const sep = tabCount >= commaCount ? "\t" : ",";
+    const hdrs = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, ""));
+    const dataRows = lines.slice(1).map(l => l.split(sep).map(c => c.trim().replace(/^["']|["']$/g, "")));
     setHeaders(hdrs);
     setRows(dataRows);
     setFileType(type);

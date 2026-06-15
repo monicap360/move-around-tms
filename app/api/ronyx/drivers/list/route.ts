@@ -39,7 +39,7 @@ export async function GET() {
       updated_at,
       created_at
     `)
-    .neq("status", "archived")
+    .or("status.is.null,and(status.neq.archived,status.neq.deleted)")
     .order("full_name", { ascending: true })
     .limit(5000);
 

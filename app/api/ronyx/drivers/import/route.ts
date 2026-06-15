@@ -62,6 +62,18 @@ export async function POST(req: NextRequest) {
     orgId = member?.org_id ?? null;
   }
 
+  // Fallback: if no session/org, read org_id from an existing driver so imports
+  // land in the same org as the rest of the data (avoids NOT NULL violations).
+  if (!orgId) {
+    const { data: anyDriver } = await supabase
+      .from("drivers")
+      .select("organization_id")
+      .not("organization_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    orgId = anyDriver?.organization_id ?? null;
+  }
+
   // Create import batch record
   const { data: batch } = await supabase
     .from("driver_import_batches")
@@ -95,6 +107,7 @@ export async function POST(req: NextRequest) {
 
       const driverPayload = {
         full_name:               row.driver_name.trim(),
+        name:                    row.driver_name.trim(),   // NOT NULL column alias
         phone:                   row.phone  || null,
         email:                   row.email  || null,
         driver_type:             row.driver_type || null,
@@ -113,7 +126,7 @@ export async function POST(req: NextRequest) {
         pay_rate:                row.pay_rate ? parseFloat(row.pay_rate) || null : null,
         pay_type:                row.pay_type || null,
         owner_operator_company:  row.owner_operator_company || null,
-        status:                  "pending_review",
+        status:                  "active",
         dispatch_eligible:       false,
         payroll_eligible:        false,
         notes:                   row.notes || null,
@@ -144,15 +157,46 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Insert new driver
-      const { data: newDriver, error } = await supabase
+      // Insert new driver — try full payload first, fall back to core fields only
+      let newDriver: { id: string } | null = null;
+      let insertError: { message: string } | null = null;
+
+      const { data: d1, error: e1 } = await supabase
         .from("drivers")
         .insert(driverPayload)
         .select("id")
         .single();
 
-      if (error) {
-        errors.push(`Insert failed for ${row.driver_name}: ${error.message}`);
+      if (e1) {
+        // Retry with minimal core fields that definitely exist on any drivers table
+        const corePayload = {
+          full_name:               driverPayload.full_name,
+          name:                    driverPayload.full_name,  // NOT NULL alias
+          phone:                   driverPayload.phone,
+          email:                   driverPayload.email,
+          driver_type:             driverPayload.driver_type,
+          assigned_truck_number:   driverPayload.assigned_truck_number,
+          license_number:          driverPayload.license_number,
+          license_state:           driverPayload.license_state,
+          license_expiration_date: driverPayload.license_expiration_date,
+          medical_card_expiration: driverPayload.medical_card_expiration,
+          mvr_expiration:          driverPayload.mvr_expiration,
+          status:                  driverPayload.status,
+          organization_id:         driverPayload.organization_id,
+        };
+        const { data: d2, error: e2 } = await supabase
+          .from("drivers")
+          .insert(corePayload)
+          .select("id")
+          .single();
+        newDriver     = d2;
+        insertError   = e2 ? { message: `${e1.message} (core retry: ${e2.message})` } : null;
+      } else {
+        newDriver = d1;
+      }
+
+      if (insertError) {
+        errors.push(`Insert failed for ${row.driver_name}: ${insertError.message}`);
         failed++;
         continue;
       }
