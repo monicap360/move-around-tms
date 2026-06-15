@@ -460,7 +460,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
     missingComp: rows.filter(r => r._issues.some(i => i.startsWith("MISSING_") || i.endsWith("_EXPIRED"))).length,
   }), [rows]);
 
-  const parseFile = useCallback((file: File) => {
+  const parseFile = useCallback(async (file: File) => {
     setFileName(file.name);
     const nameLower = file.name.toLowerCase();
 
@@ -472,10 +472,24 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
     }
     setIsPdf(false);
 
-    function processWorkbook(wb: XLSX.WorkBook) {
+    try {
+      let wb: XLSX.WorkBook;
+
+      if (nameLower.endsWith(".csv")) {
+        const text = await file.text();
+        wb = XLSX.read(text, { type: "string" });
+      } else {
+        const buffer = await file.arrayBuffer();
+        wb = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
+      }
+
       const ws = wb.Sheets[wb.SheetNames[0]];
       const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-      if (raw.length < 2) { showToast("File appears empty — no data rows found."); return; }
+
+      if (raw.length < 2) {
+        showToast("File appears empty — no data rows found below the header.");
+        return;
+      }
 
       const headers = (raw[0] as any[]).map((h: any) => String(h ?? ""));
       const normHeaders = headers.map(normalizeImportHeader);
@@ -489,13 +503,11 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
           const idx = normHeaders.indexOf(field);
           if (idx < 0) return "";
           const val = row[idx];
-          if (val == null) return "";
-          return String(val).trim();
+          return val == null ? "" : String(val).trim();
         };
         const getRaw = (field: string): string | Date | number => {
           const idx = normHeaders.indexOf(field);
-          if (idx < 0) return "";
-          return row[idx] ?? "";
+          return idx >= 0 ? (row[idx] ?? "") : "";
         };
 
         const r: ImportDriverRow = {
@@ -529,45 +541,14 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
       }
 
       if (parsed.length === 0) {
-        showToast("No driver rows found — check that the file has data below the header row.");
+        showToast("No driver rows found — check that the file has data and a header row.");
         return;
       }
       setRows(parsed);
       setStep("preview");
-    }
-
-    const reader = new FileReader();
-
-    if (nameLower.endsWith(".csv")) {
-      // CSV: read as text, parse with XLSX string mode
-      reader.onload = e => {
-        try {
-          const text = e.target?.result as string;
-          if (!text) { showToast("Could not read CSV file."); return; }
-          const wb = XLSX.read(text, { type: "string" });
-          processWorkbook(wb);
-        } catch (err) {
-          console.error("CSV parse error:", err);
-          showToast(`CSV parse error: ${err instanceof Error ? err.message : "check file format"}`);
-        }
-      };
-      reader.onerror = () => showToast("Could not read CSV file.");
-      reader.readAsText(file);
-    } else {
-      // XLS / XLSX: read as ArrayBuffer
-      reader.onload = e => {
-        try {
-          const data = e.target?.result;
-          if (!data) { showToast("Could not read Excel file."); return; }
-          const wb = XLSX.read(data, { type: "array", cellDates: true });
-          processWorkbook(wb);
-        } catch (err) {
-          console.error("Excel parse error:", err);
-          showToast(`Excel parse error: ${err instanceof Error ? err.message : "check file format"}`);
-        }
-      };
-      reader.onerror = () => showToast("Could not read Excel file.");
-      reader.readAsArrayBuffer(file);
+    } catch (err) {
+      console.error("Driver import parse error:", err);
+      showToast(`Could not read file: ${err instanceof Error ? err.message : "check format and try again"}`);
     }
   }, [existingDrivers, showToast]);
 
@@ -641,7 +622,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
               <div
                 onClick={() => fileRef.current?.click()}
                 onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) parseFile(f); }}
+                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) void parseFile(f); }}
                 style={{ border: "2px dashed #bfdbfe", borderRadius: 16, padding: "48px 32px", textAlign: "center", cursor: "pointer", background: "#eff6ff", marginBottom: 24 }}>
                 <div style={{ fontSize: "2.8rem", marginBottom: 12 }}>📂</div>
                 <h3 style={{ margin: "0 0 6px", fontWeight: 800, color: "#1e3a8a" }}>Upload Driver Roster</h3>
@@ -659,7 +640,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
                 </button>
               </div>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.pdf" style={{ display: "none" }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) parseFile(f); e.target.value = ""; }} />
+                onChange={e => { const f = e.target.files?.[0]; if (f) void parseFile(f); e.target.value = ""; }} />
 
               <div style={{ background: "#f8fafc", borderRadius: 12, padding: 18, fontSize: "0.8rem", color: "#475569" }}>
                 <div style={{ fontWeight: 700, marginBottom: 10, color: "#0f172a" }}>Column Mapping — Supported Headers</div>
@@ -1134,9 +1115,6 @@ export default function DriversPage() {
               <Link href="/ronyx/drivers/new" style={{ textDecoration: "none" }}>
                 <button style={{ width: "100%" }}>Add New Driver</button>
               </Link>
-              <button onClick={() => setImportOpen(true)} style={{ width: "100%", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "9px 0", fontWeight: 700, cursor: "pointer" }}>
-                ⬆ Import Driver List
-              </button>
               <button onClick={() => showToast("Login invite — coming soon.")}>
                 Send Login Invite
               </button>
