@@ -987,6 +987,198 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
   );
 }
 
+/* ─── Confirm Modal ─────────────────────────────────────── */
+type ConfirmAction = { type: "archive" | "delete"; driver: Driver };
+
+function ConfirmModal({
+  action,
+  onConfirm,
+  onCancel,
+}: {
+  action: ConfirmAction;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const isDelete = action.type === "delete";
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.65)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: 440, maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+        <div style={{ fontSize: "2rem", marginBottom: 8 }}>{isDelete ? "🗑️" : "📦"}</div>
+        <h2 style={{ margin: "0 0 6px", fontSize: "1.1rem", fontWeight: 900, color: isDelete ? "#dc2626" : "#d97706" }}>
+          {isDelete ? "Delete Driver" : "Archive Driver"}
+        </h2>
+        <p style={{ margin: "0 0 16px", color: "#475569", fontSize: "0.85rem" }}>
+          {isDelete
+            ? <>Permanently delete <strong>{action.driver.name}</strong>? Their full profile will be saved to Manager Alerts before removal.</>
+            : <>Archive <strong>{action.driver.name}</strong>? They will be removed from the active roster but stay in the system. Full record saved to Manager Alerts.</>}
+        </p>
+        <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 }}>
+          Reason {isDelete ? "(required)" : "(optional)"}
+        </label>
+        <input
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder={isDelete ? "Why is this driver being removed?" : "Reason for archiving…"}
+          style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: "0.88rem", outline: "none", background: "#fff", boxSizing: "border-box", marginBottom: 18 }}
+        />
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={() => { if (isDelete && !reason.trim()) return; onConfirm(reason); }}
+            disabled={isDelete && !reason.trim()}
+            style={{ flex: 1, background: isDelete ? "#dc2626" : "#d97706", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontWeight: 800, cursor: isDelete && !reason.trim() ? "not-allowed" : "pointer", opacity: isDelete && !reason.trim() ? 0.5 : 1 }}
+          >
+            {isDelete ? "Yes, Delete" : "Yes, Archive"}
+          </button>
+          <button onClick={onCancel} style={{ padding: "10px 18px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 700, cursor: "pointer", color: "#475569", background: "#fff" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Manager Alerts Panel ──────────────────────────────── */
+type ManagerAlert = {
+  id: string;
+  full_name: string;
+  action_type: "deleted" | "archived";
+  actioned_at: string;
+  actioned_by: string;
+  action_reason: string | null;
+  phone: string | null;
+  email: string | null;
+  driver_type: string | null;
+  prior_status: string | null;
+  license_number: string | null;
+  license_state: string | null;
+  license_expiration_date: string | null;
+  medical_card_number: string | null;
+  medical_card_expiration: string | null;
+  mvr_expiration: string | null;
+  assigned_truck_number: string | null;
+  job_assignment: string | null;
+  company_name: string | null;
+  pay_rate: number | null;
+  pay_type: string | null;
+  compliance_flags: string[] | null;
+  notes: string | null;
+  snapshot: Record<string, unknown> | null;
+};
+
+function ManagerAlertsPanel({ alerts, onClose }: { alerts: ManagerAlert[]; onClose: () => void }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  function fmtTs(ts: string) {
+    return new Date(ts).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function fmtD(d: string | null) { return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"; }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 500, display: "flex" }}>
+      <div style={{ flex: 1, background: "rgba(15,23,42,0.5)" }} onClick={onClose} />
+      <div style={{ width: 520, maxWidth: "95vw", background: "#fff", height: "100%", overflowY: "auto", boxShadow: "-8px 0 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ background: "#0f172a", padding: "22px 24px", flexShrink: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Manager Alerts</div>
+              <h2 style={{ margin: 0, color: "#fff", fontSize: "1.15rem", fontWeight: 900 }}>Driver Archive Log</h2>
+              <p style={{ margin: "4px 0 0", color: "#94a3b8", fontSize: "0.78rem" }}>{alerts.length} total record{alerts.length !== 1 ? "s" : ""} — full snapshots preserved</p>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.4rem", cursor: "pointer", lineHeight: 1 }}>✕</button>
+          </div>
+        </div>
+
+        {/* Alert cards */}
+        <div style={{ padding: 16, flex: 1 }}>
+          {alerts.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
+              <div style={{ fontSize: "2rem", marginBottom: 8 }}>✓</div>
+              <div style={{ fontWeight: 700 }}>No archive records yet.</div>
+              <p style={{ fontSize: "0.8rem" }}>Archived or deleted drivers will appear here.</p>
+            </div>
+          )}
+          {alerts.map(a => {
+            const isExp = expanded.has(a.id);
+            const isDelete = a.action_type === "deleted";
+            return (
+              <div key={a.id} style={{ background: "#fff", border: `1px solid ${isDelete ? "#fecdd3" : "#fed7aa"}`, borderLeft: `4px solid ${isDelete ? "#dc2626" : "#d97706"}`, borderRadius: 12, marginBottom: 12, overflow: "hidden" }}>
+                {/* Card header */}
+                <div style={{ padding: "12px 16px", background: isDelete ? "#fff1f2" : "#fff7ed" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontSize: "0.65rem", fontWeight: 800, padding: "2px 8px", borderRadius: 99, background: isDelete ? "#dc2626" : "#d97706", color: "#fff" }}>
+                          {isDelete ? "DELETED" : "ARCHIVED"}
+                        </span>
+                        <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>{a.full_name}</strong>
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{fmtTs(a.actioned_at)} · by {a.actioned_by || "Admin"}</div>
+                      {a.action_reason && <div style={{ fontSize: "0.75rem", color: isDelete ? "#dc2626" : "#b45309", fontWeight: 600, marginTop: 3 }}>Reason: {a.action_reason}</div>}
+                    </div>
+                    <button
+                      onClick={() => setExpanded(e => { const n = new Set(e); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n; })}
+                      style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "0.78rem", fontWeight: 700, padding: "2px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff" }}
+                    >
+                      {isExp ? "Hide ▲" : "Details ▼"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded details */}
+                {isExp && (
+                  <div style={{ padding: "14px 16px", borderTop: "1px solid #f1f5f9" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", fontSize: "0.78rem" }}>
+                      {[
+                        ["Phone",         a.phone],
+                        ["Email",         a.email],
+                        ["Type",          a.driver_type],
+                        ["Prior Status",  a.prior_status],
+                        ["Truck",         a.assigned_truck_number],
+                        ["Job",           a.job_assignment],
+                        ["Company",       a.company_name],
+                        ["Pay Rate",      a.pay_rate ? `$${a.pay_rate}` : null],
+                        ["Pay Type",      a.pay_type],
+                        ["CDL #",         a.license_number],
+                        ["CDL State",     a.license_state],
+                        ["CDL Exp",       fmtD(a.license_expiration_date)],
+                        ["Medical Card #",a.medical_card_number],
+                        ["Medical Exp",   fmtD(a.medical_card_expiration)],
+                        ["MVR Exp",       fmtD(a.mvr_expiration)],
+                      ].map(([label, value]) => (
+                        <div key={label as string}>
+                          <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+                          <div style={{ fontWeight: 600, color: "#0f172a" }}>{value || "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {a.compliance_flags && a.compliance_flags.length > 0 && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Compliance Flags</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          {a.compliance_flags.map(f => (
+                            <span key={f} style={{ background: "#fff1f2", color: "#dc2626", padding: "2px 8px", borderRadius: 6, fontSize: "0.65rem", fontWeight: 700 }}>{f.replace(/_/g, " ")}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {a.notes && (
+                      <div style={{ marginTop: 10, padding: "8px 12px", background: "#f8fafc", borderRadius: 8, fontSize: "0.75rem", color: "#475569" }}>
+                        <strong>Notes:</strong> {a.notes}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main page ─────────────────────────────────────────── */
 export default function DriversPage() {
   const router       = useRouter();
@@ -1006,8 +1198,53 @@ export default function DriversPage() {
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupSearch, setBackupSearch]   = useState("");
   const [emailSending, setEmailSending]   = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [alertsList, setAlertsList]       = useState<ManagerAlert[]>([]);
+  const [alertsOpen, setAlertsOpen]       = useState(false);
+  const [alertsLoaded, setAlertsLoaded]   = useState(false);
 
   function showToast(msg: string) { setToast(msg); }
+
+  function loadAlerts() {
+    fetch("/api/ronyx/drivers/deleted-archive")
+      .then(r => r.json())
+      .then(d => { setAlertsList(d.alerts || []); setAlertsLoaded(true); })
+      .catch(() => setAlertsLoaded(true));
+  }
+
+  async function handleArchive(driver: Driver, reason: string) {
+    setConfirmAction(null);
+    try {
+      const res = await fetch(`/api/ronyx/drivers/${driver.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "archive", reason, actioned_by: "admin" }),
+      });
+      if (!res.ok) throw new Error("Archive failed");
+      setAllDrivers(prev => prev.filter(d => d.id !== driver.id));
+      loadAlerts();
+      showToast(`${driver.name} archived — saved to Manager Alerts.`);
+    } catch {
+      showToast("Archive failed — try again.");
+    }
+  }
+
+  async function handleDelete(driver: Driver, reason: string) {
+    setConfirmAction(null);
+    try {
+      const res = await fetch(`/api/ronyx/drivers/${driver.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason, deleted_by: "admin" }),
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setAllDrivers(prev => prev.filter(d => d.id !== driver.id));
+      loadAlerts();
+      showToast(`${driver.name} deleted — full record saved to Manager Alerts.`);
+    } catch {
+      showToast("Delete failed — try again.");
+    }
+  }
 
   useEffect(() => {
     fetch("/api/ronyx/drivers/list")
@@ -1015,6 +1252,7 @@ export default function DriversPage() {
       .then((data) => setAllDrivers((data.drivers || []).map(mapApiDriver)))
       .catch(console.error)
       .finally(() => setLoading(false));
+    loadAlerts();
   }, []);
 
   useEffect(() => {
@@ -1093,6 +1331,18 @@ export default function DriversPage() {
           </p>
         </div>
         <div className="premium-hero-actions">
+          {/* Manager Alerts bell */}
+          <button
+            onClick={() => { if (!alertsLoaded) loadAlerts(); setAlertsOpen(true); }}
+            style={{ position: "relative", background: alertsList.length > 0 ? "#fff1f2" : "#f8fafc", border: `1px solid ${alertsList.length > 0 ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem", color: alertsList.length > 0 ? "#dc2626" : "#475569", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            🔔 Manager Alerts
+            {alertsList.length > 0 && (
+              <span style={{ background: "#dc2626", color: "#fff", borderRadius: 99, fontSize: "0.65rem", fontWeight: 800, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>
+                {alertsList.length}
+              </span>
+            )}
+          </button>
           <button
             className="premium-button ghost"
             onClick={() => {
@@ -1430,6 +1680,18 @@ export default function DriversPage() {
                           <button>Documents</button>
                         </Link>
                         <button onClick={() => setAssignTarget({ driver })}>Assign</button>
+                        <button
+                          onClick={() => setConfirmAction({ type: "archive", driver })}
+                          style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                        >
+                          Archive
+                        </button>
+                        <button
+                          onClick={() => setConfirmAction({ type: "delete", driver })}
+                          style={{ background: "#fff1f2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </article>
@@ -1539,6 +1801,23 @@ export default function DriversPage() {
           onClose={() => setUploadTarget(null)}
           showToast={showToast}
         />
+      )}
+
+      {/* ── Confirm Archive/Delete ── */}
+      {confirmAction && (
+        <ConfirmModal
+          action={confirmAction}
+          onConfirm={reason => {
+            if (confirmAction.type === "archive") handleArchive(confirmAction.driver, reason);
+            else handleDelete(confirmAction.driver, reason);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {/* ── Manager Alerts Panel ── */}
+      {alertsOpen && (
+        <ManagerAlertsPanel alerts={alertsList} onClose={() => setAlertsOpen(false)} />
       )}
 
       {/* ── Toast ── */}

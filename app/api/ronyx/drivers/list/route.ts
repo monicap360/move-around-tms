@@ -39,7 +39,9 @@ export async function GET() {
       updated_at,
       created_at
     `)
-    .order("full_name", { ascending: true });
+    .neq("status", "archived")
+    .order("full_name", { ascending: true })
+    .limit(5000);
 
   if (error) {
     return NextResponse.json({ drivers: [], error: error.message }, { status: 200 });
