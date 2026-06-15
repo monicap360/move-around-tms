@@ -87,6 +87,23 @@ const SCAN_TYPES = [
   { value: "other",         label: "Other",         icon: "📌", color: "#64748b" },
 ];
 
+// Column aliases for Excel import — maps varied header names to edge-function field names
+const IMPORT_MAP: Record<string, string[]> = {
+  ticket_number:     ["ticket #","ticket#","ticket number","ticket no","tkt#","tkt no","load #","load number","load no","ticket"],
+  ticket_date:       ["date","ticket date","load date","trip date","delivery date","work date","service date"],
+  truck_number:      ["truck","truck #","truck#","unit","unit #","vehicle","equip #","truck number","truck no","equipment","equipment #"],
+  driver_name:       ["driver","driver name","operator","hauler","driver no","driver_name"],
+  customer_name:     ["customer","client","bill to","account","billed to","customer name","sold to"],
+  project_name:      ["project","job","project #","job #","job name","project name","job no","project no","work order","work order #"],
+  po_number:         ["po","po#","po number","purchase order","po no","p.o.","p.o. number","po num"],
+  pit_location_name: ["pit","yard","quarry","origin","from","source","pit/yard","plant","pickup","quarry name","pit name","facility","location"],
+  material_name:     ["material","product","commodity","material type","mat","mat type","description","item","stone type","material name"],
+  tons:              ["tons","net tons","net wt","qty","quantity","loads","weight","net weight","net ton","net","tonnage"],
+  rate:              ["rate","rate/ton","$/ton","unit price","bill rate","customer rate","rate per ton","price","price/ton","rate per unit"],
+  amount:            ["amount","total","total amount","gross","billing","extended","extended price","total price","charge"],
+  invoice_number:    ["invoice","invoice #","invoice number","inv #","inv no","inv","statement #","statement no","bill #"],
+};
+
 const STAT_BADGE: Record<string, { bg: string; color: string }> = {
   MATCHED:            { bg: "#f0fdf4", color: "#16a34a" },
   READY_FOR_BILLING:  { bg: "#eff6ff", color: "#1d4ed8" },
@@ -266,6 +283,16 @@ export default function TicketsPage() {
   const [reconRows, setReconRows] = useState<ReconcileRow[]>([]);
   const [excelFileName, setExcelFileName] = useState("");
   const [reconProcessed, setReconProcessed] = useState(false);
+
+  // Excel import state
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<Array<Record<string, string>>>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importUploadType, setImportUploadType] = useState("vendor_excel");
+  const [importRunning, setImportRunning] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importResult, setImportResult] = useState<{ upload_id?: string; inserted_rows?: number; error?: string } | null>(null);
 
   // Invoice upload state
   const invoiceFileRef = useRef<HTMLInputElement>(null);
@@ -517,6 +544,110 @@ export default function TicketsPage() {
     } catch (e: any) { showToast(e.message); } finally { setScanSubmitting(false); }
   }, [scanType, scanDriver, scanTruck, scanJob, scanVendor, scanPit, scanTicketNo, scanDate, scanMaterial, scanGross, scanTare, scanNets, scanRate, scanPO, scanAmount, scanNotes, loadTickets, showToast]);
 
+  // Parse Excel file and open import modal
+  const processImportFile = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array", cellDates: true });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" }) as unknown[][];
+        if (raw.length < 2) { showToast("File appears empty — no rows to import."); return; }
+
+        const headers = (raw[0] as string[]).map(h => String(h || "").trim());
+        const normalized = headers.map(h => {
+          const lower = h.toLowerCase();
+          for (const [key, aliases] of Object.entries(IMPORT_MAP)) {
+            if (aliases.some(a => lower.includes(a))) return key;
+          }
+          return lower.replace(/[^a-z0-9_]/g, "_");
+        });
+
+        const rows: Array<Record<string, string>> = raw.slice(1)
+          .map(row => {
+            const obj: Record<string, string> = {};
+            (row as unknown[]).forEach((cell, i) => {
+              if (normalized[i]) obj[normalized[i]] = String(cell ?? "").trim();
+            });
+            // Preserve raw row for audit
+            obj["_raw_headers"] = headers.join("|");
+            return obj;
+          })
+          .filter(row => Object.values(row).some(v => v !== "" && !v.startsWith("_")));
+
+        setImportRows(rows);
+        setImportFileName(file.name);
+        setImportResult(null);
+        setImportProgress(0);
+        setImportOpen(true);
+        showToast(`${file.name} parsed — ${rows.length} rows ready to import`);
+      } catch (err: any) {
+        showToast(`Failed to parse file: ${err?.message || "check format"}`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }, [showToast]);
+
+  // Send parsed rows to /api/ronyx/excel-import → edge function
+  const runImport = useCallback(async () => {
+    if (importRows.length === 0 || importRunning) return;
+    setImportRunning(true);
+    setImportProgress(0);
+    setImportResult(null);
+    try {
+      const mappedRows = importRows.map((row, idx) => ({
+        row_number:        idx + 1,
+        ticket_number:     row.ticket_number    || null,
+        ticket_date:       row.ticket_date       || null,
+        truck_number:      row.truck_number      || null,
+        driver_name:       row.driver_name       || null,
+        customer_name:     row.customer_name     || null,
+        project_name:      row.project_name      || null,
+        po_number:         row.po_number         || null,
+        pit_location_name: row.pit_location_name || null,
+        material_name:     row.material_name     || null,
+        tons:              row.tons   ? parseFloat(row.tons.replace(/[^0-9.]/g, ""))   || null : null,
+        rate:              row.rate   ? parseFloat(row.rate.replace(/[^0-9.]/g, ""))   || null : null,
+        amount:            row.amount ? parseFloat(row.amount.replace(/[^0-9.]/g, "")) || null : null,
+        invoice_number:    row.invoice_number || null,
+        raw_row:           Object.fromEntries(Object.entries(row).filter(([k]) => !k.startsWith("_"))),
+      }));
+
+      // Simulate progress during the single API call
+      const ticker = setInterval(() => setImportProgress(p => Math.min(p + 5, 90)), 200);
+
+      const res = await fetch("/api/ronyx/excel-import", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_name:         importFileName,
+          upload_type:       importUploadType,
+          rows:              mappedRows,
+          trigger_reconcile: true,
+        }),
+      });
+
+      clearInterval(ticker);
+      setImportProgress(100);
+
+      const result = await res.json();
+      setImportResult(result);
+
+      if (res.ok) {
+        showToast(`Import complete — ${result.inserted_rows ?? mappedRows.length} rows stored & reconcile triggered`);
+        setTimeout(loadTickets, 1500);
+      } else {
+        showToast(`Import failed: ${result.error}`);
+      }
+    } catch (e: any) {
+      setImportResult({ error: e.message });
+      showToast(`Import error: ${e.message}`);
+    } finally {
+      setImportRunning(false);
+    }
+  }, [importRows, importFileName, importUploadType, importRunning, showToast, loadTickets]);
+
   // Derived
   const activeTickets = useMemo(() => tickets.filter(t => !t.voided), [tickets]);
   const deletedTickets = useMemo(() => tickets.filter(t => t.voided), [tickets]);
@@ -539,13 +670,18 @@ export default function TicketsPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <main className="tickets-page">
-      {toast && <div className="tickets-toast">{toast}</div>}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, background: "#1e293b", color: "#fff", padding: "14px 20px", borderRadius: 12, fontWeight: 600, fontSize: "0.85rem", zIndex: 9999, boxShadow: "0 8px 24px rgba(0,0,0,0.35)", maxWidth: 380, lineHeight: 1.5, pointerEvents: "none" }}>
+          {toast}
+        </div>
+      )}
 
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => handleFiles(e.target.files)} />
       <input ref={batchInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => { handleFiles(e.target.files); setActiveTab("all"); }} />
       <input ref={invoiceFileRef} type="file" accept=".pdf,image/*" style={{ display: "none" }} onChange={() => showToast("Invoice uploaded — processing OCR…")} />
       <input ref={excelFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processExcelFile(f); e.target.value = ""; }} />
+      <input ref={importFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processImportFile(f); e.target.value = ""; }} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <section style={{ background: "#0f172a", borderRadius: 16, padding: "28px 32px", marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
@@ -566,6 +702,9 @@ export default function TicketsPage() {
           </button>
           <button onClick={() => { setActiveTab("excel_reconcile"); }} style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(255,255,255,0.1)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, fontSize: "0.83rem", cursor: "pointer" }}>
             Upload Excel
+          </button>
+          <button onClick={() => importFileRef.current?.click()} style={{ padding: "10px 16px", borderRadius: 10, background: "#7c3aed", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer" }}>
+            ⬆ Import Excel
           </button>
           <button onClick={() => setManualOpen(true)} style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(255,255,255,0.1)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, fontSize: "0.83rem", cursor: "pointer" }}>
             Manual Entry
@@ -1644,6 +1783,155 @@ export default function TicketsPage() {
           </div>
         );
       })()}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          MODAL: EXCEL IMPORT
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {importOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.7)", zIndex: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "#fff", borderRadius: 18, width: "100%", maxWidth: 780, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", padding: 32 }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+              <div>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Excel Import</div>
+                <div style={{ fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>Import Tickets to TMS</div>
+                <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 4 }}>{importFileName} · {importRows.length} rows detected</div>
+              </div>
+              <button onClick={() => { setImportOpen(false); setImportResult(null); }} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, color: "#64748b" }}>✕</button>
+            </div>
+
+            {/* Upload type */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Source / Upload Type</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[
+                  { value: "vendor_excel",    label: "Vendor / Pit Sheet" },
+                  { value: "customer_sheet",  label: "Customer Sheet" },
+                  { value: "payroll_sheet",   label: "Payroll Sheet" },
+                  { value: "dispatch_sheet",  label: "Dispatch Sheet" },
+                ].map(t => (
+                  <button key={t.value} onClick={() => setImportUploadType(t.value)}
+                    style={{ padding: "7px 14px", borderRadius: 8, border: `2px solid ${importUploadType === t.value ? "#7c3aed" : "#e2e8f0"}`, background: importUploadType === t.value ? "#f5f3ff" : "#fff", color: importUploadType === t.value ? "#7c3aed" : "#64748b", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Column mapping preview */}
+            <div style={{ background: "#f8fafc", borderRadius: 12, padding: 16, marginBottom: 20, border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Detected Column Mapping</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {Object.keys(importRows[0] || {}).filter(k => !k.startsWith("_")).slice(0, 20).map(k => {
+                  const isMapped = Object.keys(IMPORT_MAP).includes(k);
+                  return (
+                    <span key={k} style={{ fontSize: "0.7rem", fontWeight: 600, padding: "3px 8px", borderRadius: 99, background: isMapped ? "#f0fdf4" : "#f1f5f9", color: isMapped ? "#16a34a" : "#94a3b8", border: `1px solid ${isMapped ? "#86efac" : "#e2e8f0"}` }}>
+                      {k}
+                    </span>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginTop: 8 }}>
+                Green = mapped to TMS field · Grey = stored in raw_row for reference
+              </div>
+            </div>
+
+            {/* Row preview table */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Preview (first 5 rows)</div>
+              <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.72rem" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc" }}>
+                      {["#","Ticket #","Date","Driver","Truck","Material","Tons","Rate","Amount","Pit / Location"].map(h => (
+                        <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importRows.slice(0, 5).map((row, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "7px 10px", color: "#94a3b8" }}>{i + 1}</td>
+                        <td style={{ padding: "7px 10px", fontWeight: 600 }}>{row.ticket_number || "—"}</td>
+                        <td style={{ padding: "7px 10px", color: "#64748b" }}>{row.ticket_date || "—"}</td>
+                        <td style={{ padding: "7px 10px" }}>{row.driver_name || "—"}</td>
+                        <td style={{ padding: "7px 10px" }}>{row.truck_number || "—"}</td>
+                        <td style={{ padding: "7px 10px" }}>{row.material_name || "—"}</td>
+                        <td style={{ padding: "7px 10px", textAlign: "right" }}>{row.tons || "—"}</td>
+                        <td style={{ padding: "7px 10px", textAlign: "right" }}>{row.rate ? `$${row.rate}` : "—"}</td>
+                        <td style={{ padding: "7px 10px", textAlign: "right" }}>{row.amount ? `$${row.amount}` : "—"}</td>
+                        <td style={{ padding: "7px 10px", color: "#64748b" }}>{row.pit_location_name || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {importRows.length > 5 && (
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 6, textAlign: "center" }}>
+                  + {importRows.length - 5} more rows not shown
+                </div>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {importRunning && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#64748b", marginBottom: 6 }}>
+                  <span>Uploading to TMS…</span><span>{importProgress}%</span>
+                </div>
+                <div style={{ height: 8, background: "#e2e8f0", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${importProgress}%`, background: "#7c3aed", borderRadius: 99, transition: "width 200ms" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Result */}
+            {importResult && (
+              <div style={{ marginBottom: 20, padding: 16, borderRadius: 12, background: importResult.error ? "#fff1f2" : "#f0fdf4", border: `1px solid ${importResult.error ? "#fecdd3" : "#86efac"}` }}>
+                {importResult.error ? (
+                  <div style={{ color: "#dc2626", fontWeight: 700, fontSize: "0.83rem" }}>
+                    Import failed: {importResult.error}
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ color: "#16a34a", fontWeight: 800, fontSize: "0.9rem", marginBottom: 4 }}>
+                      ✓ Import complete
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "#166534" }}>
+                      {importResult.inserted_rows ?? importRows.length} rows stored in TMS · Reconciliation triggered automatically
+                    </div>
+                    {importResult.upload_id && (
+                      <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: 4 }}>
+                        Upload ID: {importResult.upload_id}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => { setImportOpen(false); setImportResult(null); }}
+                style={{ padding: "10px 20px", borderRadius: 10, background: "#f1f5f9", border: "none", fontWeight: 600, color: "#64748b", cursor: "pointer" }}>
+                {importResult && !importResult.error ? "Close" : "Cancel"}
+              </button>
+              {!importResult && (
+                <button onClick={runImport} disabled={importRunning}
+                  style={{ padding: "10px 24px", borderRadius: 10, background: importRunning ? "#c4b5fd" : "#7c3aed", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: importRunning ? "not-allowed" : "pointer" }}>
+                  {importRunning ? `Importing…` : `⬆ Import ${importRows.length} Rows to TMS`}
+                </button>
+              )}
+              {importResult && !importResult.error && (
+                <button onClick={() => { setImportOpen(false); setImportResult(null); setActiveTab("all"); }}
+                  style={{ padding: "10px 24px", borderRadius: 10, background: "#16a34a", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: "pointer" }}>
+                  View All Tickets →
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
