@@ -344,15 +344,18 @@ const DRIVER_IMPORT_MAP: Record<string, string[]> = {
   truck_number:             ["truck","truck #","truck number","unit","unit #","equipment","assigned truck","vehicle"],
   cdl_number:               ["cdl","cdl #","cdl number","license number","driver license","dl number"],
   cdl_state:                ["cdl state","license state","state","dl state"],
-  cdl_expiration:           ["cdl exp","cdl expiration","license expiration","license exp","dl expiration","cdl exp date"],
-  medical_card_expiration:  ["medical card","medical exp","med card exp","dot medical","physical exp","med card expiration"],
+  cdl_expiration:           ["cdl expir date","cdl exp","cdl expiration","license expiration","license exp","dl expiration","cdl exp date"],
+  medical_card_number:      ["medical card #","medical card number","med card #","dot medical #"],
+  medical_card_expiration:  ["medical card expir","medical card expiration","med card exp","medical exp","dot medical expiration","physical exp","med card expiration"],
+  job_assignment:           ["job assignment","assignment","project","account","work assignment"],
+  company_name:             ["company name","employer","trucking co"],
   mvr_expiration:           ["mvr","mvr exp","mvr expiration","motor vehicle record","mvr date"],
   drug_test_expiration:     ["drug test","drug test exp","drug screen","drug screen exp","drug test date"],
   background_check_status:  ["background","background check","bg check","background status","bg status"],
   hire_date:                ["hire date","start date","onboard date","date hired"],
   pay_rate:                 ["pay rate","driver rate","rate","hourly rate","ton rate","load rate","rate per hour"],
-  pay_type:                 ["pay type","compensation","pay method","hourly","per load","per ton","pay basis"],
-  owner_operator_company:   ["company","carrier","owner operator company","trucking company","carrier name"],
+  pay_type:                 ["pay type","compensation","pay method","per load","per ton","pay basis"],
+  owner_operator_company:   ["carrier","owner operator company","trucking company","carrier name","o/o company"],
   status:                   ["status","driver status","active","inactive","blocked","employment status"],
   notes:                    ["notes","comments","remarks","additional notes"],
 };
@@ -361,13 +364,32 @@ type ImportDriverRow = {
   _idx:          number;
   driver_name:   string; phone: string; email: string; driver_type: string;
   truck_number:  string; cdl_number: string; cdl_state: string;
-  cdl_expiration: string; medical_card_expiration: string; mvr_expiration: string;
-  drug_test_expiration: string; background_check_status: string;
+  cdl_expiration: string; medical_card_number: string; medical_card_expiration: string;
+  job_assignment: string; company_name: string;
+  mvr_expiration: string; drug_test_expiration: string; background_check_status: string;
   hire_date: string; pay_rate: string; pay_type: string;
   owner_operator_company: string; status: string; notes: string;
   _issues:       string[];
   _importStatus: "ready" | "needs_review" | "duplicate" | "skip";
   _duplicateName?: string;
+};
+
+type BackupDriverRow = {
+  id: string;
+  driver_name: string;
+  cdl_number: string | null;
+  cdl_expiration: string | null;
+  truck_number: string | null;
+  medical_card_number: string | null;
+  medical_card_expiration: string | null;
+  job_assignment: string | null;
+  company_name: string | null;
+  driver_status: string | null;
+  dispatch_eligible: boolean | null;
+  payroll_eligible: boolean | null;
+  compliance_flags: string[] | null;
+  last_updated: string | null;
+  notes: string | null;
 };
 
 function normalizeImportHeader(h: string): string {
@@ -520,7 +542,10 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
           cdl_number:               get("cdl_number"),
           cdl_state:                get("cdl_state"),
           cdl_expiration:           parseExpirationDate(getRaw("cdl_expiration")),
+          medical_card_number:      get("medical_card_number"),
           medical_card_expiration:  parseExpirationDate(getRaw("medical_card_expiration")),
+          job_assignment:           get("job_assignment"),
+          company_name:             get("company_name"),
           mvr_expiration:           parseExpirationDate(getRaw("mvr_expiration")),
           drug_test_expiration:     parseExpirationDate(getRaw("drug_test_expiration")),
           background_check_status:  get("background_check_status"),
@@ -889,6 +914,11 @@ export default function DriversPage() {
   const [assignTarget, setAssignTarget] = useState<{ driver: Driver | null } | null>(null);
   const [uploadTarget, setUploadTarget] = useState<{ driver?: Driver; docType?: string } | null>(null);
   const [importOpen, setImportOpen]     = useState(false);
+  const [activeTab, setActiveTab]       = useState<"roster" | "backup">("roster");
+  const [backupRows, setBackupRows]     = useState<BackupDriverRow[]>([]);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupSearch, setBackupSearch]   = useState("");
+  const [emailSending, setEmailSending]   = useState(false);
 
   function showToast(msg: string) { setToast(msg); }
 
@@ -899,6 +929,41 @@ export default function DriversPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  function loadBackupData() {
+    setBackupLoading(true);
+    fetch("/api/ronyx/drivers/backup")
+      .then(r => r.json())
+      .then(data => setBackupRows(data.drivers || []))
+      .catch(() => showToast("Could not load backup data. Apply migration 113 first."))
+      .finally(() => setBackupLoading(false));
+  }
+
+  useEffect(() => {
+    if (activeTab === "backup" && backupRows.length === 0 && !backupLoading) {
+      loadBackupData();
+    }
+  }, [activeTab]);
+
+  async function handleEmailBackup() {
+    setEmailSending(true);
+    try {
+      const res = await fetch("/api/ronyx/drivers/email-backup", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) showToast(`Backup email sent to ${data.sentTo} — ${data.driverCount} drivers.`);
+      else if (data.queued) showToast("SMTP not configured. Set GMAIL_USER + GMAIL_APP_PASSWORD.");
+      else showToast(data.error || "Email failed.");
+    } catch { showToast("Email failed — check server logs."); }
+    finally { setEmailSending(false); }
+  }
+
+  function handleExportBackup() {
+    const a = document.createElement("a");
+    a.href     = "/api/ronyx/drivers/export-backup";
+    a.download = `Ronyx_Driver_Backup_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    showToast("Downloading backup Excel…");
+  }
 
   function handleAssignSaved(driverId: string, truck: string) {
     setAllDrivers((prev) => prev.map((d) => d.id === driverId ? { ...d, truck: truck || "—" } : d));
@@ -974,6 +1039,181 @@ export default function DriversPage() {
         <div className="premium-kpi danger"><span>Compliance Issues</span><strong>{loading ? "…" : documentIssues}</strong><p>Expired or expiring docs</p></div>
       </section>
 
+      {/* ── Tab switcher ── */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e2e8f0", margin: "0 0 0 0", padding: "0 var(--page-gutter, 32px)" }}>
+        {(["roster", "backup"] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: "11px 24px",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              border: "none",
+              borderBottom: activeTab === tab ? "2.5px solid #1d4ed8" : "2.5px solid transparent",
+              background: "none",
+              color: activeTab === tab ? "#1d4ed8" : "#64748b",
+              cursor: "pointer",
+              letterSpacing: "0.02em",
+              marginBottom: -2,
+            }}
+          >
+            {tab === "roster" ? "Driver Roster" : "Backup Data"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Backup Data tab ── */}
+      {activeTab === "backup" && (
+        <section style={{ padding: "24px var(--page-gutter, 32px)" }}>
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+            <button
+              onClick={() => setImportOpen(true)}
+              style={{ padding: "9px 18px", borderRadius: 10, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
+            >
+              ⬆ Upload Driver Sheet
+            </button>
+            <button
+              onClick={() => { setImportOpen(true); showToast("Upload a file to begin validation."); }}
+              style={{ padding: "9px 18px", borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0", color: "#1d4ed8", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
+            >
+              ✓ Validate Rows
+            </button>
+            <button
+              onClick={() => setImportOpen(true)}
+              style={{ padding: "9px 18px", borderRadius: 10, background: "#0f172a", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
+            >
+              Import / Update Drivers
+            </button>
+            <button
+              onClick={handleExportBackup}
+              style={{ padding: "9px 18px", borderRadius: 10, background: "#15803d", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
+            >
+              ↓ Export Backup Excel
+            </button>
+            <button
+              onClick={handleEmailBackup}
+              disabled={emailSending}
+              style={{ padding: "9px 18px", borderRadius: 10, background: emailSending ? "#93c5fd" : "#7c3aed", color: "#fff", border: "none", fontWeight: 700, cursor: emailSending ? "not-allowed" : "pointer", fontSize: "0.82rem" }}
+            >
+              {emailSending ? "Sending…" : "✉ Email Owner Update"}
+            </button>
+            <button
+              onClick={() => {
+                const errors = backupRows.filter(r =>
+                  !r.cdl_number || !r.medical_card_number || !r.cdl_expiration || !r.medical_card_expiration
+                );
+                if (!errors.length) { showToast("No missing-field errors to export."); return; }
+                const hdr = ["Driver Name","CDL #","CDL Expiration","Medical Card #","Medical Card Exp","Truck #","Status","Missing Fields"];
+                const csv = [hdr, ...errors.map(r => [
+                  r.driver_name, r.cdl_number || "", fmtDate(r.cdl_expiration || ""),
+                  r.medical_card_number || "", fmtDate(r.medical_card_expiration || ""),
+                  r.truck_number || "", r.driver_status || "",
+                  [!r.cdl_number?"CDL #":null, !r.cdl_expiration?"CDL Exp":null, !r.medical_card_number?"Med Card #":null, !r.medical_card_expiration?"Med Card Exp":null].filter(Boolean).join("; "),
+                ])].map(row => row.map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+                a.download = `ronyx-backup-errors-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                showToast(`Downloaded ${errors.length} error rows.`);
+              }}
+              style={{ padding: "9px 18px", borderRadius: 10, background: "#fff", border: "1px solid #fecdd3", color: "#dc2626", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
+            >
+              ↓ Download Error Report
+            </button>
+            <button onClick={loadBackupData} style={{ padding: "9px 14px", borderRadius: 10, background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 600, cursor: "pointer", fontSize: "0.82rem" }}>
+              ↺ Refresh
+            </button>
+          </div>
+
+          {/* Backup table */}
+          <div className="premium-panel" style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div>
+                <p className="premium-eyebrow" style={{ margin: 0 }}>Driver Backup Data</p>
+                <h2 style={{ margin: "2px 0 0", fontSize: "1rem" }}>Ronyx CDL / Medical Card Record</h2>
+              </div>
+              <input
+                value={backupSearch}
+                onChange={e => setBackupSearch(e.target.value)}
+                placeholder="Search drivers…"
+                style={{ marginLeft: "auto", padding: "7px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.82rem", outline: "none", width: 220 }}
+              />
+              <span style={{ fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap" }}>{backupRows.length} drivers</span>
+            </div>
+
+            {backupLoading ? (
+              <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>Loading backup data…</div>
+            ) : backupRows.length === 0 ? (
+              <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
+                No driver records found. Apply migration 113 and import a driver list to populate this view.
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                      {["Driver Name","CDL #","CDL Exp","Truck #","Med Card #","Med Card Exp","Job Assignment","Company","Status","Dispatch","Payroll","Compliance","Last Updated","Notes"].map(h => (
+                        <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {backupRows
+                      .filter(r => !backupSearch || (r.driver_name || "").toLowerCase().includes(backupSearch.toLowerCase()) || (r.cdl_number || "").toLowerCase().includes(backupSearch.toLowerCase()) || (r.truck_number || "").toLowerCase().includes(backupSearch.toLowerCase()))
+                      .map((r, i) => {
+                        const cdlDate  = r.cdl_expiration          ? new Date(r.cdl_expiration)          : null;
+                        const medDate  = r.medical_card_expiration ? new Date(r.medical_card_expiration) : null;
+                        const now      = Date.now();
+                        const cdlColor = !r.cdl_expiration ? "#f59e0b" : cdlDate && cdlDate.getTime() < now ? "#dc2626" : cdlDate && (cdlDate.getTime() - now) < 30*86400000 ? "#d97706" : "#15803d";
+                        const medColor = !r.medical_card_expiration ? "#f59e0b" : medDate && medDate.getTime() < now ? "#dc2626" : medDate && (medDate.getTime() - now) < 30*86400000 ? "#d97706" : "#15803d";
+                        const missingCount = [!r.cdl_number, !r.cdl_expiration, !r.medical_card_number, !r.medical_card_expiration].filter(Boolean).length;
+                        return (
+                          <tr key={r.id} style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap" }}>{r.driver_name || "—"}</td>
+                            <td style={{ padding: "8px 12px", fontFamily: "monospace", color: r.cdl_number ? "#0f172a" : "#dc2626" }}>{r.cdl_number || <span style={{ color: "#dc2626", fontWeight: 700 }}>MISSING</span>}</td>
+                            <td style={{ padding: "8px 12px", color: cdlColor, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(r.cdl_expiration || "") || <span style={{ color: "#f59e0b" }}>—</span>}</td>
+                            <td style={{ padding: "8px 12px", color: "#475569" }}>{r.truck_number || "—"}</td>
+                            <td style={{ padding: "8px 12px", fontFamily: "monospace", color: r.medical_card_number ? "#0f172a" : "#dc2626" }}>{r.medical_card_number || <span style={{ color: "#dc2626", fontWeight: 700 }}>MISSING</span>}</td>
+                            <td style={{ padding: "8px 12px", color: medColor, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtDate(r.medical_card_expiration || "") || <span style={{ color: "#f59e0b" }}>—</span>}</td>
+                            <td style={{ padding: "8px 12px", color: "#475569" }}>{r.job_assignment || "—"}</td>
+                            <td style={{ padding: "8px 12px", color: "#475569" }}>{r.company_name || "—"}</td>
+                            <td style={{ padding: "8px 12px" }}>
+                              <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: "0.68rem", fontWeight: 700, background: r.driver_status === "active" ? "#dcfce7" : r.driver_status === "pending_review" ? "#fef3c7" : "#f1f5f9", color: r.driver_status === "active" ? "#15803d" : r.driver_status === "pending_review" ? "#92400e" : "#64748b" }}>
+                                {r.driver_status || "—"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: r.dispatch_eligible ? "#15803d" : "#dc2626" }}>{r.dispatch_eligible ? "Yes" : "No"}</span>
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: r.payroll_eligible ? "#15803d" : "#dc2626" }}>{r.payroll_eligible ? "Yes" : "No"}</span>
+                            </td>
+                            <td style={{ padding: "8px 12px" }}>
+                              {missingCount > 0 && (
+                                <span style={{ padding: "2px 7px", borderRadius: 6, background: "#fef3c7", color: "#92400e", fontSize: "0.68rem", fontWeight: 700, marginRight: 4 }}>{missingCount} missing</span>
+                              )}
+                              {r.compliance_flags && r.compliance_flags.length > 0 ? (
+                                <span style={{ fontSize: "0.68rem", color: "#dc2626" }}>{r.compliance_flags.slice(0,2).join(", ")}{r.compliance_flags.length > 2 ? ` +${r.compliance_flags.length - 2}` : ""}</span>
+                              ) : missingCount === 0 ? (
+                                <span style={{ color: "#15803d", fontSize: "0.68rem", fontWeight: 700 }}>✓ OK</span>
+                              ) : null}
+                            </td>
+                            <td style={{ padding: "8px 12px", color: "#94a3b8", whiteSpace: "nowrap" }}>{fmtDate(r.last_updated || "") || "—"}</td>
+                            <td style={{ padding: "8px 12px", color: "#64748b", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "roster" && (
       <section className="premium-layout">
         <div className="premium-main-column">
 
@@ -1170,6 +1410,7 @@ export default function DriversPage() {
           )}
         </aside>
       </section>
+      )}
 
       {/* ── Modals ── */}
       {importOpen && (

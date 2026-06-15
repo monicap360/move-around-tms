@@ -12,7 +12,10 @@ type DriverRow = {
   cdl_number:              string;
   cdl_state:               string;
   cdl_expiration:          string;
+  medical_card_number:     string;
   medical_card_expiration: string;
+  job_assignment:          string;
+  company_name:            string;
   mvr_expiration:          string;
   drug_test_expiration:    string;
   background_check_status: string;
@@ -98,7 +101,10 @@ export async function POST(req: NextRequest) {
         license_number:          row.cdl_number   || null,
         license_state:           row.cdl_state    || null,
         license_expiration_date: toDateOrNull(row.cdl_expiration),
+        medical_card_number:     row.medical_card_number     || null,
         medical_card_expiration: toDateOrNull(row.medical_card_expiration),
+        job_assignment:          row.job_assignment          || null,
+        company_name:            row.company_name            || null,
         mvr_expiration:          toDateOrNull(row.mvr_expiration),
         drug_test_expiration:    toDateOrNull(row.drug_test_expiration),
         background_check_status: row.background_check_status || null,
@@ -178,14 +184,24 @@ export async function POST(req: NextRequest) {
 
   // Finalize batch record
   if (batchId) {
+    const now = new Date();
+    const missing_cdl_count     = rows.filter(r => r._issues?.includes("MISSING_CDL_EXPIRATION")).length;
+    const missing_medical_count = rows.filter(r => r._issues?.includes("MISSING_MEDICAL_CARD")).length;
+    const expired_cdl_count     = rows.filter(r => r._issues?.includes("CDL_EXPIRED")).length;
+    const expired_medical_count = rows.filter(r => r._issues?.includes("MEDICAL_CARD_EXPIRED")).length;
+
     await supabase.from("driver_import_batches").update({
-      imported_count:     imported,
-      updated_count:      updated,
-      failed_count:       failed,
-      needs_review_count: rows.filter(r => r._importStatus === "needs_review").length,
-      duplicate_count:    rows.filter(r => r._importStatus === "duplicate").length,
-      status:             "completed",
-      completed_at:       new Date().toISOString(),
+      imported_count:      imported,
+      updated_count:       updated,
+      failed_count:        failed,
+      needs_review_count:  rows.filter(r => r._importStatus === "needs_review").length,
+      duplicate_count:     rows.filter(r => r._importStatus === "duplicate").length,
+      missing_cdl_count,
+      missing_medical_count,
+      expired_cdl_count,
+      expired_medical_count,
+      status:              "completed",
+      completed_at:        now.toISOString(),
     }).eq("id", batchId);
 
     await supabase.from("ticket_audit_log").insert({
