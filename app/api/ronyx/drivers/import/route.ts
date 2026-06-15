@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   // Resolve user + org from active session
   const { data: { session } } = await supabase.auth.getSession();
   const userId    = session?.user?.id   ?? null;
-  const userEmail = session?.user?.email ?? body.uploaded_by_email ?? "System Import";
+  const userEmail = session?.user?.email ?? body.uploaded_by_email ?? null;
 
   let orgId: string | null = null;
   if (userId) {
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         import_batch_id:         batchId,
         compliance_flags:        row._issues?.length > 0 ? row._issues : null,
         organization_id:         orgId,
-        updated_by:              userEmail,
+        updated_by:              userEmail || null,
       };
 
       if (isDup && dupAction === "update") {
