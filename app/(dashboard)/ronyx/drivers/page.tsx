@@ -378,17 +378,25 @@ function normalizeImportHeader(h: string): string {
   return lower.replace(/[^a-z0-9]/g, "_");
 }
 
-function parseExpirationDate(raw: string): string {
-  if (!raw) return "";
-  // Handle Excel serial number
+function parseExpirationDate(raw: string | Date | number): string {
+  if (!raw && raw !== 0) return "";
+  // cellDates:true returns a JS Date object directly
+  if (raw instanceof Date) {
+    if (isNaN(raw.getTime())) return "";
+    return raw.toISOString().slice(0, 10);
+  }
+  // Excel serial number (e.g. 45678)
   const n = Number(raw);
-  if (!isNaN(n) && n > 40000) {
+  if (!isNaN(n) && n > 40000 && n < 100000) {
     const d = new Date((n - 25569) * 86400000);
     return d.toISOString().slice(0, 10);
   }
-  const d = new Date(raw);
+  // String date
+  const str = String(raw).trim();
+  if (!str) return "";
+  const d = new Date(str);
   if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-  return raw;
+  return str;
 }
 
 function buildDriverIssues(row: ImportDriverRow, existing: Driver[]): { issues: string[]; status: ImportDriverRow["_importStatus"]; dupName?: string } {
@@ -454,70 +462,113 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
 
   const parseFile = useCallback((file: File) => {
     setFileName(file.name);
-    if (file.name.toLowerCase().endsWith(".pdf")) {
+    const nameLower = file.name.toLowerCase();
+
+    if (nameLower.endsWith(".pdf")) {
       setIsPdf(true);
       setStep("preview");
       setRows([]);
       return;
     }
     setIsPdf(false);
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const wb = XLSX.read(e.target?.result, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-        if (raw.length < 2) { showToast("Sheet appears empty."); return; }
 
-        const headers = (raw[0] as any[]).map((h: any) => String(h));
-        const normHeaders = headers.map(normalizeImportHeader);
+    function processWorkbook(wb: XLSX.WorkBook) {
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      if (raw.length < 2) { showToast("File appears empty — no data rows found."); return; }
 
-        const parsed: ImportDriverRow[] = [];
-        for (let i = 1; i < raw.length; i++) {
-          const row = raw[i] as any[];
-          if (row.every((c: any) => c === "" || c == null)) continue;
+      const headers = (raw[0] as any[]).map((h: any) => String(h ?? ""));
+      const normHeaders = headers.map(normalizeImportHeader);
 
-          const get = (field: string) => {
-            const idx = normHeaders.indexOf(field);
-            return idx >= 0 ? String(row[idx] ?? "").trim() : "";
-          };
+      const parsed: ImportDriverRow[] = [];
+      for (let i = 1; i < raw.length; i++) {
+        const row = raw[i] as any[];
+        if (row.every((c: any) => c === "" || c == null)) continue;
 
-          const r: ImportDriverRow = {
-            _idx: i,
-            driver_name:              get("driver_name"),
-            phone:                    get("phone"),
-            email:                    get("email"),
-            driver_type:              get("driver_type"),
-            truck_number:             get("truck_number"),
-            cdl_number:               get("cdl_number"),
-            cdl_state:                get("cdl_state"),
-            cdl_expiration:           parseExpirationDate(get("cdl_expiration")),
-            medical_card_expiration:  parseExpirationDate(get("medical_card_expiration")),
-            mvr_expiration:           parseExpirationDate(get("mvr_expiration")),
-            drug_test_expiration:     parseExpirationDate(get("drug_test_expiration")),
-            background_check_status:  get("background_check_status"),
-            hire_date:                parseExpirationDate(get("hire_date")),
-            pay_rate:                 get("pay_rate"),
-            pay_type:                 get("pay_type"),
-            owner_operator_company:   get("owner_operator_company"),
-            status:                   get("status") || "pending_review",
-            notes:                    get("notes"),
-            _issues: [], _importStatus: "ready",
-          };
+        const get = (field: string): string => {
+          const idx = normHeaders.indexOf(field);
+          if (idx < 0) return "";
+          const val = row[idx];
+          if (val == null) return "";
+          return String(val).trim();
+        };
+        const getRaw = (field: string): string | Date | number => {
+          const idx = normHeaders.indexOf(field);
+          if (idx < 0) return "";
+          return row[idx] ?? "";
+        };
 
-          const { issues, status, dupName } = buildDriverIssues(r, existingDrivers);
-          r._issues = issues;
-          r._importStatus = status;
-          if (dupName) r._duplicateName = dupName;
-          parsed.push(r);
-        }
-        setRows(parsed);
-        setStep("preview");
-      } catch {
-        showToast("Failed to parse file — check format and try again.");
+        const r: ImportDriverRow = {
+          _idx: i,
+          driver_name:              get("driver_name"),
+          phone:                    get("phone"),
+          email:                    get("email"),
+          driver_type:              get("driver_type"),
+          truck_number:             get("truck_number"),
+          cdl_number:               get("cdl_number"),
+          cdl_state:                get("cdl_state"),
+          cdl_expiration:           parseExpirationDate(getRaw("cdl_expiration")),
+          medical_card_expiration:  parseExpirationDate(getRaw("medical_card_expiration")),
+          mvr_expiration:           parseExpirationDate(getRaw("mvr_expiration")),
+          drug_test_expiration:     parseExpirationDate(getRaw("drug_test_expiration")),
+          background_check_status:  get("background_check_status"),
+          hire_date:                parseExpirationDate(getRaw("hire_date")),
+          pay_rate:                 get("pay_rate"),
+          pay_type:                 get("pay_type"),
+          owner_operator_company:   get("owner_operator_company"),
+          status:                   get("status") || "pending_review",
+          notes:                    get("notes"),
+          _issues: [], _importStatus: "ready",
+        };
+
+        const { issues, status: importStatus, dupName } = buildDriverIssues(r, existingDrivers);
+        r._issues = issues;
+        r._importStatus = importStatus;
+        if (dupName) r._duplicateName = dupName;
+        parsed.push(r);
       }
-    };
-    reader.readAsArrayBuffer(file);
+
+      if (parsed.length === 0) {
+        showToast("No driver rows found — check that the file has data below the header row.");
+        return;
+      }
+      setRows(parsed);
+      setStep("preview");
+    }
+
+    const reader = new FileReader();
+
+    if (nameLower.endsWith(".csv")) {
+      // CSV: read as text, parse with XLSX string mode
+      reader.onload = e => {
+        try {
+          const text = e.target?.result as string;
+          if (!text) { showToast("Could not read CSV file."); return; }
+          const wb = XLSX.read(text, { type: "string" });
+          processWorkbook(wb);
+        } catch (err) {
+          console.error("CSV parse error:", err);
+          showToast(`CSV parse error: ${err instanceof Error ? err.message : "check file format"}`);
+        }
+      };
+      reader.onerror = () => showToast("Could not read CSV file.");
+      reader.readAsText(file);
+    } else {
+      // XLS / XLSX: read as ArrayBuffer
+      reader.onload = e => {
+        try {
+          const data = e.target?.result;
+          if (!data) { showToast("Could not read Excel file."); return; }
+          const wb = XLSX.read(data, { type: "array", cellDates: true });
+          processWorkbook(wb);
+        } catch (err) {
+          console.error("Excel parse error:", err);
+          showToast(`Excel parse error: ${err instanceof Error ? err.message : "check file format"}`);
+        }
+      };
+      reader.onerror = () => showToast("Could not read Excel file.");
+      reader.readAsArrayBuffer(file);
+    }
   }, [existingDrivers, showToast]);
 
   const submitImport = useCallback(async () => {
