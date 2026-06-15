@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TicketStatus = "Scanned" | "Needs Review" | "Matched" | "Approved" | "Sent to Payroll" | "Sent to Billing" | "Paid" | "Archived";
@@ -325,50 +326,116 @@ export default function TicketsPage() {
     } catch (e: any) { showToast(`Upload failed: ${e?.message || "check connection"}`); }
   }, [loadTickets, showToast]);
 
-  const processExcel = useCallback((fileName: string) => {
-    setExcelFileName(fileName);
-    // Build reconcile rows from current tickets that have mismatches
-    const rows: ReconcileRow[] = activeTickets.slice(0, 12).flatMap((t, i) => {
-      const out: ReconcileRow[] = [];
-      // Simulate tonnage mismatch on odd rows
-      if (i % 3 === 0 && t.tons > 0) {
-        const excelTons = (t.tons * 0.97).toFixed(2);
-        out.push({ id: `${t.id}-tons`, ticketNo: t.ticketNo, date: t.ticketDate, driver: t.driver, truck: t.truck, material: t.material,
-          field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: excelTons, scannedValue: t.tons.toFixed(2),
-          invoiceValue: t.tons.toFixed(2), suggestedValue: t.tons.toFixed(2), confidence: 94,
-          status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" });
+  // Column name aliases so xlsx files with varied headers still work
+  const COL_ALIASES: Record<string, string[]> = {
+    ticket_number: ["ticket #","ticket#","ticket number","ticket no","tkt#","tkt no"],
+    date:          ["date","ticket date","load date","trip date"],
+    driver:        ["driver","driver name","driver_name","operator"],
+    truck:         ["truck","truck #","truck#","unit","unit #","vehicle"],
+    material:      ["material","material type","product","commodity"],
+    tons:          ["tons","net tons","net wt","qty","quantity","loads","weight"],
+    rate:          ["rate","rate/ton","$/ton","unit price","pay rate"],
+    amount:        ["amount","total","total amount","gross","billing"],
+    pit:           ["pit","yard","quarry","location","pit/yard","origin"],
+    customer:      ["customer","client","bill to","account"],
+    job:           ["job","project","job #","project #","po","po#","po number"],
+  };
+
+  const normalizeHeader = useCallback((h: string): string => {
+    const lower = h.trim().toLowerCase();
+    for (const [key, aliases] of Object.entries(COL_ALIASES)) {
+      if (aliases.some(a => lower.includes(a))) return key;
+    }
+    return lower.replace(/[^a-z0-9]/g, "_");
+  }, []);
+
+  const processExcelFile = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (raw.length < 2) { showToast("Sheet appears empty — check the file and try again."); return; }
+
+        // Map header row
+        const headerRow = (raw[0] as any[]).map((h: any) => normalizeHeader(String(h)));
+        const col = (name: string) => headerRow.indexOf(name);
+
+        const rows: ReconcileRow[] = [];
+
+        for (let i = 1; i < raw.length; i++) {
+          const row = raw[i] as any[];
+          if (row.every(c => c === "" || c == null)) continue; // skip blank rows
+
+          const excelTicketNo = String(row[col("ticket_number")] ?? "").trim();
+          const excelTons     = parseFloat(String(row[col("tons")]   ?? "0").replace(/[^0-9.]/g, "")) || 0;
+          const excelRate     = parseFloat(String(row[col("rate")]   ?? "0").replace(/[^0-9.]/g, "")) || 0;
+          const excelPit      = String(row[col("pit")]      ?? "").trim();
+          const excelDriver   = String(row[col("driver")]   ?? "").trim();
+          const excelTruck    = String(row[col("truck")]    ?? "").trim();
+          const excelMaterial = String(row[col("material")] ?? "").trim();
+          const excelDate     = String(row[col("date")]     ?? "").trim();
+
+          // Try to match against a scanned ticket
+          const liveTickets = tickets.filter(t => !t.voided);
+          const matched = liveTickets.find(t =>
+            (excelTicketNo && t.ticketNo === excelTicketNo) ||
+            (excelDriver && excelTruck && t.driver.toLowerCase().includes(excelDriver.toLowerCase()) && t.truck === excelTruck)
+          );
+
+          const rowBase = {
+            ticketNo: excelTicketNo || matched?.ticketNo || `Row ${i}`,
+            date: excelDate || matched?.ticketDate || "—",
+            driver: excelDriver || matched?.driver || "—",
+            truck: excelTruck || matched?.truck || "—",
+            material: excelMaterial || matched?.material || "—",
+            status: "pending" as const,
+            correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "",
+          };
+
+          if (matched) {
+            // Tonnage mismatch
+            if (excelTons > 0 && Math.abs(excelTons - matched.tons) > 0.05) {
+              rows.push({ ...rowBase, id: `${i}-tons`, field: "Net Tons", errorType: "TONNAGE_MISMATCH",
+                excelValue: excelTons.toFixed(2), scannedValue: matched.tons.toFixed(2),
+                invoiceValue: matched.tons.toFixed(2), suggestedValue: matched.tons.toFixed(2),
+                confidence: Math.round(90 - Math.abs(excelTons - matched.tons) * 5) });
+            }
+            // Rate mismatch
+            if (excelRate > 0 && Math.abs(excelRate - matched.rate) > 0.01) {
+              rows.push({ ...rowBase, id: `${i}-rate`, field: "Rate ($/ton)", errorType: "RATE_MISMATCH",
+                excelValue: `$${excelRate.toFixed(2)}`, scannedValue: `$${matched.rate.toFixed(2)}`,
+                invoiceValue: `$${matched.rate.toFixed(2)}`, suggestedValue: `$${matched.rate.toFixed(2)}`,
+                confidence: 88 });
+            }
+            // Pit mismatch
+            if (excelPit && matched.pitName !== "—" && !matched.pitName.toLowerCase().includes(excelPit.toLowerCase()) && !excelPit.toLowerCase().includes(matched.pitName.toLowerCase())) {
+              rows.push({ ...rowBase, id: `${i}-pit`, field: "Pit / Yard", errorType: "PIT_MISMATCH",
+                excelValue: excelPit, scannedValue: matched.pitName,
+                invoiceValue: matched.pitName, suggestedValue: matched.pitName,
+                confidence: 75 });
+            }
+          } else if (excelTicketNo) {
+            // No matching scanned ticket
+            rows.push({ ...rowBase, id: `${i}-missing`, field: "Ticket Match", errorType: "MISSING_TICKET",
+              excelValue: excelTicketNo, scannedValue: "Not found in Fast Scan",
+              invoiceValue: "—", suggestedValue: "Scan ticket or enter manually",
+              confidence: 0 });
+          }
+        }
+
+        setExcelFileName(file.name);
+        setReconRows(rows.length > 0 ? rows : []);
+        setReconProcessed(true);
+        showToast(`${file.name} parsed — ${raw.length - 1} rows, ${rows.length} mismatches found`);
+      } catch (err: any) {
+        showToast(`Failed to parse file: ${err?.message || "check format"}`);
       }
-      // Simulate rate mismatch on every 4th row
-      if (i % 4 === 1 && t.rate > 0) {
-        const excelRate = (t.rate - 0.75).toFixed(2);
-        out.push({ id: `${t.id}-rate`, ticketNo: t.ticketNo, date: t.ticketDate, driver: t.driver, truck: t.truck, material: t.material,
-          field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: `$${excelRate}`, scannedValue: `$${t.rate.toFixed(2)}`,
-          invoiceValue: `$${t.rate.toFixed(2)}`, suggestedValue: `$${t.rate.toFixed(2)}`, confidence: 88,
-          status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" });
-      }
-      // Missing pit name
-      if (i % 5 === 2 && t.pitName === "—") {
-        out.push({ id: `${t.id}-pit`, ticketNo: t.ticketNo, date: t.ticketDate, driver: t.driver, truck: t.truck, material: t.material,
-          field: "Pit / Yard", errorType: "MISSING_PIT", excelValue: "", scannedValue: "—",
-          invoiceValue: "South Post Oak", suggestedValue: "South Post Oak Yard", confidence: 76,
-          status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" });
-      }
-      return out;
-    });
-    setReconRows(rows.length > 0 ? rows : [
-      { id: "demo-1", ticketNo: "123456", date: "Jun 14, 2026", driver: "Jose Martinez", truck: "104", material: "Limestone Base",
-        field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: "23.80", scannedValue: "24.56", invoiceValue: "24.56",
-        suggestedValue: "24.56", confidence: 97, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
-      { id: "demo-2", ticketNo: "123457", date: "Jun 14, 2026", driver: "Carlos Ruiz", truck: "107", material: "Limestone Base",
-        field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: "$17.75", scannedValue: "$18.50", invoiceValue: "$18.50",
-        suggestedValue: "$18.50", confidence: 91, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
-      { id: "demo-3", ticketNo: "123458", date: "Jun 14, 2026", driver: "Miguel Torres", truck: "112", material: "Sand",
-        field: "Pit / Yard", errorType: "PIT_MISMATCH", excelValue: "Garwood", scannedValue: "Garwood Sand", invoiceValue: "Garwood Sand & Gravel",
-        suggestedValue: "Garwood Sand & Gravel", confidence: 82, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
-    ]);
-    setReconProcessed(true);
-    showToast(`${fileName} uploaded — ${rows.length || 3} mismatches found`);
-  }, [activeTickets, showToast]);
+    };
+    reader.readAsArrayBuffer(file);
+  }, [tickets, normalizeHeader, showToast]);
 
   const applyCorrection = useCallback((rowId: string, source: "scan" | "invoice" | "suggested" | "keep" | "flag", customValue?: string) => {
     setReconRows(prev => prev.map(r => {
@@ -386,21 +453,41 @@ export default function TicketsPage() {
 
   const downloadCorrectedExcel = useCallback(() => {
     const resolved = reconRows.filter(r => r.status !== "pending");
-    const pending = reconRows.filter(r => r.status === "pending" || r.status === "flagged");
-    const headers = ["Ticket #","Date","Driver","Truck","Material","Field","Error Type","Original Excel Value","Corrected Value","Correction Source","Correction Note","Updated By","Updated At","Reconciliation Status"];
-    const rows = reconRows.map(r => [
+    const pending  = reconRows.filter(r => r.status === "pending" || r.status === "flagged");
+    const headers  = ["Ticket #","Date","Driver","Truck","Material","Field","Error Type","Original Excel Value","Corrected Value","Correction Source","Correction Note","Updated By","Updated At","Reconciliation Status"];
+    const dataRows = reconRows.map(r => [
       r.ticketNo, r.date, r.driver, r.truck, r.material, r.field, r.errorType,
-      r.excelValue, r.status === "pending" || r.status === "flagged" ? r.suggestedValue : r.correctedValue,
+      r.excelValue,
+      (r.status === "pending" || r.status === "flagged") ? r.suggestedValue : r.correctedValue,
       r.correctionSource || "Pending", r.correctionNote || "",
       r.correctedBy || "", r.correctedAt || "", r.status.toUpperCase(),
     ]);
-    const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
-    a.download = `Ronyx_Corrected_Reconciliation_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-    showToast(`Downloaded corrected reconciliation — ${resolved.length} corrections, ${pending.length} unresolved`);
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+
+    // Column widths
+    ws["!cols"] = [10,12,18,10,16,14,18,20,20,18,40,14,20,18].map(w => ({ wch: w }));
+
+    // Color corrected cells green, flagged yellow, errors red, overrides blue
+    dataRows.forEach((row, ri) => {
+      const status = reconRows[ri]?.status;
+      const statusCell = XLSX.utils.encode_cell({ r: ri + 1, c: 13 });
+      const corrCell   = XLSX.utils.encode_cell({ r: ri + 1, c: 8  });
+      const fill =
+        status === "corrected"  ? { fgColor: { rgb: "C6EFCE" } } :
+        status === "overridden" ? { fgColor: { rgb: "BDD7EE" } } :
+        status === "flagged"    ? { fgColor: { rgb: "FFEB9C" } } :
+        status === "kept"       ? { fgColor: { rgb: "D9D9D9" } } :
+                                  { fgColor: { rgb: "FFC7CE" } };
+      if (ws[statusCell]) ws[statusCell].s = { fill };
+      if (ws[corrCell])   ws[corrCell].s   = { fill };
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, "Corrected Reconciliation");
+    const date = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Ronyx_Corrected_Reconciliation_${date}.xlsx`);
+    showToast(`Downloaded .xlsx — ${resolved.length} corrections, ${pending.length} unresolved`);
   }, [reconRows, showToast]);
 
   const submitScan = useCallback(async () => {
@@ -458,7 +545,7 @@ export default function TicketsPage() {
       <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => handleFiles(e.target.files)} />
       <input ref={batchInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => { handleFiles(e.target.files); setActiveTab("all"); }} />
       <input ref={invoiceFileRef} type="file" accept=".pdf,image/*" style={{ display: "none" }} onChange={() => showToast("Invoice uploaded — processing OCR…")} />
-      <input ref={excelFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={() => showToast("Spreadsheet uploaded — parsing rows…")} />
+      <input ref={excelFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processExcelFile(f); e.target.value = ""; }} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <section style={{ background: "#0f172a", borderRadius: 16, padding: "28px 32px", marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
@@ -933,15 +1020,33 @@ export default function TicketsPage() {
                       { label: "Upload Payroll Sheet",  sub: "Driver pay records" },
                       { label: "Upload Dispatch Sheet", sub: "Match dispatch to tickets" },
                     ].map(b => (
-                      <button key={b.label} onClick={() => { const inp = excelFileRef.current; if (inp) { inp.onchange = () => { const f = inp.files?.[0]; if (f) processExcel(f.name); }; inp.click(); } }}
+                      <button key={b.label} onClick={() => { const inp = excelFileRef.current; if (inp) { inp.onchange = () => { const f = inp.files?.[0]; if (f) processExcelFile(f); }; inp.click(); } }}
                         style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1e40af", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
                         {b.label}<div style={{ fontSize: "0.65rem", color: "#94a3b8", fontWeight: 400, marginTop: 2 }}>{b.sub}</div>
                       </button>
                     ))}
                   </div>
                 </div>
-                <button onClick={() => processExcel("Ronyx_Weekly_Tickets.xlsx")} style={{ padding: "12px 0", borderRadius: 10, background: "#0f172a", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: "pointer" }}>
-                  Demo: Run Cross-Check Against Current Tickets →
+                <button onClick={() => {
+                  // Demo mode: generate sample mismatches from scanned tickets
+                  const demoRows: ReconcileRow[] = activeTickets.slice(0, 8).flatMap((t, i) => {
+                    const out: ReconcileRow[] = [];
+                    const base = { ticketNo: t.ticketNo, date: t.ticketDate, driver: t.driver, truck: t.truck, material: t.material, status: "pending" as const, correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" };
+                    if (i % 3 === 0 && t.tons > 0) out.push({ ...base, id: `demo-${i}-tons`, field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: (t.tons * 0.97).toFixed(2), scannedValue: t.tons.toFixed(2), invoiceValue: t.tons.toFixed(2), suggestedValue: t.tons.toFixed(2), confidence: 95 });
+                    if (i % 4 === 1 && t.rate > 0) out.push({ ...base, id: `demo-${i}-rate`, field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: `$${(t.rate - 0.75).toFixed(2)}`, scannedValue: `$${t.rate.toFixed(2)}`, invoiceValue: `$${t.rate.toFixed(2)}`, suggestedValue: `$${t.rate.toFixed(2)}`, confidence: 89 });
+                    return out;
+                  });
+                  const fallback: ReconcileRow[] = [
+                    { id: "demo-1", ticketNo: "123456", date: "Jun 14, 2026", driver: "Jose Martinez", truck: "104", material: "Limestone Base", field: "Net Tons", errorType: "TONNAGE_MISMATCH", excelValue: "23.80", scannedValue: "24.56", invoiceValue: "24.56", suggestedValue: "24.56", confidence: 97, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
+                    { id: "demo-2", ticketNo: "123457", date: "Jun 14, 2026", driver: "Carlos Ruiz", truck: "107", material: "Limestone Base", field: "Rate ($/ton)", errorType: "RATE_MISMATCH", excelValue: "$17.75", scannedValue: "$18.50", invoiceValue: "$18.50", suggestedValue: "$18.50", confidence: 91, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
+                    { id: "demo-3", ticketNo: "123458", date: "Jun 14, 2026", driver: "Miguel Torres", truck: "112", material: "Sand", field: "Pit / Yard", errorType: "PIT_MISMATCH", excelValue: "Garwood", scannedValue: "Garwood Sand", invoiceValue: "Garwood Sand & Gravel", suggestedValue: "Garwood Sand & Gravel", confidence: 82, status: "pending", correctionSource: "", correctionNote: "", correctedValue: "", correctedBy: "", correctedAt: "" },
+                  ];
+                  setReconRows(demoRows.length > 0 ? demoRows : fallback);
+                  setExcelFileName("Demo_Ronyx_Weekly_Tickets.xlsx");
+                  setReconProcessed(true);
+                  showToast(`Demo loaded — ${demoRows.length || 3} sample mismatches`);
+                }} style={{ padding: "12px 0", borderRadius: 10, background: "#0f172a", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: "pointer" }}>
+                  Demo: Simulate Cross-Check Without Uploading →
                 </button>
               </div>
               <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 22 }}>
