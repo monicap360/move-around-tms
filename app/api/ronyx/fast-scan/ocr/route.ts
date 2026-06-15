@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -104,9 +105,14 @@ export async function POST(req: NextRequest) {
       exception_flags:       exception_flags.length > 0 ? exception_flags : null,
     };
 
+    // Auto-generate QR token
+    const qrToken = randomBytes(20).toString("hex");
+    const appUrl  = process.env.NEXT_PUBLIC_APP_URL || "https://ronyx.movearoundtms.app";
+    const qrUrl   = `${appUrl}/ronyx/scan?t=${qrToken}`;
+
     const { data: ticket, error } = await supabase
       .from("aggregate_tickets")
-      .insert(row)
+      .insert({ ...row, qr_token: qrToken, qr_url: qrUrl, qr_created_at: new Date().toISOString() })
       .select("id, ticket_number")
       .single();
 
@@ -164,9 +170,11 @@ export async function POST(req: NextRequest) {
       exception_flags,
       payroll_hold:   true,
       billing_hold:   true,
+      qr_token:       qrToken,
+      qr_url:         qrUrl,
       message: missing_fields.length > 0
         ? `Ticket created with ${missing_fields.length} missing field(s). Routed to Reconciliation Command Center.`
-        : "Ticket created successfully. Routed to Reconciliation Command Center.",
+        : "Ticket created successfully. Fast Scan™ QR generated. Routed to Reconciliation Command Center.",
     }, { status: 201 });
 
   } catch (err: unknown) {

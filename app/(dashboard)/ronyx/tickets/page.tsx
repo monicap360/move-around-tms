@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import QRCode from "react-qr-code";
 import * as XLSX from "xlsx";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -380,7 +381,15 @@ export default function TicketsPage() {
   const [ronyxScanSource, setRonyxScanSource] = useState("file_upload");
   const [ronyxFields, setRonyxFields] = useState<RonyxFields>(RONYX_EMPTY);
   const [ronyxSubmitting, setRonyxSubmitting] = useState(false);
-  const [ronyxResult, setRonyxResult] = useState<{ ticket_id?: string; missing_fields?: string[]; exception_flags?: string[]; message?: string; error?: string } | null>(null);
+  const [ronyxResult, setRonyxResult] = useState<{ ticket_id?: string; missing_fields?: string[]; exception_flags?: string[]; qr_token?: string; qr_url?: string; message?: string; error?: string } | null>(null);
+  // QR Code state
+  const [qrOpen, setQrOpen]         = useState(false);
+  const [qrTicketId, setQrTicketId] = useState("");
+  const [qrTicketNo, setQrTicketNo] = useState("");
+  const [qrToken, setQrToken]       = useState("");
+  const [qrUrl, setQrUrl]           = useState("");
+  const [qrGenerating, setQrGenerating] = useState(false);
+  const [qrScanCount, setQrScanCount]   = useState(0);
   // Pit master state
   const [pits, setPits] = useState<PitRecord[]>(DEFAULT_PITS);
   const [pitEditId, setPitEditId] = useState<string | null>(null);
@@ -675,6 +684,26 @@ export default function TicketsPage() {
       setRonyxSubmitting(false);
     }
   }, [ronyxFields, ronyxRawText, ronyxScanSource, showToast, loadTickets]);
+
+  const generateQr = useCallback(async (ticketId: string, ticketNo: string, existingToken?: string, existingUrl?: string, scanCount?: number) => {
+    if (existingToken && existingUrl) {
+      setQrTicketId(ticketId); setQrTicketNo(ticketNo);
+      setQrToken(existingToken); setQrUrl(existingUrl);
+      setQrScanCount(scanCount ?? 0); setQrOpen(true);
+      return;
+    }
+    setQrGenerating(true);
+    try {
+      const res  = await fetch(`/api/ronyx/tickets/${ticketId}/qr`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ created_by: "office" }) });
+      const data = await res.json();
+      if (data.error) { showToast("QR generation failed: " + data.error); return; }
+      setQrTicketId(ticketId); setQrTicketNo(ticketNo);
+      setQrToken(data.qr_token); setQrUrl(data.qr_url);
+      setQrScanCount(0); setQrOpen(true);
+      await loadTickets();
+    } catch { showToast("QR generation failed"); }
+    finally   { setQrGenerating(false); }
+  }, [showToast, loadTickets]);
 
   const submitScan = useCallback(async () => {
     if (!scanDriver.trim() && !scanTruck.trim() && !scanTicketNo.trim()) { showToast("Enter ticket #, driver, or truck."); return; }
@@ -1077,11 +1106,17 @@ export default function TicketsPage() {
                           )}
                         </div>
                       )}
-                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                         <button onClick={() => { setRonyxStep("upload"); setRonyxFields(RONYX_EMPTY); setRonyxResult(null); setRonyxImagePreview(""); }}
                           style={{ padding: "8px 16px", borderRadius: 8, background: "#f1f5f9", border: "none", fontWeight: 600, color: "#475569", fontSize: "0.8rem", cursor: "pointer" }}>
                           Scan Another Ticket
                         </button>
+                        {ronyxResult && !ronyxResult.error && ronyxResult.ticket_id && ronyxResult.qr_url && (
+                          <button onClick={() => generateQr(ronyxResult!.ticket_id!, ronyxResult!.ticket_id!.slice(-6).toUpperCase(), ronyxResult!.qr_token, ronyxResult!.qr_url, 0)}
+                            style={{ padding: "8px 16px", borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
+                            📱 View QR Code
+                          </button>
+                        )}
                         <button onClick={() => setActiveTab("excel_reconcile")}
                           style={{ padding: "8px 16px", borderRadius: 8, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
                           Go to Reconciliation →
@@ -1235,9 +1270,17 @@ export default function TicketsPage() {
                         <td style={{ padding: "9px 12px" }}><SBadge code={t.invoiceMatched ? "MATCHED" : "MISSING_INVOICE"} /></td>
                         <td style={{ padding: "9px 12px" }}><SBadge code={t.billingStatus} /></td>
                         <td style={{ padding: "9px 12px" }}><SBadge code={t.payrollStatus} /></td>
-                        <td style={{ padding: "9px 12px", display: "flex", gap: 4, flexWrap: "nowrap" }}>
-                          <button onClick={() => updateTicketStatus(t.id, "approved")} style={{ padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer", whiteSpace: "nowrap" }}>Approve</button>
-                          <button onClick={() => { setDeleteConfirmId(t.id); setDeleteReason(""); }} style={{ padding: "4px 8px", borderRadius: 6, background: "#fff1f2", border: "1px solid #fecdd3", color: "#dc2626", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>Del</button>
+                        <td style={{ padding: "9px 12px" }}>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "nowrap", alignItems: "center" }}>
+                            <button onClick={() => updateTicketStatus(t.id, "approved")} style={{ padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer", whiteSpace: "nowrap" }}>Approve</button>
+                            <button
+                              onClick={() => generateQr(t.id, t.ticketNo, (t as any).qr_token, (t as any).qr_url, (t as any).qr_scan_count)}
+                              title={`Fast Scan™ QR${(t as any).qr_token ? " (exists)" : ""}`}
+                              style={{ padding: "4px 8px", borderRadius: 6, background: (t as any).qr_token ? "#eff6ff" : "#f8fafc", border: `1px solid ${(t as any).qr_token ? "#bfdbfe" : "#e2e8f0"}`, color: (t as any).qr_token ? "#1d4ed8" : "#64748b", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
+                              {qrGenerating && qrTicketId === t.id ? "…" : "QR"}
+                            </button>
+                            <button onClick={() => { setDeleteConfirmId(t.id); setDeleteReason(""); }} style={{ padding: "4px 8px", borderRadius: 6, background: "#fff1f2", border: "1px solid #fecdd3", color: "#dc2626", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>Del</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -2131,6 +2174,80 @@ export default function TicketsPage() {
                 showToast(pitEditId ? "Location updated." : "Location added to pit master.");
               }} style={{ padding: "9px 22px", borderRadius: 8, background: "#0f172a", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}>
                 {pitEditId ? "Save Changes" : "Add Location"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          MODAL: FAST SCAN™ QR CODE
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {qrOpen && qrUrl && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 900, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 18, width: "100%", maxWidth: 460, padding: "28px 32px", boxShadow: "0 24px 64px rgba(0,0,0,0.35)" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 22 }}>
+              <div>
+                <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Fast Scan™ QR</div>
+                <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a" }}>Ticket #{qrTicketNo || qrTicketId.slice(-6).toUpperCase()}</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 3 }}>
+                  Scanned {qrScanCount} time{qrScanCount !== 1 ? "s" : ""} · Secure token active
+                </div>
+              </div>
+              <button onClick={() => setQrOpen(false)} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", color: "#64748b", fontWeight: 700 }}>✕</button>
+            </div>
+
+            {/* QR Code */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginBottom: 24 }}>
+              <div style={{ padding: 16, background: "#fff", border: "2px solid #e2e8f0", borderRadius: 14, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+                <QRCode value={qrUrl} size={200} fgColor="#0f172a" bgColor="#ffffff" />
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#1d4ed8", letterSpacing: "0.1em", marginBottom: 4 }}>FAST SCAN™ QR · Ronyx Logistics LLC</div>
+                <div style={{ fontSize: "0.65rem", color: "#94a3b8" }}>Scan for live ticket status</div>
+              </div>
+            </div>
+
+            {/* Role links */}
+            <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", marginBottom: 18, fontSize: "0.72rem" }}>
+              <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Share by role</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {[
+                  { label: "📋 Office Staff", r: "office" },
+                  { label: "🚛 Driver",       r: "driver" },
+                  { label: "✍️ Customer Signer", r: "customer" },
+                ].map(({ label, r }) => {
+                  const roleUrl = `${qrUrl}&r=${r}`;
+                  return (
+                    <div key={r} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#64748b", minWidth: 130 }}>{label}</span>
+                      <button onClick={() => { navigator.clipboard?.writeText(roleUrl); showToast(`${label} link copied!`); }}
+                        style={{ padding: "3px 10px", borderRadius: 6, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", fontWeight: 700, fontSize: "0.68rem", cursor: "pointer" }}>
+                        Copy Link
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Print / action buttons */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => {
+                const w = window.open("", "_blank")!;
+                w.document.write(`<!DOCTYPE html><html><head><title>Ronyx Ticket #${qrTicketNo} — QR Label</title><style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;display:flex;flex-direction:column;align-items:center}h2{margin:0 0 4px;font-size:1rem}p{margin:2px 0;font-size:0.75rem;color:#64748b}img{margin-top:16px;width:200px;height:200px}@media print{button{display:none}}</style></head><body><h2>Ticket #${qrTicketNo}</h2><p>Fast Scan™ QR — Scan for live ticket status</p><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}" /><p style="margin-top:12px;font-size:0.65rem;color:#94a3b8">Ronyx Logistics LLC</p><button onclick="window.print()" style="margin-top:16px;padding:10px 20px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">Print QR Label</button></body></html>`);
+                w.document.close();
+              }} style={{ flex: 1, padding: "10px 14px", borderRadius: 9, background: "#0f172a", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+                🖨 Print QR Label
+              </button>
+              <button onClick={() => { navigator.clipboard?.writeText(qrUrl); showToast("QR link copied!"); }}
+                style={{ flex: 1, padding: "10px 14px", borderRadius: 9, background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+                📋 Copy Link
+              </button>
+              <button onClick={() => generateQr(qrTicketId, qrTicketNo, undefined, undefined, 0)}
+                style={{ padding: "10px 14px", borderRadius: 9, background: "#fff7ed", border: "1px solid #fed7aa", color: "#ea580c", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+                ↺ Regen
               </button>
             </div>
           </div>
