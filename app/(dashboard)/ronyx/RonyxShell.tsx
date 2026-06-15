@@ -6,22 +6,19 @@ import { useEffect, useState } from "react";
 
 const NAV_GROUPS = [
   {
-    section: "Operations",
+    section: "Main",
     items: [
       { label: "Dashboard",          href: "/ronyx" },
-      { label: "Dispatch Board",     href: "/ronyx/dispatch/board" },
-      { label: "Operations Center",  href: "/ronyx/operations-center" },
-      { label: "Loads",              href: "/ronyx/loads" },
+      { label: "Dispatch",           href: "/ronyx/dispatch/board" },
+      { label: "Tickets",            href: "/ronyx/tickets" },
     ],
   },
   {
-    section: "Tickets",
+    section: "Finance",
     items: [
-      { label: "Tickets",            href: "/ronyx/tickets" },
-      { label: "FastScan",           href: "/ronyx/fast-scan" },
-      { label: "CrossCheck",         href: "/ronyx/crosscheck" },
-      { label: "Ticket Audit",       href: "/ronyx/ticket-audit" },
-      { label: "Exception Center",   href: "/ronyx/exception-center" },
+      { label: "Billing",            href: "/ronyx/billing" },
+      { label: "Payroll",            href: "/ronyx/payroll" },
+      { label: "Accounts Rec.",      href: "/ronyx/accounts-receivable" },
     ],
   },
   {
@@ -30,39 +27,27 @@ const NAV_GROUPS = [
       { label: "Drivers",            href: "/ronyx/drivers" },
       { label: "Trucks",             href: "/ronyx/fleet" },
       { label: "Owner Operators",    href: "/ronyx/owner-operators" },
-      { label: "Inspections",        href: "/ronyx/inspections" },
-      { label: "Tracking",           href: "/ronyx/tracking" },
       { label: "Maintenance",        href: "/ronyx/maintenance" },
+    ],
+  },
+  {
+    section: "Business",
+    items: [
+      { label: "Customers",          href: "/ronyx/customers" },
+      { label: "Projects",           href: "/ronyx/loads" },
+      { label: "Reports",            href: "/ronyx/reports" },
     ],
   },
   {
     section: "Compliance",
     items: [
       { label: "Compliance Monitor", href: "/ronyx/compliance-monitor" },
-      { label: "Compliance Center",  href: "/ronyx/compliance" },
       { label: "HR & Compliance",    href: "/ronyx/hr-compliance" },
-    ],
-  },
-  {
-    section: "Finance",
-    items: [
-      { label: "Payroll",            href: "/ronyx/payroll" },
-      { label: "Billing",            href: "/ronyx/billing" },
-      { label: "Accounts Rec.",      href: "/ronyx/accounts-receivable" },
-      { label: "IFTA / Fuel",        href: "/ronyx/ifta-fuel" },
-    ],
-  },
-  {
-    section: "Intelligence",
-    items: [
-      { label: "Reports",            href: "/ronyx/reports" },
-      { label: "Customers",          href: "/ronyx/customers" },
     ],
   },
   {
     section: "System",
     items: [
-      { label: "Integrations",       href: "/ronyx/integrations" },
       { label: "Settings",           href: "/ronyx/settings" },
     ],
   },
