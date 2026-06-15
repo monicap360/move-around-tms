@@ -973,6 +973,28 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
       {/* ── Tab: Documents ───────────────────────────── */}
       {activeTab === "Documents" && (
         <div>
+          {/* Drug & Background Screening Status — quick view at top of Documents */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 18px", marginBottom: 14, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Screening Status</span>
+            {[
+              { label: "Drug Test",        value: profile.drug_test_status,        field: "drug_test_status",        opts: ["pending","cleared","failed","expired"] as const },
+              { label: "Background Check", value: profile.background_check_status, field: "background_check_status", opts: ["pending","cleared","failed"] as const },
+            ].map(({ label, value, field, opts }) => {
+              const color = value === "cleared" ? "#15803d" : value === "failed" ? "#dc2626" : value === "expired" ? "#d97706" : "#94a3b8";
+              const bg    = value === "cleared" ? "#f0fdf4" : value === "failed" ? "#fff1f2" : value === "expired" ? "#fefce8" : "#f8fafc";
+              return (
+                <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#0f172a" }}>{label}:</span>
+                  <select value={value||""} onChange={e => saveField(field, e.target.value)} style={{ background: bg, color, border: `1px solid ${color}44`, borderRadius: 8, padding: "4px 10px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", outline: "none" }}>
+                    <option value="">— not set —</option>
+                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                  {value === "cleared" && !!documents.find(d => d.doc_type === (label === "Drug Test" ? "Drug Test" : "Background Check")) && <span style={{ color: "#15803d", fontSize: "0.72rem", fontWeight: 700 }}>✓ Doc on file</span>}
+                  {value === "cleared" && !documents.find(d => d.doc_type === (label === "Drug Test" ? "Drug Test" : "Background Check")) && <span style={{ color: "#d97706", fontSize: "0.72rem", fontWeight: 700 }}>⚠ Upload result</span>}
+                </div>
+              );
+            })}
+          </div>
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
             <h3 style={{ margin: "0 0 14px", fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>Required Documents</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>

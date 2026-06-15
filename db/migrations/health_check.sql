@@ -29,7 +29,9 @@ WHERE n.nspname = 'public'
     'organizations',
     'user_seats',
     'ticket_audit_log',
-    'ronyx_owner_operators'
+    'ronyx_owner_operators',
+    'payroll_holds',
+    'audit_logs'
   )
 ORDER BY c.relname;
 
@@ -200,3 +202,85 @@ SELECT
   count(*) FILTER (WHERE action = 'deleted') AS deletion_events,
   max(created_at)                            AS latest_entry
 FROM public.ticket_audit_log;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 11. FAST SCAN TABLES — columns from migration 107
+-- ─────────────────────────────────────────────────────────────────────────────
+SELECT
+  '11. fast_scan_uploads columns' AS section,
+  col AS expected_column,
+  CASE WHEN c.column_name IS NOT NULL THEN '✅ present' ELSE '❌ MISSING' END AS status
+FROM (
+  VALUES
+    ('file_url'),('file_name'),('file_type'),('upload_status'),('scan_type'),
+    ('detected_job_id'),('detected_driver_id'),('detected_vehicle'),('detected_amount'),
+    ('extracted_text'),('confidence_score'),('creates_payroll_item'),('payroll_action'),
+    ('uploaded_by'),('related_payroll_item_id'),('resulting_ticket_id'),('organization_id')
+) AS expected(col)
+LEFT JOIN information_schema.columns c
+  ON  c.table_schema = 'public'
+  AND c.table_name   = 'fast_scan_uploads'
+  AND c.column_name  = expected.col
+ORDER BY col;
+
+
+SELECT
+  '11b. tickets columns (workflow tickets)' AS section,
+  col AS expected_column,
+  CASE WHEN c.column_name IS NOT NULL THEN '✅ present' ELSE '❌ MISSING' END AS status
+FROM (
+  VALUES
+    ('title'),('description'),('category'),('status'),('priority'),('source'),
+    ('impact'),('related_job_id'),('related_driver_id'),('related_vehicle_id'),
+    ('fast_scan_id'),('scan_type'),('payroll_impact'),('payroll_status'),
+    ('payroll_hold_reason'),('estimated_driver_pay'),('created_by'),
+    ('related_payroll_item_id'),('organization_id')
+) AS expected(col)
+LEFT JOIN information_schema.columns c
+  ON  c.table_schema = 'public'
+  AND c.table_name   = 'tickets'
+  AND c.column_name  = expected.col
+ORDER BY col;
+
+
+SELECT
+  '11c. payroll_items columns' AS section,
+  col AS expected_column,
+  CASE WHEN c.column_name IS NOT NULL THEN '✅ present' ELSE '❌ MISSING' END AS status
+FROM (
+  VALUES
+    ('driver_id'),('driver_name'),('related_job_id'),('job_number'),
+    ('item_type'),('description'),('gross_amount'),('status'),('hold_reason'),
+    ('source'),('related_ticket_id'),('related_scan_id'),('created_by'),('organization_id')
+) AS expected(col)
+LEFT JOIN information_schema.columns c
+  ON  c.table_schema = 'public'
+  AND c.table_name   = 'payroll_items'
+  AND c.column_name  = expected.col
+ORDER BY col;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 12. NEW TABLES — payroll_holds + audit_logs
+-- ─────────────────────────────────────────────────────────────────────────────
+SELECT
+  '12. New tables from migration 107' AS section,
+  t.table_name,
+  CASE WHEN c.table_name IS NOT NULL THEN '✅ exists' ELSE '❌ MISSING — run migration 107' END AS status
+FROM (VALUES ('payroll_holds'), ('audit_logs')) AS t(table_name)
+LEFT JOIN information_schema.tables c
+  ON  c.table_schema = 'public'
+  AND c.table_name   = t.table_name;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 13. FAST SCAN upload count + recent scan
+-- ─────────────────────────────────────────────────────────────────────────────
+SELECT
+  '13. Fast scan uploads' AS section,
+  count(*)                AS total_uploads,
+  count(*) FILTER (WHERE upload_status = 'linked')     AS linked,
+  count(*) FILTER (WHERE upload_status = 'processing') AS processing,
+  max(created_at)                                      AS latest_upload
+FROM public.fast_scan_uploads;
