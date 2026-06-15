@@ -140,3 +140,60 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
 
   return NextResponse.json({ ticket: enriched });
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: { ticketId: string } }) {
+  const supabase = createSupabaseServerClient();
+  const body = await request.json().catch(() => ({}));
+  const deletedBy = (body.deleted_by as string) || "dispatcher";
+  const reason = (body.reason as string) || null;
+
+  const fullUpdate = {
+    voided: true,
+    voided_at: new Date().toISOString(),
+    voided_by: deletedBy,
+    void_reason: reason,
+    status: "voided",
+  };
+
+  let result = await supabase
+    .from("aggregate_tickets")
+    .update(fullUpdate)
+    .eq("id", params.ticketId)
+    .select("id, ticket_number, driver_name, truck_number")
+    .single();
+
+  if (result.error && result.error.message.includes("column")) {
+    result = await supabase
+      .from("aggregate_tickets")
+      .update({ voided: true, voided_at: new Date().toISOString(), status: "voided" })
+      .eq("id", params.ticketId)
+      .select("id, ticket_number, driver_name, truck_number")
+      .single();
+  }
+
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: 500 });
+  }
+
+  try {
+    await supabase.from("ticket_audit_log").insert({
+      ticket_id: params.ticketId,
+      action: "deleted",
+      description: `Ticket deleted by ${deletedBy}${reason ? `: ${reason}` : ""}`,
+      old_value: "active",
+      new_value: "voided",
+      metadata: {
+        deleted_by: deletedBy,
+        reason,
+        ticket_number: result.data?.ticket_number,
+        driver_name: result.data?.driver_name,
+        truck_number: result.data?.truck_number,
+        deleted_at: new Date().toISOString(),
+      },
+    });
+  } catch {
+    // audit log failure is non-fatal
+  }
+
+  return NextResponse.json({ ok: true });
+}

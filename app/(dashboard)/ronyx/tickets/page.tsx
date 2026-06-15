@@ -53,6 +53,10 @@ type TicketRecord = {
   duplicateMatch?: string;
   missingFields: number;
   lastUpdated: string;
+  voided: boolean;
+  voidedAt: string | null;
+  voidedBy: string | null;
+  voidReason: string | null;
 };
 
 const STATUS_MAP: Record<string, TicketStatus> = {
@@ -66,6 +70,8 @@ const STATUS_MAP: Record<string, TicketStatus> = {
   archived: "Archived",
   rejected: "Needs Review",
   invoiced: "Sent to Billing",
+  voided: "Archived",
+  in_review: "Needs Review",
 };
 
 function mapApiTicket(t: any, all: any[]): TicketRecord {
@@ -215,6 +221,15 @@ function mapApiTicket(t: any, all: any[]): TicketRecord {
           minute: "2-digit",
         })
       : "—",
+    voided: Boolean(t.voided),
+    voidedAt: t.voided_at
+      ? new Date(t.voided_at).toLocaleString("en-US", {
+          month: "short", day: "numeric", year: "numeric",
+          hour: "numeric", minute: "2-digit",
+        })
+      : null,
+    voidedBy: t.voided_by || null,
+    voidReason: t.void_reason || null,
   };
 }
 
@@ -357,15 +372,16 @@ const auditAlerts = [
   { title: "Payroll Match Missing", detail: "Some tickets are not matched to payroll yet.", level: "warning" },
 ];
 
-type TicketTab = "all" | "fastscan" | "exceptions" | "invoice_match" | "payroll_review" | "audit_trail";
+type TicketTab = "all" | "fastscan" | "exceptions" | "invoice_match" | "payroll_review" | "audit_trail" | "deleted";
 
 const TICKET_TABS: { id: TicketTab; label: string; icon: string }[] = [
-  { id: "all",            label: "All Tickets",    icon: "📋" },
-  { id: "fastscan",       label: "Fast Scan",      icon: "⚡" },
-  { id: "exceptions",     label: "Exceptions",     icon: "⚠️" },
-  { id: "invoice_match",  label: "Invoice Match",  icon: "🔍" },
-  { id: "payroll_review", label: "Payroll Review", icon: "💵" },
-  { id: "audit_trail",    label: "Audit Trail",    icon: "📜" },
+  { id: "all",            label: "All Tickets",       icon: "📋" },
+  { id: "fastscan",       label: "Fast Scan",         icon: "⚡" },
+  { id: "exceptions",     label: "Exceptions",        icon: "⚠️" },
+  { id: "invoice_match",  label: "Invoice Match",     icon: "🔍" },
+  { id: "payroll_review", label: "Payroll Review",    icon: "💵" },
+  { id: "audit_trail",    label: "Audit Trail",       icon: "📜" },
+  { id: "deleted",        label: "Deleted Tickets",   icon: "🗑️" },
 ];
 
 // Scan types for inline fast scan
@@ -398,6 +414,9 @@ export default function TicketsPage() {
   const [scanNotes, setScanNotes] = useState("");
   const [scanSubmitting, setScanSubmitting] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((msg: string) => {
@@ -439,6 +458,36 @@ export default function TicketsPage() {
     }
   }, [loadTickets, showToast]);
 
+  const deleteTicket = useCallback(async (ticketId: string, reason: string) => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/ronyx/tickets/${ticketId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleted_by: "manager", reason }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        showToast(`Delete failed: ${d.error || res.statusText}`);
+        return;
+      }
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === ticketId
+            ? { ...t, voided: true, voidedAt: new Date().toLocaleString(), voidedBy: "manager", voidReason: reason }
+            : t
+        )
+      );
+      setDeleteConfirmId(null);
+      setDeleteReason("");
+      showToast("Ticket deleted and logged in audit trail.");
+    } catch {
+      showToast("Delete failed — check connection.");
+    } finally {
+      setDeleting(false);
+    }
+  }, [showToast]);
+
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     showToast(`Uploading ${files.length} file(s)…`);
@@ -455,9 +504,14 @@ export default function TicketsPage() {
       }
       const ticketId = createData.ticket?.id || createData.id;
       if (!ticketId) {
-        showToast("Ticket created but no ID returned — reload to check.");
-        setTimeout(loadTickets, 1000);
+        showToast("Ticket created but no ID returned — reloading…");
+        loadTickets();
         return;
+      }
+      // Optimistic add: show the new ticket immediately without waiting for reload
+      if (createData.ticket) {
+        const optimistic = mapApiTicket(createData.ticket, [createData.ticket]);
+        setTickets((prev) => [optimistic, ...prev]);
       }
       let uploadError = "";
       for (const file of Array.from(files)) {
@@ -475,7 +529,8 @@ export default function TicketsPage() {
       } else {
         showToast("Ticket uploaded — processing OCR…");
       }
-      setTimeout(loadTickets, 2000);
+      // Reload after 1.5s to pick up OCR-enriched data
+      setTimeout(loadTickets, 1500);
     } catch (e: any) {
       showToast(`Upload failed: ${e?.message || "check connection"}`);
     }
@@ -484,6 +539,7 @@ export default function TicketsPage() {
   const filteredTickets = useMemo(() => {
     const query = search.toLowerCase();
     return tickets.filter((ticket) => {
+      if (ticket.voided) return false;
       const matchesSearch =
         ticket.ticketNo.toLowerCase().includes(query) ||
         ticket.driver.toLowerCase().includes(query) ||
@@ -496,6 +552,8 @@ export default function TicketsPage() {
       return matchesSearch && matchesStatus && matchesRisk;
     });
   }, [search, statusFilter, riskFilter, tickets]);
+
+  const deletedTickets = useMemo(() => tickets.filter((t) => t.voided), [tickets]);
 
   const totalTickets = tickets.length;
   const verifiedTickets = tickets.filter((t) => t.ticketHealthScore >= 90).length;
@@ -623,9 +681,14 @@ export default function TicketsPage() {
                 {tickets.filter(t => t.exceptionCount > 0).length}
               </span>
             )}
-            {tab.id === "payroll_review" && (tickets.filter(t => !t.payrollReady).length > 0) && (
+            {tab.id === "payroll_review" && (tickets.filter(t => !t.payrollReady && !t.voided).length > 0) && (
               <span style={{ background: "#d97706", color: "#fff", borderRadius: 99, fontSize: "0.65rem", fontWeight: 800, padding: "1px 6px", lineHeight: 1.4 }}>
-                {tickets.filter(t => !t.payrollReady).length}
+                {tickets.filter(t => !t.payrollReady && !t.voided).length}
+              </span>
+            )}
+            {tab.id === "deleted" && deletedTickets.length > 0 && (
+              <span style={{ background: "#64748b", color: "#fff", borderRadius: 99, fontSize: "0.65rem", fontWeight: 800, padding: "1px 6px", lineHeight: 1.4 }}>
+                {deletedTickets.length}
               </span>
             )}
           </button>
@@ -996,6 +1059,116 @@ export default function TicketsPage() {
         </div>
       )}
 
+      {/* Delete confirmation modal */}
+      {deleteConfirmId && (() => {
+        const t = tickets.find(x => x.id === deleteConfirmId);
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(15,23,42,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ background: "#fff", borderRadius: 16, padding: 32, width: 480, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <span style={{ fontSize: "1.5rem" }}>🗑️</span>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>Delete Ticket?</div>
+                  <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2 }}>
+                    Ticket #{t?.ticketNo} · {t?.driver} · {t?.truck}
+                  </div>
+                </div>
+              </div>
+              <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: "0.82rem", color: "#c2410c" }}>
+                This action is logged in the audit trail and visible to managers and owners. The ticket will be moved to Deleted Tickets and cannot be used for payroll or billing.
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Reason for deletion (required)
+                </label>
+                <textarea
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="e.g. Duplicate ticket, entered in error, test scan…"
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", height: 80, resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => { setDeleteConfirmId(null); setDeleteReason(""); }}
+                  style={{ padding: "9px 20px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, cursor: "pointer", fontSize: "0.88rem" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={!deleteReason.trim() || deleting}
+                  onClick={() => deleteTicket(deleteConfirmId, deleteReason)}
+                  style={{
+                    padding: "9px 22px", borderRadius: 8, background: deleteReason.trim() ? "#dc2626" : "#e2e8f0",
+                    color: deleteReason.trim() ? "#fff" : "#94a3b8", border: "none", fontWeight: 700,
+                    cursor: deleteReason.trim() && !deleting ? "pointer" : "not-allowed", fontSize: "0.88rem"
+                  }}
+                >
+                  {deleting ? "Deleting…" : "Delete Ticket"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Deleted Tickets tab */}
+      {activeTab === "deleted" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: "1rem", color: "#0f172a" }}>🗑️ Deleted Tickets Log</span>
+              <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 600, background: "#f1f5f9", padding: "2px 10px", borderRadius: 99 }}>
+                {deletedTickets.length} record{deletedTickets.length !== 1 ? "s" : ""}
+              </span>
+              <div style={{ marginLeft: "auto", fontSize: "0.75rem", color: "#94a3b8" }}>
+                Manager &amp; Owner view — all deletions are permanently logged
+              </div>
+            </div>
+            {deletedTickets.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
+                <div style={{ fontSize: "2rem", marginBottom: 8 }}>✅</div>
+                <div style={{ fontWeight: 600 }}>No deleted tickets</div>
+              </div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc" }}>
+                    {["Ticket #", "Driver", "Truck", "Date", "Deleted By", "Deleted At", "Reason"].map(h => (
+                      <th key={h} style={{ padding: "10px 14px", fontWeight: 700, color: "#475569", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "0.7rem", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {deletedTickets.map((t, i) => (
+                    <tr key={t.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#0f172a" }}>{t.ticketNo}</td>
+                      <td style={{ padding: "10px 14px", color: "#475569" }}>{t.driver}</td>
+                      <td style={{ padding: "10px 14px", color: "#475569" }}>{t.truck}</td>
+                      <td style={{ padding: "10px 14px", color: "#475569", whiteSpace: "nowrap" }}>{t.ticketDate}</td>
+                      <td style={{ padding: "10px 14px" }}>
+                        <span style={{ fontWeight: 600, color: "#dc2626", background: "#fee2e2", padding: "2px 8px", borderRadius: 99, fontSize: "0.72rem" }}>
+                          {t.voidedBy || "Unknown"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 14px", color: "#64748b", whiteSpace: "nowrap", fontSize: "0.75rem" }}>
+                        {t.voidedAt || "—"}
+                      </td>
+                      <td style={{ padding: "10px 14px", color: "#475569", maxWidth: 240 }}>
+                        {t.voidReason || <span style={{ color: "#94a3b8" }}>No reason given</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#94a3b8", textAlign: "center" }}>
+            Deletions are also recorded in the ticket audit log and cannot be permanently erased.
+          </div>
+        </div>
+      )}
+
       {/* All Tickets tab (existing layout) */}
       {activeTab === "all" && <section className="tickets-layout">
         <div className="tickets-main-column">
@@ -1066,6 +1239,7 @@ export default function TicketsPage() {
                   Search, verify, approve, send to payroll, send to billing, or lock duplicates.
                 </span>
               </div>
+              <button className="tickets-button ghost" onClick={loadTickets}>↻ Refresh</button>
             </div>
 
             <div className="tickets-filter-bar">
@@ -1187,6 +1361,12 @@ export default function TicketsPage() {
                         <button onClick={() => updateTicketStatus(ticket.id, "invoiced")}>Release Hold</button>
                         <button onClick={() => showToast(`Open audit for ${ticket.ticketNo}`)}>Open Audit</button>
                         <button onClick={() => showToast(`Assign ticket ${ticket.ticketNo}`)}>Assign</button>
+                        <button
+                          onClick={() => { setDeleteConfirmId(ticket.id); setDeleteReason(""); }}
+                          style={{ color: "#dc2626", borderColor: "#fecaca", background: "#fff5f5" }}
+                        >
+                          Delete
+                        </button>
                       </div>
                       <button
                         className={
