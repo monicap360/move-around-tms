@@ -473,6 +473,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
   const [rows, setRows]           = useState<ImportDriverRow[]>([]);
   const [dupActions, setDupActions] = useState<Record<number, "update" | "skip" | "create">>({});
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<{ imported?: number; updated?: number; skipped?: number; failed?: number; errors?: string[]; compliance?: Record<string, number> } | null>(null);
 
   const kpis = useMemo(() => ({
@@ -580,6 +581,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
 
   const submitImport = useCallback(async () => {
     setImporting(true);
+    setImportProgress(0);
     setStep("importing");
     try {
       const payload = rows
@@ -595,20 +597,51 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
           _dup_action: r._importStatus === "duplicate" ? (dupActions[r._idx] ?? "skip") : undefined,
         }));
 
-      const res = await fetch("/api/ronyx/drivers/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: payload, file_name: fileName, upload_type: isPdf ? "pdf" : "excel" }),
-      });
-      const data = await res.json();
-      setImportResult(data);
+      // Send in batches of 10 so we can show real progress
+      const BATCH = 10;
+      const total = payload.length;
+      let imported = 0, updated = 0, skipped = 0, failed = 0;
+      const errors: string[] = [];
+      let compliance: Record<string, number> = {};
+      let batchId: string | null = null;
+
+      for (let i = 0; i < total; i += BATCH) {
+        const chunk = payload.slice(i, i + BATCH);
+        const isFirst = i === 0;
+        const res = await fetch("/api/ronyx/drivers/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rows: chunk,
+            file_name: isFirst ? fileName : undefined,
+            upload_type: isPdf ? "pdf" : "excel",
+            batch_id: isFirst ? undefined : batchId, // reuse batch for subsequent chunks
+          }),
+        });
+        const data = await res.json();
+        imported += data.imported || 0;
+        updated  += data.updated  || 0;
+        skipped  += data.skipped  || 0;
+        failed   += data.failed   || 0;
+        if (data.errors?.length) errors.push(...data.errors);
+        if (data.compliance) {
+          for (const [k, v] of Object.entries(data.compliance)) {
+            compliance[k] = (compliance[k] || 0) + (v as number);
+          }
+        }
+        if (isFirst && data.batch_id) batchId = data.batch_id;
+        setImportProgress(Math.round(((i + chunk.length) / total) * 100));
+      }
+
+      const result = { imported, updated, skipped, failed, errors, compliance };
+      setImportResult(result);
       setStep("done");
-      if (data.imported > 0 || data.updated > 0) {
-        onImported((data.imported || 0) + (data.updated || 0));
-        showToast(`Import complete — ${data.imported || 0} created, ${data.updated || 0} updated.`);
+      if (imported > 0 || updated > 0) {
+        onImported(imported + updated);
+        showToast(`Upload complete — ${imported} added, ${updated} updated.`);
       }
     } catch {
-      showToast("Import failed — check connection.");
+      showToast("Upload failed — check connection.");
       setStep("preview");
     } finally {
       setImporting(false);
@@ -862,10 +895,21 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
           {step === "importing" && (
             <div style={{ padding: "60px 0", textAlign: "center" }}>
               <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>⬆</div>
-              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a", marginBottom: 8 }}>Importing Drivers…</div>
-              <div style={{ color: "#64748b", fontSize: "0.83rem" }}>Creating records, checking duplicates, generating compliance alerts…</div>
-              <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, margin: "24px auto", maxWidth: 320, overflow: "hidden" }}>
-                <div style={{ width: "60%", height: "100%", background: "#1d4ed8", borderRadius: 99, animation: "indeterminate 1.5s ease-in-out infinite" }} />
+              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a", marginBottom: 6 }}>Uploading Drivers…</div>
+              <div style={{ color: "#64748b", fontSize: "0.83rem", marginBottom: 24 }}>
+                {importProgress < 30 ? "Connecting to database…" : importProgress < 70 ? "Creating records, checking duplicates…" : "Generating compliance alerts…"}
+              </div>
+              <div style={{ maxWidth: 360, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>Progress</span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#1d4ed8" }}>{importProgress}%</span>
+                </div>
+                <div style={{ height: 10, background: "#e2e8f0", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ width: `${importProgress}%`, height: "100%", background: "linear-gradient(90deg, #1d4ed8, #3b82f6)", borderRadius: 99, transition: "width 300ms ease" }} />
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 10 }}>
+                  {importProgress === 100 ? "Finalizing…" : "Do not close this window"}
+                </div>
               </div>
             </div>
           )}

@@ -3,63 +3,91 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const organization = searchParams.get("organization"); // optional org filter
-
+export async function GET() {
   const supabase = createSupabaseServerClient();
 
-  let query = supabase
+  // Query drivers table directly — full_name is the canonical column from import
+  const { data, error } = await supabase
     .from("drivers")
-    .select("id, name, status, email, phone, driver_profiles(*)")
-    .order("name", { ascending: true });
-
-  if (organization) {
-    // filter by organization_code stored on the driver or via driver_profiles
-    query = query.eq("organization_code", organization);
-  }
-
-  const { data, error } = await query;
+    .select(`
+      id,
+      full_name,
+      phone,
+      email,
+      driver_type,
+      status,
+      license_number,
+      license_state,
+      license_expiration_date,
+      mvr_expiration,
+      medical_card_expiration,
+      medical_card_number,
+      assigned_truck_number,
+      job_assignment,
+      company_name,
+      hire_date,
+      pay_rate,
+      pay_type,
+      background_check_status,
+      drug_test_expiration,
+      dispatch_eligible,
+      payroll_eligible,
+      compliance_flags,
+      notes,
+      organization_id,
+      updated_by,
+      updated_at,
+      created_at
+    `)
+    .order("full_name", { ascending: true });
 
   if (error) {
     return NextResponse.json({ drivers: [], error: error.message }, { status: 200 });
   }
 
-  // Flatten: merge driver_profiles (0 or 1) into the driver row
-  const drivers = (data || []).map((d: any) => {
-    const profile = Array.isArray(d.driver_profiles)
-      ? d.driver_profiles[0]
-      : d.driver_profiles;
-    return {
-      id:                        d.id,
-      full_name:                 profile?.full_name          || d.name || "",
-      phone:                     profile?.phone              || d.phone || "",
-      email:                     profile?.email              || d.email || "",
-      driver_type:               profile?.driver_type        || "W2",
-      status:                    profile?.status             || d.status || "active",
-      license_number:            profile?.license_number     || "",
-      license_state:             profile?.license_state      || "",
-      license_expiration_date:   profile?.license_expiration_date || "",
-      mvr_expiration:            profile?.mvr_expiration     || "",
-      medical_card_expiration:   profile?.medical_card_expiration || "",
-      assigned_truck_number:     profile?.assigned_truck_number || "",
-      rating:                    profile?.rating             || 0,
-      last_ticket_date:          profile?.last_ticket_date   || "",
-      hire_date:                 profile?.hire_date          || "",
-      background_check_status:   profile?.background_check_status || "pending",
-      drug_test_status:          profile?.drug_test_status   || "pending",
-      photo_url:                 profile?.photo_url          || "",
-      address:                   profile?.address            || "",
-      emergency_contact_name:    profile?.emergency_contact_name  || "",
-      emergency_contact_phone:   profile?.emergency_contact_phone || "",
-      position_role:             profile?.position_role      || "",
-      pay_rate:                  profile?.pay_rate           ? String(profile.pay_rate) : "",
-      supervisor_name:           profile?.supervisor_name    || "",
-      orientation_completed:     profile?.orientation_completed   ?? false,
-      hazmat_training:           profile?.hazmat_training         ?? false,
-      driver_scorecard:          profile?.driver_scorecard   || "",
-    };
-  });
+  const drivers = (data || []).map((d: any) => ({
+    id:                      d.id,
+    full_name:               d.full_name               || "",
+    name:                    d.full_name               || "",
+    phone:                   d.phone                   || "",
+    email:                   d.email                   || "",
+    driver_type:             d.driver_type             || "W2",
+    status:                  d.status                  || "active",
+    license_number:          d.license_number          || "",
+    license_state:           d.license_state           || "",
+    license_expiration_date: d.license_expiration_date || "",
+    mvr_expiration:          d.mvr_expiration          || "",
+    medical_card_expiration: d.medical_card_expiration || "",
+    medical_card_number:     d.medical_card_number     || "",
+    assigned_truck_number:   d.assigned_truck_number   || "",
+    job_assignment:          d.job_assignment          || "",
+    company_name:            d.company_name            || "",
+    hire_date:               d.hire_date               || "",
+    pay_rate:                d.pay_rate                ? String(d.pay_rate) : "",
+    pay_type:                d.pay_type                || "",
+    background_check_status: d.background_check_status || "pending",
+    drug_test_expiration:    d.drug_test_expiration    || "",
+    dispatch_eligible:       d.dispatch_eligible       ?? false,
+    payroll_eligible:        d.payroll_eligible        ?? false,
+    compliance_flags:        d.compliance_flags        || [],
+    notes:                   d.notes                   || "",
+    organization_id:         d.organization_id         || null,
+    updated_by:              d.updated_by              || "",
+    updated_at:              d.updated_at              || "",
+    created_at:              d.created_at              || "",
+    // legacy fields for components that expect driver_profiles shape
+    rating:                  0,
+    last_ticket_date:        "",
+    photo_url:               "",
+    address:                 "",
+    emergency_contact_name:  "",
+    emergency_contact_phone: "",
+    position_role:           "",
+    supervisor_name:         "",
+    orientation_completed:   false,
+    hazmat_training:         false,
+    driver_scorecard:        "",
+  }));
 
   return NextResponse.json({ drivers });
 }
