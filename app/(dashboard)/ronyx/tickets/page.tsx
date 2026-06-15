@@ -77,7 +77,8 @@ const TICKET_TABS: { id: TicketTab; label: string; icon: string }[] = [
 ];
 
 const SCAN_TYPES = [
-  { value: "trip_proof",    label: "Trip Proof",    icon: "📋", color: "#16a34a" },
+  { value: "ronyx_field_ticket", label: "Ronyx Field Ticket", icon: "📋", color: "#1d4ed8" },
+  { value: "trip_proof",    label: "Trip Proof",    icon: "📄", color: "#16a34a" },
   { value: "dump_ticket",   label: "Dump Ticket",   icon: "🪨", color: "#d97706" },
   { value: "scale_ticket",  label: "Scale Ticket",  icon: "⚖️", color: "#0891b2" },
   { value: "fuel",          label: "Fuel / Toll",   icon: "⛽", color: "#2563eb" },
@@ -103,6 +104,101 @@ const IMPORT_MAP: Record<string, string[]> = {
   amount:            ["amount","total","total amount","gross","billing","extended","extended price","total price","charge"],
   invoice_number:    ["invoice","invoice #","invoice number","inv #","inv no","inv","statement #","statement no","bill #"],
 };
+
+// ── Ronyx Field Ticket OCR ───────────────────────────────────────────────────
+type RonyxFields = {
+  ticket_number: string; truck_number: string; ticket_date: string;
+  truck_type: string; shift_type: string; loads: string; material: string;
+  company_name_of_truck: string; customer: string; location: string;
+  driver_printed_name: string; authorized_person: string;
+  signature_present: boolean; start_time: string; end_time: string;
+  total_hours: string; copy_color: string;
+  ocr_confidence: number; extraction_confidence: number;
+  exception_flags: string[]; missing_fields: string[];
+};
+
+const RONYX_EMPTY: RonyxFields = {
+  ticket_number: "", truck_number: "", ticket_date: "", truck_type: "",
+  shift_type: "", loads: "", material: "", company_name_of_truck: "",
+  customer: "", location: "", driver_printed_name: "", authorized_person: "",
+  signature_present: false, start_time: "", end_time: "", total_hours: "",
+  copy_color: "", ocr_confidence: 0, extraction_confidence: 0,
+  exception_flags: [], missing_fields: [],
+};
+
+function parseRonyxTicket(rawText: string, ocrConf: number): RonyxFields {
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  function grab(labels: string[]): string {
+    for (const lbl of labels) {
+      const lu = lbl.toUpperCase();
+      for (let i = 0; i < lines.length; i++) {
+        const lineUp = lines[i].toUpperCase();
+        if (!lineUp.includes(lu)) continue;
+        const afterIdx = lineUp.indexOf(lu) + lu.length;
+        const rest = lines[i].slice(afterIdx).replace(/^[\s:#]+/, "").trim();
+        if (rest.length > 1) return rest;
+        if (i + 1 < lines.length && lines[i + 1].length > 1) return lines[i + 1];
+      }
+    }
+    return "";
+  }
+
+  function checkbox(opts: string[]): string {
+    const up = rawText.toUpperCase();
+    for (const opt of opts) {
+      const idx = up.indexOf(opt.toUpperCase());
+      if (idx === -1) continue;
+      const before = up.slice(Math.max(0, idx - 8), idx);
+      if (/[✓✗X☑]|\[X\]/.test(before) || /\bX\b/.test(before)) return opt;
+    }
+    return "";
+  }
+
+  const ticket_number       = grab(["TICKET #", "TICKET#", "TICKET NUMBER", "TICKET NO"]);
+  const truck_number        = grab(["TRUCK #", "TRUCK#", "TRUCK NUMBER", "TRUCK NO"]);
+  const ticket_date         = grab(["DATE"]);
+  const truck_type          = checkbox(["DUMP TRUCK", "TRAILER TRUCK", "OTHER"]);
+  const shift_type          = checkbox(["DAY SHIFT", "NIGHT SHIFT"]);
+  const loads               = grab(["LOADS"]);
+  const material            = grab(["MATERIAL"]);
+  const company_name_of_truck = grab(["COMPANY NAME OF TRUCK", "COMPANY NAME"]);
+  const customer            = grab(["CUSTOMER"]);
+  const location            = grab(["LOCATION"]);
+  const driver_printed_name = grab(["DRIVER PRINTED NAME", "DRIVER PRINT", "DRIVER NAME"]);
+  const authorized_person   = grab(["AUTHORIZED PERSON", "AUTHORIZED BY"]);
+  const start_time          = grab(["START TIME", "START"]);
+  const end_time            = grab(["END TIME", "END"]);
+  const total_hours         = grab(["TOTAL HRS", "TOTAL HOURS", "TOTAL HR"]);
+
+  // Signature — look for non-label content near SIGNATURE label
+  let signature_present = false;
+  const sigIdx = lines.findIndex(l => l.toUpperCase().includes("SIGNATURE"));
+  if (sigIdx !== -1) {
+    const rest = lines[sigIdx].replace(/SIGNATURE|AUTHORIZED\s*PERSON/gi, "").trim();
+    signature_present = rest.length > 2 || (sigIdx + 1 < lines.length && lines[sigIdx + 1].length > 2);
+  }
+
+  // Copy color
+  let copy_color = "";
+  const up = rawText.toUpperCase();
+  if (up.includes("YELLOW") || up.includes("CUSTOMER COPY")) copy_color = "YELLOW";
+  else if (up.includes("PINK") || up.includes("TRUCKER")) copy_color = "PINK";
+  else if (up.includes("WHITE") || up.includes("RONYX LOGISTICS")) copy_color = "WHITE";
+
+  const keyFields = [ticket_number, truck_number, ticket_date, customer, location,
+    driver_printed_name, authorized_person, start_time, end_time, total_hours];
+  const extraction_confidence = Math.round((keyFields.filter(Boolean).length / keyFields.length) * 100);
+
+  return {
+    ticket_number, truck_number, ticket_date, truck_type, shift_type, loads, material,
+    company_name_of_truck, customer, location, driver_printed_name, authorized_person,
+    signature_present, start_time, end_time, total_hours, copy_color,
+    ocr_confidence: Math.round(ocrConf * 10) / 10,
+    extraction_confidence,
+    exception_flags: [], missing_fields: [],
+  };
+}
 
 const STAT_BADGE: Record<string, { bg: string; color: string }> = {
   MATCHED:            { bg: "#f0fdf4", color: "#16a34a" },
@@ -274,6 +370,17 @@ export default function TicketsPage() {
   const [scanNotes, setScanNotes] = useState("");
   const [scanSubmitting, setScanSubmitting] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
+  // Ronyx Field Ticket OCR state
+  const ronyxFileRef = useRef<HTMLInputElement>(null);
+  const [ronyxStep, setRonyxStep] = useState<"upload" | "review" | "done">("upload");
+  const [ronyxOcrRunning, setRonyxOcrRunning] = useState(false);
+  const [ronyxOcrProgress, setRonyxOcrProgress] = useState(0);
+  const [ronyxImagePreview, setRonyxImagePreview] = useState("");
+  const [ronyxRawText, setRonyxRawText] = useState("");
+  const [ronyxScanSource, setRonyxScanSource] = useState("file_upload");
+  const [ronyxFields, setRonyxFields] = useState<RonyxFields>(RONYX_EMPTY);
+  const [ronyxSubmitting, setRonyxSubmitting] = useState(false);
+  const [ronyxResult, setRonyxResult] = useState<{ ticket_id?: string; missing_fields?: string[]; exception_flags?: string[]; message?: string; error?: string } | null>(null);
   // Pit master state
   const [pits, setPits] = useState<PitRecord[]>(DEFAULT_PITS);
   const [pitEditId, setPitEditId] = useState<string | null>(null);
@@ -519,6 +626,56 @@ export default function TicketsPage() {
     showToast(`Downloaded .xlsx — ${resolved.length} corrections, ${pending.length} unresolved`);
   }, [reconRows, showToast]);
 
+  const runRonyxOcr = useCallback(async (file: File) => {
+    setRonyxOcrRunning(true);
+    setRonyxOcrProgress(0);
+    setRonyxImagePreview(URL.createObjectURL(file));
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("eng", 1, {
+        logger: (m: { status: string; progress: number }) => {
+          if (m.status === "recognizing text") setRonyxOcrProgress(Math.round(m.progress * 100));
+        },
+      });
+      const { data } = await worker.recognize(file);
+      await worker.terminate();
+      setRonyxRawText(data.text);
+      const parsed = parseRonyxTicket(data.text, data.confidence);
+      setRonyxFields(parsed);
+      setRonyxStep("review");
+    } catch (e: unknown) {
+      showToast("OCR failed — you can fill fields manually below");
+      setRonyxFields({ ...RONYX_EMPTY });
+      setRonyxStep("review");
+    } finally {
+      setRonyxOcrRunning(false);
+    }
+  }, [showToast]);
+
+  const submitRonyxTicket = useCallback(async () => {
+    setRonyxSubmitting(true);
+    try {
+      const res = await fetch("/api/ronyx/fast-scan/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...ronyxFields, raw_ocr_text: ronyxRawText, scan_source: ronyxScanSource }),
+      });
+      const result = await res.json();
+      setRonyxResult(result);
+      setRonyxStep("done");
+      if (!result.error) {
+        showToast("Ronyx ticket routed to Reconciliation Command Center");
+        await loadTickets();
+      } else {
+        showToast("Submit failed: " + result.error);
+      }
+    } catch (e: unknown) {
+      showToast("Submit failed — check connection");
+    } finally {
+      setRonyxSubmitting(false);
+    }
+  }, [ronyxFields, ronyxRawText, ronyxScanSource, showToast, loadTickets]);
+
   const submitScan = useCallback(async () => {
     if (!scanDriver.trim() && !scanTruck.trim() && !scanTicketNo.trim()) { showToast("Enter ticket #, driver, or truck."); return; }
     setScanSubmitting(true);
@@ -660,6 +817,8 @@ export default function TicketsPage() {
       <input ref={invoiceFileRef} type="file" accept=".pdf,image/*" style={{ display: "none" }} onChange={() => showToast("Invoice uploaded — processing OCR…")} />
       <input ref={excelFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processExcelFile(f); e.target.value = ""; }} />
       <input ref={importFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processImportFile(f); e.target.value = ""; }} />
+      <input ref={ronyxFileRef} type="file" accept="image/*,.pdf,.heic" style={{ display: "none" }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) { setRonyxScanSource("file_upload"); runRonyxOcr(f); } e.target.value = ""; }} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <section style={{ background: "#0f172a", borderRadius: 16, padding: "28px 32px", marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
@@ -770,48 +929,213 @@ export default function TicketsPage() {
                 ))}
               </div>
 
-              {/* OCR Fields */}
-              <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>OCR / Manual Fields</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {([
-                  ["Ticket Number", scanTicketNo, setScanTicketNo, "e.g. 123456"],
-                  ["Ticket Date", scanDate, setScanDate, "MM/DD/YYYY"],
-                  ["Vendor / Company", scanVendor, setScanVendor, "e.g. Martin Marietta"],
-                  ["Pit / Yard / Quarry", scanPit, setScanPit, "e.g. South Post Oak"],
-                  ["Driver Name", scanDriver, setScanDriver, "e.g. Jose Martinez"],
-                  ["Truck / Unit #", scanTruck, setScanTruck, "e.g. 104"],
-                  ["Project / Job", scanJob, setScanJob, "e.g. I-45 Base Job"],
-                  ["PO Number", scanPO, setScanPO, "e.g. PO-2024-001"],
-                  ["Material", scanMaterial, setScanMaterial, "e.g. Limestone Base"],
-                  ["Gross Weight", scanGross, setScanGross, "e.g. 68000"],
-                  ["Tare Weight", scanTare, setScanTare, "e.g. 34000"],
-                  ["Net Tons", scanNets, setScanNets, "e.g. 17.00"],
-                  ["Rate ($/ton)", scanRate, setScanRate, "e.g. 18.50"],
-                  ["Total Amount", scanAmount, setScanAmount, "e.g. 314.50"],
-                ] as [string, string, (v: string) => void, string][]).map(([label, val, set, ph]) => (
-                  <div key={label}>
-                    <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>{label}</label>
-                    <input value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                      style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" }} />
+              {/* ── Ronyx Field Ticket vs. Generic OCR ── */}
+              {scanType === "ronyx_field_ticket" ? (
+                <div>
+                  {/* ── STEP: upload ── */}
+                  {ronyxStep === "upload" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 16px", fontSize: "0.78rem", color: "#1e40af", fontWeight: 600 }}>
+                        📋 Ronyx Field Ticket — OCR template active. Upload the physical ticket image or scan.
+                      </div>
+                      {ronyxOcrRunning ? (
+                        <div style={{ padding: "20px 0", textAlign: "center" }}>
+                          <div style={{ fontWeight: 700, color: "#1d4ed8", marginBottom: 10 }}>Extracting fields from ticket…</div>
+                          <div style={{ height: 8, background: "#e2e8f0", borderRadius: 99, overflow: "hidden", margin: "0 auto", maxWidth: 300 }}>
+                            <div style={{ width: `${ronyxOcrProgress}%`, height: "100%", background: "#1d4ed8", borderRadius: 99, transition: "width 200ms" }} />
+                          </div>
+                          <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: 8 }}>{ronyxOcrProgress}% — Tesseract OCR reading ticket</div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {[
+                            { label: "📷 Camera / Phone Scan", src: "camera" },
+                            { label: "🖨 ScanSnap iX1600", src: "scansnap_ix1600" },
+                            { label: "🖼 Upload Image / PDF", src: "file_upload" },
+                          ].map(b => (
+                            <button key={b.src} onClick={() => { setRonyxScanSource(b.src); ronyxFileRef.current?.click(); }}
+                              style={{ flex: 1, minWidth: 140, padding: "12px 10px", borderRadius: 10, border: "2px solid #bfdbfe", background: "#eff6ff", color: "#1e40af", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", textAlign: "center" }}>
+                              {b.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+                        <button onClick={() => { setRonyxFields(RONYX_EMPTY); setRonyxStep("review"); }}
+                          style={{ fontSize: "0.75rem", color: "#64748b", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                          Skip OCR — fill fields manually
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── STEP: review ── */}
+                  {ronyxStep === "review" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {/* Confidence banner */}
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#f8fafc", borderRadius: 9, padding: "10px 14px", border: "1px solid #e2e8f0" }}>
+                        {ronyxImagePreview && <img src={ronyxImagePreview} alt="ticket" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid #e2e8f0" }} />}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#0f172a" }}>Extraction Review</div>
+                          <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 2 }}>
+                            OCR conf: <strong>{ronyxFields.ocr_confidence}%</strong> &nbsp;·&nbsp;
+                            Field extraction: <strong style={{ color: ronyxFields.extraction_confidence >= 70 ? "#16a34a" : "#dc2626" }}>{ronyxFields.extraction_confidence}%</strong>
+                          </div>
+                        </div>
+                        <button onClick={() => { setRonyxStep("upload"); setRonyxImagePreview(""); }}
+                          style={{ fontSize: "0.7rem", color: "#64748b", background: "none", border: "none", cursor: "pointer" }}>Re-scan</button>
+                      </div>
+
+                      {/* Exception flags */}
+                      {ronyxFields.exception_flags.length > 0 && (
+                        <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 9, padding: "10px 14px" }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.72rem", color: "#dc2626", marginBottom: 6 }}>Missing / Exception Flags</div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {ronyxFields.exception_flags.map(f => (
+                              <span key={f} style={{ fontSize: "0.65rem", fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "#fee2e2", color: "#dc2626" }}>{f}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Editable fields grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {([
+                          ["Ticket #",             "ticket_number",        "e.g. 123456"],
+                          ["Truck #",              "truck_number",         "e.g. 104"],
+                          ["Date",                 "ticket_date",          "MM/DD/YYYY"],
+                          ["Truck Type",           "truck_type",           "DUMP TRUCK / TRAILER / OTHER"],
+                          ["Shift",                "shift_type",           "DAY SHIFT / NIGHT SHIFT"],
+                          ["Loads",                "loads",                "e.g. 1"],
+                          ["Material",             "material",             "e.g. Limestone Base"],
+                          ["Company Name of Truck","company_name_of_truck","e.g. Ronyx Logistics LLC"],
+                          ["Customer",             "customer",             "e.g. TxDOT"],
+                          ["Location",             "location",             "e.g. I-45 Project"],
+                          ["Driver Printed Name",  "driver_printed_name",  "Full name"],
+                          ["Authorized Person",    "authorized_person",    "Supervisor name"],
+                          ["Start Time",           "start_time",           "e.g. 7:00 AM"],
+                          ["End Time",             "end_time",             "e.g. 4:30 PM"],
+                          ["Total Hours",          "total_hours",          "e.g. 9.5"],
+                          ["Copy Color",           "copy_color",           "WHITE / YELLOW / PINK"],
+                        ] as [string, keyof RonyxFields, string][]).map(([lbl, key, ph]) => {
+                          const val = ronyxFields[key];
+                          const isEmpty = typeof val === "boolean" ? false : !val || val === "";
+                          return (
+                            <div key={key}>
+                              <label style={{ fontSize: "0.63rem", fontWeight: 700, color: isEmpty ? "#dc2626" : "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 3 }}>
+                                {lbl}{isEmpty ? " ⚠" : ""}
+                              </label>
+                              <input
+                                value={typeof val === "boolean" ? "" : (val as string)}
+                                onChange={e => setRonyxFields(prev => ({ ...prev, [key]: e.target.value }))}
+                                placeholder={ph}
+                                style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${isEmpty ? "#fca5a5" : "#e2e8f0"}`, fontSize: "0.8rem", outline: "none", background: isEmpty ? "#fff1f2" : "#f8fafc", boxSizing: "border-box" }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Signature checkbox */}
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#0f172a" }}>
+                        <input type="checkbox" checked={ronyxFields.signature_present}
+                          onChange={e => setRonyxFields(prev => ({ ...prev, signature_present: e.target.checked }))}
+                          style={{ width: 16, height: 16 }} />
+                        Authorized signature is present on the physical ticket
+                      </label>
+
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 4 }}>
+                        <button onClick={submitRonyxTicket} disabled={ronyxSubmitting}
+                          style={{ padding: "10px 22px", borderRadius: 9, background: ronyxSubmitting ? "#93c5fd" : "#1d4ed8", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: ronyxSubmitting ? "not-allowed" : "pointer" }}>
+                          {ronyxSubmitting ? "Submitting…" : "🔍 Send to Reconciliation"}
+                        </button>
+                        <button onClick={() => { setRonyxStep("upload"); setRonyxImagePreview(""); }}
+                          style={{ padding: "10px 14px", borderRadius: 9, background: "#f1f5f9", border: "none", fontWeight: 600, color: "#475569", fontSize: "0.82rem", cursor: "pointer" }}>
+                          Attach Original Scan
+                        </button>
+                        <button onClick={() => { setRonyxFields(prev => ({ ...prev, exception_flags: prev.missing_fields.map(f => "MISSING_" + f.toUpperCase()) })); }}
+                          style={{ padding: "10px 14px", borderRadius: 9, background: "#fff7ed", border: "1px solid #fed7aa", fontWeight: 600, color: "#ea580c", fontSize: "0.82rem", cursor: "pointer" }}>
+                          Mark Missing Info
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── STEP: done ── */}
+                  {ronyxStep === "done" && ronyxResult && (
+                    <div style={{ padding: "16px 18px", borderRadius: 12, background: ronyxResult.error ? "#fff1f2" : "#f0fdf4", border: `1px solid ${ronyxResult.error ? "#fca5a5" : "#86efac"}` }}>
+                      {ronyxResult.error ? (
+                        <div style={{ color: "#dc2626", fontWeight: 800 }}>Error: {ronyxResult.error}</div>
+                      ) : (
+                        <div>
+                          <div style={{ fontWeight: 900, color: "#16a34a", fontSize: "0.95rem", marginBottom: 4 }}>✓ Ticket routed to Reconciliation</div>
+                          <div style={{ fontSize: "0.78rem", color: "#166534" }}>{ronyxResult.message}</div>
+                          {ronyxResult.missing_fields && ronyxResult.missing_fields.length > 0 && (
+                            <div style={{ marginTop: 8, fontSize: "0.72rem", color: "#d97706" }}>
+                              Holds active until resolved: {ronyxResult.missing_fields.join(", ")}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button onClick={() => { setRonyxStep("upload"); setRonyxFields(RONYX_EMPTY); setRonyxResult(null); setRonyxImagePreview(""); }}
+                          style={{ padding: "8px 16px", borderRadius: 8, background: "#f1f5f9", border: "none", fontWeight: 600, color: "#475569", fontSize: "0.8rem", cursor: "pointer" }}>
+                          Scan Another Ticket
+                        </button>
+                        <button onClick={() => setActiveTab("excel_reconcile")}
+                          style={{ padding: "8px 16px", borderRadius: 8, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
+                          Go to Reconciliation →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* ── Generic OCR / Manual Fields ── */
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>OCR / Manual Fields</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {([
+                      ["Ticket Number", scanTicketNo, setScanTicketNo, "e.g. 123456"],
+                      ["Ticket Date", scanDate, setScanDate, "MM/DD/YYYY"],
+                      ["Vendor / Company", scanVendor, setScanVendor, "e.g. Martin Marietta"],
+                      ["Pit / Yard / Quarry", scanPit, setScanPit, "e.g. South Post Oak"],
+                      ["Driver Name", scanDriver, setScanDriver, "e.g. Jose Martinez"],
+                      ["Truck / Unit #", scanTruck, setScanTruck, "e.g. 104"],
+                      ["Project / Job", scanJob, setScanJob, "e.g. I-45 Base Job"],
+                      ["PO Number", scanPO, setScanPO, "e.g. PO-2024-001"],
+                      ["Material", scanMaterial, setScanMaterial, "e.g. Limestone Base"],
+                      ["Gross Weight", scanGross, setScanGross, "e.g. 68000"],
+                      ["Tare Weight", scanTare, setScanTare, "e.g. 34000"],
+                      ["Net Tons", scanNets, setScanNets, "e.g. 17.00"],
+                      ["Rate ($/ton)", scanRate, setScanRate, "e.g. 18.50"],
+                      ["Total Amount", scanAmount, setScanAmount, "e.g. 314.50"],
+                    ] as [string, string, (v: string) => void, string][]).map(([label, val, set, ph]) => (
+                      <div key={label}>
+                        <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>{label}</label>
+                        <input value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                          style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" }} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>Extracted Text / Notes</label>
-                <textarea value={scanNotes} onChange={e => setScanNotes(e.target.value)} placeholder="Paste OCR text or any additional notes…" style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none", background: "#f8fafc", height: 72, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
-              </div>
-              <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-                <button disabled={scanSubmitting} onClick={submitScan} style={{ padding: "11px 26px", borderRadius: 9, background: "#1e40af", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: scanSubmitting ? "not-allowed" : "pointer", opacity: scanSubmitting ? 0.7 : 1 }}>
-                  {scanSubmitting ? "Submitting…" : "⚡ Submit Scan"}
-                </button>
-                <button onClick={() => setActiveTab("all")} style={{ padding: "11px 18px", borderRadius: 9, background: "#f1f5f9", border: "none", color: "#475569", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
-                  Cancel
-                </button>
-              </div>
-              {scanResult && (
-                <div style={{ marginTop: 14, padding: "12px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, fontSize: "0.82rem" }}>
-                  <div style={{ fontWeight: 700, color: "#16a34a" }}>✓ Scan Submitted</div>
-                  <div style={{ color: "#166534", marginTop: 3 }}>{scanResult.message}</div>
+                  <div style={{ marginTop: 10 }}>
+                    <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>Extracted Text / Notes</label>
+                    <textarea value={scanNotes} onChange={e => setScanNotes(e.target.value)} placeholder="Paste OCR text or any additional notes…" style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none", background: "#f8fafc", height: 72, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                    <button disabled={scanSubmitting} onClick={submitScan} style={{ padding: "11px 26px", borderRadius: 9, background: "#1e40af", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.88rem", cursor: scanSubmitting ? "not-allowed" : "pointer", opacity: scanSubmitting ? 0.7 : 1 }}>
+                      {scanSubmitting ? "Submitting…" : "⚡ Submit Scan"}
+                    </button>
+                    <button onClick={() => setActiveTab("all")} style={{ padding: "11px 18px", borderRadius: 9, background: "#f1f5f9", border: "none", color: "#475569", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+                      Cancel
+                    </button>
+                  </div>
+                  {scanResult && (
+                    <div style={{ marginTop: 14, padding: "12px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, fontSize: "0.82rem" }}>
+                      <div style={{ fontWeight: 700, color: "#16a34a" }}>✓ Scan Submitted</div>
+                      <div style={{ color: "#166534", marginTop: 3 }}>{scanResult.message}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1142,6 +1466,70 @@ export default function TicketsPage() {
               </div>
             </div>
           </div>
+          {/* ── Ronyx Ticket Review Card ── */}
+          {(() => {
+            const ronyxPending = tickets.filter(t => (t as any).document_type === "ronyx_field_ticket" || t.ticketSource === "fast_scan_ocr");
+            const ronyxHolds   = ronyxPending.filter(t => t.status !== "Approved");
+            if (ronyxHolds.length === 0) return null;
+            return (
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 20, marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 12, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>OCR Scan Queue</div>
+                    <div style={{ fontWeight: 900, fontSize: "0.95rem", color: "#0f172a" }}>📋 Ronyx Field Ticket Review</div>
+                    <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 2 }}>{ronyxHolds.length} ticket{ronyxHolds.length !== 1 ? "s" : ""} scanned and waiting for reconciliation approval</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setActiveTab("fastscan")}
+                      style={{ padding: "8px 14px", borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
+                      Scan Another
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {ronyxHolds.slice(0, 5).map(t => {
+                    const ef: string[] = (t as any).exception_flags || [];
+                    const mf: string[] = (t as any).missing_fields  || [];
+                    const sigOk = (t as any).signature_present === true;
+                    const payrollOk = Boolean(t.driver) && Boolean(t.truck) && Boolean(t.ticketDate) && sigOk && ef.length === 0;
+                    const billingOk = Boolean(t.customer) && sigOk && ef.length === 0;
+                    return (
+                      <div key={t.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 14px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                            <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0f172a" }}>#{t.ticketNo || "—"}</span>
+                            <span style={{ fontSize: "0.68rem", color: "#64748b" }}>{t.ticketDate}</span>
+                            <span style={{ fontSize: "0.68rem", color: "#64748b" }}>Truck {t.truck || "—"}</span>
+                            <span style={{ fontSize: "0.68rem", color: "#64748b" }}>{t.driver || "No driver"}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                            {!sigOk && <span style={{ fontSize: "0.62rem", fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: "#fee2e2", color: "#dc2626" }}>MISSING_SIGNATURE</span>}
+                            {ef.slice(0, 3).map(f => <span key={f} style={{ fontSize: "0.62rem", fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: "#fee2e2", color: "#dc2626" }}>{f}</span>)}
+                          </div>
+                          <div style={{ display: "flex", gap: 10, fontSize: "0.68rem", color: "#94a3b8" }}>
+                            <span>OCR conf: <strong>{t.scanConfidence}%</strong></span>
+                            {mf.length > 0 && <span style={{ color: "#d97706" }}>{mf.length} missing field{mf.length !== 1 ? "s" : ""}</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0, alignItems: "flex-end" }}>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: payrollOk ? "#f0fdf4" : "#fff7ed", color: payrollOk ? "#16a34a" : "#d97706" }}>
+                            {payrollOk ? "✓ Payroll OK" : "⛔ Payroll Hold"}
+                          </span>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: billingOk ? "#eff6ff" : "#fff7ed", color: billingOk ? "#1d4ed8" : "#d97706" }}>
+                            {billingOk ? "✓ Billing OK" : "⛔ Billing Hold"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {ronyxHolds.length > 5 && (
+                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", textAlign: "center", padding: "6px 0" }}>+ {ronyxHolds.length - 5} more tickets</div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Upload bar */}
           {!reconProcessed ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
