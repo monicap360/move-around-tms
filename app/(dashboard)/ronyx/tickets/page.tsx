@@ -382,6 +382,21 @@ export default function TicketsPage() {
   const [ronyxFields, setRonyxFields] = useState<RonyxFields>(RONYX_EMPTY);
   const [ronyxSubmitting, setRonyxSubmitting] = useState(false);
   const [ronyxResult, setRonyxResult] = useState<{ ticket_id?: string; missing_fields?: string[]; exception_flags?: string[]; qr_token?: string; qr_url?: string; message?: string; error?: string } | null>(null);
+  // Scan batch state
+  const [batchActive, setBatchActive]           = useState(false);
+  const [batchId, setBatchId]                   = useState<string | null>(null);
+  const [batchName, setBatchName]               = useState("");
+  const [batchScannerUsed, setBatchScannerUsed] = useState("ricoh_fi8170");
+  const [batchStartedAt, setBatchStartedAt]     = useState<string | null>(null);
+  const [batchPageCount, setBatchPageCount]     = useState(0);
+  const [batchTicketCount, setBatchTicketCount] = useState(0);
+  const [batchOcrCount, setBatchOcrCount]       = useState(0);
+  const [batchExceptionCount, setBatchExceptionCount] = useState(0);
+  const [batchDuplicateCount, setBatchDuplicateCount] = useState(0);
+  const [batchPayrollHolds, setBatchPayrollHolds]     = useState(0);
+  const [batchBillingHolds, setBatchBillingHolds]     = useState(0);
+  // Scan quality flags for current Ronyx ticket
+  const [ronyxQualityFlags, setRonyxQualityFlags] = useState<string[]>([]);
   // QR Code state
   const [qrOpen, setQrOpen]         = useState(false);
   const [qrTicketId, setQrTicketId] = useState("");
@@ -470,6 +485,43 @@ export default function TicketsPage() {
       setTimeout(loadTickets, 1500);
     } catch (e: any) { showToast(`Upload failed: ${e?.message || "check connection"}`); }
   }, [loadTickets, showToast]);
+
+  const startBatch = useCallback(async () => {
+    try {
+      const name = batchName || `Batch ${new Date().toLocaleDateString("en-US")}`;
+      const res = await fetch("/api/ronyx/scan-batches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch_name: name, scanner_used: batchScannerUsed }),
+      });
+      const d = await res.json();
+      if (!res.ok) { showToast(`Batch start failed: ${d.error}`); return; }
+      setBatchId(d.batch.id);
+      setBatchStartedAt(d.batch.started_at);
+      setBatchActive(true);
+      setBatchPageCount(0); setBatchTicketCount(0); setBatchOcrCount(0);
+      setBatchExceptionCount(0); setBatchDuplicateCount(0); setBatchPayrollHolds(0); setBatchBillingHolds(0);
+      showToast(`Scan batch started: ${name}`);
+    } catch { showToast("Could not start batch — check connection."); }
+  }, [batchName, batchScannerUsed, showToast]);
+
+  const endBatch = useCallback(async () => {
+    if (!batchId) { setBatchActive(false); return; }
+    try {
+      await fetch("/api/ronyx/scan-batches", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          batch_id: batchId, status: "completed", ended_at: new Date().toISOString(),
+          ticket_count: batchTicketCount, ocr_complete_count: batchOcrCount,
+          exceptions_count: batchExceptionCount, duplicate_count: batchDuplicateCount,
+          payroll_holds: batchPayrollHolds, billing_holds: batchBillingHolds, page_count: batchPageCount,
+        }),
+      });
+      showToast(`Batch closed — ${batchTicketCount} tickets processed.`);
+    } catch { /* non-fatal */ }
+    setBatchActive(false); setBatchId(null); setBatchName("");
+  }, [batchId, batchTicketCount, batchOcrCount, batchExceptionCount, batchDuplicateCount, batchPayrollHolds, batchBillingHolds, batchPageCount, showToast]);
 
   // Column name aliases so xlsx files with varied headers still work
   const COL_ALIASES: Record<string, string[]> = {
@@ -664,26 +716,58 @@ export default function TicketsPage() {
   const submitRonyxTicket = useCallback(async () => {
     setRonyxSubmitting(true);
     try {
+      // Auto-add quality flags based on OCR confidence
+      const autoFlags = [...ronyxQualityFlags];
+      if (ronyxFields.ocr_confidence < 60 && !autoFlags.includes("LOW_OCR_CONFIDENCE")) autoFlags.push("LOW_OCR_CONFIDENCE");
+      if (!ronyxFields.ticket_number && !autoFlags.includes("MISSING_TICKET_NUMBER")) autoFlags.push("MISSING_TICKET_NUMBER");
+      if (!ronyxFields.signature_present && !autoFlags.includes("MISSING_SIGNATURE")) autoFlags.push("MISSING_SIGNATURE");
+
       const res = await fetch("/api/ronyx/fast-scan/ocr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...ronyxFields, raw_ocr_text: ronyxRawText, scan_source: ronyxScanSource }),
+        body: JSON.stringify({
+          ...ronyxFields,
+          raw_ocr_text:       ronyxRawText,
+          scan_source:        ronyxScanSource,
+          scan_batch_id:      batchId || null,
+          scan_quality_flags: autoFlags.length > 0 ? autoFlags : null,
+        }),
       });
       const result = await res.json();
       setRonyxResult(result);
       setRonyxStep("done");
       if (!result.error) {
         showToast("Ronyx ticket routed to Reconciliation Command Center");
+        // Update batch counters
+        if (batchId) {
+          const newTicketCount = batchTicketCount + 1;
+          const newOcrCount    = batchOcrCount + 1;
+          const newExc         = batchExceptionCount + (result.exception_flags?.length > 0 ? 1 : 0);
+          const newPH          = batchPayrollHolds + 1;
+          const newBH          = batchBillingHolds + 1;
+          setBatchTicketCount(newTicketCount);
+          setBatchOcrCount(newOcrCount);
+          setBatchExceptionCount(newExc);
+          setBatchPayrollHolds(newPH);
+          setBatchBillingHolds(newBH);
+          // Persist to DB
+          fetch("/api/ronyx/scan-batches", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ batch_id: batchId, ticket_count: newTicketCount, ocr_complete_count: newOcrCount, exceptions_count: newExc, payroll_holds: newPH, billing_holds: newBH }),
+          }).catch(() => null);
+        }
+        setRonyxQualityFlags([]);
         await loadTickets();
       } else {
         showToast("Submit failed: " + result.error);
       }
-    } catch (e: unknown) {
+    } catch {
       showToast("Submit failed — check connection");
     } finally {
       setRonyxSubmitting(false);
     }
-  }, [ronyxFields, ronyxRawText, ronyxScanSource, showToast, loadTickets]);
+  }, [ronyxFields, ronyxRawText, ronyxScanSource, ronyxQualityFlags, batchId, batchTicketCount, batchOcrCount, batchExceptionCount, batchPayrollHolds, batchBillingHolds, showToast, loadTickets]);
 
   const generateQr = useCallback(async (ticketId: string, ticketNo: string, existingToken?: string, existingUrl?: string, scanCount?: number) => {
     if (existingToken && existingUrl) {
@@ -854,7 +938,9 @@ export default function TicketsPage() {
         <div>
           <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>MoveAround TMS</p>
           <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>Ticket Command Center</h1>
-          <p style={{ margin: "8px 0 0", color: "#94a3b8", fontSize: "0.83rem" }}>Scan · Match · Reconcile · Approve · Send to Payroll &amp; Billing</p>
+          <p style={{ margin: "8px 0 0", color: "#94a3b8", fontSize: "0.83rem" }}>
+            <span style={{ color: "#4ade80", fontWeight: 700 }}>Fast Scan™</span> · Powered by Ronyx &nbsp;·&nbsp; Scan · Match · Reconcile · Pay · Bill
+          </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <button onClick={() => setActiveTab("fastscan")} style={{ padding: "11px 18px", borderRadius: 10, background: "#4ade80", color: "#052e16", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>
@@ -921,16 +1007,90 @@ export default function TicketsPage() {
       {activeTab === "fastscan" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* ── Batch Controls ── */}
+            <div style={{ background: batchActive ? "#0f172a" : "#fff", borderRadius: 14, border: batchActive ? "2px solid #4ade80" : "1px solid #e2e8f0", padding: "18px 22px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: batchActive ? 16 : 0 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: batchActive ? "#4ade80" : "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
+                    {batchActive ? "● BATCH IN PROGRESS" : "Scan Batch Controls"}
+                  </div>
+                  {!batchActive && (
+                    <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 2 }}>
+                      Start a batch to group tickets from one scanning session. Every ticket in the batch shares a scan_batch_id.
+                    </div>
+                  )}
+                </div>
+                {batchActive ? (
+                  <button onClick={endBatch} style={{ padding: "8px 18px", borderRadius: 8, background: "#dc2626", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer" }}>
+                    ■ End Batch
+                  </button>
+                ) : (
+                  <button onClick={startBatch} style={{ padding: "8px 18px", borderRadius: 8, background: "#16a34a", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer" }}>
+                    ▶ Start Batch
+                  </button>
+                )}
+              </div>
+
+              {/* Batch setup fields (only when not yet active) */}
+              {!batchActive && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 3 }}>Batch Name</label>
+                    <input value={batchName} onChange={e => setBatchName(e.target.value)}
+                      placeholder={`Batch ${new Date().toLocaleDateString("en-US")}`}
+                      style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: "1px solid #e2e8f0", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 3 }}>Scanner Used</label>
+                    <select value={batchScannerUsed} onChange={e => setBatchScannerUsed(e.target.value)}
+                      style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: "1px solid #e2e8f0", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }}>
+                      <option value="ricoh_fi8170">Ricoh fi-8170 (Production)</option>
+                      <option value="scansnap_ix2500">ScanSnap iX2500 (Front Office)</option>
+                      <option value="scansnap_ix1600">ScanSnap iX1600 (Backup)</option>
+                      <option value="canon_drg2110">Canon DR-G2110 (Enterprise)</option>
+                      <option value="camera">Camera / Phone</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Batch live counters */}
+              {batchActive && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+                  {[
+                    { label: "Pages", value: batchPageCount, color: "#e2e8f0" },
+                    { label: "Tickets", value: batchTicketCount, color: "#4ade80" },
+                    { label: "OCR Done", value: batchOcrCount, color: "#60a5fa" },
+                    { label: "Exceptions", value: batchExceptionCount, color: "#fb923c" },
+                    { label: "Duplicates", value: batchDuplicateCount, color: "#f472b6" },
+                    { label: "Payroll Holds", value: batchPayrollHolds, color: "#fde68a" },
+                    { label: "Billing Holds", value: batchBillingHolds, color: "#fde68a" },
+                  ].map(c => (
+                    <div key={c.label} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "1.3rem", fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.value}</div>
+                      <div style={{ fontSize: "0.6rem", color: "#64748b", fontWeight: 600, marginTop: 3 }}>{c.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Upload zone */}
             <div style={{ background: "#fff", borderRadius: 14, border: "2px dashed #cbd5e1", padding: 32, textAlign: "center" }}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}>
               <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>📄</div>
-              <h3 style={{ margin: "0 0 6px", fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>Drop Ticket Here to Fast Scan</h3>
-              <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: "0.83rem" }}>JPG · PNG · PDF · HEIC · supports batch uploads</p>
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <h3 style={{ margin: "0 0 4px", fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>Drop Ticket Here to Fast Scan</h3>
+              <p style={{ margin: "0 0 4px", color: "#4ade80", fontWeight: 700, fontSize: "0.72rem" }}>Fast Scan™ · Powered by Ronyx</p>
+              <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: "0.8rem" }}>
+                JPG · PNG · PDF · HEIC · Batch upload · Multi-page packets · Pit Invoices · Driver Documents · Contracts
+              </p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
                 {[
-                  { label: "📷 Camera Scan", onClick: () => fileInputRef.current?.click() },
+                  { label: "🖨 Ricoh fi-8170", onClick: () => batchInputRef.current?.click() },
+                  { label: "📷 Camera / Phone", onClick: () => fileInputRef.current?.click() },
                   { label: "🖼 Upload Image", onClick: () => fileInputRef.current?.click() },
                   { label: "📄 Upload PDF", onClick: () => fileInputRef.current?.click() },
                   { label: "📦 Batch Upload", onClick: () => batchInputRef.current?.click() },
@@ -938,6 +1098,19 @@ export default function TicketsPage() {
                   <button key={b.label} onClick={b.onClick} style={{ padding: "9px 18px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1e40af", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
                     {b.label}
                   </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                {[
+                  { label: "📋 Ronyx Field Ticket", color: "#1d4ed8" },
+                  { label: "🧾 Pit Invoice", color: "#d97706" },
+                  { label: "🪪 Driver Document", color: "#7c3aed" },
+                  { label: "📝 Contract", color: "#0891b2" },
+                  { label: "🧾 Receipt", color: "#16a34a" },
+                ].map(d => (
+                  <span key={d.label} style={{ fontSize: "0.65rem", fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: d.color + "15", color: d.color, border: `1px solid ${d.color}40` }}>
+                    {d.label}
+                  </span>
                 ))}
               </div>
             </div>
@@ -978,12 +1151,17 @@ export default function TicketsPage() {
                       ) : (
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           {[
-                            { label: "📷 Camera / Phone Scan", src: "camera" },
-                            { label: "🖨 ScanSnap iX1600", src: "scansnap_ix1600" },
-                            { label: "🖼 Upload Image / PDF", src: "file_upload" },
+                            { label: "🖨 Ricoh fi-8170", src: "ricoh_fi8170", primary: true },
+                            { label: "📷 Camera / Phone", src: "camera", primary: false },
+                            { label: "🖨 ScanSnap Backup", src: "scansnap_ix2500", primary: false },
+                            { label: "🖼 Upload Image / PDF", src: "file_upload", primary: false },
                           ].map(b => (
                             <button key={b.src} onClick={() => { setRonyxScanSource(b.src); ronyxFileRef.current?.click(); }}
-                              style={{ flex: 1, minWidth: 140, padding: "12px 10px", borderRadius: 10, border: "2px solid #bfdbfe", background: "#eff6ff", color: "#1e40af", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", textAlign: "center" }}>
+                              style={{ flex: 1, minWidth: 130, padding: "12px 10px", borderRadius: 10,
+                                border: `2px solid ${b.primary ? "#1d4ed8" : "#bfdbfe"}`,
+                                background: b.primary ? "#1d4ed8" : "#eff6ff",
+                                color: b.primary ? "#fff" : "#1e40af",
+                                fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", textAlign: "center" }}>
                               {b.label}
                             </button>
                           ))}
@@ -1026,6 +1204,42 @@ export default function TicketsPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* Scan quality flags */}
+                      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 9, padding: "10px 14px" }}>
+                        <div style={{ fontWeight: 700, fontSize: "0.72rem", color: "#92400e", marginBottom: 8 }}>Scan Quality — Check All That Apply</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                          {[
+                            ["LOW_OCR_CONFIDENCE", "Low OCR confidence"],
+                            ["BLURRY_SCAN", "Blurry scan"],
+                            ["MISSING_SIGNATURE", "Missing signature"],
+                            ["MISSING_TICKET_NUMBER", "Missing ticket number"],
+                            ["DUPLICATE_TICKET", "Duplicate ticket"],
+                            ["UNREADABLE_TICKET", "Unreadable ticket"],
+                            ["MANUAL_REVIEW_REQUIRED", "Manual review required"],
+                          ].map(([flag, label]) => {
+                            const autoSet = (flag === "LOW_OCR_CONFIDENCE" && ronyxFields.ocr_confidence < 60)
+                              || (flag === "MISSING_TICKET_NUMBER" && !ronyxFields.ticket_number)
+                              || (flag === "MISSING_SIGNATURE" && !ronyxFields.signature_present);
+                            const isChecked = ronyxQualityFlags.includes(flag) || autoSet;
+                            return (
+                              <label key={flag} style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", fontSize: "0.75rem", color: "#78350f", fontWeight: autoSet ? 700 : 500 }}>
+                                <input type="checkbox" checked={isChecked}
+                                  onChange={e => setRonyxQualityFlags(prev =>
+                                    e.target.checked ? [...new Set([...prev, flag])] : prev.filter(f => f !== flag)
+                                  )}
+                                  style={{ width: 14, height: 14 }} />
+                                {label}{autoSet ? " ⚠" : ""}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {batchId && (
+                          <div style={{ marginTop: 8, fontSize: "0.65rem", color: "#92400e", fontWeight: 600 }}>
+                            Batch: {batchName || "In Progress"} · Scanner: {batchScannerUsed.replace(/_/g, " ")}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Editable fields grid */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -1179,7 +1393,8 @@ export default function TicketsPage() {
           {/* Right panel */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ background: "#0f172a", borderRadius: 14, padding: 22, color: "#e2e8f0" }}>
-              <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#fff", marginBottom: 14 }}>What Fast Scan Checks</div>
+              <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#4ade80", marginBottom: 2 }}>Fast Scan™</div>
+              <div style={{ fontSize: "0.62rem", color: "#64748b", marginBottom: 14 }}>Scan · Match · Reconcile · Pay · Bill</div>
               {[
                 ["Ticket Number", "Unique — duplicate detection"],
                 ["Vendor / Pit", "Matched to pit master"],
@@ -1194,6 +1409,9 @@ export default function TicketsPage() {
                 ["Invoice Status", "Pending / Matched / Missing"],
                 ["Payroll Status", "Ready / Hold / Review"],
                 ["Billing Status", "Ready / Hold / Review"],
+                ["Batch ID", "Groups tickets by scan session"],
+                ["Scan Quality", "OCR confidence + blurry flag"],
+                ["Duplicate Check", "Flags repeat ticket numbers"],
               ].map(([f, d]) => (
                 <div key={f} style={{ display: "flex", gap: 10, marginBottom: 9 }}>
                   <span style={{ color: "#4ade80", fontWeight: 700, flexShrink: 0 }}>✓</span>
@@ -1204,12 +1422,49 @@ export default function TicketsPage() {
                 </div>
               ))}
             </div>
+
+            {/* Document types accepted */}
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 18 }}>
+              <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#0f172a", marginBottom: 10 }}>Document Types</div>
+              {[
+                ["📋", "Ronyx Field Ticket", "#1d4ed8"],
+                ["🧾", "Pit Invoice", "#d97706"],
+                ["🪪", "Driver Document", "#7c3aed"],
+                ["📝", "Contract", "#0891b2"],
+                ["🧾", "Receipt", "#16a34a"],
+                ["📦", "Multi-page Packet", "#475569"],
+              ].map(([icon, label, color]) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                  <span>{icon}</span>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 600, color }}>{label}</span>
+                </div>
+              ))}
+            </div>
+
             <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 18 }}>
               <div style={{ fontWeight: 700, fontSize: "0.8rem", color: "#0f172a", marginBottom: 10 }}>Routes ticket to</div>
               {[["💵", "READY_FOR_PAYROLL", "#f0fdf4", "#15803d"], ["🧾", "READY_FOR_BILLING", "#eff6ff", "#1d4ed8"], ["⚠️", "NEEDS_REVIEW", "#fff7ed", "#ea580c"], ["⛔", "PAYROLL_HOLD", "#fef3c7", "#b45309"]].map(([icon, label, bg, color]) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
                   <span>{icon}</span>
                   <span style={{ fontSize: "0.7rem", fontWeight: 800, background: bg, color, padding: "2px 9px", borderRadius: 99, letterSpacing: "0.04em" }}>{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Recommended hardware */}
+            <div style={{ background: "#f8fafc", borderRadius: 14, border: "1px solid #e2e8f0", padding: 18 }}>
+              <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#0f172a", marginBottom: 10 }}>Recommended Hardware</div>
+              {[
+                { label: "Ricoh fi-8170", role: "Production (70 ppm)", color: "#16a34a", badge: "PRIMARY" },
+                { label: "ScanSnap iX2500", role: "Front Office / Backup", color: "#d97706", badge: "BACKUP" },
+                { label: "Canon DR-G2110", role: "High-volume enterprise", color: "#7c3aed", badge: "OPTIONAL" },
+              ].map(s => (
+                <div key={s.label} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "1px 7px", borderRadius: 99, background: s.color + "15", color: s.color }}>{s.badge}</span>
+                    <span style={{ fontWeight: 700, fontSize: "0.78rem", color: "#0f172a" }}>{s.label}</span>
+                  </div>
+                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 2, paddingLeft: 2 }}>{s.role}</div>
                 </div>
               ))}
             </div>
