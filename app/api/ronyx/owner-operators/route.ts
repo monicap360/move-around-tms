@@ -34,36 +34,76 @@ const REQUIRED_OOS = [
     dot_number:            "4448005",
     status:                "active",
   },
+  {
+    company_name:          "Urdaneta Trucking LLC",
+    business_address:      "7800 Willowood Ln Apt C4, Port Arthur, TX 77642",
+    contact_name:          "Reynaldo Urdaneta",
+    contact_email:         "urdanetareynaldo12@gmail.com",
+    contact_phone:         "346-592-8329",
+    ein:                   "32-0925419",
+    dot_number:            "4321209",
+    status:                "active",
+  },
 ];
 
 async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, oos: any[]) {
   if (!oos.length) return NextResponse.json({ companies: [] });
 
   const ids = oos.map((o) => o.id);
-  const [driversRes, trucksRes, docsRes, jobsRes] = await Promise.all([
+  const [driversRes, trucksRes, docsRes, jobsRes, subsRes, dtaRes] = await Promise.all([
     sb.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name"),
     sb.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number"),
     sb.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }),
     sb.from("ronyx_oo_jobs").select("*").in("oo_id", ids).order("load_date", { ascending: false }),
+    sb.from("ronyx_oo_subcontractors").select("*, drivers:ronyx_oo_subcontractor_drivers(*)").in("oo_id", ids).order("company_name"),
+    sb.from("ronyx_driver_truck_assignments")
+      .select("id, oo_id, driver_id, truck_id, priority, assignment_type, requires_manager_approval, notes")
+      .in("oo_id", ids)
+      .eq("is_active", true)
+      .order("priority"),
   ]);
 
   const drivers = driversRes.data || [];
   const trucks  = trucksRes.data  || [];
   const docs    = docsRes.data    || [];
   const jobs    = jobsRes.data    || [];
+  const subs    = subsRes.data    || [];
+  const dta     = dtaRes.data     || [];
 
   const companies = oos.map((oo) => ({
     ...oo,
     drivers:   drivers.filter((d) => d.oo_id === oo.id),
-    trucks:    trucks.filter((t)  => t.oo_id === oo.id),
+    trucks:    trucks.filter((t)  => t.oo_id === oo.id).map((t) => ({
+      ...t,
+      // approved drivers for this truck (denormalized for display in Fleet tab)
+      approved_driver_ids: dta.filter((a: any) => a.truck_id === t.id).map((a: any) => a.driver_id),
+    })),
+    driver_truck_assignments: dta.filter((a: any) => a.oo_id === oo.id),
     documents: docs.filter((d) => d.oo_id === oo.id).map((d) => ({
       type:        d.doc_type,
       uploaded_at: d.uploaded_at,
       file_name:   d.file_name || "",
       expires_on:  d.expires_on || undefined,
+      file_url:    d.file_url   || undefined,
       _db_id:      d.id,
     })),
     jobs: jobs.filter((j) => j.oo_id === oo.id),
+    subcontractors: (subs as any[]).filter(s => s.oo_id === oo.id).map(s => ({
+      id:            s.id,
+      company_name:  s.company_name,
+      contact_name:  s.contact_name  || "",
+      contact_phone: s.contact_phone || "",
+      contact_email: s.contact_email || "",
+      mc_number:     s.mc_number     || "",
+      dot_number:    s.dot_number    || "",
+      drivers:       (s.drivers || []).map((d: any) => ({
+        id:             d.id,
+        name:           d.name,
+        phone:          d.phone          || "",
+        cdl_number:     d.cdl_number     || "",
+        cdl_expiration: d.cdl_expiration || "",
+      })),
+    })),
   }));
 
   return NextResponse.json({ companies });
@@ -149,5 +189,5 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ company: { ...data, drivers: [], trucks: [], documents: [], jobs: [] } });
+  return NextResponse.json({ company: { ...data, drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [] } });
 }

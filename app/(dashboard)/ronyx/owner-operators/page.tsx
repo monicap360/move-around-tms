@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
 
 /* ─── Types ─────────────────────────────────────────── */
 type OODriver = {
@@ -11,22 +12,54 @@ type OODriver = {
   cdl_expiration: string;
   med_card_expiration: string;
   phone: string;
+  truck_number?: string;
 };
+type TruckStatus = "active" | "assigned" | "in_use" | "out_of_service" | "in_maintenance" | "inspection_due" | "insurance_expired" | "registration_expired" | "needs_review";
 type OOTruck = {
   id: string;
   truck_number: string;
   year: string;
   make: string;
   model: string;
+  type?: string;
   vin: string;
   last_inspection?: string;
   inspection_result?: "Pass" | "Pass w/ Defects" | "Fail";
+  status?: TruckStatus;
+  approved_driver_ids?: string[];
+};
+type OOTruckAssignment = {
+  id: string;
+  driver_id: string;
+  truck_id: string;
+  priority: 1 | 2 | 3 | 4;
+  assignment_type: "primary" | "backup";
+  requires_manager_approval: boolean;
+  notes?: string;
 };
 type OODoc = {
   type: string;
   uploaded_at: string;
   file_name: string;
   expires_on?: string;
+  file_url?: string;
+};
+type OOSubDriver = {
+  id: string;
+  name: string;
+  phone: string;
+  cdl_number: string;
+  cdl_expiration: string;
+};
+type OOSubcontractor = {
+  id: string;
+  company_name: string;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+  mc_number: string;
+  dot_number: string;
+  drivers: OOSubDriver[];
 };
 type OOJob = {
   id: string;
@@ -66,6 +99,8 @@ type OOCompany = {
   trucks: OOTruck[];
   documents: OODoc[];
   jobs: OOJob[];
+  subcontractors: OOSubcontractor[];
+  driver_truck_assignments?: OOTruckAssignment[];
   notes?: string;
   last_contact_date?: string;
   reminder_log?: ReminderEntry[];
@@ -88,6 +123,29 @@ async function apiPut(path: string, body: unknown) {
 async function apiDelete(path: string) {
   return fetch(path, { method: "DELETE" });
 }
+
+/* ─── Truck status helpers ───────────────────────────── */
+function truckStatusLabel(s?: string) {
+  const map: Record<string, string> = {
+    active: "Available", assigned: "Assigned", in_use: "In Use",
+    out_of_service: "Out of Service", in_maintenance: "In Maintenance",
+    inspection_due: "Inspection Due", insurance_expired: "Insurance Expired",
+    registration_expired: "Reg. Expired", needs_review: "Needs Review",
+  };
+  return map[s || "active"] || "Available";
+}
+function truckStatusColors(s?: string): [string, string] {
+  if (!s || s === "active")                return ["#f0fdf4", "#15803d"];
+  if (s === "assigned" || s === "in_use")  return ["#eff6ff", "#1d4ed8"];
+  if (s === "out_of_service")              return ["#fff1f2", "#dc2626"];
+  if (s === "in_maintenance")              return ["#fff7ed", "#ea580c"];
+  if (s === "inspection_due")              return ["#fefce8", "#ca8a04"];
+  return ["#f1f5f9", "#64748b"];
+}
+function isTruckAvailable(s?: string) {
+  return !s || s === "active" || s === "assigned";
+}
+const PRIORITY_LABELS: Record<number, string> = { 1: "Primary", 2: "Backup 1", 3: "Backup 2", 4: "Backup 3" };
 
 /* ─── Date / calc helpers ─────────────────────────────── */
 function daysUntil(d?: string) {
@@ -225,7 +283,7 @@ const EMPTY_COMPANY: Omit<OOCompany, "id"> = {
   company_name: "", contact_name: "", contact_phone: "", contact_email: "",
   business_address: "", mc_number: "", dot_number: "", ein: "",
   insurance_agent_name: "", insurance_agent_email: "", insurance_agent_phone: "",
-  drivers: [], trucks: [], documents: [], jobs: [], logo_url: undefined,
+  drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [], driver_truck_assignments: [], logo_url: undefined,
 };
 
 const DEMO: OOCompany[] = [];
@@ -288,7 +346,7 @@ export default function OwnerOperatorsPage() {
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);
-  const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance">("overview");
+  const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs">("overview");
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
 
@@ -302,8 +360,22 @@ export default function OwnerOperatorsPage() {
   const [showAddTruck,  setShowAddTruck]  = useState(false);
   const [showAddJob,    setShowAddJob]    = useState(false);
   const [addDriverForm, setAddDriverForm] = useState<Omit<OODriver,"id">>({ name:"", cdl_number:"", cdl_state:"TX", cdl_expiration:"", med_card_expiration:"", phone:"" });
+  const [pickDriverId,  setPickDriverId]  = useState("");
+
+  // Subcontractors tab state
+  const [showAddSub,   setShowAddSub]   = useState(false);
+  const [addSubForm,   setAddSubForm]   = useState({ company_name:"", contact_name:"", contact_phone:"", contact_email:"", mc_number:"", dot_number:"" });
+  const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
+  const [subDriverForms, setSubDriverForms] = useState<Record<string, { name:string; phone:string; cdl_number:string; cdl_expiration:string }>>({});
   const [addTruckForm,  setAddTruckForm]  = useState<Omit<OOTruck,"id">>({ truck_number:"", year:"", make:"", model:"", vin:"", last_inspection:"", inspection_result:"Pass" });
   const [addJobForm,    setAddJobForm]    = useState<Omit<OOJob,"id">>({ project_name:"Domino Project", project_number:"", load_date:"", truck_number:"", driver_name:"", origin:"", destination:"", material:"", tons:0, gross_revenue:0, oo_rate:0, margin:0, ticket_status:"Verified", settlement_status:"Pending" });
+
+  // Truck pool / maintenance state
+  const [expandedDriverPool, setExpandedDriverPool] = useState<Set<string>>(new Set());
+  const [assignTruckForm,   setAssignTruckForm]   = useState<{ driver_id:string; truck_id:string; priority:number; requires_manager_approval:boolean; notes:string }>({ driver_id:"", truck_id:"", priority:2, requires_manager_approval:false, notes:"" });
+  const [showAssignTruck,   setShowAssignTruck]   = useState<string>(""); // driver id
+  const [maintenanceModal,  setMaintenanceModal]  = useState<{ truckId:string; truckNumber:string } | null>(null);
+  const [maintForm, setMaintForm] = useState({ event_type:"breakdown", severity:"high", issue_title:"", issue_description:"", estimated_return_at:"", reported_by:"" });
 
   // Jobs filters
   const [jobFilter,        setJobFilter]        = useState("All Projects");
@@ -314,12 +386,22 @@ export default function OwnerOperatorsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingDocRef = useRef<string>("");
 
-  useEffect(() => {
+  const loadCompanies = useCallback(() => {
     fetch("/api/ronyx/owner-operators")
       .then(r => r.json())
       .then(({ companies: data }) => { setCompanies(data || []); })
       .catch(() => setCompanies([]));
   }, []);
+
+  useEffect(() => { loadCompanies(); }, [loadCompanies]);
+
+  // ── Live multi-user sync ──────────────────────────────
+  const { status: syncStatus, lastSync } = useRealtimeSync(
+    ["ronyx_owner_operators", "ronyx_oo_documents", "ronyx_oo_trucks", "ronyx_oo_drivers", "ronyx_oo_jobs"],
+    loadCompanies,
+    { channelName: "oo-page-sync" }
+  );
+  const liveBadge = useLiveBadgeProps(syncStatus, lastSync);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
   function persist(updated: OOCompany[]) { setCompanies(updated); }
@@ -411,6 +493,67 @@ export default function OwnerOperatorsPage() {
     updateLocalState({ ...selected, trucks: selected.trucks.filter(t => t.id !== truckId) });
   }
 
+  // Truck Pool CRUD
+  async function assignTruckToDriver() {
+    if (!selected || !assignTruckForm.driver_id || !assignTruckForm.truck_id) {
+      flash("Select a driver and truck."); return;
+    }
+    const res = await apiPost(`/api/ronyx/owner-operators/${selected.id}/driver-truck-assignments`, assignTruckForm);
+    if (res.error) { flash(`Error: ${res.error}`); return; }
+    const newDta: OOTruckAssignment = {
+      id: res.assignment.id,
+      driver_id: assignTruckForm.driver_id,
+      truck_id: assignTruckForm.truck_id,
+      priority: assignTruckForm.priority as 1|2|3|4,
+      assignment_type: assignTruckForm.priority === 1 ? "primary" : "backup",
+      requires_manager_approval: assignTruckForm.requires_manager_approval,
+      notes: assignTruckForm.notes || undefined,
+    };
+    updateLocalState({
+      ...selected,
+      driver_truck_assignments: [...(selected.driver_truck_assignments || []).filter(a => !(a.driver_id === assignTruckForm.driver_id && a.truck_id === assignTruckForm.truck_id)), newDta],
+    });
+    setShowAssignTruck(""); setAssignTruckForm({ driver_id:"", truck_id:"", priority:2, requires_manager_approval:false, notes:"" });
+    flash("Truck assigned to driver's approved pool.");
+  }
+
+  async function removeTruckAssignment(assignmentId: string, driverName: string, truckNum: string) {
+    if (!selected || !confirm(`Remove truck ${truckNum} from ${driverName}'s approved pool?`)) return;
+    await fetch(`/api/ronyx/owner-operators/${selected.id}/driver-truck-assignments/${assignmentId}`, { method: "DELETE" });
+    updateLocalState({
+      ...selected,
+      driver_truck_assignments: (selected.driver_truck_assignments || []).filter(a => a.id !== assignmentId),
+    });
+    flash(`Truck ${truckNum} removed from ${driverName}'s pool.`);
+  }
+
+  async function markTruckOutOfService() {
+    if (!selected || !maintenanceModal || !maintForm.issue_title.trim()) { flash("Issue title required."); return; }
+    const res = await fetch("/api/ronyx/maintenance-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oo_id: selected.id,
+        truck_id: maintenanceModal.truckId,
+        truck_number: maintenanceModal.truckNumber,
+        oo_company_name: selected.company_name,
+        ...maintForm,
+      }),
+    });
+    if (!res.ok) { flash("Failed to create maintenance event."); return; }
+    // Update truck status locally
+    updateLocalState({
+      ...selected,
+      trucks: selected.trucks.map(t =>
+        t.id === maintenanceModal.truckId
+          ? { ...t, status: maintForm.event_type === "breakdown" ? "out_of_service" as TruckStatus : "in_maintenance" as TruckStatus }
+          : t
+      ),
+    });
+    setMaintenanceModal(null); setMaintForm({ event_type:"breakdown", severity:"high", issue_title:"", issue_description:"", estimated_return_at:"", reported_by:"" });
+    flash(`Truck ${maintenanceModal.truckNumber} marked out of service — maintenance event created.`);
+  }
+
   // Job CRUD
   async function addJob() {
     if (!selected || !addJobForm.project_number.trim() || !addJobForm.load_date) { flash("Project # and date required."); return; }
@@ -475,9 +618,26 @@ export default function OwnerOperatorsPage() {
       expires_on: expiresInput || null,
     });
 
-    const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput };
+    const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput, file_url: fileUrl || undefined };
     updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== docType)] });
-    flash(`${docType} uploaded${fileUrl ? " & stored" : ""}.`);
+    flash(`${docType} uploaded${fileUrl ? " & stored in Backup Center" : ""}.`);
+  }
+
+  // Open a document — fetches a short-lived signed URL so private buckets work
+  async function openDoc(fileUrl: string, print = false) {
+    try {
+      const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
+      const data = await res.json();
+      const url  = data.signed_url || fileUrl;
+      if (print) {
+        const w = window.open(url);
+        if (w) { w.onload = () => w.print(); }
+      } else {
+        window.open(url, "_blank");
+      }
+    } catch {
+      window.open(fileUrl, "_blank");
+    }
   }
 
   // ── List-level aggregates ──────────────────────────
@@ -521,7 +681,12 @@ export default function OwnerOperatorsPage() {
         {/* Header */}
         <div style={{ marginBottom: 22 }}>
           <div style={eyebrow}>MoveAround TMS / Fleet</div>
-          <h1 style={{ margin: "6px 0 4px", fontSize: "1.6rem", fontWeight: 900, color: "#0f172a" }}>Owner Operator Command Center</h1>
+          <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+            <h1 style={{ margin: "6px 0 4px", fontSize: "1.6rem", fontWeight: 900, color: "#0f172a" }}>Owner Operator Command Center</h1>
+            <span title={liveBadge.title} style={{ fontSize:11, fontWeight:700, color: liveBadge.color, background: liveBadge.color + "15", padding:"3px 9px", borderRadius:20, letterSpacing:"0.02em", cursor:"default" }}>
+              {liveBadge.label}
+            </span>
+          </div>
           <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Manage OO companies as businesses — fleet, compliance, settlements, and profitability in one place.</p>
         </div>
 
@@ -675,16 +840,56 @@ export default function OwnerOperatorsPage() {
                 </div>
 
                 {/* Bottom row: projects + insurance + actions */}
-                <div style={{ padding: "10px 20px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <div style={{ padding: "10px 20px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   {projects.slice(0,3).map(p => (
                     <span key={p} style={{ background: "#eff6ff", color: "#1e40af", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700 }}>{p}</span>
                   ))}
                   {projects.length > 3 && <span style={{ color: "#94a3b8", fontSize: "0.72rem" }}>+{projects.length-3} more</span>}
-                  {insDoc && (
-                    <span style={{ marginLeft: "auto", background: expBg(insExpDays), color: expColor(insExpDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700 }}>
-                      Insurance: {expLabel(insExpDays, insDoc.expires_on)}
-                    </span>
-                  )}
+
+                  {/* Insurance quick-upload badges */}
+                  {[
+                    { key: "auto",    docType: "Auto Liability Insurance",    short: "Auto Liability" },
+                    { key: "general", docType: "General Liability Insurance", short: "General Liability" },
+                    { key: "cargo",   docType: "Cargo Insurance",             short: "Cargo" },
+                    { key: "coi",     docType: "Insurance Certificate (COI)", short: "COI" },
+                  ].map(({ key, docType, short }) => {
+                    const doc = oo.documents.find(d => d.type === docType);
+                    const expDays = doc?.expires_on ? daysUntil(doc.expires_on) : null;
+                    return doc ? (
+                      <span key={key} style={{ background: expBg(expDays), color: expColor(expDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700 }}>
+                        🛡️ {short}: {expLabel(expDays, doc.expires_on)}
+                      </span>
+                    ) : (
+                      <label key={key} onClick={e => e.stopPropagation()} style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", border: "1px solid #fca5a5" }}>
+                        + Upload {short}
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
+                          e.stopPropagation();
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          flash(`Uploading ${short} for ${oo.company_name}…`);
+                          try {
+                            const fd = new FormData();
+                            fd.append("file", f);
+                            fd.append("module", "compliance");
+                            fd.append("oo_id", oo.id);
+                            const upRes = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+                            const upData = await upRes.json();
+                            const fileUrl = upData.url || null;
+                            const originalUploadId = upData.upload_id || null;
+                            const exp = prompt(`${docType} expiration date (YYYY-MM-DD):`) || undefined;
+                            await apiPost(`/api/ronyx/owner-operators/${oo.id}/documents`, {
+                              doc_type: docType, file_name: f.name, expires_on: exp || null,
+                              file_url: fileUrl, original_upload_id: originalUploadId,
+                            });
+                            loadCompanies();
+                            flash(`✅ ${short} uploaded for ${oo.company_name}.`);
+                          } catch { flash(`Upload failed — check storage config`); }
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    );
+                  })}
+
                   {actions.length > 0 && (
                     <span style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700 }}>
                       ⚠ {actions.length} action{actions.length>1?"s":""} required
@@ -725,6 +930,7 @@ export default function OwnerOperatorsPage() {
   const DETAIL_TABS = [
     { key:"overview",   label:"Overview"    },
     { key:"drivers",    label:"Drivers"     },
+    { key:"subs",       label:`Subcontractors${selected?.subcontractors?.length ? ` (${selected.subcontractors.length})` : ""}` },
     { key:"fleet",      label:"Fleet"       },
     { key:"documents",  label:"Documents"   },
     { key:"jobs",       label:"Project Jobs"},
@@ -805,31 +1011,32 @@ export default function OwnerOperatorsPage() {
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 16px", marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 4 }}>Quick Upload</span>
         {[
-          { label: "🛡️ Auto Liability Ins.", type: "Auto Liability Insurance",    hasExpiry: true  },
-          { label: "🛡️ General Liability",   type: "General Liability Insurance", hasExpiry: true  },
-          { label: "📦 Cargo Insurance",      type: "Cargo Insurance",             hasExpiry: true  },
-          { label: "📄 COI",                  type: "Insurance Certificate (COI)", hasExpiry: true  },
-          { label: "📝 Contract",             type: "Contract",                    hasExpiry: true  },
-          { label: "🧾 W-9",                  type: "W-9 / Tax Form",              hasExpiry: false },
-          { label: "🏛️ MC Authority",         type: "MC Authority Letter",         hasExpiry: false },
-        ].map(({ label, type, hasExpiry }) => {
+          { label: "🛡️ Auto Liability",  type: "Auto Liability Insurance",    hasExpiry: true  },
+          { label: "🛡️ General Liability", type: "General Liability Insurance", hasExpiry: true  },
+          { label: "📦 Cargo Insurance",   type: "Cargo Insurance",             hasExpiry: true  },
+          { label: "📄 COI",               type: "Insurance Certificate (COI)", hasExpiry: true  },
+          { label: "📝 Contract",          type: "Contract",                    hasExpiry: true  },
+          { label: "🧾 W-9",               type: "W-9 / Tax Form",              hasExpiry: false },
+          { label: "🏛️ MC Authority",      type: "MC Authority Letter",         hasExpiry: false },
+        ].map(({ label, type }) => {
           const onFile = selected.documents.find(d => d.type === type);
           return (
-            <label key={type} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", border: `1px solid ${onFile ? "#86efac" : "#e2e8f0"}`, borderRadius: 8, fontSize: "0.75rem", fontWeight: 700, color: onFile ? "#15803d" : "#475569", background: onFile ? "#f0fdf4" : "#f8fafc", cursor: "pointer", whiteSpace: "nowrap" }}>
-              {onFile ? "✓ " : ""}{label}
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
-                const f = e.target.files?.[0];
-                if (f) {
-                  const exp = hasExpiry ? (prompt(`${type} expiration date (YYYY-MM-DD):`) || undefined) : undefined;
-                  await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: type, file_name: f.name, expires_on: exp || null });
-                  const doc: OODoc = { type, uploaded_at: new Date().toISOString(), file_name: f.name, expires_on: exp };
-                  const change: ChangeEntry = { date: new Date().toISOString().slice(0,10), type: "Document Added", detail: `${type} uploaded` };
-                  updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== type)], changes_log: [change, ...(selected.changes_log||[])] });
-                  flash(`${type} uploaded.`);
-                }
-                e.target.value = "";
-              }} />
-            </label>
+            <div key={type} style={{ display: "inline-flex", alignItems: "center", gap: 0, borderRadius: 8, border: `1px solid ${onFile ? "#86efac" : "#e2e8f0"}`, background: onFile ? "#f0fdf4" : "#f8fafc", overflow: "hidden" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", fontSize: "0.75rem", fontWeight: 700, color: onFile ? "#15803d" : "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
+                {onFile ? "✓ " : ""}{label}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) handleDocUpload(type, f);
+                  e.target.value = "";
+                }} />
+              </label>
+              {onFile?.file_url && (
+                <a href={onFile.file_url} target="_blank" rel="noopener noreferrer"
+                  style={{ padding: "5px 8px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, textDecoration: "none", borderLeft: "1px solid #bfdbfe", whiteSpace: "nowrap" }}>
+                  👁
+                </a>
+              )}
+            </div>
           );
         })}
         <button onClick={() => setActiveTab("documents")} style={{ ...ghostBtn, fontSize: "0.72rem", marginLeft: "auto" }}>All Documents →</button>
@@ -1324,6 +1531,33 @@ export default function OwnerOperatorsPage() {
 
           {showAddDriver && (
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "16px 20px", marginBottom: 14 }}>
+              {/* Pick from existing drivers across all OOs */}
+              {(() => {
+                const allDrivers = companies.flatMap(c => c.drivers.map(d => ({ ...d, company: c.company_name })));
+                const notYetAdded = allDrivers.filter(d => !selected.drivers.some(sd => sd.name.toLowerCase() === d.name.toLowerCase()));
+                return notYetAdded.length > 0 ? (
+                  <div style={{ marginBottom:14, padding:"10px 14px", background:"#f0f9ff", border:"1px solid #bae6fd", borderRadius:10 }}>
+                    <div style={{ fontSize:"0.75rem", fontWeight:700, color:"#0369a1", marginBottom:6 }}>Pick an existing driver from another company</div>
+                    <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+                      <select
+                        value={pickDriverId}
+                        onChange={e => {
+                          setPickDriverId(e.target.value);
+                          const found = allDrivers.find(d => d.id === e.target.value);
+                          if (found) setAddDriverForm({ name: found.name, cdl_number: found.cdl_number, cdl_state: found.cdl_state, cdl_expiration: found.cdl_expiration, med_card_expiration: found.med_card_expiration, phone: found.phone });
+                        }}
+                        style={{ ...inp, minWidth:240, flex:1 }}
+                      >
+                        <option value="">— select a driver —</option>
+                        {notYetAdded.map(d => (
+                          <option key={d.id} value={d.id}>{d.name} ({d.company})</option>
+                        ))}
+                      </select>
+                      {pickDriverId && <span style={{ fontSize:"0.7rem", color:"#0369a1" }}>✓ Fields pre-filled below — review then click Add Driver</span>}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px 14px" }}>
                 {([["Driver Name *","name","Carlos Ramirez"],["CDL Number","cdl_number","TX1234567"],["CDL State","cdl_state","TX"],["Phone","phone","(555) 000-0000"]] as [string,keyof typeof addDriverForm,string][]).map(([label,field,ph]) => (
                   <div key={field}><label style={lbl}>{label}</label><input value={addDriverForm[field]} onChange={e=>setAddDriverForm(f=>({...f,[field]:e.target.value}))} style={inp} placeholder={ph} /></div>
@@ -1332,8 +1566,8 @@ export default function OwnerOperatorsPage() {
                 <div><label style={lbl}>Med Card Expiration</label><input type="date" value={addDriverForm.med_card_expiration} onChange={e=>setAddDriverForm(f=>({...f,med_card_expiration:e.target.value}))} style={inp} /></div>
               </div>
               <div style={{ display:"flex", gap:10, marginTop:12 }}>
-                <button onClick={addDriver} style={primaryBtn}>Add Driver</button>
-                <button onClick={() => setShowAddDriver(false)} style={ghostBtn}>Cancel</button>
+                <button onClick={() => { addDriver(); setPickDriverId(""); }} style={primaryBtn}>Add Driver</button>
+                <button onClick={() => { setShowAddDriver(false); setPickDriverId(""); setAddDriverForm({ name:"", cdl_number:"", cdl_state:"TX", cdl_expiration:"", med_card_expiration:"", phone:"" }); }} style={ghostBtn}>Cancel</button>
               </div>
             </div>
           )}
@@ -1341,11 +1575,12 @@ export default function OwnerOperatorsPage() {
           {selected.drivers.length === 0 ? (
             <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:14, padding:"40px 0", textAlign:"center", color:"#94a3b8" }}>No drivers on file.</div>
           ) : (
+            <>
             <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, overflow:"hidden" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.82rem" }}>
                 <thead>
                   <tr style={{ background:"#f8fafc" }}>
-                    {["Driver","CDL #","State","CDL Expiration","CDL File","Med Card Exp.","Phone","Actions"].map(h=>(
+                    {["Driver","CDL #","State","CDL Expiration","CDL File","Med Card Exp.","Phone","Assigned Truck","Actions"].map(h=>(
                       <th key={h} style={{ padding:"8px 14px", fontSize:"0.68rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -1377,6 +1612,30 @@ export default function OwnerOperatorsPage() {
                         <td style={{ padding:"10px 14px" }}><span style={{ background:expBg(medD), color:expColor(medD), padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{expLabel(medD,d.med_card_expiration)}</span></td>
                         <td style={{ padding:"10px 14px", color:"#475569" }}>{d.phone||"—"}</td>
                         <td style={{ padding:"10px 14px" }}>
+                          {selected.trucks.length === 0 ? (
+                            <span style={{ fontSize:"0.72rem", color:"#94a3b8" }}>No trucks on fleet</span>
+                          ) : (
+                            <select
+                              value={d.truck_number || ""}
+                              onChange={async e => {
+                                const truck_number = e.target.value;
+                                const res = await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`, { truck_number: truck_number || null });
+                                if (res.error) { flash(`Error: ${res.error}`); return; }
+                                updateLocalState({ ...selected, drivers: selected.drivers.map(dr => dr.id === d.id ? { ...dr, truck_number: truck_number || undefined } : dr) });
+                                flash(truck_number ? `Truck ${truck_number} assigned to ${d.name}.` : `Truck unassigned from ${d.name}.`);
+                              }}
+                              style={{ border:"1px solid #e2e8f0", borderRadius:8, padding:"5px 10px", fontSize:"0.78rem", color:"#0f172a", background:"#fff", minWidth:120, fontWeight: d.truck_number ? 700 : 400 }}
+                            >
+                              <option value="">— Unassigned —</option>
+                              {selected.trucks.map(t => (
+                                <option key={t.id} value={t.truck_number}>
+                                  {t.truck_number}{t.make ? ` · ${t.make}` : ""}{t.model ? ` ${t.model}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </td>
+                        <td style={{ padding:"10px 14px" }}>
                           <div style={{ display:"flex", gap:6 }}>
                             {cdlDoc && <label style={{ background:"#f1f5f9", color:"#475569", padding:"3px 8px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", border:"1px solid #e2e8f0" }}>
                               Replace CDL
@@ -1391,7 +1650,136 @@ export default function OwnerOperatorsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* ── Approved Truck Pools (per driver) ────────────── */}
+            {selected.drivers.length > 0 && (
+              <div style={{ marginTop:20 }}>
+                <div style={{ fontWeight:800, fontSize:"0.75rem", color:"#0f172a", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:10 }}>
+                  Approved Truck Pools
+                </div>
+                <div style={{ fontSize:"0.72rem", color:"#64748b", marginBottom:12 }}>
+                  Each driver can be pre-approved for up to 4 trucks (1 primary + 3 backups). If their truck breaks down, dispatch reassigns from this pool instantly.
+                </div>
+                {selected.drivers.map(d => {
+                  const myAssignments = (selected.driver_truck_assignments || [])
+                    .filter(a => a.driver_id === d.id)
+                    .sort((a,b) => a.priority - b.priority);
+                  const expanded = expandedDriverPool.has(d.id);
+                  return (
+                    <div key={d.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, marginBottom:8, overflow:"hidden" }}>
+                      <div
+                        onClick={() => setExpandedDriverPool(prev => { const n=new Set(prev); expanded?n.delete(d.id):n.add(d.id); return n; })}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 16px", cursor:"pointer", background:"#f8fafc" }}
+                      >
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ fontWeight:700, color:"#0f172a", fontSize:"0.85rem" }}>{d.name}</span>
+                          <span style={{ background:"#eff6ff", color:"#1d4ed8", padding:"2px 8px", borderRadius:20, fontSize:"0.65rem", fontWeight:800 }}>
+                            {myAssignments.length} truck{myAssignments.length !== 1?"s":""}
+                          </span>
+                        </div>
+                        <span style={{ color:"#94a3b8", fontSize:"0.8rem" }}>{expanded?"▲":"▼"}</span>
+                      </div>
+
+                      {expanded && (
+                        <div style={{ padding:"12px 16px" }}>
+                          {/* Assigned trucks list */}
+                          {myAssignments.length === 0 ? (
+                            <div style={{ color:"#94a3b8", fontSize:"0.78rem", marginBottom:10 }}>No approved trucks assigned yet.</div>
+                          ) : myAssignments.map(a => {
+                            const t = selected.trucks.find(t => t.id === a.truck_id);
+                            if (!t) return null;
+                            const [stBg, stColor] = truckStatusColors(t.status);
+                            const avail = isTruckAvailable(t.status);
+                            return (
+                              <div key={a.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 10px", background:"#f8fafc", borderRadius:8, marginBottom:6 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                  <span style={{ background: a.priority===1?"#1e40af":"#64748b", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:"0.62rem", fontWeight:900, minWidth:64, textAlign:"center" }}>
+                                    {PRIORITY_LABELS[a.priority]}
+                                  </span>
+                                  <div>
+                                    <div style={{ fontWeight:700, fontSize:"0.82rem", color:"#0f172a" }}>
+                                      Truck #{t.truck_number}
+                                      {t.year ? ` · ${t.year}` : ""}{t.make ? ` ${t.make}` : ""}
+                                    </div>
+                                    {t.type && <div style={{ fontSize:"0.65rem", color:"#64748b" }}>{t.type}</div>}
+                                  </div>
+                                </div>
+                                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                                  <span style={{ background:stBg, color:stColor, padding:"2px 8px", borderRadius:20, fontSize:"0.65rem", fontWeight:800 }}>
+                                    {avail?"✓ Available":"✗ Unavailable"}
+                                  </span>
+                                  {a.requires_manager_approval && (
+                                    <span style={{ background:"#fef3c7", color:"#92400e", padding:"2px 6px", borderRadius:6, fontSize:"0.62rem", fontWeight:700 }}>Mgr req.</span>
+                                  )}
+                                  <button onClick={() => removeTruckAssignment(a.id, d.name, t.truck_number)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Assign truck form */}
+                          {showAssignTruck === d.id ? (
+                            <div style={{ background:"#f0f9ff", border:"1px solid #bae6fd", borderRadius:10, padding:"12px 14px", marginTop:8 }}>
+                              <div style={{ fontWeight:700, fontSize:"0.75rem", color:"#0369a1", marginBottom:10 }}>Add Truck to {d.name}&apos;s Pool</div>
+                              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                                <div>
+                                  <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Truck</label>
+                                  <select
+                                    value={assignTruckForm.truck_id}
+                                    onChange={e => setAssignTruckForm(f => ({ ...f, truck_id:e.target.value, driver_id:d.id }))}
+                                    style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.78rem" }}
+                                  >
+                                    <option value="">— Select Truck —</option>
+                                    {selected.trucks
+                                      .filter(t => !myAssignments.some(a => a.truck_id === t.id))
+                                      .map(t => <option key={t.id} value={t.id}>#{t.truck_number}{t.make?` · ${t.make}`:""}</option>)
+                                    }
+                                  </select>
+                                </div>
+                                <div>
+                                  <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Role</label>
+                                  <select
+                                    value={assignTruckForm.priority}
+                                    onChange={e => setAssignTruckForm(f => ({ ...f, priority:Number(e.target.value) }))}
+                                    style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.78rem" }}
+                                  >
+                                    <option value={1}>Primary Truck</option>
+                                    <option value={2}>Backup 1</option>
+                                    <option value={3}>Backup 2</option>
+                                    <option value={4}>Backup 3</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div style={{ marginTop:8 }}>
+                                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Notes (optional)</label>
+                                <input value={assignTruckForm.notes} onChange={e => setAssignTruckForm(f=>({...f,notes:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.78rem", boxSizing:"border-box" }} placeholder="e.g. Assigned by owner, same carrier" />
+                              </div>
+                              <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:8, fontSize:"0.72rem", color:"#64748b", cursor:"pointer" }}>
+                                <input type="checkbox" checked={assignTruckForm.requires_manager_approval} onChange={e => setAssignTruckForm(f=>({...f,requires_manager_approval:e.target.checked}))} />
+                                Requires manager approval for reassignment
+                              </label>
+                              <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                                <button onClick={() => { setAssignTruckForm(f=>({...f,driver_id:d.id})); assignTruckToDriver(); }} style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:7, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Save Assignment</button>
+                                <button onClick={() => setShowAssignTruck("")} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:7, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : myAssignments.length < 4 ? (
+                            <button onClick={() => { setShowAssignTruck(d.id); setAssignTruckForm({ driver_id:d.id, truck_id:"", priority:myAssignments.length===0?1:myAssignments.length+1, requires_manager_approval:false, notes:"" }); }} style={{ marginTop:6, background:"#eff6ff", color:"#1d4ed8", border:"1px dashed #93c5fd", borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                              + Add Truck to Pool
+                            </button>
+                          ) : (
+                            <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:6 }}>Max 4 trucks per driver.</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
           )}
+
         </div>
       )}
 
@@ -1427,19 +1815,26 @@ export default function OwnerOperatorsPage() {
           {selected.trucks.length === 0 ? (
             <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:14, padding:"40px 0", textAlign:"center", color:"#94a3b8" }}>No trucks on file.</div>
           ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:10 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:12 }}>
               {selected.trucks.map(t => {
                 const [eligible2] = ooDispatchEligible(selected);
                 const inspOK = !t.inspection_result || t.inspection_result === "Pass";
-                const truckEligible = eligible2 && inspOK;
+                const available = isTruckAvailable(t.status);
+                const truckEligible = eligible2 && inspOK && available;
+                const [stBg, stColor] = truckStatusColors(t.status);
+                const approvedDrivers = selected.drivers.filter(d => (t.approved_driver_ids || []).includes(d.id));
+                const driverAssignments = (selected.driver_truck_assignments || []).filter(a => a.truck_id === t.id);
                 return (
-                  <div key={t.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"16px 18px" }}>
+                  <div key={t.id} style={{ background:"#fff", border:`1px solid ${available?"#e2e8f0":"#fecaca"}`, borderRadius:14, padding:"16px 18px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                       <div style={{ fontSize:"1.3rem" }}>🚚</div>
-                      <button onClick={() => removeTruck(t.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"#94a3b8" }}>✕</button>
+                      <div style={{ display:"flex", gap:4 }}>
+                        <span style={{ background:stBg, color:stColor, padding:"2px 8px", borderRadius:20, fontSize:"0.65rem", fontWeight:800 }}>{truckStatusLabel(t.status)}</span>
+                        <button onClick={() => removeTruck(t.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"#94a3b8", fontSize:"0.85rem" }}>✕</button>
+                      </div>
                     </div>
                     <div style={{ fontWeight:800, fontSize:"1rem", color:"#0f172a", marginTop:6 }}>{t.truck_number}</div>
-                    <div style={{ fontSize:"0.8rem", color:"#64748b", marginTop:2 }}>{t.year} {t.make} {t.model}</div>
+                    <div style={{ fontSize:"0.8rem", color:"#64748b", marginTop:2 }}>{[t.year, t.make, t.model].filter(Boolean).join(" ")}{t.type ? ` · ${t.type}` : ""}</div>
                     {t.vin && <div style={{ fontSize:"0.68rem", color:"#94a3b8", marginTop:4 }}>VIN: {t.vin}</div>}
                     <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:4 }}>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.75rem" }}>
@@ -1450,12 +1845,58 @@ export default function OwnerOperatorsPage() {
                         <span style={{ color:"#64748b" }}>Last Inspected</span>
                         <span style={{ color:"#475569" }}>{fmtDate(t.last_inspection)}</span>
                       </div>}
-                      <div style={{ marginTop:6 }}>
+                      <div style={{ marginTop:6, display:"flex", gap:6, flexWrap:"wrap" }}>
                         <span style={{ background:truckEligible?"#f0fdf4":"#fff1f2", color:truckEligible?"#15803d":"#dc2626", padding:"3px 10px", borderRadius:20, fontSize:"0.72rem", fontWeight:800 }}>
                           {truckEligible?"✓ Dispatch Eligible":"✗ Not Eligible"}
                         </span>
                       </div>
                     </div>
+
+                    {/* Approved Drivers */}
+                    <div style={{ marginTop:12, borderTop:"1px solid #f1f5f9", paddingTop:10 }}>
+                      <div style={{ fontSize:"0.65rem", fontWeight:800, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>Approved Drivers ({approvedDrivers.length})</div>
+                      {approvedDrivers.length === 0 ? (
+                        <div style={{ fontSize:"0.72rem", color:"#94a3b8" }}>No approved drivers assigned</div>
+                      ) : driverAssignments
+                          .sort((a,b) => a.priority - b.priority)
+                          .map(a => {
+                            const drv = selected.drivers.find(d => d.id === a.driver_id);
+                            if (!drv) return null;
+                            return (
+                              <div key={a.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:"0.75rem", padding:"3px 0" }}>
+                                <span style={{ fontWeight:600, color:"#0f172a" }}>{drv.name}</span>
+                                <div style={{ display:"flex", gap:4 }}>
+                                  <span style={{ background:"#f1f5f9", color:"#475569", padding:"1px 6px", borderRadius:4, fontSize:"0.62rem", fontWeight:700 }}>{PRIORITY_LABELS[a.priority]}</span>
+                                  {a.requires_manager_approval && <span style={{ background:"#fef3c7", color:"#92400e", padding:"1px 6px", borderRadius:4, fontSize:"0.62rem", fontWeight:700 }}>Mgr req.</span>}
+                                </div>
+                              </div>
+                            );
+                          })
+                      }
+                    </div>
+
+                    {/* Maintenance actions */}
+                    {available && (
+                      <button
+                        onClick={() => setMaintenanceModal({ truckId: t.id, truckNumber: t.truck_number })}
+                        style={{ marginTop:10, width:"100%", background:"#fff1f2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"6px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}
+                      >
+                        Mark Out of Service
+                      </button>
+                    )}
+                    {!available && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Restore truck ${t.truck_number} to active?`)) return;
+                          updateLocalState({ ...selected, trucks: selected.trucks.map(tr => tr.id === t.id ? { ...tr, status: "active" as TruckStatus } : tr) });
+                          await fetch(`/api/ronyx/owner-operators/${selected.id}/trucks/${t.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ status:"active" }) });
+                          flash(`Truck ${t.truck_number} restored to active.`);
+                        }}
+                        style={{ marginTop:10, width:"100%", background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0", borderRadius:8, padding:"6px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}
+                      >
+                        Restore — Mark Available
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -1467,6 +1908,25 @@ export default function OwnerOperatorsPage() {
       {/* ── Documents ── */}
       {activeTab === "documents" && (
         <div>
+          {/* Company identity banner */}
+          <div style={{ background: "linear-gradient(135deg,#0f172a,#1e40af)", borderRadius:14, padding:"16px 20px", marginBottom:16, display:"flex", alignItems:"center", gap:16 }}>
+            <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:"1.3rem", color:"#fff", flexShrink:0 }}>
+              {selected.company_name.charAt(0)}
+            </div>
+            <div>
+              <div style={{ fontSize:"0.65rem", fontWeight:700, color:"rgba(255,255,255,0.55)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:3 }}>Uploading documents for</div>
+              <div style={{ fontWeight:900, color:"#fff", fontSize:"1.15rem" }}>{selected.company_name}</div>
+              {(selected.mc_number || selected.dot_number) && (
+                <div style={{ fontSize:"0.72rem", color:"rgba(255,255,255,0.6)", marginTop:2 }}>
+                  {selected.mc_number && `MC# ${selected.mc_number}`}{selected.mc_number && selected.dot_number && " · "}{selected.dot_number && `DOT# ${selected.dot_number}`}
+                </div>
+              )}
+            </div>
+            <div style={{ marginLeft:"auto", fontSize:"0.75rem", color:"rgba(255,255,255,0.55)" }}>
+              {selected.documents.length} document{selected.documents.length !== 1 ? "s" : ""} on file
+            </div>
+          </div>
+
           {/* Insurance Agent edit */}
           <div style={{ background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:14, padding:"16px 20px", marginBottom:16 }}>
             <div style={{ fontWeight:800, color:"#1e40af", marginBottom:12, fontSize:"0.88rem" }}>🛡️ Insurance Agent Contact</div>
@@ -1497,39 +1957,115 @@ export default function OwnerOperatorsPage() {
               <button onClick={() => { const sub = encodeURIComponent(`COI Verification Request — ${selected.company_name} MC# ${selected.mc_number || "—"}`); const body = encodeURIComponent(`Please provide a current Certificate of Insurance for:\n\nCompany: ${selected.company_name}\nMC#: ${selected.mc_number || "—"}\nDOT#: ${selected.dot_number || "—"}\n\nWe require the COI be issued directly to MoveAround TMS / Ronyx Logistics.\n\nThank you,\nRonyx Logistics Operations`); window.location.href = `mailto:${selected.insurance_agent_email || ""}?subject=${sub}&body=${body}`; flash("Email to insurance agent opened."); }} style={{ ...ghostBtn, fontSize:"0.75rem" }}>
                 Request COI via Email
               </button>
+              <button onClick={() => {
+                const hasDocs = selected.documents.filter(d => d.file_url);
+                if (!hasDocs.length) { flash("No uploaded documents with links yet."); return; }
+                const lines = hasDocs.map(d => `• ${d.type}: ${d.file_url}`).join("\n");
+                const sub  = encodeURIComponent(`Insurance & Compliance Documents — ${selected.company_name}`);
+                const body = encodeURIComponent(`Documents on file for ${selected.company_name}:\n\n${lines}\n\nFor questions contact Ronyx Logistics Operations.`);
+                window.location.href = `mailto:?subject=${sub}&body=${body}`;
+                flash("Email with all document links opened.");
+              }} style={{ ...ghostBtn, fontSize:"0.75rem" }}>
+                📧 Email All Documents
+              </button>
             </div>
           </div>
 
           {/* Insurance Documents */}
           <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10, marginTop:4 }}>🛡️ Insurance Documents</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:12 }}>
             {[
-              { type:"Auto Liability Insurance",    hasExpiry:true  },
-              { type:"General Liability Insurance", hasExpiry:true  },
-              { type:"Cargo Insurance",             hasExpiry:true  },
-              { type:"Insurance Certificate (COI)", hasExpiry:true  },
-              { type:"Workers Comp Insurance",      hasExpiry:true  },
-            ].map(({ type: docType, hasExpiry }) => {
+              { type:"Auto Liability Insurance",    icon:"🚗" },
+              { type:"General Liability Insurance", icon:"🏢" },
+              { type:"Cargo Insurance",             icon:"📦" },
+              { type:"Workers Comp Insurance",      icon:"🩺" },
+            ].map(({ type: docType, icon }) => {
               const existing = selected.documents.find(d => d.type === docType);
               const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
               return (
-                <div key={docType} style={{ background:existing?"#f0fdf4":"#fafafa", border:`1px solid ${existing?"#86efac":"#e2e8f0"}`, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.82rem", marginBottom:6 }}>{docType}</div>
+                <div key={docType} style={{ background:existing?"#f0fdf4":"#fff1f2", border:`2px solid ${existing?"#86efac":"#fca5a5"}`, borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                    <span style={{ fontSize:18 }}>{icon}</span>
+                    <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.82rem" }}>{docType}</div>
+                  </div>
+                  <div style={{ fontSize:"0.7rem", color:"#64748b", marginBottom:4 }}>For: <strong style={{ color:"#0f172a" }}>{selected.company_name}</strong></div>
                   {existing ? (
                     <>
                       <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
                       {existing.expires_on && (
-                        <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:4 }}>
+                        <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:6 }}>
                           {expLabel(expDays, existing.expires_on)}
                         </div>
                       )}
+                      {existing.file_url ? (
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                          <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,true)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
+                          <a href={`mailto:?subject=${encodeURIComponent(docType+" — "+selected.company_name)}&body=${encodeURIComponent("Document: "+existing.file_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize:"0.7rem", color:"#92400e", background:"#fef3c7", border:"1px solid #fde68a", padding:"4px 8px", borderRadius:6, marginBottom:6 }}>⚠ File not stored — click Replace below to re-upload</div>
+                      )}
                     </>
                   ) : (
-                    <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginBottom:6 }}>Not uploaded</div>
+                    <div style={{ fontSize:"0.72rem", color:"#dc2626", fontWeight:600, marginBottom:6 }}>⚠ Not uploaded — required for dispatch</div>
                   )}
-                  <label style={{ display:"inline-block", marginTop:6, ...primaryBtn, fontSize:"0.72rem", padding:"5px 12px", cursor:"pointer" }}>
-                    {existing?"Replace":"Upload"}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const exp=hasExpiry?(prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined):undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:docType,file_name:f.name,expires_on:exp||null}); const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateLocalState({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } e.target.value=""; }} />
+                  <label style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:4, background:existing?"#0f172a":"#dc2626", color:"#fff", padding:"6px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>
+                    {existing ? "🔄 Replace" : "📤 Upload"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* COI — 3 dedicated slots: one per named company */}
+          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📄 Certificates of Insurance (COI)</div>
+          <div style={{ background:"#fefce8", border:"2px solid #fde68a", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:"0.72rem", color:"#92400e" }}>
+            ⚠️ Each company that hauls for Ronyx requires its own named COI. Upload one certificate per slot below.
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:20 }}>
+            {[
+              { type:"COI — M.A. Mortenson",   label:"M.A. Mortenson",   icon:"🏗️" },
+              { type:"COI — Ronyx Logistics",  label:"Ronyx Logistics",  icon:"🚚" },
+              { type:"COI — BAS Equipment",    label:"BAS Equipment",    icon:"🚜" },
+            ].map(({ type: docType, label, icon }) => {
+              const existing = selected.documents.find(d => d.type === docType);
+              const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
+              return (
+                <div key={docType} style={{ background:existing?"#f0fdf4":"#fff1f2", border:`2px solid ${existing?"#86efac":"#fca5a5"}`, borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <span style={{ fontSize:18 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.78rem" }}>COI</div>
+                      <div style={{ fontWeight:700, color:"#1e40af", fontSize:"0.72rem" }}>Named: {label}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:"0.7rem", color:"#64748b", marginBottom:4 }}>For: <strong style={{ color:"#0f172a" }}>{selected.company_name}</strong></div>
+                  {existing ? (
+                    <>
+                      <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
+                      {existing.expires_on && (
+                        <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:6 }}>
+                          {expLabel(expDays, existing.expires_on)}
+                        </div>
+                      )}
+                      {existing.file_url ? (
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                          <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,true)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
+                          <a href={`mailto:?subject=${encodeURIComponent("COI for "+label+" — "+selected.company_name)}&body=${encodeURIComponent("COI File: "+existing.file_name+"\n\nNamed insured: "+label+"\nUploaded for: "+selected.company_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize:"0.7rem", color:"#92400e", background:"#fef3c7", border:"1px solid #fde68a", padding:"4px 8px", borderRadius:6, marginBottom:6 }}>⚠ File not stored — click Replace below to re-upload</div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ fontSize:"0.72rem", color:"#dc2626", fontWeight:600, marginBottom:6 }}>⚠ COI for {label} not uploaded</div>
+                  )}
+                  <label style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:4, background:existing?"#0f172a":"#dc2626", color:"#fff", padding:"6px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>
+                    {existing ? "🔄 Replace" : "📤 Upload COI"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
                   </label>
                 </div>
               );
@@ -1540,18 +2076,22 @@ export default function OwnerOperatorsPage() {
           <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📋 Business & Legal Documents</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:20 }}>
             {[
-              { type:"Contract",             hasExpiry:true  },
-              { type:"W-9 / Tax Form",       hasExpiry:false },
-              { type:"MC Authority Letter",  hasExpiry:false },
-              { type:"Safety Rating Letter", hasExpiry:false },
-              { type:"1099 Form",            hasExpiry:false },
-              { type:"Other",                hasExpiry:false },
-            ].map(({ type: docType, hasExpiry }) => {
+              { type:"Contract",             icon:"📝" },
+              { type:"W-9 / Tax Form",       icon:"🧾" },
+              { type:"MC Authority Letter",  icon:"🏛️" },
+              { type:"Safety Rating Letter", icon:"⭐" },
+              { type:"1099 Form",            icon:"📊" },
+              { type:"Other",                icon:"📁" },
+            ].map(({ type: docType, icon }) => {
               const existing = selected.documents.find(d => d.type === docType);
               const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
               return (
                 <div key={docType} style={{ background:existing?"#f0fdf4":"#fafafa", border:`1px solid ${existing?"#86efac":"#e2e8f0"}`, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.82rem", marginBottom:6 }}>{docType}</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                    <span style={{ fontSize:16 }}>{icon}</span>
+                    <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.82rem" }}>{docType}</div>
+                  </div>
+                  <div style={{ fontSize:"0.7rem", color:"#64748b", marginBottom:4 }}>For: <strong style={{ color:"#0f172a" }}>{selected.company_name}</strong></div>
                   {existing ? (
                     <>
                       <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
@@ -1560,13 +2100,22 @@ export default function OwnerOperatorsPage() {
                           {expLabel(expDays, existing.expires_on)}
                         </div>
                       )}
+                      {existing.file_url ? (
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                          <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,true)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
+                          <a href={`mailto:?subject=${encodeURIComponent(docType+" — "+selected.company_name)}&body=${encodeURIComponent("Document: "+existing.file_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize:"0.7rem", color:"#92400e", background:"#fef3c7", border:"1px solid #fde68a", padding:"4px 8px", borderRadius:6, marginBottom:6 }}>⚠ File not stored — click Replace below to re-upload</div>
+                      )}
                     </>
                   ) : (
                     <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginBottom:6 }}>Not uploaded</div>
                   )}
-                  <label style={{ display:"inline-block", marginTop:6, ...primaryBtn, fontSize:"0.72rem", padding:"5px 12px", cursor:"pointer" }}>
-                    {existing?"Replace":"Upload"}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const exp=hasExpiry?(prompt(`${docType} expiration date (YYYY-MM-DD):`)||undefined):undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:docType,file_name:f.name,expires_on:exp||null}); const doc:OODoc={type:docType,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateLocalState({...selected,documents:[doc,...selected.documents.filter(d=>d.type!==docType)]}); flash(`${docType} uploaded.`); } e.target.value=""; }} />
+                  <label style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:4, background:"#0f172a", color:"#fff", padding:"5px 14px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                    {existing ? "🔄 Replace" : "📤 Upload"}
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
                   </label>
                 </div>
               );
@@ -1630,13 +2179,13 @@ export default function OwnerOperatorsPage() {
           {/* All uploaded documents list */}
           {selected.documents.length > 0 && (
             <div>
-              <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📁 All Uploaded Documents</div>
+              <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📁 All Uploaded Documents ({selected.documents.length})</div>
               <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, overflow:"hidden" }}>
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.8rem" }}>
                   <thead>
                     <tr style={{ background:"#f8fafc" }}>
-                      {["Document","File Name","Uploaded","Expires",""].map(h=>(
-                        <th key={h} style={{ padding:"8px 14px", fontSize:"0.65rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left" }}>{h}</th>
+                      {["Document","File","Uploaded","Expires","Actions"].map(h=>(
+                        <th key={h} style={{ padding:"10px 14px", fontSize:"0.65rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left", borderBottom:"1px solid #e2e8f0" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1644,23 +2193,58 @@ export default function OwnerOperatorsPage() {
                     {selected.documents.map((doc, i) => {
                       const expD = doc.expires_on ? daysUntil(doc.expires_on) : null;
                       return (
-                        <tr key={i} style={{ borderBottom:"1px solid #f1f5f9" }}>
-                          <td style={{ padding:"9px 14px", fontWeight:600, color:"#0f172a" }}>{doc.type}</td>
-                          <td style={{ padding:"9px 14px", color:"#64748b", fontSize:"0.75rem" }}>{doc.file_name}</td>
-                          <td style={{ padding:"9px 14px", color:"#94a3b8", fontSize:"0.72rem" }}>{fmtDate(doc.uploaded_at)}</td>
-                          <td style={{ padding:"9px 14px" }}>
+                        <tr key={i} style={{ borderBottom:"1px solid #f1f5f9", background: i%2===0?"#fff":"#fafafa" }}>
+                          <td style={{ padding:"10px 14px", fontWeight:700, color:"#0f172a", fontSize:"0.82rem" }}>
+                            <div>{doc.type}</div>
+                            <div style={{ fontSize:"0.68rem", color:"#94a3b8", fontWeight:400, marginTop:2 }}>{selected.company_name}</div>
+                          </td>
+                          <td style={{ padding:"10px 14px", color:"#475569", fontSize:"0.75rem", maxWidth:200 }}>
+                            <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{doc.file_name || "—"}</div>
+                          </td>
+                          <td style={{ padding:"10px 14px", color:"#94a3b8", fontSize:"0.72rem", whiteSpace:"nowrap" }}>{fmtDate(doc.uploaded_at)}</td>
+                          <td style={{ padding:"10px 14px" }}>
                             {doc.expires_on ? (
-                              <span style={{ background:expBg(expD), color:expColor(expD), padding:"2px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700 }}>{expLabel(expD,doc.expires_on)}</span>
+                              <span style={{ background:expBg(expD), color:expColor(expD), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, whiteSpace:"nowrap" }}>{expLabel(expD,doc.expires_on)}</span>
                             ) : <span style={{ color:"#94a3b8", fontSize:"0.72rem" }}>—</span>}
                           </td>
-                          <td style={{ padding:"9px 14px" }}>
-                            <button onClick={async ()=>{ await fetch(`/api/ronyx/owner-operators/${selected.id}/documents`,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({doc_type:doc.type})}); updateLocalState({...selected,documents:selected.documents.filter((_,j)=>j!==i)}); flash("Document removed."); }} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
+                          <td style={{ padding:"10px 14px" }}>
+                            <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+                              {/* View button — opens file in new tab */}
+                              {doc.file_url ? (
+                                <button
+                                  onClick={()=>openDoc(doc.file_url!)}
+                                  style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}
+                                >
+                                  👁 View
+                                </button>
+                              ) : (
+                                <span style={{ background:"#f1f5f9", color:"#94a3b8", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:600, whiteSpace:"nowrap" }} title="No file URL — re-upload to store file">
+                                  No file
+                                </span>
+                              )}
+                              {/* Replace / re-upload */}
+                              <label style={{ background:"#f8fafc", color:"#475569", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                                🔄 Replace
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(doc.type,f); e.target.value=""; }} />
+                              </label>
+                              {/* Remove */}
+                              <button onClick={async ()=>{
+                                await fetch(`/api/ronyx/owner-operators/${selected.id}/documents`,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({doc_type:doc.type})});
+                                updateLocalState({...selected,documents:selected.documents.filter((_,j)=>j!==i)});
+                                flash("Document removed.");
+                              }} style={{ background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                                🗑 Remove
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+              </div>
+              <div style={{ marginTop:10, padding:"10px 14px", background:"#f8fafc", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.75rem", color:"#64748b" }}>
+                💡 Documents without a "View" button were uploaded before file storage was enabled. Click "Replace" to re-upload and get a permanent link.
               </div>
             </div>
           )}
@@ -2087,6 +2671,273 @@ export default function OwnerOperatorsPage() {
           </div>
         );
       })()}
+
+      {/* ── Subcontractors Tab ── */}
+      {activeTab === "subs" && (
+        <div style={{ padding:"4px 0" }}>
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <div>
+              <div style={{ fontSize:"0.68rem", fontWeight:800, color:"#475569", textTransform:"uppercase", letterSpacing:"0.1em" }}>Subcontractors</div>
+              <div style={{ fontSize:"0.8rem", color:"#64748b", marginTop:2 }}>
+                {selected.subcontractors.length} subcontractor{selected.subcontractors.length!==1?"s":""} working under {selected.company_name}
+              </div>
+            </div>
+            <button onClick={()=>setShowAddSub(s=>!s)} style={primaryBtn}>+ Add Subcontractor</button>
+          </div>
+
+          {/* Add form */}
+          {showAddSub && (
+            <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"18px 20px", marginBottom:16 }}>
+              <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.88rem", marginBottom:12 }}>New Subcontractor</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px 14px" }}>
+                {([["Company Name *","company_name","ABC Hauling LLC"],["Contact Name","contact_name","John Smith"],["Phone","contact_phone","(555) 000-0000"],["Email","contact_email","john@abchauling.com"],["MC #","mc_number","MC-123456"],["DOT #","dot_number","1234567"]] as [string, keyof typeof addSubForm, string][]).map(([label,field,ph]) => (
+                  <div key={field}>
+                    <label style={lbl}>{label}</label>
+                    <input value={addSubForm[field]} onChange={e=>setAddSubForm(f=>({...f,[field]:e.target.value}))} style={inp} placeholder={ph} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:"flex", gap:10, marginTop:12 }}>
+                <button onClick={async ()=>{
+                  if (!addSubForm.company_name.trim()) { flash("Company name required."); return; }
+                  const res = await apiPost(`/api/ronyx/owner-operators/${selected.id}/subcontractors`, addSubForm);
+                  if (res.error) { flash(`Error: ${res.error}`); return; }
+                  const newSub: OOSubcontractor = { ...res.subcontractor, drivers: [] };
+                  updateLocalState({ ...selected, subcontractors: [...selected.subcontractors, newSub] });
+                  setAddSubForm({ company_name:"", contact_name:"", contact_phone:"", contact_email:"", mc_number:"", dot_number:"" });
+                  setShowAddSub(false);
+                  flash(`${newSub.company_name} added as subcontractor.`);
+                }} style={primaryBtn}>Add Subcontractor</button>
+                <button onClick={()=>setShowAddSub(false)} style={ghostBtn}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {/* Subcontractor cards */}
+          {selected.subcontractors.length === 0 ? (
+            <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:14, padding:"48px 0", textAlign:"center", color:"#94a3b8" }}>
+              <div style={{ fontSize:"2rem", marginBottom:8 }}>🏗️</div>
+              <div style={{ fontWeight:600, marginBottom:4 }}>No subcontractors yet</div>
+              <div style={{ fontSize:"0.8rem" }}>Add subcontractors that haul under {selected.company_name}</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {selected.subcontractors.map(sub => {
+                const expanded  = expandedSubs.has(sub.id);
+                const driverForm = subDriverForms[sub.id] || { name:"", phone:"", cdl_number:"", cdl_expiration:"" };
+                const [showDriverForm, setShowDriverFormFor] = [!!subDriverForms[`show_${sub.id}`], (v: boolean) => setSubDriverForms(f=>({ ...f, [`show_${sub.id}`]: v as any }))];
+
+                return (
+                  <div key={sub.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, overflow:"hidden" }}>
+                    {/* Sub header */}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 18px", cursor:"pointer" }} onClick={()=>setExpandedSubs(s=>{ const n=new Set(s); n.has(sub.id)?n.delete(sub.id):n.add(sub.id); return n; })}>
+                      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                        <div style={{ width:40, height:40, borderRadius:10, background:"#eff6ff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", fontWeight:900, color:"#1e40af" }}>
+                          {sub.company_name.charAt(0)}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.9rem" }}>{sub.company_name}</div>
+                          <div style={{ fontSize:"0.72rem", color:"#64748b" }}>
+                            {sub.contact_name && <span>{sub.contact_name}</span>}
+                            {sub.contact_phone && <span style={{ marginLeft:8 }}>📞 {sub.contact_phone}</span>}
+                            {sub.mc_number && <span style={{ marginLeft:8, background:"#eff6ff", color:"#1e40af", padding:"1px 6px", borderRadius:4, fontWeight:700 }}>MC# {sub.mc_number}</span>}
+                            {sub.dot_number && <span style={{ marginLeft:6, background:"#f0fdf4", color:"#15803d", padding:"1px 6px", borderRadius:4, fontWeight:700 }}>DOT# {sub.dot_number}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <span style={{ background:"#eff6ff", color:"#1e40af", padding:"3px 10px", borderRadius:20, fontSize:"0.72rem", fontWeight:700 }}>
+                          {sub.drivers.length} driver{sub.drivers.length!==1?"s":""}
+                        </span>
+                        <span style={{ color:"#94a3b8", fontSize:"1rem" }}>{expanded ? "▲" : "▼"}</span>
+                      </div>
+                    </div>
+
+                    {/* Expanded: drivers + actions */}
+                    {expanded && (
+                      <div style={{ borderTop:"1px solid #f1f5f9", padding:"14px 18px", background:"#fafbfc" }}>
+                        {/* Drivers table */}
+                        {sub.drivers.length > 0 ? (
+                          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.8rem", marginBottom:12 }}>
+                            <thead>
+                              <tr style={{ background:"#f1f5f9" }}>
+                                {["Driver Name","Phone","CDL #","CDL Expiration",""].map(h=>(
+                                  <th key={h} style={{ padding:"6px 10px", fontWeight:700, color:"#475569", fontSize:"0.68rem", textTransform:"uppercase", textAlign:"left" }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sub.drivers.map(d => (
+                                <tr key={d.id} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                                  <td style={{ padding:"8px 10px", fontWeight:700, color:"#0f172a" }}>{d.name}</td>
+                                  <td style={{ padding:"8px 10px", color:"#475569" }}>{d.phone || "—"}</td>
+                                  <td style={{ padding:"8px 10px", color:"#475569" }}>{d.cdl_number || "—"}</td>
+                                  <td style={{ padding:"8px 10px" }}>
+                                    {d.cdl_expiration ? (
+                                      <span style={{ background:expBg(daysUntil(d.cdl_expiration)), color:expColor(daysUntil(d.cdl_expiration)), padding:"2px 7px", borderRadius:6, fontWeight:700, fontSize:"0.72rem" }}>
+                                        {expLabel(daysUntil(d.cdl_expiration), d.cdl_expiration)}
+                                      </span>
+                                    ) : <span style={{ color:"#94a3b8" }}>—</span>}
+                                  </td>
+                                  <td style={{ padding:"8px 10px" }}>
+                                    <button onClick={async ()=>{
+                                      await apiDelete(`/api/ronyx/owner-operators/${selected.id}/subcontractors/${sub.id}/drivers/${d.id}`);
+                                      const updated = { ...sub, drivers: sub.drivers.filter(x=>x.id!==d.id) };
+                                      updateLocalState({ ...selected, subcontractors: selected.subcontractors.map(s=>s.id===sub.id?updated:s) });
+                                      flash(`${d.name} removed.`);
+                                    }} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 9px", fontSize:"0.7rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <div style={{ color:"#94a3b8", fontSize:"0.8rem", marginBottom:12 }}>No drivers added yet.</div>
+                        )}
+
+                        {/* Add driver form */}
+                        {showDriverForm ? (
+                          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, padding:"12px 14px", marginBottom:10 }}>
+                            <div style={{ fontWeight:700, color:"#0f172a", fontSize:"0.82rem", marginBottom:10 }}>Add Driver to {sub.company_name}</div>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8 }}>
+                              {([["Name *","name","Carlos Ramirez"],["Phone","phone","(555) 000-0000"],["CDL #","cdl_number","TX1234567"],["CDL Exp","cdl_expiration",""]] as [string,string,string][]).map(([label,field,ph]) => (
+                                <div key={field}>
+                                  <label style={{ ...lbl, fontSize:"0.65rem" }}>{label}</label>
+                                  <input
+                                    type={field==="cdl_expiration"?"date":"text"}
+                                    value={(driverForm as any)[field]}
+                                    onChange={e=>setSubDriverForms(f=>({ ...f, [sub.id]: { ...driverForm, [field]:e.target.value } }))}
+                                    placeholder={ph}
+                                    style={{ ...inp, fontSize:"0.78rem", padding:"5px 8px" }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                              <button onClick={async ()=>{
+                                if (!driverForm.name.trim()) { flash("Driver name required."); return; }
+                                const res = await apiPost(`/api/ronyx/owner-operators/${selected.id}/subcontractors/${sub.id}/drivers`, driverForm);
+                                if (res.error) { flash(`Error: ${res.error}`); return; }
+                                const newD: OOSubDriver = { id: res.driver.id, name: res.driver.name, phone: res.driver.phone||"", cdl_number: res.driver.cdl_number||"", cdl_expiration: res.driver.cdl_expiration||"" };
+                                const updated = { ...sub, drivers: [...sub.drivers, newD] };
+                                updateLocalState({ ...selected, subcontractors: selected.subcontractors.map(s=>s.id===sub.id?updated:s) });
+                                setSubDriverForms(f=>({ ...f, [sub.id]: { name:"", phone:"", cdl_number:"", cdl_expiration:"" }, [`show_${sub.id}`]: false as any }));
+                                flash(`${newD.name} added to ${sub.company_name}.`);
+                              }} style={{ ...primaryBtn, fontSize:"0.75rem" }}>Add Driver</button>
+                              <button onClick={()=>setSubDriverForms(f=>({ ...f, [`show_${sub.id}`]: false as any }))} style={{ ...ghostBtn, fontSize:"0.75rem" }}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={()=>setSubDriverForms(f=>({ ...f, [`show_${sub.id}`]: true as any, [sub.id]: f[sub.id] || { name:"", phone:"", cdl_number:"", cdl_expiration:"" } }))} style={{ ...ghostBtn, fontSize:"0.75rem", marginBottom:10 }}>
+                            + Add Driver to {sub.company_name}
+                          </button>
+                        )}
+
+                        {/* Sub actions */}
+                        <div style={{ display:"flex", gap:8, marginTop:4, paddingTop:10, borderTop:"1px solid #f1f5f9" }}>
+                          {sub.contact_email && <a href={`mailto:${sub.contact_email}`} style={{ ...ghostBtn, fontSize:"0.72rem", textDecoration:"none" }}>📧 Email</a>}
+                          {sub.contact_phone && <a href={`tel:${sub.contact_phone}`} style={{ ...ghostBtn, fontSize:"0.72rem", textDecoration:"none" }}>📞 Call</a>}
+                          <button onClick={async ()=>{
+                            if (!confirm(`Remove ${sub.company_name} from ${selected.company_name}?`)) return;
+                            await apiDelete(`/api/ronyx/owner-operators/${selected.id}/subcontractors/${sub.id}`);
+                            updateLocalState({ ...selected, subcontractors: selected.subcontractors.filter(s=>s.id!==sub.id) });
+                            flash(`${sub.company_name} removed.`);
+                          }} style={{ marginLeft:"auto", background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:8, padding:"6px 12px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Remove Subcontractor</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Maintenance / Out-of-Service Modal ── */}
+      {maintenanceModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:9000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:16, padding:"24px 28px", width:480, maxWidth:"95vw", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ fontWeight:900, fontSize:"1rem", color:"#0f172a", marginBottom:4 }}>Mark Truck Out of Service</div>
+            <div style={{ fontSize:"0.78rem", color:"#64748b", marginBottom:16 }}>Truck <strong>#{maintenanceModal.truckNumber}</strong> will be flagged as unavailable. Staff will be guided to approved backup trucks for affected drivers.</div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px" }}>
+              <div>
+                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Event Type</label>
+                <select value={maintForm.event_type} onChange={e=>setMaintForm(f=>({...f,event_type:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:"0.82rem" }}>
+                  <option value="breakdown">Breakdown</option>
+                  <option value="out_of_service">Out of Service (other)</option>
+                  <option value="inspection_failed">Inspection Failed</option>
+                  <option value="scheduled_maintenance">Scheduled Maintenance</option>
+                  <option value="needs_review">Needs Review</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Severity</label>
+                <select value={maintForm.severity} onChange={e=>setMaintForm(f=>({...f,severity:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:"0.82rem" }}>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Issue Title *</label>
+                <input value={maintForm.issue_title} onChange={e=>setMaintForm(f=>({...f,issue_title:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:"0.82rem", boxSizing:"border-box" }} placeholder="e.g. Engine failure on I-10, flat tire, brakes" />
+              </div>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Description (optional)</label>
+                <textarea value={maintForm.issue_description} onChange={e=>setMaintForm(f=>({...f,issue_description:e.target.value}))} rows={2} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:"0.82rem", resize:"vertical", boxSizing:"border-box" }} placeholder="Additional details..." />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Est. Return Date</label>
+                <input type="date" value={maintForm.estimated_return_at} onChange={e=>setMaintForm(f=>({...f,estimated_return_at:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:"0.82rem" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>Reported By</label>
+                <input value={maintForm.reported_by} onChange={e=>setMaintForm(f=>({...f,reported_by:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:"0.82rem" }} placeholder="Staff name" />
+              </div>
+            </div>
+
+            {/* Affected drivers + recommended backups */}
+            {selected && (() => {
+              const affectedDrivers = selected.drivers.filter(d => d.truck_number === maintenanceModal.truckNumber);
+              if (affectedDrivers.length === 0) return null;
+              return (
+                <div style={{ marginTop:14, background:"#fff7ed", border:"1px solid #fed7aa", borderRadius:10, padding:"12px 14px" }}>
+                  <div style={{ fontSize:"0.68rem", fontWeight:800, color:"#ea580c", marginBottom:8 }}>AFFECTED DRIVERS</div>
+                  {affectedDrivers.map(d => {
+                    const backups = (selected.driver_truck_assignments || [])
+                      .filter(a => a.driver_id === d.id && a.assignment_type === "backup")
+                      .sort((a,b) => a.priority - b.priority)
+                      .map(a => ({ ...a, truck: selected.trucks.find(t => t.id === a.truck_id) }))
+                      .filter(a => a.truck && isTruckAvailable(a.truck.status));
+                    return (
+                      <div key={d.id} style={{ marginBottom:6 }}>
+                        <div style={{ fontWeight:700, fontSize:"0.82rem", color:"#0f172a" }}>{d.name}</div>
+                        {backups.length > 0 ? (
+                          <div style={{ fontSize:"0.72rem", color:"#15803d", marginTop:2 }}>
+                            Recommended backup: <strong>Truck #{backups[0].truck!.truck_number}</strong> ({PRIORITY_LABELS[backups[0].priority]})
+                          </div>
+                        ) : (
+                          <div style={{ fontSize:"0.72rem", color:"#dc2626", marginTop:2 }}>No approved backup trucks available</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div style={{ display:"flex", gap:10, marginTop:18 }}>
+              <button onClick={markTruckOutOfService} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:9, padding:"9px 18px", fontWeight:700, fontSize:"0.82rem", cursor:"pointer" }}>Mark Out of Service</button>
+              <button onClick={() => setMaintenanceModal(null)} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:9, padding:"9px 18px", fontWeight:700, fontSize:"0.82rem", cursor:"pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

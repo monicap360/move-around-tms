@@ -60,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Daily Dispatch Import",  href: "/ronyx/dispatch/daily-import",       icon: "📥", color: "#7c3aed" },
         { label: "Dispatch Guard™",        href: "/ronyx/dispatch/dispatch-guard",     icon: "🛡️", color: "#dc2626" },
         { label: "Load Tracker",           href: "/ronyx/dispatch/loads",              icon: "📍", color: "#0d9488" },
+        { label: "Reassign Truck",         href: "/ronyx/maintenance/breakdowns",      icon: "🔄", color: "#ea580c" },
       ]},
       { label: "Tickets",               href: "/ronyx/tickets?tab=all",            icon: "🎫", color: "#d97706", children: TICKETS_CHILDREN },
       { label: "Fast Scan™",            href: "/ronyx/tickets?tab=fastscan",       icon: "⚡", color: "#16a34a", subtitle: "Powered by Ronyx" },
@@ -73,7 +74,12 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Drivers",           href: "/ronyx/drivers?tab=list", icon: "👤", color: "#0891b2", children: DRIVERS_CHILDREN },
       { label: "Owner Operators",   href: "/ronyx/owner-operators",  icon: "🚛", color: "#7c3aed" },
       { label: "Fleet / Equipment", href: "/ronyx/fleet",            icon: "🔧", color: "#0284c7" },
-      { label: "Maintenance",       href: "/ronyx/maintenance",      icon: "🔩", color: "#ea580c" },
+      { label: "Maintenance",       href: "/ronyx/maintenance",      icon: "🔩", color: "#ea580c", children: [
+        { label: "Overview",              href: "/ronyx/maintenance",                    icon: "🔩", color: "#ea580c" },
+        { label: "Breakdowns / OOS",      href: "/ronyx/maintenance/breakdowns",         icon: "🚨", color: "#dc2626" },
+        { label: "Truck Availability",    href: "/ronyx/maintenance/availability",       icon: "✅", color: "#15803d" },
+        { label: "Reassignment Log",      href: "/ronyx/maintenance/reassignments",      icon: "🔄", color: "#7c3aed" },
+      ]},
     ],
   },
   {
@@ -88,12 +94,14 @@ const NAV_GROUPS: NavGroup[] = [
     section: "Compliance & Records",
     items: [
       { label: "HR / DOT Compliance", href: "/ronyx/compliance",  icon: "🛡️", color: "#dc2626", children: [
-        { label: "Compliance Center",    href: "/ronyx/compliance",                icon: "🛡️", color: "#dc2626" },
-        { label: "RMIS Monitor",         href: "/ronyx/compliance/rmis-monitor",   icon: "📡", color: "#7c3aed" },
-        { label: "Driver Docs",          href: "/ronyx/compliance/driver-docs",    icon: "📄", color: "#0891b2" },
-        { label: "Expiring Docs",        href: "/ronyx/compliance/expiring",       icon: "⏰", color: "#ea580c" },
-        { label: "Audit Packets",        href: "/ronyx/compliance/audit-packets",  icon: "📦", color: "#64748b" },
+        { label: "Compliance Center",       href: "/ronyx/compliance",                        icon: "🛡️", color: "#dc2626" },
+        { label: "Expired Insurance",       href: "/ronyx/compliance/expired-insurance",      icon: "🔴", color: "#dc2626" },
+        { label: "RMIS Monitor",            href: "/ronyx/compliance/rmis-monitor",           icon: "📡", color: "#7c3aed" },
+        { label: "Driver Docs",             href: "/ronyx/compliance/driver-docs",            icon: "📄", color: "#0891b2" },
+        { label: "Expiring Docs",           href: "/ronyx/compliance/expiring",               icon: "⏰", color: "#ea580c" },
+        { label: "Audit Packets",           href: "/ronyx/compliance/audit-packets",          icon: "📦", color: "#64748b" },
       ]},
+      { label: "Insurance Expiry Report", href: "/ronyx/compliance/expired-insurance", icon: "🔴", color: "#dc2626" },
       { label: "Documents",           href: "/ronyx/documents",    icon: "📄", color: "#64748b" },
       { label: "Backup Data",         href: "/ronyx/backup",       icon: "💾", color: "#0f766e" },
       { label: "Reports",             href: "/ronyx/reports",      icon: "📊", color: "#9333ea" },
@@ -162,8 +170,11 @@ export default function RonyxShell({
   useEffect(() => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (pathname.startsWith("/ronyx/tickets")) next.add("Tickets");
-      if (pathname.startsWith("/ronyx/drivers"))  next.add("Drivers");
+      if (pathname.startsWith("/ronyx/tickets"))     next.add("Tickets");
+      if (pathname.startsWith("/ronyx/drivers"))     next.add("Drivers");
+      if (pathname.startsWith("/ronyx/maintenance")) next.add("Maintenance");
+      if (pathname.startsWith("/ronyx/dispatch"))    next.add("Dispatch");
+      if (pathname.startsWith("/ronyx/compliance"))  next.add("HR / DOT Compliance");
       return next;
     });
   }, [pathname]);
