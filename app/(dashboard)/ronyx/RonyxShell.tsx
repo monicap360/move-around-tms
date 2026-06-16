@@ -116,6 +116,12 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    section: "Staff",
+    items: [
+      { label: "Mission Start™",  href: "/ronyx/staff/my-dashboard", icon: "🎯", color: "#1e40af" },
+    ],
+  },
+  {
     section: "System",
     items: [
       { label: "Admin Settings", href: "/ronyx/settings", icon: "⚙️", color: "#475569" },
