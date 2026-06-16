@@ -76,7 +76,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Drivers",           href: "/ronyx/drivers?tab=list", icon: "👤", color: "#0891b2", children: DRIVERS_CHILDREN },
       { label: "Owner Operators",   href: "/ronyx/owner-operators",  icon: "🚛", color: "#7c3aed", children: [
         { label: "Overview",          href: "/ronyx/owner-operators",              icon: "🚛", color: "#7c3aed" },
-        { label: "COI Matrix",        href: "/ronyx/owner-operators/coi-matrix",  icon: "📋", color: "#1e40af" },
+        { label: "COI Matrix",        href: "/ronyx/owner-operators/coi-matrix",        icon: "📋", color: "#1e40af" },
+        { label: "Bulk Import",       href: "/ronyx/owner-operators/bulk-import",       icon: "📥", color: "#0891b2" },
         { label: "Expired Insurance", href: "/ronyx/compliance/expired-insurance",icon: "🔴", color: "#dc2626" },
         { label: "Documents",         href: "/ronyx/owner-operators",              icon: "📄", color: "#64748b" },
         { label: "Settlement",        href: "/ronyx/owner-operators",              icon: "💵", color: "#15803d" },

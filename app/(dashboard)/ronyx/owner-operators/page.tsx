@@ -468,6 +468,9 @@ export default function OwnerOperatorsPage() {
     // Sync scalar / JSONB fields to DB (fire-and-forget)
     apiPut(`/api/ronyx/owner-operators/${oo.id}`, {
       notes: oo.notes, last_contact_date: oo.last_contact_date,
+      mc_number: oo.mc_number, dot_number: oo.dot_number, ein: oo.ein,
+      contact_name: oo.contact_name, contact_phone: oo.contact_phone, contact_email: oo.contact_email,
+      business_address: oo.business_address,
       insurance_agent_name: oo.insurance_agent_name, insurance_agent_email: oo.insurance_agent_email, insurance_agent_phone: oo.insurance_agent_phone,
       reminder_log: oo.reminder_log, compliance_history: oo.compliance_history, changes_log: oo.changes_log,
     });
@@ -1080,10 +1083,29 @@ export default function OwnerOperatorsPage() {
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ margin: "0 0 4px", fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
-            <div style={{ fontSize: "0.82rem", color: "#64748b", display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <span><strong>MC:</strong> {selected.mc_number||"—"}</span>
-              <span><strong>DOT:</strong> {selected.dot_number||"—"}</span>
-              <span><strong>EIN:</strong> {selected.ein||"—"}</span>
+            <div style={{ fontSize: "0.82rem", color: "#64748b", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              {(["mc_number","dot_number","ein"] as const).map(field => {
+                const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN" };
+                const placeholders: Record<string,string> = { mc_number:"MC-123456", dot_number:"1234567", ein:"XX-XXXXXXX" };
+                return (
+                  <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+                    <strong>{labels[field]}:</strong>
+                    <input
+                      defaultValue={selected[field]||""}
+                      placeholder={placeholders[field]}
+                      onBlur={e => {
+                        const val = e.target.value.trim();
+                        if (val !== (selected[field]||"")) {
+                          updateSelected({ ...selected, [field]: val || null });
+                          flash(`${labels[field]} saved.`);
+                        }
+                      }}
+                      onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", width: field==="ein"?100:90, outline:"none", padding:"1px 2px" }}
+                    />
+                  </span>
+                );
+              })}
               {selected.contact_phone && <span>📞 {selected.contact_phone}</span>}
               {selected.contact_email && <span>✉ {selected.contact_email}</span>}
             </div>
@@ -1125,7 +1147,7 @@ export default function OwnerOperatorsPage() {
           { label: "📝 Contract",          type: "Contract",                    hasExpiry: true  },
           { label: "🧾 W-9",               type: "W-9 / Tax Form",              hasExpiry: false },
           { label: "💳 Voided Check",      type: "Voided Check",                hasExpiry: false },
-          { label: "🏛️ MC Authority",      type: "MC Authority Letter",         hasExpiry: false },
+          { label: "🏛️ MC Auth Letter",     type: "MC Authority Letter",         hasExpiry: false },
         ].map(({ label, type }) => {
           const onFile = selected.documents.find(d => d.type === type);
           return (
@@ -2323,9 +2345,19 @@ export default function OwnerOperatorsPage() {
                           </td>
                           <td style={{ padding:"10px 14px", color:"#94a3b8", fontSize:"0.72rem", whiteSpace:"nowrap" }}>{fmtDate(doc.uploaded_at)}</td>
                           <td style={{ padding:"10px 14px" }}>
-                            {doc.expires_on ? (
-                              <span style={{ background:expBg(expD), color:expColor(expD), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, whiteSpace:"nowrap" }}>{expLabel(expD,doc.expires_on)}</span>
-                            ) : <span style={{ color:"#94a3b8", fontSize:"0.72rem" }}>—</span>}
+                            <input
+                              type="date"
+                              defaultValue={doc.expires_on?.slice(0,10) || ""}
+                              title="Click to set or override expiration date"
+                              onBlur={async e => {
+                                const newDate = e.target.value || null;
+                                if (newDate === (doc.expires_on?.slice(0,10)||null)) return;
+                                await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: doc.type, expires_on: newDate });
+                                updateLocalState({ ...selected, documents: selected.documents.map((d,j) => j===i ? { ...d, expires_on: newDate||undefined } : d) });
+                                flash(`Expiration date updated for ${doc.type}.`);
+                              }}
+                              style={{ border:"1px solid #e2e8f0", borderRadius:6, padding:"3px 8px", fontSize:"0.72rem", background: expBg(expD), color: expColor(expD)||"#475569", fontWeight:700, cursor:"pointer", outline:"none", width:130 }}
+                            />
                           </td>
                           <td style={{ padding:"10px 14px" }}>
                             <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
