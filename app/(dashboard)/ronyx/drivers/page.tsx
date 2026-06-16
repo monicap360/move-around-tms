@@ -20,6 +20,11 @@ type Driver = {
   trailer: string;
   status: DriverStatus;
   driverType: "W2" | "1099" | "Owner Operator";
+  companyName: string;
+  carrierName: string;
+  ownerOperatorName: string;
+  employmentType: string;
+  dispatchEligible: boolean;
   cdl: string;
   cdlState: string;
   cdlExp: string;
@@ -87,27 +92,32 @@ function mapApiDriver(d: any): Driver {
   const mvrExp     = fmtDate(d.mvr_expiration);
   const medicalExp = fmtDate(d.medical_card_expiration);
   return {
-    id:          d.id,
-    name:        d.full_name || d.name || "Unknown",
-    role:        d.position_role || "Driver",
-    phone:       d.phone || "—",
-    email:       d.email || "—",
-    location:    d.address ? d.address.split(",").slice(-2).join(",").trim() : "—",
-    truck:       d.assigned_truck_number || "—",
-    trailer:     "—",
-    status:      normalizeStatus(d.status),
-    driverType:  normalizeDrType(d.driver_type),
-    cdl:         d.license_number || "—",
-    cdlState:    d.license_state  || "—",
+    id:                d.id,
+    name:              d.full_name || d.name || "Unknown",
+    role:              d.position_role || "Driver",
+    phone:             d.phone || "—",
+    email:             d.email || "—",
+    location:          d.address ? d.address.split(",").slice(-2).join(",").trim() : "—",
+    truck:             d.assigned_truck_number || "—",
+    trailer:           "—",
+    status:            normalizeStatus(d.status),
+    driverType:        normalizeDrType(d.driver_type),
+    companyName:       d.company_name || "—",
+    carrierName:       d.carrier_name || "—",
+    ownerOperatorName: d.owner_operator_name || "—",
+    employmentType:    d.employment_type || normalizeDrType(d.driver_type),
+    dispatchEligible:  Boolean(d.dispatch_eligible),
+    cdl:               d.license_number || "—",
+    cdlState:          d.license_state  || "—",
     cdlExp,
     mvrExp,
     medicalExp,
-    docs:        computeDocStatus({ cdlExp: d.license_expiration_date, mvrExp: d.mvr_expiration, medicalExp: d.medical_card_expiration }),
-    rating:      Number(d.rating) || 0,
-    safetyScore: 100,
-    onTime:      100,
-    lastLoad:    "—",
-    revenueWeek: "—",
+    docs:              computeDocStatus({ cdlExp: d.license_expiration_date, mvrExp: d.mvr_expiration, medicalExp: d.medical_card_expiration }),
+    rating:            Number(d.rating) || 0,
+    safetyScore:       100,
+    onTime:            100,
+    lastLoad:          "—",
+    revenueWeek:       "—",
   };
 }
 
@@ -1747,25 +1757,25 @@ export default function DriversPage() {
             /* ── Expandable List View ── */
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 940, tableLayout: "fixed" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1060, tableLayout: "fixed" }}>
                   <colgroup>
-                    <col style={{ width: 36 }} />
-                    <col style={{ width: 152 }} />
-                    <col style={{ width: 80 }} />
+                    <col style={{ width: 34 }} />
+                    <col style={{ width: 140 }} />
+                    <col style={{ width: 130 }} />
+                    <col style={{ width: 72 }} />
                     <col style={{ width: 56 }} />
-                    <col style={{ width: 60 }} />
-                    <col style={{ width: 80 }} />
-                    <col style={{ width: 80 }} />
-                    <col style={{ width: 80 }} />
-                    <col style={{ width: 68 }} />
-                    <col style={{ width: 208 }} />
+                    <col style={{ width: 76 }} />
+                    <col style={{ width: 76 }} />
+                    <col style={{ width: 76 }} />
+                    <col style={{ width: 64 }} />
+                    <col style={{ width: 200 }} />
                   </colgroup>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
                       <th style={{ padding: "9px 8px" }}></th>
                       <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Driver</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company / Carrier</th>
                       <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
                       <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Truck</th>
                       <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>CDL Exp</th>
                       <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>MVR Exp</th>
@@ -1795,6 +1805,18 @@ export default function DriversPage() {
                             <td style={{ padding: "8px 8px" }}>
                               <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{driver.name}</div>
                               <div style={{ fontSize: 10, color: "#64748b" }}>{driver.phone !== "—" ? driver.phone : driver.email}</div>
+                            </td>
+                            <td style={{ padding: "8px 8px" }}>
+                              {driver.companyName !== "—" ? (
+                                <>
+                                  <div style={{ fontWeight: 700, fontSize: 11, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{driver.companyName}</div>
+                                  {driver.ownerOperatorName !== "—" && driver.ownerOperatorName !== driver.companyName && (
+                                    <div style={{ fontSize: 9, color: "#64748b" }}>OO: {driver.ownerOperatorName}</div>
+                                  )}
+                                </>
+                              ) : (
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 6px", borderRadius: 5 }}>No Company</span>
+                              )}
                             </td>
                             <td style={{ padding: "8px 8px" }}>
                               <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 8, background: stBg, color: stColor, display: "inline-block", whiteSpace: "nowrap" }}>{driver.status}</span>
