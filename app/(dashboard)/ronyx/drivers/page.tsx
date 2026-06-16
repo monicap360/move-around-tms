@@ -1219,6 +1219,8 @@ export default function DriversPage() {
   const [alertsList, setAlertsList]       = useState<ManagerAlert[]>([]);
   const [alertsOpen, setAlertsOpen]       = useState(false);
   const [alertsLoaded, setAlertsLoaded]   = useState(false);
+  const [viewMode, setViewMode]           = useState<"cards" | "list">("list");
+  const [expandedId, setExpandedId]       = useState<string | null>(null);
 
   function showToast(msg: string) { setToast(msg); }
 
@@ -1661,6 +1663,22 @@ export default function DriversPage() {
                 <option>Missing</option>
                 <option>Needs Attention</option>
               </select>
+              <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
+                <button
+                  onClick={() => setViewMode("list")}
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: viewMode === "list" ? "#0f172a" : "#fff", color: viewMode === "list" ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  title="List view"
+                >
+                  ☰ List
+                </button>
+                <button
+                  onClick={() => setViewMode("cards")}
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: viewMode === "cards" ? "#0f172a" : "#fff", color: viewMode === "cards" ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  title="Card view"
+                >
+                  ⊞ Cards
+                </button>
+              </div>
             </div>
 
             {loading ? (
@@ -1671,7 +1689,95 @@ export default function DriversPage() {
                   ? <>No drivers yet. <Link href="/ronyx/drivers/new" style={{ color: "#1e40af" }}>Add your first driver →</Link></>
                   : "No drivers match your filters."}
               </div>
+            ) : viewMode === "list" ? (
+              /* ── Expandable List View ── */
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+                {/* List header */}
+                <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 90px 80px 80px 90px 90px 90px 28px", gap: 8, padding: "8px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <span></span>
+                  <span>Driver</span>
+                  <span>Status</span>
+                  <span>Type</span>
+                  <span>Truck</span>
+                  <span>CDL Exp</span>
+                  <span>MVR Exp</span>
+                  <span>Medical</span>
+                  <span>Docs</span>
+                </div>
+                {filteredDrivers.map((driver, idx) => {
+                  const isExpanded = expandedId === driver.id;
+                  const docColor = driver.docs === "Good" ? "#166534" : driver.docs === "Expiring" ? "#854d0e" : driver.docs === "Expired" ? "#991b1b" : "#475569";
+                  const docBg    = driver.docs === "Good" ? "#dcfce7" : driver.docs === "Expiring" ? "#fef9c3" : driver.docs === "Expired" ? "#fee2e2" : "#f1f5f9";
+                  const stColor  = driver.status === "Active" || driver.status === "Available" ? "#166534" : driver.status === "Assigned" ? "#1e40af" : driver.status === "Suspended" ? "#991b1b" : "#475569";
+                  const stBg     = driver.status === "Active" || driver.status === "Available" ? "#dcfce7" : driver.status === "Assigned" ? "#dbeafe" : driver.status === "Suspended" ? "#fee2e2" : "#f1f5f9";
+                  return (
+                    <div key={driver.id} style={{ borderBottom: idx < filteredDrivers.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                      {/* Compact row — click to expand */}
+                      <div
+                        onClick={() => setExpandedId(isExpanded ? null : driver.id)}
+                        style={{ display: "grid", gridTemplateColumns: "32px 1fr 90px 80px 80px 90px 90px 90px 28px", gap: 8, padding: "10px 12px", alignItems: "center", cursor: "pointer", background: isExpanded ? "#f0f9ff" : "#fff", transition: "background 0.15s" }}
+                      >
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0f172a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                          {driver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{driver.name}</div>
+                          <div style={{ fontSize: 11, color: "#64748b" }}>{driver.phone !== "—" ? driver.phone : driver.email}</div>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 8, background: stBg, color: stColor, display: "inline-block" }}>{driver.status}</span>
+                        <span style={{ fontSize: 12, color: "#475569" }}>{driver.driverType}</span>
+                        <span style={{ fontSize: 12, color: "#0f172a", fontWeight: 600 }}>{driver.truck}</span>
+                        <span style={{ fontSize: 11, color: "#475569" }}>{driver.cdlExp}</span>
+                        <span style={{ fontSize: 11, color: driver.mvrExp === "Expired" ? "#991b1b" : "#475569" }}>{driver.mvrExp}</span>
+                        <span style={{ fontSize: 11, color: driver.medicalExp === "Expired" ? "#991b1b" : "#475569" }}>{driver.medicalExp}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: docBg, color: docColor, textAlign: "center" }}>{driver.docs === "Good" ? "✓" : driver.docs === "Expiring" ? "!" : driver.docs === "Expired" ? "✗" : "?"}</span>
+                      </div>
+
+                      {/* Expanded panel */}
+                      {isExpanded && (
+                        <div style={{ background: "#f8fafc", borderTop: "1px solid #e0f2fe", padding: "16px 20px" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 14 }}>
+                            {[
+                              { label: "Email",    value: driver.email },
+                              { label: "Phone",    value: driver.phone },
+                              { label: "Location", value: driver.location },
+                              { label: "CDL #",    value: driver.cdl },
+                              { label: "CDL State",value: driver.cdlState },
+                              { label: "CDL Exp",  value: driver.cdlExp },
+                              { label: "MVR Exp",  value: driver.mvrExp },
+                              { label: "Medical",  value: driver.medicalExp },
+                              { label: "Truck",    value: driver.truck },
+                              { label: "Rating",   value: driver.rating > 0 ? `★ ${driver.rating}` : "—" },
+                            ].map(({ label, value }) => (
+                              <div key={label} style={{ background: "#fff", borderRadius: 8, padding: "8px 12px", border: "1px solid #e2e8f0" }}>
+                                <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{value}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
+                              <button style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Profile</button>
+                            </Link>
+                            <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ textDecoration: "none" }}>
+                              <button style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Documents</button>
+                            </Link>
+                            <button onClick={(e) => { e.stopPropagation(); setAssignTarget({ driver }); }} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Assign Truck</button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setAssignOOTarget(driver); setOOSearch(""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
+                              style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                            >Assign to OO</button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: "archive", driver }); }} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #fed7aa", background: "#fff7ed", color: "#d97706", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Archive</button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: "delete", driver }); }} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #fca5a5", background: "#fff1f2", color: "#dc2626", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Delete</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
+              /* ── Card View ── */
               <div className="premium-driver-list">
                 {filteredDrivers.map((driver) => (
                   <article className="premium-driver-card" key={driver.id}>

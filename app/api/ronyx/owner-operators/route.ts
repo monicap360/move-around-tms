@@ -3,21 +3,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-/* ── GET /api/ronyx/owner-operators ── list all OO companies with sub-data */
-export async function GET() {
-  const sb = createSupabaseServerClient();
+// Companies from the subhauler agreement — always seed these as OOs
+const REQUIRED_OOS = [
+  { company_name: "TC Redwine Services, LLC",          business_address: "",                                    status: "active" },
+  { company_name: "BAS Equipment & Trucking LLC",       business_address: "P.O. Box 36, Throckmorton, TX 76483", status: "active" },
+  { company_name: "M.A. Mortenson Company",            business_address: "700 Meadow Ln, Minneapolis MN 55422", status: "active" },
+];
 
-  const { data: oos, error } = await sb
-    .from("ronyx_owner_operators")
-    .select("*")
-    .order("company_name", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  if (!oos || oos.length === 0) return NextResponse.json({ companies: [] });
+async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, oos: any[]) {
+  if (!oos.length) return NextResponse.json({ companies: [] });
 
   const ids = oos.map((o) => o.id);
-
   const [driversRes, trucksRes, docsRes, jobsRes] = await Promise.all([
     sb.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name"),
     sb.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number"),
@@ -32,14 +28,14 @@ export async function GET() {
 
   const companies = oos.map((oo) => ({
     ...oo,
-    drivers:  drivers.filter((d) => d.oo_id === oo.id),
-    trucks:   trucks.filter((t)  => t.oo_id === oo.id),
-    documents: docs.filter((d)   => d.oo_id === oo.id).map((d) => ({
-      type: d.doc_type,
+    drivers:   drivers.filter((d) => d.oo_id === oo.id),
+    trucks:    trucks.filter((t)  => t.oo_id === oo.id),
+    documents: docs.filter((d) => d.oo_id === oo.id).map((d) => ({
+      type:        d.doc_type,
       uploaded_at: d.uploaded_at,
-      file_name: d.file_name || "",
-      expires_on: d.expires_on || undefined,
-      _db_id: d.id,
+      file_name:   d.file_name || "",
+      expires_on:  d.expires_on || undefined,
+      _db_id:      d.id,
     })),
     jobs: jobs.filter((j) => j.oo_id === oo.id),
   }));
@@ -47,9 +43,37 @@ export async function GET() {
   return NextResponse.json({ companies });
 }
 
+/* ── GET /api/ronyx/owner-operators ─────────────────────────── */
+export async function GET() {
+  const sb = createSupabaseServerClient();
+
+  const { data: oos, error } = await sb
+    .from("ronyx_owner_operators")
+    .select("*")
+    .order("company_name", { ascending: true });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Ensure required OO companies always exist
+  const existingNames = (oos || []).map((o: any) => o.company_name.toLowerCase());
+  const missing = REQUIRED_OOS.filter(
+    (r) => !existingNames.includes(r.company_name.toLowerCase())
+  );
+  if (missing.length > 0) {
+    await sb.from("ronyx_owner_operators").insert(missing);
+    const { data: refreshed } = await sb
+      .from("ronyx_owner_operators")
+      .select("*")
+      .order("company_name", { ascending: true });
+    return buildResponse(sb, refreshed || []);
+  }
+
+  return buildResponse(sb, oos || []);
+}
+
 /* ── POST /api/ronyx/owner-operators ── create new OO company */
 export async function POST(req: Request) {
-  const sb = createSupabaseServerClient();
+  const sb   = createSupabaseServerClient();
   const body = await req.json();
 
   const { data, error } = await sb

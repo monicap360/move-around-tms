@@ -17,6 +17,12 @@ const DEFAULT_CUSTOMERS = [
   },
 ];
 
+// Companies Ronyx actively hauls for — always ensure these exist
+const REQUIRED_COMPANIES = [
+  { customer_name: "TC Red Wine Services",                    customer_type: "general_contractor", payment_terms: "net_30" },
+  { customer_name: "BAS Equipment & Trucking Services, LLC",  customer_type: "general_contractor", payment_terms: "net_30" },
+];
+
 export async function GET() {
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase.from("ronyx_customers").select("*").order("customer_name", { ascending: true });
@@ -25,11 +31,11 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if ((data || []).length === 0) {
-    const { error: insertError } = await supabase.from("ronyx_customers").insert(DEFAULT_CUSTOMERS);
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
+  const existing = data || [];
+
+  if (existing.length === 0) {
+    // Seed defaults + required companies on first load
+    await supabase.from("ronyx_customers").insert([...DEFAULT_CUSTOMERS, ...REQUIRED_COMPANIES]);
     const { data: seeded } = await supabase
       .from("ronyx_customers")
       .select("*")
@@ -37,7 +43,21 @@ export async function GET() {
     return NextResponse.json({ customers: seeded || [] });
   }
 
-  return NextResponse.json({ customers: data || [] });
+  // Always ensure required companies exist even if other customers are already present
+  const existingNames = existing.map((c: any) => c.customer_name.toLowerCase());
+  const missing = REQUIRED_COMPANIES.filter(
+    (rc) => !existingNames.includes(rc.customer_name.toLowerCase())
+  );
+  if (missing.length > 0) {
+    await supabase.from("ronyx_customers").insert(missing);
+    const { data: refreshed } = await supabase
+      .from("ronyx_customers")
+      .select("*")
+      .order("customer_name", { ascending: true });
+    return NextResponse.json({ customers: refreshed || [] });
+  }
+
+  return NextResponse.json({ customers: existing });
 }
 
 export async function POST(request: Request) {

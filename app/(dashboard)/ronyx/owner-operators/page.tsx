@@ -294,6 +294,8 @@ export default function OwnerOperatorsPage() {
 
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
+  const [newOODrivers, setNewOODrivers]     = useState<{ name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string }[]>([]);
+  const BLANK_OO_DRIVER = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_expiration: "", med_card_expiration: "" };
 
   // Add driver/truck/job forms
   const [showAddDriver, setShowAddDriver] = useState(false);
@@ -333,14 +335,25 @@ export default function OwnerOperatorsPage() {
   }
   function openOO(oo: OOCompany) { setSelected(oo); setView("detail"); setActiveTab("overview"); }
 
-  // Add company
+  // Add company (+ optional inline drivers)
   async function addCompany() {
     if (!newCompanyForm.company_name.trim()) { flash("Company name is required."); return; }
     const { company, error } = await apiPost("/api/ronyx/owner-operators", newCompanyForm);
     if (error) { flash(`Error: ${error}`); return; }
-    persist([company, ...companies]);
-    setShowAddCompany(false); setNewCompanyForm({ ...EMPTY_COMPANY });
-    flash(`${company.company_name} added.`);
+
+    // Save any drivers entered inline
+    const savedDrivers: OODriver[] = [];
+    const filledDrivers = newOODrivers.filter((d) => d.name.trim());
+    for (const d of filledDrivers) {
+      const { driver } = await apiPost(`/api/ronyx/owner-operators/${company.id}/drivers`, d);
+      if (driver) savedDrivers.push({ id: driver.id, name: driver.name, cdl_number: driver.cdl_number||"", cdl_state: driver.cdl_state||"TX", cdl_expiration: driver.cdl_expiration||"", med_card_expiration: driver.med_card_expiration||"", phone: driver.phone||"" });
+    }
+
+    persist([{ ...company, drivers: savedDrivers }, ...companies]);
+    setShowAddCompany(false);
+    setNewCompanyForm({ ...EMPTY_COMPANY });
+    setNewOODrivers([]);
+    flash(`${company.company_name} added${savedDrivers.length ? ` with ${savedDrivers.length} driver(s)` : ""}.`);
   }
 
   // Driver CRUD
@@ -500,9 +513,36 @@ export default function OwnerOperatorsPage() {
               ))}
               <div style={{ gridColumn:"1/-1" }}><label style={lbl}>Business Address</label><input value={newCompanyForm.business_address} onChange={e=>setNewCompanyForm(x=>({...x,business_address:e.target.value}))} style={inp} placeholder="Street, City, State ZIP" /></div>
             </div>
+            {/* Inline drivers */}
+            <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 16, paddingTop: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>Drivers (optional)</div>
+                <button
+                  onClick={() => setNewOODrivers((prev) => [...prev, { ...BLANK_OO_DRIVER }])}
+                  style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  + Add Driver
+                </button>
+              </div>
+              {newOODrivers.length === 0 && (
+                <div style={{ fontSize: 12, color: "#94a3b8", padding: "8px 0" }}>No drivers yet — click "+ Add Driver" to add drivers for this company.</div>
+              )}
+              {newOODrivers.map((d, idx) => (
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 8, padding: 10, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div><label style={lbl}>Driver Name *</label><input value={d.name} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} style={inp} placeholder="Full name" /></div>
+                  <div><label style={lbl}>Phone</label><input value={d.phone} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, phone: e.target.value } : x))} style={inp} /></div>
+                  <div><label style={lbl}>CDL #</label><input value={d.cdl_number} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_number: e.target.value } : x))} style={inp} /></div>
+                  <div><label style={lbl}>CDL State</label><input value={d.cdl_state} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_state: e.target.value } : x))} style={{ ...inp, width: "100%" }} /></div>
+                  <div><label style={lbl}>CDL Exp</label><input type="date" value={d.cdl_expiration} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_expiration: e.target.value } : x))} style={inp} /></div>
+                  <div><label style={lbl}>Med Exp</label><input type="date" value={d.med_card_expiration} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, med_card_expiration: e.target.value } : x))} style={inp} /></div>
+                  <button onClick={() => setNewOODrivers((prev) => prev.filter((_, i) => i !== idx))} style={{ padding: "0 8px", height: 32, borderRadius: 6, border: "1px solid #fca5a5", background: "#fee2e2", color: "#dc2626", cursor: "pointer", fontSize: 13, fontWeight: 700, alignSelf: "end" }}>✕</button>
+                </div>
+              ))}
+            </div>
+
             <div style={{ display:"flex", gap:10, marginTop:16 }}>
               <button onClick={addCompany} style={primaryBtn}>Save Company</button>
-              <button onClick={() => setShowAddCompany(false)} style={ghostBtn}>Cancel</button>
+              <button onClick={() => { setShowAddCompany(false); setNewOODrivers([]); }} style={ghostBtn}>Cancel</button>
             </div>
           </div>
         )}
