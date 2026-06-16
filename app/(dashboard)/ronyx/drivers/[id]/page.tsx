@@ -58,7 +58,7 @@ type Reminder = { docLabel: string; scheduledFor: string; scheduledAt: string };
 const TABS = ["Overview", "Documents", "Violations", "Assignments", "Compensation", "Activity"] as const;
 type Tab = (typeof TABS)[number];
 
-const REQUIRED_DOCS = ["CDL Front", "CDL Back", "MVR", "Medical Card", "Drug Test", "Background Check", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Direct Deposit Form", "Signed Contract"];
+const REQUIRED_DOCS = ["CDL Front", "CDL Back", "MVR", "Medical Card", "Drug Test", "Background Check", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Voided Check", "Direct Deposit Form", "Signed Contract"];
 const CDL_CLASSES   = ["", "Class A", "Class B", "Class C"];
 const ENDORSEMENTS  = ["H — Hazmat", "N — Tank Vehicle", "T — Double/Triple", "P — Passenger", "S — School Bus", "X — Hazmat + Tank"];
 const VIOLATION_TYPES = ["Speeding Ticket", "At-Fault Accident", "Drug/Alcohol", "HOS Violation", "Inspection Failure", "Moving Violation", "Warning", "Other"];

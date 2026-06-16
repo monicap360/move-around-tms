@@ -1124,6 +1124,7 @@ export default function OwnerOperatorsPage() {
           { label: "📄 COI",               type: "Insurance Certificate (COI)", hasExpiry: true  },
           { label: "📝 Contract",          type: "Contract",                    hasExpiry: true  },
           { label: "🧾 W-9",               type: "W-9 / Tax Form",              hasExpiry: false },
+          { label: "💳 Voided Check",      type: "Voided Check",                hasExpiry: false },
           { label: "🏛️ MC Authority",      type: "MC Authority Letter",         hasExpiry: false },
         ].map(({ label, type }) => {
           const onFile = selected.documents.find(d => d.type === type);
