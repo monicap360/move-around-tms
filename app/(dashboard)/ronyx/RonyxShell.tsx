@@ -104,7 +104,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "HR / DOT Compliance", href: "/ronyx/compliance",  icon: "🛡️", color: "#dc2626", children: [
         { label: "Compliance Center",       href: "/ronyx/compliance",                             icon: "🛡️", color: "#dc2626" },
         { label: "Dispatch Requirements",   href: "/ronyx/compliance/customer-dispatch-requirements",                            icon: "📋", color: "#1e40af" },
-        { label: "Denesse Group",           href: "/ronyx/compliance/customer-dispatch-requirements/denesse-group",            icon: "🏗️", color: "#0891b2" },
         { label: "Overrides",               href: "/ronyx/compliance/overrides",                                               icon: "🔓", color: "#ea580c" },
         { label: "Expired Insurance",       href: "/ronyx/compliance/expired-insurance",           icon: "🔴", color: "#dc2626" },
         { label: "Owner Operator COIs",     href: "/ronyx/owner-operators/coi-matrix",             icon: "📋", color: "#1e40af" },
