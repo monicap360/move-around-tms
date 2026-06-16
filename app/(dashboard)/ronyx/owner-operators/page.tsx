@@ -9,6 +9,7 @@ type OODriver = {
   name: string;
   cdl_number: string;
   cdl_state: string;
+  cdl_class?: string;
   cdl_expiration: string;
   med_card_expiration: string;
   phone: string;
@@ -403,13 +404,13 @@ export default function OwnerOperatorsPage() {
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
   const [newOODrivers, setNewOODrivers]     = useState<{ name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string }[]>([]);
-  const BLANK_OO_DRIVER = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_expiration: "", med_card_expiration: "" };
+  const BLANK_OO_DRIVER = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_class: "", cdl_expiration: "", med_card_expiration: "" };
 
   // Add driver/truck/job forms
   const [showAddDriver, setShowAddDriver] = useState(false);
   const [showAddTruck,  setShowAddTruck]  = useState(false);
   const [showAddJob,    setShowAddJob]    = useState(false);
-  const [addDriverForm, setAddDriverForm] = useState<Omit<OODriver,"id">>({ name:"", cdl_number:"", cdl_state:"TX", cdl_expiration:"", med_card_expiration:"", phone:"" });
+  const [addDriverForm, setAddDriverForm] = useState<Omit<OODriver,"id">>({ name:"", cdl_number:"", cdl_state:"TX", cdl_class:"", cdl_expiration:"", med_card_expiration:"", phone:"" });
   const [pickDriverId,  setPickDriverId]  = useState("");
 
   // Subcontractors tab state
@@ -524,7 +525,7 @@ export default function OwnerOperatorsPage() {
     if (error) { flash(`Error: ${error}`); return; }
     const d: OODriver = { id: driver.id, name: driver.name, cdl_number: driver.cdl_number||"", cdl_state: driver.cdl_state||"TX", cdl_expiration: driver.cdl_expiration||"", med_card_expiration: driver.med_card_expiration||"", phone: driver.phone||"" };
     updateLocalState({ ...selected, drivers: [...selected.drivers, d] });
-    setAddDriverForm({ name:"", cdl_number:"", cdl_state:"TX", cdl_expiration:"", med_card_expiration:"", phone:"" });
+    setAddDriverForm({ name:"", cdl_number:"", cdl_state:"TX", cdl_class:"", cdl_expiration:"", med_card_expiration:"", phone:"" });
     setShowAddDriver(false); flash("Driver added.");
   }
   async function removeDriver(driverId: string) {
@@ -847,11 +848,20 @@ export default function OwnerOperatorsPage() {
                 <div style={{ fontSize: 12, color: "#94a3b8", padding: "8px 0" }}>No drivers yet — click "+ Add Driver" to add drivers for this company.</div>
               )}
               {newOODrivers.map((d, idx) => (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 8, padding: 10, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 8, padding: 10, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
                   <div><label style={lbl}>Driver Name *</label><input value={d.name} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} style={inp} placeholder="Full name" /></div>
                   <div><label style={lbl}>Phone</label><input value={d.phone} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, phone: e.target.value } : x))} style={inp} /></div>
                   <div><label style={lbl}>CDL #</label><input value={d.cdl_number} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_number: e.target.value } : x))} style={inp} /></div>
                   <div><label style={lbl}>CDL State</label><input value={d.cdl_state} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_state: e.target.value } : x))} style={{ ...inp, width: "100%" }} /></div>
+                  <div>
+                    <label style={lbl}>CDL Class</label>
+                    <select value={d.cdl_class || ""} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_class: e.target.value } : x))} style={inp}>
+                      <option value="">—</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                    </select>
+                  </div>
                   <div><label style={lbl}>CDL Exp</label><input type="date" value={d.cdl_expiration} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_expiration: e.target.value } : x))} style={inp} /></div>
                   <div><label style={lbl}>Med Exp</label><input type="date" value={d.med_card_expiration} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, med_card_expiration: e.target.value } : x))} style={inp} /></div>
                   <button onClick={() => setNewOODrivers((prev) => prev.filter((_, i) => i !== idx))} style={{ padding: "0 8px", height: 32, borderRadius: 6, border: "1px solid #fca5a5", background: "#fee2e2", color: "#dc2626", cursor: "pointer", fontSize: 13, fontWeight: 700, alignSelf: "end" }}>✕</button>
@@ -1657,14 +1667,23 @@ export default function OwnerOperatorsPage() {
               })()}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px 14px" }}>
                 {([["Driver Name *","name","Carlos Ramirez"],["CDL Number","cdl_number","TX1234567"],["CDL State","cdl_state","TX"],["Phone","phone","(555) 000-0000"]] as [string,keyof typeof addDriverForm,string][]).map(([label,field,ph]) => (
-                  <div key={field}><label style={lbl}>{label}</label><input value={addDriverForm[field]} onChange={e=>setAddDriverForm(f=>({...f,[field]:e.target.value}))} style={inp} placeholder={ph} /></div>
+                  <div key={field}><label style={lbl}>{label}</label><input value={addDriverForm[field] as string} onChange={e=>setAddDriverForm(f=>({...f,[field]:e.target.value}))} style={inp} placeholder={ph} /></div>
                 ))}
+                <div>
+                  <label style={lbl}>CDL Class</label>
+                  <select value={addDriverForm.cdl_class || ""} onChange={e=>setAddDriverForm(f=>({...f,cdl_class:e.target.value}))} style={inp}>
+                    <option value="">— Select —</option>
+                    <option value="A">Class A</option>
+                    <option value="B">Class B</option>
+                    <option value="C">Class C</option>
+                  </select>
+                </div>
                 <div><label style={lbl}>CDL Expiration</label><input type="date" value={addDriverForm.cdl_expiration} onChange={e=>setAddDriverForm(f=>({...f,cdl_expiration:e.target.value}))} style={inp} /></div>
                 <div><label style={lbl}>Med Card Expiration</label><input type="date" value={addDriverForm.med_card_expiration} onChange={e=>setAddDriverForm(f=>({...f,med_card_expiration:e.target.value}))} style={inp} /></div>
               </div>
               <div style={{ display:"flex", gap:10, marginTop:12 }}>
                 <button onClick={() => { addDriver(); setPickDriverId(""); }} style={primaryBtn}>Add Driver</button>
-                <button onClick={() => { setShowAddDriver(false); setPickDriverId(""); setAddDriverForm({ name:"", cdl_number:"", cdl_state:"TX", cdl_expiration:"", med_card_expiration:"", phone:"" }); }} style={ghostBtn}>Cancel</button>
+                <button onClick={() => { setShowAddDriver(false); setPickDriverId(""); setAddDriverForm({ name:"", cdl_number:"", cdl_state:"TX", cdl_class:"", cdl_expiration:"", med_card_expiration:"", phone:"" }); }} style={ghostBtn}>Cancel</button>
               </div>
             </div>
           )}
@@ -1677,7 +1696,7 @@ export default function OwnerOperatorsPage() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.82rem" }}>
                 <thead>
                   <tr style={{ background:"#f8fafc" }}>
-                    {["Driver","CDL #","State","CDL Expiration","CDL File","Med Card Exp.","Phone","Assigned Truck","Actions"].map(h=>(
+                    {["Driver","CDL #","State","Class","CDL Expiration","CDL File","Med Card Exp.","Phone","Assigned Truck","Actions"].map(h=>(
                       <th key={h} style={{ padding:"8px 14px", fontSize:"0.68rem", fontWeight:700, color:"#475569", textTransform:"uppercase", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -1694,6 +1713,9 @@ export default function OwnerOperatorsPage() {
                         <td style={{ padding:"10px 14px", color:"#475569" }}>{d.cdl_number||"—"}</td>
                         <td style={{ padding:"10px 14px" }}>
                           <span style={{ background:"#eff6ff", color:"#1e40af", padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{d.cdl_state||"—"}</span>
+                        </td>
+                        <td style={{ padding:"10px 14px" }}>
+                          <span style={{ background:d.cdl_class?"#f0fdf4":"#f8fafc", color:d.cdl_class?"#15803d":"#94a3b8", padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{d.cdl_class ? `Class ${d.cdl_class}` : "—"}</span>
                         </td>
                         <td style={{ padding:"10px 14px" }}><span style={{ background:expBg(cdlD), color:expColor(cdlD), padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{expLabel(cdlD,d.cdl_expiration)}</span></td>
                         <td style={{ padding:"10px 14px" }}>

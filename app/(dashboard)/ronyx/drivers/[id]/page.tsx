@@ -58,7 +58,7 @@ type Reminder = { docLabel: string; scheduledFor: string; scheduledAt: string };
 const TABS = ["Overview", "Documents", "Violations", "Assignments", "Compensation", "Activity"] as const;
 type Tab = (typeof TABS)[number];
 
-const REQUIRED_DOCS = ["CDL", "MVR", "Medical Card", "Drug Test", "Background Check", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Direct Deposit Form", "Signed Contract"];
+const REQUIRED_DOCS = ["CDL Front", "CDL Back", "MVR", "Medical Card", "Drug Test", "Background Check", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Direct Deposit Form", "Signed Contract"];
 const CDL_CLASSES   = ["", "Class A", "Class B", "Class C"];
 const ENDORSEMENTS  = ["H — Hazmat", "N — Tank Vehicle", "T — Double/Triple", "P — Passenger", "S — School Bus", "X — Hazmat + Tank"];
 const VIOLATION_TYPES = ["Speeding Ticket", "At-Fault Accident", "Drug/Alcohol", "HOS Violation", "Inspection Failure", "Moving Violation", "Warning", "Other"];
@@ -805,12 +805,17 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <label style={{ ...primaryBtn, fontSize: "0.78rem", cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 4 }}>
-            🪪 Upload CDL
+            🪪 CDL Front
             <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} disabled={uploadingDoc} onChange={(e) => {
               const f = e.target.files?.[0]; if (!f) return;
-              const state = prompt("CDL State (e.g. TX):", profile.license_state || "TX") || "";
-              if (state) saveField("license_state", state.toUpperCase());
-              uploadDocument("CDL", f);
+              uploadDocument("CDL Front", f);
+            }} />
+          </label>
+          <label style={{ ...primaryBtn, fontSize: "0.78rem", cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 4, background: "#1d4ed8" }}>
+            🪪 CDL Back
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} disabled={uploadingDoc} onChange={(e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              uploadDocument("CDL Back", f);
             }} />
           </label>
           <button onClick={() => exportDOTPacket(profile, documents)} style={{ ...ghostBtn, fontSize: "0.82rem" }}>📋 Export DOT Packet</button>

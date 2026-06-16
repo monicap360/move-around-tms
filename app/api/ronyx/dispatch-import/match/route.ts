@@ -29,10 +29,10 @@ export async function POST(req: Request) {
 
   // ── Driver matching ──────────────────────────────────────
   if (drivers.length > 0) {
-    // Fetch all drivers and score client-side (avoids many round trips for small fleets)
+    // driver_profiles has full_name + company/carrier fields
     const { data: allDrivers } = await sb
-      .from("drivers")
-      .select("id, first_name, last_name, company_name, carrier")
+      .from("driver_profiles")
+      .select("id, full_name, company_name, carrier_name, assigned_truck_number")
       .limit(2000);
 
     for (const name of drivers) {
@@ -41,14 +41,14 @@ export async function POST(req: Request) {
 
       const scored = allDrivers.map(d => ({
         ...d,
-        score: scoreName(`${d.first_name ?? ""} ${d.last_name ?? ""}`, name),
+        score: scoreName(d.full_name ?? "", name),
       })).sort((a, b) => b.score - a.score);
 
       const best = scored[0];
       if (best && best.score > 0.4) {
         driver_matches[name] = {
           id:           best.id,
-          company_name: best.company_name || best.carrier || null,
+          company_name: best.company_name || best.carrier_name || null,
           confidence:   best.score,
           found:        true,
         };
@@ -61,8 +61,8 @@ export async function POST(req: Request) {
   // ── Truck matching ───────────────────────────────────────
   if (trucks.length > 0) {
     const { data: allTrucks } = await sb
-      .from("trucks")
-      .select("id, truck_number, status")
+      .from("ronyx_trucks")
+      .select("id, truck_number, status, company_name, owner_operator_name")
       .in("truck_number", trucks);
 
     const truckMap: Record<string, any> = {};
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     for (const num of trucks) {
       const t = truckMap[num];
       if (t) {
-        truck_matches[num] = { id: t.id, owner_operator_name: null, status: t.status || "active", found: true };
+        truck_matches[num] = { id: t.id, owner_operator_name: t.owner_operator_name || t.company_name || null, status: t.status || "active", found: true };
       } else {
         truck_matches[num] = { id: null, owner_operator_name: null, status: "unknown", found: false };
       }
