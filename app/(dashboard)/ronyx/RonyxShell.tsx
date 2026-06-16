@@ -55,7 +55,12 @@ const NAV_GROUPS: NavGroup[] = [
     section: "Operations",
     items: [
       { label: "Command Center",        href: "/ronyx",                            icon: "⊕",  color: "#1e293b" },
-      { label: "Dispatch",              href: "/ronyx/dispatch/board",             icon: "📋", color: "#2563eb" },
+      { label: "Dispatch",              href: "/ronyx/dispatch/board",             icon: "📋", color: "#2563eb", children: [
+        { label: "Dispatch Board",         href: "/ronyx/dispatch/board",              icon: "📋", color: "#2563eb" },
+        { label: "Daily Dispatch Import",  href: "/ronyx/dispatch/daily-import",       icon: "📥", color: "#7c3aed" },
+        { label: "Dispatch Guard™",        href: "/ronyx/dispatch/dispatch-guard",     icon: "🛡️", color: "#dc2626" },
+        { label: "Load Tracker",           href: "/ronyx/dispatch/loads",              icon: "📍", color: "#0d9488" },
+      ]},
       { label: "Tickets",               href: "/ronyx/tickets?tab=all",            icon: "🎫", color: "#d97706", children: TICKETS_CHILDREN },
       { label: "Fast Scan™",            href: "/ronyx/tickets?tab=fastscan",       icon: "⚡", color: "#16a34a", subtitle: "Powered by Ronyx" },
       { label: "Ticket Reconciliation", href: "/ronyx/tickets?tab=reconciliation", icon: "🔍", color: "#4f46e5" },
@@ -82,7 +87,13 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "Compliance & Records",
     items: [
-      { label: "HR / DOT Compliance", href: "/ronyx/compliance",  icon: "🛡️", color: "#dc2626" },
+      { label: "HR / DOT Compliance", href: "/ronyx/compliance",  icon: "🛡️", color: "#dc2626", children: [
+        { label: "Compliance Center",    href: "/ronyx/compliance",                icon: "🛡️", color: "#dc2626" },
+        { label: "RMIS Monitor",         href: "/ronyx/compliance/rmis-monitor",   icon: "📡", color: "#7c3aed" },
+        { label: "Driver Docs",          href: "/ronyx/compliance/driver-docs",    icon: "📄", color: "#0891b2" },
+        { label: "Expiring Docs",        href: "/ronyx/compliance/expiring",       icon: "⏰", color: "#ea580c" },
+        { label: "Audit Packets",        href: "/ronyx/compliance/audit-packets",  icon: "📦", color: "#64748b" },
+      ]},
       { label: "Documents",           href: "/ronyx/documents",    icon: "📄", color: "#64748b" },
       { label: "Backup Data",         href: "/ronyx/backup",       icon: "💾", color: "#0f766e" },
       { label: "Reports",             href: "/ronyx/reports",      icon: "📊", color: "#9333ea" },
