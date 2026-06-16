@@ -17,6 +17,7 @@ const KNOWN_SUBHAULERS = [
   { name: "BAS Equipment & Trucking LLC",        address: "P.O. Box 36\nThrockmorton, TX 76483", attn: "", phone: "", email: "" },
   { name: "M.A. Mortenson Company",             address: "700 Meadow Ln\nMinneapolis MN 55422", attn: "", phone: "", email: "" },
   { name: "Denesse Group Inc",                  address: "23433 Dome St\nMoreno Valley, CA 92553", attn: "Denesse Duran", phone: "323-712-5010", email: "denesse4@gmail.com" },
+  { name: "J&J Alvarado LLC",                   address: "", attn: "", phone: "", email: "" },
 ];
 
 const KNOWN_GCS = [

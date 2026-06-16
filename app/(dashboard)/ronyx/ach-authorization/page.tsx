@@ -17,6 +17,7 @@ const KNOWN_COMPANIES = [
   "M.A. Mortenson Company",
   "Denesse Group Inc",
   "Denesse Duran",
+  "J&J Alvarado LLC",
 ];
 
 type AuthRecord = {

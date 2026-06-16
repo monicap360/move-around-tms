@@ -8,6 +8,7 @@ const REQUIRED_OOS = [
   { company_name: "TC Redwine Services, LLC",          business_address: "",                                    status: "active" },
   { company_name: "BAS Equipment & Trucking LLC",       business_address: "P.O. Box 36, Throckmorton, TX 76483", status: "active" },
   { company_name: "M.A. Mortenson Company",            business_address: "700 Meadow Ln, Minneapolis MN 55422", status: "active" },
+  { company_name: "J&J Alvarado LLC", status: "active" },
   {
     company_name:          "Denesse Group Inc",
     business_address:      "23433 Dome St, Moreno Valley, CA 92553",
