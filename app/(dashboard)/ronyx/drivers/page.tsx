@@ -1761,14 +1761,14 @@ export default function DriversPage() {
                   <colgroup>
                     <col style={{ width: 34 }} />
                     <col style={{ width: 140 }} />
-                    <col style={{ width: 130 }} />
+                    <col style={{ width: 118 }} />
                     <col style={{ width: 72 }} />
                     <col style={{ width: 56 }} />
                     <col style={{ width: 76 }} />
                     <col style={{ width: 76 }} />
                     <col style={{ width: 76 }} />
                     <col style={{ width: 64 }} />
-                    <col style={{ width: 200 }} />
+                    <col style={{ width: 212 }} />
                   </colgroup>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
@@ -1831,21 +1831,21 @@ export default function DriversPage() {
                                 {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "! Exp" : driver.docs === "Expired" ? "✗ Exp'd" : "? Miss"}
                               </span>
                             </td>
-                            <td style={{ padding: "8px 8px" }} onClick={e => e.stopPropagation()}>
-                              <div style={{ display: "flex", gap: 3 }}>
+                            <td style={{ padding: "8px 6px" }} onClick={e => e.stopPropagation()}>
+                              <div style={{ display: "flex", gap: 2 }}>
                                 <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
-                                  <button style={{ padding: "3px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Profile</button>
+                                  <button style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Profile</button>
                                 </Link>
                                 <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ textDecoration: "none" }}>
-                                  <button style={{ padding: "3px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Docs</button>
+                                  <button style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Docs</button>
                                 </Link>
-                                <button onClick={() => setAssignTarget({ driver })} style={{ padding: "3px 7px", borderRadius: 5, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Truck</button>
+                                <button onClick={() => setAssignTarget({ driver })} style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Truck</button>
                                 <button
                                   onClick={() => { setAssignOOTarget(driver); setOOSearch(""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
-                                  style={{ padding: "3px 6px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                                  style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                                 >OO</button>
-                                <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ padding: "3px 6px", borderRadius: 5, border: "1px solid #fed7aa", background: "#fff7ed", color: "#d97706", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Arch</button>
-                                <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ padding: "3px 6px", borderRadius: 5, border: "1px solid #fca5a5", background: "#fff1f2", color: "#dc2626", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Del</button>
+                                <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #fed7aa", background: "#fff7ed", color: "#d97706", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Arch</button>
+                                <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #fca5a5", background: "#fff1f2", color: "#dc2626", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Del</button>
                               </div>
                             </td>
                           </tr>

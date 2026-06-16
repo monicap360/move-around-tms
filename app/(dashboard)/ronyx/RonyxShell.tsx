@@ -244,8 +244,8 @@ export default function RonyxShell({
         .tms-sidebar {
           width: 236px;
           min-height: 100vh;
-          background: #0f172a;
-          color: #cbd5e1;
+          background: #f1f5f9;
+          color: #334155;
           display: flex;
           flex-direction: column;
           flex-shrink: 0;
@@ -257,17 +257,17 @@ export default function RonyxShell({
           z-index: 30;
         }
         .tms-sidebar::-webkit-scrollbar { width: 3px; }
-        .tms-sidebar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .tms-sidebar::-webkit-scrollbar-thumb { background: #c7d2e0; border-radius: 4px; }
 
         .tms-sidebar-brand {
           padding: 16px 16px 12px;
-          border-bottom: 1px solid rgba(255,255,255,0.07);
+          border-bottom: 1px solid rgba(0,0,0,0.07);
           flex-shrink: 0;
         }
         .tms-sidebar-brand-name {
           font-size: 0.9rem;
           font-weight: 800;
-          color: #fff;
+          color: #0f172a;
           letter-spacing: -0.3px;
         }
         .tms-sidebar-brand-sub {
@@ -287,7 +287,7 @@ export default function RonyxShell({
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #334155;
+          color: #94a3b8;
           padding: 0 4px 5px;
         }
         .tms-qa-item {
@@ -302,8 +302,8 @@ export default function RonyxShell({
           transition: background 120ms, color 120ms;
         }
         .tms-qa-item:hover {
-          background: rgba(255,255,255,0.05);
-          color: #cbd5e1;
+          background: rgba(0,0,0,0.04);
+          color: #334155;
         }
         .tms-qa-icon { font-size: 0.82rem; flex-shrink: 0; }
 
@@ -314,7 +314,7 @@ export default function RonyxShell({
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #94a3b8;
+          color: #64748b;
           padding: 0 4px 4px;
           margin-top: 2px;
         }
@@ -327,22 +327,22 @@ export default function RonyxShell({
           margin-bottom: 1px;
           transition: background 120ms;
         }
-        .tms-nav-row:hover { background: rgba(255,255,255,0.04); }
+        .tms-nav-row:hover { background: rgba(0,0,0,0.04); }
         .tms-nav-link {
           display: flex;
           align-items: center;
           gap: 7px;
           flex: 1;
           padding: 6px 6px 6px 8px;
-          color: #94a3b8;
+          color: #475569;
           font-size: 0.79rem;
           font-weight: 500;
           min-width: 0;
           transition: color 120ms;
         }
-        .tms-nav-link:hover { color: #e2e8f0; }
+        .tms-nav-link:hover { color: #0f172a; }
         .tms-nav-link.active,
-        .tms-nav-link.section-on { color: #fff; font-weight: 600; }
+        .tms-nav-link.section-on { color: #1d4ed8; font-weight: 700; }
         .tms-nav-icon {
           font-size: 0.88rem;
           flex-shrink: 0;
@@ -359,14 +359,14 @@ export default function RonyxShell({
         .tms-nav-subtitle {
           display: block;
           font-size: 0.6rem;
-          color: #334155;
+          color: #94a3b8;
           font-weight: 400;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .tms-nav-link.active .tms-nav-subtitle,
-        .tms-nav-link.section-on .tms-nav-subtitle { color: rgba(255,255,255,0.35); }
+        .tms-nav-link.section-on .tms-nav-subtitle { color: rgba(29,78,216,0.55); }
         .tms-nav-badge {
           display: inline-flex;
           align-items: center;
@@ -395,13 +395,13 @@ export default function RonyxShell({
           padding: 0;
           transition: color 120ms;
         }
-        .tms-nav-toggle:hover { color: #94a3b8; }
+        .tms-nav-toggle:hover { color: #475569; }
 
         /* ── Sub Items ───────────────────────────────── */
         .tms-nav-sub {
           margin: 1px 0 3px 13px;
           padding-left: 9px;
-          border-left: 1px solid rgba(255,255,255,0.07);
+          border-left: 1px solid rgba(0,0,0,0.08);
         }
         .tms-nav-sub-row {
           display: flex;
@@ -416,10 +416,10 @@ export default function RonyxShell({
           transition: background 120ms, color 120ms;
         }
         .tms-nav-sub-row:hover {
-          background: rgba(255,255,255,0.04);
-          color: #cbd5e1;
+          background: rgba(0,0,0,0.04);
+          color: #0f172a;
         }
-        .tms-nav-sub-row.active { font-weight: 700; }
+        .tms-nav-sub-row.active { font-weight: 700; color: #1d4ed8; }
         .tms-sub-icon { font-size: 0.78rem; flex-shrink: 0; width: 15px; text-align: center; }
         .tms-sub-label {
           flex: 1;
@@ -447,9 +447,9 @@ export default function RonyxShell({
         .tms-sidebar-footer {
           margin-top: auto;
           padding: 10px 14px;
-          border-top: 1px solid rgba(255,255,255,0.06);
+          border-top: 1px solid rgba(0,0,0,0.06);
           font-size: 0.65rem;
-          color: #334155;
+          color: #64748b;
           flex-shrink: 0;
         }
 
@@ -582,8 +582,8 @@ export default function RonyxShell({
           position: fixed;
           bottom: 0; left: 0; right: 0;
           height: 56px;
-          background: #0f172a;
-          border-top: 1px solid rgba(255,255,255,0.1);
+          background: #f1f5f9;
+          border-top: 1px solid rgba(0,0,0,0.1);
           z-index: 40;
           align-items: stretch;
         }
@@ -601,7 +601,7 @@ export default function RonyxShell({
           gap: 2px;
           transition: color 120ms;
         }
-        .tms-mbb-btn:hover { color: #e2e8f0; }
+        .tms-mbb-btn:hover { color: #334155; }
         .tms-mbb-btn.active { color: #16a34a; }
         .tms-mbb-icon { font-size: 1.25rem; }
 

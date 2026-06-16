@@ -458,11 +458,22 @@ export default function ExpiredInsurancePage() {
             </div>
           ) : (
             <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.78rem" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.75rem", tableLayout:"fixed", minWidth:900 }}>
+                <colgroup>
+                  <col style={{ width:156 }} />
+                  <col style={{ width:88 }} />
+                  <col style={{ width:80 }} />
+                  <col style={{ width:74 }} />
+                  <col style={{ width:50 }} />
+                  <col style={{ width:70 }} />
+                  <col style={{ width:62 }} />
+                  <col style={{ width:94 }} />
+                  <col style={{ width:226 }} />
+                </colgroup>
                 <thead>
                   <tr style={{ background:"#f8fafc", borderBottom:"2px solid #e2e8f0" }}>
                     {["Company / Carrier","Policy Type","Expiration","Status","Days","Dispatch","Payroll","File","Actions"].map(h=>(
-                      <th key={h} style={{ padding:"9px 12px", fontSize:"0.65rem", fontWeight:800, color:"#475569", textTransform:"uppercase", letterSpacing:"0.06em", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding:"8px 8px", fontSize:"0.62rem", fontWeight:800, color:"#475569", textTransform:"uppercase", letterSpacing:"0.05em", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -472,28 +483,27 @@ export default function ExpiredInsurancePage() {
                     return (
                       <tr key={r.id} style={{ borderBottom:"1px solid #f1f5f9", background: r.reviewed ? "#f9fff9" : r.status==="expired"||r.status==="missing" ? "#fff8f8" : "transparent" }}>
                         {/* Company */}
-                        <td style={{ padding:"10px 12px" }}>
-                          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.8rem" }}>{r.company}</div>
-                          {r.assigned_staff && <div style={{ fontSize:"0.65rem", color:"#1e40af", marginTop:2 }}>👤 {r.assigned_staff}</div>}
-                          {r.last_reminder && <div style={{ fontSize:"0.65rem", color:"#64748b" }}>Reminded {fmtDate(r.last_reminder)}</div>}
-                          {r.reviewed && <div style={{ fontSize:"0.65rem", color:"#15803d", fontWeight:700 }}>✓ Reviewed</div>}
+                        <td style={{ padding:"8px 8px" }}>
+                          <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.75rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.company}</div>
+                          {r.assigned_staff && <div style={{ fontSize:"0.6rem", color:"#1e40af", marginTop:1 }}>👤 {r.assigned_staff}</div>}
+                          {r.reviewed && <div style={{ fontSize:"0.6rem", color:"#15803d", fontWeight:700 }}>✓ Reviewed</div>}
                         </td>
                         {/* Policy type */}
-                        <td style={{ padding:"10px 12px", color:"#374151", whiteSpace:"nowrap", fontWeight:600 }}>{r.policy_type}</td>
+                        <td style={{ padding:"8px 8px", color:"#374151", whiteSpace:"nowrap", fontWeight:600, fontSize:"0.72rem" }}>{r.policy_type}</td>
                         {/* Expiration */}
-                        <td style={{ padding:"10px 12px", whiteSpace:"nowrap" }}>
+                        <td style={{ padding:"8px 8px", whiteSpace:"nowrap" }}>
                           {r.expiration_date
-                            ? <span style={{ fontWeight:700, color: cfg.color }}>{fmtDate(r.expiration_date)}</span>
-                            : <span style={{ color:"#fca5a5", fontWeight:700, fontSize:"0.72rem" }}>{r.file_name ? "No date set" : "Not uploaded"}</span>}
+                            ? <span style={{ fontWeight:700, color: cfg.color, fontSize:"0.72rem" }}>{fmtDate(r.expiration_date)}</span>
+                            : <span style={{ color:"#fca5a5", fontWeight:700, fontSize:"0.68rem" }}>{r.file_name ? "No date" : "Not uploaded"}</span>}
                         </td>
                         {/* Status */}
-                        <td style={{ padding:"10px 12px" }}>
-                          <span style={{ background:cfg.bg, color:cfg.color, border:`1px solid ${cfg.border}`, padding:"3px 8px", borderRadius:20, fontWeight:800, fontSize:"0.67rem", whiteSpace:"nowrap" }}>
+                        <td style={{ padding:"8px 8px" }}>
+                          <span style={{ background:cfg.bg, color:cfg.color, border:`1px solid ${cfg.border}`, padding:"2px 6px", borderRadius:20, fontWeight:800, fontSize:"0.62rem", whiteSpace:"nowrap" }}>
                             {r.status==="missing" && r.file_name ? "NO DATE" : cfg.label}
                           </span>
                         </td>
                         {/* Days */}
-                        <td style={{ padding:"10px 12px", whiteSpace:"nowrap", fontWeight:700 }}>
+                        <td style={{ padding:"8px 8px", whiteSpace:"nowrap", fontWeight:700, fontSize:"0.72rem" }}>
                           {r.days !== null
                             ? <span style={{ color: r.days<0 ? "#dc2626" : r.days<=7 ? "#c2410c" : r.days<=30 ? "#b45309" : "#15803d" }}>
                                 {r.days<0 ? `${Math.abs(r.days)}d ago` : `${r.days}d`}
@@ -501,38 +511,38 @@ export default function ExpiredInsurancePage() {
                             : <span style={{ color:"#94a3b8" }}>—</span>}
                         </td>
                         {/* Dispatch */}
-                        <td style={{ padding:"10px 12px" }}>
-                          <span style={{ background:r.dispatch_blocked?"#fff1f2":"#f0fdf4", color:r.dispatch_blocked?"#dc2626":"#15803d", border:`1px solid ${r.dispatch_blocked?"#fca5a5":"#86efac"}`, padding:"3px 8px", borderRadius:20, fontWeight:700, fontSize:"0.67rem" }}>
-                            {r.dispatch_blocked ? "🚫 BLOCKED" : "✓ OK"}
+                        <td style={{ padding:"8px 8px" }}>
+                          <span style={{ background:r.dispatch_blocked?"#fff1f2":"#f0fdf4", color:r.dispatch_blocked?"#dc2626":"#15803d", border:`1px solid ${r.dispatch_blocked?"#fca5a5":"#86efac"}`, padding:"2px 6px", borderRadius:20, fontWeight:700, fontSize:"0.62rem", whiteSpace:"nowrap" }}>
+                            {r.dispatch_blocked ? "🚫 Block" : "✓ OK"}
                           </span>
                         </td>
                         {/* Payroll */}
-                        <td style={{ padding:"10px 12px" }}>
-                          <span style={{ background:r.payroll_blocked?"#fff7ed":"#f0fdf4", color:r.payroll_blocked?"#c2410c":"#15803d", border:`1px solid ${r.payroll_blocked?"#fdba74":"#86efac"}`, padding:"3px 8px", borderRadius:20, fontWeight:700, fontSize:"0.67rem" }}>
-                            {r.payroll_blocked ? "⏸ HOLD" : "✓ OK"}
+                        <td style={{ padding:"8px 8px" }}>
+                          <span style={{ background:r.payroll_blocked?"#fff7ed":"#f0fdf4", color:r.payroll_blocked?"#c2410c":"#15803d", border:`1px solid ${r.payroll_blocked?"#fdba74":"#86efac"}`, padding:"2px 6px", borderRadius:20, fontWeight:700, fontSize:"0.62rem", whiteSpace:"nowrap" }}>
+                            {r.payroll_blocked ? "⏸ Hold" : "✓ OK"}
                           </span>
                         </td>
                         {/* File */}
-                        <td style={{ padding:"10px 12px" }}>
+                        <td style={{ padding:"8px 8px", overflow:"hidden" }}>
                           {r.file_name
-                            ? <span style={{ fontSize:"0.7rem", color:"#475569" }} title={r.file_name}>📄 {r.file_name.slice(0,20)}{r.file_name.length>20?"…":""}</span>
-                            : <span style={{ fontSize:"0.7rem", color:"#fca5a5", fontWeight:700 }}>⚠ Missing</span>}
+                            ? <span style={{ fontSize:"0.67rem", color:"#475569" }} title={r.file_name}>📄 {r.file_name.slice(0,16)}{r.file_name.length>16?"…":""}</span>
+                            : <span style={{ fontSize:"0.67rem", color:"#fca5a5", fontWeight:700 }}>⚠ Missing</span>}
                         </td>
                         {/* Actions */}
-                        <td style={{ padding:"10px 12px" }}>
-                          <div style={{ display:"flex", gap:4, flexWrap:"wrap", minWidth:240 }}>
-                            <button onClick={()=>requestCOI(r)} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>📧 Request COI</button>
+                        <td style={{ padding:"8px 8px" }}>
+                          <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
+                            <button onClick={()=>requestCOI(r)} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>📧 Request</button>
                             {r.file_url
-                              ? <button onClick={()=>openDoc(r.file_url!)} style={{ background:"#dbeafe", color:"#1e40af", border:"none", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>👁 View</button>
-                              : <a href="/ronyx/owner-operators" style={{ background:"#fef3c7", color:"#92400e", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>📤 Upload</a>}
+                              ? <button onClick={()=>openDoc(r.file_url!)} style={{ background:"#dbeafe", color:"#1e40af", border:"none", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>👁 View</button>
+                              : <a href="/ronyx/owner-operators" style={{ background:"#fef3c7", color:"#92400e", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>📤 Upload</a>}
                             {r.dispatch_blocked
-                              ? <button onClick={()=>restoreDispatch(r)} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>✓ Allow</button>
-                              : <button onClick={()=>blockDispatch(r)} style={{ background:"#fff1f2", color:"#dc2626", border:"1px solid #fca5a5", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>🚫 Block</button>}
+                              ? <button onClick={()=>restoreDispatch(r)} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>✓ Allow</button>
+                              : <button onClick={()=>blockDispatch(r)} style={{ background:"#fff1f2", color:"#dc2626", border:"1px solid #fca5a5", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>🚫 Block</button>}
                             {!r.payroll_blocked
-                              ? <button onClick={()=>holdPayroll(r)} style={{ background:"#fff7ed", color:"#c2410c", border:"1px solid #fdba74", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>⏸ Hold Pay</button>
+                              ? <button onClick={()=>holdPayroll(r)} style={{ background:"#fff7ed", color:"#c2410c", border:"1px solid #fdba74", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>⏸ Hold</button>
                               : null}
-                            {!r.reviewed && <button onClick={()=>markReviewed(r)} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>✓ Reviewed</button>}
-                            <button onClick={()=>setAssignModal({ rowId:r.id, name:r.assigned_staff })} style={{ background:"#f8fafc", color:"#475569", border:"1px solid #e2e8f0", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>👤 Assign</button>
+                            {!r.reviewed && <button onClick={()=>markReviewed(r)} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>✓ Done</button>}
+                            <button onClick={()=>setAssignModal({ rowId:r.id, name:r.assigned_staff })} style={{ background:"#f8fafc", color:"#475569", border:"1px solid #e2e8f0", borderRadius:5, padding:"3px 7px", fontSize:"0.62rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>👤 Assign</button>
                           </div>
                           {/* Next Best Action */}
                           {(r.status === "expired" || r.status === "missing" || r.status === "critical") && (
