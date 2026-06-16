@@ -44,6 +44,12 @@ const REQUIRED_OOS = [
     dot_number:            "4321209",
     status:                "active",
   },
+  { company_name: "A Transport",                       status: "active" },
+  { company_name: "A Lone Journey Transportation LLC", status: "active" },
+  { company_name: "A&S Trucking",                      status: "active" },
+  { company_name: "ACtive Society LLC",                status: "active" },
+  { company_name: "Adams Enterprices Inc",             status: "active" },
+  { company_name: "AGA Trucking LLC",                  status: "active" },
 ];
 
 async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, oos: any[]) {
