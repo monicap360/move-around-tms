@@ -1749,16 +1749,16 @@ export default function DriversPage() {
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1200, tableLayout: "fixed" }}>
                   <colgroup>
-                    <col style={{ width: 44 }} />
-                    <col style={{ minWidth: 180 }} />
-                    <col style={{ width: 96 }} />
+                    <col style={{ width: 40 }} />
+                    <col style={{ width: 170 }} />
+                    <col style={{ width: 92 }} />
+                    <col style={{ width: 68 }} />
                     <col style={{ width: 72 }} />
-                    <col style={{ width: 80 }} />
-                    <col style={{ width: 100 }} />
-                    <col style={{ width: 100 }} />
-                    <col style={{ width: 100 }} />
-                    <col style={{ width: 90 }} />
-                    <col style={{ minWidth: 290 }} />
+                    <col style={{ width: 96 }} />
+                    <col style={{ width: 96 }} />
+                    <col style={{ width: 96 }} />
+                    <col style={{ width: 84 }} />
+                    <col style={{ width: 256 }} />
                   </colgroup>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
