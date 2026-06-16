@@ -143,21 +143,42 @@ export async function POST(req: NextRequest) {
           .select("id")
           .ilike("full_name", nameClean)
           .limit(1)
-          .maybeSingle(); // maybeSingle returns null instead of error when no match
+          .maybeSingle();
 
         if (existing?.id) {
-          const { error } = await supabase
+          // Two-tier update: try full payload, fall back to core fields only
+          const { error: upErr1 } = await supabase
             .from("drivers")
             .update(driverPayload)
             .eq("id", existing.id);
-          if (error) {
-            // update failed — fall through to insert below
+
+          if (upErr1) {
+            const coreUpdate = {
+              full_name: driverPayload.full_name,
+              name:      driverPayload.full_name,
+              phone:     driverPayload.phone,
+              email:     driverPayload.email,
+              driver_type:             driverPayload.driver_type,
+              assigned_truck_number:   driverPayload.assigned_truck_number,
+              license_number:          driverPayload.license_number,
+              license_state:           driverPayload.license_state,
+              license_expiration_date: driverPayload.license_expiration_date,
+              medical_card_expiration: driverPayload.medical_card_expiration,
+              mvr_expiration:          driverPayload.mvr_expiration,
+              status:                  driverPayload.status,
+            };
+            const { error: upErr2 } = await supabase
+              .from("drivers")
+              .update(coreUpdate)
+              .eq("id", existing.id);
+            if (upErr2) { errors.push(`Update failed for ${row.driver_name}: ${upErr2.message}`); failed++; }
+            else { updated++; }
           } else {
             updated++;
-            continue;
           }
+          continue; // ALWAYS continue — never insert a second copy of an existing driver
         }
-        // No existing match found — insert as new driver (fall through)
+        // No existing match found by name — fall through to insert as new
       }
 
       // Insert new driver — try full payload first, fall back to core fields only
