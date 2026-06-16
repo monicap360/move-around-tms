@@ -118,7 +118,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "Staff",
     items: [
-      { label: "Mission Start™",  href: "/ronyx/staff/my-dashboard", icon: "🎯", color: "#1e40af" },
+      { label: "Mission Start™",   href: "/ronyx/staff/my-dashboard",   icon: "🎯", color: "#1e40af" },
+      { label: "Team Momentum",    href: "/ronyx/staff/team-momentum",  icon: "📊", color: "#7c3aed" },
     ],
   },
   {
