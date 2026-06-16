@@ -56,6 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
     section: "Operations",
     items: [
       { label: "Command Center",        href: "/ronyx",                            icon: "⊕",  color: "#1e293b" },
+      { label: "Command Briefing",      href: "/ronyx/admin/command-briefing",     icon: "☀️", color: "#dc2626" },
       { label: "Dispatch",              href: "/ronyx/dispatch/board",             icon: "📋", color: "#2563eb", children: [
         { label: "Dispatch Board",         href: "/ronyx/dispatch/board",              icon: "📋", color: "#2563eb" },
         { label: "Daily Dispatch Import",  href: "/ronyx/dispatch/daily-import",       icon: "📥", color: "#7c3aed" },
@@ -129,6 +130,7 @@ const NAV_GROUPS: NavGroup[] = [
     section: "System",
     items: [
       { label: "Admin Control Center", href: "/ronyx/settings", icon: "⚙️", color: "#475569", children: [
+        { label: "Command Briefing",       href: "/ronyx/admin/command-briefing",    icon: "☀️", color: "#dc2626" },
         { label: "Company Profile",        href: "/ronyx/settings/company-profile",  icon: "🏢", color: "#1e40af" },
         { label: "Users & Staff",          href: "/ronyx/settings/users",            icon: "👥", color: "#0891b2" },
         { label: "Roles & Permissions",    href: "/ronyx/settings/roles",            icon: "🔐", color: "#7c3aed" },
@@ -200,6 +202,7 @@ export default function RonyxShell({
       if (pathname.startsWith("/ronyx/drivers"))     next.add("Drivers");
       if (pathname.startsWith("/ronyx/maintenance")) next.add("Maintenance");
       if (pathname.startsWith("/ronyx/dispatch"))    next.add("Dispatch");
+      if (pathname.startsWith("/ronyx/admin"))       next.add("Admin Control Center");
       if (pathname.startsWith("/ronyx/compliance"))  next.add("HR / DOT Compliance");
       return next;
     });
