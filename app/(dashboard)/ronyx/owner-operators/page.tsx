@@ -439,14 +439,45 @@ export default function OwnerOperatorsPage() {
     apiPut(`/api/ronyx/owner-operators/${ooId}/jobs`, { job_id: jobId, ticket_status: status });
   }
 
-  // Doc upload
+  // Doc upload — stores original file in Supabase Storage first, then records the document
   async function handleDocUpload(docType: string, file: File) {
     if (!selected) return;
-    const expiresInput = ["Insurance Certificate","Contract"].includes(docType) ? prompt(`${docType} expiration date (YYYY-MM-DD):`, "") || undefined : undefined;
-    await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: docType, file_name: file.name, expires_on: expiresInput || null });
+    flash(`Uploading ${docType}…`);
+
+    // 1. Store original file (preserved forever — original_uploads)
+    let fileUrl: string | null = null;
+    let originalUploadId: string | null = null;
+    try {
+      const fd = new FormData();
+      fd.append("file",   file);
+      fd.append("module", "compliance");
+      const upRes  = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+      const upData = await upRes.json();
+      fileUrl          = upData.url       || null;
+      originalUploadId = upData.upload_id || null;
+    } catch { /* storage not configured — still record the doc name */ }
+
+    // 2. Prompt for expiry on insurance/contract types
+    const needsExpiry = [
+      "Insurance Certificate","Insurance Certificate (COI)",
+      "Auto Liability Insurance","General Liability Insurance",
+      "Cargo Insurance","Workers Comp Insurance","Contract",
+    ].includes(docType);
+    const expiresInput = needsExpiry
+      ? prompt(`${docType} expiration date (YYYY-MM-DD):`, "") || undefined
+      : undefined;
+
+    // 3. Record in DB with file URL
+    await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, {
+      doc_type:   docType,
+      file_name:  file.name,
+      file_url:   fileUrl,
+      expires_on: expiresInput || null,
+    });
+
     const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput };
     updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== docType)] });
-    flash(`${docType} uploaded.`);
+    flash(`${docType} uploaded${fileUrl ? " & stored" : ""}.`);
   }
 
   // ── List-level aggregates ──────────────────────────

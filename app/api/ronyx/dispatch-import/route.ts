@@ -64,11 +64,12 @@ function mapJobStatus(raw: string) {
 export async function POST(req: Request) {
   const sb   = createSupabaseServerClient();
   const body = await req.json();
-  const { rows, file_name, schedule_date, import_name } = body as {
-    rows:          Record<string, string>[];
-    file_name:     string;
-    schedule_date: string;
-    import_name:   string;
+  const { rows, file_name, schedule_date, import_name, original_upload_id } = body as {
+    rows:                 Record<string, string>[];
+    file_name:            string;
+    schedule_date:        string;
+    import_name:          string;
+    original_upload_id?:  string;
   };
 
   if (!rows?.length) return NextResponse.json({ error: "No rows provided" }, { status: 400 });
@@ -76,7 +77,13 @@ export async function POST(req: Request) {
   // Create import batch record
   const { data: importBatch, error: importErr } = await sb
     .from("dispatch_imports")
-    .insert({ import_name: import_name || file_name, source_file_name: file_name, schedule_date, total_rows: rows.length })
+    .insert({
+      import_name:        import_name || file_name,
+      source_file_name:   file_name,
+      schedule_date,
+      total_rows:         rows.length,
+      original_upload_id: original_upload_id || null,
+    })
     .select("id")
     .single();
 
@@ -156,6 +163,14 @@ export async function POST(req: Request) {
     acc[j.compliance_severity] = (acc[j.compliance_severity] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  // Link original_upload to this import batch
+  if (original_upload_id && importBatch?.id) {
+    await sb.from("original_uploads").update({
+      related_import_id: importBatch.id,
+      related_table:     "dispatch_imports",
+    }).eq("id", original_upload_id);
+  }
 
   await sb.from("dispatch_imports").update({
     total_rows:       jobs?.length ?? 0,

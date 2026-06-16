@@ -188,9 +188,23 @@ async function parseDocument(file: File): Promise<ParsedDoc> {
   return { type: "unknown", filename: file.name, text_preview: text.slice(0, 400) };
 }
 
+// ─── Upload original file to storage ─────────────────────
+async function uploadOriginalFile(file: File, module: string): Promise<string | null> {
+  try {
+    const fd = new FormData();
+    fd.append("file",   file);
+    fd.append("module", module);
+    const res = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+    const d   = await res.json();
+    return d.upload_id || null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Apply extracted fields to OO ─────────────────────────
-async function applyFieldsToOO(fields: ExtractedField[], companyName: string) {
-  // Find OO by company name
+// SAFETY: Only fills in fields that are currently empty. Never overwrites existing data.
+async function applyFieldsToOO(fields: ExtractedField[], companyName: string, originalUploadId: string | null) {
   const res  = await fetch(`/api/ronyx/owner-operators`);
   const data = await res.json();
   const oo   = (data.companies || []).find((c: any) =>
@@ -202,22 +216,36 @@ async function applyFieldsToOO(fields: ExtractedField[], companyName: string) {
   const patch: Record<string, string> = {};
   for (const f of fields) {
     if (f.destination === "OO" && f.field !== "business_address_city" && f.field !== "w9_signed_date") {
-      patch[f.field] = f.value;
+      // Only set if the field is currently empty — never overwrite existing data
+      const current = oo[f.field];
+      if (!current || String(current).trim() === "") {
+        patch[f.field] = f.value;
+      }
     }
   }
 
-  // Merge address fields if both found
+  // Merge city into address only if address is being set and doesn't already have city
   const city = fields.find((f) => f.field === "business_address_city");
   if (city && patch.business_address && !patch.business_address.includes(city.value.split(",")[0])) {
     patch.business_address = `${patch.business_address}, ${city.value}`;
   }
 
+  const skipped = fields
+    .filter((f) => f.destination === "OO" && !patch[f.field] && oo[f.field])
+    .map((f) => f.label);
+
   await fetch(`/api/ronyx/owner-operators/${oo.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(patch),
+    body: JSON.stringify({ ...patch, _original_upload_id: originalUploadId }),
   });
-  return { ok: true, oo_name: oo.company_name, oo_id: oo.id, updated_fields: Object.keys(patch) };
+  return {
+    ok:             true,
+    oo_name:        oo.company_name,
+    oo_id:          oo.id,
+    updated_fields: Object.keys(patch),
+    skipped_fields: skipped,
+  };
 }
 
 // ─── Styles ───────────────────────────────────────────────
@@ -232,7 +260,9 @@ export default function ImportPage() {
   const [parsed,   setParsed]   = useState<ParsedDoc | null>(null);
   const [filename, setFilename] = useState("");
   const [toast,    setToast]    = useState<{ msg: string; ok: boolean } | null>(null);
-  const [importing, setImporting] = useState(false);
+  const [importing,        setImporting]       = useState(false);
+  const [originalUploadId, setOriginalUploadId] = useState<string | null>(null);
+  const [fileStored,       setFileStored]       = useState(false);
 
   // W-9 / contract apply state
   const [matchCompany, setMatchCompany] = useState("");
@@ -247,7 +277,17 @@ export default function ImportPage() {
     setFilename(file.name);
     setMatchCompany("");
     setApplyResult("");
+    setOriginalUploadId(null);
+    setFileStored(false);
     try {
+      // 1. Store original file first — read-only source evidence
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      const module = ["csv","txt","xlsx"].includes(ext) ? "payout" : "contracts";
+      const uploadId = await uploadOriginalFile(file, module);
+      setOriginalUploadId(uploadId);
+      setFileStored(!!uploadId);
+
+      // 2. Parse for display
       const doc = await parseDocument(file);
       setParsed(doc);
     } catch {
@@ -278,10 +318,12 @@ export default function ImportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          project_name: parsed.project,
-          week_start:   parsed.week_start,
-          week_end:     parsed.week_end,
-          loads:        parsed.loads,
+          project_name:       parsed.project,
+          week_start:         parsed.week_start,
+          week_end:           parsed.week_end,
+          loads:              parsed.loads,
+          file_name:          filename,
+          original_upload_id: originalUploadId,
         }),
       });
       const d = await res.json();
@@ -300,10 +342,13 @@ export default function ImportPage() {
     setApplying(true);
     setApplyResult("");
     try {
-      const result = await applyFieldsToOO(parsed.fields, matchCompany);
+      const result = await applyFieldsToOO(parsed.fields, matchCompany, originalUploadId);
       if (!result.ok) throw new Error(result.message);
-      setApplyResult(`✅ Updated ${result.oo_name}: ${result.updated_fields?.join(", ")}`);
-      flash(`✅ ${result.oo_name} updated.`);
+      const skippedNote = result.skipped_fields?.length
+        ? ` (${result.skipped_fields.length} fields skipped — already had data)`
+        : "";
+      setApplyResult(`✅ Updated ${result.oo_name}: ${result.updated_fields?.join(", ")}${skippedNote}`);
+      flash(`✅ ${result.oo_name} updated.${skippedNote}`);
     } catch (err: any) {
       setApplyResult(`❌ ${err.message}`);
       flash(err.message || "Apply failed", false);
@@ -345,6 +390,14 @@ export default function ImportPage() {
         </div>
         <input ref={fileRef} type="file" accept=".csv,.txt,.pdf" style={{ display: "none" }} onChange={onFileChange} />
       </div>
+
+      {/* File preserved notice */}
+      {fileStored && (
+        <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"10px 16px", marginBottom:16, fontSize:13, color:"#166534", display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:16 }}>🔒</span>
+          <span><strong>Original file preserved</strong> — {filename} is stored as read-only source evidence. Staff corrections only update parsed records. <a href="/ronyx/backup" style={{ color:"#16a34a", fontWeight:700 }}>View in Backup Center →</a></span>
+        </div>
+      )}
 
       {/* ── PAYOUT CSV result ── */}
       {parsed?.type === "payout_csv" && (
