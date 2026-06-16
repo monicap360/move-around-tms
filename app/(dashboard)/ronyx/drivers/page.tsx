@@ -587,14 +587,14 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
       const payload = rows
         .filter(r => {
           if (r._importStatus === "duplicate") {
-            const action = dupActions[r._idx] ?? "skip";
+            const action = dupActions[r._idx] ?? "update"; // default: update existing
             return action !== "skip";
           }
           return r._importStatus !== "skip";
         })
         .map(r => ({
           ...r,
-          _dup_action: r._importStatus === "duplicate" ? (dupActions[r._idx] ?? "skip") : undefined,
+          _dup_action: r._importStatus === "duplicate" ? (dupActions[r._idx] ?? "update") : undefined,
         }));
 
       // Send in batches of 10 so we can show real progress

@@ -98,8 +98,8 @@ export async function POST(req: NextRequest) {
 
   for (const row of rows) {
     try {
-      const isDup    = row._importStatus === "duplicate";
-      const dupAction = row._dup_action ?? "update";
+      const isDup     = row._importStatus === "duplicate";
+      const dupAction = row._dup_action ?? "update"; // always default to update, never silently skip
 
       if (isDup && dupAction === "skip") { skipped++; continue; }
       if (row._importStatus === "skip")   { skipped++; continue; }
@@ -137,24 +137,27 @@ export async function POST(req: NextRequest) {
       };
 
       if (isDup && dupAction === "update") {
-        // Try to find existing driver to update
         const nameClean = row.driver_name.trim().toLowerCase();
         const { data: existing } = await supabase
           .from("drivers")
           .select("id")
           .ilike("full_name", nameClean)
           .limit(1)
-          .single();
+          .maybeSingle(); // maybeSingle returns null instead of error when no match
 
         if (existing?.id) {
           const { error } = await supabase
             .from("drivers")
             .update(driverPayload)
             .eq("id", existing.id);
-          if (error) { errors.push(`Update failed for ${row.driver_name}: ${error.message}`); failed++; }
-          else { updated++; }
-          continue;
+          if (error) {
+            // update failed — fall through to insert below
+          } else {
+            updated++;
+            continue;
+          }
         }
+        // No existing match found — insert as new driver (fall through)
       }
 
       // Insert new driver — try full payload first, fall back to core fields only
