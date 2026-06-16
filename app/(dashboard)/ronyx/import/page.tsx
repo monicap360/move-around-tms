@@ -189,13 +189,15 @@ async function parseDocument(file: File): Promise<ParsedDoc> {
 }
 
 // ─── Upload original file to storage ─────────────────────
-async function uploadOriginalFile(file: File, module: string): Promise<string | null> {
+async function uploadOriginalFile(file: File, moduleHint: string): Promise<string | null> {
   try {
     const fd = new FormData();
-    fd.append("file",   file);
-    fd.append("module", module);
-    const res = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
-    const d   = await res.json();
+    fd.append("file", file);
+    if (moduleHint) fd.append("module", moduleHint);
+    // No module = server auto-detects from filename
+    const res  = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+    if (!res.ok) return null;
+    const d    = await res.json();
     return d.upload_id || null;
   } catch {
     return null;
@@ -280,18 +282,25 @@ export default function ImportPage() {
     setOriginalUploadId(null);
     setFileStored(false);
     try {
-      // 1. Store original file first — read-only source evidence
-      const ext = file.name.split(".").pop()?.toLowerCase() || "";
-      const module = ["csv","txt","xlsx"].includes(ext) ? "payout" : "contracts";
-      const uploadId = await uploadOriginalFile(file, module);
-      setOriginalUploadId(uploadId);
-      setFileStored(!!uploadId);
+      // 1. Store original file first (server auto-detects module from filename)
+      // Run storage upload and parsing in parallel — don't block parsing on upload
+      const [uploadResult, doc] = await Promise.allSettled([
+        uploadOriginalFile(file, ""),   // pass "" = let server auto-detect
+        parseDocument(file),
+      ]);
 
-      // 2. Parse for display
-      const doc = await parseDocument(file);
-      setParsed(doc);
+      if (uploadResult.status === "fulfilled" && uploadResult.value) {
+        setOriginalUploadId(uploadResult.value);
+        setFileStored(true);
+      }
+
+      if (doc.status === "fulfilled") {
+        setParsed(doc.value);
+      } else {
+        flash("Could not parse file — file stored but content unreadable.", false);
+      }
     } catch {
-      flash("Could not parse file.", false);
+      flash("Could not process file.", false);
     } finally {
       setParsing(false);
     }

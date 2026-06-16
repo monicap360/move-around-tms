@@ -3,123 +3,210 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/ronyx/upload-file
-// Stores original uploaded file in Supabase Storage under ronyx-original-uploads bucket.
-// Also inserts a record into original_uploads table.
-// Original files are NEVER deleted or overwritten — they are read-only source evidence.
+// ─── Auto-detect module from filename + MIME type ─────────
+function detectModule(fileName: string, mimeType: string): string {
+  const name  = fileName.toLowerCase();
+  const mime  = (mimeType || "").toLowerCase();
+
+  if (name.includes("dispatch") || name.includes("rmis") || name.includes("schedule") || name.includes("tabitha"))
+    return "dispatch";
+  if (name.includes("payout") || name.includes("indiana") || name.includes("invoices"))
+    return "payout";
+  if (name.includes("w-9") || name.includes("w9") || name.includes("tax"))
+    return "compliance";
+  if (name.includes("coi") || name.includes("certificate") || name.includes("insurance"))
+    return "compliance";
+  if (name.includes("contract") || name.includes("agreement") || name.includes("subhauler"))
+    return "contracts";
+  if (name.includes("driver") || name.includes("cdl") || name.includes("mvr"))
+    return "drivers";
+  if (name.includes("payroll") || name.includes("settlement"))
+    return "payroll";
+  if (name.includes("ticket") || name.includes("scan"))
+    return "fastscan";
+  if (name.includes("invoice") || name.includes("billing"))
+    return "billing";
+  if (mime.includes("image"))
+    return "images";
+  return "general";
+}
+
+// ─── Get or create a storage bucket ──────────────────────
+async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, bucket: string): Promise<boolean> {
+  try {
+    // Try to list — if bucket exists this succeeds
+    const { error } = await sb.storage.from(bucket).list("", { limit: 1 });
+    if (!error) return true;
+
+    // Bucket doesn't exist — try to create it
+    const { error: createErr } = await sb.storage.createBucket(bucket, {
+      public: false,
+      fileSizeLimit: 52428800, // 50MB
+    });
+    return !createErr;
+  } catch {
+    return false;
+  }
+}
+
+// ─── POST /api/ronyx/upload-file ─────────────────────────
+// Universal file upload for all Ronyx modules.
+// Accepts ANY file type. Auto-detects module from filename.
+// Self-healing: creates storage bucket if needed.
+// Works even if original_uploads table hasn't been migrated yet.
 //
 // FormData fields:
-//   file        — the raw File object
-//   module      — dispatch | payout | fastscan | payroll | drivers | compliance | billing | contracts
-//   folder      — optional sub-path override (defaults to module/YYYY-MM-DD)
+//   file    — the File (required)
+//   module  — override auto-detection (optional)
+//   oo_id   — owner operator ID if this is a compliance/contract doc (optional)
 //
-// Returns: { ok, upload_id, path, url }
+// Returns: { ok, upload_id, path, bucket, url, module, file_name, file_type }
 export async function POST(req: Request) {
   const sb       = createSupabaseServerClient();
   const formData = await req.formData();
   const file     = formData.get("file") as File | null;
-  const module   = (formData.get("module") as string) || "general";
+  const moduleOverride = formData.get("module") as string | null;
+  const ooId           = formData.get("oo_id")  as string | null;
 
-  if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
-
-  const today    = new Date().toISOString().split("T")[0];
-  const timestamp = Date.now();
-  const safeName  = file.name.replace(/[^a-zA-Z0-9._\-\(\) ]/g, "_");
-  const path      = `${module}/${today}/${timestamp}_${safeName}`;
-  const bucket    = "ronyx-original-uploads";
-
-  const arrayBuffer = await file.arrayBuffer();
-
-  // Try primary bucket first; fall back gracefully if it doesn't exist yet
-  const { error: uploadErr } = await sb.storage
-    .from(bucket)
-    .upload(path, arrayBuffer, {
-      contentType: file.type || "application/octet-stream",
-      upsert: false,
-    });
-
-  let storagePath = path;
-  let storageBucket = bucket;
-  let publicUrl: string | null = null;
-
-  if (uploadErr) {
-    // Fallback: try the existing company_assets bucket
-    const fallbackPath = `ronyx/${module}/${today}/${timestamp}_${safeName}`;
-    const { error: fallbackErr } = await sb.storage
-      .from("company_assets")
-      .upload(fallbackPath, arrayBuffer, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
-
-    if (fallbackErr) {
-      // Storage not available — still track the upload intent in the DB record
-      storageBucket = "unavailable";
-      storagePath   = path;
-    } else {
-      storagePath   = fallbackPath;
-      storageBucket = "company_assets";
-      const { data } = sb.storage.from("company_assets").getPublicUrl(fallbackPath);
-      publicUrl = data?.publicUrl || null;
-    }
-  } else {
-    const { data } = sb.storage.from(bucket).getPublicUrl(path);
-    publicUrl = data?.publicUrl || null;
+  if (!file) {
+    return NextResponse.json({ ok: false, error: "No file provided" }, { status: 400 });
   }
 
-  // Insert into original_uploads regardless of storage outcome
-  const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+  const module    = moduleOverride || detectModule(file.name, file.type);
+  const today     = new Date().toISOString().split("T")[0];
+  const timestamp = Date.now();
+  // Keep original filename readable — replace only truly unsafe chars
+  const safeName  = file.name.replace(/[<>:"/\\|?*]/g, "_");
+  const filePath  = `${module}/${today}/${timestamp}_${safeName}`;
+  const BUCKET    = "ronyx-imports";
+
+  const arrayBuffer = await file.arrayBuffer();
+  const contentType = file.type || "application/octet-stream";
+
+  // ── Try primary bucket (auto-create if missing) ──
+  let usedBucket = BUCKET;
+  let storagePath = filePath;
+  let publicUrl: string | null = null;
+  let storageOk = false;
+
+  const bucketReady = await ensureBucket(sb, BUCKET);
+
+  if (bucketReady) {
+    const { error: uploadErr } = await sb.storage
+      .from(BUCKET)
+      .upload(filePath, arrayBuffer, { contentType, upsert: false });
+
+    if (!uploadErr) {
+      storageOk = true;
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(filePath);
+      publicUrl = data?.publicUrl || null;
+    }
+  }
+
+  // ── Fallback: company_assets bucket ──
+  if (!storageOk) {
+    const fallbackPath = `ronyx/${module}/${today}/${timestamp}_${safeName}`;
+    const fbReady = await ensureBucket(sb, "company_assets");
+
+    if (fbReady) {
+      const { error: fbErr } = await sb.storage
+        .from("company_assets")
+        .upload(fallbackPath, arrayBuffer, { contentType, upsert: false });
+
+      if (!fbErr) {
+        storageOk   = true;
+        usedBucket  = "company_assets";
+        storagePath = fallbackPath;
+        const { data } = sb.storage.from("company_assets").getPublicUrl(fallbackPath);
+        publicUrl = data?.publicUrl || null;
+      }
+    }
+  }
+
+  // ── Derive file_type ──
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
   const fileType = ["csv","txt"].includes(ext) ? "csv"
     : ext === "pdf" ? "pdf"
     : ["xls","xlsx"].includes(ext) ? "xlsx"
-    : ["jpg","jpeg","png","webp","gif"].includes(ext) ? "image"
-    : ext;
+    : ["doc","docx"].includes(ext) ? "doc"
+    : ["jpg","jpeg","png","webp","gif","bmp","tiff"].includes(ext) ? "image"
+    : ext || "bin";
 
-  const { data: uploadRecord, error: dbErr } = await sb
-    .from("original_uploads")
-    .insert({
+  // ── Track in original_uploads (graceful — table may not exist yet) ──
+  let uploadId: string | null = null;
+  try {
+    const row: Record<string, any> = {
       module,
       source_file_name:  file.name,
-      storage_bucket:    storageBucket,
+      storage_bucket:    storageOk ? usedBucket : "pending",
       storage_path:      storagePath,
       file_type:         fileType,
       file_size_bytes:   file.size,
       mime_type:         file.type || null,
       is_original:       true,
       is_deleted:        false,
-    })
-    .select("id")
-    .single();
-
-  if (dbErr) {
-    return NextResponse.json({ ok: false, error: dbErr.message, path: storagePath, url: publicUrl, upload_id: null });
+    };
+    if (ooId) {
+      row.notes = `oo_id:${ooId}`;
+    }
+    const { data } = await sb
+      .from("original_uploads")
+      .insert(row)
+      .select("id")
+      .single();
+    uploadId = data?.id || null;
+  } catch {
+    // Table doesn't exist yet — storage still worked, just no DB tracking
   }
 
   return NextResponse.json({
-    ok:        true,
-    upload_id: uploadRecord.id,
+    ok:        storageOk,
+    upload_id: uploadId,
     path:      storagePath,
-    bucket:    storageBucket,
+    bucket:    storageOk ? usedBucket : null,
     url:       publicUrl,
+    module,
+    file_name: file.name,
+    file_type: fileType,
+    storage_ok: storageOk,
+    db_tracked: !!uploadId,
+    // Hint for caller about what to do with this file
+    routing_hint: getRoutingHint(module, fileType, file.name),
   });
 }
 
-// GET /api/ronyx/upload-file — list original uploads for backup center
+// ─── Routing hints for callers ────────────────────────────
+function getRoutingHint(module: string, fileType: string, fileName: string): string {
+  if (module === "dispatch")   return "dispatch-import";
+  if (module === "payout")     return "payout-import";
+  if (module === "compliance" && fileName.toLowerCase().includes("w-9")) return "oo-w9";
+  if (module === "compliance") return "oo-compliance-doc";
+  if (module === "contracts")  return "oo-contract";
+  if (module === "fastscan")   return "ticket-scan";
+  if (module === "drivers")    return "driver-doc";
+  if (fileType === "image")    return "ticket-scan";
+  return "general";
+}
+
+// ─── GET /api/ronyx/upload-file — list original uploads ──
 export async function GET(req: Request) {
   const sb  = createSupabaseServerClient();
   const url = new URL(req.url);
   const mod = url.searchParams.get("module");
 
-  let query = sb
-    .from("original_uploads")
-    .select("*")
-    .eq("is_deleted", false)
-    .order("uploaded_at", { ascending: false })
-    .limit(200);
+  try {
+    let query = sb
+      .from("original_uploads")
+      .select("*")
+      .eq("is_deleted", false)
+      .order("uploaded_at", { ascending: false })
+      .limit(200);
 
-  if (mod) query = query.eq("module", mod);
-
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ uploads: data || [] });
+    if (mod) query = query.eq("module", mod);
+    const { data, error } = await query;
+    if (error) throw error;
+    return NextResponse.json({ uploads: data || [] });
+  } catch {
+    return NextResponse.json({ uploads: [], note: "original_uploads table not yet migrated" });
+  }
 }
