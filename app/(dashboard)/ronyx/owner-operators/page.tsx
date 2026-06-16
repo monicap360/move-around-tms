@@ -82,6 +82,26 @@ type ReminderEntry = { doc_type: string; sent_at: string; method: string };
 type HistoryEntry  = { date: string; event: string; type: "info"|"warning"|"critical" };
 type ChangeEntry   = { date: string; type: string; detail: string };
 
+type COIDoc = {
+  id: string;
+  coi_group: string;
+  document_type: string;
+  insurance_provider?: string;
+  policy_number?: string;
+  effective_date?: string;
+  expiration_date?: string;
+  file_name?: string;
+  file_url?: string;
+  status: "complete" | "missing" | "expired" | "expiring_soon" | "needs_review" | "not_required" | "rejected";
+  review_status: string;
+  dispatch_blocked: boolean;
+  settlement_hold: boolean;
+  last_reminder_sent_at?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  notes?: string;
+};
+
 type OOCompany = {
   id: string;
   company_name: string;
@@ -101,6 +121,7 @@ type OOCompany = {
   jobs: OOJob[];
   subcontractors: OOSubcontractor[];
   driver_truck_assignments?: OOTruckAssignment[];
+  coi_documents?: COIDoc[];
   notes?: string;
   last_contact_date?: string;
   reminder_log?: ReminderEntry[];
@@ -123,6 +144,35 @@ async function apiPut(path: string, body: unknown) {
 async function apiDelete(path: string) {
   return fetch(path, { method: "DELETE" });
 }
+
+/* ─── COI type constants ─────────────────────────────── */
+const COI_TYPES_CONST = [
+  { value:"auto_liability_coi",                     label:"Auto Liability COI",                    group:"standard",    shortLabel:"Auto Liab" },
+  { value:"general_liability_coi",                  label:"General Liability COI",                 group:"standard",    shortLabel:"Gen Liab"  },
+  { value:"cargo_coi",                              label:"Cargo / Motor Truck Cargo COI",         group:"standard",    shortLabel:"Cargo"     },
+  { value:"ronyx_contractor_auto_liability_coi",    label:"Ronyx Auto Liability COI",              group:"ronyx",       shortLabel:"Ronyx Auto"},
+  { value:"ronyx_contractor_general_liability_coi", label:"Ronyx General Liability COI",           group:"ronyx",       shortLabel:"Ronyx Gen" },
+  { value:"ronyx_contractor_cargo_coi",             label:"Ronyx Cargo COI",                       group:"ronyx",       shortLabel:"Ronyx Cargo"},
+  { value:"ma_morrison_auto_liability_coi",         label:"MA Morrison Auto Liability COI",        group:"ma_morrison", shortLabel:"MAM Auto"  },
+  { value:"ma_morrison_general_liability_coi",      label:"MA Morrison General Liability COI",     group:"ma_morrison", shortLabel:"MAM Gen"   },
+  { value:"ma_morrison_cargo_coi",                  label:"MA Morrison Cargo COI",                 group:"ma_morrison", shortLabel:"MAM Cargo" },
+] as const;
+
+const COI_GROUPS_DEF = {
+  standard:   { label:"Standard Owner Operator COIs",  desc:"Required for all dispatch",          color:"#1e40af", bg:"#eff6ff" },
+  ronyx:      { label:"Ronyx Contractor COIs",         desc:"Required for Ronyx contractor jobs", color:"#7c3aed", bg:"#f5f3ff" },
+  ma_morrison:{ label:"MA Morrison COIs",              desc:"Required for MA Morrison jobs",      color:"#0891b2", bg:"#f0f9ff" },
+} as const;
+
+const COI_STATUS_COLORS: Record<string, [string,string]> = {
+  complete:      ["#f0fdf4","#15803d"],
+  missing:       ["#fff1f2","#dc2626"],
+  expired:       ["#fff1f2","#dc2626"],
+  expiring_soon: ["#fefce8","#ca8a04"],
+  needs_review:  ["#fff7ed","#ea580c"],
+  not_required:  ["#f1f5f9","#64748b"],
+  rejected:      ["#fff1f2","#dc2626"],
+};
 
 /* ─── Truck status helpers ───────────────────────────── */
 function truckStatusLabel(s?: string) {
@@ -283,7 +333,7 @@ const EMPTY_COMPANY: Omit<OOCompany, "id"> = {
   company_name: "", contact_name: "", contact_phone: "", contact_email: "",
   business_address: "", mc_number: "", dot_number: "", ein: "",
   insurance_agent_name: "", insurance_agent_email: "", insurance_agent_phone: "",
-  drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [], driver_truck_assignments: [], logo_url: undefined,
+  drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [], driver_truck_assignments: [], coi_documents: [], logo_url: undefined,
 };
 
 const DEMO: OOCompany[] = [];
@@ -346,7 +396,7 @@ export default function OwnerOperatorsPage() {
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);
-  const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs">("overview");
+  const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs" | "coi">("overview");
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
 
@@ -369,6 +419,12 @@ export default function OwnerOperatorsPage() {
   const [subDriverForms, setSubDriverForms] = useState<Record<string, { name:string; phone:string; cdl_number:string; cdl_expiration:string }>>({});
   const [addTruckForm,  setAddTruckForm]  = useState<Omit<OOTruck,"id">>({ truck_number:"", year:"", make:"", model:"", vin:"", last_inspection:"", inspection_result:"Pass" });
   const [addJobForm,    setAddJobForm]    = useState<Omit<OOJob,"id">>({ project_name:"Domino Project", project_number:"", load_date:"", truck_number:"", driver_name:"", origin:"", destination:"", material:"", tons:0, gross_revenue:0, oo_rate:0, margin:0, ticket_status:"Verified", settlement_status:"Pending" });
+
+  // COI upload state
+  const [coiUploadForm, setCoiUploadForm] = useState({ document_type:"", coi_group:"standard", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
+  const [showCoiUpload, setShowCoiUpload] = useState<string>(""); // document_type being uploaded
+  const coiFileRef = useRef<HTMLInputElement>(null);
+  const pendingCoiTypeRef = useRef<string>("");
 
   // Truck pool / maintenance state
   const [expandedDriverPool, setExpandedDriverPool] = useState<Set<string>>(new Set());
@@ -552,6 +608,43 @@ export default function OwnerOperatorsPage() {
     });
     setMaintenanceModal(null); setMaintForm({ event_type:"breakdown", severity:"high", issue_title:"", issue_description:"", estimated_return_at:"", reported_by:"" });
     flash(`Truck ${maintenanceModal.truckNumber} marked out of service — maintenance event created.`);
+  }
+
+  // COI upload handler
+  async function handleCOIUpload(docType: string, file: File) {
+    if (!selected) return;
+    const form = new FormData();
+    form.append("file", file);
+    form.append("bucket", "ronyx-imports");
+    form.append("path", `oo-coi/${selected.id}/${docType}/${file.name}`);
+    const upRes = await fetch("/api/ronyx/upload-file", { method:"POST", body:form });
+    const upData = await upRes.json();
+    const fileUrl = upData.url || null;
+
+    const coiType = COI_TYPES_CONST.find(t => t.value === docType);
+    const body = {
+      ...coiUploadForm,
+      document_type: docType,
+      coi_group: coiType?.group || "standard",
+      file_name: file.name,
+      file_url: fileUrl,
+    };
+    const r = await fetch(`/api/ronyx/owner-operators/${selected.id}/coi`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    const data = await r.json();
+    if (data.error) { flash(`Error: ${data.error}`); return; }
+    const newDoc: COIDoc = { id: data.coi.id, coi_group: data.coi.coi_group, document_type: data.coi.document_type, insurance_provider: body.insurance_provider||undefined, policy_number: body.policy_number||undefined, effective_date: body.effective_date||undefined, expiration_date: body.expiration_date||undefined, file_name: file.name, file_url: fileUrl||undefined, status: data.coi.status, review_status: data.coi.review_status, dispatch_blocked: false, settlement_hold: false };
+    updateLocalState({ ...selected, coi_documents: [...(selected.coi_documents||[]).filter(d => d.document_type !== docType), newDoc] });
+    setShowCoiUpload(""); setCoiUploadForm({ document_type:"", coi_group:"standard", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
+    flash(`COI uploaded: ${coiType?.label || docType}`);
+  }
+
+  async function updateCOIStatus(docId: string, patch: Partial<COIDoc>) {
+    if (!selected) return;
+    const r = await fetch(`/api/ronyx/owner-operators/${selected.id}/coi/${docId}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(patch) });
+    const data = await r.json();
+    if (data.error) { flash(`Error: ${data.error}`); return; }
+    updateLocalState({ ...selected, coi_documents: (selected.coi_documents||[]).map(d => d.id === docId ? { ...d, ...patch, status: data.coi.status } : d) });
+    flash("COI updated.");
   }
 
   // Job CRUD
@@ -927,11 +1020,15 @@ export default function OwnerOperatorsPage() {
   const tick    = ooTicketHealth(selected);
   const actions = ooActionRequired(selected);
 
+  const coiDocs  = selected?.coi_documents || [];
+  const coiIssues = coiDocs.filter(d => d.status === "expired" || d.status === "missing").length;
+
   const DETAIL_TABS = [
     { key:"overview",   label:"Overview"    },
     { key:"drivers",    label:"Drivers"     },
     { key:"subs",       label:`Subcontractors${selected?.subcontractors?.length ? ` (${selected.subcontractors.length})` : ""}` },
     { key:"fleet",      label:"Fleet"       },
+    { key:"coi",        label:`Insurance / COI${coiIssues > 0 ? ` ⚠ ${coiIssues}` : ""}` },
     { key:"documents",  label:"Documents"   },
     { key:"jobs",       label:"Project Jobs"},
     { key:"settlement", label:"Settlement"  },
@@ -2852,6 +2949,166 @@ export default function OwnerOperatorsPage() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── COI Tab ── */}
+      {activeTab === "coi" && selected && (
+        <div>
+          <input ref={coiFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }}
+            onChange={async e => {
+              const f = e.target.files?.[0];
+              if (f && pendingCoiTypeRef.current) await handleCOIUpload(pendingCoiTypeRef.current, f);
+              e.target.value = "";
+            }}
+          />
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <div>
+              <div style={eyebrow}>Insurance / COI Requirements</div>
+              <div style={{ fontSize:"0.8rem", color:"#64748b", marginTop:2 }}>
+                {coiDocs.filter(d=>d.status==="complete").length}/{COI_TYPES_CONST.length} documents complete · missing or expired COIs block dispatch
+              </div>
+            </div>
+            <a href="/ronyx/owner-operators/coi-matrix" style={{ background:"#eff6ff", color:"#1d4ed8", padding:"7px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none" }}>View COI Matrix →</a>
+          </div>
+
+          {(["standard","ronyx","ma_morrison"] as const).map(group => {
+            const gDef   = COI_GROUPS_DEF[group];
+            const types  = COI_TYPES_CONST.filter(t => t.group === group);
+            const gDocs  = coiDocs.filter(d => d.coi_group === group);
+            const allOK  = types.every(t => gDocs.find(d => d.document_type === t.value && d.status === "complete"));
+            return (
+              <div key={group} style={{ background:"#fff", border:`1px solid ${allOK?"#bbf7d0":"#e2e8f0"}`, borderRadius:14, padding:"18px 20px", marginBottom:14 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                  <div>
+                    <div style={{ fontWeight:900, fontSize:"0.9rem", color:gDef.color }}>{gDef.label}</div>
+                    <div style={{ fontSize:"0.75rem", color:"#64748b" }}>{gDef.desc}</div>
+                  </div>
+                  <span style={{ background:allOK?"#f0fdf4":"#fff1f2", color:allOK?"#15803d":"#dc2626", padding:"4px 12px", borderRadius:20, fontSize:"0.72rem", fontWeight:800 }}>
+                    {allOK ? "✓ Complete" : `${gDocs.filter(d=>d.status==="complete").length}/${types.length} docs`}
+                  </span>
+                </div>
+
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:10 }}>
+                  {types.map(t => {
+                    const doc = gDocs.find(d => d.document_type === t.value);
+                    const days = daysUntil(doc?.expiration_date);
+                    const st   = doc?.status || "missing";
+                    const [stBg, stColor] = COI_STATUS_COLORS[st] || COI_STATUS_COLORS.missing;
+                    const isUploading = showCoiUpload === t.value;
+
+                    return (
+                      <div key={t.value} style={{ background:stBg, border:`1px solid ${stColor}33`, borderRadius:12, padding:"14px 16px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                          <div style={{ fontWeight:700, fontSize:"0.82rem", color:"#0f172a", flex:1 }}>{t.label}</div>
+                          <span style={{ background:"#fff", color:stColor, border:`1px solid ${stColor}66`, padding:"2px 8px", borderRadius:20, fontSize:"0.62rem", fontWeight:800, flexShrink:0, marginLeft:8 }}>
+                            {st.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}
+                          </span>
+                        </div>
+
+                        {doc ? (
+                          <div style={{ fontSize:"0.72rem", color:"#475569", display:"flex", flexDirection:"column", gap:3 }}>
+                            {doc.insurance_provider && <div><span style={{ color:"#94a3b8" }}>Provider:</span> <strong>{doc.insurance_provider}</strong></div>}
+                            {doc.policy_number     && <div><span style={{ color:"#94a3b8" }}>Policy #:</span> {doc.policy_number}</div>}
+                            {doc.effective_date    && <div><span style={{ color:"#94a3b8" }}>Effective:</span> {fmtDate(doc.effective_date)}</div>}
+                            {doc.expiration_date   && (
+                              <div>
+                                <span style={{ color:"#94a3b8" }}>Expires:</span>{" "}
+                                <strong style={{ color: days !== null && days < 0 ? "#dc2626" : days !== null && days <= 30 ? "#ca8a04" : "#15803d" }}>
+                                  {fmtDate(doc.expiration_date)} {days !== null ? (days < 0 ? `(${Math.abs(days)}d ago)` : `(${days}d)`) : ""}
+                                </strong>
+                              </div>
+                            )}
+                            {doc.reviewed_by && <div style={{ color:"#15803d", fontSize:"0.65rem" }}>✓ Reviewed by {doc.reviewed_by}</div>}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize:"0.72rem", color:"#dc2626", fontWeight:600, marginBottom:8 }}>Not uploaded</div>
+                        )}
+
+                        {/* Actions */}
+                        {!isUploading ? (
+                          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:10 }}>
+                            <button
+                              onClick={() => { pendingCoiTypeRef.current = t.value; setShowCoiUpload(t.value); setCoiUploadForm(f => ({ ...f, document_type:t.value, coi_group:group })); }}
+                              style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
+                              {doc ? "Replace" : "Upload"}
+                            </button>
+                            {doc?.file_url && (
+                              <>
+                                <button onClick={()=>window.open(doc.file_url!,"_blank")} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>View</button>
+                                <a href={doc.file_url} download={doc.file_name||"coi"} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer", textDecoration:"none" }}>Download</a>
+                              </>
+                            )}
+                            {doc && doc.review_status !== "approved" && (
+                              <button onClick={() => updateCOIStatus(doc.id, { review_status:"approved", reviewed_by:"Staff", status:"complete" })} style={{ background:"#f0fdf4", color:"#15803d", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>Approve</button>
+                            )}
+                            {doc && (
+                              <button onClick={() => updateCOIStatus(doc.id, { review_status:"rejected", status:"rejected" })} style={{ background:"#fff1f2", color:"#dc2626", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>Reject</button>
+                            )}
+                            <button
+                              onClick={() => {
+                                const sub = `Updated COI Needed — ${selected.company_name}`;
+                                const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need an updated ${t.label} for your file.\n\nPlease send the updated Certificate of Insurance as soon as possible. Dispatch and/or settlement may remain on hold until the document is received and verified.\n\nThank you.`;
+                                window.open(`mailto:${selected.contact_email||""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
+                              }}
+                              style={{ background:"#fef3c7", color:"#92400e", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
+                              Request
+                            </button>
+                          </div>
+                        ) : (
+                          /* Inline upload form */
+                          <div style={{ marginTop:10, background:"rgba(255,255,255,0.7)", borderRadius:8, padding:"10px 12px" }}>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 10px", marginBottom:8 }}>
+                              <div>
+                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Insurance Provider</label>
+                                <input value={coiUploadForm.insurance_provider} onChange={e=>setCoiUploadForm(f=>({...f,insurance_provider:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem", boxSizing:"border-box" }} placeholder="State Farm, Zurich…" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Policy Number</label>
+                                <input value={coiUploadForm.policy_number} onChange={e=>setCoiUploadForm(f=>({...f,policy_number:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem", boxSizing:"border-box" }} placeholder="POL-12345" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Effective Date</label>
+                                <input type="date" value={coiUploadForm.effective_date} onChange={e=>setCoiUploadForm(f=>({...f,effective_date:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem" }} />
+                              </div>
+                              <div>
+                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Expiration Date</label>
+                                <input type="date" value={coiUploadForm.expiration_date} onChange={e=>setCoiUploadForm(f=>({...f,expiration_date:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem" }} />
+                              </div>
+                            </div>
+                            <div style={{ display:"flex", gap:6 }}>
+                              <button onClick={() => { pendingCoiTypeRef.current = t.value; coiFileRef.current?.click(); }} style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:6, padding:"6px 12px", fontSize:"0.7rem", fontWeight:700, cursor:"pointer" }}>Choose File & Upload</button>
+                              <button onClick={() => setShowCoiUpload("")} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"6px 10px", fontSize:"0.7rem", fontWeight:700, cursor:"pointer" }}>Cancel</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Group-level actions */}
+                <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                  <button
+                    onClick={() => {
+                      const missing = types.filter(t => !gDocs.find(d => d.document_type === t.value && d.status === "complete")).map(t => `• ${t.label}`).join("\n");
+                      if (!missing) { flash("All COIs in this group are complete."); return; }
+                      const sub = `${gDef.label} Required — ${selected.company_name}`;
+                      const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need the following insurance documents:\n\n${missing}\n\nPlease provide updated COIs as soon as possible.\n\nThank you.`;
+                      window.open(`mailto:${selected.contact_email||""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
+                    }}
+                    style={{ background:gDef.bg, color:gDef.color, border:`1px solid ${gDef.color}33`, borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                    Request {gDef.label}
+                  </button>
+                  <button
+                    onClick={() => { window.print(); }}
+                    style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                    Print COI Packet
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

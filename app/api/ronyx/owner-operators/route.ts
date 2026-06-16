@@ -50,7 +50,7 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
   if (!oos.length) return NextResponse.json({ companies: [] });
 
   const ids = oos.map((o) => o.id);
-  const [driversRes, trucksRes, docsRes, jobsRes, subsRes, dtaRes] = await Promise.all([
+  const [driversRes, trucksRes, docsRes, jobsRes, subsRes, dtaRes, coisRes] = await Promise.all([
     sb.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name"),
     sb.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number"),
     sb.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }),
@@ -61,6 +61,7 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
       .in("oo_id", ids)
       .eq("is_active", true)
       .order("priority"),
+    sb.from("ronyx_oo_coi_documents").select("*").in("oo_id", ids).order("coi_group").order("document_type"),
   ]);
 
   const drivers = driversRes.data || [];
@@ -69,6 +70,7 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
   const jobs    = jobsRes.data    || [];
   const subs    = subsRes.data    || [];
   const dta     = dtaRes.data     || [];
+  const cois    = coisRes.data    || [];
 
   const companies = oos.map((oo) => ({
     ...oo,
@@ -79,6 +81,7 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
       approved_driver_ids: dta.filter((a: any) => a.truck_id === t.id).map((a: any) => a.driver_id),
     })),
     driver_truck_assignments: dta.filter((a: any) => a.oo_id === oo.id),
+    coi_documents: cois.filter((c: any) => c.oo_id === oo.id),
     documents: docs.filter((d) => d.oo_id === oo.id).map((d) => ({
       type:        d.doc_type,
       uploaded_at: d.uploaded_at,
