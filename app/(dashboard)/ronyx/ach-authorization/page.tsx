@@ -16,6 +16,7 @@ const KNOWN_COMPANIES = [
   "BAS Equipment & Trucking LLC",
   "M.A. Mortenson Company",
   "Denesse Group Inc",
+  "Denesse Duran",
 ];
 
 type AuthRecord = {

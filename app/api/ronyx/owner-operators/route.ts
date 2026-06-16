@@ -3,11 +3,21 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// Companies from the subhauler agreement — always seed these as OOs
+// Known owner operator companies — always ensure these exist
 const REQUIRED_OOS = [
   { company_name: "TC Redwine Services, LLC",          business_address: "",                                    status: "active" },
   { company_name: "BAS Equipment & Trucking LLC",       business_address: "P.O. Box 36, Throckmorton, TX 76483", status: "active" },
   { company_name: "M.A. Mortenson Company",            business_address: "700 Meadow Ln, Minneapolis MN 55422", status: "active" },
+  {
+    company_name:          "Denesse Group Inc",
+    business_address:      "23433 Dome St, Moreno Valley, CA 92553",
+    contact_name:          "Denesse Duran",
+    contact_email:         "denesse4@gmail.com",
+    contact_phone:         "323-712-5010",
+    ein:                   "83-3084898",
+    dot_number:            "484120",
+    status:                "active",
+  },
 ];
 
 async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, oos: any[]) {

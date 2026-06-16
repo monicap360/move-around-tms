@@ -21,6 +21,7 @@ const DEFAULT_CUSTOMERS = [
 const REQUIRED_COMPANIES = [
   { customer_name: "TC Red Wine Services",                    customer_type: "general_contractor", payment_terms: "net_30" },
   { customer_name: "BAS Equipment & Trucking Services, LLC",  customer_type: "general_contractor", payment_terms: "net_30" },
+  { customer_name: "Denesse Group Inc",                       customer_type: "subcontractor",      payment_terms: "net_30", billing_contact_name: "Denesse Duran", billing_email: "denesse4@gmail.com", billing_phone: "323-712-5010" },
 ];
 
 export async function GET() {
