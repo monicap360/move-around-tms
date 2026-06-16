@@ -89,13 +89,33 @@ export async function POST(req: Request) {
 
   if (importErr) return NextResponse.json({ error: importErr.message }, { status: 500 });
 
-  // Build job rows
+  // Build job rows — keep compliance metadata in a parallel array so we
+  // can use it for alert creation without selecting alert_type from DB
+  // (dispatch_jobs table has no alert_type column).
+  const complianceMeta: Array<{
+    alert_type: string | null; compliance_severity: string;
+    compliance_issue: string | null; compliance_action: string | null;
+    driver_name: string | null; truck_number: string | null;
+    friendly_job_id: string | null; rmis_note: string | null;
+  }> = [];
+
   const jobRows = rows.map((row) => {
     const rmisNote = row["See Notes!!"] || row["RMIS Notes"] || row["Notes"] || "";
     const compliance = classifyRmis(rmisNote);
     const rawStatus  = row["Job Status"] || row["Status"] || "";
     const dispatchStatus = mapJobStatus(rawStatus);
     const qty = parseFloat(row["Job Quantity"] || "0") || 0;
+
+    complianceMeta.push({
+      alert_type:         compliance.alert_type,
+      compliance_severity: compliance.compliance_severity,
+      compliance_issue:   compliance.compliance_issue,
+      compliance_action:  compliance.compliance_action,
+      driver_name:        row["Driver"]?.trim() || null,
+      truck_number:       row["Truck Number"]?.trim() || null,
+      friendly_job_id:    row["Friendly Job ID"]?.trim() || null,
+      rmis_note:          rmisNote || null,
+    });
 
     return {
       dispatch_import_id:       importBatch.id,
@@ -128,24 +148,26 @@ export async function POST(req: Request) {
     };
   });
 
+  // Only select columns that actually exist in dispatch_jobs
   const { data: jobs, error: jobsErr } = await sb
     .from("dispatch_jobs")
     .insert(jobRows)
-    .select("id, compliance_severity, compliance_issue, compliance_action, alert_type, dispatch_status, driver_name, truck_number, friendly_job_id, rmis_note");
+    .select("id, compliance_severity, dispatch_status");
 
   if (jobsErr) return NextResponse.json({ error: jobsErr.message }, { status: 500 });
 
-  // Build alerts for non-clear jobs
+  // Build alerts using in-memory compliance metadata (not DB columns)
   const alertRows = (jobs || [])
-    .filter((j: any) => j.compliance_severity !== "clear" && j.alert_type)
-    .map((j: any) => ({
+    .map((j: any, i: number) => ({ j, meta: complianceMeta[i] }))
+    .filter(({ j, meta }) => j.compliance_severity !== "clear" && meta?.alert_type)
+    .map(({ j, meta }) => ({
       dispatch_import_id: importBatch.id,
       dispatch_job_id:    j.id,
       severity:           j.compliance_severity,
-      alert_type:         j.alert_type,
-      title:              j.compliance_issue || "Compliance issue",
-      message:            `Driver: ${j.driver_name || "Unknown"} | Truck: ${j.truck_number || "?"} | Job: ${j.friendly_job_id || "?"} | Note: ${j.rmis_note || ""}`,
-      recommended_action: j.compliance_action,
+      alert_type:         meta.alert_type,
+      title:              meta.compliance_issue || "Compliance issue",
+      message:            `Driver: ${meta.driver_name || "Unknown"} | Truck: ${meta.truck_number || "?"} | Job: ${meta.friendly_job_id || "?"} | Note: ${meta.rmis_note || ""}`,
+      recommended_action: meta.compliance_action,
       status:             "open",
     }));
 
