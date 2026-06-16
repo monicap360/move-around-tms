@@ -105,13 +105,17 @@ async function syncTaskForDoc(
     title,
     priority,
     status:              "open",
-    assigned_to_name:    "Sylvia",
+    assigned_to_name:    "CCB",
     owner_operator_id:   ooId,
     owner_operator_name: ooName,
     document_type,
     coi_document_id:     docId,
     due_date:            dueDate,
     description:         `Auto-created. OO: ${ooName}. COI: ${label}. Status: ${status}.`,
+    source_type:         "oo",
+    source_label:        `OO: ${ooName}`,
+    entity_type:         "oo",
+    entity_id:           ooId,
   }).select("id").maybeSingle(); // ignore unique conflict silently
 }
 

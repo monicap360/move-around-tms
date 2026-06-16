@@ -91,6 +91,26 @@ export async function POST(request: NextRequest) {
 
     if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
 
+    // Close any open Sylvia compliance tasks tied to this driver + doc type
+    const closeTypes: Record<string, string[]> = {
+      "CDL Front":       ["cdl_expiring","cdl_missing","cdl_front_missing","driver_doc"],
+      "CDL Back":        ["cdl_back_missing","driver_doc"],
+      "Medical Card":    ["medical_expiring","medical_missing","driver_doc"],
+      "MVR":             ["mvr_expiring","mvr_missing","driver_doc"],
+      "Drug Test":       ["drug_test_missing","driver_doc"],
+      "Background Check":["background_check_missing","driver_doc"],
+    };
+    const taskTypesToClose = closeTypes[docType || ""] || [];
+    if (taskTypesToClose.length > 0) {
+      await supabase
+        .from("ronyx_staff_tasks")
+        .update({ status: "completed", completed_at: new Date().toISOString(), completion_notes: `${docType} uploaded`, updated_at: new Date().toISOString() })
+        .eq("entity_type", "driver")
+        .eq("entity_id", driverId)
+        .in("task_type", taskTypesToClose)
+        .eq("status", "open");
+    }
+
     // Return with aliased fields for frontend compatibility
     return NextResponse.json({
       document: { ...doc, doc_type: doc.document_type, file_url: doc.file_path }

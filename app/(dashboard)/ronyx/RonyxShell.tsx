@@ -122,8 +122,14 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "Staff",
     items: [
-      { label: "Mission Start™",   href: "/ronyx/staff/my-dashboard",   icon: "🎯", color: "#1e40af" },
-      { label: "Team Momentum",    href: "/ronyx/staff/team-momentum",  icon: "📊", color: "#7c3aed" },
+      { label: "Staff To-Do Lists", href: "/ronyx/tasks",                icon: "✅", color: "#15803d", children: [
+        { label: "CCB (Insurance)",      href: "/ronyx/tasks?tab=CCB",    icon: "🛡️", color: "#1d4ed8" },
+        { label: "Sylvia (Compliance)",  href: "/ronyx/tasks?tab=Sylvia", icon: "📋", color: "#7c3aed" },
+        { label: "Team (General)",       href: "/ronyx/tasks?tab=Team",   icon: "👥", color: "#0891b2" },
+        { label: "All Tasks",            href: "/ronyx/tasks?tab=All",    icon: "📌", color: "#475569" },
+      ]},
+      { label: "Mission Start™",    href: "/ronyx/staff/my-dashboard",   icon: "🎯", color: "#1e40af" },
+      { label: "Team Momentum",     href: "/ronyx/staff/team-momentum",  icon: "📊", color: "#7c3aed" },
     ],
   },
   {
