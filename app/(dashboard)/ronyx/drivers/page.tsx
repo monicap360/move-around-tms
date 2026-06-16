@@ -1747,31 +1747,31 @@ export default function DriversPage() {
             /* ── Expandable List View ── */
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1200, tableLayout: "fixed" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 940, tableLayout: "fixed" }}>
                   <colgroup>
-                    <col style={{ width: 40 }} />
-                    <col style={{ width: 170 }} />
-                    <col style={{ width: 92 }} />
+                    <col style={{ width: 36 }} />
+                    <col style={{ width: 152 }} />
+                    <col style={{ width: 80 }} />
+                    <col style={{ width: 56 }} />
+                    <col style={{ width: 60 }} />
+                    <col style={{ width: 80 }} />
+                    <col style={{ width: 80 }} />
+                    <col style={{ width: 80 }} />
                     <col style={{ width: 68 }} />
-                    <col style={{ width: 72 }} />
-                    <col style={{ width: 96 }} />
-                    <col style={{ width: 96 }} />
-                    <col style={{ width: 96 }} />
-                    <col style={{ width: 84 }} />
-                    <col style={{ width: 256 }} />
+                    <col style={{ width: 208 }} />
                   </colgroup>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                      <th style={{ padding: "10px 12px" }}></th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Driver</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Truck</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>CDL Exp</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>MVR Exp</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Medical</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Docs</th>
-                      <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
+                      <th style={{ padding: "9px 8px" }}></th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Driver</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Truck</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>CDL Exp</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>MVR Exp</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Medical</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Docs</th>
+                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1787,43 +1787,43 @@ export default function DriversPage() {
                             onClick={() => setExpandedId(isExpanded ? null : driver.id)}
                             style={{ borderBottom: "1px solid #f1f5f9", background: isExpanded ? "#f0f9ff" : idx % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer", transition: "background 0.12s" }}
                           >
-                            <td style={{ padding: "9px 12px", textAlign: "center" }}>
-                              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0f172a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, margin: "0 auto" }}>
+                            <td style={{ padding: "8px 6px", textAlign: "center" }}>
+                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#0f172a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, margin: "0 auto" }}>
                                 {driver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
                               </div>
                             </td>
-                            <td style={{ padding: "9px 12px" }}>
-                              <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", whiteSpace: "nowrap" }}>{driver.name}</div>
-                              <div style={{ fontSize: 11, color: "#64748b" }}>{driver.phone !== "—" ? driver.phone : driver.email}</div>
+                            <td style={{ padding: "8px 8px" }}>
+                              <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{driver.name}</div>
+                              <div style={{ fontSize: 10, color: "#64748b" }}>{driver.phone !== "—" ? driver.phone : driver.email}</div>
                             </td>
-                            <td style={{ padding: "9px 12px" }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 8, background: stBg, color: stColor, display: "inline-block", whiteSpace: "nowrap" }}>{driver.status}</span>
+                            <td style={{ padding: "8px 8px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 8, background: stBg, color: stColor, display: "inline-block", whiteSpace: "nowrap" }}>{driver.status}</span>
                             </td>
-                            <td style={{ padding: "9px 12px", fontSize: 12, color: "#475569", whiteSpace: "nowrap" }}>{driver.driverType}</td>
-                            <td style={{ padding: "9px 12px", fontSize: 12, color: "#0f172a", fontWeight: 600, whiteSpace: "nowrap" }}>{driver.truck}</td>
-                            <td style={{ padding: "9px 12px", fontSize: 11, color: "#475569", whiteSpace: "nowrap" }}>{driver.cdlExp}</td>
-                            <td style={{ padding: "9px 12px", fontSize: 11, color: driver.mvrExp === "Expired" ? "#991b1b" : "#475569", whiteSpace: "nowrap" }}>{driver.mvrExp}</td>
-                            <td style={{ padding: "9px 12px", fontSize: 11, color: driver.medicalExp === "Expired" ? "#991b1b" : "#475569", whiteSpace: "nowrap" }}>{driver.medicalExp}</td>
-                            <td style={{ padding: "9px 12px" }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: docBg, color: docColor, whiteSpace: "nowrap" }}>
-                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "! Expiring" : driver.docs === "Expired" ? "✗ Expired" : "? Missing"}
+                            <td style={{ padding: "8px 8px", fontSize: 11, color: "#475569", whiteSpace: "nowrap" }}>{driver.driverType}</td>
+                            <td style={{ padding: "8px 8px", fontSize: 11, color: "#0f172a", fontWeight: 600, whiteSpace: "nowrap" }}>{driver.truck}</td>
+                            <td style={{ padding: "8px 8px", fontSize: 11, color: "#475569", whiteSpace: "nowrap" }}>{driver.cdlExp}</td>
+                            <td style={{ padding: "8px 8px", fontSize: 11, color: driver.mvrExp === "Expired" ? "#991b1b" : "#475569", whiteSpace: "nowrap" }}>{driver.mvrExp}</td>
+                            <td style={{ padding: "8px 8px", fontSize: 11, color: driver.medicalExp === "Expired" ? "#991b1b" : "#475569", whiteSpace: "nowrap" }}>{driver.medicalExp}</td>
+                            <td style={{ padding: "8px 8px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: docBg, color: docColor, whiteSpace: "nowrap" }}>
+                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "! Exp" : driver.docs === "Expired" ? "✗ Exp'd" : "? Miss"}
                               </span>
                             </td>
-                            <td style={{ padding: "9px 12px" }} onClick={e => e.stopPropagation()}>
-                              <div style={{ display: "flex", gap: 4 }}>
+                            <td style={{ padding: "8px 8px" }} onClick={e => e.stopPropagation()}>
+                              <div style={{ display: "flex", gap: 3 }}>
                                 <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
-                                  <button style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Profile</button>
+                                  <button style={{ padding: "3px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Profile</button>
                                 </Link>
                                 <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ textDecoration: "none" }}>
-                                  <button style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Docs</button>
+                                  <button style={{ padding: "3px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Docs</button>
                                 </Link>
-                                <button onClick={() => setAssignTarget({ driver })} style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Truck</button>
+                                <button onClick={() => setAssignTarget({ driver })} style={{ padding: "3px 7px", borderRadius: 5, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Truck</button>
                                 <button
                                   onClick={() => { setAssignOOTarget(driver); setOOSearch(""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
-                                  style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                                  style={{ padding: "3px 6px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                                 >OO</button>
-                                <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #fed7aa", background: "#fff7ed", color: "#d97706", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Archive</button>
-                                <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff1f2", color: "#dc2626", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Delete</button>
+                                <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ padding: "3px 6px", borderRadius: 5, border: "1px solid #fed7aa", background: "#fff7ed", color: "#d97706", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Arch</button>
+                                <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ padding: "3px 6px", borderRadius: 5, border: "1px solid #fca5a5", background: "#fff1f2", color: "#dc2626", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Del</button>
                               </div>
                             </td>
                           </tr>
