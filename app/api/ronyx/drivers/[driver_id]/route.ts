@@ -71,6 +71,21 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
+  // ── Direct driver field update (owner_operator_company, notes, etc.) ──
+  const directFields = ["owner_operator_company", "notes", "job_assignment", "company_name", "pay_rate", "pay_type", "status"];
+  const directUpdate: Record<string, unknown> = {};
+  for (const field of directFields) {
+    if (body[field] !== undefined) directUpdate[field] = body[field];
+  }
+  if (Object.keys(directUpdate).length > 0) {
+    const { error: directErr } = await supabase
+      .from("drivers")
+      .update(directUpdate)
+      .eq("id", driverId);
+    if (directErr) return NextResponse.json({ error: directErr.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
   // ── Compliance / dispatch profile update ──────────────────────
   const profileUpdate: Record<string, unknown> = {};
 

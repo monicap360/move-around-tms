@@ -1204,6 +1204,11 @@ export default function DriversPage() {
   const [assignTarget, setAssignTarget] = useState<{ driver: Driver | null } | null>(null);
   const [uploadTarget, setUploadTarget] = useState<{ driver?: Driver; docType?: string } | null>(null);
   const [importOpen, setImportOpen]     = useState(false);
+  const [deduping, setDeduping]         = useState(false);
+  const [assignOOTarget, setAssignOOTarget] = useState<Driver | null>(null);
+  const [ooList, setOOList]             = useState<{ id: string; company_name: string }[]>([]);
+  const [ooSearch, setOOSearch]         = useState("");
+  const [ooSaving, setOOSaving]         = useState(false);
   const urlTab = searchParams.get("tab") as "roster" | "backup" | "import" | null;
   const [activeTab, setActiveTab]       = useState<"roster" | "backup">(urlTab === "backup" ? "backup" : "roster");
   const [backupRows, setBackupRows]     = useState<BackupDriverRow[]>([]);
@@ -1381,6 +1386,28 @@ export default function DriversPage() {
             style={{ background: "#1d4ed8", color: "#fff", border: "none" }}
           >
             ⬆ Import Driver List
+          </button>
+          <button
+            className="premium-button dark"
+            disabled={deduping}
+            onClick={async () => {
+              if (!window.confirm("Remove all duplicate driver records? This keeps the oldest copy of each driver and permanently deletes extras.")) return;
+              setDeduping(true);
+              try {
+                const res = await fetch("/api/ronyx/drivers/dedup", { method: "POST" });
+                const data = await res.json();
+                if (!res.ok) { showToast(`Dedup failed: ${data.error}`); return; }
+                showToast(data.message);
+                // Reload driver list
+                const listRes = await fetch("/api/ronyx/drivers/list");
+                const listData = await listRes.json();
+                setAllDrivers((listData.drivers || []).map(mapApiDriver));
+              } catch { showToast("Dedup failed — check connection."); }
+              finally { setDeduping(false); }
+            }}
+            style={{ background: deduping ? "#94a3b8" : "#dc2626", color: "#fff", border: "none" }}
+          >
+            {deduping ? "Removing…" : "🗑 Remove Duplicates"}
           </button>
           <Link href="/ronyx/drivers/new" className="premium-button primary">
             + Add Driver
@@ -1695,7 +1722,21 @@ export default function DriversPage() {
                         <Link href={`/ronyx/drivers/${driver.id}?tab=documents`}>
                           <button>Documents</button>
                         </Link>
-                        <button onClick={() => setAssignTarget({ driver })}>Assign</button>
+                        <button onClick={() => setAssignTarget({ driver })}>Assign Truck</button>
+                        <button
+                          onClick={() => {
+                            setAssignOOTarget(driver);
+                            setOOSearch("");
+                            if (ooList.length === 0) {
+                              fetch("/api/ronyx/owner-operators")
+                                .then(r => r.json())
+                                .then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name }))));
+                            }
+                          }}
+                          style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                        >
+                          Assign to OO
+                        </button>
                         <button
                           onClick={() => setConfirmAction({ type: "archive", driver })}
                           style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
@@ -1781,6 +1822,99 @@ export default function DriversPage() {
           )}
         </aside>
       </section>
+      )}
+
+      {/* ── Assign to Owner Operator Modal ── */}
+      {assignOOTarget && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(15,23,42,0.65)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: 18, padding: 32, width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: "1.1rem", color: "#0f172a" }}>Assign to Owner Operator</div>
+                <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: 2 }}>Driver: <strong>{assignOOTarget.name}</strong></div>
+              </div>
+              <button onClick={() => setAssignOOTarget(null)} style={{ background: "none", border: "none", fontSize: "1.3rem", cursor: "pointer", color: "#94a3b8" }}>✕</button>
+            </div>
+
+            {assignOOTarget.owner_operator_company && (
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 9, padding: "10px 14px", marginBottom: 16, fontSize: "0.78rem", color: "#1d4ed8", fontWeight: 600 }}>
+                Currently assigned to: {assignOOTarget.owner_operator_company}
+              </div>
+            )}
+
+            <input
+              type="text"
+              placeholder="Search owner operators…"
+              value={ooSearch}
+              onChange={e => setOOSearch(e.target.value)}
+              style={{ border: "1.5px solid #e2e8f0", borderRadius: 9, padding: "10px 14px", fontSize: "0.88rem", marginBottom: 12, outline: "none", width: "100%", boxSizing: "border-box" }}
+              autoFocus
+            />
+
+            <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* Clear assignment option */}
+              <button
+                onClick={async () => {
+                  setOOSaving(true);
+                  await fetch(`/api/ronyx/drivers/${assignOOTarget.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ owner_operator_company: null }),
+                  });
+                  setAllDrivers(prev => prev.map(d => d.id === assignOOTarget.id ? { ...d, owner_operator_company: "" } : d));
+                  showToast(`${assignOOTarget.name} unassigned from owner operator.`);
+                  setAssignOOTarget(null);
+                  setOOSaving(false);
+                }}
+                style={{ padding: "10px 14px", borderRadius: 9, border: "1px dashed #e2e8f0", background: "#f8fafc", color: "#94a3b8", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", textAlign: "left" }}
+              >
+                🚫 Remove OO Assignment
+              </button>
+
+              {ooList.length === 0 && (
+                <div style={{ color: "#94a3b8", fontSize: "0.8rem", textAlign: "center", padding: "20px 0" }}>Loading owner operators…</div>
+              )}
+
+              {ooList
+                .filter(oo => !ooSearch || oo.company_name.toLowerCase().includes(ooSearch.toLowerCase()))
+                .map(oo => (
+                  <button
+                    key={oo.id}
+                    disabled={ooSaving}
+                    onClick={async () => {
+                      setOOSaving(true);
+                      const res = await fetch(`/api/ronyx/drivers/${assignOOTarget.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ owner_operator_company: oo.company_name }),
+                      });
+                      if (res.ok) {
+                        setAllDrivers(prev => prev.map(d => d.id === assignOOTarget.id ? { ...d, owner_operator_company: oo.company_name } : d));
+                        showToast(`${assignOOTarget.name} assigned to ${oo.company_name}.`);
+                        setAssignOOTarget(null);
+                      } else {
+                        showToast("Failed to assign — try again.");
+                      }
+                      setOOSaving(false);
+                    }}
+                    style={{ padding: "12px 16px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: assignOOTarget.owner_operator_company === oo.company_name ? "#eff6ff" : "#fff", color: "#0f172a", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <span style={{ fontSize: "1.1rem" }}>🏢</span>
+                    <span>{oo.company_name}</span>
+                    {assignOOTarget.owner_operator_company === oo.company_name && <span style={{ marginLeft: "auto", fontSize: "0.7rem", color: "#1d4ed8", fontWeight: 700 }}>✓ Current</span>}
+                  </button>
+                ))}
+
+              {ooList.length > 0 && ooList.filter(oo => !ooSearch || oo.company_name.toLowerCase().includes(ooSearch.toLowerCase())).length === 0 && (
+                <div style={{ color: "#94a3b8", fontSize: "0.8rem", textAlign: "center", padding: "20px 0" }}>No owner operators match "{ooSearch}"</div>
+              )}
+            </div>
+
+            <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={() => setAssignOOTarget(null)} style={{ padding: "9px 20px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Modals ── */}
