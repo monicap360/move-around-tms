@@ -97,6 +97,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const QUICK_ACTIONS = [
+  { label: "Smart Import",          icon: "📤", href: "/ronyx/import" },
   { label: "Start Fast Scan Batch", icon: "⚡", href: "/ronyx/tickets?tab=fastscan&action=start_batch" },
   { label: "New Ticket",            icon: "🎫", href: "/ronyx/tickets?action=new" },
   { label: "Upload Driver Sheet",   icon: "⬆️", href: "/ronyx/drivers?tab=import" },
@@ -561,6 +562,41 @@ export default function RonyxShell({
         .tms-mbb-btn:hover { color: #e2e8f0; }
         .tms-mbb-btn.active { color: #16a34a; }
         .tms-mbb-icon { font-size: 1.25rem; }
+
+        /* ── Smart Import FAB ────────────────────────── */
+        .tms-smart-import-fab {
+          position: fixed;
+          bottom: 28px;
+          right: 28px;
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #1e40af 0%, #4f46e5 100%);
+          color: #fff;
+          border: none;
+          border-radius: 50px;
+          padding: 13px 20px;
+          font-size: 0.85rem;
+          font-weight: 800;
+          cursor: pointer;
+          box-shadow: 0 8px 25px rgba(79,70,229,0.45);
+          text-decoration: none;
+          transition: transform 140ms ease, box-shadow 140ms ease;
+          letter-spacing: -0.2px;
+          white-space: nowrap;
+        }
+        .tms-smart-import-fab:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(79,70,229,0.55);
+        }
+        .tms-smart-import-fab.on-import-page {
+          background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+          box-shadow: 0 8px 25px rgba(22,101,52,0.4);
+        }
+        @media (max-width: 900px) {
+          .tms-smart-import-fab { bottom: 68px; right: 16px; padding: 11px 16px; font-size: 0.78rem; }
+        }
       `}</style>
 
       {/* ── Sidebar ─────────────────────────────────── */}
@@ -690,6 +726,16 @@ export default function RonyxShell({
 
         <main className="tms-content">{children}</main>
       </div>
+
+      {/* Smart Import floating button */}
+      <Link
+        href="/ronyx/import"
+        className={`tms-smart-import-fab${pathname === "/ronyx/import" ? " on-import-page" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      >
+        <span style={{ fontSize: "1.1rem" }}>📤</span>
+        {pathname === "/ronyx/import" ? "Smart Import (active)" : "Smart Import"}
+      </Link>
 
       {/* Mobile bottom bar */}
       <nav className="tms-mobile-bottom" style={{ display: "none" }}>
