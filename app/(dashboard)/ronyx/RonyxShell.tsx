@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import PageProtection from "@/components/security/PageProtection";
 
 type NavChild = {
   label:  string;
@@ -230,6 +231,7 @@ export default function RonyxShell({
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+      <PageProtection />
       <style>{`
         * { box-sizing: border-box; }
         body { margin: 0; }
