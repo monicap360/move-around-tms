@@ -3,59 +3,63 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const BUCKET = "ronyx-driver-documents";
-const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
-const ALLOWED_TYPES = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-];
+const BUCKET    = "ronyx-driver-documents";
+const MAX_SIZE  = 20 * 1024 * 1024; // 20 MB
+const ALLOWED   = ["application/pdf","image/jpeg","image/png","image/webp","image/heic","image/heif"];
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
-  const driverId = new URL(request.url).searchParams.get("driverId");
-  if (!driverId) {
-    return NextResponse.json({ error: "Missing driverId" }, { status: 400 });
-  }
+  const supabase  = createSupabaseServerClient();
+  const driverId  = new URL(request.url).searchParams.get("driverId");
+  if (!driverId) return NextResponse.json({ error: "Missing driverId" }, { status: 400 });
+
   const { data, error } = await supabase
-    .from("ronyx_driver_documents")
+    .from("driver_documents")
     .select("*")
     .eq("driver_id", driverId)
-    .order("uploaded_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ documents: data || [] });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Normalize: expose doc_type and file_url aliases so the frontend works either way
+  const documents = (data || []).map((d: any) => ({
+    ...d,
+    doc_type: d.document_type || d.doc_type || "",
+    file_url: d.file_path     || d.file_url || d.image_url || "",
+  }));
+
+  return NextResponse.json({ documents });
 }
 
-// POST — supports both multipart (file upload) and JSON (metadata only)
 export async function POST(request: NextRequest) {
   const contentType = request.headers.get("content-type") || "";
-  const supabase = createSupabaseServerClient();
+  const supabase    = createSupabaseServerClient();
 
   if (contentType.includes("multipart/form-data")) {
-    // ── File upload path ──────────────────────────────────────────────────
-    const formData = await request.formData();
-    const file     = formData.get("file") as File | null;
-    const driverId = formData.get("driver_id") as string | null;
-    const docType  = formData.get("doc_type")  as string | null;
-    const expiresOn = formData.get("expires_on") as string | null;
+    const formData  = await request.formData();
+    const file      = formData.get("file")      as File   | null;
+    const driverId  = formData.get("driver_id") as string | null;
+    const docType   = formData.get("doc_type")  as string | null;
+    const expiresOn = formData.get("expires_on")as string | null;
 
-    if (!driverId || !docType) {
-      return NextResponse.json({ error: "Missing driver_id or doc_type" }, { status: 400 });
-    }
-    if (!file) {
-      return NextResponse.json({ error: "No file attached" }, { status: 400 });
-    }
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: `File type not allowed. Use PDF, JPG, PNG, or WEBP.` }, { status: 400 });
-    }
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File too large (max 20 MB)" }, { status: 400 });
-    }
+    if (!driverId || !docType) return NextResponse.json({ error: "Missing driver_id or doc_type" }, { status: 400 });
+    if (!file)                 return NextResponse.json({ error: "No file attached" }, { status: 400 });
+    if (file.size > MAX_SIZE)  return NextResponse.json({ error: "File too large (max 20 MB)" }, { status: 400 });
+
+    // Accept any image or PDF — HEIC from iPhone comes as image/heic or image/heif
+    const mimeOk = ALLOWED.includes(file.type) || file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!mimeOk) return NextResponse.json({ error: "Use PDF, JPG, PNG, WEBP, or HEIC" }, { status: 400 });
+
+    // Resolve org_id from the driver record
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("organization_id")
+      .eq("id", driverId)
+      .maybeSingle();
+    const orgId = driver?.organization_id ?? null;
+
+    // Upload to Storage
+    const ext      = file.name.split(".").pop() || "bin";
+    const filePath = `${driverId}/${Date.now()}-${docType.replace(/\s+/g, "-")}.${ext}`;
 
     // Ensure bucket exists
     const { data: buckets } = await supabase.storage.listBuckets();
@@ -63,72 +67,79 @@ export async function POST(request: NextRequest) {
       await supabase.storage.createBucket(BUCKET, { public: true });
     }
 
-    // Upload to Storage
-    const ext      = file.name.split(".").pop() || "bin";
-    const filePath = `${driverId}/${Date.now()}-${docType.replace(/\s+/g, "-")}.${ext}`;
     const { error: uploadErr } = await supabase.storage
       .from(BUCKET)
-      .upload(filePath, await file.arrayBuffer(), { contentType: file.type, upsert: false });
+      .upload(filePath, await file.arrayBuffer(), { contentType: file.type, upsert: true });
 
-    if (uploadErr) {
-      return NextResponse.json({ error: "Storage upload failed: " + uploadErr.message }, { status: 500 });
-    }
+    if (uploadErr) return NextResponse.json({ error: "Storage upload failed: " + uploadErr.message }, { status: 500 });
 
     const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-    const fileUrl = urlData.publicUrl;
+    const publicUrl = urlData.publicUrl;
 
-    // Save record
-    const { data, error } = await supabase
-      .from("ronyx_driver_documents")
+    // Insert record using actual column names
+    const { data: doc, error: insertErr } = await supabase
+      .from("driver_documents")
       .insert({
-        driver_id:   driverId,
-        doc_type:    docType,
-        status:      "uploaded",
-        expires_on:  expiresOn || null,
-        file_url:    fileUrl,
-        updated_at:  new Date().toISOString(),
+        driver_id:       driverId,
+        organization_id: orgId,
+        document_type:   docType,
+        file_path:       publicUrl,
+        expires_on:      expiresOn || null,
       })
       .select("*")
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json({ document: data }, { status: 201 });
+    if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
 
-  } else {
-    // ── JSON metadata-only path (backward compat) ─────────────────────────
-    const payload = await request.json();
-    if (!payload?.driver_id || !payload?.doc_type) {
-      return NextResponse.json({ error: "Missing driver_id or doc_type" }, { status: 400 });
-    }
-    const { data, error } = await supabase
-      .from("ronyx_driver_documents")
-      .insert({ ...payload, updated_at: new Date().toISOString() })
-      .select("*")
-      .single();
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json({ document: data }, { status: 201 });
+    // Return with aliased fields for frontend compatibility
+    return NextResponse.json({
+      document: { ...doc, doc_type: doc.document_type, file_url: doc.file_path }
+    }, { status: 201 });
   }
+
+  // JSON metadata-only path
+  const payload = await request.json().catch(() => null);
+  if (!payload?.driver_id || !payload?.doc_type) {
+    return NextResponse.json({ error: "Missing driver_id or doc_type" }, { status: 400 });
+  }
+  const { data: driver } = await supabase
+    .from("drivers")
+    .select("organization_id")
+    .eq("id", payload.driver_id)
+    .maybeSingle();
+
+  const { data: doc, error } = await supabase
+    .from("driver_documents")
+    .insert({
+      driver_id:       payload.driver_id,
+      organization_id: driver?.organization_id ?? null,
+      document_type:   payload.doc_type,
+      file_path:       payload.file_url || null,
+      expires_on:      payload.expires_on || null,
+    })
+    .select("*")
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ document: { ...doc, doc_type: doc.document_type, file_url: doc.file_path } }, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
-  const payload = await request.json();
-  if (!payload?.id) {
-    return NextResponse.json({ error: "Missing document id" }, { status: 400 });
-  }
+  const payload = await request.json().catch(() => null);
+  if (!payload?.id) return NextResponse.json({ error: "Missing document id" }, { status: 400 });
   const supabase = createSupabaseServerClient();
-  const { id, ...rest } = payload;
+  const { id, doc_type, file_url, ...rest } = payload;
   const { data, error } = await supabase
-    .from("ronyx_driver_documents")
-    .update({ ...rest, updated_at: new Date().toISOString() })
+    .from("driver_documents")
+    .update({
+      ...rest,
+      ...(doc_type  ? { document_type: doc_type  } : {}),
+      ...(file_url  ? { file_path:     file_url   } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
     .select("*")
     .single();
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ document: data });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ document: { ...data, doc_type: data.document_type, file_url: data.file_path } });
 }
