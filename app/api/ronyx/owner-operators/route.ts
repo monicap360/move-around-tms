@@ -8,7 +8,12 @@ const REQUIRED_OOS = [
   { company_name: "TC Redwine Services, LLC",          business_address: "",                                    status: "active" },
   { company_name: "BAS Equipment & Trucking LLC",       business_address: "P.O. Box 36, Throckmorton, TX 76483", status: "active" },
   { company_name: "M.A. Mortenson Company",            business_address: "700 Meadow Ln, Minneapolis MN 55422", status: "active" },
-  { company_name: "J&J Alvarado LLC", status: "active" },
+  {
+    company_name:     "J&J Alvarado LLC",
+    business_address: "3172 Mimosa St, Port Arthur, TX 77640",
+    ein:              "84-2207150",
+    status:           "active",
+  },
   {
     company_name:          "Denesse Group Inc",
     business_address:      "23433 Dome St, Moreno Valley, CA 92553",
@@ -17,6 +22,16 @@ const REQUIRED_OOS = [
     contact_phone:         "323-712-5010",
     ein:                   "83-3084898",
     dot_number:            "484120",
+    status:                "active",
+  },
+  {
+    company_name:          "Fan Fan Trucking LLC",
+    business_address:      "2600 Twin City Hwy APT 3, Groves, TX 77619",
+    contact_name:          "Alexander Bandera Sanchez",
+    contact_email:         "alexanderbanderasanchez90@gmail.com",
+    contact_phone:         "409-293-7900",
+    ein:                   "99-4549020",
+    dot_number:            "4448005",
     status:                "active",
   },
 ];
@@ -65,13 +80,37 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Ensure required OO companies always exist
-  const existingNames = (oos || []).map((o: any) => o.company_name.toLowerCase());
-  const missing = REQUIRED_OOS.filter(
-    (r) => !existingNames.includes(r.company_name.toLowerCase())
-  );
-  if (missing.length > 0) {
-    await sb.from("ronyx_owner_operators").insert(missing);
+  // Ensure required OO companies exist and have their known fields filled in
+  const existing = oos || [];
+  const missing: typeof REQUIRED_OOS = [];
+  const updates: { id: string; patch: Record<string, string> }[] = [];
+
+  for (const req of REQUIRED_OOS) {
+    const found = existing.find(
+      (o: any) => o.company_name.toLowerCase() === req.company_name.toLowerCase()
+    );
+    if (!found) {
+      missing.push(req);
+    } else {
+      // Back-fill any known fields the DB record is missing
+      const patch: Record<string, string> = {};
+      if (!found.ein              && (req as any).ein)              patch.ein              = (req as any).ein;
+      if (!found.business_address && (req as any).business_address) patch.business_address = (req as any).business_address;
+      if (!found.contact_name     && (req as any).contact_name)     patch.contact_name     = (req as any).contact_name;
+      if (!found.contact_email    && (req as any).contact_email)    patch.contact_email    = (req as any).contact_email;
+      if (!found.contact_phone    && (req as any).contact_phone)    patch.contact_phone    = (req as any).contact_phone;
+      if (!found.dot_number       && (req as any).dot_number)       patch.dot_number       = (req as any).dot_number;
+      if (Object.keys(patch).length > 0) updates.push({ id: found.id, patch });
+    }
+  }
+
+  const needsRefresh = missing.length > 0 || updates.length > 0;
+  if (missing.length > 0) await sb.from("ronyx_owner_operators").insert(missing);
+  for (const { id, patch } of updates) {
+    await sb.from("ronyx_owner_operators").update(patch).eq("id", id);
+  }
+
+  if (needsRefresh) {
     const { data: refreshed } = await sb
       .from("ronyx_owner_operators")
       .select("*")
@@ -79,7 +118,7 @@ export async function GET() {
     return buildResponse(sb, refreshed || []);
   }
 
-  return buildResponse(sb, oos || []);
+  return buildResponse(sb, existing);
 }
 
 /* ── POST /api/ronyx/owner-operators ── create new OO company */

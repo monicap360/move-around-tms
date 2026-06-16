@@ -335,7 +335,10 @@ export default function OwnerOperatorsPage() {
   }
   function openOO(oo: OOCompany) { setSelected(oo); setView("detail"); setActiveTab("overview"); }
 
-  // Add company (+ optional inline drivers)
+  // Track the last auto-created agreement ID so we can show a link
+  const [lastAgreementToken, setLastAgreementToken] = useState<string | null>(null);
+
+  // Add company (+ optional inline drivers) → auto-create draft subhauler agreement
   async function addCompany() {
     if (!newCompanyForm.company_name.trim()) { flash("Company name is required."); return; }
     const { company, error } = await apiPost("/api/ronyx/owner-operators", newCompanyForm);
@@ -349,11 +352,31 @@ export default function OwnerOperatorsPage() {
       if (driver) savedDrivers.push({ id: driver.id, name: driver.name, cdl_number: driver.cdl_number||"", cdl_state: driver.cdl_state||"TX", cdl_expiration: driver.cdl_expiration||"", med_card_expiration: driver.med_card_expiration||"", phone: driver.phone||"" });
     }
 
+    // Auto-create a draft subhauler agreement pre-filled with this OO's info
+    const { agreement } = await apiPost("/api/ronyx/subhauler-agreements", {
+      subhauler_company: company.company_name,
+      subhauler_address: company.business_address || "",
+      subhauler_attn:    company.contact_name    || "",
+      subhauler_phone:   company.contact_phone   || "",
+      subhauler_email:   company.contact_email   || "",
+      status:            "draft",
+    });
+    if (agreement?.sign_token) setLastAgreementToken(agreement.sign_token);
+
     persist([{ ...company, drivers: savedDrivers }, ...companies]);
     setShowAddCompany(false);
     setNewCompanyForm({ ...EMPTY_COMPANY });
     setNewOODrivers([]);
-    flash(`${company.company_name} added${savedDrivers.length ? ` with ${savedDrivers.length} driver(s)` : ""}.`);
+    flash(`${company.company_name} added${savedDrivers.length ? ` with ${savedDrivers.length} driver(s)` : ""}. Contract package draft created.`);
+  }
+
+  // Delete OO company
+  async function deleteOO(oo: OOCompany) {
+    if (!confirm(`Delete "${oo.company_name}"? This cannot be undone.`)) return;
+    const res = await fetch(`/api/ronyx/owner-operators/${oo.id}`, { method: "DELETE" });
+    if (!res.ok) { flash("Delete failed."); return; }
+    persist(companies.filter((c) => c.id !== oo.id));
+    flash(`${oo.company_name} deleted.`);
   }
 
   // Driver CRUD
@@ -455,6 +478,13 @@ export default function OwnerOperatorsPage() {
     return (
       <div style={{ maxWidth: 1100 }}>
         {toast && <Toast msg={toast} />}
+        {lastAgreementToken && (
+          <div style={{ position: "fixed", top: 20, right: 20, zIndex: 10000, padding: "12px 20px", borderRadius: 10, background: "#1e3a8a", color: "#fff", fontSize: 13, fontWeight: 600, boxShadow: "0 4px 20px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", gap: 12 }}>
+            <span>📄 Contract package draft created</span>
+            <a href="/ronyx/subhauler-agreement" style={{ color: "#93c5fd", fontWeight: 700, textDecoration: "underline" }}>Review & Send →</a>
+            <button onClick={() => setLastAgreementToken(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+          </div>
+        )}
         <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(pendingDocRef.current, f); e.target.value = ""; }} />
 
         {/* Header */}
@@ -629,6 +659,13 @@ export default function OwnerOperatorsPage() {
                       ⚠ {actions.length} action{actions.length>1?"s":""} required
                     </span>
                   )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteOO(oo); }}
+                    title="Delete owner operator"
+                    style={{ marginLeft: "auto", background: "#fee2e2", border: "1px solid #fecaca", color: "#991b1b", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             );

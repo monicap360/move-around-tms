@@ -74,6 +74,12 @@ export default function ContractsPage() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [form, setForm] = useState({ ...BLANK_FORM });
 
+  // Expiration override modal
+  const [overrideContract, setOverrideContract] = useState<Contract | null>(null);
+  const [overrideDate, setOverrideDate] = useState("");
+  const [overrideReason, setOverrideReason] = useState("");
+  const [overriding, setOverriding] = useState(false);
+
   useEffect(() => {
     void Promise.all([loadContracts(), loadCustomers()]);
   }, []);
@@ -187,6 +193,61 @@ export default function ContractsPage() {
       setContracts((prev) => prev.filter((c) => c.id !== id));
     } catch (err: any) {
       showToast(err.message || "Delete failed", false);
+    }
+  }
+
+  async function applyOverride() {
+    if (!overrideContract || !overrideDate) return;
+    setOverriding(true);
+    try {
+      const wasExpired = overrideContract.status === "expired";
+      const payload = {
+        id:       overrideContract.id,
+        end_date: overrideDate,
+        ...(wasExpired ? { status: "active" } : {}),
+      };
+      const res = await fetch("/api/ronyx/contracts", {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Update failed");
+
+      // Update local state
+      setContracts((prev) => prev.map((c) =>
+        c.id === overrideContract.id
+          ? { ...c, end_date: overrideDate, ...(wasExpired ? { status: "active" } : {}) }
+          : c
+      ));
+
+      // Send manager notification
+      await fetch("/api/email/send", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to:      "ronyxlogistics@gmail.com",
+          subject: `Contract End Date Override — ${overrideContract.company_name}`,
+          html: `<p><strong>Contract expiration date has been overridden.</strong></p>
+            <ul>
+              <li><strong>Company:</strong> ${overrideContract.company_name}</li>
+              <li><strong>Previous end date:</strong> ${overrideContract.end_date || "none"}</li>
+              <li><strong>New end date:</strong> ${overrideDate}</li>
+              <li><strong>Status:</strong> ${wasExpired ? "Reactivated → Active" : "Unchanged"}</li>
+              <li><strong>Reason:</strong> ${overrideReason || "No reason provided"}</li>
+              <li><strong>Override applied:</strong> ${new Date().toLocaleString()}</li>
+            </ul>`,
+        }),
+      });
+
+      showToast(`End date updated${wasExpired ? " — contract reactivated" : ""}. Manager notified.`);
+      setOverrideContract(null);
+      setOverrideDate("");
+      setOverrideReason("");
+    } catch (err: any) {
+      showToast(err.message || "Override failed", false);
+    } finally {
+      setOverriding(false);
     }
   }
 
@@ -360,6 +421,60 @@ export default function ContractsPage() {
         </section>
       )}
 
+      {/* Override end-date modal */}
+      {overrideContract && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>Override End Date</h2>
+            <p style={{ margin: "0 0 18px", fontSize: 12, color: "#64748b" }}>
+              <strong>{overrideContract.company_name}</strong> — current end date: <strong>{overrideContract.end_date ? fmtDate(overrideContract.end_date) : "none"}</strong>
+              {overrideContract.status === "expired" && <span style={{ marginLeft: 8, background: "#fee2e2", color: "#991b1b", padding: "1px 6px", borderRadius: 6, fontWeight: 700, fontSize: 11 }}>EXPIRED</span>}
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={lbl}>New End Date *</label>
+              <input
+                type="date"
+                style={{ ...inp, borderColor: overrideDate ? "#22c55e" : "#e2e8f0" }}
+                value={overrideDate}
+                onChange={(e) => setOverrideDate(e.target.value)}
+              />
+              {overrideContract.status === "expired" && overrideDate && (
+                <div style={{ marginTop: 6, fontSize: 11, color: "#166534", background: "#f0fdf4", padding: "4px 8px", borderRadius: 6 }}>
+                  This contract will be <strong>reactivated</strong> to Active status.
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={lbl}>Reason (sent to manager)</label>
+              <textarea
+                style={{ ...inp, minHeight: 72, resize: "vertical" }}
+                placeholder="e.g. Project extended 90 days per verbal agreement with GC…"
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={applyOverride}
+                disabled={!overrideDate || overriding}
+                style={{ background: overrideDate ? "#0f172a" : "#94a3b8", color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontWeight: 700, fontSize: 13, cursor: overrideDate ? "pointer" : "not-allowed" }}
+              >
+                {overriding ? "Saving…" : "Override & Notify Manager"}
+              </button>
+              <button
+                onClick={() => { setOverrideContract(null); setOverrideDate(""); setOverrideReason(""); }}
+                style={{ background: "transparent", border: "1px solid #e2e8f0", color: "#475569", borderRadius: 8, padding: "9px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filter tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
         {["all", "active", "pending", "expired", "terminated", "draft"].map((s) => (
@@ -450,6 +565,13 @@ export default function ContractsPage() {
                             style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 12, cursor: "pointer", fontWeight: 600 }}
                           >
                             Edit
+                          </button>
+                          <button
+                            onClick={() => { setOverrideContract(c); setOverrideDate(c.end_date || ""); setOverrideReason(""); }}
+                            title="Override expiration date and notify manager"
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #fde68a", background: "#fefce8", color: "#92400e", fontSize: 12, cursor: "pointer", fontWeight: 600 }}
+                          >
+                            Override
                           </button>
                           <button
                             onClick={() => deleteContract(c.id, c.company_name)}
