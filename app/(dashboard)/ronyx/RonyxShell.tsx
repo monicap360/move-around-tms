@@ -128,7 +128,15 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "System",
     items: [
-      { label: "Admin Settings", href: "/ronyx/settings", icon: "⚙️", color: "#475569" },
+      { label: "Admin Control Center", href: "/ronyx/settings", icon: "⚙️", color: "#475569", children: [
+        { label: "Company Profile",        href: "/ronyx/settings/company-profile",  icon: "🏢", color: "#1e40af" },
+        { label: "Users & Staff",          href: "/ronyx/settings/users",            icon: "👥", color: "#0891b2" },
+        { label: "Roles & Permissions",    href: "/ronyx/settings/roles",            icon: "🔐", color: "#7c3aed" },
+        { label: "System Rules",           href: "/ronyx/settings/system-rules",     icon: "⚡", color: "#1e40af" },
+        { label: "Document Routing",       href: "/ronyx/settings/document-routing", icon: "📂", color: "#d97706" },
+        { label: "Notification Rules",     href: "/ronyx/settings/notifications",    icon: "🔔", color: "#d97706" },
+        { label: "Audit Log",              href: "/ronyx/settings/audit-log",        icon: "📜", color: "#475569" },
+      ]},
     ],
   },
 ];
