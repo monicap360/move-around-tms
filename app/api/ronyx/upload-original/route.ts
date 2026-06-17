@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { TMS_BUCKET, fastScanPath, generalUploadPath } from "@/lib/storage-paths";
 
 export const dynamic = "force-dynamic";
 
-const BUCKET       = "ronyx-fast-scan";
+const BUCKET       = TMS_BUCKET;
 const MAX_SIZE     = 25 * 1024 * 1024; // 25 MB
 const ALLOWED_MIME: Record<string, boolean> = {
   "image/jpeg": true, "image/jpg": true, "image/png": true, "image/webp": true,
@@ -44,16 +45,19 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Step 1: Upload original to Supabase Storage ──────────────────────────
-  const now       = new Date();
-  const yearMonth = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const safeName  = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storagePath = `${uploadSource || "fast-scan"}/${yearMonth}/${Date.now()}-${safeName}`;
+  // Path: {org_id}/fastscan/{ticketId_or_unknown}/{timestamp}_{filename}
+  // If a ticket ID is provided use fastScanPath, otherwise fall back to generalUploadPath.
+  const ticketId    = form.get("ticket_id") as string | null;
+  const storagePath = ticketId
+    ? fastScanPath(ticketId, file.name)
+    : generalUploadPath(uploadSource || "fastscan", file.name);
   const bytes     = await file.arrayBuffer();
 
-  // Ensure bucket exists
+  // Ensure bucket exists (tms-documents is created by migration 158;
+  // this auto-creates it if the migration hasn't run yet)
   const { error: bucketErr } = await supabase.storage.from(BUCKET).list("", { limit: 1 });
   if (bucketErr) {
-    await supabase.storage.createBucket(BUCKET, { public: false, fileSizeLimit: MAX_SIZE });
+    await supabase.storage.createBucket(BUCKET, { public: false, fileSizeLimit: 104857600 });
   }
 
   const { error: uploadErr } = await supabase.storage

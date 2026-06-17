@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { TMS_BUCKET, generalUploadPath } from "@/lib/storage-paths";
 
 export const dynamic = "force-dynamic";
 
@@ -72,27 +73,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "No file provided" }, { status: 400 });
   }
 
-  const module    = moduleOverride || detectModule(file.name, file.type);
-  const today     = new Date().toISOString().split("T")[0];
-  const timestamp = Date.now();
-  // Keep original filename readable — replace only truly unsafe chars
-  const safeName  = file.name.replace(/[<>:"/\\|?*]/g, "_");
-  const filePath  = `${module}/${today}/${timestamp}_${safeName}`;
-  const BUCKET    = "ronyx-imports";
-
+  const module      = moduleOverride || detectModule(file.name, file.type);
+  const filePath    = generalUploadPath(module, file.name);
   const arrayBuffer = await file.arrayBuffer();
   const contentType = file.type || "application/octet-stream";
 
-  // ── Try buckets in priority order until one works ──
-  const FALLBACK_BUCKETS = ["ronyx-imports", "company_assets", "ronyx-files"];
-  let usedBucket  = BUCKET;
+  // ── Try tms-documents first, fall back to legacy buckets if not yet created ──
+  const BUCKET_ORDER = [TMS_BUCKET, "ronyx-imports", "company_assets"];
+  let usedBucket  = TMS_BUCKET;
   let storagePath = filePath;
   let publicUrl: string | null = null;
   let storageOk = false;
 
-  for (const candidateBucket of FALLBACK_BUCKETS) {
+  for (const candidateBucket of BUCKET_ORDER) {
     if (storageOk) break;
-    const candidatePath = candidateBucket === BUCKET ? filePath : `ronyx/${module}/${today}/${timestamp}_${safeName}`;
+    const candidatePath = candidateBucket === TMS_BUCKET ? filePath : `ronyx/${module}/${Date.now()}_${file.name.replace(/[<>:"/\\|?*]/g, "_")}`;
     const ready = await ensureBucket(sb, candidateBucket);
     if (!ready) continue;
 
@@ -104,8 +99,11 @@ export async function POST(req: Request) {
       storageOk   = true;
       usedBucket  = candidateBucket;
       storagePath = candidatePath;
-      const { data } = sb.storage.from(candidateBucket).getPublicUrl(candidatePath);
-      publicUrl = data?.publicUrl || null;
+      // tms-documents is private — no public URL; caller uses view-doc to get signed URL
+      if (candidateBucket !== TMS_BUCKET) {
+        const { data } = sb.storage.from(candidateBucket).getPublicUrl(candidatePath);
+        publicUrl = data?.publicUrl || null;
+      }
     }
   }
 
