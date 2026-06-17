@@ -43,6 +43,7 @@ type OODoc = {
   uploaded_at: string;
   file_name: string;
   expires_on?: string;
+  issued_on?: string;
   file_url?: string;
 };
 type OOSubDriver = {
@@ -697,12 +698,15 @@ export default function OwnerOperatorsPage() {
       originalUploadId = upData.upload_id || null;
     } catch { /* storage not configured — still record the doc name */ }
 
-    // 2. Prompt for expiry on insurance/contract types
+    // 2. Prompt for dates on insurance/contract types
     const needsExpiry = [
       "Insurance Certificate","Insurance Certificate (COI)",
       "Auto Liability Insurance","General Liability Insurance",
       "Cargo Insurance","Workers Comp Insurance","Contract",
     ].includes(docType);
+    const issuedOnInput = docType === "Contract"
+      ? prompt("Contract start / effective date (YYYY-MM-DD):", "") || undefined
+      : undefined;
     const expiresInput = needsExpiry
       ? prompt(`${docType} expiration date (YYYY-MM-DD):`, "") || undefined
       : undefined;
@@ -712,10 +716,11 @@ export default function OwnerOperatorsPage() {
       doc_type:   docType,
       file_name:  file.name,
       file_url:   fileUrl,
-      expires_on: expiresInput || null,
+      expires_on: expiresInput  || null,
+      issued_on:  issuedOnInput || null,
     });
 
-    const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput, file_url: fileUrl || undefined };
+    const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput, issued_on: issuedOnInput, file_url: fileUrl || undefined };
     updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== docType)] });
     flash(`${docType} uploaded${fileUrl ? " & stored in Backup Center" : ""}.`);
   }
@@ -2237,11 +2242,21 @@ export default function OwnerOperatorsPage() {
                   {existing ? (
                     <>
                       <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
-                      {existing.expires_on && (
+                      {docType === "Contract" ? (
+                        <div style={{ fontSize:"0.72rem", color:"#475569", marginBottom:4 }}>
+                          <span style={{ fontWeight:700 }}>Period: </span>
+                          {existing.issued_on ? fmtDate(existing.issued_on) : <span style={{ color:"#cbd5e1" }}>no start</span>}
+                          {" → "}
+                          {existing.expires_on
+                            ? <span style={{ background:expBg(expDays), color:expColor(expDays)||"#475569", padding:"1px 6px", borderRadius:4, fontWeight:700 }}>{fmtDate(existing.expires_on)}{expDays!==null && expDays<=90 ? ` (${expDays<0?"EXPIRED":expDays+"d"})` : ""}</span>
+                            : <span style={{ color:"#cbd5e1" }}>no end date</span>
+                          }
+                        </div>
+                      ) : existing.expires_on ? (
                         <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:4 }}>
                           {expLabel(expDays, existing.expires_on)}
                         </div>
-                      )}
+                      ) : null}
                       {existing.file_url ? (
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
                           <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
@@ -2345,19 +2360,56 @@ export default function OwnerOperatorsPage() {
                           </td>
                           <td style={{ padding:"10px 14px", color:"#94a3b8", fontSize:"0.72rem", whiteSpace:"nowrap" }}>{fmtDate(doc.uploaded_at)}</td>
                           <td style={{ padding:"10px 14px" }}>
-                            <input
-                              type="date"
-                              defaultValue={doc.expires_on?.slice(0,10) || ""}
-                              title="Click to set or override expiration date"
-                              onBlur={async e => {
-                                const newDate = e.target.value || null;
-                                if (newDate === (doc.expires_on?.slice(0,10)||null)) return;
-                                await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: doc.type, expires_on: newDate });
-                                updateLocalState({ ...selected, documents: selected.documents.map((d,j) => j===i ? { ...d, expires_on: newDate||undefined } : d) });
-                                flash(`Expiration date updated for ${doc.type}.`);
-                              }}
-                              style={{ border:"1px solid #e2e8f0", borderRadius:6, padding:"3px 8px", fontSize:"0.72rem", background: expBg(expD), color: expColor(expD)||"#475569", fontWeight:700, cursor:"pointer", outline:"none", width:130 }}
-                            />
+                            {doc.type === "Contract" ? (
+                              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                                <div>
+                                  <div style={{ fontSize:"0.6rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:2 }}>Start</div>
+                                  <input
+                                    type="date"
+                                    defaultValue={doc.issued_on?.slice(0,10) || ""}
+                                    title="Contract start / effective date"
+                                    onBlur={async e => {
+                                      const newDate = e.target.value || null;
+                                      if (newDate === (doc.issued_on?.slice(0,10)||null)) return;
+                                      await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: doc.type, issued_on: newDate });
+                                      updateLocalState({ ...selected, documents: selected.documents.map((d,j) => j===i ? { ...d, issued_on: newDate||undefined } : d) });
+                                      flash("Contract start date updated.");
+                                    }}
+                                    style={{ border:"1px solid #e2e8f0", borderRadius:6, padding:"3px 8px", fontSize:"0.7rem", color:"#475569", fontWeight:600, cursor:"pointer", outline:"none", width:130 }}
+                                  />
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:"0.6rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:2 }}>End</div>
+                                  <input
+                                    type="date"
+                                    defaultValue={doc.expires_on?.slice(0,10) || ""}
+                                    title="Contract expiration date"
+                                    onBlur={async e => {
+                                      const newDate = e.target.value || null;
+                                      if (newDate === (doc.expires_on?.slice(0,10)||null)) return;
+                                      await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: doc.type, expires_on: newDate });
+                                      updateLocalState({ ...selected, documents: selected.documents.map((d,j) => j===i ? { ...d, expires_on: newDate||undefined } : d) });
+                                      flash("Contract end date updated.");
+                                    }}
+                                    style={{ border:"1px solid #e2e8f0", borderRadius:6, padding:"3px 8px", fontSize:"0.72rem", background: expBg(expD), color: expColor(expD)||"#475569", fontWeight:700, cursor:"pointer", outline:"none", width:130 }}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <input
+                                type="date"
+                                defaultValue={doc.expires_on?.slice(0,10) || ""}
+                                title="Click to set or override expiration date"
+                                onBlur={async e => {
+                                  const newDate = e.target.value || null;
+                                  if (newDate === (doc.expires_on?.slice(0,10)||null)) return;
+                                  await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`, { doc_type: doc.type, expires_on: newDate });
+                                  updateLocalState({ ...selected, documents: selected.documents.map((d,j) => j===i ? { ...d, expires_on: newDate||undefined } : d) });
+                                  flash(`Expiration date updated for ${doc.type}.`);
+                                }}
+                                style={{ border:"1px solid #e2e8f0", borderRadius:6, padding:"3px 8px", fontSize:"0.72rem", background: expBg(expD), color: expColor(expD)||"#475569", fontWeight:700, cursor:"pointer", outline:"none", width:130 }}
+                              />
+                            )}
                           </td>
                           <td style={{ padding:"10px 14px" }}>
                             <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>

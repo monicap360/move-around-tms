@@ -15,6 +15,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     doc_type:   body.doc_type,
     file_name:  body.file_name  || null,
     expires_on: body.expires_on || null,
+    issued_on:  body.issued_on  || null,
   };
 
   // Include file_url only if the column exists (migration 130)
@@ -46,6 +47,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   const patch: Record<string, unknown> = {};
   if ("expires_on" in body) patch.expires_on = body.expires_on || null;
+  if ("issued_on"  in body) patch.issued_on  = body.issued_on  || null;
   if ("file_url"   in body) patch.file_url   = body.file_url   || null;
   if ("file_name"  in body) patch.file_name  = body.file_name  || null;
 
