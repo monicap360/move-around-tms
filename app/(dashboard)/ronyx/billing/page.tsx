@@ -15,6 +15,7 @@ type TabKey =
   | "deductions"
   | "exceptions"
   | "staff_todos"
+  | "closeout"
   | "history";
 
 type TicketRow = {
@@ -113,7 +114,21 @@ const TABS: { id: TabKey; label: string; icon: string }[] = [
   { id: "deductions",      label: "Deductions & Adjustments", icon: "➖" },
   { id: "exceptions",      label: "Reconciliation Exceptions",icon: "🔴" },
   { id: "staff_todos",     label: "Staff To-Do List",         icon: "✅" },
+  { id: "closeout",        label: "Weekly Closeout",          icon: "🔒" },
   { id: "history",         label: "Invoice History",          icon: "📜" },
+];
+
+const CLOSEOUT_ITEMS = [
+  "All approved tickets reviewed",
+  "Customer invoices generated",
+  "Payroll invoices generated",
+  "Unpaid tickets reviewed",
+  "Void tickets confirmed",
+  "Deductions approved",
+  "Mismatches resolved",
+  "Payroll holds reviewed",
+  "Billing packets saved",
+  "Original files saved to Backup Vault",
 ];
 
 const LIFECYCLE_STATUSES = [
@@ -183,6 +198,8 @@ export default function InvoiceCommandCenter() {
   const [toast, setToast]                 = useState("");
   const [filterStatus, setFilterStatus]   = useState("all");
   const [filterContractor, setFilterContractor] = useState("");
+  const [closeoutChecked, setCloseoutChecked] = useState<Record<string, boolean>>({});
+  const [closeoutRunning, setCloseoutRunning] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const payrollImportRef = useRef<HTMLInputElement>(null);
 
@@ -321,62 +338,182 @@ export default function InvoiceCommandCenter() {
       <div style={{ maxWidth: 1300, margin: "0 auto", padding: "24px 32px" }}>
 
         {/* ── 1. MISSION CONTROL ──────────────────────────────────────── */}
-        {tab === "mission_control" && (
-          <div>
-            <div style={{ ...darkPanel, marginBottom: 20 }}>
-              <div style={{ fontWeight: 800, color: "#4ade80", fontSize: "0.82rem", marginBottom: 8 }}>Today&apos;s Invoice Focus</div>
-              <div style={{ fontSize: "0.8rem", color: "#cbd5e1", lineHeight: 1.7, marginBottom: 12 }}>
-                Approved tickets are ready to become either <strong style={{ color: "#fde68a" }}>Customer Billing Invoices</strong> or <strong style={{ color: "#a5b4fc" }}>Payroll Invoices / Contractor Pay Sheets</strong>.
+        {tab === "mission_control" && (() => {
+          // Build "Do This First" items from live KPI data
+          type ActionItem = { icon:string; issue:string; detail?:string; dollarImpact?:string; actionLabel:string; action:()=>void; level:"critical"|"high"|"review" };
+          const criticalItems: ActionItem[] = [];
+          const highItems: ActionItem[] = [];
+          const reviewItems: ActionItem[] = [];
+
+          if (kpis.unpaid_tickets > 0)
+            criticalItems.push({ icon:"🚨", level:"critical", issue:`${kpis.unpaid_tickets} unpaid ticket${kpis.unpaid_tickets>1?"s":""} need review before payroll is released`, detail:"These tickets have no customer invoice and no payroll invoice assigned.", dollarImpact: fmt$(kpis.ticket_value_total), actionLabel:"Review Unpaid", action:()=>setTab("unpaid") });
+
+          if (kpis.invoice_mismatches > 0)
+            criticalItems.push({ icon:"⚡", level:"critical", issue:`${kpis.invoice_mismatches} invoice payout mismatch${kpis.invoice_mismatches>1?"es":""} detected`, detail:"Total Paid does not match Ticket Total minus deductions.", actionLabel:"Fix Mismatches", action:()=>setTab("exceptions") });
+
+          const critEx = exceptions.filter(e=>e.severity==="critical");
+          if (critEx.length > 0)
+            criticalItems.push({ icon:"🔴", level:"critical", issue:`${critEx.length} critical reconciliation exception${critEx.length>1?"s":""} — money at risk`, detail:critEx.map(e=>e.exception_type.replace(/_/g," ")).slice(0,3).join(", "), dollarImpact: fmt$(critEx.reduce((a,e)=>a+e.dollar_impact,0)), actionLabel:"Review", action:()=>setTab("exceptions") });
+
+          if (kpis.missing_proof > 0)
+            highItems.push({ icon:"📄", level:"high", issue:`${kpis.missing_proof} ticket${kpis.missing_proof>1?"s":""} missing proof — cannot release to payroll or billing`, actionLabel:"Fix", action:()=>setTab("unpaid") });
+
+          if (kpis.void_tickets > 0)
+            highItems.push({ icon:"🚫", level:"high", issue:`${kpis.void_tickets} void ticket${kpis.void_tickets>1?"s":""} in system — verify none appear in payroll totals`, actionLabel:"Review Voids", action:()=>setTab("void") });
+
+          const highEx = exceptions.filter(e=>e.severity==="high");
+          if (highEx.length > 0)
+            highItems.push({ icon:"🟡", level:"high", issue:`${highEx.length} high-priority exception${highEx.length>1?"s":""} need staff action`, actionLabel:"Review", action:()=>setTab("exceptions") });
+
+          if (kpis.customer_invoices_ready > 0)
+            highItems.push({ icon:"💵", level:"high", issue:`${kpis.customer_invoices_ready} customer invoice${kpis.customer_invoices_ready>1?"s":""} ready to generate`, detail:"Approved tickets are waiting to be invoiced to the customer.", actionLabel:"Generate", action:generateCustomerInvoices });
+
+          if (kpis.payroll_invoices_ready > 0)
+            highItems.push({ icon:"🧾", level:"high", issue:`${kpis.payroll_invoices_ready} payroll invoice${kpis.payroll_invoices_ready>1?"s":""} ready to generate`, detail:"Approved ticket rows have rates and contractor data — ready for payroll.", actionLabel:"Generate", action:generatePayrollInvoices });
+
+          if (kpis.approved_tickets > 0 && kpis.customer_invoices_ready === 0 && kpis.payroll_invoices_ready === 0)
+            reviewItems.push({ icon:"✅", level:"review", issue:`${kpis.approved_tickets} approved ticket${kpis.approved_tickets>1?"s":""} in system — verify invoices were generated`, actionLabel:"View Tickets", action:()=>setTab("customer_billing") });
+
+          if (kpis.ready_to_send > 0)
+            reviewItems.push({ icon:"📬", level:"review", issue:`${kpis.ready_to_send} customer invoice${kpis.ready_to_send>1?"s":""} ready to send to customer`, actionLabel:"View Billing", action:()=>setTab("customer_billing") });
+
+          const allClear = criticalItems.length === 0 && highItems.length === 0 && reviewItems.length === 0;
+
+          function ActionCard({ item }: { item: ActionItem }) {
+            const isCrit = item.level === "critical";
+            const isHigh = item.level === "high";
+            const bg     = isCrit ? "#fff1f2" : isHigh ? "#fffbeb" : "#f0fdf4";
+            const border = isCrit ? "#fca5a5" : isHigh ? "#fde68a" : "#bbf7d0";
+            const color  = isCrit ? "#dc2626" : isHigh ? "#b45309" : "#15803d";
+            const btnBg  = isCrit ? "#dc2626" : isHigh ? "#d97706" : "#15803d";
+            return (
+              <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 14 }}>
+                <span style={{ fontSize: "1.3rem", marginTop: 1 }}>{item.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, color, fontSize: "0.88rem", lineHeight: 1.3 }}>{item.issue}</div>
+                  {item.detail && <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: 3 }}>{item.detail}</div>}
+                  {item.dollarImpact && <div style={{ fontSize: "0.72rem", fontWeight: 700, color, marginTop: 3 }}>Dollar at risk: {item.dollarImpact}</div>}
+                </div>
+                <button onClick={item.action} style={{ padding: "7px 16px", background: btnBg, color: "#fff", border: "none", borderRadius: 8, fontWeight: 800, fontSize: "0.76rem", cursor: "pointer", whiteSpace: "nowrap", marginTop: 1 }}>
+                  {item.actionLabel}
+                </button>
               </div>
-              <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", fontSize: "0.76rem", color: "#fde68a", fontWeight: 700 }}>
-                AI Recommended First Action: Review unpaid tickets, void tickets, and payroll invoice mismatches before generating final invoices.
+            );
+          }
+
+          return (
+            <div>
+              {/* Office Supervisor Banner */}
+              <div style={{ background: "#0f172a", borderRadius: 14, padding: "18px 24px", marginBottom: 20, border: "2px solid #22c55e", display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ fontSize: "2rem" }}>🤖</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 900, color: "#4ade80", fontSize: "1rem", marginBottom: 3 }}>Office Supervisor — Invoice Command</div>
+                  <div style={{ fontSize: "0.76rem", color: "#94a3b8", lineHeight: 1.6 }}>
+                    Reading your ticket data and payroll sheets now. I found <strong style={{ color: "#fde68a" }}>{criticalItems.length} critical</strong> and <strong style={{ color: "#fbbf24" }}>{highItems.length} high-priority</strong> items that need staff attention before money moves.
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "right" }}>
+                  <div style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Money In Pipeline</div>
+                  <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#4ade80" }}>{fmt$(kpis.ticket_value_total)}</div>
+                </div>
+              </div>
+
+              {/* Do This First */}
+              <div style={{ ...card, padding: "20px 22px", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                  <div style={{ fontWeight: 900, color: "#0f172a", fontSize: "1rem" }}>Do This First</div>
+                  {criticalItems.length > 0 && <span style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 20, padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800 }}>{criticalItems.length} Critical</span>}
+                  {highItems.length > 0 && <span style={{ background: "#fef3c7", color: "#b45309", borderRadius: 20, padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800 }}>{highItems.length} High</span>}
+                  {reviewItems.length > 0 && <span style={{ background: "#f0fdf4", color: "#15803d", borderRadius: 20, padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800 }}>{reviewItems.length} Review</span>}
+                </div>
+
+                {allClear && (
+                  <div style={{ background: "#f0fdf4", border: "2px solid #bbf7d0", borderRadius: 12, padding: "20px 22px", textAlign: "center" }}>
+                    <div style={{ fontSize: "1.5rem", marginBottom: 6 }}>✅</div>
+                    <div style={{ fontWeight: 900, color: "#15803d", fontSize: "0.95rem" }}>All clear — no critical issues detected</div>
+                    <div style={{ fontSize: "0.76rem", color: "#64748b", marginTop: 4 }}>Import ticket data or payroll sheets to run the full supervisor check.</div>
+                  </div>
+                )}
+
+                {criticalItems.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 900, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "#dc2626", color: "#fff", borderRadius: "50%", width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 900 }}>!</span>
+                      Critical — Fix Before Any Money Moves
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {criticalItems.map((item, i) => <ActionCard key={i} item={item} />)}
+                    </div>
+                  </div>
+                )}
+
+                {highItems.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 900, color: "#b45309", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>High Priority</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {highItems.map((item, i) => <ActionCard key={i} item={item} />)}
+                    </div>
+                  </div>
+                )}
+
+                {reviewItems.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 900, color: "#15803d", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Review / Ready</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {reviewItems.map((item, i) => <ActionCard key={i} item={item} />)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* KPI Row 1 */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 14 }}>
+                {[
+                  { label: "Approved Tickets",        value: fmtN(kpis.approved_tickets),        color: "#0f172a",  bg: "#f8fafc", onClick: ()=>setTab("customer_billing") },
+                  { label: "Customer Invoices Ready",  value: fmtN(kpis.customer_invoices_ready), color: "#1e40af",  bg: "#eff6ff", onClick: ()=>setTab("customer_billing") },
+                  { label: "Payroll Invoices Ready",   value: fmtN(kpis.payroll_invoices_ready),  color: "#7c3aed",  bg: "#f5f3ff", onClick: ()=>setTab("payroll_queue") },
+                  { label: "Unpaid Tickets",           value: fmtN(kpis.unpaid_tickets),          color: kpis.unpaid_tickets>0?"#dc2626":"#0f172a", bg: kpis.unpaid_tickets>0?"#fff1f2":"#f8fafc", onClick: ()=>setTab("unpaid") },
+                ].map(k => (
+                  <div key={k.label} onClick={k.onClick} style={{ background: k.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", cursor: "pointer" }}>
+                    <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{k.label}</div>
+                    <div style={{ fontSize: "1.8rem", fontWeight: 900, color: k.color }}>{k.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* KPI Row 2 — Money */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 14 }}>
+                {[
+                  { label: "Ticket Value Total", value: fmt$(kpis.ticket_value_total), color: "#0f172a",  bg: "#f8fafc", sub: "gross billing value" },
+                  { label: "Payout Total",        value: fmt$(kpis.payout_total),        color: "#7c3aed",  bg: "#f5f3ff", sub: "contractor payouts" },
+                  { label: "Deductions Total",    value: fmt$(kpis.deductions_total),    color: "#dc2626",  bg: "#fff1f2", sub: "ins · loans · shop · advances" },
+                  { label: "Total Paid",          value: fmt$(kpis.total_paid),          color: "#15803d",  bg: "#f0fdf4", sub: "net after deductions" },
+                ].map(k => (
+                  <div key={k.label} style={{ background: k.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px" }}>
+                    <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{k.label}</div>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 900, color: k.color }}>{k.value}</div>
+                    <div style={{ fontSize: "0.66rem", color: "#94a3b8", marginTop: 2 }}>{k.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* KPI Row 3 — Flags */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+                {[
+                  { label: "Invoice Mismatches",  value: fmtN(kpis.invoice_mismatches), bad: kpis.invoice_mismatches > 0, onClick: ()=>setTab("exceptions") },
+                  { label: "Missing Proof",        value: fmtN(kpis.missing_proof),       bad: kpis.missing_proof > 0,       onClick: ()=>setTab("unpaid") },
+                  { label: "Void Tickets",         value: fmtN(kpis.void_tickets),        bad: false,                         onClick: ()=>setTab("void") },
+                  { label: "Ready to Send",        value: fmtN(kpis.ready_to_send),       bad: false,                         onClick: ()=>setTab("customer_billing") },
+                ].map(k => (
+                  <div key={k.label} onClick={k.onClick} style={{ background: k.bad?"#fff1f2":"#f8fafc", border: `1px solid ${k.bad?"#fca5a5":"#e2e8f0"}`, borderRadius: 12, padding: "16px 20px", cursor: "pointer" }}>
+                    <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{k.label}</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 900, color: k.bad ? "#dc2626" : "#0f172a" }}>{k.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
-              {[
-                { label: "Approved Tickets",        value: kpis.approved_tickets,        color: "#0f172a" },
-                { label: "Customer Invoices Ready",  value: kpis.customer_invoices_ready, color: "#1e40af" },
-                { label: "Payroll Invoices Ready",   value: kpis.payroll_invoices_ready,  color: "#7c3aed" },
-                { label: "Unpaid Tickets",           value: kpis.unpaid_tickets,          color: "#dc2626" },
-              ].map(k => (
-                <div key={k.label} style={{ ...card, padding: "18px 20px" }}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{k.label}</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 900, color: k.color }}>{fmtN(k.value)}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
-              {[
-                { label: "Ticket Value Total", value: fmt$(kpis.ticket_value_total), color: "#0f172a",  sub: "gross billing value" },
-                { label: "Payout Total",        value: fmt$(kpis.payout_total),        color: "#7c3aed", sub: "contractor payouts" },
-                { label: "Deductions Total",    value: fmt$(kpis.deductions_total),    color: "#dc2626", sub: "ins, loans, shop, advances" },
-                { label: "Total Paid",          value: fmt$(kpis.total_paid),          color: "#15803d", sub: "net after deductions" },
-              ].map(k => (
-                <div key={k.label} style={{ ...card, padding: "18px 20px" }}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{k.label}</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: 900, color: k.color }}>{k.value}</div>
-                  <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginTop: 2 }}>{k.sub}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-              {[
-                { label: "Invoice Mismatches", value: kpis.invoice_mismatches, bad: kpis.invoice_mismatches > 0 },
-                { label: "Missing Proof",       value: kpis.missing_proof,       bad: kpis.missing_proof > 0 },
-                { label: "Void Tickets",        value: kpis.void_tickets,        bad: false },
-                { label: "Ready to Send",       value: kpis.ready_to_send,       bad: false },
-              ].map(k => (
-                <div key={k.label} style={{ ...card, padding: "16px 20px" }}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{k.label}</div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 900, color: k.bad ? "#dc2626" : "#0f172a" }}>{fmtN(k.value)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── 2. LIFECYCLE ───────────────────────────────────────────── */}
         {tab === "lifecycle" && (
@@ -561,6 +698,49 @@ export default function InvoiceCommandCenter() {
                 </tbody>
               </table>
             </div>
+
+            {/* Readiness Score */}
+            {payrollInvoices.length > 0 && (
+              <div style={{ ...card, padding: "18px 22px", marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a", marginBottom: 12 }}>Payroll Invoice Readiness</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {payrollInvoices.map(inv => {
+                    const checks = [
+                      { pass: !!inv.contractor_name,   label: "Contractor identified" },
+                      { pass: !!inv.truck_number,       label: "Truck number on record" },
+                      { pass: !!inv.payroll_week_start, label: "Payroll week set" },
+                      { pass: inv.ticket_total > 0,     label: "Ticket total > $0" },
+                      { pass: inv.status !== "disputed",label: "No disputes" },
+                      { pass: inv.status !== "void",    label: "Not voided" },
+                    ];
+                    const score = Math.round((checks.filter(c=>c.pass).length / checks.length) * 100);
+                    const scoreColor = score >= 90 ? "#15803d" : score >= 70 ? "#b45309" : "#dc2626";
+                    const scoreBg    = score >= 90 ? "#f0fdf4"  : score >= 70 ? "#fef3c7"  : "#fff1f2";
+                    const scoreLabel = score >= 90 ? "Ready" : score >= 70 ? "Needs Review" : "Hold";
+                    return (
+                      <div key={inv.id} style={{ background: scoreBg, border: `1.5px solid ${scoreColor}30`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+                        <div style={{ textAlign: "center", minWidth: 52 }}>
+                          <div style={{ fontSize: "1.3rem", fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{score}%</div>
+                          <div style={{ fontSize: "0.6rem", fontWeight: 800, color: scoreColor, textTransform: "uppercase" }}>{scoreLabel}</div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.8rem", color: "#0f172a", marginBottom: 4 }}>
+                            {inv.contractor_name || "Unknown"} · {inv.truck_number || "No Truck"} · {fmt$(inv.total_paid)}
+                          </div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            {checks.map(c => (
+                              <span key={c.label} style={{ fontSize: "0.64rem", fontWeight: 600, color: c.pass ? "#15803d" : "#dc2626", background: c.pass ? "#dcfce7" : "#fee2e2", borderRadius: 6, padding: "1px 7px" }}>
+                                {c.pass ? "✓" : "✗"} {c.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div style={{ ...card, padding: "18px 22px" }}>
               <div style={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a", marginBottom: 10 }}>Payroll Calculation Rules</div>
@@ -921,7 +1101,132 @@ export default function InvoiceCommandCenter() {
           </div>
         )}
 
-        {/* ── 12. INVOICE HISTORY ─────────────────────────────────── */}
+        {/* ── 12. WEEKLY CLOSEOUT ─────────────────────────────────── */}
+        {tab === "closeout" && (() => {
+          const checkedCount = CLOSEOUT_ITEMS.filter(item => closeoutChecked[item]).length;
+          const pct = Math.round((checkedCount / CLOSEOUT_ITEMS.length) * 100);
+          const canClose = checkedCount === CLOSEOUT_ITEMS.length && kpis.unpaid_tickets === 0 && kpis.invoice_mismatches === 0;
+          const needsReview = checkedCount === CLOSEOUT_ITEMS.length && (kpis.unpaid_tickets > 0 || kpis.invoice_mismatches > 0);
+          const statusLabel = canClose ? "Ready to Close" : needsReview ? "Needs Review Before Close" : "In Progress";
+          const statusColor = canClose ? "#15803d" : needsReview ? "#b45309" : "#1e40af";
+          const statusBg    = canClose ? "#f0fdf4"  : needsReview ? "#fef3c7"  : "#eff6ff";
+
+          return (
+            <div>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <h2 style={{ margin: "0 0 4px", fontWeight: 900, color: "#0f172a", fontSize: "1rem" }}>Weekly Invoice Closeout</h2>
+                  <div style={{ fontSize: "0.76rem", color: "#475569" }}>Complete all items before releasing payroll or sending billing packets</div>
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ background: statusBg, color: statusColor, borderRadius: 20, padding: "5px 14px", fontSize: "0.76rem", fontWeight: 800, border: `1.5px solid ${statusColor}40` }}>
+                    {statusLabel}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (!canClose) { showToast("Complete all checklist items and resolve critical issues first."); return; }
+                      setCloseoutRunning(true);
+                      setTimeout(() => { setCloseoutRunning(false); showToast("Weekly closeout complete — payroll and billing are ready to release."); }, 1800);
+                    }}
+                    style={{ padding: "9px 20px", background: canClose ? "#15803d" : "#94a3b8", color: "#fff", border: "none", borderRadius: 9, fontWeight: 800, fontSize: "0.82rem", cursor: canClose ? "pointer" : "not-allowed" }}>
+                    {closeoutRunning ? "Running…" : "🔒 Run Weekly Closeout"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Open issues banner */}
+              {(kpis.unpaid_tickets > 0 || kpis.invoice_mismatches > 0 || exceptions.filter(e=>e.severity==="critical").length > 0) && (
+                <div style={{ background: "#fff1f2", border: "2px solid #fca5a5", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
+                  <div style={{ fontWeight: 800, color: "#dc2626", marginBottom: 8, fontSize: "0.85rem" }}>🚨 Cannot close — open critical issues must be resolved first</div>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    {kpis.unpaid_tickets > 0 && <span style={{ fontSize: "0.76rem", color: "#7f1d1d", fontWeight: 700 }}>• {kpis.unpaid_tickets} unpaid tickets</span>}
+                    {kpis.invoice_mismatches > 0 && <span style={{ fontSize: "0.76rem", color: "#7f1d1d", fontWeight: 700 }}>• {kpis.invoice_mismatches} invoice mismatches</span>}
+                    {exceptions.filter(e=>e.severity==="critical").length > 0 && <span style={{ fontSize: "0.76rem", color: "#7f1d1d", fontWeight: 700 }}>• {exceptions.filter(e=>e.severity==="critical").length} critical reconciliation exceptions</span>}
+                  </div>
+                  <button onClick={() => setTab("mission_control")} style={{ marginTop: 10, padding: "5px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.74rem", cursor: "pointer" }}>
+                    Go to Do This First
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, alignItems: "start" }}>
+                {/* Checklist */}
+                <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "22px 24px" }}>
+                  <div style={{ fontWeight: 900, color: "#0f172a", fontSize: "0.9rem", marginBottom: 4 }}>Invoice Closeout Checklist</div>
+                  <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginBottom: 16 }}>{checkedCount} of {CLOSEOUT_ITEMS.length} complete</div>
+                  {/* Progress bar */}
+                  <div style={{ background: "#f1f5f9", borderRadius: 999, height: 8, marginBottom: 20, overflow: "hidden" }}>
+                    <div style={{ background: pct === 100 ? "#15803d" : "#1e40af", height: "100%", width: `${pct}%`, borderRadius: 999, transition: "width 0.3s" }} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {CLOSEOUT_ITEMS.map(item => {
+                      const checked = !!closeoutChecked[item];
+                      return (
+                        <label key={item} onClick={() => setCloseoutChecked(prev => ({ ...prev, [item]: !prev[item] }))}
+                          style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", padding: "10px 14px", borderRadius: 10, background: checked ? "#f0fdf4" : "#f8fafc", border: `1.5px solid ${checked ? "#bbf7d0" : "#e2e8f0"}`, transition: "all 0.15s" }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${checked ? "#15803d" : "#cbd5e1"}`, background: checked ? "#15803d" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {checked && <span style={{ color: "#fff", fontSize: "0.8rem", fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                          </div>
+                          <span style={{ fontSize: "0.84rem", fontWeight: checked ? 700 : 500, color: checked ? "#15803d" : "#0f172a", textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>
+                            {item}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                    <button onClick={() => setCloseoutChecked(Object.fromEntries(CLOSEOUT_ITEMS.map(i=>[i,true])))} style={{ padding: "6px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>Check All</button>
+                    <button onClick={() => setCloseoutChecked({})} style={{ padding: "6px 14px", background: "#f1f5f9", color: "#64748b", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>Clear All</button>
+                  </div>
+                </div>
+
+                {/* Status sidebar */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {/* Score */}
+                  <div style={{ background: "#0f172a", borderRadius: 14, padding: "20px 22px", textAlign: "center" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Closeout Progress</div>
+                    <div style={{ fontSize: "3rem", fontWeight: 900, color: pct===100?"#4ade80":pct>=70?"#fbbf24":"#f87171", lineHeight: 1 }}>{pct}%</div>
+                    <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: 4 }}>{pct===100?"All items complete":pct>=70?"Almost there":"Keep going"}</div>
+                  </div>
+                  {/* What happens on close */}
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "18px 20px" }}>
+                    <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.82rem", marginBottom: 10 }}>On Successful Closeout</div>
+                    {[
+                      { icon: "💵", text: "Customer invoices locked for sending" },
+                      { icon: "🧾", text: "Payroll invoices released for payment" },
+                      { icon: "📁", text: "Week archived to Invoice History" },
+                      { icon: "🔒", text: "Closeout timestamp recorded" },
+                    ].map(r => (
+                      <div key={r.text} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 7 }}>
+                        <span style={{ fontSize: "0.9rem" }}>{r.icon}</span>
+                        <span style={{ fontSize: "0.74rem", color: "#475569" }}>{r.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Quick links */}
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "18px 20px" }}>
+                    <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.82rem", marginBottom: 10 }}>Quick Checks</div>
+                    {[
+                      { label: "Review Unpaid",       tab: "unpaid" as TabKey,           count: kpis.unpaid_tickets },
+                      { label: "Exceptions",          tab: "exceptions" as TabKey,        count: exceptions.length },
+                      { label: "Void Tickets",        tab: "void" as TabKey,             count: kpis.void_tickets },
+                      { label: "Customer Billing",    tab: "customer_billing" as TabKey, count: kpis.ready_to_send },
+                    ].map(r => (
+                      <button key={r.label} onClick={() => setTab(r.tab)}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "7px 0", background: "none", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontSize: "0.76rem", fontWeight: 600, color: r.count>0?"#dc2626":"#475569", textAlign: "left" }}>
+                        <span>{r.label}</span>
+                        <span style={{ background: r.count>0?"#fee2e2":"#f1f5f9", color: r.count>0?"#dc2626":"#94a3b8", borderRadius: 20, padding: "1px 9px", fontSize: "0.65rem", fontWeight: 800 }}>{r.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── 13. INVOICE HISTORY ─────────────────────────────────── */}
         {tab === "history" && (
           <div>
             <h2 style={{ margin: "0 0 16px", fontWeight: 900, color: "#0f172a", fontSize: "1rem" }}>Invoice History</h2>
