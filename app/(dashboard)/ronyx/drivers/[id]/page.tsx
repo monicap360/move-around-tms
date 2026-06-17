@@ -78,6 +78,22 @@ function fmtDateTime(d?: string | null) {
 }
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
+async function openDoc(fileUrl: string, doPrint = false) {
+  try {
+    const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
+    const data = await res.json();
+    const url  = data.signed_url || fileUrl;
+    if (doPrint) {
+      const w = window.open(url);
+      if (w) w.onload = () => w.print();
+    } else {
+      window.open(url, "_blank");
+    }
+  } catch {
+    window.open(fileUrl, "_blank");
+  }
+}
+
 /* ─── localStorage helpers ───────────────────────── */
 function lsGet<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -548,7 +564,7 @@ function EditField({ label, value, field, type = "text", options, onSave }: {
 }
 
 /* ─── DocRow ─────────────────────────────────────── */
-function DocRow({ doc, onDelete }: { doc: Document; onDelete: (id: string) => void }) {
+function DocRow({ doc, driverName, onDelete }: { doc: Document; driverName?: string; onDelete: (id: string) => void }) {
   const days = daysUntil(doc.expires_on);
   const expColor = days === null ? "#64748b" : days < 0 ? "#dc2626" : days <= 30 ? "#d97706" : "#15803d";
   return (
@@ -556,7 +572,16 @@ function DocRow({ doc, onDelete }: { doc: Document; onDelete: (id: string) => vo
       <td style={tdSt}><strong style={{ color: "#0f172a" }}>{doc.doc_type}</strong></td>
       <td style={tdSt}><span style={{ background: doc.status === "uploaded" ? "#dcfce7" : "#f1f5f9", color: doc.status === "uploaded" ? "#15803d" : "#64748b", padding: "2px 8px", borderRadius: 12, fontSize: "0.75rem", fontWeight: 700 }}>{doc.status}</span></td>
       <td style={{ ...tdSt, color: expColor, fontWeight: days !== null && days <= 30 ? 700 : 400 }}>{doc.expires_on ?? "—"}{days !== null && days < 0 && " ⚠"}</td>
-      <td style={tdSt}>{doc.file_url ? <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: "#1e40af", fontSize: "0.8rem", fontWeight: 600 }}>View</a> : <span style={{ color: "#cbd5e1", fontSize: "0.8rem" }}>No file</span>}</td>
+      <td style={tdSt}>
+        {doc.file_url ? (
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            <button onClick={() => openDoc(doc.file_url!)} style={{ ...actionSm, color: "#1e40af", background: "#dbeafe" }}>👁 View</button>
+            <button onClick={() => openDoc(doc.file_url!, true)} style={{ ...actionSm, color: "#374151", background: "#f3f4f6" }}>🖨️ Print</button>
+            <a href={`mailto:?subject=${encodeURIComponent(doc.doc_type + (driverName ? " — " + driverName : ""))}&body=${encodeURIComponent("Document: " + doc.doc_type + (driverName ? "\nDriver: " + driverName : "") + "\n\nFile: " + doc.file_url)}`}
+              style={{ ...actionSm, color: "#065f46", background: "#d1fae5", textDecoration: "none" }}>📧 Email</a>
+          </div>
+        ) : <span style={{ color: "#cbd5e1", fontSize: "0.8rem" }}>No file</span>}
+      </td>
       <td style={tdSt}><button onClick={() => onDelete(doc.id)} style={{ ...actionSm, color: "#dc2626", background: "#fee2e2" }}>Delete</button></td>
     </tr>
   );
@@ -1013,7 +1038,14 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
                       {existing ? "Replace" : "Upload"}
                       <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic" style={{ display: "none" }} disabled={uploadingDoc} onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument(docType, f); }} />
                     </label>
-                    {existing?.file_url && <a href={existing.file_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 6, fontSize: "0.72rem", color: "#1e40af", fontWeight: 600 }}>View →</a>}
+                    {existing?.file_url && (
+                      <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+                        <button onClick={() => openDoc(existing.file_url!)} style={{ fontSize: "0.68rem", fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>👁 View</button>
+                        <button onClick={() => openDoc(existing.file_url!, true)} style={{ fontSize: "0.68rem", fontWeight: 700, color: "#374151", background: "#f3f4f6", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>🖨️ Print</button>
+                        <a href={`mailto:?subject=${encodeURIComponent(docType + " — " + (profile.full_name || ""))}&body=${encodeURIComponent("Document: " + docType + "\nDriver: " + (profile.full_name || "") + "\n\nFile: " + existing.file_url)}`}
+                          style={{ fontSize: "0.68rem", fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 5, padding: "3px 8px", textDecoration: "none" }}>📧 Email</a>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1026,7 +1058,7 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
                 <thead><tr style={{ background: "#f8fafc" }}><th style={thSt}>Document</th><th style={thSt}>Status</th><th style={thSt}>Expires</th><th style={thSt}>File</th><th style={thSt}>Actions</th></tr></thead>
-                <tbody>{documents.map(doc => <DocRow key={doc.id} doc={doc} onDelete={deleteDocument} />)}</tbody>
+                <tbody>{documents.map(doc => <DocRow key={doc.id} doc={doc} driverName={profile.full_name} onDelete={deleteDocument} />)}</tbody>
               </table>
             </div>
           ) : (

@@ -57,6 +57,22 @@ function daysUntil(d: string | null | undefined): number | null {
   if (!d) return null;
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
 }
+
+async function openDoc(fileUrl: string, doPrint = false) {
+  try {
+    const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
+    const data = await res.json();
+    const url  = data.signed_url || fileUrl;
+    if (doPrint) {
+      const w = window.open(url);
+      if (w) w.onload = () => w.print();
+    } else {
+      window.open(url, "_blank");
+    }
+  } catch {
+    window.open(fileUrl, "_blank");
+  }
+}
 function fmtDate(d?: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -180,7 +196,7 @@ function DocBadge({ docType, doc }: { docType: string; doc?: DocRecord }) {
   return (
     <div title={has ? `${docType} · ${doc?.expires_on ? fmtDate(doc.expires_on) : "No expiry"} · Click to view` : `${docType} — missing`}
       style={{ background: bg, border: `1.5px solid ${border}`, borderRadius: 8, padding: "4px 10px", fontSize: "0.7rem", fontWeight: 800, color: textColor, cursor: has ? "pointer" : "default", whiteSpace: "nowrap" }}
-      onClick={() => { if (doc?.file_url) window.open(doc.file_url, "_blank"); }}
+      onClick={() => { if (doc?.file_url) openDoc(doc.file_url); }}
     >
       {has ? (expired ? "⚠" : expiring ? "⏰" : "✓") : "✕"} {shortLabels[docType] || docType}
       {days !== null && days >= 0 && days <= 30 && <span style={{ marginLeft: 4, fontSize: "0.62rem" }}>{days}d</span>}
@@ -282,6 +298,22 @@ function DriverRow({
           </div>
         </div>
       </div>
+
+      {/* Quick actions for uploaded docs */}
+      {driver.docs.some(d => d.file_url) && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #f1f5f9", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: "0.62rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Docs:</span>
+          {driver.docs.filter(d => d.file_url).map(d => (
+            <span key={d.doc_type} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: "0.65rem", color: "#475569", fontWeight: 700 }}>{d.doc_type}</span>
+              <button onClick={() => openDoc(d.file_url!)} style={{ fontSize: "0.62rem", fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "none", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}>👁</button>
+              <button onClick={() => openDoc(d.file_url!, true)} style={{ fontSize: "0.62rem", fontWeight: 700, color: "#374151", background: "#f3f4f6", border: "none", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}>🖨️</button>
+              <a href={`mailto:?subject=${encodeURIComponent(d.doc_type + " — " + driver.full_name)}&body=${encodeURIComponent("Document: " + d.doc_type + "\nDriver: " + driver.full_name + "\n\nFile: " + (d.file_url || ""))}`}
+                style={{ fontSize: "0.62rem", fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 4, padding: "2px 6px", textDecoration: "none" }}>📧</a>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Expiry details for problem docs */}
       {(driverStatus === "critical" || driverStatus === "expiring") && (
