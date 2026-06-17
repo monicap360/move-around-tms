@@ -235,7 +235,7 @@ function expLabel(days: number | null, date?: string) {
 
 /* ─── Per-OO analytics ───────────────────────────────── */
 function ooHealthScore(oo: OOCompany): number {
-  const insDoc = oo.documents.find(d => d.type === "Insurance Certificate");
+  const insDoc = oo.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
   const insExpDays = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
   const checks = [
     !!oo.mc_number,
@@ -257,7 +257,7 @@ function ooHealthScore(oo: OOCompany): number {
 
 function ooDispatchEligible(oo: OOCompany): [boolean, string[]] {
   const blocks: string[] = [];
-  const insDoc = oo.documents.find(d => d.type === "Insurance Certificate");
+  const insDoc = oo.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
   const insExpDays = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
   if (!insDoc)                                         blocks.push("No insurance on file");
   else if (insExpDays !== null && insExpDays <= 0)     blocks.push("Insurance expired");
@@ -296,7 +296,7 @@ function ooMarginMTD(oo: OOCompany): number {
 
 function ooActionRequired(oo: OOCompany): string[] {
   const actions: string[] = [];
-  const insDoc = oo.documents.find(d => d.type === "Insurance Certificate");
+  const insDoc = oo.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
   const insExpDays = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
   if (!insDoc)                                               actions.push("Upload insurance certificate");
   else if (insExpDays !== null && insExpDays <= 30)          actions.push(`Insurance expires in ${insExpDays < 0 ? "EXPIRED" : insExpDays + "d"} — request COI`);
@@ -893,7 +893,7 @@ export default function OwnerOperatorsPage() {
             const pendingJobs = oo.jobs.filter(j => j.settlement_status === "Pending").length;
             const holdJobs    = oo.jobs.filter(j => j.settlement_status === "Hold").length;
             const projects    = [...new Set(oo.jobs.map(j => j.project_number))];
-            const insDoc      = oo.documents.find(d => d.type === "Insurance Certificate");
+            const insDoc      = oo.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
             const insExpDays  = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
 
             return (
@@ -2598,7 +2598,7 @@ export default function OwnerOperatorsPage() {
 
       {/* ── Compliance Monitor Tab ── */}
       {activeTab === "compliance" && (() => {
-        const insDoc    = selected.documents.find(d => d.type === "Insurance Certificate");
+        const insDoc    = selected.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
         const autoIns   = selected.documents.find(d => d.type === "Auto Liability Insurance");
         const glIns     = selected.documents.find(d => d.type === "General Liability Insurance");
         const cargoIns  = selected.documents.find(d => d.type === "Cargo Insurance");
