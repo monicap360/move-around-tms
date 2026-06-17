@@ -1,15 +1,32 @@
 // Centralized Supabase Storage path builder.
 //
 // Single bucket: tms-documents
-// Root structure: {org_id}/{module}/{entity_id?}/{timestamp}_{safe_filename}
+// Root structure: {org_uuid}/{module}/{entity_id?}/{timestamp}_{safe_filename}
 //
-// Set RONYX_ORG_ID in .env to change the org (defaults to "ronyx").
-// When selling MoveAround TMS to other companies, each company gets its own
-// org_id and their files are fully isolated in the same bucket.
+// IMPORTANT: user_seats.organization_id is a UUID (not a text slug).
+// The first path segment must be the Supabase UUID of the organization so
+// the storage RLS policy (us.organization_id::text = foldername[1]) matches.
+//
+// To find your org UUID: SELECT id FROM public.organizations WHERE name = 'Ronyx';
+// Then set RONYX_ORG_ID in .env.local to that UUID.
+// Example: RONYX_ORG_ID=9f1c8e4a-1234-4567-8910-abcdef123456
+//
+// Path examples:
+//   9f1c8e4a-.../fastscan/ticket-789/1718376000000_scale-ticket.jpg
+//   9f1c8e4a-.../drivers/driver-123/1718376000000_cdl.pdf
+//   9f1c8e4a-.../payroll/2026-W25/1718376000000_payroll-report.pdf
 
 export const TMS_BUCKET = "tms-documents";
 
-const ORG_ID = process.env.RONYX_ORG_ID || "ronyx";
+// Must be a UUID matching public.organizations.id
+const ORG_ID = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000000";
+if (ORG_ID === "00000000-0000-0000-0000-000000000000") {
+  // Server-side warning — does not crash, but files will not pass RLS SELECT checks
+  // until RONYX_ORG_ID is set in .env.local to the real org UUID from Supabase.
+  if (typeof process !== "undefined" && process.env.NODE_ENV !== "test") {
+    console.warn("[storage-paths] RONYX_ORG_ID is not set. Run: SELECT id FROM public.organizations; and add it to .env.local");
+  }
+}
 
 function safeName(filename: string): string {
   return filename.replace(/[<>:"/\\|?*\s]/g, "_");
