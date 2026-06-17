@@ -118,8 +118,38 @@ export default function FastScanPage() {
     <div style={S.page}>
       {/* Header */}
       <div style={S.header}>
-        <h1 style={S.hTitle}>FastScan</h1>
-        <p style={S.hSub}>Log documents, receipts, incidents, and driver paperwork — automatically linked to payroll &amp; tickets.</p>
+        {/* Brand stack */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            {/* Product name */}
+            <h1 style={{ ...S.hTitle, fontSize: "1.8rem", letterSpacing: "-0.02em" }}>
+              Fast Scan™
+            </h1>
+            {/* Module tagline */}
+            <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#94a3b8", fontWeight: 500, letterSpacing: "0.02em" }}>
+              Ticket OCR &nbsp;•&nbsp; Invoice Match &nbsp;•&nbsp; Payroll Verification
+            </p>
+            {/* Powered-by line */}
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: "0.67rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                Powered by
+              </span>
+              <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.01em" }}>
+                MoveAround TMS
+              </span>
+              <span style={{ fontSize: "0.62rem", color: "#64748b", fontWeight: 600 }}>
+                &nbsp;·&nbsp; by Igotta Technologies
+              </span>
+            </div>
+          </div>
+          {/* Badge */}
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, padding: "8px 14px" }}>
+              <div style={{ fontSize: "1.5rem", lineHeight: 1 }}>📡</div>
+              <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>Live</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, alignItems: "start" }}>
@@ -266,6 +296,15 @@ export default function FastScanPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Legal footer */}
+      <div style={{ marginTop: 32, padding: "14px 0", borderTop: "1px solid #f1f5f9", textAlign: "center" }}>
+        <p style={{ margin: 0, fontSize: "0.68rem", color: "#94a3b8", lineHeight: 1.7 }}>
+          <strong style={{ color: "#64748b" }}>Fast Scan™</strong> is a product of{" "}
+          <strong style={{ color: "#64748b" }}>Igotta Technologies</strong> and part of the{" "}
+          <strong style={{ color: "#64748b" }}>MoveAround TMS</strong> platform.
+        </p>
       </div>
     </div>
   );
