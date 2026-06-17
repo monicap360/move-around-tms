@@ -215,6 +215,19 @@ export default function RonyxShell({
     });
   }, [pathname]);
 
+  // Auto-initialize all storage buckets once per day (silent, background)
+  useEffect(() => {
+    const KEY = "ronyx_storage_setup_at";
+    const last = localStorage.getItem(KEY);
+    const oneDayAgo = Date.now() - 86400000;
+    if (last && Number(last) > oneDayAgo) return; // already ran today
+    fetch("/api/ronyx/setup-storage")
+      .then(r => r.json())
+      .then(d => { if (d.created > 0) console.info(`[storage] ${d.created} bucket(s) initialized`); })
+      .catch(() => {}) // never block the UI
+      .finally(() => localStorage.setItem(KEY, String(Date.now())));
+  }, []);
+
   const displayName =
     user.first_name || user.last_name
       ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()

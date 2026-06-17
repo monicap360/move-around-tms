@@ -40,7 +40,7 @@ async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, b
 
     // Bucket doesn't exist — try to create it
     const { error: createErr } = await sb.storage.createBucket(bucket, {
-      public: false,
+      public: true,
       fileSizeLimit: 52428800, // 50MB
     });
     return !createErr;
@@ -83,43 +83,29 @@ export async function POST(req: Request) {
   const arrayBuffer = await file.arrayBuffer();
   const contentType = file.type || "application/octet-stream";
 
-  // ── Try primary bucket (auto-create if missing) ──
-  let usedBucket = BUCKET;
+  // ── Try buckets in priority order until one works ──
+  const FALLBACK_BUCKETS = ["ronyx-imports", "company_assets", "ronyx-files"];
+  let usedBucket  = BUCKET;
   let storagePath = filePath;
   let publicUrl: string | null = null;
   let storageOk = false;
 
-  const bucketReady = await ensureBucket(sb, BUCKET);
+  for (const candidateBucket of FALLBACK_BUCKETS) {
+    if (storageOk) break;
+    const candidatePath = candidateBucket === BUCKET ? filePath : `ronyx/${module}/${today}/${timestamp}_${safeName}`;
+    const ready = await ensureBucket(sb, candidateBucket);
+    if (!ready) continue;
 
-  if (bucketReady) {
     const { error: uploadErr } = await sb.storage
-      .from(BUCKET)
-      .upload(filePath, arrayBuffer, { contentType, upsert: false });
+      .from(candidateBucket)
+      .upload(candidatePath, arrayBuffer, { contentType, upsert: false });
 
     if (!uploadErr) {
-      storageOk = true;
-      const { data } = sb.storage.from(BUCKET).getPublicUrl(filePath);
+      storageOk   = true;
+      usedBucket  = candidateBucket;
+      storagePath = candidatePath;
+      const { data } = sb.storage.from(candidateBucket).getPublicUrl(candidatePath);
       publicUrl = data?.publicUrl || null;
-    }
-  }
-
-  // ── Fallback: company_assets bucket ──
-  if (!storageOk) {
-    const fallbackPath = `ronyx/${module}/${today}/${timestamp}_${safeName}`;
-    const fbReady = await ensureBucket(sb, "company_assets");
-
-    if (fbReady) {
-      const { error: fbErr } = await sb.storage
-        .from("company_assets")
-        .upload(fallbackPath, arrayBuffer, { contentType, upsert: false });
-
-      if (!fbErr) {
-        storageOk   = true;
-        usedBucket  = "company_assets";
-        storagePath = fallbackPath;
-        const { data } = sb.storage.from("company_assets").getPublicUrl(fallbackPath);
-        publicUrl = data?.publicUrl || null;
-      }
     }
   }
 
