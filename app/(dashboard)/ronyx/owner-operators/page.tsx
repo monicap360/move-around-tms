@@ -414,6 +414,7 @@ export default function OwnerOperatorsPage() {
   const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs" | "coi">("overview");
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
+  const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string } | null>(null);
 
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
@@ -741,8 +742,8 @@ export default function OwnerOperatorsPage() {
     flash(`${docType} uploaded${fileUrl ? " & stored in Backup Center" : ""}.`);
   }
 
-  // Open a document — fetches a short-lived signed URL so private buckets work
-  async function openDoc(fileUrl: string, print = false) {
+  // Open a document — fetches a short-lived signed URL, then shows in-app viewer
+  async function openDoc(fileUrl: string, print = false, filename?: string) {
     try {
       const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
       const data = await res.json();
@@ -751,10 +752,10 @@ export default function OwnerOperatorsPage() {
         const w = window.open(url);
         if (w) { w.onload = () => w.print(); }
       } else {
-        window.open(url, "_blank");
+        setDocViewer({ url, filename });
       }
     } catch {
-      window.open(fileUrl, "_blank");
+      setDocViewer({ url: fileUrl, filename });
     }
   }
 
@@ -1129,6 +1130,7 @@ export default function OwnerOperatorsPage() {
               })}
               {selected.contact_phone && <span>📞 {selected.contact_phone}</span>}
               {selected.contact_email && <span>✉ {selected.contact_email}</span>}
+              {selected.business_address && <span>📍 {selected.business_address}</span>}
               <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
                 <strong>Since:</strong>
                 <input
@@ -1201,7 +1203,7 @@ export default function OwnerOperatorsPage() {
                 }} />
               </label>
               {onFile?.file_url && (
-                <button onClick={()=>openDoc(onFile.file_url!)}
+                <button onClick={()=>openDoc(onFile.file_url!,false,onFile.file_name)}
                   style={{ padding: "5px 8px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #bfdbfe", cursor: "pointer", whiteSpace: "nowrap" }}>
                   👁
                 </button>
@@ -1649,6 +1651,11 @@ export default function OwnerOperatorsPage() {
                   <div style={{ marginBottom:10 }}>
                     <div style={{ fontWeight:700, color:"#0f172a", marginBottom:2 }}>{selected.contact_name||"—"}</div>
                     <div style={{ fontSize:"0.72rem", color:"#64748b" }}>Primary Contact</div>
+                    {selected.business_address && (
+                      <div style={{ fontSize:"0.72rem", color:"#475569", marginTop:4, display:"flex", alignItems:"flex-start", gap:4 }}>
+                        <span>📍</span><span>{selected.business_address}</span>
+                      </div>
+                    )}
                     {selected.last_contact_date && (
                       <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:4 }}>
                         Last contact: {Math.floor((Date.now()-new Date(selected.last_contact_date).getTime())/86400000)} day{Math.floor((Date.now()-new Date(selected.last_contact_date).getTime())/86400000)!==1?"s":""} ago
@@ -2188,8 +2195,8 @@ export default function OwnerOperatorsPage() {
                       )}
                       {existing.file_url ? (
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                          <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
-                          <button onClick={()=>openDoc(existing.file_url!,true)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
+                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,true,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
                           <a href={`mailto:?subject=${encodeURIComponent(docType+" — "+selected.company_name)}&body=${encodeURIComponent("Document: "+existing.file_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
                         </div>
                       ) : (
@@ -2241,8 +2248,8 @@ export default function OwnerOperatorsPage() {
                       )}
                       {existing.file_url ? (
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                          <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
-                          <button onClick={()=>openDoc(existing.file_url!,true)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
+                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,true,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
                           <a href={`mailto:?subject=${encodeURIComponent("COI for "+label+" — "+selected.company_name)}&body=${encodeURIComponent("COI File: "+existing.file_name+"\n\nNamed insured: "+label+"\nUploaded for: "+selected.company_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
                         </div>
                       ) : (
@@ -2301,8 +2308,8 @@ export default function OwnerOperatorsPage() {
                       ) : null}
                       {existing.file_url ? (
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                          <button onClick={()=>openDoc(existing.file_url!)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
-                          <button onClick={()=>openDoc(existing.file_url!,true)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
+                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,true,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
                           <a href={`mailto:?subject=${encodeURIComponent(docType+" — "+selected.company_name)}&body=${encodeURIComponent("Document: "+existing.file_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
                         </div>
                       ) : (
@@ -3395,6 +3402,53 @@ export default function OwnerOperatorsPage() {
           </div>
         </div>
       )}
+
+      {/* ── In-app document viewer ── */}
+      {docViewer && (() => {
+        const isPdf = /\.pdf(\?|$)/i.test(docViewer.url) || docViewer.url.includes("application%2Fpdf") || docViewer.url.includes("content-type=application");
+        const isImage = !isPdf && /\.(jpe?g|png|webp|heic|gif|bmp|tiff?)(\?|$)/i.test(docViewer.url);
+        return (
+          <div
+            onClick={() => setDocViewer(null)}
+            style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ background:"#fff", borderRadius:14, width:"100%", maxWidth:960, height:"90vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 24px 80px rgba(0,0,0,0.4)" }}>
+              {/* Title bar */}
+              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 18px", borderBottom:"1px solid #e2e8f0", flexShrink:0, background:"#f8fafc" }}>
+                <span style={{ fontSize:"1.1rem" }}>{isPdf ? "📄" : isImage ? "🖼️" : "📁"}</span>
+                <span style={{ flex:1, fontWeight:700, fontSize:"0.85rem", color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {docViewer.filename || "Document"}
+                </span>
+                <a href={docViewer.url} download target="_blank" rel="noreferrer"
+                  style={{ padding:"5px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", textDecoration:"none", border:"1px solid #e2e8f0" }}>
+                  ⬇ Download
+                </a>
+                <button onClick={() => { const w = window.open(docViewer.url); if (w && isPdf) { w.onload = () => w.print(); } }}
+                  style={{ padding:"5px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", border:"1px solid #e2e8f0", cursor:"pointer" }}>
+                  🖨 Print
+                </button>
+                <button onClick={() => setDocViewer(null)}
+                  style={{ padding:"5px 12px", background:"#fff1f2", color:"#dc2626", borderRadius:7, fontWeight:700, fontSize:"0.72rem", border:"1px solid #fecaca", cursor:"pointer" }}>
+                  ✕ Close
+                </button>
+              </div>
+              {/* Content */}
+              <div style={{ flex:1, overflow:"auto", background:"#475569", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {isImage ? (
+                  <img src={docViewer.url} alt={docViewer.filename || "document"} style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", borderRadius:4 }} />
+                ) : (
+                  <iframe
+                    src={docViewer.url}
+                    title={docViewer.filename || "document"}
+                    style={{ width:"100%", height:"100%", border:"none" }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
