@@ -188,16 +188,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Auto-create/close staff task based on new status
-  await syncTaskForDoc(sb, params.id, ooName, { ...data, coi_group: body.coi_group });
+  // Auto-create/close staff task — non-fatal if tasks table not yet migrated
+  try {
+    await syncTaskForDoc(sb, params.id, ooName, { ...data, coi_group: body.coi_group });
+  } catch { /* tasks table may not be fully migrated yet */ }
 
-  // Audit log
-  await sb.from("ronyx_oo_coi_audit").insert({
-    oo_id: params.id, coi_document_id: data.id,
-    action: "upload", new_status: status,
-    note: `Uploaded by ${body.uploaded_by || "staff"}. Provider: ${body.insurance_provider || "unknown"}.`,
-    created_by: body.uploaded_by || null,
-  });
+  // Audit log — non-fatal
+  try {
+    await sb.from("ronyx_oo_coi_audit").insert({
+      oo_id: params.id, coi_document_id: data.id,
+      action: "upload", new_status: status,
+      note: `Uploaded by ${body.uploaded_by || "staff"}. Provider: ${body.insurance_provider || "unknown"}.`,
+      created_by: body.uploaded_by || null,
+    });
+  } catch { /* audit table may not be fully migrated yet */ }
 
   return NextResponse.json({ coi: data });
 }
