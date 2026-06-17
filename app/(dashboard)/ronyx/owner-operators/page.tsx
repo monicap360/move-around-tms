@@ -130,6 +130,8 @@ type OOCompany = {
   compliance_history?: HistoryEntry[];
   changes_log?: ChangeEntry[];
   logo_url?: string;
+  start_date?: string;
+  website?: string;
 };
 
 /* ─── helpers ────────────────────────────────────────── */
@@ -149,21 +151,30 @@ async function apiDelete(path: string) {
 
 /* ─── COI type constants ─────────────────────────────── */
 const COI_TYPES_CONST = [
-  { value:"auto_liability_coi",                     label:"Auto Liability COI",                    group:"standard",    shortLabel:"Auto Liab" },
-  { value:"general_liability_coi",                  label:"General Liability COI",                 group:"standard",    shortLabel:"Gen Liab"  },
-  { value:"cargo_coi",                              label:"Cargo / Motor Truck Cargo COI",         group:"standard",    shortLabel:"Cargo"     },
-  { value:"ronyx_contractor_auto_liability_coi",    label:"Ronyx Auto Liability COI",              group:"ronyx",       shortLabel:"Ronyx Auto"},
-  { value:"ronyx_contractor_general_liability_coi", label:"Ronyx General Liability COI",           group:"ronyx",       shortLabel:"Ronyx Gen" },
-  { value:"ronyx_contractor_cargo_coi",             label:"Ronyx Cargo COI",                       group:"ronyx",       shortLabel:"Ronyx Cargo"},
-  { value:"ma_morrison_auto_liability_coi",         label:"MA Morrison Auto Liability COI",        group:"ma_morrison", shortLabel:"MAM Auto"  },
-  { value:"ma_morrison_general_liability_coi",      label:"MA Morrison General Liability COI",     group:"ma_morrison", shortLabel:"MAM Gen"   },
-  { value:"ma_morrison_cargo_coi",                  label:"MA Morrison Cargo COI",                 group:"ma_morrison", shortLabel:"MAM Cargo" },
+  { value:"auto_liability_coi",                       label:"Auto Liability COI",                   group:"ronyx_ma_mortenson", shortLabel:"Auto Liab"   },
+  { value:"general_liability_coi",                    label:"General Liability COI",                group:"ronyx_ma_mortenson", shortLabel:"Gen Liab"    },
+  { value:"cargo_coi",                                label:"Cargo / Motor Truck Cargo COI",        group:"ronyx_ma_mortenson", shortLabel:"Cargo"       },
+  { value:"ronyx_contractor_auto_liability_coi",      label:"Ronyx Auto Liability COI",             group:"ronyx_ma_mortenson", shortLabel:"Ronyx Auto"  },
+  { value:"ronyx_contractor_general_liability_coi",   label:"Ronyx General Liability COI",          group:"ronyx_ma_mortenson", shortLabel:"Ronyx Gen"   },
+  { value:"ronyx_contractor_cargo_coi",               label:"Ronyx Cargo COI",                      group:"ronyx_ma_mortenson", shortLabel:"Ronyx Cargo" },
+  { value:"ma_morrison_auto_liability_coi",           label:"MA Morrison Auto Liability COI",       group:"ronyx_ma_mortenson", shortLabel:"MAM Auto"    },
+  { value:"ma_morrison_general_liability_coi",        label:"MA Morrison General Liability COI",    group:"ronyx_ma_mortenson", shortLabel:"MAM Gen"     },
+  { value:"ma_morrison_cargo_coi",                    label:"MA Morrison Cargo COI",                group:"ronyx_ma_mortenson", shortLabel:"MAM Cargo"   },
+  { value:"bass_equipment_auto_liability_coi",        label:"Bass Equipment Auto Liability COI",    group:"bass_equipment",     shortLabel:"Bass Auto"   },
+  { value:"bass_equipment_general_liability_coi",     label:"Bass Equipment General Liability COI", group:"bass_equipment",     shortLabel:"Bass Gen"    },
+  { value:"bass_equipment_cargo_coi",                 label:"Bass Equipment Cargo / Motor Truck COI", group:"bass_equipment",   shortLabel:"Bass Cargo"  },
 ] as const;
 
+/* ─── Customer COI company packages ─────────────────── */
+const COI_COMPANIES = [
+  { key:"ronyx_ma_mortenson", label:"Ronyx, MA. Mortenson COI", color:"#1e40af", bg:"#eff6ff", desc:"Required for Ronyx & MA Morrison jobs" },
+  { key:"bass_equipment",     label:"Bass Equipment COI",        color:"#0891b2", bg:"#f0f9ff", desc:"Required for Bass Equipment jobs"       },
+] as const;
+type CoiCompanyKey = typeof COI_COMPANIES[number]["key"];
+
 const COI_GROUPS_DEF = {
-  standard:   { label:"Standard Owner Operator COIs",  desc:"Required for all dispatch",          color:"#1e40af", bg:"#eff6ff" },
-  ronyx:      { label:"Ronyx Contractor COIs",         desc:"Required for Ronyx contractor jobs", color:"#7c3aed", bg:"#f5f3ff" },
-  ma_morrison:{ label:"MA Morrison COIs",              desc:"Required for MA Morrison jobs",      color:"#0891b2", bg:"#f0f9ff" },
+  ronyx_ma_mortenson: { label:"Ronyx, MA. Mortenson COI", desc:"Required for Ronyx & MA Morrison jobs", color:"#1e40af", bg:"#eff6ff" },
+  bass_equipment:     { label:"Bass Equipment COI",        desc:"Required for Bass Equipment jobs",      color:"#0891b2", bg:"#f0f9ff" },
 } as const;
 
 const COI_STATUS_COLORS: Record<string, [string,string]> = {
@@ -262,7 +273,6 @@ function ooDispatchEligible(oo: OOCompany): [boolean, string[]] {
   const insExpDays = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
   if (!insDoc)                                         blocks.push("No insurance on file");
   else if (insExpDays !== null && insExpDays <= 0)     blocks.push("Insurance expired");
-  if (!oo.mc_number)                                   blocks.push("MC# missing");
   const expCDL = oo.drivers.filter(d => { const x = daysUntil(d.cdl_expiration); return x !== null && x <= 0; });
   const expMed = oo.drivers.filter(d => { const x = daysUntil(d.med_card_expiration); return x !== null && x <= 0; });
   if (expCDL.length > 0) blocks.push(`${expCDL.length} CDL expired`);
@@ -336,6 +346,7 @@ const EMPTY_COMPANY: Omit<OOCompany, "id"> = {
   business_address: "", mc_number: "", dot_number: "", ein: "",
   insurance_agent_name: "", insurance_agent_email: "", insurance_agent_phone: "",
   drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [], driver_truck_assignments: [], coi_documents: [], logo_url: undefined,
+  start_date: "", website: "",
 };
 
 const DEMO: OOCompany[] = [];
@@ -360,10 +371,12 @@ function Row({ label, value }: { label: string; value?: string | React.ReactNode
   );
 }
 function KPI({ label, value, color, bg, onClick }: { label: string; value: string | number; color?: string; bg?: string; onClick?: () => void }) {
+  const c = color || "#1e40af";
+  const b = bg || "#eff6ff";
   return (
-    <div onClick={onClick} style={{ background: bg || "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 16px", cursor: onClick ? "pointer" : undefined }}>
-      <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</div>
-      <div style={{ fontSize: "1.4rem", fontWeight: 900, color: color || "#0f172a", marginTop: 4, lineHeight: 1.1 }}>{value}</div>
+    <div onClick={onClick} style={{ background: b, border: `1.5px solid ${c}30`, borderRadius: 14, padding: "12px 14px", cursor: onClick ? "pointer" : undefined }}>
+      <div style={{ display:"inline-block", background: `${c}18`, color: c, borderRadius: 20, padding: "2px 10px", fontSize: "0.62rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ fontSize: "1.45rem", fontWeight: 900, color: c, lineHeight: 1.1 }}>{value}</div>
     </div>
   );
 }
@@ -404,7 +417,7 @@ export default function OwnerOperatorsPage() {
 
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
-  const [newOODrivers, setNewOODrivers]     = useState<{ name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string }[]>([]);
+  const [newOODrivers, setNewOODrivers]     = useState<{ name: string; phone: string; cdl_number: string; cdl_state: string; cdl_class?: string; cdl_expiration: string; med_card_expiration: string }[]>([]);
   const BLANK_OO_DRIVER = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_class: "", cdl_expiration: "", med_card_expiration: "" };
 
   // Add driver/truck/job forms
@@ -423,8 +436,10 @@ export default function OwnerOperatorsPage() {
   const [addJobForm,    setAddJobForm]    = useState<Omit<OOJob,"id">>({ project_name:"Domino Project", project_number:"", load_date:"", truck_number:"", driver_name:"", origin:"", destination:"", material:"", tons:0, gross_revenue:0, oo_rate:0, margin:0, ticket_status:"Verified", settlement_status:"Pending" });
 
   // COI upload state
-  const [coiUploadForm, setCoiUploadForm] = useState({ document_type:"", coi_group:"standard", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
+  const [coiUploadForm, setCoiUploadForm] = useState({ document_type:"", coi_group:"ronyx_ma_mortenson", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
   const [showCoiUpload, setShowCoiUpload] = useState<string>(""); // document_type being uploaded
+  const [activeCoiCompanies, setActiveCoiCompanies] = useState<CoiCompanyKey[]>(["ronyx_ma_mortenson"]);
+  const [showCoiDropdown, setShowCoiDropdown] = useState(false);
   const coiFileRef = useRef<HTMLInputElement>(null);
   const pendingCoiTypeRef = useRef<string>("");
 
@@ -474,6 +489,7 @@ export default function OwnerOperatorsPage() {
       business_address: oo.business_address,
       insurance_agent_name: oo.insurance_agent_name, insurance_agent_email: oo.insurance_agent_email, insurance_agent_phone: oo.insurance_agent_phone,
       reminder_log: oo.reminder_log, compliance_history: oo.compliance_history, changes_log: oo.changes_log,
+      start_date: oo.start_date || null, website: oo.website || null,
     });
   }
   function openOO(oo: OOCompany) { setSelected(oo); setView("detail"); setActiveTab("overview"); }
@@ -1071,7 +1087,7 @@ export default function OwnerOperatorsPage() {
                 : selected.company_name.charAt(0)}
             </div>
             {/* Logo upload button */}
-            <label style={{ position: "absolute", bottom: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", cursor: "pointer", border: "2px solid #fff", title: "Upload logo" }}>
+            <label title="Upload logo" style={{ position: "absolute", bottom: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", cursor: "pointer", border: "2px solid #fff" }}>
               📷
               <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
                 const f = e.target.files?.[0];
@@ -1113,6 +1129,25 @@ export default function OwnerOperatorsPage() {
               })}
               {selected.contact_phone && <span>📞 {selected.contact_phone}</span>}
               {selected.contact_email && <span>✉ {selected.contact_email}</span>}
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+                <strong>Since:</strong>
+                <input
+                  type="date"
+                  defaultValue={selected.start_date||""}
+                  onBlur={e => { const v=e.target.value.trim(); if(v!==(selected.start_date||"")){ updateSelected({...selected,start_date:v||undefined}); flash("Start date saved."); } }}
+                  style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", width:110, outline:"none", padding:"1px 2px" }}
+                />
+              </span>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+                <strong>Web:</strong>
+                <input
+                  defaultValue={selected.website||""}
+                  placeholder="www.company.com"
+                  onBlur={e => { const v=e.target.value.trim(); if(v!==(selected.website||"")){ updateSelected({...selected,website:v||undefined}); flash("Website saved."); } }}
+                  onKeyDown={e => { if(e.key==="Enter")(e.target as HTMLInputElement).blur(); }}
+                  style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", width:140, outline:"none", padding:"1px 2px" }}
+                />
+              </span>
             </div>
             {selected.logo_url && (
               <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ marginTop: 6, background: "none", border: "none", color: "#94a3b8", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
@@ -1134,11 +1169,11 @@ export default function OwnerOperatorsPage() {
         <KPI label="Settlement Ready" value={`$${settlementReady.toLocaleString()}`} color="#1e40af" bg="#eff6ff" />
         <KPI label="Revenue MTD"      value={`$${revMTD.toLocaleString()}`}          color="#15803d" bg="#f0fdf4" />
         <KPI label="Margin MTD"       value={`$${marMTD.toLocaleString()}`}          color="#7c3aed" bg="#f5f3ff" />
-        <KPI label="Verified Tickets" value={tick.verified}  color="#15803d" />
-        <KPI label="Needs Review"     value={tick.needsReview} color={tick.needsReview>0?"#d97706":undefined} />
-        <KPI label="Missing Tickets"  value={tick.missing}   color={tick.missing>0?"#dc2626":undefined} bg={tick.missing>0?"#fff1f2":undefined} />
-        <KPI label="Drivers"          value={selected.drivers.length} />
-        <KPI label="Trucks"           value={selected.trucks.length} />
+        <KPI label="Verified Tickets" value={tick.verified}  color="#15803d" bg="#f0fdf4" />
+        <KPI label="Needs Review"     value={tick.needsReview} color={tick.needsReview>0?"#d97706":"#64748b"} bg={tick.needsReview>0?"#fffbeb":"#f8fafc"} />
+        <KPI label="Missing Tickets"  value={tick.missing}   color={tick.missing>0?"#dc2626":"#64748b"} bg={tick.missing>0?"#fff1f2":"#f8fafc"} />
+        <KPI label="Drivers"          value={selected.drivers.length} color="#0891b2" bg="#f0f9ff" />
+        <KPI label="Trucks"           value={selected.trucks.length}  color="#0891b2" bg="#f0f9ff" />
       </div>
 
       {/* Quick Upload Actions */}
@@ -1166,10 +1201,10 @@ export default function OwnerOperatorsPage() {
                 }} />
               </label>
               {onFile?.file_url && (
-                <a href={onFile.file_url} target="_blank" rel="noopener noreferrer"
-                  style={{ padding: "5px 8px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, textDecoration: "none", borderLeft: "1px solid #bfdbfe", whiteSpace: "nowrap" }}>
+                <button onClick={()=>openDoc(onFile.file_url!)}
+                  style={{ padding: "5px 8px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #bfdbfe", cursor: "pointer", whiteSpace: "nowrap" }}>
                   👁
-                </a>
+                </button>
               )}
             </div>
           );
@@ -1239,11 +1274,7 @@ export default function OwnerOperatorsPage() {
           if (c!==null && c<=0) missingItems.push({ label:`CDL Expired — ${d.name}` });
           if (m!==null && m<=0) missingItems.push({ label:`Medical Card Expired — ${d.name}` });
           const cdlDoc = selected.documents.find(doc=>doc.type===`[${d.name}] CDL License`);
-          const dtDoc  = selected.documents.find(doc=>doc.type===`[${d.name}] Drug Test`);
-          const bgDoc  = selected.documents.find(doc=>doc.type===`[${d.name}] Background Check`);
           if (!cdlDoc) missingItems.push({ label:`CDL Upload Missing — ${d.name}` });
-          if (!dtDoc)  missingItems.push({ label:`Drug Test Missing — ${d.name}` });
-          if (!bgDoc)  missingItems.push({ label:`Background Check Missing — ${d.name}` });
         });
 
         // ── upcoming expirations for reminder center ──
@@ -1291,12 +1322,14 @@ export default function OwnerOperatorsPage() {
         if (settlementReady>0) recommendedActions.push(`$${settlementReady.toLocaleString()} ready to settle — release payment to ${selected.company_name}`);
 
         function sendReminder(docType: string, label: string) {
-          const sub = encodeURIComponent(`Document Renewal Required — ${selected.company_name} — ${label}`);
-          const body = encodeURIComponent(`Dear ${selected.contact_name||selected.company_name},\n\nThis is a reminder that the following document requires renewal:\n\n${label}\n\nPlease provide an updated document at your earliest convenience.\n\nMC#: ${selected.mc_number||"—"}\n\nThank you,\nRonyx Logistics Operations`);
-          window.location.href = `mailto:${selected.contact_email||selected.insurance_agent_email||""}?subject=${sub}&body=${body}`;
+          if (!selected) return;
+          const sel = selected;
+          const sub = encodeURIComponent(`Document Renewal Required — ${sel.company_name} — ${label}`);
+          const body = encodeURIComponent(`Dear ${sel.contact_name||sel.company_name},\n\nThis is a reminder that the following document requires renewal:\n\n${label}\n\nPlease provide an updated document at your earliest convenience.\n\nMC#: ${sel.mc_number||"—"}\n\nThank you,\nRonyx Logistics Operations`);
+          window.location.href = `mailto:${sel.contact_email||sel.insurance_agent_email||""}?subject=${sub}&body=${body}`;
           const log: ReminderEntry = { doc_type:docType, sent_at:new Date().toISOString(), method:"email" };
           const change: ChangeEntry = { date:new Date().toISOString().slice(0,10), type:"Reminder Sent", detail:`${label} reminder emailed` };
-          updateSelected({ ...selected, reminder_log:[log,...(selected.reminder_log||[])], changes_log:[change,...(selected.changes_log||[])] });
+          updateSelected({ ...sel, reminder_log:[log,...(sel.reminder_log||[])], changes_log:[change,...(sel.changes_log||[])] });
           flash(`Reminder sent for ${label}.`);
         }
 
@@ -2287,11 +2320,13 @@ export default function OwnerOperatorsPage() {
             <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
               {selected.drivers.map(d => {
                 async function driverDocUpload(docLabel: string, f: File, hasExp: boolean) {
+                  if (!selected) return;
+                  const sel = selected;
                   const key = `[${d.name}] ${docLabel}`;
                   const exp = hasExp ? (prompt(`${docLabel} expiration date for ${d.name} (YYYY-MM-DD):`) || undefined) : undefined;
-                  await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:key,file_name:f.name,expires_on:exp||null});
+                  await apiPost(`/api/ronyx/owner-operators/${sel.id}/documents`,{doc_type:key,file_name:f.name,expires_on:exp||null});
                   const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name, expires_on:exp };
-                  updateLocalState({...selected, documents:[doc,...selected.documents.filter(x=>x.type!==key)]});
+                  updateLocalState({...sel, documents:[doc,...sel.documents.filter(x=>x.type!==key)]});
                   flash(`${docLabel} uploaded for ${d.name}.`);
                 }
                 return (
@@ -3079,17 +3114,72 @@ export default function OwnerOperatorsPage() {
             <a href="/ronyx/owner-operators/coi-matrix" style={{ background:"#eff6ff", color:"#1d4ed8", padding:"7px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none" }}>View COI Matrix →</a>
           </div>
 
-          {(["standard","ronyx","ma_morrison"] as const).map(group => {
-            const gDef   = COI_GROUPS_DEF[group];
-            const types  = COI_TYPES_CONST.filter(t => t.group === group);
-            const gDocs  = coiDocs.filter(d => d.coi_group === group);
+          {/* ── Split button: primary company + dropdown to add more ── */}
+          <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:18, position:"relative" }}>
+            {/* Main button — always active: Ronyx, MA. Mortenson COI */}
+            <button
+              onClick={() => setActiveCoiCompanies(prev => prev.includes("ronyx_ma_mortenson") ? prev.filter(k=>k!=="ronyx_ma_mortenson") : [...prev,"ronyx_ma_mortenson"])}
+              style={{ background: activeCoiCompanies.includes("ronyx_ma_mortenson")?"#1e40af":"#f1f5f9", color: activeCoiCompanies.includes("ronyx_ma_mortenson")?"#fff":"#374151", border:"1px solid #1e40af", borderRight:"none", borderRadius:"8px 0 0 8px", padding:"9px 18px", fontWeight:800, fontSize:"0.82rem", cursor:"pointer" }}>
+              📋 Ronyx, MA. Mortenson COI
+              {activeCoiCompanies.includes("ronyx_ma_mortenson") && <span style={{ marginLeft:8, background:"rgba(255,255,255,0.25)", borderRadius:10, padding:"1px 7px", fontSize:"0.65rem" }}>
+                {COI_TYPES_CONST.filter(t=>t.group==="ronyx_ma_mortenson").filter(t=>coiDocs.find(d=>d.document_type===t.value&&d.status==="complete"&&["standard","ronyx","ma_morrison","ronyx_ma_mortenson"].includes(d.coi_group))).length}/{COI_TYPES_CONST.filter(t=>t.group==="ronyx_ma_mortenson").length}
+              </span>}
+            </button>
+
+            {/* Show Bass Equipment button if already active */}
+            {activeCoiCompanies.includes("bass_equipment") && (
+              <button
+                onClick={() => setActiveCoiCompanies(prev => prev.filter(k=>k!=="bass_equipment"))}
+                style={{ background:"#0891b2", color:"#fff", border:"1px solid #0891b2", borderRight:"none", borderLeft:"1px solid rgba(255,255,255,0.3)", padding:"9px 16px", fontWeight:800, fontSize:"0.82rem", cursor:"pointer" }}>
+                🏗️ Bass Equipment COI
+                <span style={{ marginLeft:8, background:"rgba(255,255,255,0.25)", borderRadius:10, padding:"1px 7px", fontSize:"0.65rem" }}>
+                  {COI_TYPES_CONST.filter(t=>t.group==="bass_equipment").filter(t=>coiDocs.find(d=>d.document_type===t.value&&d.status==="complete")).length}/{COI_TYPES_CONST.filter(t=>t.group==="bass_equipment").length}
+                </span>
+                <span style={{ marginLeft:8, opacity:0.7, fontSize:"0.7rem" }}>✕</span>
+              </button>
+            )}
+
+            {/* Dropdown toggle */}
+            <div style={{ position:"relative" }}>
+              <button
+                onClick={() => setShowCoiDropdown(s=>!s)}
+                style={{ background:"#1e40af", color:"#fff", border:"1px solid #1e40af", borderRadius:"0 8px 8px 0", padding:"9px 13px", fontWeight:800, fontSize:"0.85rem", cursor:"pointer", minWidth:36 }}>
+                ▾
+              </button>
+              {showCoiDropdown && (
+                <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, zIndex:200, background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:220, overflow:"hidden" }}
+                  onMouseLeave={()=>setShowCoiDropdown(false)}>
+                  <div style={{ padding:"8px 12px 4px", fontSize:"0.6rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em" }}>Add Customer COI</div>
+                  {COI_COMPANIES.filter(c => !activeCoiCompanies.includes(c.key)).map(c => (
+                    <button key={c.key}
+                      onClick={() => { setActiveCoiCompanies(prev=>[...prev, c.key]); setShowCoiDropdown(false); }}
+                      style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 14px", background:"none", border:"none", cursor:"pointer", fontSize:"0.82rem", fontWeight:700, color:c.color }}>
+                      + {c.label}
+                    </button>
+                  ))}
+                  {COI_COMPANIES.every(c => activeCoiCompanies.includes(c.key)) && (
+                    <div style={{ padding:"10px 14px", fontSize:"0.78rem", color:"#94a3b8" }}>All companies added</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── COI panels for each active company ── */}
+          {activeCoiCompanies.map(companyKey => {
+            const company = COI_COMPANIES.find(c => c.key === companyKey);
+            if (!company) return null;
+            const types  = COI_TYPES_CONST.filter(t => t.group === companyKey);
+            const gDocs  = companyKey === "ronyx_ma_mortenson"
+              ? coiDocs.filter(d => ["standard","ronyx","ma_morrison","ronyx_ma_mortenson"].includes(d.coi_group))
+              : coiDocs.filter(d => d.coi_group === companyKey);
             const allOK  = types.every(t => gDocs.find(d => d.document_type === t.value && d.status === "complete"));
             return (
-              <div key={group} style={{ background:"#fff", border:`1px solid ${allOK?"#bbf7d0":"#e2e8f0"}`, borderRadius:14, padding:"18px 20px", marginBottom:14 }}>
+              <div key={companyKey} style={{ background:"#fff", border:`1px solid ${allOK?"#bbf7d0":"#e2e8f0"}`, borderRadius:14, padding:"18px 20px", marginBottom:14 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
                   <div>
-                    <div style={{ fontWeight:900, fontSize:"0.9rem", color:gDef.color }}>{gDef.label}</div>
-                    <div style={{ fontSize:"0.75rem", color:"#64748b" }}>{gDef.desc}</div>
+                    <div style={{ fontWeight:900, fontSize:"0.9rem", color:company.color }}>{company.label}</div>
+                    <div style={{ fontSize:"0.75rem", color:"#64748b" }}>{company.desc}</div>
                   </div>
                   <span style={{ background:allOK?"#f0fdf4":"#fff1f2", color:allOK?"#15803d":"#dc2626", padding:"4px 12px", borderRadius:20, fontSize:"0.72rem", fontWeight:800 }}>
                     {allOK ? "✓ Complete" : `${gDocs.filter(d=>d.status==="complete").length}/${types.length} docs`}
@@ -3132,17 +3222,16 @@ export default function OwnerOperatorsPage() {
                           <div style={{ fontSize:"0.72rem", color:"#dc2626", fontWeight:600, marginBottom:8 }}>Not uploaded</div>
                         )}
 
-                        {/* Actions */}
                         {!isUploading ? (
                           <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:10 }}>
                             <button
-                              onClick={() => { pendingCoiTypeRef.current = t.value; setShowCoiUpload(t.value); setCoiUploadForm(f => ({ ...f, document_type:t.value, coi_group:group })); }}
+                              onClick={() => { pendingCoiTypeRef.current = t.value; setShowCoiUpload(t.value); setCoiUploadForm(f => ({ ...f, document_type:t.value, coi_group:companyKey })); }}
                               style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
                               {doc ? "Replace" : "Upload"}
                             </button>
                             {doc?.file_url && (
                               <>
-                                <button onClick={()=>window.open(doc.file_url!,"_blank")} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>View</button>
+                                <button onClick={()=>openDoc(doc.file_url!)} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>View</button>
                                 <a href={doc.file_url} download={doc.file_name||"coi"} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer", textDecoration:"none" }}>Download</a>
                               </>
                             )}
@@ -3154,8 +3243,8 @@ export default function OwnerOperatorsPage() {
                             )}
                             <button
                               onClick={() => {
-                                const sub = `Updated COI Needed — ${selected.company_name}`;
-                                const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need an updated ${t.label} for your file.\n\nPlease send the updated Certificate of Insurance as soon as possible. Dispatch and/or settlement may remain on hold until the document is received and verified.\n\nThank you.`;
+                                const sub = `${company.label} Required — ${selected.company_name}`;
+                                const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need an updated ${t.label} for your file.\n\nPlease send the updated Certificate of Insurance as soon as possible.\n\nThank you.`;
                                 window.open(`mailto:${selected.contact_email||""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
                               }}
                               style={{ background:"#fef3c7", color:"#92400e", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
@@ -3163,7 +3252,6 @@ export default function OwnerOperatorsPage() {
                             </button>
                           </div>
                         ) : (
-                          /* Inline upload form */
                           <div style={{ marginTop:10, background:"rgba(255,255,255,0.7)", borderRadius:8, padding:"10px 12px" }}>
                             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 10px", marginBottom:8 }}>
                               <div>
@@ -3194,22 +3282,19 @@ export default function OwnerOperatorsPage() {
                   })}
                 </div>
 
-                {/* Group-level actions */}
                 <div style={{ display:"flex", gap:8, marginTop:12 }}>
                   <button
                     onClick={() => {
                       const missing = types.filter(t => !gDocs.find(d => d.document_type === t.value && d.status === "complete")).map(t => `• ${t.label}`).join("\n");
-                      if (!missing) { flash("All COIs in this group are complete."); return; }
-                      const sub = `${gDef.label} Required — ${selected.company_name}`;
+                      if (!missing) { flash("All COIs complete."); return; }
+                      const sub = `${company.label} Required — ${selected.company_name}`;
                       const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need the following insurance documents:\n\n${missing}\n\nPlease provide updated COIs as soon as possible.\n\nThank you.`;
                       window.open(`mailto:${selected.contact_email||""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
                     }}
-                    style={{ background:gDef.bg, color:gDef.color, border:`1px solid ${gDef.color}33`, borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
-                    Request {gDef.label}
+                    style={{ background:company.bg, color:company.color, border:`1px solid ${company.color}33`, borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                    Request Missing COIs
                   </button>
-                  <button
-                    onClick={() => { window.print(); }}
-                    style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
+                  <button onClick={() => window.print()} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
                     Print COI Packet
                   </button>
                 </div>

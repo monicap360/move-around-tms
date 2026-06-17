@@ -119,6 +119,11 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
     show_fuel: body.show_fuel ?? Boolean(body.fuel_surcharge_amount || body.fuel_surcharge),
     show_spread: body.show_spread ?? Boolean(body.spread_amount),
     show_detention: body.show_detention ?? Boolean(body.detention_amount),
+    vendor_name: body.vendor_name || null,
+    pit_location_name: body.pit_location_name || null,
+    po_number: body.po_number || null,
+    scan_type: body.scan_type || null,
+    total_amount: body.total_amount ? Number(body.total_amount) : null,
   };
 
   const { data, error } = await supabase

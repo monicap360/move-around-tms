@@ -10,13 +10,13 @@ import { logValidations, validateTicket } from "@/lib/ronyx/aiValidationEngine";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_UNITS = ["Load", "Yard", "Ton", "Hour"];
-const ALLOWED_STATUSES = ["pending", "approved", "rejected", "paid", "invoiced", "voided"];
+const ALLOWED_STATUSES = ["scanned", "pending", "needs_review", "in_review", "approved", "matched", "sent_to_payroll", "sent_to_billing", "rejected", "paid", "invoiced", "voided"];
 const ALLOWED_PAYMENT = ["unpaid", "processing", "paid"];
 
 function normalizeStatus(status?: string) {
-  if (!status) return "pending";
-  const lower = status.toLowerCase();
-  return ALLOWED_STATUSES.includes(lower) ? lower : "pending";
+  if (!status) return "scanned";
+  const lower = status.toLowerCase().replace(/ /g, "_");
+  return ALLOWED_STATUSES.includes(lower) ? lower : "scanned";
 }
 
 function normalizePayment(status?: string) {
@@ -212,6 +212,12 @@ export async function POST(request: NextRequest) {
     show_fuel: body.show_fuel ?? Boolean(body.fuel_surcharge_amount || body.fuel_surcharge),
     show_spread: body.show_spread ?? Boolean(body.spread_amount),
     show_detention: body.show_detention ?? Boolean(body.detention_amount),
+    // Dump-truck fields added by migration 151
+    vendor_name: body.vendor_name || null,
+    pit_location_name: body.pit_location_name || null,
+    po_number: body.po_number || null,
+    scan_type: body.scan_type || null,
+    total_amount: body.total_amount ? Number(body.total_amount) : null,
   };
 
   // Try full insert first; fall back to core-only if migration 103 hasn't run yet

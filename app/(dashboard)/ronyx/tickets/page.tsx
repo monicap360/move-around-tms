@@ -107,10 +107,11 @@ const TICKET_TABS: { id: TicketTab; label: string; icon: string }[] = [
 ];
 
 const SCAN_TYPES = [
-  { value: "ronyx_field_ticket", label: "Ronyx Field Ticket", icon: "📋", color: "#1d4ed8" },
+  { value: "ronyx_field_ticket",     label: "Ronyx Field Ticket",     icon: "📋", color: "#1d4ed8" },
+  { value: "martin_marietta_ticket", label: "Martin Marietta Ticket", icon: "⛰️", color: "#b45309" },
+  { value: "weight_ticket",          label: "Weight Ticket",          icon: "⚖️", color: "#0891b2" },
   { value: "trip_proof",    label: "Trip Proof",    icon: "📄", color: "#16a34a" },
   { value: "dump_ticket",   label: "Dump Ticket",   icon: "🪨", color: "#d97706" },
-  { value: "scale_ticket",  label: "Scale Ticket",  icon: "⚖️", color: "#0891b2" },
   { value: "fuel",          label: "Fuel / Toll",   icon: "⛽", color: "#2563eb" },
   { value: "receipt",       label: "Receipt",       icon: "🧾", color: "#7c3aed" },
   { value: "damage",        label: "Damage",        icon: "⚠️",  color: "#dc2626" },
@@ -227,6 +228,134 @@ function parseRonyxTicket(rawText: string, ocrConf: number): RonyxFields {
     ocr_confidence: Math.round(ocrConf * 10) / 10,
     extraction_confidence,
     exception_flags: [], missing_fields: [],
+  };
+}
+
+// ── Ticket format detection + Martin Marietta parser ────────────────────────
+
+function detectTicketVendor(rawText: string): "martin_marietta" | "ronyx" | "other" {
+  const up = rawText.toUpperCase();
+  if (up.includes("MARTIN MARIETTA") || (up.includes("SOLD FROM") && up.includes("SOLD TO")))
+    return "martin_marietta";
+  if (up.includes("RONYX") || up.includes("DRIVER PRINTED NAME") || up.includes("COMPANY NAME OF TRUCK"))
+    return "ronyx";
+  return "other";
+}
+
+type MMFields = {
+  ticket_number: string; ticket_date: string; po_number: string;
+  truck_number: string; driver_name: string; vendor_name: string;
+  pickup_location: string; delivery_location: string;
+  job_name: string; customer_name: string; material: string;
+  gross_weight: string; tare_weight: string; net_weight: string;
+  quantity: string; total_amount: string;
+  ocr_confidence: number; extraction_confidence: number;
+};
+
+function parseMartinMariettaTicket(rawText: string, ocrConf: number): MMFields {
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const up = rawText.toUpperCase();
+
+  function grab(labels: string[]): string {
+    for (const lbl of labels) {
+      const lu = lbl.toUpperCase();
+      for (let i = 0; i < lines.length; i++) {
+        const lineUp = lines[i].toUpperCase();
+        if (!lineUp.includes(lu)) continue;
+        const afterIdx = lineUp.indexOf(lu) + lu.length;
+        const rest = lines[i].slice(afterIdx).replace(/^[\s:#]+/, "").trim();
+        if (rest.length > 1) return rest;
+        if (i + 1 < lines.length && lines[i + 1].length > 1) return lines[i + 1];
+      }
+    }
+    return "";
+  }
+
+  function grabTons(label: string): string {
+    const lu = label.toUpperCase();
+    for (const line of lines) {
+      if (!line.toUpperCase().includes(lu)) continue;
+      const tonMatch = line.match(/(\d+\.?\d*)\s*Ton/i);
+      if (tonMatch) return tonMatch[1];
+      const nums = line.match(/\d+\.?\d*/g);
+      if (nums && nums.length > 0) return nums[nums.length - 1];
+    }
+    return "";
+  }
+
+  // Ticket number — "Ticket#: 211455" anywhere on the page
+  let ticket_number = "";
+  const tktMatch = rawText.match(/Ticket#?:?\s*#?\s*(\d+)/i);
+  if (tktMatch) ticket_number = tktMatch[1];
+  if (!ticket_number) ticket_number = grab(["TICKET#", "TICKET #"]);
+
+  // Date — "Date: 12/20/19"
+  let ticket_date = "";
+  const dateMatch = rawText.match(/Date:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+  if (dateMatch) ticket_date = dateMatch[1];
+
+  // PO number
+  const po_number = grab(["PO NO", "PO#", "P.O."]);
+
+  // Truck + driver from "Truck: JT6585   JACOBS" line
+  let truck_number = "";
+  let driver_name = "";
+  const truckLineIdx = lines.findIndex(l => /^Truck:/i.test(l));
+  if (truckLineIdx !== -1) {
+    const parts = lines[truckLineIdx].replace(/^Truck:/i, "").trim().split(/\s{2,}|\t/);
+    truck_number = parts[0]?.trim() || "";
+    driver_name  = parts[1]?.trim() || "";
+  }
+  if (!driver_name) driver_name = grab(["DRIVER"]);
+
+  const vendor_name = up.includes("MARTIN MARIETTA") ? "Martin Marietta" : "";
+
+  // "Sold From:" → pit/pickup location
+  const pickup_location = grab(["SOLD FROM", "PLANT", "YARD"]);
+
+  // "Job/Dest. Information:" → delivery location
+  const delivery_location = grab(["JOB/DEST", "JOB DEST", "DESTINATION", "DEST."]);
+
+  // Job name
+  const job_name = grab(["JOB#", "JOB #", "JOB NO"]) || grab(["ATTN:"]);
+
+  // Customer from "Sold To:" line
+  let customer_name = "";
+  const soldToIdx = lines.findIndex(l => l.toUpperCase().includes("SOLD TO"));
+  if (soldToIdx !== -1) {
+    const afterSoldTo = lines[soldToIdx].replace(/SOLD TO:?\s*/i, "").trim();
+    customer_name = /^\d+/.test(afterSoldTo) && soldToIdx + 1 < lines.length
+      ? lines[soldToIdx + 1].trim()
+      : afterSoldTo;
+  }
+
+  // Material from "Desc:" line
+  const material = grab(["DESC:", "DESCRIPTION", "PRODUCT NO", "COMMERCIAL TYPE"]) ||
+    lines.find(l => /COMMERCIAL|LIMESTONE|GRAVEL|SAND|CRUSHED/i.test(l)) || "";
+
+  // Weights in tons
+  const gross_weight = grabTons("GROSS");
+  const tare_weight  = grabTons("TARE");
+  const net_weight   = grabTons("NET");
+
+  // QTY
+  const qty_raw = grab(["QTY:", "QTY ", "QUANTITY"]);
+  const quantity = qty_raw.match(/(\d+\.?\d*)/)?.[1] || net_weight;
+
+  // Total
+  let total_amount = "";
+  const totalMatch = rawText.match(/Total[s$]?\s*\$?\s*([\d,]+\.?\d*)/i);
+  if (totalMatch) total_amount = totalMatch[1].replace(/,/g, "");
+
+  const keyFields = [ticket_number, ticket_date, truck_number, pickup_location, net_weight, material];
+  const extraction_confidence = Math.round((keyFields.filter(Boolean).length / keyFields.length) * 100);
+
+  return {
+    ticket_number, ticket_date, po_number, truck_number, driver_name,
+    vendor_name, pickup_location, delivery_location, job_name, customer_name,
+    material, gross_weight, tare_weight, net_weight, quantity, total_amount,
+    ocr_confidence: Math.round(ocrConf * 10) / 10,
+    extraction_confidence,
   };
 }
 
@@ -382,7 +511,7 @@ export default function TicketsPage() {
   const [deleteReason, setDeleteReason] = useState("");
   const [deleting, setDeleting] = useState(false);
   // Fast Scan state
-  const [scanType, setScanType] = useState("trip_proof");
+  const [scanType, setScanType] = useState("ronyx_field_ticket");
   const [scanDriver, setScanDriver] = useState("");
   const [scanTruck, setScanTruck] = useState("");
   const [scanJob, setScanJob] = useState("");
@@ -397,6 +526,7 @@ export default function TicketsPage() {
   const [scanRate, setScanRate] = useState("");
   const [scanPO, setScanPO] = useState("");
   const [scanAmount, setScanAmount] = useState("");
+  const [scanDelivery, setScanDelivery] = useState("");
   const [scanNotes, setScanNotes] = useState("");
   const [scanSubmitting, setScanSubmitting] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
@@ -415,7 +545,7 @@ export default function TicketsPage() {
   const [batchActive, setBatchActive]           = useState(false);
   const [batchId, setBatchId]                   = useState<string | null>(null);
   const [batchName, setBatchName]               = useState("");
-  const [batchScannerUsed, setBatchScannerUsed] = useState("ricoh_fi8170");
+  const [batchScannerUsed, setBatchScannerUsed] = useState("hp_envy_6552e");
   const [batchStartedAt, setBatchStartedAt]     = useState<string | null>(null);
   const [batchPageCount, setBatchPageCount]     = useState(0);
   const [batchTicketCount, setBatchTicketCount] = useState(0);
@@ -424,6 +554,8 @@ export default function TicketsPage() {
   const [batchDuplicateCount, setBatchDuplicateCount] = useState(0);
   const [batchPayrollHolds, setBatchPayrollHolds]     = useState(0);
   const [batchBillingHolds, setBatchBillingHolds]     = useState(0);
+  // Original upload ID (set after storage-first upload, cleared on reset)
+  const [originalUploadId, setOriginalUploadId] = useState<string | null>(null);
   // Scan quality flags for current Ronyx ticket
   const [ronyxQualityFlags, setRonyxQualityFlags] = useState<string[]>([]);
   // QR Code state
@@ -461,6 +593,10 @@ export default function TicketsPage() {
   const excelFileRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const batchInputRef = useRef<HTMLInputElement>(null);
+  const [pitInvoices, setPitInvoices] = useState<any[]>([]);
+  const [invoiceUploading, setInvoiceUploading] = useState(false);
+  // vendor context for the next invoice upload (set by which button was clicked)
+  const [pendingInvoiceVendor, setPendingInvoiceVendor] = useState<string>("");
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3500); }, []);
 
@@ -472,7 +608,31 @@ export default function TicketsPage() {
     } catch { /* keep empty */ } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { loadTickets(); }, [loadTickets]);
+  const loadPitInvoices = useCallback(async () => {
+    try {
+      const r = await fetch("/api/ronyx/pit-invoices");
+      const data = await r.json();
+      if (Array.isArray(data.invoices)) setPitInvoices(data.invoices);
+    } catch { /* keep empty */ }
+  }, []);
+
+  useEffect(() => { loadTickets(); loadPitInvoices(); }, [loadTickets, loadPitInvoices]);
+
+  const handlePitInvoiceUpload = useCallback(async (file: File) => {
+    setInvoiceUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("vendor_name", pendingInvoiceVendor || "Unknown Vendor");
+      const res  = await fetch("/api/ronyx/pit-invoices", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) { showToast(`Upload failed: ${data.error || res.statusText}`); return; }
+      setPitInvoices(prev => [data.invoice, ...prev]);
+      showToast(`✅ Pit invoice uploaded — ${file.name}`);
+      setActiveTab("invoice_match");
+    } catch { showToast("Upload failed — check connection"); }
+    finally { setInvoiceUploading(false); setPendingInvoiceVendor(""); }
+  }, [pendingInvoiceVendor, showToast]);
 
   const updateTicketStatus = useCallback(async (ticketId: string, newStatus: string) => {
     const opt = STATUS_MAP[newStatus] || ("Needs Review" as TicketStatus);
@@ -498,22 +658,36 @@ export default function TicketsPage() {
     if (!files || files.length === 0) return;
     showToast(`Uploading ${files.length} file(s)…`);
     try {
-      const createRes = await fetch("/api/ronyx/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "scanned", source: "FastScan" }) });
+      const createRes  = await fetch("/api/ronyx/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "scanned", source: "FastScan" }) });
       const createData = await createRes.json();
-      if (!createRes.ok) { showToast(`Failed: ${createData.error || createRes.statusText}`); return; }
+      if (!createRes.ok) { showToast(`Ticket create failed: ${createData.error || createRes.statusText}`); return; }
       const ticketId = createData.ticket?.id || createData.id;
       if (!ticketId) { showToast("Ticket created — reloading…"); loadTickets(); return; }
-      if (createData.ticket) { const opt = mapApiTicket(createData.ticket, [createData.ticket]); setTickets((prev) => [opt, ...prev]); }
-      let err = "";
-      for (const file of Array.from(files)) {
-        const form = new FormData(); form.append("file", file); form.append("ticket_id", ticketId);
-        const upRes = await fetch("/api/ronyx/tickets/upload", { method: "POST", body: form });
-        if (!upRes.ok) { const d = await upRes.json().catch(() => ({})); err = d.error || upRes.statusText; }
+      // Optimistically add ticket to list so Scanned Today counter increments immediately
+      if (createData.ticket) {
+        const opt = mapApiTicket(createData.ticket, [createData.ticket]);
+        setTickets(prev => [opt, ...prev]);
       }
-      showToast(err ? `Saved — file upload failed: ${err}` : "Uploaded — processing OCR…");
-      setTimeout(loadTickets, 1500);
+      let uploadErr = "";
+      for (const file of Array.from(files)) {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("ticket_id", ticketId);
+        form.append("scanner_used", batchScannerUsed);
+        const upRes = await fetch("/api/ronyx/tickets/upload", { method: "POST", body: form });
+        if (!upRes.ok) {
+          const d = await upRes.json().catch(() => ({}));
+          uploadErr = d.error || upRes.statusText;
+        }
+      }
+      if (uploadErr) {
+        showToast(`⚠️ Ticket saved but image upload failed: ${uploadErr}`);
+      } else {
+        showToast(`✅ Ticket scanned and saved${files.length > 1 ? ` (${files.length} images)` : ""}`);
+      }
+      loadTickets(); // Refresh so Command Center cards update
     } catch (e: any) { showToast(`Upload failed: ${e?.message || "check connection"}`); }
-  }, [loadTickets, showToast]);
+  }, [loadTickets, showToast, batchScannerUsed]);
 
   const startBatch = useCallback(async () => {
     try {
@@ -776,8 +950,33 @@ export default function TicketsPage() {
   const runRonyxOcr = useCallback(async (file: File) => {
     setRonyxOcrRunning(true);
     setRonyxOcrProgress(0);
+    setOriginalUploadId(null);
     setRonyxImagePreview(URL.createObjectURL(file));
     try {
+      // ── Step 1: Upload original file to Supabase Storage BEFORE any OCR ──
+      const uploadForm = new FormData();
+      uploadForm.append("file", file);
+      uploadForm.append("upload_source", "fast_scan");
+      uploadForm.append("entity_type", "ticket");
+      if (batchId) uploadForm.append("batch_id", batchId);
+
+      const uploadRes = await fetch("/api/ronyx/upload-original", {
+        method: "POST",
+        body: uploadForm,
+      });
+
+      if (!uploadRes.ok) {
+        const uploadErr = await uploadRes.json().catch(() => ({}));
+        const reason = uploadErr.error || "Storage upload failed";
+        showToast(`Upload failed. Original file was not saved. This import cannot continue. (${reason})`);
+        setRonyxOcrRunning(false);
+        return;
+      }
+
+      const uploadResult = await uploadRes.json();
+      setOriginalUploadId(uploadResult.upload_id || null);
+      // ─────────────────────────────────────────────────────────────────────
+
       const { createWorker } = await import("tesseract.js");
       const worker = await createWorker("eng", 1, {
         logger: (m: { status: string; progress: number }) => {
@@ -787,6 +986,33 @@ export default function TicketsPage() {
       const { data } = await worker.recognize(file);
       await worker.terminate();
       setRonyxRawText(data.text);
+
+      const vendor = detectTicketVendor(data.text);
+
+      if (vendor === "martin_marietta") {
+        // Martin Marietta ticket — populate the manual scan fields and show review
+        const mm = parseMartinMariettaTicket(data.text, data.confidence);
+        setScanTicketNo(mm.ticket_number);
+        setScanDate(mm.ticket_date || new Date().toISOString().slice(0, 10));
+        setScanDriver(mm.driver_name);
+        setScanTruck(mm.truck_number);
+        setScanVendor(mm.vendor_name);
+        setScanPit(mm.pickup_location);
+        setScanDelivery(mm.delivery_location);
+        setScanJob(mm.job_name);
+        setScanMaterial(mm.material);
+        setScanGross(mm.gross_weight);
+        setScanTare(mm.tare_weight);
+        setScanNets(mm.net_weight);
+        setScanPO(mm.po_number);
+        setScanAmount(mm.total_amount);
+        setScanType("weight_ticket");
+        setRonyxOcrRunning(false);
+        showToast(`✓ Martin Marietta ticket — ${mm.extraction_confidence}% fields extracted. Review fields below and submit.`);
+        return;
+      }
+
+      // Ronyx or unknown — use the Ronyx field ticket review flow
       const parsed = parseRonyxTicket(data.text, data.confidence);
       setRonyxFields(parsed);
       setRonyxStep("review");
@@ -797,7 +1023,9 @@ export default function TicketsPage() {
     } finally {
       setRonyxOcrRunning(false);
     }
-  }, [showToast]);
+  }, [showToast, batchId, setScanTicketNo, setScanDate, setScanDriver, setScanTruck, setScanVendor,
+      setScanPit, setScanDelivery, setScanJob, setScanMaterial, setScanGross, setScanTare,
+      setScanNets, setScanPO, setScanAmount, setScanType]);
 
   const submitRonyxTicket = useCallback(async () => {
     setRonyxSubmitting(true);
@@ -813,10 +1041,11 @@ export default function TicketsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...ronyxFields,
-          raw_ocr_text:       ronyxRawText,
-          scan_source:        ronyxScanSource,
-          scan_batch_id:      batchId || null,
-          scan_quality_flags: autoFlags.length > 0 ? autoFlags : null,
+          raw_ocr_text:        ronyxRawText,
+          scan_source:         ronyxScanSource,
+          scan_batch_id:       batchId || null,
+          scan_quality_flags:  autoFlags.length > 0 ? autoFlags : null,
+          original_upload_id:  originalUploadId || null,
         }),
       });
       const result = await res.json();
@@ -853,7 +1082,7 @@ export default function TicketsPage() {
     } finally {
       setRonyxSubmitting(false);
     }
-  }, [ronyxFields, ronyxRawText, ronyxScanSource, ronyxQualityFlags, batchId, batchTicketCount, batchOcrCount, batchExceptionCount, batchPayrollHolds, batchBillingHolds, showToast, loadTickets]);
+  }, [ronyxFields, ronyxRawText, ronyxScanSource, ronyxQualityFlags, batchId, batchTicketCount, batchOcrCount, batchExceptionCount, batchPayrollHolds, batchBillingHolds, originalUploadId, showToast, loadTickets]);
 
   const generateQr = useCallback(async (ticketId: string, ticketNo: string, existingToken?: string, existingUrl?: string, scanCount?: number) => {
     if (existingToken && existingUrl) {
@@ -876,31 +1105,55 @@ export default function TicketsPage() {
   }, [showToast, loadTickets]);
 
   const submitScan = useCallback(async () => {
-    if (!scanDriver.trim() && !scanTruck.trim() && !scanTicketNo.trim()) { showToast("Enter ticket #, driver, or truck."); return; }
+    if (!scanDriver.trim() && !scanTruck.trim() && !scanTicketNo.trim()) { showToast("Enter ticket #, driver, or truck to continue."); return; }
     setScanSubmitting(true);
     try {
-      const res = await fetch("/api/ronyx/fast-scan", {
+      // Create ticket in aggregate_tickets (shows in All Tickets, has delivery_location)
+      const res = await fetch("/api/ronyx/tickets", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          file_url: `manual://fastscan/${Date.now()}`, file_type: "manual", scan_type: scanType,
-          driver_name: scanDriver || null, detected_vehicle: scanTruck || null,
-          job_number: scanJob || null, vendor_name: scanVendor || null, pit_location_name: scanPit || null,
-          ticket_number: scanTicketNo || null, ticket_date: scanDate || null, material: scanMaterial || null,
-          gross_weight: scanGross ? parseFloat(scanGross) : null, tare_weight: scanTare ? parseFloat(scanTare) : null,
-          net_tons: scanNets ? parseFloat(scanNets) : null, po_number: scanPO || null,
-          detected_amount: scanAmount ? parseFloat(scanAmount) : null, extracted_text: scanNotes || null,
-          confidence_score: 1, uploaded_by: "dispatcher",
+          ticket_number:     scanTicketNo || null,
+          ticket_date:       scanDate || new Date().toISOString().slice(0, 10),
+          driver_name:       scanDriver || null,
+          truck_number:      scanTruck || null,
+          job_name:          scanJob || null,
+          vendor_name:       scanVendor || null,
+          pit_location_name: scanPit || null,
+          delivery_location: scanDelivery || null,
+          material:          scanMaterial || null,
+          gross_weight:      scanGross ? parseFloat(scanGross) : null,
+          tare_weight:       scanTare ? parseFloat(scanTare) : null,
+          net_weight:        scanNets ? parseFloat(scanNets) : null,
+          pay_rate:          scanRate ? parseFloat(scanRate) : null,
+          po_number:         scanPO || null,
+          total_amount:      scanAmount ? parseFloat(scanAmount) : null,
+          ticket_notes:      scanNotes || null,
+          source:            "FastScan",
+          scan_type:         scanType,
+          status:            "scanned",
         }),
       });
       const data = await res.json();
-      setScanResult(data);
       if (res.ok) {
-        showToast(`✓ Ticket created — ${data.payroll_impact ? `Payroll: ${data.payroll_action}` : "No payroll impact"}`);
-        [setScanDriver, setScanTruck, setScanJob, setScanVendor, setScanPit, setScanTicketNo, setScanDate, setScanMaterial, setScanGross, setScanTare, setScanNets, setScanRate, setScanPO, setScanAmount, setScanNotes].forEach(fn => fn(""));
-        setTimeout(() => { loadTickets(); setActiveTab("all"); }, 1500);
-      } else { showToast(`Scan failed: ${data.error}`); }
-    } catch (e: any) { showToast(e.message); } finally { setScanSubmitting(false); }
-  }, [scanType, scanDriver, scanTruck, scanJob, scanVendor, scanPit, scanTicketNo, scanDate, scanMaterial, scanGross, scanTare, scanNets, scanRate, scanPO, scanAmount, scanNotes, loadTickets, showToast]);
+        setScanResult({ message: `Ticket #${data.ticket?.ticket_number || "—"} created successfully.` });
+        showToast("✓ Ticket scanned and saved — check All Tickets.");
+        [setScanDriver, setScanTruck, setScanJob, setScanVendor, setScanPit, setScanTicketNo, setScanDate, setScanMaterial, setScanGross, setScanTare, setScanNets, setScanRate, setScanPO, setScanAmount, setScanDelivery, setScanNotes].forEach(fn => fn(""));
+        setTimeout(() => { loadTickets(); setActiveTab("all"); }, 1200);
+        // Fire-and-forget payroll side-effect (non-blocking)
+        fetch("/api/ronyx/fast-scan", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file_url: `manual://fastscan/${data.ticket?.id || Date.now()}`, file_type: "manual",
+            scan_type: scanType, driver_name: scanDriver || null, detected_vehicle: scanTruck || null,
+            extracted_text: scanNotes || null, detected_amount: scanAmount ? parseFloat(scanAmount) : null,
+            confidence_score: 1, uploaded_by: "dispatcher",
+          }),
+        }).catch(() => {});
+      } else {
+        showToast(`Scan failed: ${data.error || "check your connection"}`);
+      }
+    } catch (e: any) { showToast(`Scan error: ${e.message}`); } finally { setScanSubmitting(false); }
+  }, [scanType, scanDriver, scanTruck, scanJob, scanVendor, scanPit, scanTicketNo, scanDate, scanMaterial, scanGross, scanTare, scanNets, scanRate, scanPO, scanAmount, scanDelivery, scanNotes, loadTickets, showToast]);
 
   // Parse Excel file and open import modal — captures ALL columns
   const processImportFile = useCallback((file: File) => {
@@ -1013,7 +1266,7 @@ export default function TicketsPage() {
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => handleFiles(e.target.files)} />
       <input ref={batchInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => { handleFiles(e.target.files); setActiveTab("all"); }} />
-      <input ref={invoiceFileRef} type="file" accept=".pdf,image/*" style={{ display: "none" }} onChange={() => showToast("Invoice uploaded — processing OCR…")} />
+      <input ref={invoiceFileRef} type="file" accept=".pdf,image/*,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handlePitInvoiceUpload(f); e.target.value = ""; }} />
       <input ref={excelFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processExcelFile(f); e.target.value = ""; }} />
       <input ref={importFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) processImportFile(f); e.target.value = ""; }} />
       <input ref={ronyxFileRef} type="file" accept="image/*,.pdf,.heic" style={{ display: "none" }}
@@ -1029,7 +1282,7 @@ export default function TicketsPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button onClick={() => setActiveTab("fastscan")} style={{ padding: "11px 18px", borderRadius: 10, background: "#4ade80", color: "#052e16", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>
+          <button onClick={() => { setScanType("ronyx_field_ticket"); setRonyxStep("upload"); setActiveTab("fastscan"); }} style={{ padding: "11px 18px", borderRadius: 10, background: "#4ade80", color: "#052e16", border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>
             ⚡ Fast Scan Ticket
           </button>
           <button onClick={() => batchInputRef.current?.click()} style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(255,255,255,0.1)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, fontSize: "0.82rem", cursor: "pointer" }}>
@@ -1131,6 +1384,7 @@ export default function TicketsPage() {
                     <label style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 3 }}>Scanner Used</label>
                     <select value={batchScannerUsed} onChange={e => setBatchScannerUsed(e.target.value)}
                       style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: "1px solid #e2e8f0", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }}>
+                      <option value="hp_envy_6552e">HP Envy 6552e (Testing)</option>
                       <option value="ricoh_fi8170">Ricoh fi-8170 (Production)</option>
                       <option value="scansnap_ix2500">ScanSnap iX2500 (Front Office)</option>
                       <option value="scansnap_ix1600">ScanSnap iX1600 (Backup)</option>
@@ -1164,24 +1418,74 @@ export default function TicketsPage() {
             </div>
 
             {/* Upload zone */}
-            <div style={{ background: "#fff", borderRadius: 14, border: "2px dashed #cbd5e1", padding: 32, textAlign: "center" }}
+            <div style={{ background: "#fff", borderRadius: 14, border: (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") ? "2px dashed #1d4ed8" : "2px dashed #cbd5e1", padding: 32, textAlign: "center" }}
               onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}>
-              <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>📄</div>
-              <h3 style={{ margin: "0 0 4px", fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>Drop Ticket Here to Fast Scan</h3>
+              onDrop={e => {
+                e.preventDefault();
+                const files = e.dataTransfer.files;
+                if (!files?.length) return;
+                if (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") {
+                  setRonyxScanSource("file_upload");
+                  runRonyxOcr(files[0]);
+                } else {
+                  handleFiles(files);
+                }
+              }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>{scanType === "ronyx_field_ticket" ? "📋" : scanType === "martin_marietta_ticket" ? "⛰️" : "📄"}</div>
+              <h3 style={{ margin: "0 0 4px", fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>
+                {scanType === "ronyx_field_ticket" ? "Drop Ronyx Field Ticket Here — OCR will extract all fields"
+                  : scanType === "martin_marietta_ticket" ? "Drop Martin Marietta Ticket Here — OCR will extract weights, PO, truck, and material"
+                  : "Drop Ticket Here to Fast Scan"}
+              </h3>
               <p style={{ margin: "0 0 4px", color: "#4ade80", fontWeight: 700, fontSize: "0.72rem" }}>Fast Scan™ · Powered by Ronyx</p>
               <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: "0.8rem" }}>
-                JPG · PNG · PDF · HEIC · Batch upload · Multi-page packets · Pit Invoices · Driver Documents · Contracts
+                JPG · PNG · PDF · HEIC · Phone photos supported
               </p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
                 {[
-                  { label: "🖨 Ricoh fi-8170", onClick: () => batchInputRef.current?.click() },
-                  { label: "📷 Camera / Phone", onClick: () => fileInputRef.current?.click() },
-                  { label: "🖼 Upload Image", onClick: () => fileInputRef.current?.click() },
-                  { label: "📄 Upload PDF", onClick: () => fileInputRef.current?.click() },
-                  { label: "📦 Batch Upload", onClick: () => batchInputRef.current?.click() },
+                  {
+                    label: "🖨 HP Envy 6552e",
+                    primary: true,
+                    onClick: () => {
+                      setBatchScannerUsed("hp_envy_6552e");
+                      if (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") {
+                        setRonyxScanSource("hp_envy_6552e");
+                        ronyxFileRef.current?.click();
+                      } else {
+                        fileInputRef.current?.click();
+                      }
+                    },
+                  },
+                  {
+                    label: "🖨 Ricoh fi-8170",
+                    primary: false,
+                    onClick: () => {
+                      setBatchScannerUsed("ricoh_fi8170");
+                      if (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") {
+                        setRonyxScanSource("ricoh_fi8170");
+                        ronyxFileRef.current?.click();
+                      } else {
+                        batchInputRef.current?.click();
+                      }
+                    },
+                  },
+                  {
+                    label: "📷 Camera / Phone",
+                    primary: false,
+                    onClick: () => {
+                      if (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") {
+                        setRonyxScanSource("camera");
+                        ronyxFileRef.current?.click();
+                      } else {
+                        fileInputRef.current?.click();
+                      }
+                    },
+                  },
+                  { label: "🖼 Upload Image", primary: false, onClick: () => (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") ? (setRonyxScanSource("file_upload"), ronyxFileRef.current?.click()) : fileInputRef.current?.click() },
+                  { label: "📄 Upload PDF",   primary: false, onClick: () => (scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") ? (setRonyxScanSource("file_upload"), ronyxFileRef.current?.click()) : fileInputRef.current?.click() },
+                  { label: "📦 Batch Upload", primary: false, onClick: () => batchInputRef.current?.click() },
                 ].map(b => (
-                  <button key={b.label} onClick={b.onClick} style={{ padding: "9px 18px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1e40af", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+                  <button key={b.label} onClick={b.onClick} style={{ padding: "9px 18px", borderRadius: 9, border: `1px solid ${(b as any).primary ? "#1d4ed8" : "#e2e8f0"}`, background: (b as any).primary ? "#1d4ed8" : "#f8fafc", color: (b as any).primary ? "#fff" : "#1e40af", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
                     {b.label}
                   </button>
                 ))}
@@ -1217,14 +1521,16 @@ export default function TicketsPage() {
                 ))}
               </div>
 
-              {/* ── Ronyx Field Ticket vs. Generic OCR ── */}
-              {scanType === "ronyx_field_ticket" ? (
+              {/* ── Ronyx / Martin Marietta OCR vs. Generic scan ── */}
+              {(scanType === "ronyx_field_ticket" || scanType === "martin_marietta_ticket") ? (
                 <div>
                   {/* ── STEP: upload ── */}
                   {ronyxStep === "upload" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "12px 16px", fontSize: "0.78rem", color: "#1e40af", fontWeight: 600 }}>
-                        📋 Ronyx Field Ticket — OCR template active. Upload the physical ticket image or scan.
+                        {scanType === "martin_marietta_ticket"
+                          ? "⛰️ Martin Marietta Ticket — OCR will extract ticket#, truck, material, gross/tare/net tons, PO number, and delivery location."
+                          : "📋 Ronyx Field Ticket — OCR template active. Upload the physical ticket image or scan."}
                       </div>
                       {ronyxOcrRunning ? (
                         <div style={{ padding: "20px 0", textAlign: "center" }}>
@@ -1237,12 +1543,12 @@ export default function TicketsPage() {
                       ) : (
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           {[
-                            { label: "🖨 Ricoh fi-8170", src: "ricoh_fi8170", primary: true },
-                            { label: "📷 Camera / Phone", src: "camera", primary: false },
-                            { label: "🖨 ScanSnap Backup", src: "scansnap_ix2500", primary: false },
-                            { label: "🖼 Upload Image / PDF", src: "file_upload", primary: false },
+                            { label: "🖨 HP Envy 6552e",   src: "hp_envy_6552e",   primary: true },
+                            { label: "📷 Camera / Phone",   src: "camera",          primary: false },
+                            { label: "🖨 Ricoh fi-8170",    src: "ricoh_fi8170",    primary: false },
+                            { label: "🖼 Upload Image / PDF", src: "file_upload",   primary: false },
                           ].map(b => (
-                            <button key={b.src} onClick={() => { setRonyxScanSource(b.src); ronyxFileRef.current?.click(); }}
+                            <button key={b.src} onClick={() => { setBatchScannerUsed(b.src); setRonyxScanSource(b.src); ronyxFileRef.current?.click(); }}
                               style={{ flex: 1, minWidth: 130, padding: "12px 10px", borderRadius: 10,
                                 border: `2px solid ${b.primary ? "#1d4ed8" : "#bfdbfe"}`,
                                 background: b.primary ? "#1d4ed8" : "#eff6ff",
@@ -1438,6 +1744,7 @@ export default function TicketsPage() {
                       ["Driver Name", scanDriver, setScanDriver, "e.g. Jose Martinez"],
                       ["Truck / Unit #", scanTruck, setScanTruck, "e.g. 104"],
                       ["Project / Job", scanJob, setScanJob, "e.g. I-45 Base Job"],
+                      ["Delivery Location", scanDelivery, setScanDelivery, "e.g. 2845 N Loop W, Houston TX"],
                       ["PO Number", scanPO, setScanPO, "e.g. PO-2024-001"],
                       ["Material", scanMaterial, setScanMaterial, "e.g. Limestone Base"],
                       ["Gross Weight", scanGross, setScanGross, "e.g. 68000"],
@@ -1753,67 +2060,102 @@ export default function TicketsPage() {
           TAB: INVOICE MATCH
       ═══════════════════════════════════════════════════════════════════════ */}
       {activeTab === "invoice_match" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          {/* Upload panel */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 24 }}>
-              <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#0f172a", marginBottom: 16 }}>📤 Invoice Upload &amp; Reconcile</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { label: "Upload Vendor Invoice", icon: "📄", sub: "Martin Marietta, pit vendors, suppliers" },
-                  { label: "Upload Martin Marietta Invoice", icon: "🪨", sub: "MM pit / quarry invoice PDF" },
-                  { label: "Upload Customer Invoice", icon: "🧾", sub: "Customer-facing billing invoice" },
-                  { label: "Match Invoice to Tickets", icon: "🔍", sub: "Cross-reference ticket numbers in invoice" },
-                ].map(b => (
-                  <button key={b.label} onClick={() => invoiceFileRef.current?.click()} style={{ padding: "14px 16px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: "1.5rem" }}>{b.icon}</span>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: "0.83rem", color: "#0f172a" }}>{b.label}</div>
-                      <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 2 }}>{b.sub}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ background: "#0f172a", borderRadius: 14, padding: 22, color: "#e2e8f0" }}>
-              <div style={{ fontWeight: 800, fontSize: "0.85rem", color: "#fff", marginBottom: 12 }}>Invoice OCR Extracts</div>
-              {[["Invoice Number","INV-2024-001042"],["Invoice Date","06/14/2026"],["Vendor","Martin Marietta"],["Customer Account","MOVEARO-001"],["PO Number","PO-2024-445"],["Ticket Numbers","Listed in invoice body"],["Pit / Yard","South Post Oak"],["Material","Limestone Base"],["Tons","247.50"],["Unit Price","$18.50/ton"],["Freight","$0.00"],["Fuel Surcharge","$124.00"],["Tax","$0.00"],["Invoice Total","$4,702.75"]].map(([f, ex]) => (
-                <div key={f} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.73rem", padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                  <span style={{ color: "#94a3b8" }}>{f}</span>
-                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{ex}</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            {/* Upload panel */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 24 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#0f172a", marginBottom: 4 }}>📤 Upload Pit Invoice</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: 16 }}>PDF or image of your pit / quarry vendor invoice. File is stored securely and linked to matching tickets.</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    { label: "Upload Martin Marietta Invoice", icon: "🪨", sub: "MM pit / quarry invoice PDF or image", vendor: "Martin Marietta" },
+                    { label: "Upload Other Pit Vendor Invoice", icon: "📄", sub: "Any other quarry or pit supplier", vendor: "Pit Vendor" },
+                    { label: "Upload Customer Invoice", icon: "🧾", sub: "Customer-facing billing invoice", vendor: "Customer" },
+                  ].map(b => (
+                    <button key={b.label}
+                      disabled={invoiceUploading}
+                      onClick={() => { setPendingInvoiceVendor(b.vendor); setTimeout(() => invoiceFileRef.current?.click(), 50); }}
+                      style={{ padding: "14px 16px", borderRadius: 10, background: invoiceUploading ? "#f1f5f9" : "#f8fafc", border: "1px solid #e2e8f0", cursor: invoiceUploading ? "not-allowed" : "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12, opacity: invoiceUploading ? 0.6 : 1 }}>
+                      <span style={{ fontSize: "1.5rem" }}>{b.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.83rem", color: "#0f172a" }}>{b.label}</div>
+                        <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 2 }}>{b.sub}</div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+                {invoiceUploading && <div style={{ marginTop: 12, fontSize: "0.78rem", color: "#1d4ed8", fontWeight: 600 }}>⏳ Uploading invoice…</div>}
+              </div>
 
-          {/* Match status panel */}
-          <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid #e2e8f0", fontWeight: 700, color: "#0f172a", fontSize: "0.9rem" }}>Invoice Match Status</div>
-            <div style={{ padding: 20 }}>
-              {activeTickets.length === 0 ? (
-                <div style={{ textAlign: "center", color: "#94a3b8", padding: "40px 0" }}>No tickets to match. Scan tickets first.</div>
-              ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-                  <thead>
-                    <tr style={{ background: "#f8fafc" }}>
-                      {["Ticket #","Date","Tons","Invoice #","Status"].map(h => (
-                        <th key={h} style={{ padding: "8px 12px", fontWeight: 700, color: "#475569", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "0.68rem" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeTickets.slice(0, 20).map((t, i) => (
-                      <tr key={t.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "8px 12px", fontWeight: 700 }}>{t.ticketNo}</td>
-                        <td style={{ padding: "8px 12px", color: "#64748b" }}>{t.ticketDate}</td>
-                        <td style={{ padding: "8px 12px", textAlign: "right" }}>{t.tons.toFixed(2)}</td>
-                        <td style={{ padding: "8px 12px", color: "#64748b" }}>{t.invoiceNumber || "—"}</td>
-                        <td style={{ padding: "8px 12px" }}><SBadge code={t.invoiceMatched ? "MATCHED" : "MISSING_INVOICE"} /></td>
-                      </tr>
+              {/* Uploaded pit invoices list */}
+              {pitInvoices.length > 0 && (
+                <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                  <div style={{ padding: "12px 18px", borderBottom: "1px solid #e2e8f0", fontWeight: 700, fontSize: "0.85rem", color: "#0f172a" }}>
+                    Uploaded Pit Invoices ({pitInvoices.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {pitInvoices.slice(0, 10).map((inv, i) => (
+                      <div key={inv.id} style={{ padding: "12px 18px", borderBottom: i < pitInvoices.length - 1 ? "1px solid #f1f5f9" : "none", display: "flex", alignItems: "center", gap: 12, background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                        <span style={{ fontSize: "1.4rem" }}>🪨</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inv.file_name || "Invoice"}</div>
+                          <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: 2 }}>{inv.vendor_name || "—"} · {inv.invoice_date || "no date"}{inv.total_amount ? ` · $${Number(inv.total_amount).toLocaleString()}` : ""}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {inv.file_url && (
+                            <a href={`/api/ronyx/view-doc?url=${encodeURIComponent(inv.file_url)}`} target="_blank" rel="noreferrer"
+                              style={{ padding: "5px 10px", borderRadius: 6, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer", textDecoration: "none" }}>
+                              View
+                            </a>
+                          )}
+                          <span style={{ padding: "4px 8px", borderRadius: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", fontWeight: 700, fontSize: "0.68rem" }}>
+                            {inv.status === "uploaded" ? "✓ Stored" : inv.status}
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               )}
+            </div>
+
+            {/* Match status panel */}
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.9rem" }}>Invoice Match Status</span>
+                {activeTickets.length > 0 && <span style={{ fontSize: "0.72rem", color: "#64748b" }}>{activeTickets.filter(t => t.invoiceMatched).length} / {activeTickets.length} matched</span>}
+              </div>
+              <div style={{ padding: 20 }}>
+                {activeTickets.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <div style={{ fontSize: "2rem", marginBottom: 8 }}>🧾</div>
+                    <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>No tickets yet</div>
+                    <div style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Scan tickets first, then upload a pit invoice to match against them.</div>
+                  </div>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+                    <thead>
+                      <tr style={{ background: "#f8fafc" }}>
+                        {["Ticket #","Date","Tons","Invoice #","Status"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", fontWeight: 700, color: "#475569", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "0.68rem" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeTickets.slice(0, 20).map((t, i) => (
+                        <tr key={t.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "8px 12px", fontWeight: 700 }}>{t.ticketNo}</td>
+                          <td style={{ padding: "8px 12px", color: "#64748b" }}>{t.ticketDate}</td>
+                          <td style={{ padding: "8px 12px", textAlign: "right" }}>{t.tons.toFixed(2)}</td>
+                          <td style={{ padding: "8px 12px", color: "#64748b" }}>{t.invoiceNumber || "—"}</td>
+                          <td style={{ padding: "8px 12px" }}><SBadge code={t.invoiceMatched ? "MATCHED" : "MISSING_INVOICE"} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         </div>

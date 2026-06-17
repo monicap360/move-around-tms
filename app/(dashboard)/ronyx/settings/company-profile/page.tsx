@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+type RegTab = "dot" | "mc" | "ein";
+
 const COMPANY_TYPES = ["Dump Truck Company","Fleet","Broker","Owner Operator Group","Contractor","Mixed Operation"];
 const TIMEZONES = ["America/Chicago","America/New_York","America/Denver","America/Los_Angeles","America/Phoenix"];
 
@@ -22,10 +24,11 @@ const lbl: React.CSSProperties = { display: "block", fontSize: 11, fontWeight: 7
 const inp: React.CSSProperties = { width: "100%", padding: "8px 11px", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 12.5, outline: "none", boxSizing: "border-box" };
 
 export default function CompanyProfilePage() {
-  const [profile, setProfile] = useState<Profile>(EMPTY);
-  const [saving, setSaving]   = useState(false);
-  const [toast, setToast]     = useState("");
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile]   = useState<Profile>(EMPTY);
+  const [saving, setSaving]     = useState(false);
+  const [toast, setToast]       = useState("");
+  const [loading, setLoading]   = useState(true);
+  const [regTab, setRegTab]     = useState<RegTab>("dot");
 
   useEffect(() => {
     fetch("/api/ronyx/settings/admin?group=company_profile").then(r => r.json()).then(d => {
@@ -92,17 +95,78 @@ export default function CompanyProfilePage() {
 
         {/* Regulatory */}
         <div style={{ fontWeight: 800, fontSize: 12, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Regulatory Numbers</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: 22 }}>
-          {[
-            { label: "DOT Number", key: "dot_number", placeholder: "USDOT 0000000" },
-            { label: "MC Number",  key: "mc_number",  placeholder: "MC-000000" },
-            { label: "EIN / Tax ID", key: "ein",      placeholder: "XX-XXXXXXX" },
-          ].map(({ label, key, placeholder }) => (
-            <div key={key}>
-              <label style={lbl}>{label}</label>
-              <input value={(profile as any)[key]} onChange={set(key as keyof Profile)} placeholder={placeholder} style={inp} />
+
+        {/* Tab row */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 0, borderBottom: "2px solid #e2e8f0" }}>
+          {([
+            { id: "dot" as RegTab, label: "US DOT",    prefix: "USDOT",  key: "dot_number" },
+            { id: "mc"  as RegTab, label: "MC Number", prefix: "MC-",    key: "mc_number"  },
+            { id: "ein" as RegTab, label: "EIN / Tax", prefix: "",       key: "ein"        },
+          ] as { id: RegTab; label: string; prefix: string; key: keyof Profile }[]).map(t => {
+            const active = regTab === t.id;
+            const filled = !!(profile as any)[t.key];
+            return (
+              <button key={t.id} type="button" onClick={() => setRegTab(t.id)} style={{
+                padding: "10px 22px", border: "none", background: "none", cursor: "pointer",
+                fontWeight: 800, fontSize: 13,
+                color: active ? "#1e40af" : filled ? "#0f172a" : "#94a3b8",
+                borderBottom: active ? "2px solid #1e40af" : "2px solid transparent",
+                marginBottom: -2,
+                display: "flex", alignItems: "center", gap: 6,
+              }}>
+                {t.label}
+                {filled && <span style={{ background: active ? "#dbeafe" : "#f1f5f9", color: active ? "#1e40af" : "#475569", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>✓</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab panel */}
+        <div style={{ border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 10px 10px", padding: "20px 22px", marginBottom: 22, background: "#f8fafc" }}>
+          {regTab === "dot" && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>US DOT Number</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontWeight: 800, fontSize: 15, color: "#64748b" }}>USDOT</span>
+                <input
+                  value={profile.dot_number} onChange={set("dot_number")} placeholder="0000000"
+                  style={{ ...inp, width: 180, fontWeight: 700, fontSize: 16, color: "#0f172a", letterSpacing: "0.05em" }}
+                />
+              </div>
+              {profile.dot_number && (
+                <div style={{ marginTop: 10, fontSize: 11, color: "#475569" }}>
+                  Full number: <strong>USDOT {profile.dot_number}</strong>
+                </div>
+              )}
             </div>
-          ))}
+          )}
+          {regTab === "mc" && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>MC Number (Motor Carrier)</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontWeight: 800, fontSize: 15, color: "#64748b" }}>MC-</span>
+                <input
+                  value={profile.mc_number.replace(/^MC-?/i, "")} onChange={e => setProfile(p => ({ ...p, mc_number: "MC-" + e.target.value.replace(/^MC-?/i, "") }))} placeholder="000000"
+                  style={{ ...inp, width: 180, fontWeight: 700, fontSize: 16, color: "#0f172a", letterSpacing: "0.05em" }}
+                />
+              </div>
+              {profile.mc_number && (
+                <div style={{ marginTop: 10, fontSize: 11, color: "#475569" }}>
+                  Full number: <strong>{profile.mc_number.startsWith("MC") ? profile.mc_number : "MC-" + profile.mc_number}</strong>
+                </div>
+              )}
+            </div>
+          )}
+          {regTab === "ein" && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>EIN / Federal Tax ID</div>
+              <input
+                value={profile.ein} onChange={set("ein")} placeholder="XX-XXXXXXX"
+                style={{ ...inp, width: 220, fontWeight: 700, fontSize: 16, color: "#0f172a", letterSpacing: "0.05em" }}
+              />
+              <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>Format: 12-3456789</div>
+            </div>
+          )}
         </div>
 
         {/* Operational Defaults */}

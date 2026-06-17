@@ -96,7 +96,13 @@ const NAV_GROUPS: NavGroup[] = [
     section: "Money",
     items: [
       { label: "Payroll",            href: "/ronyx/payroll",  icon: "💵", color: "#15803d" },
-      { label: "Billing / Invoices", href: "/ronyx/billing",  icon: "🧾", color: "#1d4ed8" },
+      { label: "Invoice Command Center", href: "/ronyx/billing", icon: "🧾", color: "#1d4ed8", children: [
+        { label: "Customer Billing",         href: "/ronyx/billing?tab=customer_billing", icon: "💵", color: "#1e40af" },
+        { label: "Payroll Invoices",         href: "/ronyx/billing?tab=payroll_queue",    icon: "📋", color: "#7c3aed" },
+        { label: "Contractor Pay Sheets",    href: "/ronyx/billing?tab=pay_sheet",        icon: "🧾", color: "#0f766e" },
+        { label: "Unpaid Tickets",           href: "/ronyx/billing?tab=unpaid",           icon: "⚠️", color: "#dc2626" },
+        { label: "Reconciliation",           href: "/ronyx/billing?tab=exceptions",       icon: "🔴", color: "#b45309" },
+      ]},
       { label: "IFTA / Fuel Tax",    href: "/ronyx/ifta",     icon: "⛽", color: "#ca8a04" },
     ],
   },
@@ -116,7 +122,9 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { label: "Insurance Expiry Report", href: "/ronyx/compliance/expired-insurance", icon: "🔴", color: "#dc2626" },
       { label: "Documents",           href: "/ronyx/documents",    icon: "📄", color: "#64748b" },
-      { label: "Backup Data",         href: "/ronyx/backup",       icon: "💾", color: "#0f766e" },
+      { label: "Backup Vault",        href: "/ronyx/backup",       icon: "💾", color: "#0f766e", children: [
+        { label: "Archive Center",    href: "/ronyx/backup/archive-center", icon: "🗃️", color: "#0f766e" },
+      ]},
       { label: "Reports",             href: "/ronyx/reports",      icon: "📊", color: "#9333ea" },
     ],
   },
@@ -144,6 +152,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "System Rules",           href: "/ronyx/settings/system-rules",     icon: "⚡", color: "#1e40af" },
         { label: "Document Routing",       href: "/ronyx/settings/document-routing", icon: "📂", color: "#d97706" },
         { label: "Notification Rules",     href: "/ronyx/settings/notifications",    icon: "🔔", color: "#d97706" },
+        { label: "Storage Health",         href: "/ronyx/admin/storage-health",      icon: "🗄️", color: "#0891b2" },
         { label: "Audit Log",              href: "/ronyx/settings/audit-log",        icon: "📜", color: "#475569" },
       ]},
     ],
@@ -210,6 +219,7 @@ export default function RonyxShell({
       if (pathname.startsWith("/ronyx/maintenance")) next.add("Maintenance");
       if (pathname.startsWith("/ronyx/dispatch"))    next.add("Dispatch");
       if (pathname.startsWith("/ronyx/admin"))       next.add("Admin Control Center");
+      if (pathname.startsWith("/ronyx/backup"))      next.add("Backup Vault");
       if (pathname.startsWith("/ronyx/compliance"))  next.add("HR / DOT Compliance");
       return next;
     });
@@ -274,8 +284,8 @@ export default function RonyxShell({
         .tms-sidebar {
           width: 236px;
           min-height: 100vh;
-          background: #f1f5f9;
-          color: #334155;
+          background: #1e3a8a;
+          color: #e2e8f0;
           display: flex;
           flex-direction: column;
           flex-shrink: 0;
@@ -287,29 +297,29 @@ export default function RonyxShell({
           z-index: 30;
         }
         .tms-sidebar::-webkit-scrollbar { width: 3px; }
-        .tms-sidebar::-webkit-scrollbar-thumb { background: #c7d2e0; border-radius: 4px; }
+        .tms-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 4px; }
 
         .tms-sidebar-brand {
           padding: 16px 16px 12px;
-          border-bottom: 1px solid rgba(0,0,0,0.07);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
           flex-shrink: 0;
         }
         .tms-sidebar-brand-name {
           font-size: 0.9rem;
           font-weight: 800;
-          color: #0f172a;
+          color: #ffffff;
           letter-spacing: -0.3px;
         }
         .tms-sidebar-brand-sub {
           font-size: 0.65rem;
-          color: #475569;
+          color: rgba(255,255,255,0.55);
           margin-top: 2px;
         }
 
         /* ── Quick Actions ───────────────────────────── */
         .tms-quick-actions {
           padding: 8px 10px 6px;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
           flex-shrink: 0;
         }
         .tms-qa-label {
@@ -317,7 +327,7 @@ export default function RonyxShell({
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #94a3b8;
+          color: rgba(255,255,255,0.45);
           padding: 0 4px 5px;
         }
         .tms-qa-item {
@@ -326,14 +336,14 @@ export default function RonyxShell({
           gap: 7px;
           padding: 4px 8px;
           border-radius: 5px;
-          color: #64748b;
+          color: rgba(255,255,255,0.75);
           font-size: 0.74rem;
           font-weight: 500;
           transition: background 120ms, color 120ms;
         }
         .tms-qa-item:hover {
-          background: rgba(0,0,0,0.04);
-          color: #334155;
+          background: rgba(255,255,255,0.1);
+          color: #ffffff;
         }
         .tms-qa-icon { font-size: 0.82rem; flex-shrink: 0; }
 
@@ -344,7 +354,7 @@ export default function RonyxShell({
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #64748b;
+          color: rgba(255,255,255,0.4);
           padding: 0 4px 4px;
           margin-top: 2px;
         }
@@ -357,22 +367,22 @@ export default function RonyxShell({
           margin-bottom: 1px;
           transition: background 120ms;
         }
-        .tms-nav-row:hover { background: rgba(0,0,0,0.04); }
+        .tms-nav-row:hover { background: rgba(255,255,255,0.1); }
         .tms-nav-link {
           display: flex;
           align-items: center;
           gap: 7px;
           flex: 1;
           padding: 6px 6px 6px 8px;
-          color: #475569;
+          color: rgba(255,255,255,0.8);
           font-size: 0.79rem;
           font-weight: 500;
           min-width: 0;
           transition: color 120ms;
         }
-        .tms-nav-link:hover { color: #0f172a; }
+        .tms-nav-link:hover { color: #ffffff; }
         .tms-nav-link.active,
-        .tms-nav-link.section-on { color: #1d4ed8; font-weight: 700; }
+        .tms-nav-link.section-on { color: #ffffff; font-weight: 700; background: rgba(255,255,255,0.15); border-radius: 6px; }
         .tms-nav-icon {
           font-size: 0.88rem;
           flex-shrink: 0;
@@ -386,17 +396,19 @@ export default function RonyxShell({
           overflow: hidden;
           text-overflow: ellipsis;
         }
+        .tms-nav-icon { color: rgba(255,255,255,0.7); }
+        .tms-nav-link:hover .tms-nav-icon, .tms-nav-link.active .tms-nav-icon { color: #ffffff; }
         .tms-nav-subtitle {
           display: block;
           font-size: 0.6rem;
-          color: #94a3b8;
+          color: rgba(255,255,255,0.45);
           font-weight: 400;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .tms-nav-link.active .tms-nav-subtitle,
-        .tms-nav-link.section-on .tms-nav-subtitle { color: rgba(29,78,216,0.55); }
+        .tms-nav-link.section-on .tms-nav-subtitle { color: rgba(255,255,255,0.65); }
         .tms-nav-badge {
           display: inline-flex;
           align-items: center;
@@ -419,19 +431,19 @@ export default function RonyxShell({
           background: none;
           border: none;
           cursor: pointer;
-          color: #475569;
+          color: rgba(255,255,255,0.5);
           font-size: 0.7rem;
           flex-shrink: 0;
           padding: 0;
           transition: color 120ms;
         }
-        .tms-nav-toggle:hover { color: #475569; }
+        .tms-nav-toggle:hover { color: rgba(255,255,255,0.9); }
 
         /* ── Sub Items ───────────────────────────────── */
         .tms-nav-sub {
           margin: 1px 0 3px 13px;
           padding-left: 9px;
-          border-left: 1px solid rgba(0,0,0,0.08);
+          border-left: 1px solid rgba(255,255,255,0.18);
         }
         .tms-nav-sub-row {
           display: flex;
@@ -439,17 +451,17 @@ export default function RonyxShell({
           gap: 6px;
           padding: 4px 8px;
           border-radius: 5px;
-          color: #64748b;
+          color: rgba(255,255,255,0.65);
           font-size: 0.75rem;
           font-weight: 500;
           margin-bottom: 1px;
           transition: background 120ms, color 120ms;
         }
         .tms-nav-sub-row:hover {
-          background: rgba(0,0,0,0.04);
-          color: #0f172a;
+          background: rgba(255,255,255,0.1);
+          color: #ffffff;
         }
-        .tms-nav-sub-row.active { font-weight: 700; color: #1d4ed8; }
+        .tms-nav-sub-row.active { font-weight: 700; color: #ffffff; background: rgba(255,255,255,0.15); }
         .tms-sub-icon { font-size: 0.78rem; flex-shrink: 0; width: 15px; text-align: center; }
         .tms-sub-label {
           flex: 1;
@@ -477,9 +489,9 @@ export default function RonyxShell({
         .tms-sidebar-footer {
           margin-top: auto;
           padding: 10px 14px;
-          border-top: 1px solid rgba(0,0,0,0.06);
+          border-top: 1px solid rgba(255,255,255,0.12);
           font-size: 0.65rem;
-          color: #64748b;
+          color: rgba(255,255,255,0.4);
           flex-shrink: 0;
         }
 

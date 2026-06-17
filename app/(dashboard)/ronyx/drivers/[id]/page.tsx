@@ -34,6 +34,9 @@ type Profile = {
   hazmat_training?: boolean;
   orientation_completed?: boolean;
   rating?: number;
+  dispatch_override?: boolean;
+  dispatch_override_reason?: string;
+  dispatch_override_by?: string;
 };
 
 type Document = {
@@ -42,7 +45,8 @@ type Document = {
   status: string;
   expires_on: string | null;
   file_url: string | null;
-  uploaded_at: string;
+  uploaded_at?: string;
+  created_at?: string;
 };
 
 type TicketStat = {
@@ -58,7 +62,7 @@ type Reminder = { docLabel: string; scheduledFor: string; scheduledAt: string };
 const TABS = ["Overview", "Documents", "Violations", "Assignments", "Compensation", "Activity"] as const;
 type Tab = (typeof TABS)[number];
 
-const REQUIRED_DOCS = ["CDL Front", "CDL Back", "MVR", "Medical Card", "Drug Test", "Background Check", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Voided Check", "Direct Deposit Form", "Signed Contract"];
+const REQUIRED_DOCS = ["CDL Front", "CDL Back", "MVR", "Medical Card", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Voided Check", "Direct Deposit Form", "Signed Contract"];
 const CDL_CLASSES   = ["", "Class A", "Class B", "Class C"];
 const ENDORSEMENTS  = ["H — Hazmat", "N — Tank Vehicle", "T — Double/Triple", "P — Passenger", "S — School Bus", "X — Hazmat + Tank"];
 const VIOLATION_TYPES = ["Speeding Ticket", "At-Fault Accident", "Drug/Alcohol", "HOS Violation", "Inspection Failure", "Moving Violation", "Warning", "Other"];
@@ -78,14 +82,86 @@ function fmtDateTime(d?: string | null) {
 }
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
+/* ─── In-app Document Viewer ─────────────────────── */
+function DocViewerModal({ fileUrl, docType, driverName, onClose }: {
+  fileUrl: string; docType: string; driverName?: string; onClose: () => void;
+}) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState("");
+  const ext  = fileUrl.split("?")[0].split(".").pop()?.toLowerCase() || "";
+  const isPdf = ext === "pdf" || fileUrl.includes("application/pdf");
+
+  useEffect(() => {
+    fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`)
+      .then(r => r.json())
+      .then(d => { setSignedUrl(d.signed_url || fileUrl); setLoading(false); })
+      .catch(() => { setSignedUrl(fileUrl); setLoading(false); });
+  }, [fileUrl]);
+
+  function handlePrint() {
+    if (!signedUrl) return;
+    const w = window.open(signedUrl, "_blank");
+    if (w) { setTimeout(() => { try { w.focus(); w.print(); } catch {} }, 1200); }
+  }
+
+  async function handleEmail() {
+    const subject = encodeURIComponent(`${docType}${driverName ? " — " + driverName : ""}`);
+    const body    = encodeURIComponent(`Document: ${docType}${driverName ? "\nDriver: " + driverName : ""}\n\nSecure link (expires in 1 hour):\n${signedUrl || fileUrl}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
+  const bar: React.CSSProperties = { background: "#0f172a", padding: "12px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 };
+  const btn: React.CSSProperties = { padding: "6px 14px", borderRadius: 7, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", background: "#0f172a" }}
+         onClick={(e) => e.target === e.currentTarget && onClose()}>
+      {/* Toolbar */}
+      <div style={bar}>
+        <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Document</span>
+        <span style={{ color: "#fff", fontWeight: 800, fontSize: 14, flex: 1 }}>{docType}{driverName ? ` — ${driverName}` : ""}</span>
+        <button onClick={handlePrint} style={{ ...btn, background: "#f3f4f6", color: "#374151" }}>🖨️ Print</button>
+        <button onClick={handleEmail} style={{ ...btn, background: "#d1fae5", color: "#065f46" }}>📧 Email</button>
+        {signedUrl && (
+          <a href={signedUrl} download={`${docType.replace(/\s+/g,"-")}.${ext || "pdf"}`}
+             style={{ ...btn, background: "#dbeafe", color: "#1e40af", textDecoration: "none" }}>⬇ Download</a>
+        )}
+        <button onClick={onClose} style={{ ...btn, background: "#dc2626", color: "#fff", marginLeft: 8 }}>✕ Close</button>
+      </div>
+      {/* Viewer */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "#1e293b" }}>
+        {loading && <div style={{ color: "#94a3b8", fontSize: 14 }}>Loading document…</div>}
+        {!loading && error && <div style={{ color: "#f87171", fontSize: 14 }}>{error}</div>}
+        {!loading && signedUrl && (
+          isPdf ? (
+            <iframe
+              src={signedUrl}
+              style={{ width: "100%", height: "100%", border: "none" }}
+              title={docType}
+              onError={() => setError("Could not load PDF. Try Download instead.")}
+            />
+          ) : (
+            <div style={{ overflow: "auto", maxWidth: "100%", maxHeight: "100%", padding: 20 }}>
+              <img src={signedUrl} alt={docType} style={{ maxWidth: "100%", maxHeight: "80vh", borderRadius: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
+                   onError={() => setError("Could not load image. Try Download instead.")} />
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 async function openDoc(fileUrl: string, doPrint = false) {
+  // Legacy fallback — only used outside the main component where DocViewerModal isn't available
   try {
     const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
     const data = await res.json();
     const url  = data.signed_url || fileUrl;
     if (doPrint) {
-      const w = window.open(url);
-      if (w) w.onload = () => w.print();
+      const w = window.open(url, "_blank");
+      if (w) setTimeout(() => { try { w.focus(); w.print(); } catch {} }, 1200);
     } else {
       window.open(url, "_blank");
     }
@@ -120,15 +196,12 @@ function computeReadiness(profile: Profile, documents: Document[], tickets: Tick
   const cdlValid = cdlDays !== null && cdlDays > 0;
   const mvrValid = mvrDays !== null && mvrDays > 0;
   const medValid = medDays !== null && medDays > 0;
-  const bgCleared   = profile.background_check_status === "cleared";
-  const drugCleared = profile.drug_test_status === "cleared";
+  // Background checks and drug testing are handled by the subcontractor's company — not tracked here.
   const missingDocs = REQUIRED_DOCS.filter((t) => !documents.some((d) => d.doc_type === t));
 
   const dispatchBlocks: string[] = [];
   if (!cdlValid) dispatchBlocks.push(cdlDays === null ? "CDL Missing" : "CDL Expired");
   if (!medValid) dispatchBlocks.push(medDays === null ? "Medical Card Missing" : "Medical Card Expired");
-  if (!bgCleared)   dispatchBlocks.push("Background Check Not Cleared");
-  if (!drugCleared) dispatchBlocks.push("Drug Test Not Cleared");
 
   const payrollIssues: string[] = [];
   if (tickets.payrollHolds > 0)      payrollIssues.push(`${tickets.payrollHolds} payroll hold${tickets.payrollHolds > 1 ? "s" : ""}`);
@@ -145,8 +218,6 @@ function computeReadiness(profile: Profile, documents: Document[], tickets: Tick
   if (!medValid) riskFactors.push(medDays !== null && medDays <= 0 ? "Medical card expired" : "Medical card missing");
   if (!mvrValid) riskFactors.push("MVR expired or missing");
   if (missingDocs.length > 0) riskFactors.push(`${missingDocs.length} required doc${missingDocs.length > 1 ? "s" : ""} missing`);
-  if (!bgCleared)   riskFactors.push("Background check pending");
-  if (!drugCleared) riskFactors.push("Drug test pending");
   if (cdlDays !== null && cdlDays > 0 && cdlDays <= 30) riskFactors.push("CDL expiring in 30 days");
   if (medDays !== null && medDays > 0 && medDays <= 30) riskFactors.push("Medical card expiring soon");
   if (tickets.duplicates > 0) riskFactors.push(`${tickets.duplicates} duplicate ticket${tickets.duplicates > 1 ? "s" : ""}`);
@@ -155,9 +226,9 @@ function computeReadiness(profile: Profile, documents: Document[], tickets: Tick
   const riskLevel: "Low" | "Medium" | "High" | "Critical" =
     riskFactors.length === 0 ? "Low" : riskFactors.length <= 2 ? "Medium" : riskFactors.length <= 4 ? "High" : "Critical";
 
-  const factors = [cdlValid, mvrValid, medValid, bgCleared, drugCleared,
-    !!documents.find(d => d.doc_type === "CDL"), !!documents.find(d => d.doc_type === "MVR"),
-    !!documents.find(d => d.doc_type === "Medical Card"), !!documents.find(d => d.doc_type === "Drug Test"),
+  const factors = [cdlValid, mvrValid, medValid,
+    !!documents.find(d => d.doc_type === "CDL Front"), !!documents.find(d => d.doc_type === "MVR"),
+    !!documents.find(d => d.doc_type === "Medical Card"),
     tickets.payrollHolds === 0];
   const score = Math.round((factors.filter(Boolean).length / factors.length) * 100);
 
@@ -165,18 +236,14 @@ function computeReadiness(profile: Profile, documents: Document[], tickets: Tick
   if (!medValid)           nextAction = { action: "Request Updated Medical Card", urgency: medDays !== null && medDays < 0 ? "Expired" : "Missing" };
   else if (!cdlValid)      nextAction = { action: "Renew CDL",           urgency: cdlDays !== null && cdlDays < 0 ? "Expired" : "Missing" };
   else if (!mvrValid)      nextAction = { action: "Run MVR Check",       urgency: "Missing or expired" };
-  else if (!bgCleared)     nextAction = { action: "Clear Background Check", urgency: "Pending" };
-  else if (!drugCleared)   nextAction = { action: "Clear Drug Test",     urgency: "Pending" };
   else if (medDays !== null && medDays <= 30) nextAction = { action: "Renew Medical Card", urgency: `Expires in ${medDays} days` };
   else if (cdlDays !== null && cdlDays <= 60) nextAction = { action: "Renew CDL",         urgency: `Expires in ${cdlDays} days` };
   else if (missingDocs.length > 0) nextAction = { action: `Upload ${missingDocs[0]}`,    urgency: "Missing document" };
 
   const onboarding = [
-    { label: "CDL verified & on file",       done: cdlValid && !!documents.find(d => d.doc_type === "CDL") },
+    { label: "CDL verified & on file",       done: cdlValid && !!documents.find(d => d.doc_type === "CDL Front") },
     { label: "MVR on file",                  done: !!documents.find(d => d.doc_type === "MVR") },
     { label: "Medical Card on file",         done: medValid && !!documents.find(d => d.doc_type === "Medical Card") },
-    { label: "Drug test cleared",            done: drugCleared && !!documents.find(d => d.doc_type === "Drug Test") },
-    { label: "Background check cleared",     done: bgCleared  && !!documents.find(d => d.doc_type === "Background Check") },
     { label: "Insurance on file",            done: !!documents.find(d => d.doc_type === "Insurance") },
     { label: "Orientation completed",        done: !!profile.orientation_completed },
     { label: "Truck assigned",               done: !!profile.assigned_truck_number },
@@ -211,15 +278,40 @@ function ScoreBanner({ score, dispatchOk, payrollOk, complianceOk }: { score: nu
 }
 
 /* ─── EligBadge ──────────────────────────────────── */
-function EligBadge({ ok, label, blocks }: { ok: boolean; label: string; blocks: string[] }) {
+function EligBadge({ ok, label, blocks, overridden, onOverride, onClearOverride }: {
+  ok: boolean; label: string; blocks: string[];
+  overridden?: boolean;
+  onOverride?: () => void;
+  onClearOverride?: () => void;
+}) {
+  const isDispatch = label === "Dispatch Status";
+  const effectiveOk = ok || (isDispatch && overridden);
   return (
-    <div style={{ background: ok ? "#f0fdf4" : "#fff1f2", border: `1.5px solid ${ok ? "#86efac" : "#fda4af"}`, borderRadius: 14, padding: "16px 18px", minWidth: 180 }}>
+    <div style={{ background: effectiveOk ? "#f0fdf4" : "#fff1f2", border: `1.5px solid ${effectiveOk ? "#86efac" : "#fda4af"}`, borderRadius: 14, padding: "16px 18px", minWidth: 200 }}>
       <div style={eyebrow}>{label}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: blocks.length > 0 ? 8 : 0 }}>
-        <span style={{ fontSize: "1.1rem" }}>{ok ? "🟢" : "🔴"}</span>
-        <span style={{ fontWeight: 800, fontSize: "1rem", color: ok ? "#15803d" : "#dc2626" }}>{ok ? "Eligible" : "Blocked"}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: (blocks.length > 0 && !overridden) ? 8 : 0 }}>
+        <span style={{ fontSize: "1.1rem" }}>{effectiveOk ? "🟢" : "🔴"}</span>
+        <span style={{ fontWeight: 800, fontSize: "1rem", color: effectiveOk ? "#15803d" : "#dc2626" }}>
+          {effectiveOk ? "Eligible" : "Blocked"}
+          {overridden && <span style={{ fontSize: "0.65rem", background: "#fef3c7", color: "#92400e", borderRadius: 5, padding: "1px 6px", marginLeft: 6, fontWeight: 700 }}>ADMIN OVERRIDE</span>}
+        </span>
       </div>
-      {blocks.map((b, i) => <div key={i} style={{ fontSize: "0.72rem", color: "#dc2626", fontWeight: 600, marginTop: 3 }}>• {b}</div>)}
+      {!overridden && blocks.map((b, i) => <div key={i} style={{ fontSize: "0.72rem", color: "#dc2626", fontWeight: 600, marginTop: 3 }}>• {b}</div>)}
+      {overridden && blocks.length > 0 && (
+        <div style={{ marginTop: 6 }}>
+          {blocks.map((b, i) => <div key={i} style={{ fontSize: "0.68rem", color: "#92400e", fontWeight: 500, marginTop: 2 }}>⚠ {b} (overridden)</div>)}
+        </div>
+      )}
+      {isDispatch && !ok && !overridden && onOverride && (
+        <button onClick={onOverride} style={{ marginTop: 10, width: "100%", padding: "7px 0", background: "#1e40af", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>
+          🔓 Admin Override — Allow Dispatch
+        </button>
+      )}
+      {isDispatch && overridden && onClearOverride && (
+        <button onClick={onClearOverride} style={{ marginTop: 8, width: "100%", padding: "5px 0", background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 7, fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
+          🔒 Remove Override
+        </button>
+      )}
     </div>
   );
 }
@@ -456,7 +548,7 @@ function CommPanel({ profile }: { profile: Profile }) {
 /* ─── Timeline ───────────────────────────────────── */
 function Timeline({ documents, profile }: { documents: Document[]; profile: Profile }) {
   type Ev = { date: string; label: string; detail: string; icon: string };
-  const events: Ev[] = documents.map(doc => ({ date: doc.uploaded_at, label: `${doc.doc_type} Uploaded`, detail: doc.expires_on ? `Expires ${fmtDate(doc.expires_on)}` : "No expiration", icon: "📄" }));
+  const events: Ev[] = documents.map(doc => ({ date: doc.uploaded_at ?? doc.created_at ?? "", label: `${doc.doc_type} Uploaded`, detail: doc.expires_on ? `Expires ${fmtDate(doc.expires_on)}` : "No expiration", icon: "📄" }));
   if (profile.hire_date) events.push({ date: profile.hire_date + "T00:00:00", label: "Hired", detail: profile.position_role || "Driver", icon: "🚛" });
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const shown = events.slice(0, 8);
@@ -564,9 +656,26 @@ function EditField({ label, value, field, type = "text", options, onSave }: {
 }
 
 /* ─── DocRow ─────────────────────────────────────── */
-function DocRow({ doc, driverName, onDelete }: { doc: Document; driverName?: string; onDelete: (id: string) => void }) {
-  const days = daysUntil(doc.expires_on);
+function DocRow({ doc, driverName, onDelete, onView }: {
+  doc: Document; driverName?: string;
+  onDelete: (id: string) => void;
+  onView?: (url: string, docType: string) => void;
+}) {
+  const days     = daysUntil(doc.expires_on);
   const expColor = days === null ? "#64748b" : days < 0 ? "#dc2626" : days <= 30 ? "#d97706" : "#15803d";
+
+  async function handleEmail() {
+    let url = doc.file_url!;
+    try {
+      const res = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(url)}`);
+      const d   = await res.json();
+      url = d.signed_url || url;
+    } catch {}
+    const subject = encodeURIComponent(`${doc.doc_type}${driverName ? " — " + driverName : ""}`);
+    const body    = encodeURIComponent(`Document: ${doc.doc_type}${driverName ? "\nDriver: " + driverName : ""}\n\nSecure link (valid 1 hr):\n${url}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
   return (
     <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
       <td style={tdSt}><strong style={{ color: "#0f172a" }}>{doc.doc_type}</strong></td>
@@ -575,10 +684,11 @@ function DocRow({ doc, driverName, onDelete }: { doc: Document; driverName?: str
       <td style={tdSt}>
         {doc.file_url ? (
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            <button onClick={() => openDoc(doc.file_url!)} style={{ ...actionSm, color: "#1e40af", background: "#dbeafe" }}>👁 View</button>
-            <button onClick={() => openDoc(doc.file_url!, true)} style={{ ...actionSm, color: "#374151", background: "#f3f4f6" }}>🖨️ Print</button>
-            <a href={`mailto:?subject=${encodeURIComponent(doc.doc_type + (driverName ? " — " + driverName : ""))}&body=${encodeURIComponent("Document: " + doc.doc_type + (driverName ? "\nDriver: " + driverName : "") + "\n\nFile: " + doc.file_url)}`}
-              style={{ ...actionSm, color: "#065f46", background: "#d1fae5", textDecoration: "none" }}>📧 Email</a>
+            <button onClick={() => onView ? onView(doc.file_url!, doc.doc_type) : openDoc(doc.file_url!)}
+              style={{ ...actionSm, color: "#1e40af", background: "#dbeafe" }}>👁 View</button>
+            <button onClick={() => onView ? onView(doc.file_url!, doc.doc_type) : openDoc(doc.file_url!, true)}
+              style={{ ...actionSm, color: "#374151", background: "#f3f4f6" }}>🖨️ Print</button>
+            <button onClick={handleEmail} style={{ ...actionSm, color: "#065f46", background: "#d1fae5" }}>📧 Email</button>
           </div>
         ) : <span style={{ color: "#cbd5e1", fontSize: "0.8rem" }}>No file</span>}
       </td>
@@ -704,6 +814,7 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
   const [statusMsg, setStatusMsg]   = useState(searchParams.get("new") === "1" ? "Driver created! Upload documents and assign a truck below." : "");
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
+  const [viewingDoc, setViewingDoc]   = useState<{ fileUrl: string; docType: string } | null>(null);
   const driverId = params.id;
 
   const loadData = useCallback(async () => {
@@ -743,7 +854,7 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  async function saveField(field: string, value: string) {
+  async function saveField(field: string, value: string | boolean | null) {
     setSaving(true);
     const res = await fetch(`/api/ronyx/drivers/profile?driverId=${driverId}`, {
       method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [field]: value }),
@@ -797,6 +908,16 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
 
   return (
     <div style={{ maxWidth: 1080 }}>
+      {/* In-app document viewer */}
+      {viewingDoc && (
+        <DocViewerModal
+          fileUrl={viewingDoc.fileUrl}
+          docType={viewingDoc.docType}
+          driverName={profile.full_name}
+          onClose={() => setViewingDoc(null)}
+        />
+      )}
+
       <div style={{ marginBottom: 16 }}>
         <Link href="/ronyx/drivers" style={{ color: "#64748b", fontSize: "0.83rem", textDecoration: "none" }}>← Drivers</Link>
       </div>
@@ -861,7 +982,32 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
 
       {/* ── Eligibility + risk row ───────────────────── */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-        <EligBadge ok={readiness.dispatchEligible} label="Dispatch Status" blocks={readiness.dispatchBlocks} />
+        <EligBadge
+          ok={readiness.dispatchEligible}
+          label="Dispatch Status"
+          blocks={readiness.dispatchBlocks}
+          overridden={!!profile.dispatch_override}
+          onOverride={async () => {
+            const res = await fetch(`/api/ronyx/drivers/profile?driverId=${driverId}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ dispatch_override: true, dispatch_override_by: "admin", dispatch_override_at: new Date().toISOString() }),
+            });
+            if (res.ok) {
+              setProfile(p => p ? { ...p, dispatch_override: true, dispatch_override_by: "admin" } : p);
+              flash("Dispatch override applied — driver is now eligible.");
+            } else flash("Override failed — check database migration 157.");
+          }}
+          onClearOverride={async () => {
+            const res = await fetch(`/api/ronyx/drivers/profile?driverId=${driverId}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ dispatch_override: false, dispatch_override_by: null, dispatch_override_at: null }),
+            });
+            if (res.ok) {
+              setProfile(p => p ? { ...p, dispatch_override: false } : p);
+              flash("Dispatch override removed.");
+            }
+          }}
+        />
         <EligBadge ok={readiness.payrollEligible}  label="Payroll Status"  blocks={readiness.payrollIssues} />
         <RiskBadge level={readiness.riskLevel} factors={readiness.riskFactors} />
         <ComplianceAssistant nextAction={readiness.nextAction} onSchedule={() => setReminderOpen(true)} />
@@ -973,28 +1119,11 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
             <EditField label="Contact Phone" value={profile.emergency_contact_phone} field="emergency_contact_phone" type="tel" onSave={saveField} />
           </Card>
           <Card title="Drug & Background Screening">
-            <EditField label="Drug Test Status"       value={profile.drug_test_status}       field="drug_test_status"       options={["pending","cleared","failed","expired"]} onSave={saveField} />
-            <EditField label="Background Check Status" value={profile.background_check_status} field="background_check_status" options={["pending","cleared","failed"]} onSave={saveField} />
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Upload Drug Screen Result</div>
-              <label style={{ ...uploadLabelStyle, cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.6 : 1 }}>
-                Upload Drug Test
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} disabled={uploadingDoc} onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument("Drug Test", f); }} />
-              </label>
-              {documents.find(d => d.doc_type === "Drug Test") && (
-                <span style={{ marginLeft: 10, fontSize: "0.72rem", color: "#15803d", fontWeight: 600 }}>✓ On file</span>
-              )}
-            </div>
-            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {[
-                { label: "Drug Test Status",  value: profile.drug_test_status,        color: profile.drug_test_status === "cleared" ? "#15803d" : profile.drug_test_status === "failed" ? "#dc2626" : "#d97706" },
-                { label: "Background Check",  value: profile.background_check_status, color: profile.background_check_status === "cleared" ? "#15803d" : profile.background_check_status === "failed" ? "#dc2626" : "#d97706" },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-                  <div style={{ fontWeight: 800, color: value ? color : "#cbd5e1", textTransform: "capitalize" }}>{value || "—"}</div>
-                </div>
-              ))}
+            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#0369a1", marginBottom: 4 }}>Handled by subcontractor&apos;s company</div>
+              <div style={{ fontSize: "0.76rem", color: "#475569", lineHeight: 1.5 }}>
+                These drivers work as subcontractors. Background checks and drug testing are the responsibility of the company they work for — not tracked or managed here.
+              </div>
             </div>
           </Card>
         </div>
@@ -1003,49 +1132,53 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
       {/* ── Tab: Documents ───────────────────────────── */}
       {activeTab === "Documents" && (
         <div>
-          {/* Drug & Background Screening Status — quick view at top of Documents */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 18px", marginBottom: 14, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Screening Status</span>
-            {[
-              { label: "Drug Test",        value: profile.drug_test_status,        field: "drug_test_status",        opts: ["pending","cleared","failed","expired"] as const },
-              { label: "Background Check", value: profile.background_check_status, field: "background_check_status", opts: ["pending","cleared","failed"] as const },
-            ].map(({ label, value, field, opts }) => {
-              const color = value === "cleared" ? "#15803d" : value === "failed" ? "#dc2626" : value === "expired" ? "#d97706" : "#94a3b8";
-              const bg    = value === "cleared" ? "#f0fdf4" : value === "failed" ? "#fff1f2" : value === "expired" ? "#fefce8" : "#f8fafc";
-              return (
-                <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#0f172a" }}>{label}:</span>
-                  <select value={value||""} onChange={e => saveField(field, e.target.value)} style={{ background: bg, color, border: `1px solid ${color}44`, borderRadius: 8, padding: "4px 10px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", outline: "none" }}>
-                    <option value="">— not set —</option>
-                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                  {value === "cleared" && !!documents.find(d => d.doc_type === (label === "Drug Test" ? "Drug Test" : "Background Check")) && <span style={{ color: "#15803d", fontSize: "0.72rem", fontWeight: 700 }}>✓ Doc on file</span>}
-                  {value === "cleared" && !documents.find(d => d.doc_type === (label === "Drug Test" ? "Drug Test" : "Background Check")) && <span style={{ color: "#d97706", fontSize: "0.72rem", fontWeight: 700 }}>⚠ Upload result</span>}
-                </div>
-              );
-            })}
+          {/* Subcontractor screening notice */}
+          <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10, padding: "10px 16px", marginBottom: 14, fontSize: "0.76rem", color: "#0369a1", fontWeight: 600 }}>
+            Drug testing and background checks are handled by the subcontractor&apos;s company — not tracked here.
           </div>
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
             <h3 style={{ margin: "0 0 14px", fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>Required Documents</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
               {REQUIRED_DOCS.map(docType => {
                 const existing = documents.find(d => d.doc_type === docType);
+                const hasFile  = !!existing?.file_url;
                 return (
-                  <div key={docType} style={{ border: `1px solid ${existing ? "#86efac" : "#e2e8f0"}`, borderRadius: 8, padding: "10px 14px", background: existing ? "#f0fdf4" : "#fafafa" }}>
-                    <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>{docType}</div>
-                    <div style={{ fontSize: "0.72rem", color: existing ? "#15803d" : "#94a3b8", marginBottom: 8 }}>{existing ? "✓ On file" : "Not uploaded"}</div>
-                    <label style={{ ...uploadLabelStyle, cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.6 : 1 }}>
-                      {existing ? "Replace" : "Upload"}
-                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic" style={{ display: "none" }} disabled={uploadingDoc} onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument(docType, f); }} />
-                    </label>
-                    {existing?.file_url && (
-                      <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-                        <button onClick={() => openDoc(existing.file_url!)} style={{ fontSize: "0.68rem", fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>👁 View</button>
-                        <button onClick={() => openDoc(existing.file_url!, true)} style={{ fontSize: "0.68rem", fontWeight: 700, color: "#374151", background: "#f3f4f6", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>🖨️ Print</button>
-                        <a href={`mailto:?subject=${encodeURIComponent(docType + " — " + (profile.full_name || ""))}&body=${encodeURIComponent("Document: " + docType + "\nDriver: " + (profile.full_name || "") + "\n\nFile: " + existing.file_url)}`}
-                          style={{ fontSize: "0.68rem", fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 5, padding: "3px 8px", textDecoration: "none" }}>📧 Email</a>
-                      </div>
+                  <div key={docType} style={{ border: `1px solid ${hasFile ? "#86efac" : "#e2e8f0"}`, borderRadius: 8, padding: "10px 14px", background: hasFile ? "#f0fdf4" : "#fafafa" }}>
+                    <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>{docType}</div>
+                    <div style={{ fontSize: "0.72rem", color: hasFile ? "#15803d" : "#94a3b8", marginBottom: 2 }}>
+                      {hasFile ? "✓ On file" : "Not uploaded"}
+                    </div>
+                    {existing?.expires_on && (
+                      <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginBottom: 6 }}>Expires {fmtDate(existing.expires_on)}</div>
                     )}
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+                      {hasFile && (
+                        <>
+                          <button
+                            onClick={() => setViewingDoc({ fileUrl: existing!.file_url!, docType })}
+                            style={{ fontSize: "0.68rem", fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}
+                          >👁 View</button>
+                          <button
+                            onClick={() => setViewingDoc({ fileUrl: existing!.file_url!, docType })}
+                            style={{ fontSize: "0.68rem", fontWeight: 700, color: "#374151", background: "#f3f4f6", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}
+                          >🖨️ Print</button>
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(existing!.file_url!)}`).then(r => r.json()).catch(() => ({ signed_url: existing!.file_url }));
+                              const url = res.signed_url || existing!.file_url!;
+                              const subject = encodeURIComponent(`${docType} — ${profile.full_name || ""}`);
+                              const body    = encodeURIComponent(`Document: ${docType}\nDriver: ${profile.full_name || ""}\n\nSecure link (valid 1 hr):\n${url}`);
+                              window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                            }}
+                            style={{ fontSize: "0.68rem", fontWeight: 700, color: "#065f46", background: "#d1fae5", border: "none", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}
+                          >📧 Email</button>
+                        </>
+                      )}
+                      <label style={{ ...uploadLabelStyle, cursor: uploadingDoc ? "not-allowed" : "pointer", opacity: uploadingDoc ? 0.6 : 1 }}>
+                        {hasFile ? "Replace" : "Upload"}
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.tif,.tiff,.bmp" style={{ display: "none" }} disabled={uploadingDoc} onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument(docType, f); }} />
+                      </label>
+                    </div>
                   </div>
                 );
               })}
@@ -1058,7 +1191,10 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
                 <thead><tr style={{ background: "#f8fafc" }}><th style={thSt}>Document</th><th style={thSt}>Status</th><th style={thSt}>Expires</th><th style={thSt}>File</th><th style={thSt}>Actions</th></tr></thead>
-                <tbody>{documents.map(doc => <DocRow key={doc.id} doc={doc} driverName={profile.full_name} onDelete={deleteDocument} />)}</tbody>
+                <tbody>{documents.map(doc => (
+                  <DocRow key={doc.id} doc={doc} driverName={profile.full_name} onDelete={deleteDocument}
+                    onView={(url, dt) => setViewingDoc({ fileUrl: url, docType: dt })} />
+                ))}</tbody>
               </table>
             </div>
           ) : (
@@ -1092,8 +1228,9 @@ export default function DriverProfilePage({ params }: { params: { id: string } }
             <EditField label="Pay Rate"           value={profile.pay_rate}      field="pay_rate"      type="number" onSave={saveField} />
           </Card>
           <Card title="Compliance Checks">
-            <EditField label="Background Check" value={profile.background_check_status} field="background_check_status" options={["pending","cleared","failed"]} onSave={saveField} />
-            <EditField label="Drug Test" value={profile.drug_test_status} field="drug_test_status" options={["pending","cleared","failed"]} onSave={saveField} />
+            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: "0.74rem", color: "#0369a1", fontWeight: 600 }}>
+              Background checks &amp; drug testing handled by subcontractor&apos;s company.
+            </div>
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Hazmat Training</div>
               <select value={profile.hazmat_training ? "Yes" : "No"} onChange={e => saveField("hazmat_training", e.target.value === "Yes" ? "true" : "false")} style={{ padding: "5px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: "0.85rem" }}><option>No</option><option>Yes</option></select>

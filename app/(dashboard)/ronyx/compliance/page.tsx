@@ -103,16 +103,7 @@ function computeDriverIssues(d: Driver): { issue: string; days: number | null; p
     issues.push({ issue: `MVR ${mvrDays < 0 ? `Expired ${Math.abs(mvrDays)}d ago` : `Expires in ${mvrDays}d`}`, days: mvrDays, priority: priorityFromDays(mvrDays), required_action: "Order new MVR from state DMV" });
   }
 
-  const drugDays = daysUntil(d.drug_test_expiration);
-  if (!d.drug_test_expiration) {
-    issues.push({ issue: "Drug Test Missing", days: null, priority: "this_week", required_action: "Schedule pre-employment or random drug test" });
-  } else if (drugDays !== null && drugDays <= 90) {
-    issues.push({ issue: `Drug Test ${drugDays < 0 ? `Expired ${Math.abs(drugDays)}d ago` : `Expires in ${drugDays}d`}`, days: drugDays, priority: priorityFromDays(drugDays), required_action: "Schedule drug test" });
-  }
-
-  if (!d.background_check_status || d.background_check_status === "pending") {
-    issues.push({ issue: "Background Check Pending", days: null, priority: "this_week", required_action: "Submit background check request" });
-  }
+  // Drug testing and background checks are handled by the subcontractor's company — not tracked here.
 
   return issues;
 }
@@ -131,8 +122,7 @@ function compliance_score(d: Driver): number {
   if (!d.medical_card_expiration) score -= 25;
   else { const days = daysUntil(d.medical_card_expiration); if (days !== null && days < 0) score -= 25; else if (days !== null && days < 30) score -= 15; }
   if (!d.mvr_expiration) score -= 15;
-  if (!d.drug_test_expiration) score -= 15;
-  if (!d.background_check_status || d.background_check_status === "pending") score -= 10;
+  // Drug testing and background checks handled by subcontractor's company — not factored in score.
   return Math.max(0, score);
 }
 
@@ -166,7 +156,7 @@ const TABS = [
 type TabKey = typeof TABS[number]["key"];
 
 const DOC_TYPES = [
-  "CDL / License", "Medical Certificate", "MVR", "Drug Test", "Background Check",
+  "CDL / License", "Medical Certificate", "MVR",
   "Auto Insurance", "General Liability", "Cargo Insurance", "W9", "Contract",
   "Cab Card", "Vehicle Registration", "Vehicle Insurance", "Inspection Report",
   "IFTA Decal", "Other",
@@ -462,8 +452,6 @@ function DriverCard({ d, onUpload, onRemind, onBlock }: {
               { label: "CDL", value: d.license_expiration_date, missing: !d.license_expiration_date },
               { label: "Medical Card", value: d.medical_card_expiration, missing: !d.medical_card_expiration },
               { label: "MVR", value: d.mvr_expiration, missing: !d.mvr_expiration },
-              { label: "Drug Test", value: d.drug_test_expiration, missing: !d.drug_test_expiration },
-              { label: "Background Check", value: d.background_check_status || "—", missing: !d.background_check_status || d.background_check_status === "pending" },
             ].map(item => {
               const days = item.value && item.value.match(/^\d{4}/) ? daysUntil(item.value) : null;
               const expired = days !== null && days < 0;
@@ -482,7 +470,7 @@ function DriverCard({ d, onUpload, onRemind, onBlock }: {
 
           {/* Quick upload buttons */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            {["CDL / License", "Medical Certificate", "MVR", "Drug Test", "Background Check"].map(t => (
+            {["CDL / License", "Medical Certificate", "MVR"].map(t => (
               <button key={t} style={S.ghost} onClick={() => onUpload("driver", d.id, d.full_name, t)}>
                 Upload {t.split(" / ")[0]}
               </button>
@@ -654,12 +642,11 @@ function StaffAssistantPanel({ drivers, onToast, onUpload, onRemind, setTab }: {
 
   function exportComplianceCSV() {
     const rows = [
-      ["Driver", "Status", "CDL Exp", "Medical Exp", "MVR Exp", "Drug Test", "BG Check", "Score"],
+      ["Driver", "Status", "CDL Exp", "Medical Exp", "MVR Exp", "Score"],
       ...drivers.map(d => [
         d.full_name, d.status || "active",
         d.license_expiration_date || "", d.medical_card_expiration || "",
-        d.mvr_expiration || "", d.drug_test_expiration || "",
-        d.background_check_status || "", String(compliance_score(d)),
+        d.mvr_expiration || "", String(compliance_score(d)),
       ]),
     ].map(r => r.join(",")).join("\n");
     const a = document.createElement("a");
@@ -742,7 +729,7 @@ function StaffAssistantPanel({ drivers, onToast, onUpload, onRemind, setTab }: {
           "Medical card expired — schedule DOT physical today",
           "CDL renewal needed — send new copy to office",
           "MVR missing — request from state DMV",
-          "Drug test required — schedule appointment",
+          "Insurance expiring — request updated cert from carrier",
         ].map((t, i) => (
           <div key={i} style={{ fontSize: "0.73rem", color: "#475569", padding: "5px 0", borderBottom: i < 3 ? "1px solid #ede9fe" : "none" }}>{t}</div>
         ))}
@@ -806,7 +793,6 @@ function ExpiringSoonTab({ drivers, onRemind, onUpload }: {
       [d.license_expiration_date, "CDL", "CDL / License"],
       [d.medical_card_expiration, "Medical Card", "Medical Certificate"],
       [d.mvr_expiration,          "MVR", "MVR"],
-      [d.drug_test_expiration,    "Drug Test", "Drug Test"],
     ];
     pairs.forEach(([date, issue, docType]) => {
       const days = daysUntil(date);
@@ -1004,14 +990,12 @@ function AuditPacketTab({ drivers }: { drivers: Driver[] }) {
     if (!selected.length) return;
     const selectedDrivers = drivers.filter(d => selected.includes(d.id));
     const rows = [
-      ["Driver Name", "CDL Exp", "Medical Card Exp", "MVR Exp", "Drug Test Exp", "BG Check", "Dispatch Eligible", "Payroll Eligible", "Score"],
+      ["Driver Name", "CDL Exp", "Medical Card Exp", "MVR Exp", "Dispatch Eligible", "Payroll Eligible", "Score"],
       ...selectedDrivers.map(d => [
         d.full_name,
         d.license_expiration_date || "MISSING",
         d.medical_card_expiration || "MISSING",
         d.mvr_expiration          || "MISSING",
-        d.drug_test_expiration    || "MISSING",
-        d.background_check_status || "pending",
         d.dispatch_eligible !== false ? "Yes" : "No",
         d.payroll_eligible  !== false ? "Yes" : "No",
         String(compliance_score(d)),
@@ -1028,7 +1012,7 @@ function AuditPacketTab({ drivers }: { drivers: Driver[] }) {
     <div>
       <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 14, padding: 16, marginBottom: 20 }}>
         <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#1d4ed8", marginBottom: 6 }}>Build Audit Packet</div>
-        <div style={{ fontSize: "0.82rem", color: "#475569", marginBottom: 12 }}>Select drivers to include in the compliance audit packet. The packet will include CDL, medical card, MVR, drug test, background check, eligibility status, and compliance score.</div>
+        <div style={{ fontSize: "0.82rem", color: "#475569", marginBottom: 12 }}>Select drivers to include in the compliance audit packet. The packet will include CDL, medical card, MVR, eligibility status, and compliance score.</div>
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           <button style={S.btn("#1d4ed8")} onClick={() => setSelected(drivers.map(d => d.id))}>Select All</button>
           <button style={S.ghost} onClick={() => setSelected([])}>Clear</button>
@@ -1074,13 +1058,12 @@ function BackupDataTab({ drivers }: { drivers: Driver[] }) {
 
   function exportDriverCompliance() {
     exportSection("driver-compliance-backup", [
-      ["ID", "Name", "Phone", "Email", "Type", "Status", "CDL #", "CDL State", "CDL Exp", "Medical Card Exp", "MVR Exp", "Drug Test Exp", "BG Check", "Truck #", "Company", "Dispatch Eligible", "Payroll Eligible", "Score", "Compliance Flags"],
+      ["ID", "Name", "Phone", "Email", "Type", "Status", "CDL #", "CDL State", "CDL Exp", "Medical Card Exp", "MVR Exp", "Truck #", "Company", "Dispatch Eligible", "Payroll Eligible", "Score", "Compliance Flags"],
       ...drivers.map(d => [
         d.id, `"${d.full_name}"`, d.phone || "", d.email || "",
         d.driver_type || "", d.status || "active",
         d.license_number || "", d.license_state || "", d.license_expiration_date || "",
-        d.medical_card_expiration || "", d.mvr_expiration || "", d.drug_test_expiration || "",
-        d.background_check_status || "pending",
+        d.medical_card_expiration || "", d.mvr_expiration || "",
         d.assigned_truck_number || "", `"${d.company_name || ""}"`,
         d.dispatch_eligible !== false ? "Yes" : "No",
         d.payroll_eligible  !== false ? "Yes" : "No",
@@ -1101,7 +1084,7 @@ function BackupDataTab({ drivers }: { drivers: Driver[] }) {
         {[
           {
             title: "Driver Compliance Backup",
-            desc: `${drivers.length} active drivers — CDL, medical, MVR, drug test, BG check, eligibility`,
+            desc: `${drivers.length} active drivers — CDL, medical, MVR, eligibility`,
             icon: "🪪",
             action: exportDriverCompliance,
             label: "Export Driver Compliance Excel",
@@ -1142,7 +1125,6 @@ function BackupDataTab({ drivers }: { drivers: Driver[] }) {
                   [d.license_expiration_date, "CDL"],
                   [d.medical_card_expiration, "Medical Card"],
                   [d.mvr_expiration, "MVR"],
-                  [d.drug_test_expiration, "Drug Test"],
                 ];
                 pairs.forEach(([date, doc]) => {
                   const days = daysUntil(date);
@@ -1221,7 +1203,7 @@ export default function ComplianceWorkCenterPage() {
     expiring30:      (() => {
       let n = 0;
       drivers.forEach(d => {
-        [d.license_expiration_date, d.medical_card_expiration, d.mvr_expiration, d.drug_test_expiration].forEach(date => {
+        [d.license_expiration_date, d.medical_card_expiration, d.mvr_expiration].forEach(date => {
           const days = daysUntil(date);
           if (days !== null && days >= 0 && days <= 30) n++;
         });
@@ -1325,7 +1307,7 @@ export default function ComplianceWorkCenterPage() {
           <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#7c3aed", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 6 }}>MoveAround TMS</div>
           <h1 style={{ margin: "0 0 6px", fontSize: "1.7rem", fontWeight: 900, color: "#fff" }}>HR / DOT Compliance Work Center</h1>
           <p style={{ margin: "0 0 20px", color: "#94a3b8", fontSize: "0.83rem" }}>
-            CDL · Medical Cards · MVR · Drug Tests · Background Checks · Insurance · Cab Cards · IFTA · Registration — staff work queue, eligibility controls, audit backup, and one-click action center.
+            CDL · Medical Cards · MVR · Insurance · Cab Cards · IFTA · Registration — staff work queue, eligibility controls, audit backup, and one-click action center. Drug testing &amp; background checks are handled by the subcontractor&apos;s company.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
