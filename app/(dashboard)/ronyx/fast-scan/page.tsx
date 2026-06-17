@@ -40,6 +40,25 @@ type UploadResult = {
   document?: any;
   next_step?: string;
   db_warning?: string;
+  ocr_skipped?: boolean;
+  ocr_error?: string;
+  ocr_confidence?: number;
+  extraction_confidence?: number;
+  extracted?: {
+    ticket_number?: string | null;
+    truck_number?:  string | null;
+    driver_name?:   string | null;
+    ticket_date?:   string | null;
+    customer?:      string | null;
+    material?:      string | null;
+    loads?:         number | null;
+    total_hours?:   number | null;
+    signature?:     boolean;
+  };
+  ticket_id?: string | null;
+  ticket_number?: string | null;
+  missing_fields?: string[];
+  qr_url?: string | null;
 };
 
 type Scan = any;
@@ -283,44 +302,106 @@ export default function FastScanPage() {
             </button>
 
             {/* Upload result */}
-            {uploadResult && (
-              <div style={{ marginTop: 14, background: uploadResult.db_warning ? "#fffbeb" : "#f0fdf4", border: `1.5px solid ${uploadResult.db_warning ? "#fde68a" : "#bbf7d0"}`, borderRadius: 10, padding: "14px 16px" }}>
-                <div style={{ fontWeight: 800, color: uploadResult.db_warning ? "#b45309" : "#16a34a", fontSize: "0.82rem", marginBottom: 10 }}>
-                  {uploadResult.db_warning ? "⚠ Uploaded to storage (DB record failed)" : "✓ Ticket Scan Uploaded"}
-                </div>
-                {uploadResult.db_warning && (
-                  <div style={{ fontSize: "0.72rem", color: "#92400e", marginBottom: 8 }}>{uploadResult.db_warning}</div>
-                )}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: "0.72rem" }}>
-                  {[
-                    ["Document ID", uploadResult.document_id ? `…${uploadResult.document_id.slice(-8)}` : "—"],
-                    ["Bucket",      uploadResult.bucket],
-                    ["Scan Status", uploadResult.document?.scan_status || "uploaded"],
-                    ["OCR Status",  uploadResult.document?.ocr_status  || "pending"],
-                    ["Payroll",     uploadResult.document?.payroll_status || "not_ready"],
-                    ["Billing",     uploadResult.document?.billing_status || "not_ready"],
-                  ].map(([k, v]) => (
-                    <div key={String(k)} style={{ background: "#fff", borderRadius: 6, padding: "7px 10px", border: "1px solid #e2e8f0" }}>
-                      <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 2 }}>{k}</div>
-                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{v}</div>
+            {uploadResult && (() => {
+              const hasOcr    = !!uploadResult.extracted;
+              const hasTicket = !!uploadResult.ticket_id;
+              const hasError  = !!uploadResult.db_warning || !!uploadResult.ocr_error;
+              const borderColor = hasError ? "#fde68a" : hasTicket ? "#bbf7d0" : "#bfdbfe";
+              const bgColor     = hasError ? "#fffbeb"  : hasTicket ? "#f0fdf4"  : "#eff6ff";
+              const headerColor = hasError ? "#b45309"  : hasTicket ? "#16a34a"  : "#1e40af";
+              const headerText  = uploadResult.db_warning
+                ? "⚠ Uploaded (DB record failed)"
+                : uploadResult.ocr_error
+                ? "⚠ Uploaded — OCR Failed"
+                : uploadResult.ocr_skipped
+                ? "✓ Uploaded — OCR Skipped"
+                : hasTicket
+                ? "✓ Ticket Created from Scan"
+                : "✓ Scan Uploaded";
+
+              return (
+                <div style={{ marginTop: 14, background: bgColor, border: `1.5px solid ${borderColor}`, borderRadius: 10, padding: "14px 16px" }}>
+                  <div style={{ fontWeight: 800, color: headerColor, fontSize: "0.85rem", marginBottom: 10 }}>{headerText}</div>
+
+                  {(uploadResult.db_warning || uploadResult.ocr_error) && (
+                    <div style={{ fontSize: "0.72rem", color: "#92400e", marginBottom: 10, padding: "6px 10px", background: "#fef3c7", borderRadius: 6 }}>
+                      {uploadResult.db_warning || uploadResult.ocr_error}
                     </div>
-                  ))}
+                  )}
+
+                  {/* Status grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: hasOcr ? 12 : 0 }}>
+                    {[
+                      ["Doc ID",     uploadResult.document_id ? `…${uploadResult.document_id.slice(-8)}` : "—"],
+                      ["OCR Status", uploadResult.document?.ocr_status || (uploadResult.ocr_skipped ? "skipped" : "pending")],
+                      ["Ticket #",   uploadResult.ticket_number || "—"],
+                      ["Confidence", hasOcr ? `${uploadResult.ocr_confidence}%` : "—"],
+                    ].map(([k, v]) => (
+                      <div key={String(k)} style={{ background: "#fff", borderRadius: 6, padding: "6px 10px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: "0.58rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 1 }}>{k}</div>
+                        <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.82rem" }}>{String(v)}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* OCR extracted fields */}
+                  {hasOcr && uploadResult.extracted && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Extracted Fields</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5 }}>
+                        {[
+                          ["Truck #",   uploadResult.extracted.truck_number],
+                          ["Driver",    uploadResult.extracted.driver_name],
+                          ["Date",      uploadResult.extracted.ticket_date],
+                          ["Customer",  uploadResult.extracted.customer],
+                          ["Material",  uploadResult.extracted.material],
+                          ["Loads",     uploadResult.extracted.loads?.toString()],
+                          ["Hours",     uploadResult.extracted.total_hours?.toString()],
+                          ["Signature", uploadResult.extracted.signature ? "✓ Yes" : "✗ Missing"],
+                        ].map(([k, v]) => v != null ? (
+                          <div key={String(k)} style={{ background: "#fff", borderRadius: 5, padding: "5px 8px", border: "1px solid #e2e8f0" }}>
+                            <div style={{ fontSize: "0.55rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>{k}</div>
+                            <div style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.75rem", marginTop: 1 }}>{String(v)}</div>
+                          </div>
+                        ) : null)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing fields warning */}
+                  {(uploadResult.missing_fields?.length ?? 0) > 0 && (
+                    <div style={{ marginBottom: 10, padding: "7px 10px", background: "#fef3c7", borderRadius: 6, fontSize: "0.7rem", color: "#92400e" }}>
+                      <strong>Missing:</strong> {uploadResult.missing_fields!.join(", ")} — routed to Reconciliation
+                    </div>
+                  )}
+
+                  {uploadResult.next_step && (
+                    <div style={{ marginBottom: 10, fontSize: "0.72rem", color: "#1e40af", fontWeight: 600 }}>
+                      {uploadResult.next_step}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {uploadResult.signed_url && (
+                      <button onClick={() => window.open(uploadResult.signed_url!, "_blank")}
+                        style={{ padding: "5px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                        👁 Preview File
+                      </button>
+                    )}
+                    {uploadResult.qr_url && (
+                      <button onClick={() => window.open(uploadResult.qr_url!, "_blank")}
+                        style={{ padding: "5px 14px", background: "#f0fdf4", color: "#16a34a", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                        📱 QR Code
+                      </button>
+                    )}
+                    <button onClick={() => setUploadResult(null)}
+                      style={{ padding: "5px 14px", background: "#f1f5f9", color: "#64748b", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                      Upload Another
+                    </button>
+                  </div>
                 </div>
-                {uploadResult.next_step && (
-                  <div style={{ marginTop: 10, fontSize: "0.72rem", color: "#1e40af", fontWeight: 600 }}>Next: {uploadResult.next_step}</div>
-                )}
-                {uploadResult.signed_url && (
-                  <button onClick={() => window.open(uploadResult.signed_url!, "_blank")}
-                    style={{ marginTop: 10, padding: "5px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
-                    👁 Preview Uploaded File
-                  </button>
-                )}
-                <button onClick={() => setUploadResult(null)}
-                  style={{ marginTop: 8, marginLeft: 8, padding: "5px 14px", background: "#f1f5f9", color: "#64748b", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
-                  Upload Another
-                </button>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Scan type grid */}
