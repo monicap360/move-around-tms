@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -129,6 +129,132 @@ const PRIORITY_STYLE: Record<Priority, { bg: string; text: string }> = {
   High:     { bg: "#fee2e2", text: "#991b1b" },
   Critical: { bg: "#1e293b", text: "#f8fafc" },
 };
+
+// ─── Maintenance document types ──────────────────────────────────────────────
+
+type MaintDoc = {
+  id: string;
+  unit_id: string;
+  work_order_id?: string | null;
+  document_type: string;
+  file_name: string;
+  file_url: string;
+  expires_at?: string | null;
+  created_at: string;
+};
+
+const MAINT_DOC_TYPES = ["Registration", "Insurance", "Annual Inspection", "Work Order Invoice", "Repair Receipt", "Photo", "General"];
+
+const DOC_STATUS_STYLE: Record<string, { color: string; label: string }> = {
+  expired:  { color: "#dc2626", label: "EXPIRED" },
+  expiring: { color: "#d97706", label: "EXPIRING SOON" },
+  valid:    { color: "#16a34a", label: "Valid" },
+  none:     { color: "#94a3b8", label: "Not Set" },
+};
+
+async function openDoc(fileUrl: string, doPrint = false) {
+  try {
+    const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
+    const data = await res.json();
+    const url  = data.signed_url || fileUrl;
+    if (doPrint) { const w = window.open(url); if (w) w.onload = () => w.print(); }
+    else window.open(url, "_blank");
+  } catch { window.open(fileUrl, "_blank"); }
+}
+
+// ─── Maintenance Doc Section ──────────────────────────────────────────────────
+
+function MaintDocSection({ unitId, unitNumber }: { unitId: string; unitNumber: string }) {
+  const [docs,      setDocs]      = useState<MaintDoc[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [docType,   setDocType]   = useState("General");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch(`/api/ronyx/maintenance/documents?unit_id=${unitId}`)
+      .then(r => r.json())
+      .then(d => { setDocs(d.documents || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [unitId]);
+
+  async function handleUpload(file: File) {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file",          file);
+    fd.append("unit_id",       unitId);
+    fd.append("document_type", docType);
+    try {
+      const res  = await fetch("/api/ronyx/maintenance/documents", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.document) setDocs(prev => [data.document, ...prev]);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <p className="mnt-drawer-section-title" style={{ marginTop: 20 }}>Uploaded Documents</p>
+
+      {/* Upload row */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+        <select
+          value={docType}
+          onChange={e => setDocType(e.target.value)}
+          style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: "0.78rem", color: "#0f172a", background: "#fff", flex: 1 }}
+        >
+          {MAINT_DOC_TYPES.map(t => <option key={t}>{t}</option>)}
+        </select>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, background: uploading ? "#94a3b8" : "#1e40af", color: "#fff", padding: "6px 14px", borderRadius: 8, fontSize: "0.78rem", fontWeight: 700, cursor: uploading ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+          {uploading ? "Uploading…" : "📎 Upload"}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.webp,.heic"
+            style={{ display: "none" }}
+            disabled={uploading}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
+          />
+        </label>
+      </div>
+
+      {/* Doc list */}
+      {loading ? (
+        <div style={{ color: "#94a3b8", fontSize: "0.78rem", padding: "8px 0" }}>Loading…</div>
+      ) : docs.length === 0 ? (
+        <div style={{ color: "#94a3b8", fontSize: "0.78rem", background: "#f8fafc", borderRadius: 8, padding: "12px 14px", border: "1px dashed #e2e8f0", textAlign: "center" }}>
+          No documents uploaded yet — select a type and upload above.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {docs.map(doc => {
+            const expSt = doc.expires_at ? DOC_STATUS_STYLE[docStatus(doc.expires_at)] : null;
+            return (
+              <div key={doc.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#0f172a" }}>{doc.document_type}</div>
+                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{doc.file_name}</div>
+                  {expSt && doc.expires_at && (
+                    <div style={{ fontSize: "0.65rem", color: expSt.color, fontWeight: 700, marginTop: 2 }}>Expires: {fmtDate(doc.expires_at)} · {expSt.label}</div>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => openDoc(doc.file_url)} style={{ fontSize: "0.7rem", fontWeight: 700, color: "#1e40af", background: "#dbeafe", border: "none", borderRadius: 6, padding: "4px 9px", cursor: "pointer" }}>👁 View</button>
+                  <button onClick={() => openDoc(doc.file_url, true)} style={{ fontSize: "0.7rem", fontWeight: 700, color: "#374151", background: "#f3f4f6", border: "none", borderRadius: 6, padding: "4px 9px", cursor: "pointer" }}>🖨️ Print</button>
+                  <a
+                    href={`mailto:?subject=${encodeURIComponent("Unit " + unitNumber + " — " + doc.document_type)}&body=${encodeURIComponent("Document: " + doc.document_type + "\nUnit: " + unitNumber + "\nFile: " + doc.file_name + "\n\nLink: " + doc.file_url)}`}
+                    style={{ fontSize: "0.7rem", fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 6, padding: "4px 9px", textDecoration: "none" }}
+                  >📧 Email</a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function mapDbStatusToLane(dbStatus: string, dueDate?: string | null): WOStatus {
   if (dbStatus === "Open")          return "Needs Review";
@@ -297,12 +423,7 @@ function VehicleDrawer({ unit, workOrders, onClose, onBlock, onRestore, onCreate
     { label: "Annual Inspection",  date: unit.annual_inspection_expires,   status: docStatus(unit.annual_inspection_expires) },
   ];
 
-  const docStatusStyle: Record<string, { color: string; label: string }> = {
-    expired:  { color: "#dc2626", label: "EXPIRED" },
-    expiring: { color: "#d97706", label: "EXPIRING SOON" },
-    valid:    { color: "#16a34a", label: "Valid" },
-    none:     { color: "#94a3b8", label: "Not Set" },
-  };
+  const docStatusStyle = DOC_STATUS_STYLE;
 
   return (
     <div className="mnt-drawer-backdrop" onClick={onClose}>
@@ -326,7 +447,7 @@ function VehicleDrawer({ unit, workOrders, onClose, onBlock, onRestore, onCreate
           {unit.luggage_capacity != null && <div><span>Luggage Capacity</span><strong>{unit.luggage_capacity}</strong></div>}
         </div>
 
-        <p className="mnt-drawer-section-title">Documents</p>
+        <p className="mnt-drawer-section-title">Compliance Dates</p>
         <div className="mnt-drawer-docs">
           {docs.map(d => (
             <div key={d.label} className="mnt-drawer-doc-row">
@@ -336,6 +457,8 @@ function VehicleDrawer({ unit, workOrders, onClose, onBlock, onRestore, onCreate
             </div>
           ))}
         </div>
+
+        <MaintDocSection unitId={unit.id} unitNumber={unit.unit_number} />
 
         {activeWOs.length > 0 && (
           <>
