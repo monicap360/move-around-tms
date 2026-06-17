@@ -1551,15 +1551,24 @@ export default function OwnerOperatorsPage() {
                 {/* ── #13 Compliance History Timeline ── */}
                 {(selected.compliance_history||[]).length > 0 && (
                   <Card title="Compliance History">
-                    <div style={{ position:"relative", paddingLeft:18 }}>
-                      <div style={{ position:"absolute", left:6, top:0, bottom:0, width:2, background:"#e2e8f0" }} />
-                      {(selected.compliance_history||[]).slice(0,5).map((h,i) => {
-                        const dot = h.type==="critical"?"#dc2626":h.type==="warning"?"#d97706":"#1e40af";
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {(selected.compliance_history||[]).slice(0,6).map((h,i) => {
+                        const isCrit = h.type==="critical";
+                        const isWarn = h.type==="warning";
+                        const bg    = isCrit?"#fff1f2":isWarn?"#fffbeb":"#eff6ff";
+                        const border= isCrit?"#fda4af":isWarn?"#fde68a":"#bfdbfe";
+                        const color = isCrit?"#dc2626":isWarn?"#b45309":"#1d4ed8";
+                        const icon  = isCrit?"🔴":isWarn?"🟡":"🔵";
                         return (
-                          <div key={i} style={{ position:"relative", marginBottom:12 }}>
-                            <div style={{ position:"absolute", left:-18, top:4, width:10, height:10, borderRadius:"50%", background:dot, border:"2px solid #fff" }} />
-                            <div style={{ fontSize:"0.7rem", color:"#94a3b8", marginBottom:2 }}>{h.date}</div>
-                            <div style={{ fontSize:"0.82rem", color:"#0f172a", fontWeight:600 }}>{h.event}</div>
+                          <div key={i} style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:12, padding:"12px 14px" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                              <span style={{ fontSize:"1rem" }}>{icon}</span>
+                              <span style={{ fontSize:"0.62rem", fontWeight:700, color:color, textTransform:"uppercase", letterSpacing:"0.06em", background:`${border}66`, borderRadius:20, padding:"2px 8px" }}>
+                                {h.type || "info"}
+                              </span>
+                              <span style={{ fontSize:"0.7rem", color:"#94a3b8", marginLeft:"auto" }}>{h.date}</span>
+                            </div>
+                            <div style={{ fontSize:"0.9rem", fontWeight:800, color:color, lineHeight:1.3 }}>{h.event}</div>
                           </div>
                         );
                       })}
