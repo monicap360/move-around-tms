@@ -32,6 +32,16 @@ type ScanResult = {
   message: string;
 };
 
+type UploadResult = {
+  document_id: string | null;
+  storage_path: string;
+  bucket: string;
+  signed_url: string | null;
+  document?: any;
+  next_step?: string;
+  db_warning?: string;
+};
+
 type Scan = any;
 
 const S = {
@@ -64,15 +74,64 @@ export default function FastScanPage() {
   const [error, setError]           = useState("");
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [loadingScans, setLoadingScans] = useState(true);
+
+  // File upload state
+  const [uploadFile, setUploadFile]         = useState<File | null>(null);
+  const [uploadTicketNum, setUploadTicketNum] = useState("");
+  const [uploadTruck, setUploadTruck]       = useState("");
+  const [uploadDriver, setUploadDriver]     = useState("");
+  const [uploading, setUploading]           = useState(false);
+  const [uploadResult, setUploadResult]     = useState<UploadResult | null>(null);
+  const [uploadError, setUploadError]       = useState("");
+  const [dragOver, setDragOver]             = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetch("/api/ronyx/fast-scan")
+  function loadRecentScans() {
+    // Try new pipeline table first, fall back to old table
+    fetch("/api/ronyx/fast-scan/upload")
       .then(r => r.json())
-      .then(d => setRecentScans(d.scans || []))
+      .then(d => {
+        if (d.documents && d.documents.length > 0) {
+          setRecentScans(d.documents.map((doc: any) => ({ ...doc, _source: "pipeline" })));
+        } else {
+          return fetch("/api/ronyx/fast-scan").then(r => r.json()).then(d2 => setRecentScans(d2.scans || []));
+        }
+      })
       .catch(() => {})
       .finally(() => setLoadingScans(false));
-  }, []);
+  }
+
+  useEffect(() => { loadRecentScans(); }, []);
+
+  async function handleFileUpload() {
+    if (!uploadFile) { setUploadError("Choose a file first."); return; }
+    setUploadError("");
+    setUploading(true);
+    setUploadResult(null);
+    try {
+      const form = new FormData();
+      form.append("file", uploadFile);
+      form.append("scan_type", "ticket");
+      if (uploadTicketNum) form.append("ticket_number", uploadTicketNum);
+      if (uploadTruck)     form.append("truck_number",  uploadTruck);
+      if (uploadDriver)    form.append("driver_name",   uploadDriver);
+
+      const res = await fetch("/api/ronyx/fast-scan/upload", { method: "POST", body: form });
+      const data = await res.json();
+
+      if (!res.ok && res.status !== 207) { setUploadError(data.error || "Upload failed."); return; }
+      setUploadResult(data);
+      setUploadFile(null);
+      setUploadTicketNum(""); setUploadTruck(""); setUploadDriver("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      loadRecentScans();
+    } catch (e: any) {
+      setUploadError(e.message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const selectedType = SCAN_TYPES.find(t => t.value === scanType)!;
 
@@ -155,6 +214,115 @@ export default function FastScanPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, alignItems: "start" }}>
         {/* Left: form */}
         <div>
+
+          {/* ── Upload Ticket Scan ───────────────────────────────── */}
+          <div style={{ ...S.card, border: "2px solid #1e40af" }}>
+            <div style={{ fontWeight: 800, color: "#1e40af", fontSize: "0.85rem", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: "1.1rem" }}>📡</span> Upload Ticket Scan
+              <span style={{ marginLeft: "auto", fontSize: "0.65rem", fontWeight: 600, color: "#64748b", background: "#f1f5f9", borderRadius: 6, padding: "2px 8px" }}>PDF · JPG · PNG · HEIC · TIFF</span>
+            </div>
+
+            {/* Drop zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => {
+                e.preventDefault(); setDragOver(false);
+                const f = e.dataTransfer.files[0];
+                if (f) setUploadFile(f);
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${dragOver ? "#1e40af" : uploadFile ? "#16a34a" : "#cbd5e1"}`,
+                borderRadius: 10, background: dragOver ? "#eff6ff" : uploadFile ? "#f0fdf4" : "#f8fafc",
+                padding: "20px 16px", textAlign: "center", cursor: "pointer",
+                transition: "all 150ms", marginBottom: 14,
+              }}>
+              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff,.bmp" style={{ display: "none" }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) setUploadFile(f); }} />
+              {uploadFile ? (
+                <div>
+                  <div style={{ fontSize: "1.4rem", marginBottom: 4 }}>✅</div>
+                  <div style={{ fontWeight: 700, color: "#16a34a", fontSize: "0.82rem" }}>{uploadFile.name}</div>
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: 2 }}>
+                    {(uploadFile.size / 1024 / 1024).toFixed(2)} MB · Click to change
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>📄</div>
+                  <div style={{ fontWeight: 700, color: "#475569", fontSize: "0.82rem" }}>Drop ticket scan here or click to browse</div>
+                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: 4 }}>Max 25 MB</div>
+                </div>
+              )}
+            </div>
+
+            {/* Optional metadata */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+              {[
+                { label: "Ticket #", value: uploadTicketNum, set: setUploadTicketNum, placeholder: "e.g. 104582" },
+                { label: "Truck #",  value: uploadTruck,     set: setUploadTruck,     placeholder: "e.g. 8143"  },
+                { label: "Driver",   value: uploadDriver,    set: setUploadDriver,    placeholder: "e.g. J. Smith" },
+              ].map(f => (
+                <div key={f.label} style={{ flex: 1, minWidth: 120 }}>
+                  <label style={S.label}>{f.label}</label>
+                  <input style={S.input} value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder} />
+                </div>
+              ))}
+            </div>
+
+            {uploadError && (
+              <div style={{ marginBottom: 12, padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#dc2626", fontSize: "0.78rem" }}>
+                {uploadError}
+              </div>
+            )}
+
+            <button onClick={handleFileUpload} disabled={uploading || !uploadFile}
+              style={{ ...S.btn, background: uploadFile ? "#1e40af" : "#94a3b8", color: "#fff", opacity: uploading ? 0.7 : 1, width: "100%" }}>
+              {uploading ? "Uploading…" : "📤 Upload Ticket Scan"}
+            </button>
+
+            {/* Upload result */}
+            {uploadResult && (
+              <div style={{ marginTop: 14, background: uploadResult.db_warning ? "#fffbeb" : "#f0fdf4", border: `1.5px solid ${uploadResult.db_warning ? "#fde68a" : "#bbf7d0"}`, borderRadius: 10, padding: "14px 16px" }}>
+                <div style={{ fontWeight: 800, color: uploadResult.db_warning ? "#b45309" : "#16a34a", fontSize: "0.82rem", marginBottom: 10 }}>
+                  {uploadResult.db_warning ? "⚠ Uploaded to storage (DB record failed)" : "✓ Ticket Scan Uploaded"}
+                </div>
+                {uploadResult.db_warning && (
+                  <div style={{ fontSize: "0.72rem", color: "#92400e", marginBottom: 8 }}>{uploadResult.db_warning}</div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: "0.72rem" }}>
+                  {[
+                    ["Document ID", uploadResult.document_id ? `…${uploadResult.document_id.slice(-8)}` : "—"],
+                    ["Bucket",      uploadResult.bucket],
+                    ["Scan Status", uploadResult.document?.scan_status || "uploaded"],
+                    ["OCR Status",  uploadResult.document?.ocr_status  || "pending"],
+                    ["Payroll",     uploadResult.document?.payroll_status || "not_ready"],
+                    ["Billing",     uploadResult.document?.billing_status || "not_ready"],
+                  ].map(([k, v]) => (
+                    <div key={String(k)} style={{ background: "#fff", borderRadius: 6, padding: "7px 10px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 2 }}>{k}</div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                {uploadResult.next_step && (
+                  <div style={{ marginTop: 10, fontSize: "0.72rem", color: "#1e40af", fontWeight: 600 }}>Next: {uploadResult.next_step}</div>
+                )}
+                {uploadResult.signed_url && (
+                  <button onClick={() => window.open(uploadResult.signed_url!, "_blank")}
+                    style={{ marginTop: 10, padding: "5px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                    👁 Preview Uploaded File
+                  </button>
+                )}
+                <button onClick={() => setUploadResult(null)}
+                  style={{ marginTop: 8, marginLeft: 8, padding: "5px 14px", background: "#f1f5f9", color: "#64748b", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                  Upload Another
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Scan type grid */}
           <div style={S.card}>
             <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#475569", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.07em" }}>Scan Type</div>
@@ -266,25 +434,60 @@ export default function FastScanPage() {
           {loadingScans ? (
             <div style={{ color: "#94a3b8", fontSize: "0.82rem", textAlign: "center", padding: "24px 0" }}>Loading…</div>
           ) : recentScans.length === 0 ? (
-            <div style={{ color: "#94a3b8", fontSize: "0.82rem", textAlign: "center", padding: "24px 0" }}>No scans yet.</div>
+            <div style={{ color: "#94a3b8", fontSize: "0.82rem", textAlign: "center", padding: "24px 0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: 6 }}>📂</div>
+              No scans yet — upload a ticket scan above.
+            </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {recentScans.slice(0, 20).map((s: any) => {
+                // New pipeline records (_source === "pipeline") vs legacy fast_scan_uploads
+                const isPipeline = s._source === "pipeline";
+                if (isPipeline) {
+                  const statusColor = (st: string) =>
+                    st === "approved" || st === "paid" || st === "invoiced" ? "#16a34a"
+                    : st === "on_hold" || st === "needs_review" ? "#d97706"
+                    : st === "ready" ? "#2563eb"
+                    : "#64748b";
+                  return (
+                    <div key={s.id} style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #dbeafe", background: "#f8fafc" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: "1rem" }}>📄</span>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e40af" }}>
+                          {s.original_filename || s.document_kind || "Ticket"}
+                        </span>
+                        <span style={{ marginLeft: "auto", fontSize: "0.65rem", fontWeight: 700, padding: "2px 7px", borderRadius: 99, background: "#eff6ff", color: "#1e40af" }}>
+                          {s.scan_status}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                        {s.ticket_number && <span style={{ fontSize: "0.65rem", background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontWeight: 600 }}>#{s.ticket_number}</span>}
+                        {s.truck_number  && <span style={{ fontSize: "0.65rem", background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontWeight: 600 }}>Truck {s.truck_number}</span>}
+                        {s.driver_name   && <span style={{ fontSize: "0.65rem", background: "#f1f5f9", color: "#475569", borderRadius: 5, padding: "1px 6px", fontWeight: 600 }}>{s.driver_name}</span>}
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <span style={{ fontSize: "0.65rem", color: statusColor(s.payroll_status), fontWeight: 600 }}>Payroll: {s.payroll_status}</span>
+                        <span style={{ fontSize: "0.65rem", color: "#94a3b8" }}>·</span>
+                        <span style={{ fontSize: "0.65rem", color: statusColor(s.billing_status), fontWeight: 600 }}>Billing: {s.billing_status}</span>
+                        <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "#94a3b8" }}>
+                          {new Date(s.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                // Legacy format
                 const t = SCAN_TYPES.find(x => x.value === s.scan_type) || SCAN_TYPES[SCAN_TYPES.length - 1];
                 return (
                   <div key={s.id} style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #f1f5f9", background: "#f8fafc" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: "1rem" }}>{t.icon}</span>
                       <span style={{ fontSize: "0.8rem", fontWeight: 600, color: t.color }}>{t.label}</span>
-                      <span style={{
-                        marginLeft: "auto",
-                        fontSize: "0.67rem",
-                        fontWeight: 600,
-                        padding: "2px 7px",
-                        borderRadius: 99,
+                      <span style={{ marginLeft: "auto", fontSize: "0.67rem", fontWeight: 600, padding: "2px 7px", borderRadius: 99,
                         background: s.upload_status === "linked" ? "#dcfce7" : "#fef3c7",
-                        color: s.upload_status === "linked" ? "#16a34a" : "#92400e",
-                      }}>{s.upload_status}</span>
+                        color:      s.upload_status === "linked" ? "#16a34a" : "#92400e" }}>
+                        {s.upload_status}
+                      </span>
                     </div>
                     <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
                       {s.detected_vehicle && <span>Truck {s.detected_vehicle} · </span>}
