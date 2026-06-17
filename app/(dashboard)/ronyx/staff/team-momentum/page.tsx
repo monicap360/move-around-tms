@@ -12,6 +12,7 @@ type StaffTask = {
   due_date: string | null;
   completed_at: string | null;
   owner_operator_name: string | null;
+  owner_operator_id?: string | null;
   is_overdue: boolean;
   days_until_due: number | null;
 };
@@ -178,7 +179,7 @@ export default function TeamMomentumPage() {
             const [wbg, wc, wIcon] = WORKLOAD_STYLE[sm.workload];
             const isOpen = expanded.has(sm.name);
             const openTaskList = sm.tasks.filter(t=>t.status==="open"||t.status==="in_progress")
-              .sort((a,b)=>{ const r={critical:4,high:3,normal:2,low:1}; return (r[b.priority]||0)-(r[a.priority]||0); });
+              .sort((a,b)=>{ const r: Record<string,number>={critical:4,high:3,normal:2,low:1}; return (r[b.priority]||0)-(r[a.priority]||0); });
 
             return (
               <div key={sm.name} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, overflow:"hidden" }}>

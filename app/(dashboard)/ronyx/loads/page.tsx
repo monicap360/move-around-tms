@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 type LoadRow = {
   id: string;
@@ -57,6 +57,75 @@ export default function RonyxLoadsPage() {
   const [lastUpdated, setLastUpdated] = useState(() => new Date());
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [loadRows, setLoadRows] = useState<LoadRow[]>(FALLBACK_LOADS);
+
+  type PanelId = "fleetStatus" | "pitControl" | "performance" | "loadBoard" | "trafficIntel" | "weatherAlerts" | "hosMonitor";
+  type PanelSize = "compact" | "normal" | "large";
+  type PanelCfg = { collapsed: boolean; size: PanelSize };
+
+  const DEFAULT_PANELS: Record<PanelId, PanelCfg> = {
+    fleetStatus:   { collapsed: false, size: "normal" },
+    pitControl:    { collapsed: false, size: "normal" },
+    performance:   { collapsed: false, size: "normal" },
+    loadBoard:     { collapsed: false, size: "normal" },
+    trafficIntel:  { collapsed: false, size: "normal" },
+    weatherAlerts: { collapsed: false, size: "normal" },
+    hosMonitor:    { collapsed: false, size: "normal" },
+  };
+
+  const [panels, setPanels] = useState<Record<PanelId, PanelCfg>>(() => {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem("ronyx_loads_panels") : null;
+      return stored ? { ...DEFAULT_PANELS, ...JSON.parse(stored) } : DEFAULT_PANELS;
+    } catch { return DEFAULT_PANELS; }
+  });
+
+  function togglePanel(id: PanelId) {
+    setPanels((prev) => {
+      const next = { ...prev, [id]: { ...prev[id], collapsed: !prev[id].collapsed } };
+      try { localStorage.setItem("ronyx_loads_panels", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
+  function resizePanel(id: PanelId, size: PanelSize) {
+    setPanels((prev) => {
+      const next = { ...prev, [id]: { ...prev[id], size } };
+      try { localStorage.setItem("ronyx_loads_panels", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
+  function panelSizeStyle(id: PanelId): React.CSSProperties {
+    const s = panels[id].size;
+    if (s === "compact") return { fontSize: "0.82em", lineHeight: "1.3" };
+    if (s === "large")   return { fontSize: "1.08em" };
+    return {};
+  }
+
+  function PanelCtrlBar({ id, icon, label }: { id: PanelId; icon: string; label: string }) {
+    const cfg = panels[id];
+    const btnBase: React.CSSProperties = {
+      width: 22, height: 22, fontSize: 9, fontWeight: 700, border: "1px solid var(--dispatch-border)",
+      borderRadius: 3, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+    };
+    return (
+      <h3 style={{ marginBottom: cfg.collapsed ? 0 : 16, display: "flex", alignItems: "center", gap: 10, userSelect: "none" }}>
+        <i className={`fas ${icon}`} /> {label}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 3, alignItems: "center" }}>
+          {(["compact", "normal", "large"] as PanelSize[]).map((s) => (
+            <button key={s} title={s} onClick={(e) => { e.stopPropagation(); resizePanel(id, s); }}
+              style={{ ...btnBase, background: cfg.size === s ? "var(--accent,#1e90ff)" : "rgba(255,255,255,0.07)", color: cfg.size === s ? "#fff" : "var(--text-tertiary)" }}>
+              {s === "compact" ? "S" : s === "normal" ? "M" : "L"}
+            </button>
+          ))}
+          <button onClick={(e) => { e.stopPropagation(); togglePanel(id); }} title={cfg.collapsed ? "Expand" : "Collapse"}
+            style={{ ...btnBase, marginLeft: 4, background: "rgba(255,255,255,0.07)", color: "var(--text-tertiary)", fontSize: 10 }}>
+            {cfg.collapsed ? "▼" : "▲"}
+          </button>
+        </div>
+      </h3>
+    );
+  }
 
   useEffect(() => {
     fetch("/api/ronyx/loads")
@@ -869,63 +938,67 @@ export default function RonyxLoadsPage() {
 
         <div className="operations-rail">
           <div className="fleet-status">
-            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="fas fa-truck" /> FLEET STATUS
-            </h3>
-            <div className="fleet-matrix">
-              {fleetCells.map((cell) => (
-                <div
-                  key={cell.id}
-                  className={`fleet-cell ${
-                    cell.status === "maintenance" ? "maintenance" : cell.status === "inactive" ? "inactive" : "active"
-                  }`}
-                >
-                  <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
-                    {cell.status === "inactive" ? "—" : cell.id}
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                    {cell.status === "inactive" ? "AVAILABLE" : cell.driver}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      marginTop: 4,
-                      color: cell.status === "maintenance" ? "var(--status-warning)" : "var(--text-secondary)",
-                    }}
-                  >
-                    {cell.issue || cell.hours || ""}
-                  </div>
+            <PanelCtrlBar id="fleetStatus" icon="fa-truck" label="FLEET STATUS" />
+            {!panels.fleetStatus.collapsed && (
+              <div style={panelSizeStyle("fleetStatus")}>
+                <div className="fleet-matrix">
+                  {fleetCells.map((cell) => (
+                    <div
+                      key={cell.id}
+                      className={`fleet-cell ${
+                        cell.status === "maintenance" ? "maintenance" : cell.status === "inactive" ? "inactive" : "active"
+                      }`}
+                    >
+                      <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+                        {cell.status === "inactive" ? "—" : cell.id}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                        {cell.status === "inactive" ? "AVAILABLE" : cell.driver}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          marginTop: 4,
+                          color: cell.status === "maintenance" ? "var(--status-warning)" : "var(--text-secondary)",
+                        }}
+                      >
+                        {cell.issue || cell.hours || ""}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="pit-control">
-            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="fas fa-mountain" /> PIT CONTROL
-            </h3>
-            <div className="pit-grid">
-              <div className="pit-slot pit-loading" style={{ ["--progress" as string]: "65%" }}>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 3</div>
-                <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4029</div>
-                <div style={{ fontSize: 12, color: "var(--status-ok)" }}>LOADING • 65%</div>
+            <PanelCtrlBar id="pitControl" icon="fa-mountain" label="PIT CONTROL" />
+            {!panels.pitControl.collapsed && (
+              <div style={panelSizeStyle("pitControl")}>
+                <div className="pit-grid">
+                  <div className="pit-slot pit-loading" style={{ ["--progress" as string]: "65%" }}>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 3</div>
+                    <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4029</div>
+                    <div style={{ fontSize: 12, color: "var(--status-ok)" }}>LOADING • 65%</div>
+                  </div>
+                  <div className="pit-slot pit-waiting">
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 7</div>
+                    <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4031</div>
+                    <div style={{ fontSize: 12, color: "var(--status-warning)" }}>WAITING • 8 min</div>
+                  </div>
+                  <div className="pit-slot">
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 1</div>
+                    <div style={{ fontWeight: 600, margin: "4px 0" }}>OPEN</div>
+                    <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>AVAILABLE</div>
+                  </div>
+                  <div className="pit-slot">
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 4</div>
+                    <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4030</div>
+                    <div style={{ fontSize: 12, color: "var(--status-info)" }}>DISPATCHED</div>
+                  </div>
+                </div>
               </div>
-              <div className="pit-slot pit-waiting">
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 7</div>
-                <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4031</div>
-                <div style={{ fontSize: 12, color: "var(--status-warning)" }}>WAITING • 8 min</div>
-              </div>
-              <div className="pit-slot">
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 1</div>
-                <div style={{ fontWeight: 600, margin: "4px 0" }}>OPEN</div>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>AVAILABLE</div>
-              </div>
-              <div className="pit-slot">
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>PIT 4</div>
-                <div style={{ fontWeight: 600, margin: "4px 0" }}>LD-4030</div>
-                <div style={{ fontSize: 12, color: "var(--status-info)" }}>DISPATCHED</div>
-              </div>
-            </div>
+            )}
           </div>
 
           <div
@@ -936,23 +1009,25 @@ export default function RonyxLoadsPage() {
               border: "1px solid var(--dispatch-border)",
             }}
           >
-            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="fas fa-chart-line" /> PERFORMANCE
-            </h3>
-            <div className="performance-metrics">
-              {[
-                { label: "UTILIZATION", value: "78%", trend: "+2.4%", tone: "var(--status-ok)" },
-                { label: "AVG LOAD TIME", value: "18m", trend: "+1.2m", tone: "var(--status-warning)" },
-                { label: "IDLE TIME", value: "12%", trend: "-1.8%", tone: "var(--status-ok)" },
-                { label: "REV/LOAD", value: "$485", trend: "+$24", tone: "var(--status-ok)" },
-              ].map((metric) => (
-                <div key={metric.label} className="metric-card">
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{metric.label}</div>
-                  <div className="metric-value">{metric.value}</div>
-                  <div style={{ fontSize: 12, color: metric.tone }}>{metric.trend}</div>
+            <PanelCtrlBar id="performance" icon="fa-chart-line" label="PERFORMANCE" />
+            {!panels.performance.collapsed && (
+              <div style={panelSizeStyle("performance")}>
+                <div className="performance-metrics">
+                  {[
+                    { label: "UTILIZATION", value: "78%", trend: "+2.4%", tone: "var(--status-ok)" },
+                    { label: "AVG LOAD TIME", value: "18m", trend: "+1.2m", tone: "var(--status-warning)" },
+                    { label: "IDLE TIME", value: "12%", trend: "-1.8%", tone: "var(--status-ok)" },
+                    { label: "REV/LOAD", value: "$485", trend: "+$24", tone: "var(--status-ok)" },
+                  ].map((metric) => (
+                    <div key={metric.label} className="metric-card">
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{metric.label}</div>
+                      <div className="metric-value">{metric.value}</div>
+                      <div style={{ fontSize: 12, color: metric.tone }}>{metric.trend}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -977,147 +1052,171 @@ export default function RonyxLoadsPage() {
                 Updated every 30 seconds • Last: {lastUpdated.toLocaleTimeString("en-US", { hour12: false })}
               </div>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-              Filtered: <strong style={{ color: "var(--status-info)" }}>{activeFilter}</strong>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                Filtered: <strong style={{ color: "var(--status-info)" }}>{activeFilter}</strong>
+              </div>
+              <div style={{ display: "flex", gap: 3 }}>
+                {(["compact", "normal", "large"] as PanelSize[]).map((s) => (
+                  <button key={s} title={s} onClick={() => resizePanel("loadBoard", s)}
+                    style={{ width: 22, height: 22, fontSize: 9, fontWeight: 700, border: "1px solid var(--dispatch-border)", borderRadius: 3, cursor: "pointer", background: panels.loadBoard.size === s ? "var(--accent,#1e90ff)" : "rgba(255,255,255,0.07)", color: panels.loadBoard.size === s ? "#fff" : "var(--text-tertiary)" }}>
+                    {s === "compact" ? "S" : s === "normal" ? "M" : "L"}
+                  </button>
+                ))}
+                <button onClick={() => togglePanel("loadBoard")} title={panels.loadBoard.collapsed ? "Expand" : "Collapse"}
+                  style={{ marginLeft: 4, width: 22, height: 22, fontSize: 10, fontWeight: 700, border: "1px solid var(--dispatch-border)", borderRadius: 3, cursor: "pointer", background: "rgba(255,255,255,0.07)", color: "var(--text-tertiary)" }}>
+                  {panels.loadBoard.collapsed ? "▼" : "▲"}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="load-table">
-            <div className="table-header">
-              <div>LOAD ID</div>
-              <div>STATUS</div>
-              <div>DRIVER</div>
-              <div>ROUTE</div>
-              <div>MATERIAL</div>
-              <div>WEIGHT</div>
-              <div>ETA/STATUS</div>
-              <div>ACTIONS</div>
-            </div>
-            <div className="table-rows">
-              {filteredRows.map((row) => (
-                <div key={row.id} className={`table-row ${row.priority === "high" ? "high-priority" : ""}`}>
-                  <div>{row.id}</div>
-                  <div>
-                    <span
-                      className={`status-indicator ${
-                        row.status === "LOADING"
-                          ? "status-loading"
-                          : row.status === "IN TRANSIT"
-                          ? "status-transit"
-                          : row.status === "ON SITE"
-                          ? "status-onsite"
-                          : "status-delayed"
-                      }`}
-                    />
-                    {row.status}
-                  </div>
-                  <div className="driver-info">
-                    <div className="driver-badge">{row.driverInitials}</div>
-                    {row.driver}
-                  </div>
-                  <div className="route-display">{row.route}</div>
-                  <div>{row.material}</div>
-                  <div>{row.weight}</div>
-                  <div className={row.status === "DELAYED" ? "eta-warning" : undefined}>{row.eta}</div>
-                  <div className="action-buttons">
-                    <button className="action-btn" onClick={() => handleCommand(`Calling ${row.driver}`)}>
-                      <i className="fas fa-phone" />
-                    </button>
-                    <button className="action-btn" onClick={() => handleCommand(`Tracking ${row.id}`)}>
-                      <i className="fas fa-map-marker-alt" />
-                    </button>
-                    <button className="action-btn" onClick={() => handleCommand(`Message sent to ${row.driver}`)}>
-                      <i className="fas fa-message" />
-                    </button>
-                    <button className="action-btn" onClick={() => handleCommand(`Updated ${row.id}`)}>
-                      <i className="fas fa-pen-to-square" />
-                    </button>
-                    {row.status === "IN TRANSIT" || row.status === "DELAYED" ? (
-                      <button className="action-btn" onClick={() => handleCommand(`Reroute queued for ${row.id}`)}>
-                        <i className="fas fa-route" />
-                      </button>
-                    ) : (
-                      <button className="action-btn" onClick={() => handleCommand(`Ticket ready for ${row.id}`)}>
-                        <i className="fas fa-file-invoice" />
-                      </button>
-                    )}
-                  </div>
+          {!panels.loadBoard.collapsed && (
+            <div style={panelSizeStyle("loadBoard")}>
+              <div className="load-table">
+                <div className="table-header">
+                  <div>LOAD ID</div>
+                  <div>STATUS</div>
+                  <div>DRIVER</div>
+                  <div>ROUTE</div>
+                  <div>MATERIAL</div>
+                  <div>WEIGHT</div>
+                  <div>ETA/STATUS</div>
+                  <div>ACTIONS</div>
                 </div>
-              ))}
+                <div className="table-rows">
+                  {filteredRows.map((row) => (
+                    <div key={row.id} className={`table-row ${row.priority === "high" ? "high-priority" : ""}`}>
+                      <div>{row.id}</div>
+                      <div>
+                        <span
+                          className={`status-indicator ${
+                            row.status === "LOADING"
+                              ? "status-loading"
+                              : row.status === "IN TRANSIT"
+                              ? "status-transit"
+                              : row.status === "ON SITE"
+                              ? "status-onsite"
+                              : "status-delayed"
+                          }`}
+                        />
+                        {row.status}
+                      </div>
+                      <div className="driver-info">
+                        <div className="driver-badge">{row.driverInitials}</div>
+                        {row.driver}
+                      </div>
+                      <div className="route-display">{row.route}</div>
+                      <div>{row.material}</div>
+                      <div>{row.weight}</div>
+                      <div className={row.status === "DELAYED" ? "eta-warning" : undefined}>{row.eta}</div>
+                      <div className="action-buttons">
+                        <button className="action-btn" onClick={() => handleCommand(`Calling ${row.driver}`)}>
+                          <i className="fas fa-phone" />
+                        </button>
+                        <button className="action-btn" onClick={() => handleCommand(`Tracking ${row.id}`)}>
+                          <i className="fas fa-map-marker-alt" />
+                        </button>
+                        <button className="action-btn" onClick={() => handleCommand(`Message sent to ${row.driver}`)}>
+                          <i className="fas fa-message" />
+                        </button>
+                        <button className="action-btn" onClick={() => handleCommand(`Updated ${row.id}`)}>
+                          <i className="fas fa-pen-to-square" />
+                        </button>
+                        {row.status === "IN TRANSIT" || row.status === "DELAYED" ? (
+                          <button className="action-btn" onClick={() => handleCommand(`Reroute queued for ${row.id}`)}>
+                            <i className="fas fa-route" />
+                          </button>
+                        ) : (
+                          <button className="action-btn" onClick={() => handleCommand(`Ticket ready for ${row.id}`)}>
+                            <i className="fas fa-file-invoice" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="intelligence-rail">
           <div className="traffic-intel">
-            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="fas fa-traffic-light" /> TRAFFIC INTELLIGENCE
-            </h3>
-            <div className="route-status-grid">
-              <div className="route-item critical">
-                <span>I-45 NORTH</span>
-                <span style={{ color: "var(--status-urgent)", fontWeight: 600 }}>HEAVY</span>
+            <PanelCtrlBar id="trafficIntel" icon="fa-traffic-light" label="TRAFFIC INTELLIGENCE" />
+            {!panels.trafficIntel.collapsed && (
+              <div style={panelSizeStyle("trafficIntel")}>
+                <div className="route-status-grid">
+                  <div className="route-item critical">
+                    <span>I-45 NORTH</span>
+                    <span style={{ color: "var(--status-urgent)", fontWeight: 600 }}>HEAVY</span>
+                  </div>
+                  <div className="route-item clear">
+                    <span>BELTWAY 8</span>
+                    <span style={{ color: "var(--status-ok)", fontWeight: 600 }}>CLEAR</span>
+                  </div>
+                  <div className="route-item warning">
+                    <span>HIGHWAY 290</span>
+                    <span style={{ color: "var(--status-warning)", fontWeight: 600 }}>MODERATE</span>
+                  </div>
+                  <div className="route-item clear">
+                    <span>I-10 WEST</span>
+                    <span style={{ color: "var(--status-ok)", fontWeight: 600 }}>CLEAR</span>
+                  </div>
+                </div>
               </div>
-              <div className="route-item clear">
-                <span>BELTWAY 8</span>
-                <span style={{ color: "var(--status-ok)", fontWeight: 600 }}>CLEAR</span>
-              </div>
-              <div className="route-item warning">
-                <span>HIGHWAY 290</span>
-                <span style={{ color: "var(--status-warning)", fontWeight: 600 }}>MODERATE</span>
-              </div>
-              <div className="route-item clear">
-                <span>I-10 WEST</span>
-                <span style={{ color: "var(--status-ok)", fontWeight: 600 }}>CLEAR</span>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="weather-alerts">
-            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="fas fa-cloud-sun" /> WEATHER ALERTS
-            </h3>
-            <div className="weather-grid">
-              <div className="weather-site">
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>MAIN ST PROJECT</div>
-                <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 68°F</div>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>SITE CLOSES 3PM</div>
+            <PanelCtrlBar id="weatherAlerts" icon="fa-cloud-sun" label="WEATHER ALERTS" />
+            {!panels.weatherAlerts.collapsed && (
+              <div style={panelSizeStyle("weatherAlerts")}>
+                <div className="weather-grid">
+                  <div className="weather-site">
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>MAIN ST PROJECT</div>
+                    <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 68°F</div>
+                    <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>SITE CLOSES 3PM</div>
+                  </div>
+                  <div className="weather-site">
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>KATY SITE</div>
+                    <div style={{ fontSize: 13, color: "var(--status-warning)" }}>RAIN IN 45m</div>
+                    <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>PREPARE TARPS</div>
+                  </div>
+                  <div className="weather-site">
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>I-45 JOBSITE</div>
+                    <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 72°F</div>
+                    <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>DRY CONDITIONS</div>
+                  </div>
+                  <div className="weather-site">
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>WESTSIDE</div>
+                    <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 70°F</div>
+                    <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>NORMAL OPS</div>
+                  </div>
+                </div>
               </div>
-              <div className="weather-site">
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>KATY SITE</div>
-                <div style={{ fontSize: 13, color: "var(--status-warning)" }}>RAIN IN 45m</div>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>PREPARE TARPS</div>
-              </div>
-              <div className="weather-site">
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>I-45 JOBSITE</div>
-                <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 72°F</div>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>DRY CONDITIONS</div>
-              </div>
-              <div className="weather-site">
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>WESTSIDE</div>
-                <div style={{ fontSize: 13, color: "var(--status-ok)" }}>CLEAR • 70°F</div>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>NORMAL OPS</div>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="hos-monitor">
-            <h3 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="fas fa-hourglass-half" /> HOS MONITOR
-            </h3>
-            <div className="hos-progress-container">
-              {hosDrivers.map((driver) => (
-                <div key={driver.name} className="hos-driver">
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                    <span>{driver.name}</span>
-                    <span>{driver.hoursLeft}</span>
-                  </div>
-                  <div className="hos-bar">
-                    <div className={`hos-progress hos-${driver.tone}`} style={{ width: `${driver.pct}%` }} />
-                  </div>
+            <PanelCtrlBar id="hosMonitor" icon="fa-hourglass-half" label="HOS MONITOR" />
+            {!panels.hosMonitor.collapsed && (
+              <div style={panelSizeStyle("hosMonitor")}>
+                <div className="hos-progress-container">
+                  {hosDrivers.map((driver) => (
+                    <div key={driver.name} className="hos-driver">
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                        <span>{driver.name}</span>
+                        <span>{driver.hoursLeft}</span>
+                      </div>
+                      <div className="hos-bar">
+                        <div className={`hos-progress hos-${driver.tone}`} style={{ width: `${driver.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 

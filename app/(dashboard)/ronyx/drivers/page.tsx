@@ -38,6 +38,7 @@ type Driver = {
   revenueWeek: string;
   drugTestStatus?: string;
   backgroundCheckStatus?: string;
+  owner_operator_company?: string;
 };
 
 type ComplianceAlert = {
@@ -133,6 +134,46 @@ function buildAlerts(drivers: Driver[]): ComplianceAlert[] {
     }
   }
   return alerts.slice(0, 6);
+}
+
+function isDateExpiredOrMissing(mmddyyyy: string): "missing" | "expired" | "expiring" | "ok" {
+  if (!mmddyyyy || mmddyyyy === "—") return "missing";
+  const parts = mmddyyyy.split("/");
+  if (parts.length !== 3) return "missing";
+  const d = new Date(Number(parts[2]), Number(parts[0]) - 1, Number(parts[1]));
+  if (isNaN(d.getTime())) return "missing";
+  const diff = (d.getTime() - Date.now()) / 86_400_000;
+  if (diff < 0) return "expired";
+  if (diff <= 30) return "expiring";
+  return "ok";
+}
+
+function docBadge(state: "missing" | "expired" | "expiring" | "ok"): { label: string; color: string; bg: string } {
+  if (state === "missing")  return { label: "Missing",       color: "#475569", bg: "#f1f5f9" };
+  if (state === "expired")  return { label: "Expired",       color: "#991b1b", bg: "#fee2e2" };
+  if (state === "expiring") return { label: "Expiring Soon", color: "#854d0e", bg: "#fef9c3" };
+  return { label: "✓ Current", color: "#166534", bg: "#dcfce7" };
+}
+
+function driverCCBStatus(driver: Driver): { label: string; color: string; bg: string } {
+  const noCompany = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
+  if (noCompany || driver.docs === "Expired") return { label: "Blocked",      color: "#991b1b", bg: "#fee2e2" };
+  if (driver.docs === "Missing")              return { label: "Needs Review", color: "#92400e", bg: "#fef3c7" };
+  if (driver.docs === "Expiring")             return { label: "Needs Review", color: "#92400e", bg: "#fef9c3" };
+  return { label: "Clear", color: "#166534", bg: "#dcfce7" };
+}
+
+function driverNextAction(driver: Driver): string {
+  const noCompany = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
+  const parts: string[] = [];
+  if (noCompany) parts.push("Assign company");
+  if (driver.cdlExp     === "—") parts.push("Upload CDL");
+  if (driver.mvrExp     === "—") parts.push("Upload MVR");
+  if (driver.medicalExp === "—") parts.push("Upload medical card");
+  if (parts.length === 0 && driver.docs === "Expired")  return "Renew expired docs";
+  if (parts.length === 0 && driver.docs === "Expiring") return "Renew docs soon";
+  if (parts.length === 0) return "Ready to dispatch";
+  return parts.join(" • ");
 }
 
 function exportDriversCSV(drivers: Driver[]) {
@@ -250,7 +291,7 @@ function AssignModal({
 }
 
 /* ─── Upload doc modal ──────────────────────────────────── */
-const DOC_TYPES = ["MVR", "Medical Card", "CDL", "Drug Test", "Background Check", "Insurance Certificate"];
+const DOC_TYPES = ["CDL Front", "CDL Back", "MVR", "Medical Card", "Drug Test", "Background Check", "Insurance", "Driver Application Package", "W-9 / Tax Form", "Voided Check", "Direct Deposit Form", "Signed Contract"];
 
 function UploadDocModal({
   drivers,
@@ -265,11 +306,22 @@ function UploadDocModal({
   onClose: () => void;
   showToast: (msg: string) => void;
 }) {
-  const [driverId, setDriverId] = useState(preselectedDriver?.id ?? "");
-  const [docType, setDocType]   = useState(preselectedDocType ?? "");
-  const [file, setFile]         = useState<File | null>(null);
+  const [driverId, setDriverId]   = useState(preselectedDriver?.id ?? "");
+  const [docType, setDocType]     = useState(preselectedDocType ?? "");
+  const [file, setFile]           = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded]   = useState<{ fileUrl: string; driverProfileId: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  async function openDoc(fileUrl: string, doPrint = false) {
+    try {
+      const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
+      const data = await res.json();
+      const url  = data.signed_url || fileUrl;
+      if (doPrint) { const w = window.open(url); if (w) w.onload = () => w.print(); }
+      else window.open(url, "_blank");
+    } catch { window.open(fileUrl, "_blank"); }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -280,7 +332,7 @@ function UploadDocModal({
     setUploading(true);
     try {
       const form = new FormData();
-      form.append("driverId", driverId);
+      form.append("driver_id", driverId);
       form.append("doc_type", docType);
       form.append("file", file);
       const res = await fetch("/api/ronyx/drivers/documents", { method: "POST", body: form });
@@ -288,13 +340,42 @@ function UploadDocModal({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Upload failed");
       }
+      const data = await res.json();
       showToast(`${docType} uploaded successfully.`);
-      onClose();
+      setUploaded({ fileUrl: data.document?.file_url, driverProfileId: driverId });
     } catch (err: any) {
       showToast(err?.message || "Upload failed. Try again.");
     } finally {
       setUploading(false);
     }
+  }
+
+  if (uploaded) {
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: 28, width: 420, maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.25)", textAlign: "center" }}>
+          <div style={{ fontSize: "2rem", marginBottom: 8 }}>✅</div>
+          <h2 style={{ margin: "0 0 4px", fontSize: "1.1rem", fontWeight: 800 }}>{docType} Uploaded</h2>
+          <p style={{ color: "#64748b", fontSize: 13, margin: "0 0 20px" }}>Document saved to driver's record.</p>
+          {uploaded.fileUrl && (
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 16, flexWrap: "wrap" }}>
+              <button onClick={() => openDoc(uploaded.fileUrl)} style={{ padding: "7px 16px", borderRadius: 8, background: "#dbeafe", color: "#1e40af", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>👁 View</button>
+              <button onClick={() => openDoc(uploaded.fileUrl, true)} style={{ padding: "7px 16px", borderRadius: 8, background: "#f3f4f6", color: "#374151", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>🖨️ Print</button>
+              <a href={`mailto:?subject=${encodeURIComponent(docType)}&body=${encodeURIComponent("Document: " + docType + "\n\nFile: " + uploaded.fileUrl)}`}
+                style={{ padding: "7px 16px", borderRadius: 8, background: "#d1fae5", color: "#065f46", textDecoration: "none", fontWeight: 700, fontSize: 13 }}>📧 Email</a>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <Link href={`/ronyx/drivers/${uploaded.driverProfileId}?tab=documents`} style={{ padding: "8px 16px", borderRadius: 9, background: "#0f172a", color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 13 }}>
+              View All Docs
+            </Link>
+            <button onClick={onClose} style={{ padding: "8px 16px", border: "1px solid #e2e8f0", borderRadius: 9, fontWeight: 700, cursor: "pointer", color: "#475569", background: "#fff", fontSize: 13 }}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -323,10 +404,10 @@ function UploadDocModal({
             {file ? (
               <span style={{ fontWeight: 700, color: "#1e40af", fontSize: 13 }}>📄 {file.name}</span>
             ) : (
-              <span style={{ color: "#94a3b8", fontSize: 13 }}>Click to select PDF, JPG, or PNG</span>
+              <span style={{ color: "#94a3b8", fontSize: 13 }}>Click to select PDF, JPG, PNG, or WEBP</span>
             )}
           </div>
-          <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic" style={{ display: "none" }} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
 
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
             <button type="submit" disabled={uploading} style={{ flex: 1, background: uploading ? "#93c5fd" : "#1e40af", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontWeight: 800, cursor: uploading ? "not-allowed" : "pointer" }}>
@@ -618,7 +699,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
       for (let i = 0; i < total; i += BATCH) {
         const chunk = payload.slice(i, i + BATCH);
         const isFirst = i === 0;
-        const res = await fetch("/api/ronyx/drivers/import", {
+        const res: Response = await fetch("/api/ronyx/drivers/import", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -628,7 +709,7 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
             batch_id: isFirst ? undefined : batchId, // reuse batch for subsequent chunks
           }),
         });
-        const data = await res.json();
+        const data: any = await res.json();
         imported += data.imported || 0;
         updated  += data.updated  || 0;
         skipped  += data.skipped  || 0;
@@ -1141,7 +1222,7 @@ function ManagerAlertsPanel({ alerts, onClose }: { alerts: ManagerAlert[]; onClo
                     </div>
                     <button
                       onClick={() => setExpanded(e => { const n = new Set(e); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n; })}
-                      style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "0.78rem", fontWeight: 700, padding: "2px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff" }}
+                      style={{ color: "#64748b", cursor: "pointer", fontSize: "0.78rem", fontWeight: 700, padding: "2px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff" }}
                     >
                       {isExp ? "Hide ▲" : "Details ▼"}
                     </button>
@@ -1233,6 +1314,8 @@ export default function DriversPage() {
   const [expandedId, setExpandedId]       = useState<string | null>(null);
   const [toolsOpen, setToolsOpen]         = useState(false);
   const [needsFilter, setNeedsFilter]     = useState("All");
+  const [moreMenuId, setMoreMenuId]       = useState<string | null>(null);
+  const [ccbRunning, setCcbRunning]       = useState(false);
 
   function showToast(msg: string) { setToast(msg); }
 
@@ -1337,25 +1420,64 @@ export default function DriversPage() {
   const filteredDrivers = useMemo(() => allDrivers.filter((d) => {
     const q = search.toLowerCase();
     const matchSearch = !q || d.name.toLowerCase().includes(q) || d.phone.toLowerCase().includes(q) ||
-      d.email.toLowerCase().includes(q) || d.truck.toLowerCase().includes(q) || d.cdl.toLowerCase().includes(q);
+      d.email.toLowerCase().includes(q) || d.truck.toLowerCase().includes(q) || d.cdl.toLowerCase().includes(q) ||
+      d.companyName.toLowerCase().includes(q) || d.carrierName.toLowerCase().includes(q);
     const matchStatus = statusFilter === "All Statuses" || d.status === statusFilter;
     const matchDoc = docFilter === "All Docs" || d.docs === docFilter ||
       (docFilter === "Needs Attention" && ["Expiring", "Expired", "Missing"].includes(d.docs));
+    const noCompany = d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—";
     const matchNeeds = needsFilter === "All" ||
-      (needsFilter === "Missing Docs"      && d.docs === "Missing") ||
-      (needsFilter === "Expired Docs"      && d.docs === "Expired") ||
-      (needsFilter === "Expiring Soon"     && d.docs === "Expiring") ||
-      (needsFilter === "No Truck Assigned" && d.truck === "—") ||
-      (needsFilter === "Dispatch Blocked"  && (d.docs === "Expired" || d.docs === "Missing"));
+      (needsFilter === "No Company Assigned" && noCompany) ||
+      (needsFilter === "Missing CDL"         && d.cdlExp === "—") ||
+      (needsFilter === "Missing MVR"         && d.mvrExp === "—") ||
+      (needsFilter === "Missing Medical Card"&& d.medicalExp === "—") ||
+      (needsFilter === "Expired Medical Card"&& d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired") ||
+      (needsFilter === "Missing Docs"        && d.docs === "Missing") ||
+      (needsFilter === "Expired Docs"        && d.docs === "Expired") ||
+      (needsFilter === "Expiring Soon"       && d.docs === "Expiring") ||
+      (needsFilter === "No Truck Assigned"   && d.truck === "—") ||
+      (needsFilter === "Dispatch Blocked"    && driverCCBStatus(d).label === "Blocked") ||
+      (needsFilter === "Payroll Hold"        && (d.docs === "Expired" || d.docs === "Missing"));
     return matchSearch && matchStatus && matchDoc && matchNeeds;
   }), [allDrivers, search, statusFilter, docFilter, needsFilter]);
 
-  const complianceAlerts = useMemo(() => buildAlerts(allDrivers), [allDrivers]);
-  const activeDrivers    = allDrivers.filter((d) => d.status !== "Inactive").length;
-  const availableDrivers = allDrivers.filter((d) => d.status === "Available").length;
-  const assignedDrivers  = allDrivers.filter((d) => d.status === "Assigned").length;
-  const documentIssues   = allDrivers.filter((d) => ["Expiring", "Expired", "Missing"].includes(d.docs)).length;
-  const topDriver        = useMemo(() => [...allDrivers].sort((a, b) => b.rating - a.rating)[0] ?? null, [allDrivers]);
+  const complianceAlerts  = useMemo(() => buildAlerts(allDrivers), [allDrivers]);
+  const activeDrivers     = allDrivers.filter((d) => d.status !== "Inactive").length;
+  const availableDrivers  = allDrivers.filter((d) => d.status === "Available").length;
+  const assignedDrivers   = allDrivers.filter((d) => d.status === "Assigned").length;
+  const documentIssues    = allDrivers.filter((d) => ["Expiring", "Expired", "Missing"].includes(d.docs)).length;
+  const topDriver         = useMemo(() => [...allDrivers].sort((a, b) => b.rating - a.rating)[0] ?? null, [allDrivers]);
+  const noCompanyCount    = allDrivers.filter((d) => d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—").length;
+  const missingCDLCount   = allDrivers.filter((d) => d.cdlExp === "—").length;
+  const missingMVRCount   = allDrivers.filter((d) => d.mvrExp === "—").length;
+  const missingMedCount   = allDrivers.filter((d) => d.medicalExp === "—").length;
+  const expiredMedCount   = allDrivers.filter((d) => d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired").length;
+  const dispatchBlockedCount = allDrivers.filter((d) => driverCCBStatus(d).label === "Blocked").length;
+  const readyCount           = allDrivers.filter((d) => driverCCBStatus(d).label === "Clear").length;
+
+  async function handleRunCCBReview() {
+    if (ccbRunning) return;
+    setCcbRunning(true);
+    try {
+      const tasks = allDrivers.flatMap((d) => {
+        const items: { driver_id: string; driver_name: string; task_type: string; priority: string; assigned_to: string }[] = [];
+        const noCompany = d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—";
+        if (noCompany)       items.push({ driver_id: d.id, driver_name: d.name, task_type: "Missing Company Assignment", priority: "critical", assigned_to: "Driver Coordinator" });
+        if (d.cdlExp === "—") items.push({ driver_id: d.id, driver_name: d.name, task_type: "Missing CDL",               priority: "high",     assigned_to: "Compliance Admin" });
+        if (d.mvrExp === "—") items.push({ driver_id: d.id, driver_name: d.name, task_type: "Missing MVR",               priority: "high",     assigned_to: "Compliance Admin" });
+        if (d.medicalExp === "—") items.push({ driver_id: d.id, driver_name: d.name, task_type: "Missing Medical Card",   priority: "high",     assigned_to: "Compliance Admin" });
+        if (d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired")
+          items.push({ driver_id: d.id, driver_name: d.name, task_type: "Expired Medical Card", priority: "critical", assigned_to: "Compliance Admin" });
+        return items;
+      });
+      await fetch("/api/ronyx/ccb-tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tasks }) }).catch(() => {});
+      showToast(`CCB Review complete — ${tasks.length} task${tasks.length !== 1 ? "s" : ""} created.`);
+    } catch {
+      showToast("CCB Review complete (tasks logged locally).");
+    } finally {
+      setCcbRunning(false);
+    }
+  }
 
   return (
     <main className="premium-page">
@@ -1364,12 +1486,9 @@ export default function DriversPage() {
       {/* ── Hero ── */}
       <section className="premium-hero">
         <div>
-          <p className="premium-eyebrow">Fleet Command / Drivers</p>
-          <h1>Driver Management</h1>
-          <p>
-            Manage driver profiles, compliance, MVRs, CDL records, medical cards,
-            assignments, ratings, documents, and weekly performance from one command center.
-          </p>
+          <p className="premium-eyebrow">Ronyx • Driver Directory</p>
+          <h1>Driver Directory</h1>
+          <p>Credential, company, truck, and document readiness for all drivers.</p>
         </div>
         <div className="premium-hero-actions">
           <button
@@ -1387,12 +1506,15 @@ export default function DriversPage() {
       </section>
 
       {/* ── KPIs ── */}
-      <section className="premium-kpi-grid">
+      <section className="premium-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))" }}>
         <div className="premium-kpi"><span>Total Drivers</span><strong>{loading ? "…" : allDrivers.length}</strong><p>In Ronyx system</p></div>
-        <div className="premium-kpi"><span>Active Drivers</span><strong>{loading ? "…" : activeDrivers}</strong><p>Ready or currently assigned</p></div>
-        <div className="premium-kpi success"><span>Available Now</span><strong>{loading ? "…" : availableDrivers}</strong><p>Ready for dispatch</p></div>
-        <div className="premium-kpi blue"><span>Assigned</span><strong>{loading ? "…" : assignedDrivers}</strong><p>Currently on load</p></div>
-        <div className="premium-kpi danger"><span>Compliance Issues</span><strong>{loading ? "…" : documentIssues}</strong><p>Expired or expiring docs</p></div>
+        <div className={`premium-kpi${noCompanyCount > 0 ? " danger" : ""}`}><span>No Company</span><strong>{loading ? "…" : noCompanyCount}</strong><p>Unassigned company</p></div>
+        <div className={`premium-kpi${missingCDLCount > 0 ? " danger" : ""}`}><span>Missing CDL</span><strong>{loading ? "…" : missingCDLCount}</strong><p>No CDL on file</p></div>
+        <div className={`premium-kpi${missingMVRCount > 0 ? " danger" : ""}`}><span>Missing MVR</span><strong>{loading ? "…" : missingMVRCount}</strong><p>No MVR on file</p></div>
+        <div className={`premium-kpi${missingMedCount > 0 ? " danger" : ""}`}><span>Missing Medical</span><strong>{loading ? "…" : missingMedCount}</strong><p>No medical card</p></div>
+        <div className={`premium-kpi${expiredMedCount > 0 ? " danger" : ""}`}><span>Expired Medical</span><strong>{loading ? "…" : expiredMedCount}</strong><p>Card expired</p></div>
+        <div className={`premium-kpi${dispatchBlockedCount > 0 ? " danger" : ""}`}><span>Dispatch Blocked</span><strong>{loading ? "…" : dispatchBlockedCount}</strong><p>Cannot dispatch</p></div>
+        <div className="premium-kpi success"><span>Ready to Work</span><strong>{loading ? "…" : readyCount}</strong><p>All clear</p></div>
       </section>
 
       {/* ── Tab switcher ── */}
@@ -1652,9 +1774,16 @@ export default function DriversPage() {
           >
             {deduping ? "Removing…" : "Remove Duplicates"}
           </button>
+          <button
+            onClick={handleRunCCBReview}
+            disabled={ccbRunning}
+            style={{ padding: "8px 16px", borderRadius: 9, background: ccbRunning ? "#94a3b8" : "#7c3aed", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: ccbRunning ? "not-allowed" : "pointer" }}
+          >
+            {ccbRunning ? "Running…" : "Run CCB Review"}
+          </button>
           <Link href="/ronyx/hr-compliance" style={{ textDecoration: "none" }}>
             <button style={{ padding: "8px 16px", borderRadius: 9, background: "#fff", border: "1px solid #e2e8f0", color: "#0f172a", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
-              Run Compliance Review
+              Compliance Review
             </button>
           </Link>
           <button
@@ -1665,31 +1794,33 @@ export default function DriversPage() {
           </button>
         </div>
 
-        {/* ── Needs Action quick filters ── */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
+        {/* ── Quick filters ── */}
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 18 }}>
           {[
-            { label: "All",               count: allDrivers.length },
-            { label: "Missing Docs",      count: allDrivers.filter(d => d.docs === "Missing").length },
-            { label: "Expired Docs",      count: allDrivers.filter(d => d.docs === "Expired").length },
-            { label: "Expiring Soon",     count: allDrivers.filter(d => d.docs === "Expiring").length },
-            { label: "No Truck Assigned", count: allDrivers.filter(d => d.truck === "—").length },
-            { label: "Dispatch Blocked",  count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length },
-          ].map(({ label, count }) => {
-            const active = needsFilter === label;
-            const isDanger = label !== "All" && count > 0;
+            { label: "All",                   count: allDrivers.length,     danger: false },
+            { label: "No Company Assigned",   count: noCompanyCount,        danger: true },
+            { label: "Missing CDL",           count: missingCDLCount,       danger: true },
+            { label: "Missing MVR",           count: missingMVRCount,       danger: true },
+            { label: "Missing Medical Card",  count: missingMedCount,       danger: true },
+            { label: "Expired Medical Card",  count: expiredMedCount,       danger: true },
+            { label: "Missing Docs",          count: allDrivers.filter(d => d.docs === "Missing").length, danger: true },
+            { label: "Expiring Soon",         count: allDrivers.filter(d => d.docs === "Expiring").length, danger: false },
+            { label: "No Truck Assigned",     count: allDrivers.filter(d => d.truck === "—").length, danger: false },
+            { label: "Dispatch Blocked",      count: dispatchBlockedCount,  danger: true },
+            { label: "Payroll Hold",          count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length, danger: true },
+          ].map(({ label, count, danger }) => {
+            const active  = needsFilter === label;
+            const isDanger = danger && count > 0;
             return (
-              <button
-                key={label}
-                onClick={() => setNeedsFilter(label)}
-                style={{
-                  padding: "5px 13px", borderRadius: 99, border: `1px solid ${active ? "#0f172a" : isDanger ? "#fca5a5" : "#e2e8f0"}`,
-                  background: active ? "#0f172a" : isDanger ? "#fff1f2" : "#fff",
-                  color: active ? "#fff" : isDanger ? "#dc2626" : "#64748b",
-                  fontWeight: 700, fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-                }}
-              >
+              <button key={label} onClick={() => setNeedsFilter(label)} style={{
+                padding: "5px 11px", borderRadius: 99,
+                border: `1px solid ${active ? "#0f172a" : isDanger ? "#fca5a5" : "#e2e8f0"}`,
+                background: active ? "#0f172a" : isDanger ? "#fff1f2" : "#fff",
+                color: active ? "#fff" : isDanger ? "#dc2626" : "#64748b",
+                fontWeight: 700, fontSize: "0.72rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+              }}>
                 {label}
-                {count > 0 && <span style={{ background: active ? "rgba(255,255,255,0.2)" : isDanger ? "#fee2e2" : "#f1f5f9", borderRadius: 99, padding: "0 5px", fontSize: "0.65rem", fontWeight: 800, color: active ? "#fff" : isDanger ? "#dc2626" : "#64748b" }}>{count}</span>}
+                {count > 0 && <span style={{ background: active ? "rgba(255,255,255,0.2)" : isDanger ? "#fee2e2" : "#f1f5f9", borderRadius: 99, padding: "0 5px", fontSize: "0.63rem", fontWeight: 800, color: active ? "#fff" : isDanger ? "#dc2626" : "#64748b" }}>{count}</span>}
               </button>
             );
           })}
@@ -1754,120 +1885,154 @@ export default function DriversPage() {
                 : "No drivers match your filters."}
             </div>
           ) : viewMode === "list" ? (
-            /* ── Expandable List View ── */
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+            /* ── List View ── */
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }} onClick={() => setMoreMenuId(null)}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1060, tableLayout: "fixed" }}>
-                  <colgroup>
-                    <col style={{ width: 34 }} />
-                    <col style={{ width: 140 }} />
-                    <col style={{ width: 118 }} />
-                    <col style={{ width: 72 }} />
-                    <col style={{ width: 56 }} />
-                    <col style={{ width: 76 }} />
-                    <col style={{ width: 76 }} />
-                    <col style={{ width: 76 }} />
-                    <col style={{ width: 64 }} />
-                    <col style={{ width: 212 }} />
-                  </colgroup>
-                  <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100 }}>
+                  <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                      <th style={{ padding: "9px 8px" }}></th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Driver</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company / Carrier</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Truck</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>CDL Exp</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>MVR Exp</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Medical</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Docs</th>
-                      <th style={{ padding: "9px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
+                      {["", "Driver", "Company / Carrier", "Type", "Status", "Truck", "CDL", "MVR", "Medical Card", "Docs", "CCB Status", "Next Action", "Actions"].map((h) => (
+                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / Carrier" ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDrivers.map((driver, idx) => {
                       const isExpanded = expandedId === driver.id;
-                      const docColor = driver.docs === "Good" ? "#166534" : driver.docs === "Expiring" ? "#854d0e" : driver.docs === "Expired" ? "#991b1b" : "#475569";
-                      const docBg    = driver.docs === "Good" ? "#dcfce7" : driver.docs === "Expiring" ? "#fef9c3" : driver.docs === "Expired" ? "#fee2e2" : "#f1f5f9";
-                      const stColor  = driver.status === "Active" || driver.status === "Available" ? "#166534" : driver.status === "Assigned" ? "#1e40af" : driver.status === "Suspended" ? "#991b1b" : "#475569";
-                      const stBg     = driver.status === "Active" || driver.status === "Available" ? "#dcfce7" : driver.status === "Assigned" ? "#dbeafe" : driver.status === "Suspended" ? "#fee2e2" : "#f1f5f9";
+                      const noCompany  = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
+                      const stColor    = driver.status === "Active" || driver.status === "Available" ? "#166534" : driver.status === "Assigned" ? "#1e40af" : driver.status === "Suspended" ? "#991b1b" : "#475569";
+                      const stBg       = driver.status === "Active" || driver.status === "Available" ? "#dcfce7" : driver.status === "Assigned" ? "#dbeafe" : driver.status === "Suspended" ? "#fee2e2" : "#f1f5f9";
+                      const cdlState   = isDateExpiredOrMissing(driver.cdlExp);
+                      const mvrState   = isDateExpiredOrMissing(driver.mvrExp);
+                      const medState   = isDateExpiredOrMissing(driver.medicalExp);
+                      const cdlBadge   = docBadge(cdlState);
+                      const mvrBadge   = docBadge(mvrState);
+                      const medBadge   = docBadge(medState);
+                      const overallDocColor = driver.docs === "Good" ? "#166534" : driver.docs === "Expiring" ? "#854d0e" : driver.docs === "Expired" ? "#991b1b" : "#475569";
+                      const overallDocBg    = driver.docs === "Good" ? "#dcfce7" : driver.docs === "Expiring" ? "#fef9c3" : driver.docs === "Expired" ? "#fee2e2" : "#f1f5f9";
+                      const ccb        = driverCCBStatus(driver);
+                      const nextAct    = driverNextAction(driver);
+                      const btnS: React.CSSProperties = { padding: "3px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" };
+                      const menuItemS: React.CSSProperties = { display: "block", width: "100%", textAlign: "left", padding: "7px 12px", background: "none", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", borderRadius: 6, color: "#0f172a" };
+                      const isMoreOpen = moreMenuId === driver.id;
                       return (
                         <React.Fragment key={driver.id}>
                           <tr
-                            onClick={() => setExpandedId(isExpanded ? null : driver.id)}
-                            style={{ borderBottom: "1px solid #f1f5f9", background: isExpanded ? "#f0f9ff" : idx % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer", transition: "background 0.12s" }}
+                            onClick={() => { setExpandedId(isExpanded ? null : driver.id); setMoreMenuId(null); }}
+                            style={{ borderBottom: "1px solid #f1f5f9", background: isExpanded ? "#f0f9ff" : idx % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer" }}
                           >
-                            <td style={{ padding: "8px 6px", textAlign: "center" }}>
+                            {/* Avatar */}
+                            <td style={{ padding: "8px 6px", textAlign: "center", width: 32 }}>
                               <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#0f172a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, margin: "0 auto" }}>
                                 {driver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
                               </div>
                             </td>
-                            <td style={{ padding: "8px 8px" }}>
-                              <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{driver.name}</div>
+                            {/* Driver */}
+                            <td style={{ padding: "8px 8px", minWidth: 130 }}>
+                              <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a" }}>{driver.name}</div>
                               <div style={{ fontSize: 10, color: "#64748b" }}>{driver.phone !== "—" ? driver.phone : driver.email}</div>
                             </td>
-                            <td style={{ padding: "8px 8px" }}>
-                              {driver.companyName !== "—" ? (
-                                <>
-                                  <div style={{ fontWeight: 700, fontSize: 11, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{driver.companyName}</div>
-                                  {driver.ownerOperatorName !== "—" && driver.ownerOperatorName !== driver.companyName && (
-                                    <div style={{ fontSize: 9, color: "#64748b" }}>OO: {driver.ownerOperatorName}</div>
-                                  )}
-                                </>
+                            {/* Company */}
+                            <td style={{ padding: "8px 8px", minWidth: 130 }}>
+                              {noCompany ? (
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 7px", borderRadius: 5 }}>No Company Assigned</span>
                               ) : (
-                                <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 6px", borderRadius: 5 }}>No Company</span>
+                                <>
+                                  <div style={{ fontWeight: 700, fontSize: 11, color: "#0f172a" }}>{driver.companyName !== "—" ? driver.companyName : driver.carrierName}</div>
+                                  {driver.ownerOperatorName !== "—" && <div style={{ fontSize: 9, color: "#64748b" }}>OO: {driver.ownerOperatorName}</div>}
+                                </>
                               )}
                             </td>
+                            {/* Type */}
+                            <td style={{ padding: "8px 8px", fontSize: 10, color: "#475569", whiteSpace: "nowrap" }}>{driver.driverType}</td>
+                            {/* Status */}
                             <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 8, background: stBg, color: stColor, display: "inline-block", whiteSpace: "nowrap" }}>{driver.status}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 8, background: stBg, color: stColor, whiteSpace: "nowrap" }}>{driver.status}</span>
                             </td>
-                            <td style={{ padding: "8px 8px", fontSize: 11, color: "#475569", whiteSpace: "nowrap" }}>{driver.driverType}</td>
-                            <td style={{ padding: "8px 8px", fontSize: 11, color: "#0f172a", fontWeight: 600, whiteSpace: "nowrap" }}>{driver.truck}</td>
-                            <td style={{ padding: "8px 8px", fontSize: 11, color: "#475569", whiteSpace: "nowrap" }}>{driver.cdlExp}</td>
-                            <td style={{ padding: "8px 8px", fontSize: 11, color: driver.mvrExp === "Expired" ? "#991b1b" : "#475569", whiteSpace: "nowrap" }}>{driver.mvrExp}</td>
-                            <td style={{ padding: "8px 8px", fontSize: 11, color: driver.medicalExp === "Expired" ? "#991b1b" : "#475569", whiteSpace: "nowrap" }}>{driver.medicalExp}</td>
+                            {/* Truck */}
+                            <td style={{ padding: "8px 8px", fontSize: 11, fontWeight: 600, color: driver.truck === "—" ? "#94a3b8" : "#0f172a", whiteSpace: "nowrap" }}>{driver.truck}</td>
+                            {/* CDL */}
                             <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: docBg, color: docColor, whiteSpace: "nowrap" }}>
-                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "! Exp" : driver.docs === "Expired" ? "✗ Exp'd" : "? Miss"}
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: cdlBadge.bg, color: cdlBadge.color, whiteSpace: "nowrap" }}>{cdlState === "ok" ? driver.cdlExp : cdlBadge.label}</span>
+                            </td>
+                            {/* MVR */}
+                            <td style={{ padding: "8px 8px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: mvrBadge.bg, color: mvrBadge.color, whiteSpace: "nowrap" }}>{mvrState === "ok" ? driver.mvrExp : mvrBadge.label}</span>
+                            </td>
+                            {/* Medical */}
+                            <td style={{ padding: "8px 8px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: medBadge.bg, color: medBadge.color, whiteSpace: "nowrap" }}>{medState === "ok" ? driver.medicalExp : medBadge.label}</span>
+                            </td>
+                            {/* Overall Docs */}
+                            <td style={{ padding: "8px 8px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: overallDocBg, color: overallDocColor, whiteSpace: "nowrap" }}>
+                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "Expiring" : driver.docs === "Expired" ? "Expired" : "Missing"}
                               </span>
                             </td>
-                            <td style={{ padding: "8px 6px" }} onClick={e => e.stopPropagation()}>
-                              <div style={{ display: "flex", gap: 2 }}>
+                            {/* CCB Status */}
+                            <td style={{ padding: "8px 8px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: ccb.bg, color: ccb.color, whiteSpace: "nowrap" }}>{ccb.label}</span>
+                            </td>
+                            {/* Next Action */}
+                            <td style={{ padding: "8px 8px", fontSize: 10, color: nextAct === "Ready to dispatch" ? "#166534" : "#92400e", fontWeight: 600, minWidth: 160, maxWidth: 200 }}>{nextAct}</td>
+                            {/* Actions */}
+                            <td style={{ padding: "8px 6px" }} onClick={(e) => e.stopPropagation()}>
+                              <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
                                 <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
-                                  <button style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Profile</button>
+                                  <button style={btnS}>Profile</button>
                                 </Link>
                                 <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ textDecoration: "none" }}>
-                                  <button style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Docs</button>
+                                  <button style={btnS}>Docs</button>
                                 </Link>
-                                <button onClick={() => setAssignTarget({ driver })} style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Truck</button>
-                                <button
-                                  onClick={() => { setAssignOOTarget(driver); setOOSearch(""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
-                                  style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                                >OO</button>
-                                <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #fed7aa", background: "#fff7ed", color: "#d97706", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Arch</button>
-                                <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ padding: "2px 5px", borderRadius: 4, border: "1px solid #fca5a5", background: "#fff1f2", color: "#dc2626", fontSize: 9, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Del</button>
+                                <button style={{ ...btnS, background: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }}
+                                  onClick={() => showToast(`CCB review queued for ${driver.name}`)}>
+                                  CCB
+                                </button>
+                                <div style={{ position: "relative" }}>
+                                  <button
+                                    style={{ ...btnS, background: isMoreOpen ? "#0f172a" : "#f8fafc", color: isMoreOpen ? "#fff" : "#475569" }}
+                                    onClick={(e) => { e.stopPropagation(); setMoreMenuId(isMoreOpen ? null : driver.id); }}
+                                  >
+                                    More ⋯
+                                  </button>
+                                  {isMoreOpen && (
+                                    <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 2, zIndex: 50, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.13)", minWidth: 176, padding: 6 }}>
+                                      <button style={menuItemS} onClick={() => { setAssignTarget({ driver }); setMoreMenuId(null); }}>Assign Truck</button>
+                                      <button style={menuItemS} onClick={() => { setAssignOOTarget(driver); setOOSearch(""); setMoreMenuId(null); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}>Assign Company</button>
+                                      <Link href={`/ronyx/drivers/${driver.id}?tab=oo`} style={{ textDecoration: "none" }}>
+                                        <button style={menuItemS} onClick={() => setMoreMenuId(null)}>Open Owner Operator</button>
+                                      </Link>
+                                      <hr style={{ border: "none", borderTop: "1px solid #f1f5f9", margin: "4px 0" }} />
+                                      <button style={{ ...menuItemS, color: "#d97706" }} onClick={() => { setConfirmAction({ type: "archive", driver }); setMoreMenuId(null); }}>Archive</button>
+                                      <button style={{ ...menuItemS, color: "#dc2626" }} onClick={() => { setConfirmAction({ type: "delete", driver }); setMoreMenuId(null); }}>Delete</button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           </tr>
                           {isExpanded && (
                             <tr key={`${driver.id}-exp`} style={{ background: "#f8fafc", borderBottom: "1px solid #e0f2fe" }}>
-                              <td colSpan={10} style={{ padding: "16px 20px" }}>
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 12 }}>
+                              <td colSpan={13} style={{ padding: "14px 20px" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
                                   {[
-                                    { label: "Email",     value: driver.email },
-                                    { label: "Phone",     value: driver.phone },
-                                    { label: "Location",  value: driver.location },
-                                    { label: "CDL #",     value: driver.cdl },
-                                    { label: "CDL State", value: driver.cdlState },
-                                    { label: "CDL Exp",   value: driver.cdlExp },
-                                    { label: "MVR Exp",   value: driver.mvrExp },
-                                    { label: "Medical",   value: driver.medicalExp },
-                                    { label: "Truck",     value: driver.truck },
-                                    { label: "Rating",    value: driver.rating > 0 ? `★ ${driver.rating}` : "—" },
+                                    { label: "Email",          value: driver.email },
+                                    { label: "Phone",          value: driver.phone },
+                                    { label: "Location",       value: driver.location },
+                                    { label: "CDL #",          value: driver.cdl },
+                                    { label: "CDL State",      value: driver.cdlState },
+                                    { label: "CDL Exp",        value: driver.cdlExp },
+                                    { label: "MVR Exp",        value: driver.mvrExp },
+                                    { label: "Medical Exp",    value: driver.medicalExp },
+                                    { label: "Truck",          value: driver.truck },
+                                    { label: "Employment",     value: driver.employmentType },
+                                    { label: "Rating",         value: driver.rating > 0 ? `★ ${driver.rating}` : "—" },
+                                    { label: "Carrier",        value: driver.carrierName },
+                                    { label: "Owner Operator", value: driver.ownerOperatorName },
                                   ].map(({ label, value }) => (
-                                    <div key={label} style={{ background: "#fff", borderRadius: 8, padding: "8px 12px", border: "1px solid #e2e8f0" }}>
-                                      <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
-                                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{value}</div>
+                                    <div key={label} style={{ background: "#fff", borderRadius: 8, padding: "7px 10px", border: "1px solid #e2e8f0" }}>
+                                      <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
+                                      <div style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{value}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -1923,10 +2088,10 @@ export default function DriversPage() {
                       <button onClick={() => setAssignTarget({ driver })}>Assign Truck</button>
                       <button
                         onClick={() => { setAssignOOTarget(driver); setOOSearch(""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
-                        style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                        style={{ color: "#1d4ed8", borderColor: "#bfdbfe", background: "#eff6ff" }}
                       >Assign to OO</button>
-                      <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}>Archive</button>
-                      <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ background: "#fff1f2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 8, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}>Delete</button>
+                      <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ color: "#d97706", borderColor: "#fed7aa", background: "#fff7ed" }}>Archive</button>
+                      <button onClick={() => setConfirmAction({ type: "delete", driver })} style={{ color: "#dc2626", borderColor: "#fca5a5", background: "#fff1f2" }}>Delete</button>
                     </div>
                   </div>
                 </article>

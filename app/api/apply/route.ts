@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
       resumeUrl = supabase.storage
         .from("driver-applications")
-        .getPublicUrl(data.path).publicUrl;
+        .getPublicUrl(data.path).data.publicUrl;
     }
 
     // ✅ Insert application record

@@ -7,7 +7,7 @@ import { Invoice } from "./invoice.types";
 export async function generateAndUploadInvoicePDF(invoice: Invoice) {
   // 1. Generate PDF
   const pdfBytes = await generateInvoicePDF(invoice);
-  const file = new File([pdfBytes], `invoice-${invoice.id}.pdf`, {
+  const file = new File([Buffer.from(pdfBytes)], `invoice-${invoice.id}.pdf`, {
     type: "application/pdf",
   });
   // 2. Upload to Supabase Storage
@@ -16,10 +16,10 @@ export async function generateAndUploadInvoicePDF(invoice: Invoice) {
     .upload(`invoices/${invoice.user_id}/${file.name}`, file, { upsert: true });
   if (error) throw error;
   // 3. Get public URL
-  const { publicURL } = supabase.storage
+  const { data: { publicUrl } } = supabase.storage
     .from("invoices")
     .getPublicUrl(data.path);
   // 4. Update invoice record
-  await updateInvoice(invoice.id, { pdf_url: publicURL });
-  return publicURL;
+  await updateInvoice(invoice.id, { pdf_url: publicUrl });
+  return publicUrl;
 }

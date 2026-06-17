@@ -59,6 +59,7 @@ interface AggregateTicket {
   fuel_used: number;
   notes: string;
   created_at: string;
+  ticket_date?: string;
   // Related data
   driver_name?: string;
   truck_number?: string;
@@ -106,6 +107,8 @@ export default function AggregateTicketsPage() {
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [advancedSearchCriteria, setAdvancedSearchCriteria] = useState<any[]>([]);
 
   const [newTicket, setNewTicket] = useState({
     ticket_number: "",

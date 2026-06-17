@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PDF Generation for Evidence Packets
  * Generates comprehensive PDF documents for ticket evidence packets

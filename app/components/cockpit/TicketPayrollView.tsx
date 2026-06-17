@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";

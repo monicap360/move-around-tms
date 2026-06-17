@@ -19,9 +19,10 @@ function sendEscalationEmail(
 }
 
 export async function evaluateEscalations(organizationId: string) {
-  const rules = getEscalationRules(organizationId);
+  const rules = await getEscalationRules(organizationId);
   const now = Date.now();
-  const events = getAlertEvents(organizationId, 1000).filter(
+  const allEvents = await getAlertEvents(organizationId, 1000);
+  const events = allEvents.filter(
     (e) => !e.acknowledgedAt,
   );
   for (const rule of rules) {

@@ -47,15 +47,15 @@ export async function GET(req: NextRequest) {
       ],
       [
         metrics.window.label,
-        metrics.compliance.statusCounts.pass,
-        metrics.compliance.statusCounts.warn,
-        metrics.compliance.statusCounts.fail,
+        String(metrics.compliance.statusCounts.pass),
+        String(metrics.compliance.statusCounts.warn),
+        String(metrics.compliance.statusCounts.fail),
         metrics.compliance.topViolations
           .map((v) => `${v.code} (${v.count})`)
           .join("; "),
-        metrics.documents.expiringSoon.length,
-        metrics.scans.total,
-        metrics.ocr.averageConfidence ?? "",
+        String(metrics.documents.expiringSoon.length),
+        String(metrics.scans.total),
+        String(metrics.ocr.averageConfidence ?? ""),
       ],
     ];
     const csv = toCSV(rows);

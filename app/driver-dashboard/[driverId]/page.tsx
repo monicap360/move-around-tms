@@ -59,10 +59,7 @@ export default function DriverDashboard({
       <DashboardHeader
         title={`${driver.name} — Driver Portal`}
         subtitle="Upload Tickets • View Pay • Status"
-        userName={driver.name}
-        userRole="Driver"
-        view={driverId}
-        onViewChange={() => {}}
+        fullName={driver.name}
       />
       <main className="max-w-4xl mx-auto px-6 py-10 space-y-12">
         {/* STATUS */}

@@ -1,5 +1,6 @@
 // API route: POST /api/company/[org]/plants/[plant_id]/materials/import-seed
 import { NextRequest, NextResponse } from "next/server";
+// @ts-ignore
 import aggregates from "../../../../../../company/[org]/plants/[plant_id]/materials/seed-aggregates.json";
 
 export async function POST(req: NextRequest, { params }: any) {

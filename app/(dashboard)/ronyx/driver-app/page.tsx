@@ -124,7 +124,7 @@ export default function RonyxDriverAppPage() {
       return;
     }
     setStatus(action);
-    await submitUpdate(load?.ticket_id || null);
+    await submitUpdate(load?.ticket_id || undefined);
     const location = await captureLocation();
     await sendDriverEvent({
       event_type: "STATUS_UPDATE",

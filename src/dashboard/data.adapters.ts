@@ -109,7 +109,7 @@ export async function fetchDocuments(
     const { data: documents, error } = await supabase
       .from("driver_documents")
       .select("id, doc_type, expiration_date, driver_id")
-      .order("expiration_date", { ascending: true, nullsLast: true });
+      .order("expiration_date", { ascending: true, nullsFirst: false });
 
     if (error) {
       console.error("Error fetching documents:", error);

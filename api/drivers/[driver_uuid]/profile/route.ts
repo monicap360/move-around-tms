@@ -6,7 +6,7 @@ const client = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function GET(_req, { params }) {
+export async function GET(_req: Request, { params }: { params: { driver_uuid: string } }) {
   const { driver_uuid } = params;
 
   const { data, error } = await client

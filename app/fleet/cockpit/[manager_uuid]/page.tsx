@@ -18,7 +18,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export default function FleetCockpitPage(params: { manager_uuid: string }) {
+export default function FleetCockpitPage({ params }: { params: { manager_uuid: string } }) {
   const [manager, setManager] = useState<any>(null);
   const [layout, setLayout] = useState<any[]>([]);
   const [party, setParty] = useState(false);

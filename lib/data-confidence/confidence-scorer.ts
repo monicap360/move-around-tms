@@ -6,7 +6,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getVerticalProfile, getBaselineWindowDays, VerticalTypeString } from "@/lib/verticals";
 
-interface ConfidenceScore {
+export interface ConfidenceScore {
   score: number; // 0-1
   reason: string;
   baselineType: 'driver_historical' | 'site_historical' | 'global';

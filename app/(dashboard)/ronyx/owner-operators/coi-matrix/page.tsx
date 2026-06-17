@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 /* ─── COI type definitions ─────────────────────────────── */
-export const COI_TYPES = [
+const COI_TYPES = [
   { value:"auto_liability_coi",                     label:"Auto Liability COI",                     shortLabel:"Auto Liab",   group:"standard",    blocks:"general_dispatch" },
   { value:"general_liability_coi",                  label:"General Liability COI",                  shortLabel:"Gen Liab",    group:"standard",    blocks:"general_dispatch" },
   { value:"cargo_coi",                              label:"Cargo / Motor Truck Cargo COI",           shortLabel:"Cargo",       group:"standard",    blocks:"general_dispatch" },
@@ -15,7 +15,7 @@ export const COI_TYPES = [
   { value:"ma_morrison_cargo_coi",                  label:"MA Morrison Cargo COI",                  shortLabel:"MA Cargo",    group:"ma_morrison", blocks:"ma_morrison_jobs" },
 ] as const;
 
-export const COI_GROUPS = {
+const COI_GROUPS = {
   standard:   { label:"Standard Owner Operator COIs",  desc:"Required for all dispatch",          color:"#1e40af", bg:"#eff6ff" },
   ronyx:      { label:"Ronyx Contractor COIs",          desc:"Required for Ronyx contractor jobs", color:"#7c3aed", bg:"#f5f3ff" },
   ma_morrison:{ label:"MA Morrison COIs",               desc:"Required for MA Morrison jobs",      color:"#0891b2", bg:"#f0f9ff" },

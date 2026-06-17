@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 // Create a new truck score
-export async function POST(req) {
+export async function POST(req: Request) {
   const body = await req.json();
   const { data, error } = await supa
     .from("fleetpulse_truck_scores")

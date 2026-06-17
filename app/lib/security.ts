@@ -144,7 +144,7 @@ export async function authenticate(
     }
 
     // Get user details from database
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await supabaseAdmin!
       .from("users")
       .select("id, email, role, name, active")
       .eq("id", payload.sub)
@@ -213,7 +213,7 @@ export async function logActivity(
   ip?: string,
 ) {
   try {
-    await supabaseAdmin.from("audit_logs").insert({
+    await supabaseAdmin!.from("audit_logs").insert({
       user_id: user?.id || "anonymous",
       user_email: user?.email,
       action,

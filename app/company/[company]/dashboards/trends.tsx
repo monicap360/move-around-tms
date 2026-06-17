@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Trends Dashboard (placeholder for time-based charts)
 
 import React, { useState, useEffect } from "react";

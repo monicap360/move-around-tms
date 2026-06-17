@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 // Create a new Excel compare result
-export async function POST(req) {
+export async function POST(req: Request) {
   const body = await req.json();
   const supa = getSupabaseClient();
   const { data, error } = await supa

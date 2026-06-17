@@ -11,7 +11,7 @@ function getOrganizationId(req: NextRequest): string {
 export async function GET(req: NextRequest) {
   try {
     const organizationId = getOrganizationId(req);
-    const events = getAlertEvents(organizationId);
+    const events = await getAlertEvents(organizationId);
     return NextResponse.json(events, { status: 200 });
   } catch (err: any) {
     return NextResponse.json(

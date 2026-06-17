@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
       organizationId: profile.organization_id,
       userId: user.id,
       userMessage: message,
-      ticketId,
-      violationId,
+      entityId: ticketId ?? violationId,
+      entityType: ticketId ? "ticket" : violationId ? "violation" : undefined,
       currentPage,
     });
 

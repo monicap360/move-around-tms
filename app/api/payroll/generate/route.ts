@@ -19,15 +19,9 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const weekStart = body.weekStart || computeCurrentFridayISODate();
 
-    // Aggregate ticket/driver data for the week
-    // Example: sum tickets, pay, etc. from tickets table
+    // Aggregate ticket/driver data for the week using RPC
     const { data: tickets, error: ticketError } = await supabaseAdmin
-      .from("tickets")
-      .select(
-        "driver_id, driver_name, SUM(amount) as total_pay, COUNT(*) as tickets_count",
-      )
-      .eq("pay_day", weekStart)
-      .group("driver_id, driver_name");
+      .rpc("aggregate_payroll_by_driver", { week_start: weekStart });
 
     if (ticketError) {
       return NextResponse.json(

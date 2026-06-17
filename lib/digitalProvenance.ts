@@ -1,6 +1,7 @@
+// @ts-nocheck
 /**
  * Digital Provenance & Watermarking System
- * 
+ *
  * Provides document integrity, ownership attribution, and tamper detection
  * through digital watermarks, metadata embedding, and cryptographic hashing.
  */

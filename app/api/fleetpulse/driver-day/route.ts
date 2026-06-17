@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 // Create a new driver day record
-export async function POST(req) {
+export async function POST(req: Request) {
   const supa = createSupabaseServerClient();
   const body = await req.json();
   const { data, error } = await supa

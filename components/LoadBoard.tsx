@@ -28,6 +28,7 @@ const LoadBoard = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadAvailableLoads();

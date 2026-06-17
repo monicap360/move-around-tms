@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../../../../lib/supabase/server";
 
-export async function GET(_req, { params }) {
+export async function GET(_req: Request, { params }: { params: { driver_uuid: string } }) {
   const { driver_uuid } = params;
   const client = createSupabaseServerClient();
 

@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const rows = (tickets || []).map((ticket) => ({
+  const rows = (tickets || []).map((ticket: any) => ({
     ticket_number: ticket.ticket_number || "",
     ticket_date: ticket.ticket_date || "",
     driver_name: ticket.driver_name || "",

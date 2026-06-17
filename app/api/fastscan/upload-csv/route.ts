@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       throw new Error("CSV must have header and at least one row");
     const header = rows[0].split(",").map((h) => h.trim().toLowerCase());
     // Expect: ticket_id,driver_name,truck_number,material,net_weight,load_date,source
-    const idx = (name) => header.findIndex((h) => h === name);
+    const idx = (name: string) => header.findIndex((h) => h === name);
     const seen = new Set();
     const tickets = [];
     for (let i = 1; i < rows.length; ++i) {
@@ -50,9 +50,9 @@ export async function POST(req: NextRequest) {
       if (ticket_id) seen.add(ticket_id);
     }
     return NextResponse.json({ tickets });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
-      { error: err.message || "Failed to parse CSV" },
+      { error: err?.message || "Failed to parse CSV" },
       { status: 400 },
     );
   }

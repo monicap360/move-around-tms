@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function POST(req, { params }) {
+export async function POST(req: Request, { params }: { params: { job_id: string } }) {
   const { job_id } = params;
   const body = await req.json();
   const { data, error } = await supabase

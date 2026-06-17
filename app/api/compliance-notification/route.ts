@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    let email = {
+    let email: Record<string, unknown> = {
       sent: false,
       reason: "recipient_email not provided",
     };

@@ -6,7 +6,7 @@ const client = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const { ticket_uuid } = await req.json();
 
   const { error } = await client

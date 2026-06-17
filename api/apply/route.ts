@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       if (error) throw new Error("Resume upload failed");
       resumeUrl = data?.path
         ? supabase.storage.from("driver-applications").getPublicUrl(data.path)
-            .publicUrl
+            .data.publicUrl
         : null;
     }
 

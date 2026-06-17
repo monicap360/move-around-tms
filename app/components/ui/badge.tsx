@@ -3,6 +3,7 @@ import React from "react";
 interface BadgeProps {
   children: React.ReactNode;
   variant?: "default" | "secondary" | "destructive" | "outline";
+  status?: string;
   className?: string;
 }
 

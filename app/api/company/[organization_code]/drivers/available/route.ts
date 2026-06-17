@@ -69,8 +69,8 @@ export async function GET(req: Request) {
       .eq("organization_id", organizationId)
       .is("active_load", null)
       .in("status", ["available", "Active", "active"])
-      .order("safety_score", { ascending: false, nullsLast: true })
-      .order("performance_score", { ascending: false, nullsLast: true });
+      .order("safety_score", { ascending: false, nullsFirst: false })
+      .order("performance_score", { ascending: false, nullsFirst: false });
 
     if (driversError) {
       return NextResponse.json(

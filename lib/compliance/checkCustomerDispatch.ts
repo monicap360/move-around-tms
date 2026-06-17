@@ -28,6 +28,7 @@ export type ComplianceDoc = {
   document_type: string;
   status?: string | null;
   expiration_date?: string | null;
+  requires_expiration_check?: boolean | null;
 };
 
 export type ComplianceOverride = {

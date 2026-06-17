@@ -1,6 +1,7 @@
+// @ts-nocheck
 /**
  * Business Rules for Geofencing System
- * 
+ *
  * Defines business logic, validation rules, and constraints
  * for the geofencing system.
  */

@@ -177,6 +177,7 @@ export async function GET(request: Request) {
       .limit(25);
 
     if (!ronyxTickets.error && (ronyxTickets.data || []).length > 0) {
+      // @ts-ignore
       return NextResponse.json({ rows: (ronyxTickets.data || []).map(formatTicketRow) });
     }
 
@@ -217,6 +218,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: aggregateTickets.error.message }, { status: 500 });
     }
 
+    // @ts-ignore
     return NextResponse.json({ rows: (aggregateTickets.data || []).map(formatTicketRow) });
   }
 

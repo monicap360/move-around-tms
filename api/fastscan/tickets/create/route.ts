@@ -6,7 +6,7 @@ const client = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const body = await req.json();
   const { driver_uuid, load_id, weight_in, weight_out, plant_id, material_id } =
     body;
@@ -15,6 +15,7 @@ export async function POST(req) {
     .select("id")
     .eq("driver_uuid", driver_uuid)
     .single();
+  if (!driver) return NextResponse.json({ error: "Driver not found" }, { status: 404 });
   const payload = {
     driver_id: driver.id,
     load_id,

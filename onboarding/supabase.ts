@@ -21,7 +21,7 @@ export async function fetchOnboardingStatus(
 export async function upsertOnboardingStatus(status: OnboardingStatus) {
   const { data, error } = await supabase
     .from("onboarding_status")
-    .upsert([status], { onConflict: ["user_id"] });
+    .upsert([status], { onConflict: "user_id" });
   if (error) throw error;
   return data;
 }

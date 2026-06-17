@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const to = searchParams.get("to") || new Date().toISOString().slice(0, 10);
     const groupBy = (searchParams.get("groupBy") as "day" | "week") || "day";
     const severity = searchParams.get("severity") || undefined;
-    const events = getAlertEvents(organizationId, 1000);
+    const events = await getAlertEvents(organizationId, 1000);
     const trends = calcTrends(events, from, to, groupBy, severity);
     return NextResponse.json(trends, { status: 200 });
   } catch (err: any) {

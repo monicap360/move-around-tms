@@ -3,9 +3,21 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const TABLE    = "ronyx_driver_documents";
-const BUCKET   = "ronyx-driver-documents";
+const TABLE          = "ronyx_driver_documents";
+const PRIMARY_BUCKET = "ronyx-driver-documents";
+const FALLBACK_BUCKETS = [PRIMARY_BUCKET, "ronyx-imports", "ronyx-files"];
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+
+async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, bucket: string): Promise<boolean> {
+  try {
+    const { error } = await sb.storage.from(bucket).list("", { limit: 1 });
+    if (!error) return true;
+    const { error: ce } = await sb.storage.createBucket(bucket, { public: false, fileSizeLimit: MAX_SIZE });
+    return !ce;
+  } catch {
+    return false;
+  }
+}
 
 // GET /api/ronyx/drivers/documents?driverId=<uuid>
 export async function GET(request: NextRequest) {
@@ -15,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await sb
     .from(TABLE)
-    .select("id, driver_id, doc_type, file_url, status, expires_on, notes, uploaded_by, organization_id, created_at, updated_at")
+    .select("*")
     .eq("driver_id", driverId)
     .order("created_at", { ascending: false });
 
@@ -29,36 +41,51 @@ export async function POST(request: NextRequest) {
   const contentType = request.headers.get("content-type") || "";
 
   if (contentType.includes("multipart/form-data")) {
-    const form     = await request.formData();
-    const file     = form.get("file")      as File   | null;
-    const driverId = form.get("driver_id") as string | null;
-    const docType  = form.get("doc_type")  as string | null;
+    const form      = await request.formData();
+    const file      = form.get("file")       as File   | null;
+    const driverId  = form.get("driver_id")  as string | null;
+    const docType   = form.get("doc_type")   as string | null;
     const expiresOn = form.get("expires_on") as string | null;
 
     if (!driverId || !docType) return NextResponse.json({ error: "Missing driver_id or doc_type" }, { status: 400 });
     if (!file)                 return NextResponse.json({ error: "No file attached" }, { status: 400 });
     if (file.size > MAX_SIZE)  return NextResponse.json({ error: "File too large (max 20 MB)" }, { status: 400 });
 
-    const mimeOk = file.type.startsWith("image/") || file.type === "application/pdf";
-    if (!mimeOk) return NextResponse.json({ error: "Use PDF, JPG, PNG, WEBP, or HEIC" }, { status: 400 });
-
-    // Ensure storage bucket exists
-    const { data: buckets } = await sb.storage.listBuckets();
-    if (!buckets?.find((b: any) => b.id === BUCKET)) {
-      await sb.storage.createBucket(BUCKET, { public: true });
-    }
+    const EXT_MIME: Record<string, string> = {
+      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+      heic: "image/heic", heif: "image/heif", tif: "image/tiff", tiff: "image/tiff",
+      bmp: "image/bmp", pdf: "application/pdf",
+    };
+    const rawExt  = (file.name.split(".").pop() || "").toLowerCase();
+    const mimeType = (file.type && (file.type.startsWith("image/") || file.type === "application/pdf"))
+      ? file.type
+      : EXT_MIME[rawExt] || "";
+    if (!mimeType) return NextResponse.json({ error: `File type not supported (${file.type || rawExt || "unknown"}) — use PDF, JPG, PNG, TIFF, BMP, or HEIC` }, { status: 400 });
 
     const ext      = file.name.split(".").pop() || "bin";
-    const filePath = `${driverId}/${Date.now()}-${(docType).replace(/\s+/g, "-")}.${ext}`;
+    const bytes    = await file.arrayBuffer();
 
-    const { error: uploadErr } = await sb.storage
-      .from(BUCKET)
-      .upload(filePath, await file.arrayBuffer(), { contentType: file.type, upsert: true });
+    // Try buckets in order until one works
+    let fileUrl: string | null = null;
+    for (const bucket of FALLBACK_BUCKETS) {
+      const ready = await ensureBucket(sb, bucket);
+      if (!ready) continue;
 
-    if (uploadErr) return NextResponse.json({ error: "Storage upload failed: " + uploadErr.message }, { status: 500 });
+      const filePath = `${driverId}/${Date.now()}-${docType.replace(/\s+/g, "-")}.${ext}`;
+      const { error: uploadErr } = await sb.storage
+        .from(bucket)
+        .upload(filePath, bytes, { contentType: mimeType, upsert: true });
 
-    const { data: urlData } = sb.storage.from(BUCKET).getPublicUrl(filePath);
-    const fileUrl = urlData.publicUrl;
+      if (!uploadErr) {
+        const { data: urlData } = sb.storage.from(bucket).getPublicUrl(filePath);
+        fileUrl = urlData.publicUrl;
+        break;
+      }
+    }
+
+    if (!fileUrl) {
+      return NextResponse.json({ error: "Storage upload failed — no available bucket" }, { status: 500 });
+    }
 
     const { data: doc, error: insertErr } = await sb
       .from(TABLE)
@@ -74,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
 
-    // Auto-close matching open Sylvia compliance tasks
+    // Auto-close matching open compliance tasks
     const closeMap: Record<string, string[]> = {
       "CDL Front":        ["cdl_expiring","cdl_missing","cdl_front_missing","driver_doc"],
       "CDL Back":         ["cdl_back_missing","driver_doc"],

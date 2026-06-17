@@ -114,20 +114,20 @@ export class PayrollIncidentIntegration {
     runningJobs: number;
     pausedJobs: number;
   }> {
-    const { data: queued } = await this.supabase
+    const { count: queuedCount } = await this.supabase
       .from('payroll_jobs')
       .select('id', { count: 'exact', head: true })
       .in('status', ['queued', 'paused']);
 
-    const { data: running } = await this.supabase
+    const { count: runningCount } = await this.supabase
       .from('payroll_jobs')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'running');
 
     return {
-      queuedJobs: queued?.count || 0,
-      runningJobs: running?.count || 0,
-      pausedJobs: queued?.count || 0,
+      queuedJobs: queuedCount || 0,
+      runningJobs: runningCount || 0,
+      pausedJobs: queuedCount || 0,
     };
   }
 }

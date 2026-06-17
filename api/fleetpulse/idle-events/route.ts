@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 // Create a new idle/delay event
-export async function POST(req) {
+export async function POST(req: Request) {
   const body = await req.json();
   const { data, error } = await supa
     .from("fleetpulse_idle_events")

@@ -76,7 +76,8 @@ export async function GET(req: NextRequest) {
 
     const startDate = getStartDate(timeframe);
 
-    let ticketsQuery = supabase
+    // @ts-ignore – two query shapes (with/without join) reassigned to same variable
+    let ticketsQuery: any = supabase
       .from("aggregate_tickets")
       .select("id, created_at, driver_id")
       .gte("created_at", startDate.toISOString());

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /* ─── Types ─────────────────────────────────────── */
-type CertStatus = "Valid" | "Expiring Soon" | "Expired" | "Cancelled" | "Missing" | "Pending Review" | "Rejected";
+type CertStatus = "Valid" | "Expiring Soon" | "Expired" | "Cancelled" | "Missing" | "Pending Review" | "Rejected" | "Non-Certified";
 type CarrierStatus = "Certified" | "Warning" | "Non-Certified";
 
 type InsuranceCert = {

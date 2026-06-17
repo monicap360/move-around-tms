@@ -188,7 +188,7 @@ export class VoiceUIEngine {
     const lastLog = this.interactionLogs[this.interactionLogs.length - 1];
     if (lastLog && lastLog.userId === command.userId) {
       lastLog.response = responseText;
-      lastLog.success = command.intent !== 'unknown' && command.confidence > 0.7;
+      lastLog.success = (command.intent as string) !== 'unknown' && command.confidence > 0.7;
       lastLog.vehicleMoving = vehicleMoving;
     }
 

@@ -6,13 +6,15 @@ const supa = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function GET(req, { params }) {
+export async function GET(req: Request, { params }: { params: { organization_code: string } }) {
   const { organization_code } = params;
   const { data: org } = await supa
     .from("organizations")
     .select("id")
     .eq("organization_code", organization_code)
     .single();
+
+  if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
 
   const { data, error } = await supa
     .from("tickets")

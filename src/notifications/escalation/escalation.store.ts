@@ -1,6 +1,6 @@
 // src/notifications/escalation/escalation.store.ts
 import { EscalationRule } from "./escalation.types";
-import { createSupabaseServerClient } from "../../lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Fetch escalation rules from Supabase
 export async function getEscalationRules(
@@ -25,7 +25,7 @@ export async function setEscalationRules(
     const { error } = await supabase
       .from("escalation_rules")
       .upsert([{ ...update, organizationId }], {
-        onConflict: ["organizationId", "severity"],
+        onConflict: "organizationId,severity",
       });
     if (error) throw error;
   }

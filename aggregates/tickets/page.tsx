@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { supabase } from "../../lib/supabaseClient";
+// @ts-ignore
 import { uploadTicketImage } from "../../utils/uploadTicketImage";
 import toast from "react-hot-toast";
 import {

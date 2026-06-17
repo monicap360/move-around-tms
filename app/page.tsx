@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useI18n } from "./lib/i18n/context";
 
 export default function LandingPage() {
@@ -75,15 +75,15 @@ function LandingPageContent() {
       choosePathDump: "I run a Dump Truck or Heavy Haul Fleet",
       choosePathCrossBorder: "I run Cross‑Border (US‑Mexico) Operations",
       choosePathGeneral: "I run General Freight / Trucking / 3PL",
-      heroBadge: "BUSINESS PROCESS SOLUTION",
-      heroTitle: "Stop Losing Time and Money on Manual Haul Tracking",
-      heroSub: "We automate your 3 biggest operational headaches—Excel tickets, pit reconciliations, and driver payroll.",
+      heroBadge: "OFFICE COMMAND CENTER FOR DUMP TRUCK FLEETS",
+      heroTitle: "Dispatch Smarter. Scan Faster. Protect Payroll. Catch Billing Errors.",
+      heroSub: "MoveAround TMS helps dump truck and construction fleet offices dispatch smarter, scan tickets faster, protect payroll, and catch billing errors before money is lost.",
       heroBody1:
-        "MoveAround is a business process solution that replaces spreadsheet chaos with a connected workflow: Excel → digital ticket, pit invoice matching, and payroll export.",
+        "Built for dispatch, Fast Scan™ ticket OCR, payout reconciliation, RMIS compliance, payroll holds, billing review, and staff-guided operations.",
       heroBody2:
-        "Powered by a modern, easy-to-use TMS built specifically for aggregate and dump truck fleets.",
+        "Instead of making staff search through spreadsheets, tickets, dispatch boards, and payroll reports — MoveAround turns exceptions into guided work queues.",
       heroBody3:
-        "Prove it fast: run the 3‑module demo and see the whole workflow in under 5 minutes.",
+        "Prove it fast: request a live demo and see dispatch, Fast Scan, and payroll guard in action.",
       heroCtaPrimary: "Get ROI Analysis",
       heroCtaSecondary: "See Pit-to-Pay",
       pitsTitle: "For Aggregate & Bulk Material Haulers",
@@ -480,7 +480,7 @@ function LandingPageContent() {
   ];
 
   const loadCounts = loadRows.reduce(
-    (acc, load) => {
+    (acc: Record<string, number>, load) => {
       acc[load.statusGroup] += 1;
       return acc;
     },
@@ -882,7 +882,7 @@ function LandingPageContent() {
         }
 
         h1 {
-          font-size: 5rem;
+          font-size: 3rem;
           margin-bottom: 1.5rem;
           text-transform: uppercase;
           letter-spacing: -0.04em;
@@ -6241,6 +6241,345 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PLATFORM FEATURE GRID ===== */}
+      <section id="features" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24 }}>
+              <i className="fas fa-th-large"></i> PLATFORM FEATURES
+            </div>
+            <h2>More Than a TMS — <span className="speed-gradient">A Guided Office Command Center</span></h2>
+            <p style={{ color: "rgba(255,255,255,0.8)", maxWidth: 720, margin: "0 auto" }}>
+              Most TMS platforms help you manage loads. MoveAround helps office staff know what to do next.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, marginTop: 48 }}>
+            {[
+              { icon: "fa-bolt", badge: "Fast Scan™", title: "Ticket OCR & Payout Import", desc: "Scan tickets, invoices, and payout sheets into usable operational data. Match scanned proof to dispatch records automatically.", color: "#F7931E" },
+              { icon: "fa-shield-alt", badge: "Dispatch Guard™", title: "Daily Dispatch Import", desc: "Import daily dispatch schedules, track RMIS notes, identify driver/truck readiness issues, and catch compliance blockers before dispatch.", color: "#00b4ff" },
+              { icon: "fa-lock", badge: "Payroll Guard™", title: "Proof-Before-Pay Controls", desc: "Stop payroll from being released when ticket proof is missing. Flag duplicates, rate mismatches, and deductions before settlement.", color: "#00ff9d" },
+              { icon: "fa-search-dollar", badge: "Revenue Guard™", title: "Find Unbilled Work", desc: "Find worked loads that have not been billed. Detect invoice mismatches and catch missing customer rates before money is lost.", color: "#ffd700" },
+              { icon: "fa-file-invoice-dollar", badge: "Billing Guard™", title: "Invoice Verification", desc: "Verify ticket totals, invoice lines, customer rates, pit invoices, and material types before billing is sent to the customer.", color: "#a855f7" },
+              { icon: "fa-id-card", badge: "Compliance Guard™", title: "Driver & Fleet Compliance", desc: "Track CDL, medical card, MVR, drug tests, inspections, and insurance. Block dispatch when documents are expired or missing.", color: "#f43f5e" },
+              { icon: "fa-tasks", badge: "Staff Work Queue", title: "Daily Office Priority List", desc: "Show office staff exactly what to fix, approve, hold, or escalate. Missing proof queue, payroll hold queue, compliance queue.", color: "#38bdf8" },
+              { icon: "fa-database", badge: "Backup Center", title: "Original Upload Preservation", desc: "Every original uploaded sheet, schedule, ticket, or invoice is preserved as read-only evidence. Download originals anytime.", color: "#4ade80" },
+            ].map((f) => (
+              <div key={f.badge} style={{ background: "rgba(30,30,30,0.8)", borderRadius: 16, padding: "32px 28px", border: "1px solid rgba(255,215,0,0.15)", transition: "all 0.2s", position: "relative", overflow: "hidden" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = f.color + "55"; (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,215,0,0.15)"; (e.currentTarget as HTMLElement).style.transform = "none"; }}>
+                <div style={{ width: 52, height: 52, borderRadius: 12, background: f.color + "20", border: `1px solid ${f.color}40`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+                  <i className={`fas ${f.icon}`} style={{ color: f.color, fontSize: 22 }}></i>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: f.color, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>{f.badge}</div>
+                <h3 style={{ fontSize: "1.1rem", marginBottom: 10, color: "#fff" }}>{f.title}</h3>
+                <p style={{ color: "rgba(255,255,255,0.72)", fontSize: "0.9rem", lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FAST SCAN ===== */}
+      <section id="fast-scan" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+            <div>
+              <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24, background: "rgba(247,147,30,0.12)", borderColor: "rgba(247,147,30,0.4)", color: "#F7931E" }}>
+                <i className="fas fa-bolt"></i> Fast Scan™
+              </div>
+              <h2>Turn Scanned Tickets Into <span className="speed-gradient">Payroll-Ready Data</span></h2>
+              <p style={{ color: "rgba(255,255,255,0.8)" }}>
+                Fast Scan turns scanned tickets, invoices, payout sheets, and dispatch schedules into usable operational data. It helps office staff find missing proof, match tickets to payroll, and prepare billing faster.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 24 }}>
+                {["OCR ticket scanning","Ticket-to-payroll matching","Invoice reconciliation","Excel payout sheet import","Missing proof detection","Payroll hold rules","Billing-ready ticket queue","Audit trail for every correction"].map((b) => (
+                  <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(247,147,30,0.08)", borderRadius: 10, border: "1px solid rgba(247,147,30,0.2)" }}>
+                    <i className="fas fa-check" style={{ color: "#F7931E", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
+                    <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{b}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 28, display: "flex", gap: 16 }}>
+                <a href="#demo" className="btn btn-primary" style={{ fontSize: "0.875rem", padding: "12px 28px" }}>See Fast Scan Demo</a>
+                <a href="/ronyx/tickets?tab=fastscan" className="btn btn-secondary" style={{ fontSize: "0.875rem", padding: "12px 28px" }}>Open Fast Scan</a>
+              </div>
+            </div>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(247,147,30,0.25)", padding: 32 }}>
+              <div style={{ marginBottom: 16, fontWeight: 800, color: "#F7931E", fontSize: "0.85rem", letterSpacing: "0.1em" }}>FAST SCAN™ — LIVE TICKET QUEUE</div>
+              {[
+                { ticket: "TKT-4821", driver: "D. Perez · Truck #12", status: "Matched", statusColor: "#00ff9d", note: "Proof verified · Ready for payroll" },
+                { ticket: "TKT-4822", driver: "K. Alston · Truck #23", status: "Missing Proof", statusColor: "#ff6b6b", note: "No scale ticket found · Payroll held" },
+                { ticket: "TKT-4823", driver: "S. Grant · Truck #18", status: "Rate Mismatch", statusColor: "#ffd700", note: "Invoice $850 vs dispatch $780 · Review" },
+                { ticket: "TKT-4824", driver: "M. Chen · Truck #07", status: "Matched", statusColor: "#00ff9d", note: "Proof verified · Billing-ready" },
+              ].map((row) => (
+                <div key={row.ticket} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem" }}>{row.ticket}</div>
+                    <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.8rem", marginTop: 2 }}>{row.driver}</div>
+                    <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.78rem", marginTop: 2 }}>{row.note}</div>
+                  </div>
+                  <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, background: row.statusColor + "18", color: row.statusColor, border: `1px solid ${row.statusColor}45`, flexShrink: 0 }}>{row.status}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: 18, padding: "12px 16px", background: "rgba(247,147,30,0.1)", borderRadius: 10, border: "1px solid rgba(247,147,30,0.25)", fontSize: "0.85rem", color: "rgba(255,255,255,0.8)" }}>
+                <strong style={{ color: "#F7931E" }}>3 of 4 tickets matched.</strong> 1 payroll hold active · 1 billing review needed.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== DISPATCH GUARD ===== */}
+      <section id="dispatch-guard" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(0,180,255,0.25)", padding: 32 }}>
+              <div style={{ marginBottom: 16, fontWeight: 800, color: "#00b4ff", fontSize: "0.85rem", letterSpacing: "0.1em" }}>DISPATCH GUARD™ — COMPLIANCE ALERTS</div>
+              {[
+                { driver: "J. Williams", issue: "Medical card expires in 3 days", severity: "CRITICAL", color: "#ff2800" },
+                { driver: "R. Thompson", issue: "Missing back-of-DL — See RMIS Notes!!", severity: "HIGH", color: "#ff6b6b" },
+                { driver: "A. Davis", issue: "Inspection follow-up pending", severity: "WARNING", color: "#ffd700" },
+                { driver: "K. Alston", issue: "CDL renewal due in 14 days", severity: "LOW", color: "#00b4ff" },
+                { driver: "M. Chen", issue: "All documents current", severity: "CLEAR", color: "#00ff9d" },
+              ].map((alert) => (
+                <div key={alert.driver} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#fff", fontSize: "0.88rem" }}>{alert.driver}</div>
+                    <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.78rem", marginTop: 2 }}>{alert.issue}</div>
+                  </div>
+                  <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: "0.7rem", fontWeight: 800, background: alert.color + "18", color: alert.color, border: `1px solid ${alert.color}40`, flexShrink: 0 }}>{alert.severity}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24, background: "rgba(0,180,255,0.1)", borderColor: "rgba(0,180,255,0.4)", color: "#00b4ff" }}>
+                <i className="fas fa-shield-alt"></i> Dispatch Guard™
+              </div>
+              <h2>Import Dispatch Schedules. <span style={{ background: "linear-gradient(90deg,#00b4ff,#00ff9d)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Catch Blockers.</span></h2>
+              <p style={{ color: "rgba(255,255,255,0.8)" }}>
+                Dispatch Guard helps staff import daily dispatch schedules, check driver and truck readiness, identify compliance problems, and connect dispatch activity to ticket proof and payroll.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 24 }}>
+                {["Daily dispatch schedule import","Driver, truck, vendor matching","RMIS note tracking","Compliance issue alerts","Expected ticket count by job","Dispatch-to-Fast Scan matching","Dispatch-to-payroll validation","Dispatch block recommendations"].map((b) => (
+                  <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(0,180,255,0.06)", borderRadius: 10, border: "1px solid rgba(0,180,255,0.2)" }}>
+                    <i className="fas fa-check" style={{ color: "#00b4ff", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
+                    <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{b}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 28 }}>
+                <a href="/ronyx/dispatch/daily-import" className="btn btn-primary" style={{ fontSize: "0.875rem", padding: "12px 28px" }}>Open Dispatch Guard</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PAYROLL GUARD + REVENUE GUARD ===== */}
+      <section id="payroll-guard" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(0,255,157,0.25)", padding: 36 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(0,255,157,0.12)", border: "1px solid rgba(0,255,157,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <i className="fas fa-lock" style={{ color: "#00ff9d", fontSize: 22 }}></i>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#00ff9d", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Payroll Guard™</div>
+              <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Proof-Before-Pay Controls</h3>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
+                Payroll Guard protects companies from paying loads without proof. It checks scanned tickets, dispatch records, payout sheets, rates, deductions, and approvals before payroll is released.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                {["Proof-before-pay controls","Missing ticket payroll holds","Duplicate ticket detection","Rate mismatch alerts","Deduction review","Manager override logging","Settlement packet support"].map((b) => (
+                  <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.82)", fontSize: "0.88rem" }}>
+                    <i className="fas fa-check-circle" style={{ color: "#00ff9d", fontSize: 13 }}></i>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(255,215,0,0.25)", padding: 36 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(255,215,0,0.1)", border: "1px solid rgba(255,215,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <i className="fas fa-search-dollar" style={{ color: "#ffd700", fontSize: 22 }}></i>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#ffd700", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Revenue Guard™</div>
+              <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Find Worked Loads Not Billed</h3>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
+                Revenue Guard helps prevent missed billing and underbilling by comparing scanned tickets, dispatch records, invoices, and payout data to surface revenue leaks before they compound.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                {["Find worked loads not billed","Find tickets paid but not invoiced","Detect invoice mismatches","Catch missing customer rates","Flag duplicate billing items","Move clean tickets to billing review"].map((b) => (
+                  <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.82)", fontSize: "0.88rem" }}>
+                    <i className="fas fa-check-circle" style={{ color: "#ffd700", fontSize: 13 }}></i>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== COMPLIANCE + STAFF WORK QUEUE ===== */}
+      <section id="compliance-guard" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(244,63,94,0.25)", padding: 36 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <i className="fas fa-id-card" style={{ color: "#f43f5e", fontSize: 22 }}></i>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#f43f5e", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Compliance Guard™</div>
+              <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Driver & Fleet Compliance</h3>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
+                Compliance Guard helps prevent dispatching drivers or trucks with expired or missing documents. Track every document, get expiration alerts, and block dispatch before it becomes an incident.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {["CDL tracking","Medical card tracking","MVR tracking","Drug test tracking","Background checks","Insurance tracking","Dispatch eligibility rules","Payroll eligibility rules"].map((b) => (
+                  <div key={b} style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.82)", fontSize: "0.83rem" }}>
+                    <i className="fas fa-shield-alt" style={{ color: "#f43f5e", fontSize: 11 }}></i>{b}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(56,189,248,0.25)", padding: 36 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <i className="fas fa-tasks" style={{ color: "#38bdf8", fontSize: 22 }}></i>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#38bdf8", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Staff Work Queue</div>
+              <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Daily Office Priority List</h3>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
+                The Staff Work Queue shows office teams what needs attention first across dispatch, compliance, tickets, payroll, billing, and settlements. No more hunting through spreadsheets to know what to fix.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                {["Daily office priority list","Missing proof queue","Payroll hold queue","Compliance follow-up queue","Billing review queue","Dispatch issue queue","One-click staff actions","Next-best-action guidance"].map((b) => (
+                  <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.82)", fontSize: "0.88rem" }}>
+                    <i className="fas fa-arrow-right" style={{ color: "#38bdf8", fontSize: 11 }}></i>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== OWNER OPERATOR + BACKUP CENTER ===== */}
+      <section id="owner-operator" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(168,85,247,0.25)", padding: 36 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <i className="fas fa-users-cog" style={{ color: "#a855f7", fontSize: 22 }}></i>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#a855f7", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Owner Operator Command Center</div>
+              <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Complete OO Management</h3>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
+                Manage owner operators as businesses — fleet, compliance, contracts, settlements, and performance in one place. Track every document, settlement status, and dispatch eligibility score.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {["OO company profile","Driver roster","Fleet roster","Document tracking","Settlement status","Compliance score","Dispatch eligibility","Performance score"].map((b) => (
+                  <div key={b} style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.82)", fontSize: "0.83rem" }}>
+                    <i className="fas fa-check" style={{ color: "#a855f7", fontSize: 11 }}></i>{b}
+                  </div>
+                ))}
+              </div>
+              <a href="/ronyx/owner-operators" className="btn btn-primary" style={{ marginTop: 24, fontSize: "0.85rem", padding: "10px 22px" }}>Open OO Center</a>
+            </div>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(74,222,128,0.25)", padding: 36 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <i className="fas fa-database" style={{ color: "#4ade80", fontSize: 22 }}></i>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Original Upload Backup Center</div>
+              <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Every File Preserved</h3>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
+                Every original uploaded sheet, schedule, ticket, invoice, or backup file is preserved as read-only source evidence. Staff can correct parsed records without ever changing the original file.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                {["Original files preserved permanently","Download original sheets anytime","Parsed row backup","Raw row JSON storage","Import history","Staff upload history","Audit-safe document archive"].map((b) => (
+                  <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.82)", fontSize: "0.88rem" }}>
+                    <i className="fas fa-lock" style={{ color: "#4ade80", fontSize: 11 }}></i>{b}
+                  </li>
+                ))}
+              </ul>
+              <a href="/ronyx/backup" className="btn btn-secondary" style={{ marginTop: 24, fontSize: "0.85rem", padding: "10px 22px", color: "#4ade80", borderColor: "#4ade80" }}>Open Backup Center</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== COMPARISON TABLE ===== */}
+      <section id="compare" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>More Than a TMS — <span className="speed-gradient">A Guided Office System</span></h2>
+            <p style={{ color: "rgba(255,255,255,0.75)", maxWidth: 640, margin: "0 auto" }}>
+              Most TMS platforms help you manage loads. MoveAround helps office staff know what to do next. Instead of making staff search through spreadsheets, tickets, dispatch boards, and payroll reports, MoveAround turns exceptions into guided work queues.
+            </p>
+          </div>
+          <div style={{ marginTop: 48, maxWidth: 900, margin: "48px auto 0" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 0, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,215,0,0.2)" }}>
+              <div style={{ background: "rgba(30,30,30,0.9)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", letterSpacing: "0.1em", textTransform: "uppercase" }}>Feature</div>
+              <div style={{ background: "rgba(30,30,30,0.9)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", borderLeft: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", textAlign: "center" }}>Standard TMS</div>
+              <div style={{ background: "rgba(247,147,30,0.12)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", borderLeft: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "#F7931E", fontSize: "0.8rem", textAlign: "center" }}>MoveAround TMS</div>
+              {[
+                ["Dispatch board","✓","Dispatch Guard™"],
+                ["Ticket scanning","Limited","Fast Scan™ OCR"],
+                ["Payout reconciliation","Manual spreadsheet","Automated Payout Reconcile"],
+                ["Payroll proof checks","Manual","Payroll Guard™"],
+                ["Billing error detection","Manual","Revenue Guard™"],
+                ["RMIS compliance notes","Spreadsheet-based","Dispatch Guard™"],
+                ["Staff guidance","Limited","Work Queue + Next Best Action"],
+                ["Original upload preservation","Not always clear","Backup Center"],
+                ["Owner operator management","Basic","OO Command Center"],
+              ].map(([feature, standard, movearound], i) => (
+                <React.Fragment key={i}>
+                  <div style={{ background: i % 2 === 0 ? "rgba(20,20,20,0.8)" : "rgba(28,28,28,0.8)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", fontSize: "0.9rem" }}>{feature}</div>
+                  <div style={{ background: i % 2 === 0 ? "rgba(20,20,20,0.8)" : "rgba(28,28,28,0.8)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(255,215,0,0.1)", color: "rgba(255,255,255,0.45)", fontSize: "0.88rem", textAlign: "center" }}>{standard}</div>
+                  <div style={{ background: i % 2 === 0 ? "rgba(247,147,30,0.07)" : "rgba(247,147,30,0.04)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(255,215,0,0.15)", color: "#F7931E", fontSize: "0.88rem", fontWeight: 700, textAlign: "center" }}>{movearound}</div>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FINAL CTA ===== */}
+      <section id="request-demo" className="switch-benefits" style={{ paddingTop: 80 }}>
+        <div className="container">
+          <div style={{ background: "linear-gradient(135deg, rgba(247,147,30,0.12), rgba(0,180,255,0.08))", borderRadius: 24, border: "1px solid rgba(247,147,30,0.3)", padding: "60px 48px", textAlign: "center" }}>
+            <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24 }}>
+              <i className="fas fa-rocket"></i> GET STARTED
+            </div>
+            <h2 style={{ maxWidth: 700, margin: "0 auto 20px" }}>
+              Ready to Protect Dispatch, Payroll, and Billing from Costly Mistakes?
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.78)", maxWidth: 560, margin: "0 auto 36px" }}>
+              MoveAround TMS is built for dump truck operations where dispatch, tickets, payout sheets, payroll, compliance, and billing all have to match.
+            </p>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+              <a href="mailto:sales@movearoundtms.com?subject=Demo Request" className="btn btn-primary">
+                <i className="fas fa-calendar-check"></i> Request Demo
+              </a>
+              <a href="#fast-scan" className="btn btn-secondary">
+                <i className="fas fa-bolt"></i> See Fast Scan
+              </a>
+              <a href="#contact" className="btn btn-secondary">
+                <i className="fas fa-envelope"></i> Contact Sales
+              </a>
+            </div>
+            <div style={{ display: "flex", gap: 32, justifyContent: "center", marginTop: 40, flexWrap: "wrap" }}>
+              {[
+                { icon: "fa-check-circle", label: "No long-term contracts", color: "#00ff9d" },
+                { icon: "fa-bolt", label: "30-day implementation", color: "#F7931E" },
+                { icon: "fa-chart-line", label: "214% average ROI", color: "#ffd700" },
+                { icon: "fa-lock", label: "Proof-before-pay controls", color: "#00b4ff" },
+              ].map((item) => (
+                <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.75)", fontSize: "0.88rem" }}>
+                  <i className={`fas ${item.icon}`} style={{ color: item.color }}></i>
+                  {item.label}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

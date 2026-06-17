@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const organizationId = getOrganizationId(req);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
-    let events = getAlertEvents(organizationId, 1000);
+    let events = await getAlertEvents(organizationId, 1000);
     if (from) events = events.filter((e) => e.triggeredAt >= from);
     if (to) events = events.filter((e) => e.triggeredAt <= to);
     const metrics = computeSLAMetrics(events);

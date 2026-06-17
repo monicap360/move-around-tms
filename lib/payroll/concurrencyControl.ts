@@ -170,12 +170,12 @@ export class PayrollConcurrencyControl {
     paused: boolean;
     maxConcurrent: number;
   }> {
-    const { data: running } = await this.supabase
+    const { count: runningCount } = await this.supabase
       .from('payroll_jobs')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'running');
 
-    const { data: queued } = await this.supabase
+    const { count: queuedCount } = await this.supabase
       .from('payroll_jobs')
       .select('id', { count: 'exact', head: true })
       .in('status', ['queued', 'paused']);
@@ -187,8 +187,8 @@ export class PayrollConcurrencyControl {
       .single();
 
     return {
-      running: running?.count || 0,
-      queued: queued?.count || 0,
+      running: runningCount || 0,
+      queued: queuedCount || 0,
       paused: lock?.paused || false,
       maxConcurrent: lock?.max_concurrent_jobs || this.MAX_CONCURRENT_JOBS,
     };

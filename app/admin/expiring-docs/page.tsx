@@ -3,7 +3,7 @@ import supabaseAdmin from "../../lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 export default async function ExpiringDocsPage() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin!
     .from("driver_documents_expiring")
     .select("*")
     .order("expiration_date", { ascending: true });

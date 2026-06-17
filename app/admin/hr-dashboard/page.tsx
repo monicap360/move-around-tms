@@ -4,7 +4,7 @@ import supabaseAdmin from "../../lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 export default async function HRDashboardPage() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin!
     .from("driver_documents")
     .select(
       "id, doc_type, image_url, status, expiration_date, ocr_confidence, drivers ( id, name )",

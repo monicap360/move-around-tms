@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
         const { data: legacyDvirs } = await supabase
           .from("dvir")
           .select("created_at");
-        dvirList = legacyDvirs || [];
+        dvirList = (legacyDvirs || []) as any[];
       }
       if (dvirList.length > 0) {
         const compliantCount = dvirList.filter((d: any) => {

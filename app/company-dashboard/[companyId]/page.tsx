@@ -72,10 +72,7 @@ export default function CompanyOwnerDashboard({
       <DashboardHeader
         title={`${company.name} — Owner Portal`}
         subtitle="Drivers • Tickets • Payroll • Dispatch • HR • Compliance"
-        userName={company.owner_name}
-        userRole="Company Owner"
-        view={companyId}
-        onViewChange={() => {}}
+        fullName={company.owner_name}
       />
       <main className="max-w-7xl mx-auto px-6 py-10 space-y-12">
         {/* ANALYTICS GRID */}

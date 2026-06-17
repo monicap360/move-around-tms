@@ -222,7 +222,7 @@ export default function RonyxAggregatesPage() {
     return { haulCharge, timeCharge, fuelCharge, total, minimumCharge };
   }, [quote, selectedRate]);
 
-  const updateRateField = (field: keyof RateCard, value: string | boolean) => {
+  const updateRateField = (field: keyof RateCard, value: string | boolean | { material: string; surcharge: string }[]) => {
     if (!selectedRate) return;
     setRateCards((prev) =>
       prev.map((card) => (card.id === selectedRate.id ? { ...card, [field]: value } : card)),

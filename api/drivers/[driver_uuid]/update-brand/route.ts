@@ -6,7 +6,7 @@ const client = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function POST(req, { params }) {
+export async function POST(req: Request, { params }: { params: { driver_uuid: string } }) {
   const { driver_uuid } = params;
   const body = await req.json();
   const { truck_skin, custom_logo_url } = body;

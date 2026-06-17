@@ -61,7 +61,7 @@ export async function GET(
 
     const zipBytes = await zip.generateAsync({ type: "uint8array" });
 
-    return new NextResponse(zipBytes, {
+    return new NextResponse(Buffer.from(zipBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

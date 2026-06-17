@@ -6,7 +6,7 @@ const client = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function POST(req) {
+export async function POST(req: Request) {
   const { driver_id, start_date, end_date } = await req.json();
 
   const { data, error } = await client

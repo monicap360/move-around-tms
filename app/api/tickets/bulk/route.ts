@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
         if (updatedStatus === "cancelled" && ticket.status === "cancelled") {
           invalidTransitions.push(ticket.id);
         }
-        // Can't invoice already-invoiced tickets (unless going to paid)
-        if (updatedStatus === "invoiced" && ticket.status === "invoiced" && updatedStatus !== "paid") {
+        // Can't invoice already-invoiced tickets
+        if (updatedStatus === "invoiced" && ticket.status === "invoiced") {
           invalidTransitions.push(ticket.id);
         }
         // Can't pay already-paid tickets

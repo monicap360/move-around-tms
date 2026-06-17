@@ -25,6 +25,7 @@ interface FinancialIntelligenceProps {
     pay_rate?: number;
     bill_rate?: number;
     quantity?: number;
+    status?: string;
   };
 }
 

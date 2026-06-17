@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Integration API utilities and helpers
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";

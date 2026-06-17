@@ -26,7 +26,7 @@ export async function setPreferences(
     const { error } = await supabase
       .from("notification_preferences")
       .upsert([{ ...update, organizationId }], {
-        onConflict: ["organizationId", "channel", "severity"],
+        onConflict: "organizationId,channel,severity",
       });
     if (error) throw error;
   }

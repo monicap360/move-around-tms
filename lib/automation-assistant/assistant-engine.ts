@@ -237,7 +237,7 @@ export class AutomationAssistantEngine {
 
     // Certifications (0-10 points)
     if (load.specialRequirements) {
-      const matching = load.specialRequirements.filter(req => 
+      const matching = load.specialRequirements.filter((req: any) =>
         driver.certifications.includes(req)
       ).length;
       score += (matching / load.specialRequirements.length) * 10;

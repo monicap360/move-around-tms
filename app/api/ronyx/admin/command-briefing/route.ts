@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-async function safe<T>(promise: Promise<{ data: T | null; error: any }>): Promise<T | null> {
+async function safe<T>(promise: PromiseLike<{ data: T | null; error: any }>): Promise<T | null> {
   try { const { data } = await promise; return data; } catch { return null; }
 }
 

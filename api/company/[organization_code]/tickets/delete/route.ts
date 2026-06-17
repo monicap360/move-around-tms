@@ -6,7 +6,7 @@ const supa = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req: Request, { params }: { params: { organization_code: string } }) {
   const { organization_code } = params;
   const { ticket_id } = await req.json();
 
@@ -19,6 +19,8 @@ export async function DELETE(req, { params }) {
     .select("id")
     .eq("organization_code", organization_code)
     .single();
+
+  if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
 
   const { error } = await supa
     .from("tickets")

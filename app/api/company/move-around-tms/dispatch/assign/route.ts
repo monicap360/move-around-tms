@@ -39,14 +39,16 @@ export async function POST(request: Request) {
     if (loadError) throw loadError;
 
     // Optionally, create a driver assignment record
-    await supabaseAdmin.from("driver_assignments").insert({
-      driver_id,
-      truck_id,
-      load_id,
-      status: "Dispatched",
-    }).catch(() => {
+    try {
+      await supabaseAdmin.from("driver_assignments").insert({
+        driver_id,
+        truck_id,
+        load_id,
+        status: "Dispatched",
+      });
+    } catch {
       // Non-fatal if table doesn't exist
-    });
+    }
 
     return NextResponse.json({
       ok: true,
