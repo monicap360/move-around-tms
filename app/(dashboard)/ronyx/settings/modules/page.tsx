@@ -2,157 +2,91 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import BrandLogo from "@/components/ronyx/BrandLogo";
-import { MODULE_LOGO_MAP, BrandAssetKey } from "@/lib/brandAssets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Module = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-  monthly_price: number;
-  icon: string | null;
+type ModuleRow = {
+  id?: string;
+  module_key: string;
+  module_name: string;
+  module_subtitle?: string | null;
   category: string;
-  included_in_plans: string[];
-  sort_order: number;
-  org_is_active: boolean;
+  status: "active" | "in_trial" | "available" | "locked" | "expired" | "coming_soon" | "inactive";
+  description?: string | null;
+  features?: string[];
+  price_monthly?: number;
+  price_label?: string | null;
+  included_in_plan?: string[];
+  trial_days_left?: number | null;
+  is_enterprise_add_on?: boolean;
 };
 
-type Subscription = {
-  plan_slug: string;
-  plan: { name: string } | null;
+type Stats = {
+  activeOrTrial: number;
+  trialModules: number;
+  availableAddOns: number;
+  estAddOnCost: number;
 };
 
 // ── Category config ───────────────────────────────────────────────────────────
 
-const CATEGORIES: { slug: string; label: string }[] = [
+const CATEGORIES = [
   { slug: "all",              label: "All" },
-  { slug: "operations",       label: "Operations" },
-  { slug: "tickets-ocr",      label: "Tickets & OCR" },
-  { slug: "billing-payroll",  label: "Billing & Payroll" },
-  { slug: "compliance",       label: "Compliance" },
-  { slug: "ai",               label: "AI / Automation" },
-  { slug: "store",            label: "Store" },
-  { slug: "enterprise-addons",label: "Enterprise Add-Ons" },
+  { slug: "Operations",       label: "Operations" },
+  { slug: "Tickets & OCR",    label: "Tickets & OCR" },
+  { slug: "Billing & Payroll",label: "Billing & Payroll" },
+  { slug: "Compliance",       label: "Compliance" },
+  { slug: "AI / Automation",  label: "AI / Automation" },
+  { slug: "Enterprise Add-Ons",label: "Enterprise Add-Ons" },
 ];
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
-  operations:         { bg: "#dbeafe", color: "#1e40af" },
-  "tickets-ocr":      { bg: "#fef3c7", color: "#d97706" },
-  "billing-payroll":  { bg: "#dcfce7", color: "#15803d" },
-  compliance:         { bg: "#fee2e2", color: "#dc2626" },
-  ai:                 { bg: "#ede9fe", color: "#7c3aed" },
-  store:              { bg: "#d1fae5", color: "#065f46" },
-  "enterprise-addons":{ bg: "#f0f4ff", color: "#3730a3" },
+  "Operations":         { bg: "#dbeafe", color: "#1e40af" },
+  "Tickets & OCR":      { bg: "#fef3c7", color: "#d97706" },
+  "Billing & Payroll":  { bg: "#dcfce7", color: "#15803d" },
+  "Compliance":         { bg: "#fee2e2", color: "#dc2626" },
+  "AI / Automation":    { bg: "#ede9fe", color: "#7c3aed" },
+  "Enterprise Add-Ons": { bg: "#f0f4ff", color: "#3730a3" },
 };
 
-function catColor(cat: string): { bg: string; color: string } {
+function catColor(cat: string) {
   return CATEGORY_COLORS[cat] ?? { bg: "#f1f5f9", color: "#475569" };
 }
 
-// DB category slug → display filter slug
-const DB_TO_DISPLAY: Record<string, string> = {
-  operations: "operations",
-  compliance: "compliance",
-  money:      "billing-payroll",
-  people:     "operations",
-  ai:         "ai",
-  commerce:   "store",
-};
+// ── Status badge ──────────────────────────────────────────────────────────────
 
-// Per-slug overrides (takes precedence over DB category)
-const SLUG_CATEGORY_OVERRIDE: Record<string, string> = {
-  "fast-scan": "tickets-ocr",
-  billing:     "billing-payroll",
-  payroll:     "billing-payroll",
-};
-
-function displayCat(m: Module): string {
-  if (SLUG_CATEGORY_OVERRIDE[m.slug]) return SLUG_CATEGORY_OVERRIDE[m.slug];
-  return DB_TO_DISPLAY[m.category] ?? m.category;
+function StatusBadge({ status }: { status: ModuleRow["status"] }) {
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    active:      { label: "🟢 Active",       bg: "#dcfce7", color: "#15803d" },
+    in_trial:    { label: "🟢 Trial Active",  bg: "#d1fae5", color: "#065f46" },
+    available:   { label: "🔒 Available",     bg: "#f1f5f9", color: "#64748b" },
+    locked:      { label: "🔒 Locked",        bg: "#f1f5f9", color: "#94a3b8" },
+    expired:     { label: "⚠️ Expired",       bg: "#fef2f2", color: "#dc2626" },
+    coming_soon: { label: "⏳ Coming Soon",   bg: "#fffbeb", color: "#d97706" },
+    inactive:    { label: "⭕ Inactive",      bg: "#f8fafc", color: "#94a3b8" },
+  };
+  const s = map[status] ?? map.available;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 11px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 700, background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  );
 }
 
-// ── Featured module config ────────────────────────────────────────────────────
-
-// These slugs get dedicated featured cards and are excluded from the regular grid
-const FEATURED_SLUGS = ["ccb", "fast-dispatch"];
-
-// Which filter tabs reveal each featured card
-const FEATURED_CATEGORIES: Record<string, string[]> = {
-  "ccb":           ["compliance", "billing-payroll", "enterprise-addons"],
-  "fast-dispatch": ["operations", "ai", "enterprise-addons"],
-};
-
-// Local fallbacks — used if DB migrations haven't been run yet
-const LOCAL_FEATURED: Module[] = [
-  {
-    id: "local-ccb",
-    slug: "ccb",
-    name: "Carrier Clearance Bureau™",
-    description: "Carrier vetting, clearance status, billing risk, compliance controls, dispatch holds, account blocks, and audit history for owner operators and sub-haulers. Base plan includes up to 10 owner operators. Additional owner operators: $10/month each.",
-    monthly_price: 199,
-    icon: "🏛️",
-    category: "compliance",
-    included_in_plans: ["enterprise", "enterprise-plus"],
-    sort_order: 100,
-    org_is_active: false,
-  },
-  {
-    id: "local-fast-dispatch",
-    slug: "fast-dispatch",
-    name: "Fast Dispatch™",
-    description: "AI-assisted dispatch recommendations for drivers, trucks, compliance, tickets, payroll, billing, and CCB holds.",
-    monthly_price: 299,
-    icon: "⚡",
-    category: "ai",
-    included_in_plans: ["pro", "enterprise", "enterprise-plus"],
-    sort_order: 101,
-    org_is_active: false,
-  },
-];
-
-// ── Plan display labels ───────────────────────────────────────────────────────
-const PLAN_LABELS: Record<string, string> = {
-  starter:          "Starter",
-  operations:       "Operations Pro",
-  pro:              "Pro",
-  enterprise:       "Enterprise",
-  "enterprise-plus":"Enterprise Plus",
-};
-
-function planLabel(slug: string): string {
-  return PLAN_LABELS[slug] ?? slug.charAt(0).toUpperCase() + slug.slice(1);
-}
-
-function includedInLabel(plans: string[]): string {
-  if (!plans.length) return "Add-on";
-  const labels = plans.map(planLabel);
-  if (labels.length === 1) return `Included in ${labels[0]}`;
-  if (labels.length === 2) return `Included in ${labels[0]} & ${labels[1]}`;
-  return `Included in ${labels[0]}, ${labels[1]} & above`;
-}
-
-// ── Module Card (regular grid) ────────────────────────────────────────────────
+// ── Regular module card ───────────────────────────────────────────────────────
 
 function ModuleCard({
   module,
-  planSlug,
   onToggle,
   toggling,
 }: {
-  module: Module;
-  planSlug: string;
-  onToggle: (slug: string, action: "activate" | "deactivate") => void;
+  module: ModuleRow;
+  onToggle: (key: string, action: "activate" | "deactivate") => void;
   toggling: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
-  const isActive       = module.org_is_active;
-  const includedInPlan = module.included_in_plans.includes(planSlug);
-  const dispCat        = displayCat(module);
-  const cc             = catColor(dispCat);
-  const catLabel       = CATEGORIES.find(c => c.slug === dispCat)?.label ?? dispCat;
+  const isOn  = module.status === "active" || module.status === "in_trial";
+  const cc    = catColor(module.category);
 
   return (
     <div
@@ -160,7 +94,7 @@ function ModuleCard({
       onMouseLeave={() => setHovered(false)}
       style={{
         background: "#ffffff",
-        border: isActive ? "2px solid #86efac" : "1px solid #e2e8f0",
+        border: isOn ? "2px solid #86efac" : "1px solid #e2e8f0",
         borderRadius: 14,
         padding: "20px 20px 18px",
         display: "flex",
@@ -171,46 +105,43 @@ function ModuleCard({
         opacity: toggling ? 0.7 : 1,
       }}
     >
-      {(() => {
-        const logoKey = MODULE_LOGO_MAP[module.slug] as BrandAssetKey | undefined;
-        return (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {logoKey ? (
-              <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, flexShrink: 0, padding: 4 }}>
-                <BrandLogo asset={logoKey} maxHeight={36} maxWidth={36} fallbackStyle={{ fontSize: "0.55rem", color: "#64748b" }} />
-              </div>
-            ) : (
-              <span style={{ fontSize: "2rem", lineHeight: 1, flexShrink: 0 }}>{module.icon ?? "📦"}</span>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#0f172a" }}>{module.name}</div>
-              <span style={{ display: "inline-block", marginTop: 3, background: cc.bg, color: cc.color, borderRadius: 20, padding: "2px 9px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {catLabel}
-              </span>
-            </div>
+      {/* Title row */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#0f172a", lineHeight: 1.3 }}>
+            {module.module_name}
           </div>
-        );
-      })()}
-
-      <div style={{ fontSize: "0.78rem", color: "#475569", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>
-        {module.description ?? getDefaultDescription(module.slug)}
+          {module.module_subtitle && (
+            <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: 2 }}>{module.module_subtitle}</div>
+          )}
+          <span style={{ display: "inline-block", marginTop: 5, background: cc.bg, color: cc.color, borderRadius: 20, padding: "2px 9px", fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {module.category}
+          </span>
+        </div>
       </div>
 
-      <div style={{ fontSize: "0.8rem", fontWeight: 700, color: includedInPlan || module.monthly_price === 0 ? "#15803d" : "#1e40af" }}>
-        {includedInPlan
-          ? "✓ Included in your plan"
-          : module.monthly_price === 0
-            ? `✓ ${includedInLabel(module.included_in_plans)}`
-            : `$${module.monthly_price}/mo add-on · ${includedInLabel(module.included_in_plans)}`}
+      {/* Description */}
+      {module.description && (
+        <div style={{ fontSize: "0.78rem", color: "#475569", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>
+          {module.description}
+        </div>
+      )}
+
+      {/* Pricing / plan line */}
+      <div style={{ fontSize: "0.78rem", fontWeight: 700, color: (module.price_monthly ?? 0) > 0 ? "#1e40af" : "#15803d" }}>
+        {module.price_label ?? (
+          (module.price_monthly ?? 0) === 0
+            ? `✓ Included in ${module.included_in_plan?.join(", ") ?? "plan"}`
+            : `$${module.price_monthly}/mo add-on`
+        )}
       </div>
 
+      {/* Bottom row: status + button */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 11px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 700, background: isActive ? "#dcfce7" : "#f1f5f9", color: isActive ? "#15803d" : "#64748b" }}>
-          {isActive ? "🟢 Active" : "🔒 Inactive"}
-        </span>
-        {isActive ? (
+        <StatusBadge status={module.status} />
+        {isOn ? (
           <button
-            onClick={() => onToggle(module.slug, "deactivate")}
+            onClick={() => onToggle(module.module_key, "deactivate")}
             disabled={toggling}
             style={{ padding: "6px 14px", background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 700, fontSize: "0.75rem", cursor: toggling ? "not-allowed" : "pointer" }}
           >
@@ -218,7 +149,7 @@ function ModuleCard({
           </button>
         ) : (
           <button
-            onClick={() => onToggle(module.slug, "activate")}
+            onClick={() => onToggle(module.module_key, "activate")}
             disabled={toggling}
             style={{ padding: "6px 14px", background: toggling ? "#94a3b8" : "#1e40af", color: "#ffffff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.75rem", cursor: toggling ? "not-allowed" : "pointer" }}
           >
@@ -230,140 +161,108 @@ function ModuleCard({
   );
 }
 
-function getDefaultDescription(slug: string): string {
-  const map: Record<string, string> = {
-    dispatch:          "Core dispatching, load tracking, and driver assignment.",
-    "fast-scan":       "OCR ticket scanning and automatic data extraction.",
-    compliance:        "Driver compliance tracking, document expiry alerts, and DOT readiness.",
-    maintenance:       "Fleet maintenance scheduling, breakdown tracking, and service logs.",
-    "owner-operators": "Manage owner operators, contracts, insurance, trucks, drivers, settlements, and documents. Included in Operations Pro and above — no per-OO charge.",
-    payroll:           "Driver payroll calculation, ticket-to-pay reconciliation, and export.",
-    billing:           "Customer invoice generation, aging reports, and collections.",
-    "owner-operators": "Owner operator onboarding, COI tracking, and settlement reports.",
-    "customer-portal": "Self-service portal for customers to view tickets and invoices.",
-    "live-tracking":   "Real-time GPS tracking of trucks and loads on the map.",
-    "ai-assistant":    "AI-powered office assistant for dispatch, compliance, and reporting.",
-    store:             "Shopify-linked merch store for MoveAround branded gear.",
-  };
-  return map[slug] ?? "No description available.";
-}
+// ── Enterprise Add-On featured card ──────────────────────────────────────────
 
-// ── CCB Featured Card ─────────────────────────────────────────────────────────
+const ENTERPRISE_GRADIENTS: Record<string, string> = {
+  ccb:           "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)",
+  fast_dispatch: "linear-gradient(135deg, #052e16 0%, #064e3b 50%, #065f46 100%)",
+};
+const ENTERPRISE_BORDER: Record<string, string> = {
+  ccb:           "1px solid rgba(99,102,241,0.4)",
+  fast_dispatch: "1px solid rgba(16,185,129,0.35)",
+};
+const ENTERPRISE_BADGE_STYLE: Record<string, { bg: string; color: string; border: string }> = {
+  ccb:           { bg: "#312e81", color: "#a5b4fc", border: "1px solid #4f46e5" },
+  fast_dispatch: { bg: "#064e3b", color: "#6ee7b7", border: "1px solid #059669" },
+};
+const DEFAULT_ENTERPRISE_GRADIENT = "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e40af 100%)";
 
-function CcbCard({ mod, planSlug, onToggle, togglingSlug }: {
-  mod: Module; planSlug: string;
-  onToggle: (slug: string, action: "activate" | "deactivate") => void;
-  togglingSlug: string | null;
+function EnterpriseCard({
+  module,
+  onToggle,
+  toggling,
+}: {
+  module: ModuleRow;
+  onToggle: (key: string, action: "activate" | "deactivate") => void;
+  toggling: boolean;
 }) {
-  const isActive = mod.org_is_active;
-  const inPlan   = mod.included_in_plans.includes(planSlug);
+  const isOn    = module.status === "active" || module.status === "in_trial";
+  const bg      = ENTERPRISE_GRADIENTS[module.module_key] ?? DEFAULT_ENTERPRISE_GRADIENT;
+  const border  = ENTERPRISE_BORDER[module.module_key] ?? "1px solid rgba(99,102,241,0.25)";
+  const badge   = ENTERPRISE_BADGE_STYLE[module.module_key] ?? { bg: "#1e3a5f", color: "#93c5fd", border: "1px solid #3b82f6" };
+  const btnColor = module.module_key === "ccb" ? "#4f46e5" : module.module_key === "fast_dispatch" ? "#059669" : "#1e40af";
+
   return (
-    <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)", border: "1px solid rgba(99,102,241,0.4)", borderRadius: 16, padding: "24px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20, marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 18, flex: "1 1 300px" }}>
-        <div style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "10px 14px", flexShrink: 0 }}>
-          <BrandLogo asset="ccb" maxHeight={40} maxWidth={120} fallbackStyle={{ color: "#c7d2fe", fontSize: "0.7rem", fontWeight: 700 }} />
-        </div>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <div style={{ fontWeight: 900, fontSize: "1rem", color: "#ffffff" }}>CCB™ — Carrier Clearance Bureau</div>
-            <span style={{ background: "#312e81", color: "#a5b4fc", border: "1px solid #4f46e5", borderRadius: 20, padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Enterprise Add-On
+    <div style={{ background: bg, border, borderRadius: 16, padding: "24px 28px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 20, marginBottom: 14 }}>
+      <div style={{ flex: "1 1 300px" }}>
+        {/* Title + subtitle badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+          <div style={{ fontWeight: 900, fontSize: "1rem", color: "#ffffff" }}>{module.module_name}</div>
+          {module.module_subtitle && (
+            <span style={{ background: badge.bg, color: badge.color, border: badge.border, borderRadius: 20, padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {module.module_subtitle}
             </span>
-          </div>
-          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.7)", lineHeight: 1.5, maxWidth: 480 }}>
-            Carrier vetting, clearance status, billing risk, compliance controls, dispatch holds, account blocks, and audit history for owner operators and sub-haulers.
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
-            {inPlan ? (
-              <span style={{ fontSize: "0.75rem", color: "#86efac", fontWeight: 700 }}>✓ Included in your plan</span>
-            ) : (
-              <>
-                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#a5b4fc", fontWeight: 700 }}>+$199/mo base</span>
-                  <span style={{ fontSize: "0.75rem", color: "#4b5563" }}>·</span>
-                  <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Includes up to 10 owner operators</span>
-                </div>
-                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.72rem", color: "#818cf8" }}>+$10/mo per additional owner operator</span>
-                  <span style={{ fontSize: "0.72rem", color: "#4b5563" }}>·</span>
-                  <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>Volume pricing available</span>
-                </div>
-                <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: 2 }}>Included in Enterprise &amp; Enterprise Plus</div>
-              </>
-            )}
-          </div>
+          )}
         </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-        {isActive ? (
-          <button onClick={() => onToggle("ccb", "deactivate")} disabled={togglingSlug === "ccb"} style={{ padding: "10px 20px", background: "rgba(255,255,255,0.12)", color: "#c7d2fe", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 9, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
-            ✓ Active — Deactivate
-          </button>
-        ) : (
-          <button onClick={() => onToggle("ccb", "activate")} disabled={togglingSlug === "ccb"} style={{ padding: "10px 20px", background: "#4f46e5", color: "#fff", border: "none", borderRadius: 9, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
-            🏛️ Activate CCB
-          </button>
+
+        {/* Description */}
+        {module.description && (
+          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.7)", lineHeight: 1.5, maxWidth: 520, marginBottom: 10 }}>
+            {module.description}
+          </div>
         )}
-        <Link href="/ronyx/settings/billing" style={{ padding: "9px 20px", background: "transparent", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, fontWeight: 600, fontSize: "0.78rem", textDecoration: "none", textAlign: "center" }}>
-          View Enterprise Plans
-        </Link>
-      </div>
-    </div>
-  );
-}
 
-// ── Fast Dispatch Featured Card ───────────────────────────────────────────────
-
-function FastDispatchCard({ mod, planSlug, onToggle, togglingSlug }: {
-  mod: Module; planSlug: string;
-  onToggle: (slug: string, action: "activate" | "deactivate") => void;
-  togglingSlug: string | null;
-}) {
-  const isActive = mod.org_is_active;
-  const inPlan   = mod.included_in_plans.includes(planSlug);
-  return (
-    <div style={{ background: "linear-gradient(135deg, #052e16 0%, #064e3b 50%, #065f46 100%)", border: "1px solid rgba(16,185,129,0.35)", borderRadius: 16, padding: "24px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20, marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 18, flex: "1 1 300px" }}>
-        <div style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "14px", flexShrink: 0, fontSize: "2rem", lineHeight: 1 }}>
-          ⚡
-        </div>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <div style={{ fontWeight: 900, fontSize: "1rem", color: "#ffffff" }}>Fast Dispatch™</div>
-            <span style={{ background: "#064e3b", color: "#6ee7b7", border: "1px solid #059669", borderRadius: 20, padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              AI Add-On
-            </span>
-          </div>
-          <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>Virtual Dispatcher powered by MoveAround TMS</div>
-          <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.5, maxWidth: 520 }}>
-            AI-assisted dispatch recommendations for drivers, trucks, compliance, tickets, payroll, billing, and CCB holds.
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 20px", marginTop: 8 }}>
-            {["Recommend best driver","Check dispatch blockers","Driver/truck eligibility","Late/risk alerts","Missing ticket alerts","Send completed jobs to Fast Scan","Payroll and billing routing suggestions"].map(f => (
-              <span key={f} style={{ fontSize: "0.72rem", color: "#6ee7b7" }}>✓ {f}</span>
+        {/* Features */}
+        {module.features && module.features.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 18px", marginBottom: 10 }}>
+            {module.features.slice(0, 8).map(f => (
+              <span key={f} style={{ fontSize: "0.72rem", color: badge.color }}>✓ {f}</span>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 14, marginTop: 12, flexWrap: "wrap" }}>
-            {inPlan
-              ? <span style={{ fontSize: "0.75rem", color: "#6ee7b7", fontWeight: 700 }}>✓ Included in your plan</span>
-              : <span style={{ fontSize: "0.75rem", color: "#6ee7b7", fontWeight: 700 }}>+$299/mo add-on</span>}
-            <span style={{ fontSize: "0.75rem", color: "#374151" }}>·</span>
-            <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Included in Pro, Enterprise &amp; Enterprise Plus</span>
-          </div>
+        )}
+
+        {/* Price label */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {module.price_label ? (
+            // Split on " · " to render each pricing point on its own line
+            module.price_label.split(" · ").map((part, i) => (
+              <span key={i} style={{ fontSize: i === 0 ? "0.8rem" : "0.73rem", color: i === 0 ? badge.color : "rgba(255,255,255,0.55)", fontWeight: i === 0 ? 700 : 500 }}>
+                {i === 0 ? part : `· ${part}`}
+              </span>
+            ))
+          ) : (
+            <span style={{ fontSize: "0.78rem", color: badge.color, fontWeight: 700 }}>
+              {(module.price_monthly ?? 0) === 0 ? `Included in ${module.included_in_plan?.join(", ")}` : `$${module.price_monthly}/mo add-on`}
+            </span>
+          )}
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-        {isActive ? (
-          <button onClick={() => onToggle("fast-dispatch", "deactivate")} disabled={togglingSlug === "fast-dispatch"} style={{ padding: "10px 20px", background: "rgba(255,255,255,0.12)", color: "#6ee7b7", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 9, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, minWidth: 160 }}>
+        <StatusBadge status={module.status} />
+        {isOn ? (
+          <button
+            onClick={() => onToggle(module.module_key, "deactivate")}
+            disabled={toggling}
+            style={{ padding: "10px 20px", background: "rgba(255,255,255,0.12)", color: badge.color, border: "1px solid rgba(255,255,255,0.25)", borderRadius: 9, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+          >
             ✓ Active — Deactivate
           </button>
         ) : (
-          <button onClick={() => onToggle("fast-dispatch", "activate")} disabled={togglingSlug === "fast-dispatch"} style={{ padding: "10px 20px", background: "#059669", color: "#fff", border: "none", borderRadius: 9, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
-            ⚡ Activate Fast Dispatch
+          <button
+            onClick={() => onToggle(module.module_key, "activate")}
+            disabled={toggling}
+            style={{ padding: "10px 20px", background: btnColor, color: "#fff", border: "none", borderRadius: 9, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+          >
+            Activate {module.module_name.split(" ")[0]}
           </button>
         )}
-        <Link href="/ronyx/settings/billing" style={{ padding: "9px 20px", background: "transparent", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, fontWeight: 600, fontSize: "0.78rem", textDecoration: "none", textAlign: "center" }}>
-          View Plans
+        <Link
+          href="/ronyx/settings/billing"
+          style={{ padding: "9px 20px", background: "transparent", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, fontWeight: 600, fontSize: "0.78rem", textDecoration: "none", textAlign: "center" }}
+        >
+          View Enterprise Plans
         </Link>
       </div>
     </div>
@@ -373,95 +272,80 @@ function FastDispatchCard({ mod, planSlug, onToggle, togglingSlug }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ModulesPage() {
-  const [modules, setModules]           = useState<Module[]>([]);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
-
-  // Merge API response with local featured fallbacks (so stats always count them)
-  function mergeWithFallbacks(apiModules: Module[]): Module[] {
-    const merged = [...apiModules];
-    for (const local of LOCAL_FEATURED) {
-      if (!merged.some(m => m.slug === local.slug)) merged.push(local);
-    }
-    return merged;
-  }
+  const [modules,       setModules]       = useState<ModuleRow[]>([]);
+  const [stats,         setStats]         = useState<Stats>({ activeOrTrial: 0, trialModules: 0, availableAddOns: 0, estAddOnCost: 0 });
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [trialActive,   setTrialActive]   = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [togglingKey,   setTogglingKey]   = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [mRes, sRes] = await Promise.all([
-        fetch("/api/ronyx/subscription-modules"),
-        fetch("/api/ronyx/subscription"),
-      ]);
-      const [mJson, sJson] = await Promise.all([mRes.json(), sRes.json()]);
-      setModules(mergeWithFallbacks(mJson.modules ?? []));
-      if (sJson.subscription) setSubscription(sJson.subscription);
+      const res  = await fetch("/api/ronyx/subscription-modules");
+      const json = await res.json();
+      setModules(json.modules ?? []);
+      if (json.stats)         setStats(json.stats);
+      if (json.trialDaysLeft != null) setTrialDaysLeft(json.trialDaysLeft);
+      if (json.trialActive != null)   setTrialActive(json.trialActive);
     } catch {
       setError("Failed to load module data");
-      setModules(LOCAL_FEATURED);
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const planSlug = subscription?.plan_slug ?? "starter";
-
-  // Stats — include ALL modules (featured + regular)
-  const activeCount   = modules.filter(m => m.org_is_active).length;
-  const inactiveCount = modules.filter(m => !m.org_is_active).length;
-  // Est. add-on cost = inactive paid add-ons not already in current plan
-  const addonCost = modules
-    .filter(m => !m.org_is_active && m.monthly_price > 0 && !m.included_in_plans.includes(planSlug))
-    .reduce((sum, m) => sum + m.monthly_price, 0);
-
-  // Regular modules (exclude featured — they get their own cards)
-  const regularModules = modules.filter(m => !FEATURED_SLUGS.includes(m.slug));
-
-  // Which featured cards are visible for the active category
-  const showCcb = activeCategory === "all" || FEATURED_CATEGORIES["ccb"].includes(activeCategory);
-  const showFd  = activeCategory === "all" || FEATURED_CATEGORIES["fast-dispatch"].includes(activeCategory);
-
-  // Regular modules visible in current tab
-  const filteredRegular = activeCategory === "all"
-    ? regularModules
-    : regularModules.filter(m => displayCat(m) === activeCategory);
-
-  // True empty = no featured cards AND no regular modules for this tab
-  const isEmptyCategory = !showCcb && !showFd && filteredRegular.length === 0;
-
-  const ccbMod = modules.find(m => m.slug === "ccb") ?? LOCAL_FEATURED[0];
-  const fdMod  = modules.find(m => m.slug === "fast-dispatch") ?? LOCAL_FEATURED[1];
-
-  async function handleToggle(slug: string, action: "activate" | "deactivate") {
-    setTogglingSlug(slug);
-    setModules(prev => prev.map(m => m.slug === slug ? { ...m, org_is_active: action === "activate" } : m));
+  async function handleToggle(key: string, action: "activate" | "deactivate") {
+    setTogglingKey(key);
+    setModules(prev => prev.map(m =>
+      m.module_key === key ? { ...m, status: action === "activate" ? "active" : "inactive" } : m
+    ));
     try {
-      const res = await fetch("/api/ronyx/subscription-modules", {
+      const res  = await fetch("/api/ronyx/subscription-modules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ module_slug: slug, action }),
+        body: JSON.stringify({ module_key: key, action }),
       });
       const json = await res.json();
       if (!res.ok) {
-        setModules(prev => prev.map(m => m.slug === slug ? { ...m, org_is_active: action !== "activate" } : m));
+        setModules(prev => prev.map(m =>
+          m.module_key === key ? { ...m, status: action === "activate" ? "available" : "active" } : m
+        ));
         alert(json.error || "Toggle failed");
-      } else if (json.modules) {
-        setModules(mergeWithFallbacks(json.modules));
+      } else if (json.modules?.length) {
+        setModules(json.modules);
       }
     } catch {
-      setModules(prev => prev.map(m => m.slug === slug ? { ...m, org_is_active: action !== "activate" } : m));
       alert("Network error — please try again");
     } finally {
-      setTogglingSlug(null);
+      setTogglingKey(null);
     }
   }
+
+  // Split enterprise add-ons (featured dark cards) from regular grid modules
+  const enterpriseModules = modules.filter(m =>
+    m.category === "Enterprise Add-Ons" || m.is_enterprise_add_on === true
+  );
+  const regularModules = modules.filter(m =>
+    m.category !== "Enterprise Add-Ons" && !m.is_enterprise_add_on
+  );
+
+  // Filter by active category tab
+  const showEnterpriseSection = activeCategory === "all" || activeCategory === "Enterprise Add-Ons";
+  const filteredEnterprise = showEnterpriseSection
+    ? enterpriseModules
+    : enterpriseModules.filter(m => m.category === activeCategory);
+
+  const filteredRegular = activeCategory === "all"
+    ? regularModules
+    : regularModules.filter(m => m.category === activeCategory);
+
+  const isEmpty = filteredEnterprise.length === 0 && filteredRegular.length === 0;
 
   return (
     <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif", color: "#0f172a", maxWidth: 1200 }}>
@@ -469,8 +353,12 @@ export default function ModulesPage() {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div style={{ background: "linear-gradient(135deg, #3b0764 0%, #6d28d9 40%, #7c3aed 100%)", borderRadius: 16, padding: "24px 28px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900, color: "#ffffff", letterSpacing: "-0.5px" }}>🧩 Module Marketplace</h1>
-          <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.82rem", marginTop: 4 }}>Activate or deactivate features for your organization</div>
+          <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900, color: "#ffffff", letterSpacing: "-0.5px" }}>
+            🧩 Module Marketplace
+          </h1>
+          <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.82rem", marginTop: 4 }}>
+            Activate or deactivate features for your organization
+          </div>
         </div>
         <Link href="/ronyx/settings/billing" style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#ddd6fe", padding: "8px 18px", borderRadius: 20, fontSize: "0.78rem", fontWeight: 700, textDecoration: "none" }}>
           💳 Billing &amp; Subscription →
@@ -478,24 +366,36 @@ export default function ModulesPage() {
       </div>
 
       {loading && <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>Loading modules…</div>}
-
-      {error && <div style={{ background: "#fee2e2", color: "#dc2626", padding: "14px 18px", borderRadius: 10, marginBottom: 20, fontSize: "0.85rem" }}>{error}</div>}
+      {error   && <div style={{ background: "#fee2e2", color: "#dc2626", padding: "14px 18px", borderRadius: 10, marginBottom: 20, fontSize: "0.85rem" }}>{error}</div>}
 
       {!loading && (
         <>
           {/* ── Stats Strip ───────────────────────────────────────────────── */}
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 20 }}>
             {[
-              { label: "Active Modules",   value: String(activeCount),  color: "#15803d", bg: "#dcfce7", border: "#86efac" },
-              { label: "Est. Add-on Cost", value: addonCost > 0 ? `$${addonCost}/mo` : "$0/mo", color: "#1e40af", bg: "#dbeafe", border: "#93c5fd" },
-              { label: "Available to Add", value: String(inactiveCount), color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
+              { label: "Active Modules",       value: String(stats.activeOrTrial),  color: "#15803d", bg: "#dcfce7", border: "#86efac" },
+              { label: "Trial Modules",         value: String(stats.trialModules),   color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
+              { label: "Available Add-Ons",     value: String(stats.availableAddOns),color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
+              { label: "Trial Days Left",       value: trialDaysLeft != null ? `${trialDaysLeft}d` : "—", color: "#b45309", bg: "#fef3c7", border: "#fcd34d" },
+              { label: "Est. Available Add-on Cost", value: stats.estAddOnCost > 0 ? `$${stats.estAddOnCost}/mo` : "$0/mo", color: "#1e40af", bg: "#dbeafe", border: "#93c5fd" },
             ].map((stat) => (
-              <div key={stat.label} style={{ flex: "1 1 160px", background: stat.bg, border: `1px solid ${stat.border}`, borderRadius: 12, padding: "14px 20px", minWidth: 140 }}>
-                <div style={{ fontSize: "0.7rem", fontWeight: 700, color: stat.color, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontSize: "1.7rem", fontWeight: 900, color: stat.color, lineHeight: 1 }}>{stat.value}</div>
+              <div key={stat.label} style={{ flex: "1 1 140px", background: stat.bg, border: `1px solid ${stat.border}`, borderRadius: 12, padding: "14px 18px", minWidth: 130 }}>
+                <div style={{ fontSize: "0.67rem", fontWeight: 700, color: stat.color, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{stat.label}</div>
+                <div style={{ fontSize: "1.55rem", fontWeight: 900, color: stat.color, lineHeight: 1 }}>{stat.value}</div>
               </div>
             ))}
           </div>
+
+          {/* ── Trial banner ──────────────────────────────────────────────── */}
+          {trialActive && (
+            <div style={{ background: "linear-gradient(90deg, #064e3b, #065f46)", border: "1px solid #059669", borderRadius: 12, padding: "12px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: "1.1rem" }}>🟢</span>
+              <span style={{ color: "#6ee7b7", fontWeight: 700, fontSize: "0.85rem" }}>
+                Free Trial Active — All modules marked Trial Active have full access.{" "}
+                {trialDaysLeft != null ? `${trialDaysLeft} days remaining.` : ""}
+              </span>
+            </div>
+          )}
 
           {/* ── Category Filter ───────────────────────────────────────────── */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
@@ -506,17 +406,7 @@ export default function ModulesPage() {
                 <button
                   key={slug}
                   onClick={() => setActiveCategory(slug)}
-                  style={{
-                    padding: "6px 16px",
-                    background: isAct ? (slug === "all" ? "#1e40af" : cc.bg) : "#ffffff",
-                    color:      isAct ? (slug === "all" ? "#ffffff" : cc.color) : "#64748b",
-                    border:     isAct ? `2px solid ${slug === "all" ? "#1e40af" : cc.color}` : "1px solid #e2e8f0",
-                    borderRadius: 20,
-                    fontWeight: isAct ? 700 : 500,
-                    fontSize: "0.78rem",
-                    cursor: "pointer",
-                    transition: "all 120ms",
-                  }}
+                  style={{ padding: "6px 16px", background: isAct ? (slug === "all" ? "#1e40af" : cc.bg) : "#ffffff", color: isAct ? (slug === "all" ? "#ffffff" : cc.color) : "#64748b", border: isAct ? `2px solid ${slug === "all" ? "#1e40af" : cc.color}` : "1px solid #e2e8f0", borderRadius: 20, fontWeight: isAct ? 700 : 500, fontSize: "0.78rem", cursor: "pointer", transition: "all 120ms" }}
                 >
                   {label}
                 </button>
@@ -524,21 +414,26 @@ export default function ModulesPage() {
             })}
           </div>
 
-          {/* ── Featured Cards ────────────────────────────────────────────── */}
-          {showFd  && <FastDispatchCard mod={fdMod}  planSlug={planSlug} onToggle={handleToggle} togglingSlug={togglingSlug} />}
-          {showCcb && <CcbCard         mod={ccbMod} planSlug={planSlug} onToggle={handleToggle} togglingSlug={togglingSlug} />}
-
-          {/* ── Module Grid ───────────────────────────────────────────────── */}
-          {filteredRegular.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16, marginTop: (showCcb || showFd) ? 8 : 0 }}>
-              {filteredRegular.map((m) => (
-                <ModuleCard key={m.slug} module={m} planSlug={planSlug} onToggle={handleToggle} toggling={togglingSlug === m.slug} />
+          {/* ── Enterprise Add-On featured cards ──────────────────────────── */}
+          {filteredEnterprise.length > 0 && (
+            <div style={{ marginBottom: filteredRegular.length > 0 ? 8 : 0 }}>
+              {filteredEnterprise.map(m => (
+                <EnterpriseCard key={m.module_key} module={m} onToggle={handleToggle} toggling={togglingKey === m.module_key} />
               ))}
             </div>
           )}
 
-          {/* ── Empty state — only when the tab truly has no content ──────── */}
-          {isEmptyCategory && (
+          {/* ── Regular module grid ───────────────────────────────────────── */}
+          {filteredRegular.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 16 }}>
+              {filteredRegular.map(m => (
+                <ModuleCard key={m.module_key} module={m} onToggle={handleToggle} toggling={togglingKey === m.module_key} />
+              ))}
+            </div>
+          )}
+
+          {/* ── Empty state ───────────────────────────────────────────────── */}
+          {isEmpty && (
             <div style={{ textAlign: "center", padding: "60px 24px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, color: "#94a3b8" }}>
               <div style={{ fontSize: "2rem", marginBottom: 10 }}>🧩</div>
               <div style={{ fontWeight: 700, color: "#475569" }}>No modules in this category</div>
@@ -549,8 +444,7 @@ export default function ModulesPage() {
           <div style={{ marginTop: 24, padding: "16px 20px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, fontSize: "0.78rem", color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: "1rem" }}>ℹ️</span>
             <span>
-              Add-on billing for extra modules will be processed via Stripe — integration coming soon.
-              Modules included in your plan are free.{" "}
+              Add-on billing will be processed via Stripe — integration coming soon. Modules included in your plan are free.{" "}
               <Link href="/ronyx/settings/billing" style={{ color: "#7c3aed", fontWeight: 700 }}>View billing details</Link>
             </span>
           </div>
