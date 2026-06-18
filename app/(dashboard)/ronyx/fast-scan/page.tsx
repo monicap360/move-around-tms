@@ -100,6 +100,7 @@ export default function FastScanPage() {
   const [uploadTruck, setUploadTruck]       = useState("");
   const [uploadDriver, setUploadDriver]     = useState("");
   const [uploading, setUploading]           = useState(false);
+  const [ocrRunning, setOcrRunning]         = useState(false);
   const [uploadResult, setUploadResult]     = useState<UploadResult | null>(null);
   const [uploadError, setUploadError]       = useState("");
   const [dragOver, setDragOver]             = useState(false);
@@ -140,15 +141,44 @@ export default function FastScanPage() {
       const data = await res.json();
 
       if (!res.ok && res.status !== 207) { setUploadError(data.error || "Upload failed."); return; }
-      setUploadResult(data);
+
+      // Upload done — reset form immediately so staff can queue the next scan
       setUploadFile(null);
       setUploadTicketNum(""); setUploadTruck(""); setUploadDriver("");
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploading(false);
+
+      // If OCR is available, run it as a separate request so the upload never times out
+      if (data.next_step === "ocr" && data.document_id) {
+        setOcrRunning(true);
+        setUploadResult({ ...data, document: { ...data.document, ocr_status: "processing" } });
+        try {
+          const ocrRes = await fetch("/api/ronyx/fast-scan/process", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document_id: data.document_id }),
+          });
+          const ocrData = await ocrRes.json();
+          if (ocrRes.ok || ocrRes.status === 201) {
+            setUploadResult({ ...data, ...ocrData, document: { ...data.document, ocr_status: "completed", scan_status: "processed" } });
+          } else {
+            setUploadResult({ ...data, ocr_error: ocrData.error || "OCR failed", document: { ...data.document, ocr_status: "failed" } });
+          }
+        } catch (ocrErr: any) {
+          setUploadResult({ ...data, ocr_error: ocrErr.message || "OCR request failed", document: { ...data.document, ocr_status: "failed" } });
+        } finally {
+          setOcrRunning(false);
+        }
+      } else {
+        setUploadResult(data);
+      }
+
       loadRecentScans();
     } catch (e: any) {
-      setUploadError(e.message);
+      setUploadError(e.message || "Upload failed — check your connection and try again.");
     } finally {
       setUploading(false);
+      setOcrRunning(false);
     }
   }
 
@@ -296,10 +326,15 @@ export default function FastScanPage() {
               </div>
             )}
 
-            <button onClick={handleFileUpload} disabled={uploading || !uploadFile}
-              style={{ ...S.btn, background: uploadFile ? "#1e40af" : "#94a3b8", color: "#fff", opacity: uploading ? 0.7 : 1, width: "100%" }}>
-              {uploading ? "Uploading…" : "📤 Upload Ticket Scan"}
+            <button onClick={handleFileUpload} disabled={uploading || ocrRunning || !uploadFile}
+              style={{ ...S.btn, background: uploadFile ? "#1e40af" : "#94a3b8", color: "#fff", opacity: (uploading || ocrRunning) ? 0.7 : 1, width: "100%" }}>
+              {uploading ? "Uploading…" : ocrRunning ? "🔍 Running OCR…" : "📤 Upload Ticket Scan"}
             </button>
+            {ocrRunning && (
+              <div style={{ marginTop: 10, padding: "8px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: "0.78rem", color: "#1e40af", fontWeight: 600, textAlign: "center" }}>
+                🤖 Claude is reading your ticket… this takes 10–20 seconds
+              </div>
+            )}
 
             {/* Upload result */}
             {uploadResult && (() => {
