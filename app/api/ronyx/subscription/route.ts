@@ -3,12 +3,20 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// All module slugs unlocked during a free trial.
-// Fallback if the modules table is empty or doesn't exist yet.
+// All module slugs/keys unlocked during a free trial.
+// Includes both legacy hyphenated slugs (used by useModuleAccess calls in pages)
+// and new underscore keys (used by module_registry). Both must be present so
+// pages using either convention are unblocked.
 const FREE_TRIAL_MODULES = [
+  // Legacy page slugs (useModuleAccess calls these strings directly)
   "owner-operators", "fast-scan", "maintenance", "compliance",
   "billing", "payroll", "dispatch", "tickets", "drivers",
   "loads", "reports", "hr-compliance", "dispatch-guard",
+  // New module_registry keys
+  "owner_operator_hub", "fast_scan", "driver_management",
+  "load_management", "maintenance_hub", "driver_compliance",
+  "payroll_settlements", "billing_invoicing", "dispatch_guard",
+  "reporting_analytics", "hr_compliance",
 ];
 
 const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
@@ -117,7 +125,9 @@ export async function GET() {
   if (isActiveTrial(org, columnsMissing)) {
     const { data: allPlans } = await allPlansQuery;
     const dbSlugs = (allModulesRaw ?? []).map((m: Record<string, unknown>) => m.slug as string);
-    const activeModules = dbSlugs.length > 0 ? dbSlugs : FREE_TRIAL_MODULES;
+    // Always union DB slugs + FREE_TRIAL_MODULES so both old hyphenated and new
+    // underscore key formats are present regardless of which DB table has data.
+    const activeModules = [...new Set([...dbSlugs, ...FREE_TRIAL_MODULES])];
     const allModules = (allModulesRaw ?? []).map((m: Record<string, unknown>) => ({
       ...m, org_is_active: true,
     }));

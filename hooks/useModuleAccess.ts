@@ -8,53 +8,66 @@ type ModuleAccessResult = {
   activeModules: string[];
 };
 
-// Simple in-memory cache so navigating between pages doesn't re-fetch every time.
-// Cache expires after 60 seconds.
-let cachedModules: string[] | null = null;
-let cacheExpiry = 0;
-const listeners: Array<(modules: string[]) => void> = [];
+type SubscriptionCache = {
+  modules: string[];
+  trialActive: boolean;
+};
 
-function notifyListeners(modules: string[]) {
-  listeners.forEach((fn) => fn(modules));
+// In-memory cache. Shared across all hook instances so navigating between
+// pages does not re-fetch. Expires after 60 seconds.
+let cache: SubscriptionCache | null = null;
+let cacheExpiry = 0;
+const listeners: Array<(data: SubscriptionCache) => void> = [];
+
+function notifyListeners(data: SubscriptionCache) {
+  listeners.forEach((fn) => fn(data));
 }
 
-async function fetchModules(): Promise<string[]> {
+async function fetchSubscription(): Promise<SubscriptionCache> {
   const now = Date.now();
-  if (cachedModules && now < cacheExpiry) return cachedModules;
+  if (cache && now < cacheExpiry) return cache;
+
   try {
     const res = await fetch("/api/ronyx/subscription");
     const data = await res.json();
     const modules: string[] = Array.isArray(data.activeModules) ? data.activeModules : [];
-    cachedModules = modules;
+    const trialActive: boolean = data.trialActive === true;
+    const result: SubscriptionCache = { modules, trialActive };
+    cache = result;
     cacheExpiry = now + 60_000;
-    notifyListeners(modules);
-    return modules;
+    notifyListeners(result);
+    return result;
   } catch {
-    // On error, default to allowing access (fail open) to avoid locking out users on network issues
-    return cachedModules ?? [];
+    // On network/parse error, fail open so transient failures never lock users out.
+    return cache ?? { modules: [], trialActive: true };
   }
 }
 
 export function useModuleAccess(moduleSlug: string): ModuleAccessResult {
-  const [activeModules, setActiveModules] = useState<string[]>(cachedModules ?? []);
-  const [loading, setLoading] = useState(!cachedModules || Date.now() >= cacheExpiry);
+  const [state, setState] = useState<SubscriptionCache>(
+    cache ?? { modules: [], trialActive: false }
+  );
+  const [loading, setLoading] = useState(!cache || Date.now() >= cacheExpiry);
 
   useEffect(() => {
-    // Subscribe to cache updates
-    listeners.push(setActiveModules);
-    fetchModules().then((modules) => {
-      setActiveModules(modules);
+    const handler = (data: SubscriptionCache) => setState(data);
+    listeners.push(handler);
+    fetchSubscription().then((result) => {
+      setState(result);
       setLoading(false);
     });
     return () => {
-      const idx = listeners.indexOf(setActiveModules);
+      const idx = listeners.indexOf(handler);
       if (idx >= 0) listeners.splice(idx, 1);
     };
   }, []);
 
+  // If trial is active, never block — trial unlocks all modules.
+  const blocked = !loading && !state.trialActive && !state.modules.includes(moduleSlug);
+
   return {
-    blocked: !loading && !activeModules.includes(moduleSlug),
+    blocked,
     loading,
-    activeModules,
+    activeModules: state.modules,
   };
 }

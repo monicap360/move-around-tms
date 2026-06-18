@@ -10,6 +10,36 @@ export type PilotStatus = {
 // primary gate — adding a new type here is all that's needed to extend access.
 const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
 
+// Quick boolean check used in API routes and server components.
+// Returns true for both active free-trial orgs and orgs with a paid active subscription.
+export function hasOrganizationAccess(organization: Record<string, unknown> | null | undefined): boolean {
+  if (!organization) return false;
+
+  const trialEndsAt = organization.pilot_ends_at
+    ? new Date(organization.pilot_ends_at as string)
+    : null;
+  const trialIsActive =
+    trialEndsAt instanceof Date &&
+    !Number.isNaN(trialEndsAt.getTime()) &&
+    trialEndsAt > new Date();
+
+  const hasFreeTrialAccess =
+    organization.status               === "active" &&
+    organization.account_type         === "free_trial" &&
+    organization.subscription_status  === "trial_active" &&
+    organization.bypass_subscription  === true &&
+    organization.subscription_required === false &&
+    trialIsActive;
+
+  const hasPaidAccess =
+    organization.status === "active" &&
+    ["active", "paid", "current"].includes(
+      String(organization.subscription_status ?? "").toLowerCase()
+    );
+
+  return hasFreeTrialAccess || hasPaidAccess;
+}
+
 export function checkPilotAccess(org: {
   bypass_subscription?: boolean | null;
   subscription_required?: boolean | null;
