@@ -6,6 +6,10 @@ export type PilotStatus = {
   daysRemaining: number | null;
 };
 
+// Supported trial account types. Checked last so bypass_subscription is the
+// primary gate — adding a new type here is all that's needed to extend access.
+const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
+
 export function checkPilotAccess(org: {
   bypass_subscription?: boolean | null;
   subscription_required?: boolean | null;
@@ -15,12 +19,14 @@ export function checkPilotAccess(org: {
 } | null): PilotStatus {
   if (!org) return { allowed: false, isPilot: false, pilotExpired: false, pilotEndsAt: null, daysRemaining: null };
 
-  // Core bypass rule — does not depend on subscription_status value
+  // Primary gate: structural flags. Does NOT depend on subscription_status value.
+  // account_type must be a recognised trial type but bypass_subscription is the
+  // real enforcement — if DB says bypass, we trust it.
   const isPilot =
-    org.status              === 'active'     &&
-    org.account_type        === 'free_trial' &&
-    org.bypass_subscription === true         &&
-    org.subscription_required === false;
+    org.status              === "active" &&
+    org.bypass_subscription === true     &&
+    org.subscription_required === false  &&
+    TRIAL_ACCOUNT_TYPES.includes(org.account_type ?? "");
 
   if (!isPilot) {
     return { allowed: false, isPilot: false, pilotExpired: false, pilotEndsAt: null, daysRemaining: null };

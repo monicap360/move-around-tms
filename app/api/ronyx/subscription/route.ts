@@ -27,13 +27,18 @@ const FREE_TRIAL_MODULES = [
   "dispatch-guard",
 ];
 
+const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
+
 function isActiveTrial(org: Record<string, unknown> | null): boolean {
   if (!org) return false;
+  // Primary check: bypass flags + expiry. account_type must be a trial type
+  // but bypass_subscription is the real gate — exact subscription_status value
+  // is intentionally NOT checked so wording changes don't break access.
   return (
-    org.status              === "active"      &&
-    org.account_type        === "free_trial"  &&
-    org.bypass_subscription === true          &&
-    org.subscription_required === false       &&
+    org.status               === "active" &&
+    org.bypass_subscription  === true     &&
+    org.subscription_required === false   &&
+    TRIAL_ACCOUNT_TYPES.includes(org.account_type as string) &&
     !!org.pilot_ends_at &&
     new Date(org.pilot_ends_at as string) > new Date()
   );
