@@ -3,61 +3,102 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClient>): Promise<string | null> {
-  if (process.env.RONYX_ORG_ID) return process.env.RONYX_ORG_ID;
-  const { data } = await supabase.from("organizations").select("id").limit(1).single();
-  return data?.id ?? null;
-}
-
-// All module slugs that should be unlocked during a free trial.
-// Used as a fallback if the modules table is empty.
+// All module slugs unlocked during a free trial.
+// Fallback if the modules table is empty or doesn't exist yet.
 const FREE_TRIAL_MODULES = [
-  "owner-operators",
-  "fast-scan",
-  "maintenance",
-  "compliance",
-  "billing",
-  "payroll",
-  "dispatch",
-  "tickets",
-  "drivers",
-  "loads",
-  "reports",
-  "hr-compliance",
-  "dispatch-guard",
+  "owner-operators", "fast-scan", "maintenance", "compliance",
+  "billing", "payroll", "dispatch", "tickets", "drivers",
+  "loads", "reports", "hr-compliance", "dispatch-guard",
 ];
 
 const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
 
-function isActiveTrial(org: Record<string, unknown> | null): boolean {
-  if (!org) return false;
-  // Primary check: bypass flags + expiry. account_type must be a trial type
-  // but bypass_subscription is the real gate — exact subscription_status value
-  // is intentionally NOT checked so wording changes don't break access.
-  return (
-    org.status               === "active" &&
-    org.bypass_subscription  === true     &&
-    org.subscription_required === false   &&
-    TRIAL_ACCOUNT_TYPES.includes(org.account_type as string) &&
-    !!org.pilot_ends_at &&
-    new Date(org.pilot_ends_at as string) > new Date()
-  );
+// ── Resolve org ───────────────────────────────────────────────────────────────
+// Tries: env var ID → organization_code RONYX → first org in table.
+// Returns the org row with trial columns if available, otherwise just id/name.
+async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
+  const envOrgId = process.env.RONYX_ORG_ID;
+
+  // Build OR filter: match by env UUID if set, always also match by org code
+  const orFilter = envOrgId
+    ? `id.eq.${envOrgId},organization_code.eq.RONYX`
+    : `organization_code.eq.RONYX`;
+
+  // First attempt: full select including trial columns (requires migration 166)
+  const { data: full, error: fullErr } = await supabase
+    .from("organizations")
+    .select("id, name, organization_code, status, account_type, bypass_subscription, subscription_required, pilot_ends_at")
+    .or(orFilter)
+    .limit(1)
+    .single();
+
+  if (!fullErr && full) return { org: full, columnsMissing: false };
+
+  // Second attempt: columns may not exist yet (migration 166 not run) — try minimal select
+  const colMissing = fullErr?.message?.includes("account_type") ||
+                     fullErr?.message?.includes("bypass_subscription") ||
+                     fullErr?.code === "42703" ||
+                     // also catches "column X of relation Y does not exist"
+                     fullErr?.message?.includes("does not exist");
+
+  if (colMissing || !full) {
+    const { data: minimal } = await supabase
+      .from("organizations")
+      .select("id, name, organization_code, status")
+      .or(orFilter)
+      .limit(1)
+      .single();
+
+    if (minimal) return { org: minimal, columnsMissing: true };
+  }
+
+  // Last resort: grab any org (single-tenant assumption)
+  const { data: any } = await supabase
+    .from("organizations")
+    .select("id, name, organization_code, status")
+    .limit(1)
+    .single();
+
+  return { org: any ?? null, columnsMissing: true };
 }
 
+// ── Trial check ───────────────────────────────────────────────────────────────
+function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: boolean): boolean {
+  if (!org) return false;
+
+  // If trial columns exist: use them
+  if (!columnsMissing) {
+    return (
+      org.status               === "active" &&
+      org.bypass_subscription  === true     &&
+      org.subscription_required === false   &&
+      TRIAL_ACCOUNT_TYPES.includes(org.account_type as string) &&
+      !!org.pilot_ends_at &&
+      new Date(org.pilot_ends_at as string) > new Date()
+    );
+  }
+
+  // Columns missing (migration 166 not run yet):
+  // Trust that Ronyx org code means trial access during this bootstrap period.
+  // Remove this fallback after migration 166 has been confirmed to run.
+  const isRonyxOrg =
+    (org.organization_code as string)?.toUpperCase() === "RONYX" ||
+    (org.name as string)?.toLowerCase().includes("ronyx");
+
+  return isRonyxOrg && org.status === "active";
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET() {
   const supabase = createSupabaseServerClient();
 
-  const orgId = await resolveOrgId(supabase);
-  if (!orgId) {
+  const { org, columnsMissing } = await resolveRonyxOrg(supabase);
+
+  if (!org) {
     return NextResponse.json({ error: "No organization found" }, { status: 404 });
   }
 
-  // Check free-trial bypass on the org
-  const { data: orgRow } = await supabase
-    .from("organizations")
-    .select("status, account_type, bypass_subscription, subscription_required, pilot_ends_at")
-    .eq("id", orgId)
-    .single();
+  const orgId = org.id as string;
 
   // Fetch all available modules
   const { data: allModulesRaw } = await supabase
@@ -72,36 +113,40 @@ export async function GET() {
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
-  // If org is on an active free trial — unlock everything, skip subscription check
-  if (isActiveTrial(orgRow)) {
+  // Free trial → unlock everything
+  if (isActiveTrial(org, columnsMissing)) {
     const { data: allPlans } = await allPlansQuery;
+    const dbSlugs = (allModulesRaw ?? []).map((m: Record<string, unknown>) => m.slug as string);
+    const activeModules = dbSlugs.length > 0 ? dbSlugs : FREE_TRIAL_MODULES;
     const allModules = (allModulesRaw ?? []).map((m: Record<string, unknown>) => ({
-      ...m,
-      org_is_active: true,
+      ...m, org_is_active: true,
     }));
-    const dbModuleSlugs = (allModulesRaw ?? []).map((m: Record<string, unknown>) => m.slug as string);
-    const activeModules: string[] = dbModuleSlugs.length > 0
-      ? dbModuleSlugs
-      : FREE_TRIAL_MODULES;
 
     return NextResponse.json({
       subscription: {
         plan_slug:              "free_trial",
         status:                 "trialing",
-        trial_ends_at:          orgRow?.pilot_ends_at ?? null,
+        trial_ends_at:          (org as Record<string, unknown>).pilot_ends_at ?? null,
         current_period_start:   null,
-        current_period_end:     orgRow?.pilot_ends_at ?? null,
+        current_period_end:     (org as Record<string, unknown>).pilot_ends_at ?? null,
         billing_email:          null,
         stripe_customer_id:     null,
         stripe_subscription_id: null,
         plan:                   null,
         bypass_subscription:    true,
-        account_type:           "free_trial",
+        account_type:           (org as Record<string, unknown>).account_type ?? "free_trial",
       },
       activeModules,
-      allPlans:   allPlans ?? [],
+      allPlans:    allPlans ?? [],
       allModules,
       trialActive: true,
+      _debug: {
+        orgId,
+        columnsMissing,
+        org_code: org.organization_code,
+        account_type: (org as Record<string, unknown>).account_type ?? "(column missing)",
+        bypass_subscription: (org as Record<string, unknown>).bypass_subscription ?? "(column missing)",
+      },
     });
   }
 
@@ -135,19 +180,15 @@ export async function GET() {
   if (!subRow) {
     return NextResponse.json({
       subscription: {
-        plan_slug:              "starter",
-        status:                 "trialing",
-        trial_ends_at:          null,
-        current_period_start:   null,
-        current_period_end:     null,
-        billing_email:          null,
-        stripe_customer_id:     null,
-        stripe_subscription_id: null,
-        plan:                   (allPlans ?? []).find((p: Record<string, unknown>) => p.slug === "starter") ?? null,
+        plan_slug: "starter", status: "trialing",
+        trial_ends_at: null, current_period_start: null, current_period_end: null,
+        billing_email: null, stripe_customer_id: null, stripe_subscription_id: null,
+        plan: (allPlans ?? []).find((p: Record<string, unknown>) => p.slug === "starter") ?? null,
       },
       activeModules: [],
       allPlans:      allPlans ?? [],
       allModules,
+      _debug: { orgId, columnsMissing, reason: "no subscription row, trial check failed" },
     });
   }
 
