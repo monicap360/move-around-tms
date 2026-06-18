@@ -9,6 +9,24 @@ async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClie
   return data?.id ?? null;
 }
 
+// All module slugs that should be unlocked during a free trial.
+// Used as a fallback if the modules table is empty.
+const FREE_TRIAL_MODULES = [
+  "owner-operators",
+  "fast-scan",
+  "maintenance",
+  "compliance",
+  "billing",
+  "payroll",
+  "dispatch",
+  "tickets",
+  "drivers",
+  "loads",
+  "reports",
+  "hr-compliance",
+  "dispatch-guard",
+];
+
 function isActiveTrial(org: Record<string, unknown> | null): boolean {
   if (!org) return false;
   return (
@@ -56,7 +74,10 @@ export async function GET() {
       ...m,
       org_is_active: true,
     }));
-    const activeModules: string[] = (allModulesRaw ?? []).map((m: Record<string, unknown>) => m.slug as string);
+    const dbModuleSlugs = (allModulesRaw ?? []).map((m: Record<string, unknown>) => m.slug as string);
+    const activeModules: string[] = dbModuleSlugs.length > 0
+      ? dbModuleSlugs
+      : FREE_TRIAL_MODULES;
 
     return NextResponse.json({
       subscription: {
