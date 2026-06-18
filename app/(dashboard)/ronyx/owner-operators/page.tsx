@@ -111,6 +111,18 @@ type OOCompany = {
   contact_phone: string;
   contact_email: string;
   business_address: string;
+  // Structured address (migration 160)
+  company_address_line1?: string;
+  company_address_line2?: string;
+  company_city?: string;
+  company_state?: string;
+  company_zip?: string;
+  mailing_same_as_company?: boolean;
+  mailing_address_line1?: string;
+  mailing_address_line2?: string;
+  mailing_city?: string;
+  mailing_state?: string;
+  mailing_zip?: string;
   mc_number: string;
   dot_number: string;
   ein: string;
@@ -132,6 +144,8 @@ type OOCompany = {
   logo_url?: string;
   start_date?: string;
   website?: string;
+  dispatch_blocked_override?: boolean;
+  settlement_hold_override?: boolean;
 };
 
 /* ─── helpers ────────────────────────────────────────── */
@@ -1061,13 +1075,13 @@ export default function OwnerOperatorsPage() {
   const DETAIL_TABS = [
     { key:"overview",   label:"Overview"    },
     { key:"drivers",    label:"Drivers"     },
-    { key:"subs",       label:`Subcontractors${selected?.subcontractors?.length ? ` (${selected.subcontractors.length})` : ""}` },
     { key:"fleet",      label:"Fleet"       },
-    { key:"coi",        label:`Insurance / COI${coiIssues > 0 ? ` ⚠ ${coiIssues}` : ""}` },
+    { key:"coi",        label:`Insurance${coiIssues > 0 ? ` ⚠ ${coiIssues}` : ""}` },
     { key:"documents",  label:"Documents"   },
-    { key:"jobs",       label:"Project Jobs"},
+    { key:"jobs",       label:"Jobs & Tickets" },
     { key:"settlement", label:"Settlement"  },
-    { key:"compliance", label:"Compliance Monitor" },
+    { key:"compliance", label:"Compliance History" },
+    { key:"subs",       label:`Subs${selected?.subcontractors?.length ? ` (${selected.subcontractors.length})` : ""}` },
   ] as const;
 
   return (
@@ -1105,51 +1119,71 @@ export default function OwnerOperatorsPage() {
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ margin: "0 0 4px", fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
-            <div style={{ fontSize: "0.82rem", color: "#64748b", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ fontSize: "0.82rem", color: "#64748b", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               {(["mc_number","dot_number","ein"] as const).map(field => {
                 const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN" };
-                const placeholders: Record<string,string> = { mc_number:"MC-123456", dot_number:"1234567", ein:"XX-XXXXXXX" };
+                const val = selected[field]?.trim();
                 return (
                   <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-                    <strong>{labels[field]}:</strong>
+                    <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>{labels[field]}:</strong>
                     <input
-                      defaultValue={selected[field]||""}
-                      placeholder={placeholders[field]}
+                      key={selected.id+field}
+                      defaultValue={val||""}
+                      placeholder="Not on file"
                       onBlur={e => {
-                        const val = e.target.value.trim();
-                        if (val !== (selected[field]||"")) {
-                          updateSelected({ ...selected, [field]: val || null });
-                          flash(`${labels[field]} saved.`);
-                        }
+                        const v = e.target.value.trim();
+                        if (v !== (selected[field]||"")) { updateSelected({ ...selected, [field]: v || "" }); flash(`${labels[field]} saved.`); }
                       }}
                       onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                      style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", width: field==="ein"?100:90, outline:"none", padding:"1px 2px" }}
+                      style={{ border:"none", borderBottom:`1px dashed ${val?"#cbd5e1":"#fca5a5"}`, background:"transparent", fontSize:"0.82rem", color:val?"#0f172a":"#dc2626", fontWeight:val?600:400, width:field==="ein"?100:90, outline:"none", padding:"1px 2px" }}
                     />
                   </span>
                 );
               })}
-              {selected.contact_phone && <span>📞 {selected.contact_phone}</span>}
-              {selected.contact_email && <span>✉ {selected.contact_email}</span>}
-              {selected.business_address && <span>📍 {selected.business_address}</span>}
+              {selected.contact_phone && <span style={{ color:"#0f172a" }}>📞 {selected.contact_phone}</span>}
+              {selected.contact_email && <span style={{ color:"#0f172a" }}>✉ {selected.contact_email}</span>}
+              {(() => {
+                // Show structured address if available, fall back to business_address
+                const addr = [selected.company_address_line1, [selected.company_city, selected.company_state].filter(Boolean).join(", "), selected.company_zip].filter(Boolean).join(" · ") || selected.business_address;
+                if (!addr) return null;
+                return (
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:4, color:"#0f172a" }}>
+                    📍 {addr}
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(addr); flash("Address copied."); }}
+                      title="Copy address"
+                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.7rem", color:"#94a3b8", padding:"0 2px" }}>⎘</button>
+                    <a href={`https://maps.google.com/?q=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
+                      title="Open in Google Maps"
+                      style={{ color:"#1e40af", fontSize:"0.7rem", textDecoration:"none" }}>🗺</a>
+                  </span>
+                );
+              })()}
               <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-                <strong>Since:</strong>
-                <input
-                  type="date"
-                  defaultValue={selected.start_date||""}
-                  onBlur={e => { const v=e.target.value.trim(); if(v!==(selected.start_date||"")){ updateSelected({...selected,start_date:v||undefined}); flash("Start date saved."); } }}
-                  style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", width:110, outline:"none", padding:"1px 2px" }}
-                />
+                <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>Since:</strong>
+                {selected.start_date ? (
+                  <input
+                    key={selected.id+"start"}
+                    type="date"
+                    defaultValue={selected.start_date}
+                    onBlur={e => { const v=e.target.value.trim(); if(v!==selected.start_date){ updateSelected({...selected,start_date:v||undefined}); flash("Start date saved."); } }}
+                    style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", fontWeight:600, width:110, outline:"none", padding:"1px 2px" }}
+                  />
+                ) : (
+                  <span
+                    style={{ color:"#dc2626", fontSize:"0.8rem", borderBottom:"1px dashed #fca5a5", cursor:"pointer" }}
+                    onClick={e => { const inp = document.createElement("input"); inp.type="date"; (e.target as HTMLElement).replaceWith(inp); inp.focus(); inp.onblur=()=>{ if(inp.value){ updateSelected({...selected,start_date:inp.value}); flash("Start date saved."); } }; }}>
+                    Not entered
+                  </span>
+                )}
               </span>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-                <strong>Web:</strong>
-                <input
-                  defaultValue={selected.website||""}
-                  placeholder="www.company.com"
-                  onBlur={e => { const v=e.target.value.trim(); if(v!==(selected.website||"")){ updateSelected({...selected,website:v||undefined}); flash("Website saved."); } }}
-                  onKeyDown={e => { if(e.key==="Enter")(e.target as HTMLInputElement).blur(); }}
-                  style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", width:140, outline:"none", padding:"1px 2px" }}
-                />
-              </span>
+              {(selected.website?.trim()) ? (
+                <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
+                  <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>Web:</strong>
+                  <a href={selected.website.startsWith("http")?selected.website:`https://${selected.website}`} target="_blank" rel="noreferrer"
+                    style={{ color:"#1e40af", fontSize:"0.82rem" }}>{selected.website}</a>
+                </span>
+              ) : null}
             </div>
             {selected.logo_url && (
               <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ marginTop: 6, background: "none", border: "none", color: "#94a3b8", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
@@ -1469,9 +1503,9 @@ export default function OwnerOperatorsPage() {
                 <Card title="Compliance Score">
                   {[
                     { label:"Insurance",  score:insScore,       detail:`${insOK}/${insTotal} policies valid` },
-                    { label:"Drivers",    score:driversScore,   detail:`${driversOK}/${driversTotal||0} drivers compliant` },
-                    { label:"Fleet",      score:fleetScore,     detail:`${trucksOK}/${trucksTotal||0} trucks passing inspection` },
-                    { label:"Contracts",  score:contractsScore, detail:`${contractsOK}/2 documents on file (Contract, W-9)` },
+                    { label:"Drivers",    score:driversScore,   detail:driversTotal>0?`${driversOK}/${driversTotal} drivers compliant`:"No drivers added yet" },
+                    { label:"Fleet",      score:trucksTotal>0?fleetScore:0, detail:trucksTotal>0?`${trucksOK}/${trucksTotal} trucks passing inspection`:"No trucks added yet" },
+                    { label:"Contracts",  score:contractsScore, detail:`Contract: ${contract?"✓ On file":"✗ Missing"} · W-9: ${w9?"✓ On file":"✗ Missing"}` },
                   ].map(({ label, score, detail }) => (
                     <div key={label} style={{ marginBottom:12, paddingBottom:12, borderBottom:"1px solid #f1f5f9" }}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
@@ -1646,6 +1680,84 @@ export default function OwnerOperatorsPage() {
                   )}
                 </Card>
 
+                {/* ── Carrier Details ── */}
+                <Card title="Carrier Details">
+                  {/* Legal identifiers */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
+                    {([
+                      ["Legal Name",  selected.company_name],
+                      ["MC #",        selected.mc_number  || "Not on file"],
+                      ["DOT #",       selected.dot_number || "Not on file"],
+                      ["EIN / Tax ID",selected.ein        || "Not on file"],
+                    ] as [string,string][]).map(([k,v]) => (
+                      <div key={k} style={{ background:"#f8fafc", borderRadius:7, padding:"6px 10px", border:"1px solid #f1f5f9" }}>
+                        <div style={{ fontSize:"0.58rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:1 }}>{k}</div>
+                        <div style={{ fontWeight:700, fontSize:"0.8rem", color: v==="Not on file"?"#dc2626":"#0f172a" }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Company address */}
+                  <div style={{ marginBottom:12, paddingBottom:12, borderBottom:"1px solid #f1f5f9" }}>
+                    <div style={{ fontSize:"0.65rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:6 }}>Company Address</div>
+                    {(selected.company_address_line1 || selected.business_address) ? (
+                      <div style={{ fontSize:"0.82rem", color:"#0f172a", lineHeight:1.6 }}>
+                        {selected.company_address_line1 && <div>{selected.company_address_line1}</div>}
+                        {selected.company_address_line2 && <div>{selected.company_address_line2}</div>}
+                        {(selected.company_city||selected.company_state||selected.company_zip) && (
+                          <div>{[selected.company_city, selected.company_state].filter(Boolean).join(", ")} {selected.company_zip}</div>
+                        )}
+                        {!selected.company_address_line1 && selected.business_address && <div>{selected.business_address}</div>}
+                      </div>
+                    ) : (
+                      <div style={{ color:"#dc2626", fontSize:"0.8rem", fontStyle:"italic" }}>Not entered</div>
+                    )}
+                    {/* Mailing address */}
+                    <div style={{ fontSize:"0.65rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", margin:"10px 0 4px" }}>Mailing Address</div>
+                    {selected.mailing_same_as_company !== false ? (
+                      <div style={{ fontSize:"0.75rem", color:"#64748b" }}>Same as company address</div>
+                    ) : (selected.mailing_address_line1 ? (
+                      <div style={{ fontSize:"0.82rem", color:"#0f172a", lineHeight:1.6 }}>
+                        <div>{selected.mailing_address_line1}</div>
+                        {selected.mailing_address_line2 && <div>{selected.mailing_address_line2}</div>}
+                        {(selected.mailing_city||selected.mailing_state||selected.mailing_zip) && (
+                          <div>{[selected.mailing_city, selected.mailing_state].filter(Boolean).join(", ")} {selected.mailing_zip}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ color:"#dc2626", fontSize:"0.8rem", fontStyle:"italic" }}>Not entered</div>
+                    ))}
+                  </div>
+                  {/* Address action buttons */}
+                  {(() => {
+                    const addr = selected.company_address_line1
+                      ? [selected.company_address_line1, selected.company_address_line2, [selected.company_city,selected.company_state].filter(Boolean).join(", "), selected.company_zip].filter(Boolean).join(" ")
+                      : selected.business_address || "";
+                    return addr ? (
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        <a href={`https://maps.google.com/?q=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
+                          style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem" }}>🗺 Open Map</a>
+                        <button onClick={() => { navigator.clipboard.writeText(addr); flash("Address copied."); }}
+                          style={{ ...ghostBtn, fontSize:"0.72rem" }}>⎘ Copy Address</button>
+                      </div>
+                    ) : null;
+                  })()}
+                  {/* Website */}
+                  {selected.website?.trim() && (
+                    <div style={{ marginTop:10, fontSize:"0.78rem" }}>
+                      <strong style={{ color:"#94a3b8", fontSize:"0.65rem", textTransform:"uppercase" }}>Website </strong>
+                      <a href={selected.website.startsWith("http")?selected.website:`https://${selected.website}`} target="_blank" rel="noreferrer"
+                        style={{ color:"#1e40af" }}>{selected.website}</a>
+                    </div>
+                  )}
+                  {/* Started */}
+                  {selected.start_date && (
+                    <div style={{ marginTop:8, fontSize:"0.75rem", color:"#64748b" }}>
+                      <strong style={{ color:"#94a3b8", fontSize:"0.65rem", textTransform:"uppercase" }}>Carrier Since </strong>
+                      {new Date(selected.start_date+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+                    </div>
+                  )}
+                </Card>
+
                 {/* ── #8 Contact Center ── */}
                 <Card title="Contact Center">
                   <div style={{ marginBottom:10 }}>
@@ -1662,10 +1774,48 @@ export default function OwnerOperatorsPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:10 }}>
                     {selected.contact_phone && <a href={`tel:${selected.contact_phone}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Called carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...primaryBtn, textDecoration:"none", fontSize:"0.75rem" }}>📞 Call</a>}
                     {selected.contact_email && <a href={`mailto:${selected.contact_email}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Emailed carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>✉ Email</a>}
                     {selected.contact_phone && <a href={`sms:${selected.contact_phone}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Texted carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>💬 Text</a>}
+                    <button onClick={()=>{
+                      const note=prompt("Log call notes (optional):")||"Called carrier";
+                      const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Call Logged",detail:note};
+                      updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]});
+                      flash("Call logged.");
+                    }} style={{ ...ghostBtn, fontSize:"0.75rem" }}>📋 Log Call</button>
+                  </div>
+                  {/* Office action buttons */}
+                  <div style={{ borderTop:"1px solid #f1f5f9", paddingTop:10, display:"flex", flexDirection:"column", gap:6 }}>
+                    <div style={{ fontSize:"0.62rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:2 }}>Quick Actions</div>
+                    {!w9 && selected.contact_email && (
+                      <a href={`mailto:${selected.contact_email}?subject=${encodeURIComponent("W-9 Required — "+selected.company_name)}&body=${encodeURIComponent("Hi "+selected.contact_name+",\n\nWe need a completed W-9 form on file before we can process payment. Please complete and return at your earliest convenience.\n\nThank you,\nRonyx Logistics Operations")}`}
+                        style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem", display:"block", textAlign:"center" }}>📄 Request W-9</a>
+                    )}
+                    {(!autoIns||!cargoIns) && (selected.contact_email||selected.insurance_agent_email) && (
+                      <a href={`mailto:${selected.insurance_agent_email||selected.contact_email}?subject=${encodeURIComponent("COI Required — "+selected.company_name)}&body=${encodeURIComponent("Please provide an updated Certificate of Insurance (COI) for "+selected.company_name+". Insurance is required to maintain dispatch eligibility.\n\nThank you,\nRonyx Logistics Operations")}`}
+                        style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem", display:"block", textAlign:"center" }}>🛡 Request COI</a>
+                    )}
+                    <button onClick={()=>{
+                      const isBlocked = selected.dispatch_blocked_override;
+                      const note = isBlocked ? "Dispatch block removed" : (prompt("Reason for blocking dispatch:")||"Blocked by office");
+                      if (!isBlocked && !note) return;
+                      const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:isBlocked?"Dispatch Unblocked":"Dispatch Blocked",detail:note};
+                      updateSelected({...selected,dispatch_blocked_override:!isBlocked,changes_log:[change,...(selected.changes_log||[])]});
+                      flash(isBlocked?"Dispatch block removed.":"Dispatch blocked.");
+                    }} style={{ ...ghostBtn, fontSize:"0.72rem", color: selected.dispatch_blocked_override?"#15803d":"#dc2626", borderColor: selected.dispatch_blocked_override?"#86efac":"#fca5a5", background: selected.dispatch_blocked_override?"#f0fdf4":"#fff1f2" }}>
+                      {selected.dispatch_blocked_override ? "✓ Unblock Dispatch" : "🚫 Block Dispatch"}
+                    </button>
+                    <button onClick={()=>{
+                      const isHeld = selected.settlement_hold_override;
+                      const note = isHeld ? "Settlement hold released" : (prompt("Reason for hold:")||"Hold placed by office");
+                      if (!isHeld && !note) return;
+                      const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:isHeld?"Settlement Released":"Settlement Hold",detail:note};
+                      updateSelected({...selected,settlement_hold_override:!isHeld,changes_log:[change,...(selected.changes_log||[])]});
+                      flash(isHeld?"Settlement hold released.":"Settlement placed on hold.");
+                    }} style={{ ...ghostBtn, fontSize:"0.72rem", color: selected.settlement_hold_override?"#15803d":"#d97706", borderColor: selected.settlement_hold_override?"#86efac":"#fde68a", background: selected.settlement_hold_override?"#f0fdf4":"#fffbeb" }}>
+                      {selected.settlement_hold_override ? "✓ Release Settlement Hold" : "⏸ Put Settlement on Hold"}
+                    </button>
                   </div>
                   {selected.insurance_agent_name && (
                     <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #f1f5f9" }}>
