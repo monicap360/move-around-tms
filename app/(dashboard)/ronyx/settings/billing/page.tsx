@@ -53,6 +53,70 @@ type ModuleRow = {
   org_is_active: boolean;
 };
 
+type ManualPaymentStatus =
+  | "not_required"
+  | "pending_manual_payment"
+  | "payment_submitted"
+  | "payment_received"
+  | "payment_verified"
+  | "payment_rejected"
+  | "past_due";
+
+type ManualPaymentState = {
+  manual_payment_status: ManualPaymentStatus;
+  manual_payment_method: string | null;
+  manual_payment_reference: string | null;
+  manual_payment_amount: number | null;
+  manual_payment_submitted_at: string | null;
+  manual_payment_confirmed_at: string | null;
+  logs: Array<Record<string, unknown>>;
+};
+
+const PAYMENT_METHODS = [
+  {
+    key:   "zelle",
+    label: "Zelle",
+    icon:  "💜",
+    detail: "409-392-9626",
+    copy:  "Send payment to 409-392-9626 via Zelle.",
+    gradient: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+  },
+  {
+    key:   "cash_app",
+    label: "Cash App",
+    icon:  "💚",
+    detail: "$GalvestonMonica",
+    copy:  "Send to $GalvestonMonica on Cash App.",
+    gradient: "linear-gradient(135deg, #15803d, #16a34a)",
+  },
+  {
+    key:   "cash",
+    label: "Cash",
+    icon:  "💵",
+    detail: "By approval only",
+    copy:  "Accepted by approval only. Please request a receipt at time of payment.",
+    gradient: "linear-gradient(135deg, #92400e, #b45309)",
+  },
+  {
+    key:   "check",
+    label: "Check",
+    icon:  "📄",
+    detail: "See invoice for payee name",
+    copy:  "Make checks payable to the approved business name listed on your invoice.",
+    gradient: "linear-gradient(135deg, #1e40af, #2563eb)",
+  },
+] as const;
+
+const PAYMENT_STATUS_LABELS: Record<ManualPaymentStatus, { label: string; bg: string; color: string }> = {
+  not_required:          { label: "Not Required",       bg: "#f1f5f9", color: "#64748b" },
+  pending_manual_payment:{ label: "Pending Payment",    bg: "#fef3c7", color: "#b45309" },
+  payment_submitted:     { label: "Payment Submitted",  bg: "#dbeafe", color: "#1e40af" },
+  payment_received:      { label: "Payment Received",   bg: "#d1fae5", color: "#065f46" },
+  payment_verified:      { label: "Payment Verified ✓", bg: "#dcfce7", color: "#15803d" },
+  payment_rejected:      { label: "Payment Rejected",   bg: "#fee2e2", color: "#dc2626" },
+  past_due:              { label: "Past Due",           bg: "#fef2f2", color: "#dc2626" },
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string | null): string {
@@ -253,6 +317,15 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Manual payment state
+  const [manualPayment, setManualPayment] = useState<ManualPaymentState | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [payAmount, setPayAmount]     = useState("");
+  const [payReference, setPayReference] = useState("");
+  const [payNotes, setPayNotes]       = useState("");
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [payMsg, setPayMsg]           = useState<{ text: string; ok: boolean } | null>(null);
+
   useEffect(() => {
     fetch("/api/ronyx/subscription")
       .then((r) => r.json())
@@ -264,7 +337,54 @@ export default function BillingPage() {
       })
       .catch(() => setError("Failed to load subscription data"))
       .finally(() => setLoading(false));
+
+    fetch("/api/ronyx/manual-payment")
+      .then((r) => r.json())
+      .then((d) => setManualPayment(d))
+      .catch(() => {/* payment fields not migrated yet — silent */});
   }, []);
+
+  async function handleSubmitPayment() {
+    if (!selectedMethod) return;
+    setPaySubmitting(true);
+    setPayMsg(null);
+    try {
+      const res  = await fetch("/api/ronyx/manual-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action:    "submit",
+          method:    selectedMethod,
+          amount:    payAmount ? Number(payAmount) : undefined,
+          reference: payReference || undefined,
+          notes:     payNotes || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setPayMsg({ text: "Payment marked as submitted. We will review and confirm shortly.", ok: true });
+        setManualPayment(prev => prev ? { ...prev, manual_payment_status: "payment_submitted", manual_payment_method: selectedMethod } : prev);
+      } else {
+        setPayMsg({ text: json.error ?? "Submission failed", ok: false });
+      }
+    } catch {
+      setPayMsg({ text: "Network error — please try again", ok: false });
+    } finally {
+      setPaySubmitting(false);
+    }
+  }
+
+  async function handleAdminAction(action: "verify" | "reject" | "reset") {
+    const res  = await fetch("/api/ronyx/manual-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    const json = await res.json();
+    if (res.ok && json.manual_payment_status) {
+      setManualPayment(prev => prev ? { ...prev, manual_payment_status: json.manual_payment_status } : prev);
+    }
+  }
 
   const planSlug = subscription?.plan_slug ?? "starter";
   const status   = subscription?.status    ?? "trialing";
@@ -630,6 +750,181 @@ export default function BillingPage() {
               </div>
             )}
           </div>
+
+          {/* ── Manual Payment Options ──────────────────── */}
+          <Card style={{ border: "1px solid #c4b5fd", padding: 0, overflow: "hidden" }}>
+            {/* Header */}
+            <div style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4f46e5 100%)", padding: "20px 28px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <span style={{ fontSize: "1.4rem" }}>💸</span>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: "1.05rem", color: "#ffffff" }}>Manual Payment Options</div>
+                  <div style={{ fontSize: "0.77rem", color: "rgba(255,255,255,0.65)", marginTop: 2 }}>
+                    For onboarding deposits, setup fees, approved invoices, or enterprise billing.
+                  </div>
+                </div>
+                {manualPayment?.manual_payment_status && (
+                  <span style={{ marginLeft: "auto", background: PAYMENT_STATUS_LABELS[manualPayment.manual_payment_status].bg, color: PAYMENT_STATUS_LABELS[manualPayment.manual_payment_status].color, borderRadius: 20, padding: "4px 14px", fontSize: "0.75rem", fontWeight: 800 }}>
+                    {PAYMENT_STATUS_LABELS[manualPayment.manual_payment_status].label}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+
+              {/* Description */}
+              <div style={{ fontSize: "0.83rem", color: "#334155", lineHeight: 1.6 }}>
+                We accept <strong>Zelle</strong>, <strong>Cash App</strong>, <strong>cash</strong>, and <strong>business check</strong> payments for approved onboarding deposits, setup fees, invoices, and enterprise accounts.
+              </div>
+
+              {/* Payment method cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+                {PAYMENT_METHODS.map((pm) => {
+                  const isSelected = selectedMethod === pm.key;
+                  return (
+                    <button
+                      key={pm.key}
+                      onClick={() => setSelectedMethod(isSelected ? null : pm.key)}
+                      style={{
+                        background: isSelected ? pm.gradient : "#f8fafc",
+                        border: isSelected ? "2px solid transparent" : "1px solid #e2e8f0",
+                        borderRadius: 12,
+                        padding: "16px 18px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        transition: "all 150ms",
+                        boxShadow: isSelected ? "0 4px 14px rgba(0,0,0,0.15)" : "none",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <span style={{ fontSize: "1.4rem" }}>{pm.icon}</span>
+                        <span style={{ fontWeight: 800, fontSize: "0.9rem", color: isSelected ? "#ffffff" : "#0f172a" }}>
+                          {pm.label}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: isSelected ? "rgba(255,255,255,0.9)" : "#1e40af", marginBottom: 4 }}>
+                        {pm.detail}
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: isSelected ? "rgba(255,255,255,0.7)" : "#64748b", lineHeight: 1.4 }}>
+                        {pm.copy}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Expanded form when method selected */}
+              {selectedMethod && (
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "20px 22px" }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a", marginBottom: 14 }}>
+                    {PAYMENT_METHODS.find(p => p.key === selectedMethod)?.icon}{" "}
+                    Pay with {PAYMENT_METHODS.find(p => p.key === selectedMethod)?.label}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", display: "block", marginBottom: 4 }}>Amount (optional)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 500"
+                        value={payAmount}
+                        onChange={e => setPayAmount(e.target.value)}
+                        style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.85rem", boxSizing: "border-box" as const }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", display: "block", marginBottom: 4 }}>Reference / Invoice # / Memo (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Invoice # or transaction memo"
+                        value={payReference}
+                        onChange={e => setPayReference(e.target.value)}
+                        style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.85rem", boxSizing: "border-box" as const }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", display: "block", marginBottom: 4 }}>Additional Notes (optional)</label>
+                      <textarea
+                        placeholder="Company name, contact info, or other details"
+                        value={payNotes}
+                        onChange={e => setPayNotes(e.target.value)}
+                        rows={2}
+                        style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.85rem", resize: "vertical", boxSizing: "border-box" as const }}
+                      />
+                    </div>
+                    <button
+                      onClick={handleSubmitPayment}
+                      disabled={paySubmitting}
+                      style={{ padding: "11px 24px", background: paySubmitting ? "#94a3b8" : "#1e40af", color: "#fff", border: "none", borderRadius: 9, fontWeight: 800, fontSize: "0.88rem", cursor: paySubmitting ? "not-allowed" : "pointer" }}
+                    >
+                      {paySubmitting ? "Submitting…" : "✓ I Sent Payment — Mark as Submitted"}
+                    </button>
+                    {payMsg && (
+                      <div style={{ padding: "10px 14px", background: payMsg.ok ? "#dcfce7" : "#fee2e2", color: payMsg.ok ? "#15803d" : "#dc2626", borderRadius: 8, fontSize: "0.82rem", fontWeight: 600 }}>
+                        {payMsg.text}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Important notice */}
+              <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 10, padding: "14px 16px", fontSize: "0.8rem", color: "#713f12", lineHeight: 1.6 }}>
+                <strong>Important:</strong> Please include your company name and invoice number in the payment note when available.
+                Manual payments must be reviewed and confirmed before account activation, upgrades, or continued service access are completed.
+              </div>
+
+              {/* Admin verify panel — shown when payment submitted */}
+              {manualPayment?.manual_payment_status === "payment_submitted" && (
+                <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "18px 20px" }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0369a1", marginBottom: 12 }}>
+                    🔐 Admin — Payment Verification
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: "0.82rem", color: "#334155", marginBottom: 14 }}>
+                    <div><strong>Method:</strong> {manualPayment.manual_payment_method ?? "—"}</div>
+                    <div><strong>Amount:</strong> {manualPayment.manual_payment_amount ? `$${manualPayment.manual_payment_amount.toLocaleString()}` : "Not specified"}</div>
+                    <div><strong>Reference:</strong> {manualPayment.manual_payment_reference ?? "—"}</div>
+                    <div><strong>Submitted:</strong> {manualPayment.manual_payment_submitted_at ? new Date(manualPayment.manual_payment_submitted_at).toLocaleString() : "—"}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      onClick={() => handleAdminAction("verify")}
+                      style={{ padding: "9px 20px", background: "#15803d", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+                    >
+                      ✓ Verify Payment
+                    </button>
+                    <button
+                      onClick={() => handleAdminAction("reject")}
+                      style={{ padding: "9px 20px", background: "transparent", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 8, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+                    >
+                      ✗ Reject
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {manualPayment?.manual_payment_status === "payment_verified" && (
+                <div style={{ background: "#dcfce7", border: "1px solid #86efac", borderRadius: 10, padding: "14px 18px", fontSize: "0.85rem", color: "#15803d", fontWeight: 700 }}>
+                  ✓ Payment verified on {manualPayment.manual_payment_confirmed_at ? new Date(manualPayment.manual_payment_confirmed_at).toLocaleDateString() : "—"}.
+                  Access has been activated.
+                </div>
+              )}
+
+              {manualPayment?.manual_payment_status === "payment_rejected" && (
+                <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "14px 18px" }}>
+                  <div style={{ fontSize: "0.85rem", color: "#dc2626", fontWeight: 700, marginBottom: 8 }}>
+                    Payment was not confirmed. Please try again or contact support.
+                  </div>
+                  <button
+                    onClick={() => handleAdminAction("reset")}
+                    style={{ fontSize: "0.78rem", color: "#1e40af", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                  >
+                    Re-submit payment
+                  </button>
+                </div>
+              )}
+            </div>
+          </Card>
 
           {/* ── Billing History ──────────────────────────── */}
           <Card>
