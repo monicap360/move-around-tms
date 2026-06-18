@@ -201,7 +201,7 @@ export default function CustomerRequirementsPage() {
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, fontSize: 12, color: "#64748b" }}>
         <Link href="/ronyx/compliance/customer-dispatch-requirements" style={{ color: "#1d4ed8", fontWeight: 600 }}>
-          ← Customer Dispatch Requirements
+          ← Clearance Check™
         </Link>
         <span>/</span>
         <span style={{ color: "#0f172a", fontWeight: 700 }}>{customer}</span>
@@ -211,7 +211,7 @@ export default function CustomerRequirementsPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 22, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: "1.3rem", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.4px" }}>{customer}</div>
-          <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>Customer Dispatch Requirement Profile</div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>Clearance Check™ — Requirements Profile</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button

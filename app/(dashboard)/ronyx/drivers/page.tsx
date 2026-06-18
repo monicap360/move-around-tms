@@ -1526,7 +1526,7 @@ export default function DriversPage() {
       </section>
 
       {/* ── Tab switcher ── */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e2e8f0", margin: "0 0 0 0", padding: "0 var(--page-gutter, 32px)" }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e2e8f0", margin: "0 0 0 0", padding: "0" }}>
         {(["roster", "backup"] as const).map(tab => (
           <button
             key={tab}
@@ -1551,7 +1551,7 @@ export default function DriversPage() {
 
       {/* ── Backup Data tab ── */}
       {activeTab === "backup" && (
-        <section style={{ padding: "24px var(--page-gutter, 32px)" }}>
+        <section style={{ padding: "24px 0" }}>
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
             <button
@@ -1701,7 +1701,7 @@ export default function DriversPage() {
       )}
 
       {activeTab === "roster" && (
-      <section style={{ padding: "0 var(--page-gutter, 32px) 32px" }}>
+      <section style={{ padding: "0 0 32px" }}>
 
         {/* ── Compliance alerts — full width ── */}
         {complianceAlerts.length > 0 && (

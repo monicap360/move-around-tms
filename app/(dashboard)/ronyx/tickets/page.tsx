@@ -186,17 +186,17 @@ function parseRonyxTicket(rawText: string, ocrConf: number): RonyxFields {
     return "";
   }
 
-  const ticket_number       = grab(["TICKET #", "TICKET#", "TICKET NUMBER", "TICKET NO"]);
-  const truck_number        = grab(["TRUCK #", "TRUCK#", "TRUCK NUMBER", "TRUCK NO"]);
+  const ticket_number       = grab(["TICKET #", "TICKET#", "TICKET NUMBER", "TICKET NO", "LOAD TICKET"]);
+  const truck_number        = grab(["TRUCK #", "TRUCK#", "TRUCK NUMBER", "TRUCK NO", "UNIT #", "UNIT NO", "VEHICLE #"]);
   const ticket_date         = grab(["DATE"]);
   const truck_type          = checkbox(["DUMP TRUCK", "TRAILER TRUCK", "OTHER"]);
   const shift_type          = checkbox(["DAY SHIFT", "NIGHT SHIFT"]);
-  const loads               = grab(["LOADS"]);
-  const material            = grab(["MATERIAL"]);
+  const loads               = grab(["LOADS", "# LOADS", "QTY", "QUANTITY", "NO LOADS"]);
+  const material            = grab(["MATERIAL", "PRODUCT", "MATERIAL TYPE", "DESCRIPTION", "LOAD TYPE"]);
   const company_name_of_truck = grab(["COMPANY NAME OF TRUCK", "COMPANY NAME"]);
-  const customer            = grab(["CUSTOMER"]);
-  const location            = grab(["LOCATION"]);
-  const driver_printed_name = grab(["DRIVER PRINTED NAME", "DRIVER PRINT", "DRIVER NAME"]);
+  const customer            = grab(["CUSTOMER", "BILL TO", "CONTRACTOR", "OWNER", "ORDERED BY"]);
+  const location            = grab(["LOCATION", "JOB SITE", "JOB #", "PROJECT", "PIT", "QUARRY", "FROM", "DELIVER TO", "WORK SITE", "SITE"]);
+  const driver_printed_name = grab(["DRIVER PRINTED NAME", "DRIVER PRINT", "DRIVER NAME", "DRIVER", "OPERATOR"]);
   const authorized_person   = grab(["AUTHORIZED PERSON", "AUTHORIZED BY"]);
   const start_time          = grab(["START TIME", "START"]);
   const end_time            = grab(["END TIME", "END"]);
@@ -953,14 +953,13 @@ export default function TicketsPage() {
     setOriginalUploadId(null);
     setRonyxImagePreview(URL.createObjectURL(file));
     try {
-      // ── Step 1: Upload original file to Supabase Storage BEFORE any OCR ──
+      // ── Step 1: Upload via fast-scan/upload (creates fast_scan_documents record) ──
       const uploadForm = new FormData();
       uploadForm.append("file", file);
-      uploadForm.append("upload_source", "fast_scan");
-      uploadForm.append("entity_type", "ticket");
+      uploadForm.append("scan_type", "ticket");
       if (batchId) uploadForm.append("batch_id", batchId);
 
-      const uploadRes = await fetch("/api/ronyx/upload-original", {
+      const uploadRes = await fetch("/api/ronyx/fast-scan/upload", {
         method: "POST",
         body: uploadForm,
       });
@@ -974,13 +973,40 @@ export default function TicketsPage() {
       }
 
       const uploadResult = await uploadRes.json();
-      setOriginalUploadId(uploadResult.upload_id || null);
-      // ─────────────────────────────────────────────────────────────────────
+      setRonyxOcrProgress(20);
 
+      // ── Step 2: Claude OCR via /process (when ANTHROPIC_API_KEY is set + image file) ──
+      if (uploadResult.ocr_ready && uploadResult.next_step === "ocr" && uploadResult.document_id) {
+        setRonyxOcrProgress(40);
+        try {
+          const processRes = await fetch("/api/ronyx/fast-scan/process", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document_id: uploadResult.document_id }),
+          });
+          const processResult = await processRes.json();
+          setRonyxOcrProgress(100);
+          if (!processResult.error && (processResult.ticket_id || processResult.ticket_number)) {
+            setRonyxResult({
+              ticket_id:     processResult.ticket_id,
+              missing_fields: processResult.missing_fields || [],
+              qr_url:        processResult.qr_url,
+              message:       (processResult.missing_fields?.length ?? 0) > 0
+                ? `Ticket extracted by Claude OCR with ${processResult.missing_fields.length} flagged field(s). Routed to Reconciliation.`
+                : "Ticket extracted by Claude OCR. Routed to Reconciliation.",
+            });
+            setRonyxStep("done");
+            showToast("✓ Claude OCR — ticket routed to Reconciliation");
+            return;
+          }
+        } catch { /* Claude path failed — fall through to Tesseract */ }
+      }
+
+      // ── Step 3: Tesseract fallback (no API key, PDF, or Claude failed) ──
       const { createWorker } = await import("tesseract.js");
       const worker = await createWorker("eng", 1, {
         logger: (m: { status: string; progress: number }) => {
-          if (m.status === "recognizing text") setRonyxOcrProgress(Math.round(m.progress * 100));
+          if (m.status === "recognizing text") setRonyxOcrProgress(20 + Math.round(m.progress * 70));
         },
       });
       const { data } = await worker.recognize(file);
@@ -990,7 +1016,6 @@ export default function TicketsPage() {
       const vendor = detectTicketVendor(data.text);
 
       if (vendor === "martin_marietta") {
-        // Martin Marietta ticket — populate the manual scan fields and show review
         const mm = parseMartinMariettaTicket(data.text, data.confidence);
         setScanTicketNo(mm.ticket_number);
         setScanDate(mm.ticket_date || new Date().toISOString().slice(0, 10));
@@ -1278,7 +1303,7 @@ export default function TicketsPage() {
           <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>MoveAround TMS</p>
           <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>Ticket Command Center</h1>
           <p style={{ margin: "8px 0 0", color: "#94a3b8", fontSize: "0.83rem" }}>
-            <span style={{ color: "#4ade80", fontWeight: 700 }}>Fast Scan™</span> · Powered by Ronyx &nbsp;·&nbsp; Scan · Match · Reconcile · Pay · Bill
+            <span style={{ color: "#4ade80", fontWeight: 700 }}>Fast Scan™</span> &nbsp;·&nbsp; Scan · Match · Reconcile · Pay · Bill
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -1437,7 +1462,7 @@ export default function TicketsPage() {
                   : scanType === "martin_marietta_ticket" ? "Drop Martin Marietta Ticket Here — OCR will extract weights, PO, truck, and material"
                   : "Drop Ticket Here to Fast Scan"}
               </h3>
-              <p style={{ margin: "0 0 4px", color: "#4ade80", fontWeight: 700, fontSize: "0.72rem" }}>Fast Scan™ · Powered by Ronyx</p>
+              <p style={{ margin: "0 0 4px", color: "#4ade80", fontWeight: 700, fontSize: "0.72rem" }}>Fast Scan™</p>
               <p style={{ margin: "0 0 20px", color: "#64748b", fontSize: "0.8rem" }}>
                 JPG · PNG · PDF · HEIC · Phone photos supported
               </p>

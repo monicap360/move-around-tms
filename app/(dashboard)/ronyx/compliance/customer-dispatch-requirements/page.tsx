@@ -237,10 +237,10 @@ export default function CustomerDispatchRequirementsPage() {
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: "1.45rem", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.5px" }}>
-          Customer Dispatch Requirements™
+          Clearance Check™
         </div>
         <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-          AI-guided customer, driver, truck, owner operator, COI, insurance, and document rules checked before every dispatch.
+          Customer, driver, truck, owner operator, COI, insurance, and document requirements checked before dispatch.
         </div>
       </div>
 
@@ -248,10 +248,10 @@ export default function CustomerDispatchRequirementsPage() {
       <div style={{ border: "1px solid #bfdbfe", borderRadius: 14, background: "linear-gradient(135deg,#eff6ff 0%,#f0f9ff 100%)", padding: "18px 22px", marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>AI Requirement Guard</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>AI Clearance Check</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#1e3a8a", marginBottom: 6 }}>Today's Focus</div>
             <div style={{ fontSize: 13, color: "#1e40af" }}>
-              Check customer-specific requirements before dispatch so no driver, truck, or owner operator is released with missing documents.
+              Checks customer-specific requirements before release so no driver, truck, or owner operator is dispatched with missing documents.
             </div>
             {expiringOverrides > 0 && (
               <div style={{ marginTop: 10, fontSize: 12, color: "#92400e", fontWeight: 600 }}>

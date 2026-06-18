@@ -24,8 +24,15 @@ export type OcrFields = {
   extraction_confidence:  number;
 };
 
-const OCR_PROMPT = `You are an OCR assistant for a transportation management system (dump truck / heavy haul).
+const OCR_PROMPT = `You are an OCR assistant for a transportation management system (dump truck / aggregate hauling).
 Extract ALL visible data from this field ticket image.
+
+IMPORTANT for aggregate/dump truck tickets:
+- "location" means: job site name, pit name, quarry name, project name, delivery address, or any text near labels like "Job Site", "Location", "Project", "Pit", "Quarry", "From", "To", "Deliver To", "Job #", "Work Site", "Site". Use whatever location-like text appears — it does NOT need to be a formatted street address.
+- "customer" means: the company or person who ordered the haul — look near "Customer", "Bill To", "Owner", "Contractor", "Ordered By".
+- "material" means: what was hauled — look near "Material", "Product", "Load", "Type", "Description", e.g. "Dirt", "Gravel", "Sand", "Asphalt", "Base", "Limestone", "Concrete".
+- "loads" means: number of loads hauled — look for a number near "Loads", "Qty", "Quantity", "#".
+- If a field label is visible but the value is blank or illegible, return null for that field — do not guess.
 
 Return ONLY a valid JSON object with these exact fields (use null for anything not found):
 {
@@ -35,18 +42,18 @@ Return ONLY a valid JSON object with these exact fields (use null for anything n
   "truck_type": "string (e.g. 'End Dump', 'Belly Dump', 'Water Truck')",
   "shift_type": "string (e.g. 'Day', 'Night')",
   "loads": number or null,
-  "material": "string (e.g. 'Dirt', 'Gravel', 'Asphalt')",
-  "company_name_of_truck": "string",
-  "customer": "string (company hiring the truck)",
-  "location": "string (job site / address)",
+  "material": "string (e.g. 'Dirt', 'Gravel', 'Asphalt', 'Base')",
+  "company_name_of_truck": "string (trucking company name on the truck)",
+  "customer": "string (company or person who ordered the haul)",
+  "location": "string (job site, pit, quarry, project name, or delivery address — any location identifier)",
   "driver_printed_name": "string",
-  "authorized_person": "string (supervisor who signed)",
+  "authorized_person": "string (supervisor or authorized person who signed)",
   "signature_present": true or false,
   "start_time": "HH:MM or null",
   "end_time": "HH:MM or null",
   "total_hours": number or null,
   "copy_color": "string (e.g. 'White', 'Yellow', 'Pink')",
-  "raw_ocr_text": "all visible text concatenated",
+  "raw_ocr_text": "all visible text concatenated in reading order",
   "ocr_confidence": number 0-100,
   "extraction_confidence": number 0-100
 }

@@ -34,23 +34,31 @@ type RonyxPayload = {
 type ValidationResult = { missing_fields: string[]; exception_flags: string[] };
 
 function validateRonyx(f: RonyxPayload): ValidationResult {
-  const mf: string[] = [];
-  const ef: string[] = [];
+  const mf: string[] = [];  // missing fields (warnings — ticket still created)
+  const ef: string[] = [];  // exception flags (hard errors — need reconciliation)
 
-  if (!f.ticket_number?.trim())       { mf.push("ticket_number");  ef.push("MISSING_TICKET_NUMBER"); }
-  if (!f.truck_number?.trim())        { mf.push("truck_number");   ef.push("MISSING_TRUCK_NUMBER"); }
-  if (!f.ticket_date)                 { mf.push("ticket_date"); }
-  if (!f.customer?.trim())            { mf.push("customer");       ef.push("MISSING_CUSTOMER_LOCATION"); }
-  if (!f.location?.trim())            { mf.push("location");       ef.push("MISSING_CUSTOMER_LOCATION"); }
+  // Hard required: ticket cannot be matched or paid without these
+  if (!f.ticket_number?.trim())       { mf.push("ticket_number");       ef.push("MISSING_TICKET_NUMBER"); }
+  if (!f.truck_number?.trim())        { mf.push("truck_number");        ef.push("MISSING_TRUCK_NUMBER"); }
   if (!f.driver_printed_name?.trim()) { mf.push("driver_printed_name"); ef.push("MISSING_DRIVER_NAME"); }
-  if (!f.authorized_person?.trim())   { mf.push("authorized_person");   ef.push("MISSING_AUTHORIZED_PERSON"); }
-  if (!f.signature_present)           { mf.push("signature_present");   ef.push("MISSING_SIGNATURE"); }
-  if (!f.start_time?.trim())          { mf.push("start_time");    ef.push("MISSING_TIME"); }
-  if (!f.end_time?.trim())            { mf.push("end_time");      ef.push("MISSING_TIME"); }
-  if (!f.total_hours && f.total_hours !== 0) { mf.push("total_hours"); ef.push("MISSING_TOTAL_HOURS"); }
-  if (!f.material?.trim() && !f.loads)      { mf.push("material");     ef.push("MISSING_REQUIRED_TICKET_FIELD"); }
 
-  if (mf.length > 0 && !ef.includes("MISSING_REQUIRED_TICKET_FIELD"))
+  // Soft required: important but ticket can still be routed for reconciliation without them
+  if (!f.ticket_date)                                 mf.push("ticket_date");
+  if (!f.customer?.trim())                            mf.push("customer");
+  if (!f.authorized_person?.trim())                   mf.push("authorized_person");
+  if (!f.signature_present)                           mf.push("signature_present");
+  if (!f.start_time?.trim())                          mf.push("start_time");
+  if (!f.end_time?.trim())                            mf.push("end_time");
+  if (!f.total_hours && f.total_hours !== 0)          mf.push("total_hours");
+
+  // Location: warning only — aggregate tickets often use pit/quarry/project names
+  // which may not look like a traditional address. Do not hard-flag.
+  if (!f.location?.trim())                            mf.push("location");
+
+  // Material OR loads: at least one must be present for a valid aggregate ticket
+  if (!f.material?.trim() && !f.loads)               { mf.push("material"); ef.push("MISSING_MATERIAL_OR_LOADS"); }
+
+  if (ef.length > 0 && !ef.includes("MISSING_REQUIRED_TICKET_FIELD"))
     ef.push("MISSING_REQUIRED_TICKET_FIELD");
 
   return { missing_fields: [...new Set(mf)], exception_flags: [...new Set(ef)] };

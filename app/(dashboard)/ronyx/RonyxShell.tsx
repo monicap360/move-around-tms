@@ -65,7 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Reassign Truck",         href: "/ronyx/maintenance/breakdowns",      icon: "🔄", color: "#ea580c" },
       ]},
       { label: "Tickets",               href: "/ronyx/tickets?tab=all",            icon: "🎫", color: "#d97706", children: TICKETS_CHILDREN },
-      { label: "Fast Scan™",            href: "/ronyx/tickets?tab=fastscan",       icon: "⚡", color: "#16a34a", subtitle: "Powered by Ronyx" },
+      { label: "Fast Scan™",            href: "/ronyx/tickets?tab=fastscan",       icon: "⚡", color: "#16a34a", subtitle: "Powered by MoveAround" },
       { label: "Ticket Reconciliation", href: "/ronyx/tickets?tab=reconciliation", icon: "🔍", color: "#4f46e5" },
       { label: "Projects / Jobs",       href: "/ronyx/loads",                      icon: "📁", color: "#0d9488" },
     ],
@@ -111,7 +111,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "HR / DOT Compliance", href: "/ronyx/compliance",  icon: "🛡️", color: "#dc2626", children: [
         { label: "Compliance Center",       href: "/ronyx/compliance",                             icon: "🛡️", color: "#dc2626" },
-        { label: "Dispatch Requirements",   href: "/ronyx/compliance/customer-dispatch-requirements",                            icon: "📋", color: "#1e40af" },
+        { label: "Clearance Check™",         href: "/ronyx/compliance/customer-dispatch-requirements",                            icon: "✅", color: "#1e40af" },
         { label: "Overrides",               href: "/ronyx/compliance/overrides",                                               icon: "🔓", color: "#ea580c" },
         { label: "Expired Insurance",       href: "/ronyx/compliance/expired-insurance",           icon: "🔴", color: "#dc2626" },
         { label: "Owner Operator COIs",     href: "/ronyx/owner-operators/coi-matrix",             icon: "📋", color: "#1e40af" },

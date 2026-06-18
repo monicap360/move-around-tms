@@ -20,7 +20,7 @@ const SECTIONS = [
   { id: "users",         label: "Users & Staff",                   icon: "👥", color: "#0891b2", href: "/ronyx/settings/users",                desc: "Add staff, assign roles, set department, manage access and on-shift status." },
   { id: "roles",         label: "Roles & Permissions",             icon: "🔐", color: "#7c3aed", href: "/ronyx/settings/roles",                desc: "Permission matrix for each role — what staff can view, edit, approve, or delete." },
   { id: "rules",         label: "System Rules",                    icon: "⚡", color: "#1e40af", href: "/ronyx/settings/system-rules",         desc: "Dispatch, compliance, fleet, payroll, billing, and Fast Scan rules." },
-  { id: "requirements",  label: "Customer Dispatch Requirements",   icon: "📋", color: "#0891b2", href: "/ronyx/compliance/customer-dispatch-requirements", desc: "Per-customer rulebook — what each customer requires before dispatch." },
+  { id: "requirements",  label: "Clearance Check™",                 icon: "✅", color: "#0891b2", href: "/ronyx/compliance/customer-dispatch-requirements", desc: "Per-customer rulebook — customer, driver, truck, COI, and document requirements checked before dispatch." },
   { id: "compliance",    label: "Compliance Defaults",             icon: "🛡️", color: "#dc2626", href: "/ronyx/settings/system-rules#compliance", desc: "Expiration warning windows, auto-block rules, auto-notify settings." },
   { id: "payroll",       label: "Payroll / Settlement Rules",       icon: "💰", color: "#16a34a", href: "/ronyx/settings/system-rules#payroll",  desc: "Payroll week, ticket proof requirements, loan deductions, settlement review." },
   { id: "documents",     label: "Document Types & Routing",         icon: "📂", color: "#d97706", href: "/ronyx/settings/document-routing",      desc: "Where each document type routes — CDL, COIs, invoices, ticket proofs, PODs." },
@@ -104,7 +104,7 @@ export default function AdminControlCenterPage() {
       : health.staffUsers === 0
       ? { text: "Add staff users and assign roles so dispatch and compliance can log in.", href: "/ronyx/settings/users" }
       : health.customerRules === 0
-      ? { text: "Configure Customer Dispatch Requirements so Dispatch Guard knows what to check.", href: "/ronyx/compliance/customer-dispatch-requirements" }
+      ? { text: "Configure Clearance Check™ so it knows what to verify before every dispatch.", href: "/ronyx/compliance/customer-dispatch-requirements" }
       : health.docRoutingRules <= 5
       ? { text: "Set up document routing so uploads go to the right place automatically.", href: "/ronyx/settings/document-routing" }
       : health.notifRules <= 3
