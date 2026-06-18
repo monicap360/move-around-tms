@@ -62,10 +62,12 @@ export async function PATCH(
       }
     }
 
+    const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
     const { error } = await supabase
       .from("drivers")
       .update({ status: newStatus })
-      .eq("id", driverId);
+      .eq("id", driverId)
+      .eq("organization_id", orgId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
@@ -77,11 +79,13 @@ export async function PATCH(
   for (const field of directFields) {
     if (body[field] !== undefined) directUpdate[field] = body[field];
   }
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   if (Object.keys(directUpdate).length > 0) {
     const { error: directErr } = await supabase
       .from("drivers")
       .update(directUpdate)
-      .eq("id", driverId);
+      .eq("id", driverId)
+      .eq("organization_id", orgId);
     if (directErr) return NextResponse.json({ error: directErr.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }

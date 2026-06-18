@@ -352,7 +352,7 @@ export default function DumpFleetCommandCenter() {
             </div>
           </div>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100, tableLayout: "fixed" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700, tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: 68 }} /><col style={{ width: 88 }} /><col style={{ width: 72 }} />
                 <col style={{ width: 90 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} />

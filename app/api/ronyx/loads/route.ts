@@ -42,11 +42,16 @@ const DEFAULT_LOADS = [
 
 export async function GET(request: Request) {
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const driverName = searchParams.get("driver_name");
 
-  let query = supabase.from("ronyx_loads").select("*").order("created_at", { ascending: false });
+  let query = supabase
+    .from("ronyx_loads")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
   if (status) {
     query = query.eq("status", status);
   }
@@ -60,13 +65,15 @@ export async function GET(request: Request) {
   }
 
   if ((data || []).length === 0) {
-    const { error: insertError } = await supabase.from("ronyx_loads").insert(DEFAULT_LOADS);
+    const seededRows = DEFAULT_LOADS.map(r => ({ ...r, organization_id: orgId }));
+    const { error: insertError } = await supabase.from("ronyx_loads").insert(seededRows);
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
     const { data: seeded } = await supabase
       .from("ronyx_loads")
       .select("*")
+      .eq("organization_id", orgId)
       .order("created_at", { ascending: false });
     return NextResponse.json({ loads: seeded || [] });
   }
@@ -77,6 +84,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const route =
     payload?.route ||
     (payload?.pickup_location && payload?.delivery_location
@@ -85,7 +93,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from("ronyx_loads")
-    .insert({ ...payload, route })
+    .insert({ ...payload, route, organization_id: orgId })
     .select("*")
     .single();
 
@@ -105,6 +113,7 @@ export async function PUT(request: Request) {
   }
 
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const now = new Date().toISOString();
   const resolvedUpdates = { ...updates };
 
@@ -122,6 +131,7 @@ export async function PUT(request: Request) {
     const { data: existing } = await supabase.from("ronyx_loads").select("*").eq("id", id).single();
     if (existing) {
       const ticketPayload = {
+        organization_id: orgId,
         ticket_number: existing.load_number,
         ticket_date: new Date().toISOString().slice(0, 10),
         driver_name: existing.driver_name,

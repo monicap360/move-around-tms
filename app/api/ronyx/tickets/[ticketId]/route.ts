@@ -40,11 +40,13 @@ function deriveProofStatus(ticket: any) {
 
 export async function GET(_request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
   const { data, error } = await supabase
     .from("aggregate_tickets")
     .select("*")
     .eq("id", params.ticketId)
+    .eq("organization_id", orgId)
     .single();
 
   if (error) {
@@ -62,6 +64,7 @@ export async function GET(_request: NextRequest, { params }: { params: { ticketI
 
 export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const body = await request.json();
 
   const updates = {
@@ -130,6 +133,7 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
     .from("aggregate_tickets")
     .update(updates)
     .eq("id", params.ticketId)
+    .eq("organization_id", orgId)
     .select()
     .single();
 
@@ -148,6 +152,7 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
 
 export async function DELETE(request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const body = await request.json().catch(() => ({}));
   const deletedBy = (body.deleted_by as string) || "dispatcher";
   const reason = (body.reason as string) || null;
@@ -164,6 +169,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { ticke
     .from("aggregate_tickets")
     .update(fullUpdate)
     .eq("id", params.ticketId)
+    .eq("organization_id", orgId)
     .select("id, ticket_number, driver_name, truck_number")
     .single();
 
@@ -172,6 +178,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { ticke
       .from("aggregate_tickets")
       .update({ voided: true, voided_at: new Date().toISOString(), status: "voided" })
       .eq("id", params.ticketId)
+      .eq("organization_id", orgId)
       .select("id, ticket_number, driver_name, truck_number")
       .single();
   }

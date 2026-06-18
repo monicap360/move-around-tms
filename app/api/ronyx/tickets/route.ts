@@ -66,8 +66,15 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status") || "";
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
-  let query = supabase.from("aggregate_tickets").select("*").order("ticket_date", { ascending: false });
+  // Include both this org's tickets AND unassigned tickets (pre-migration fallback).
+  // After migration 165 backfills all rows, organization_id IS NULL will return 0 naturally.
+  let query = supabase
+    .from("aggregate_tickets")
+    .select("*")
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .order("ticket_date", { ascending: false });
 
   if (status) {
     query = query.eq("status", status);
@@ -140,8 +147,11 @@ export async function POST(request: NextRequest) {
       ? Number(body.waiting_minutes)
       : calculateWaitingMinutes(body.load_time, body.dump_time);
 
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+
   // Core payload — columns that exist in all migration versions (003 + 069 baseline)
   const corePayload = {
+    organization_id: orgId,
     ticket_number,
     ticket_date,
     driver_id: body.driver_id || null,

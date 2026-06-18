@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
   // Query drivers table directly — full_name is the canonical column from import
   const { data, error } = await supabase
@@ -39,6 +40,7 @@ export async function GET() {
       updated_at,
       created_at
     `)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .or("status.is.null,and(status.neq.archived,status.neq.deleted)")
     .order("full_name", { ascending: true })
     .limit(5000);

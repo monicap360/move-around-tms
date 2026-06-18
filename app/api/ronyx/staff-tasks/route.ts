@@ -18,7 +18,7 @@ const SYLVIA_PATTERNS = [
   /driver.*doc/i, /missing.*doc/i, /upload.*doc/i,
 ];
 
-export function routeTaskAssignee(taskType: string, title: string): string {
+function routeTaskAssignee(taskType: string, title: string): string {
   const text = `${taskType} ${title}`;
   if (CCB_PATTERNS.some((p) => p.test(text))) return "CCB";
   if (SYLVIA_PATTERNS.some((p) => p.test(text))) return "Sylvia";

@@ -96,6 +96,10 @@ type BlockResult = {
   driver_name: string;
 };
 
+type GuardStatus = "CLEAR" | "WARNING" | "BLOCKED" | "OVERRIDE_REQUESTED" | "OVERRIDE_APPROVED";
+type GuardCheck  = { name: string; status: "pass" | "warn" | "fail"; detail?: string };
+type GuardJobResult = { job: DispatchJob; status: GuardStatus; checks: GuardCheck[] };
+
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
 
@@ -236,6 +240,216 @@ const READINESS_CFG: Record<ReadinessStatus, { label: string; bg: string; text: 
   manager_approval: { label: "Manager Approval", bg: "#fff7ed", text: "#c2410c", border: "#ea580c" },
   blocked:          { label: "Blocked",          bg: "#1e293b", text: "#f8fafc", border: "#1e293b" },
 };
+
+// ─── Dispatch Guard™ ─────────────────────────────────────────────────────────
+
+function runGuardChecks(job: DispatchJob): GuardJobResult {
+  const checks: GuardCheck[] = [];
+
+  // 1. Driver compliance
+  checks.push({
+    name: "Driver Compliance",
+    status: job.driver_compliance === "blocked" ? "fail" : job.driver_compliance === "expiring" ? "warn" : "pass",
+    detail: job.driver_block_reason || undefined,
+  });
+
+  // 2. Truck compliance
+  checks.push({
+    name: "Truck Compliance",
+    status: job.truck_compliance === "blocked" ? "fail" : job.truck_compliance === "expiring" ? "warn" : "pass",
+    detail: job.truck_block_reason || undefined,
+  });
+
+  // 3. Owner operator COI
+  checks.push({
+    name: "Owner Operator COI",
+    status: job.oo_compliance === "blocked" ? "fail" : job.oo_compliance === "expiring" ? "warn" : "pass",
+    detail: job.oo_block_reason || undefined,
+  });
+
+  // 4+5. Customer requirements + Payment holds
+  const payBlocked = job.payment_hold || job.payment_status === "unpaid";
+  checks.push({
+    name: "Customer Payment / Hold",
+    status: payBlocked ? "fail" : "pass",
+    detail: job.payment_hold ? "Payment hold active" : job.payment_status === "unpaid" ? "Balance unpaid" : undefined,
+  });
+
+  // 6. Missing job / project fields
+  const missing: string[] = [];
+  if (!job.pickup_location && !job.pickup_address)   missing.push("pickup location");
+  if (!job.delivery_location && !job.dropoff_address) missing.push("delivery location");
+  if (!job.material)     missing.push("material");
+  if (!job.project_name) missing.push("project name");
+  checks.push({
+    name: "Job / Project Fields",
+    status: missing.length >= 2 ? "fail" : missing.length === 1 ? "warn" : "pass",
+    detail: missing.length ? `Missing: ${missing.join(", ")}` : undefined,
+  });
+
+  // 7. Payroll rate
+  checks.push({
+    name: "Payroll Rate",
+    status: !job.load_pay || job.missing_rate ? "warn" : "pass",
+    detail: !job.load_pay ? "Load pay not set" : undefined,
+  });
+
+  // 8. Billing rate
+  checks.push({
+    name: "Billing Rate",
+    status: !job.billing_rate ? "warn" : "pass",
+    detail: !job.billing_rate ? "Billing rate not set" : undefined,
+  });
+
+  // 9. Ticket requirements (only matters post-delivery)
+  const needsTicket = ["delivered","ticket_needed","ready_for_payroll","ready_for_billing","completed"].includes(job.job_status);
+  const hasTicket   = !!job.ticket_status && ["scanned","approved"].includes(job.ticket_status);
+  checks.push({
+    name: "Ticket Requirements",
+    status: needsTicket && !hasTicket ? "fail" : "pass",
+    detail: needsTicket && !hasTicket ? "Ticket not scanned / approved" : undefined,
+  });
+
+  // 10. Maintenance issues
+  const maintenanceIssue = !!(job.truck_block_reason && /maintenanc|inspection|out.of.service/i.test(job.truck_block_reason));
+  checks.push({
+    name: "Maintenance",
+    status: maintenanceIssue ? "fail" : "pass",
+    detail: maintenanceIssue ? job.truck_block_reason ?? undefined : undefined,
+  });
+
+  const fails = checks.filter(c => c.status === "fail").length;
+  const warns = checks.filter(c => c.status === "warn").length;
+  const status: GuardStatus = fails > 0 ? "BLOCKED" : warns > 0 ? "WARNING" : "CLEAR";
+  return { job, status, checks };
+}
+
+const GUARD_CFG: Record<GuardStatus, { bg: string; text: string; border: string; label: string }> = {
+  CLEAR:              { bg: "#f0fdf4", text: "#15803d", border: "#16a34a", label: "CLEAR" },
+  WARNING:            { bg: "#fef3c7", text: "#92400e", border: "#f59e0b", label: "WARNING" },
+  BLOCKED:            { bg: "#1e293b", text: "#f8fafc", border: "#1e293b", label: "BLOCKED" },
+  OVERRIDE_REQUESTED: { bg: "#eff6ff", text: "#1d4ed8", border: "#3b82f6", label: "OVERRIDE REQUESTED" },
+  OVERRIDE_APPROVED:  { bg: "#f0fdf4", text: "#15803d", border: "#16a34a", label: "OVERRIDE APPROVED" },
+};
+
+function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: () => void }) {
+  const [overrides, setOverrides] = useState<Record<string, "requested" | "approved">>({});
+
+  const activeJobs = jobs.filter(j => !["completed","ready_for_billing"].includes(j.job_status));
+  const results: GuardJobResult[] = activeJobs.map(j => {
+    const r = runGuardChecks(j);
+    if (overrides[j.id] === "approved")  return { ...r, status: "OVERRIDE_APPROVED"  as GuardStatus };
+    if (overrides[j.id] === "requested") return { ...r, status: "OVERRIDE_REQUESTED" as GuardStatus };
+    return r;
+  });
+
+  const summary = {
+    clear:    results.filter(r => r.status === "CLEAR").length,
+    warning:  results.filter(r => r.status === "WARNING").length,
+    blocked:  results.filter(r => r.status === "BLOCKED").length,
+    override: results.filter(r => ["OVERRIDE_REQUESTED","OVERRIDE_APPROVED"].includes(r.status)).length,
+  };
+
+  return (
+    <div className="db-modal-backdrop" onClick={onClose}>
+      <div className="db-modal db-modal-wide" style={{ maxWidth: 680, maxHeight: "85vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+        <div style={{ marginBottom: 14 }}>
+          <p className="db-modal-sub">Dispatch Command Center™</p>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span>🛡</span> Dispatch Guard™
+          </h2>
+          <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Pre-dispatch protection that checks every job before it goes out.</p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 16 }}>
+          {[
+            { label: "CLEAR",    count: summary.clear,    bg: "#f0fdf4", text: "#15803d" },
+            { label: "WARNING",  count: summary.warning,  bg: "#fef3c7", text: "#92400e" },
+            { label: "BLOCKED",  count: summary.blocked,  bg: "#fee2e2", text: "#dc2626" },
+            { label: "OVERRIDE", count: summary.override, bg: "#eff6ff", text: "#1d4ed8" },
+          ].map(s => (
+            <div key={s.label} style={{ background: s.bg, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: s.text }}>{s.count}</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: s.text, letterSpacing: "0.08em" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {results.length === 0 && (
+          <div style={{ textAlign: "center", color: "#94a3b8", padding: "24px 0" }}>No active jobs to evaluate.</div>
+        )}
+
+        {results.map(r => {
+          const gc    = GUARD_CFG[r.status];
+          const fails = r.checks.filter(c => c.status === "fail");
+          const warns = r.checks.filter(c => c.status === "warn");
+          return (
+            <div key={r.job.id} style={{ border: `1.5px solid ${gc.border}`, borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
+              <div style={{ background: gc.bg, padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div>
+                  <span style={{ fontWeight: 800, color: gc.text, fontSize: 12 }}>
+                    #{r.job.job_number} · {r.job.customer_name}
+                  </span>
+                  {r.job.project_name && (
+                    <span style={{ fontSize: 10, color: "#64748b", marginLeft: 8 }}>{r.job.project_name}</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 999,
+                    background: r.status === "BLOCKED" ? "#dc2626" : r.status === "WARNING" ? "#f59e0b" : r.status === "CLEAR" ? "#16a34a" : "#3b82f6",
+                    color: "#fff",
+                  }}>{gc.label}</span>
+                  {r.status === "BLOCKED" && (
+                    <button type="button"
+                      onClick={() => setOverrides(p => ({ ...p, [r.job.id]: "requested" }))}
+                      style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, background: "#3b82f6", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}
+                    >Request Override</button>
+                  )}
+                  {r.status === "OVERRIDE_REQUESTED" && (
+                    <button type="button"
+                      onClick={() => setOverrides(p => ({ ...p, [r.job.id]: "approved" }))}
+                      style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, background: "#16a34a", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}
+                    >Approve Override</button>
+                  )}
+                </div>
+              </div>
+
+              {(fails.length > 0 || warns.length > 0) && (
+                <div style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  {[...fails, ...warns].map((c, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11 }}>
+                      <span style={{ color: c.status === "fail" ? "#dc2626" : "#d97706", fontWeight: 800, flexShrink: 0, minWidth: 70 }}>
+                        {c.status === "fail" ? "✕ BLOCKED" : "⚠ WARN"}
+                      </span>
+                      <span style={{ fontWeight: 600, color: "#0f172a" }}>{c.name}</span>
+                      {c.detail && <span style={{ color: "#64748b" }}>— {c.detail}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {r.status === "CLEAR" && (
+                <div style={{ padding: "6px 14px", fontSize: 11, color: "#15803d", fontWeight: 600 }}>
+                  ✓ All checks passed — cleared for dispatch
+                </div>
+              )}
+              {r.status === "OVERRIDE_APPROVED" && (
+                <div style={{ padding: "6px 14px", fontSize: 11, color: "#15803d", fontWeight: 600 }}>
+                  ✓ Override approved by manager — cleared to dispatch
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <div className="db-modal-footer">
+          <button type="button" onClick={onClose} className="db-btn-ghost">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Virtual Dispatcher ───────────────────────────────────────────────────────
 
@@ -1405,6 +1619,7 @@ export default function RonyxDispatchCommandCenter() {
   const [activeQueue, setActiveQueue] = useState("dispatch_blockers");
   const [vdTab, setVdTab]           = useState<"actions"|"recs"|"eod"|"owner">("actions");
 
+  const [guardOpen,    setGuardOpen]    = useState(false);
   const [assignTarget, setAssignTarget] = useState<DispatchJob | null>(null);
   const [detailTarget, setDetailTarget] = useState<DispatchJob | null>(null);
   const [noteTarget,   setNoteTarget]   = useState<DispatchJob | null>(null);
@@ -1513,7 +1728,7 @@ export default function RonyxDispatchCommandCenter() {
       {/* ── Header ── */}
       <div className="db-page-header" style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)", padding: "18px 28px" }}>
         <div>
-          <h1 className="db-page-title" style={{ color: "#f8fafc", fontSize: "1.3rem" }}>RONYX DISPATCH COMMAND CENTER™</h1>
+          <h1 className="db-page-title" style={{ color: "#f8fafc", fontSize: "1.3rem" }}>Dispatch Command Center™</h1>
           <p className="db-page-subtitle" style={{ color: "#94a3b8", marginTop: 3 }}>
             Control tower for jobs, drivers, trucks, tickets, payroll, billing, and compliance · {dateDisplay}
           </p>
@@ -1521,6 +1736,7 @@ export default function RonyxDispatchCommandCenter() {
         <div className="db-header-actions">
           <button type="button" onClick={loadAll} className="db-btn-ghost db-btn-sm">↻ Refresh</button>
           <button type="button" onClick={exportCSV} className="db-btn-ghost db-btn-sm">Export</button>
+          <button type="button" onClick={() => setGuardOpen(true)} className="db-btn-ghost db-btn-sm" style={{ color: "#f8fafc", borderColor: "#3b82f6", background: "#1d4ed8", fontWeight: 800 }}>🛡 Run Dispatch Guard</button>
           <button type="button" onClick={() => { setVdTab("recs"); }} className="db-btn-ghost db-btn-sm" style={{ color: "#4ade80", borderColor: "#4ade80" }}>⚡ Smart Assign</button>
           <button type="button" onClick={() => { setVdTab("eod"); }} className="db-btn-ghost db-btn-sm">End of Day Review</button>
           <button type="button" onClick={() => { setVdTab("owner"); }} className="db-btn-ghost db-btn-sm">Owner View</button>
@@ -1631,6 +1847,7 @@ export default function RonyxDispatchCommandCenter() {
       </div>
 
       {/* ── Modals ── */}
+      {guardOpen    && <DispatchGuardPanel jobs={jobs} onClose={() => setGuardOpen(false)} />}
       {assignTarget && <AssignModal job={assignTarget} drivers={drivers} onAssign={assignDriver} onClose={() => setAssignTarget(null)} />}
       {detailTarget && <JobDetailModal job={detailTarget} onClose={() => setDetailTarget(null)} onStatusChange={async (id, s) => { await moveJob(id, s); showToast(`Status → ${s.replace(/_/g," ")}`); }} />}
       {noteTarget   && <NoteModal job={noteTarget} onClose={() => setNoteTarget(null)} onSaved={() => showToast("Note saved")} />}

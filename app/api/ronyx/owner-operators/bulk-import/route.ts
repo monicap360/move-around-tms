@@ -35,6 +35,7 @@ export const dynamic = "force-dynamic";
 */
 export async function POST(req: Request) {
   const sb = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { companies } = await req.json();
 
   if (!Array.isArray(companies)) {
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
     const { data: existing } = await sb
       .from("ronyx_owner_operators")
       .select("id")
+      .eq("organization_id", orgId)
       .ilike("company_name", co.company_name.trim())
       .maybeSingle();
 
@@ -62,6 +64,7 @@ export async function POST(req: Request) {
       const { data: newOO, error: createErr } = await sb
         .from("ronyx_owner_operators")
         .insert({
+          organization_id: orgId,
           company_name: co.company_name.trim(),
           mc_number:    co.mc_number    || null,
           dot_number:   co.dot_number   || null,

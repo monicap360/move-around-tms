@@ -26,7 +26,12 @@ const REQUIRED_COMPANIES = [
 
 export async function GET() {
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.from("ronyx_customers").select("*").order("customer_name", { ascending: true });
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const { data, error } = await supabase
+    .from("ronyx_customers")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("customer_name", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -36,10 +41,12 @@ export async function GET() {
 
   if (existing.length === 0) {
     // Seed defaults + required companies on first load
-    await supabase.from("ronyx_customers").insert([...DEFAULT_CUSTOMERS, ...REQUIRED_COMPANIES]);
+    const seedRows = [...DEFAULT_CUSTOMERS, ...REQUIRED_COMPANIES].map(r => ({ ...r, organization_id: orgId }));
+    await supabase.from("ronyx_customers").insert(seedRows);
     const { data: seeded } = await supabase
       .from("ronyx_customers")
       .select("*")
+      .eq("organization_id", orgId)
       .order("customer_name", { ascending: true });
     return NextResponse.json({ customers: seeded || [] });
   }
@@ -50,10 +57,11 @@ export async function GET() {
     (rc) => !existingNames.includes(rc.customer_name.toLowerCase())
   );
   if (missing.length > 0) {
-    await supabase.from("ronyx_customers").insert(missing);
+    await supabase.from("ronyx_customers").insert(missing.map(r => ({ ...r, organization_id: orgId })));
     const { data: refreshed } = await supabase
       .from("ronyx_customers")
       .select("*")
+      .eq("organization_id", orgId)
       .order("customer_name", { ascending: true });
     return NextResponse.json({ customers: refreshed || [] });
   }
@@ -64,8 +72,13 @@ export async function GET() {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
-  const { data, error } = await supabase.from("ronyx_customers").insert(payload).select("*").single();
+  const { data, error } = await supabase
+    .from("ronyx_customers")
+    .insert({ ...payload, organization_id: orgId })
+    .select("*")
+    .single();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -80,10 +93,12 @@ export async function PUT(request: Request) {
   }
 
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { data, error } = await supabase
     .from("ronyx_customers")
     .update(payload)
     .eq("id", payload.id)
+    .eq("organization_id", orgId)
     .select("*")
     .single();
 

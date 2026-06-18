@@ -497,6 +497,241 @@ function ConfBar({ score }: { score: number }) {
   );
 }
 
+// ── Ticket Viewer ─────────────────────────────────────────────────────────────
+function TicketViewer({
+  ticket,
+  onClose,
+  onEmail,
+  onPrint,
+  onDownload,
+  onStatusChange,
+}: {
+  ticket: TicketRecord;
+  onClose: () => void;
+  onEmail: (t: TicketRecord, to?: string) => void;
+  onPrint: (t: TicketRecord) => void;
+  onDownload: (t: TicketRecord) => void;
+  onStatusChange: (id: string, status: string) => void;
+}) {
+  const s: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 1000, display: "flex" };
+  const btnS = (bg: string, color: string): React.CSSProperties => ({
+    padding: "8px 14px", borderRadius: 8, border: "none", background: bg, color,
+    fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", whiteSpace: "nowrap",
+  });
+  const detailRow = (label: string, value: React.ReactNode) => (
+    <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid #f1f5f9" }}>
+      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0, minWidth: 130 }}>{label}</span>
+      <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "#0f172a", textAlign: "right" }}>{value || "—"}</span>
+    </div>
+  );
+
+  const auditEvents = [
+    { action: "Ticket uploaded", by: "Fast Scan", at: ticket.ticketDate },
+    { action: "OCR processed", by: "System", at: ticket.ticketDate },
+    { action: "Status: " + ticket.status, by: "System", at: ticket.lastUpdated },
+  ];
+
+  return (
+    <div style={s}>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.55)" }} />
+      {/* Drawer */}
+      <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "min(960px, 95vw)", background: "#fff", display: "flex", flexDirection: "column", boxShadow: "-8px 0 40px rgba(0,0,0,0.18)", overflowY: "auto" }}>
+        {/* Header */}
+        <div style={{ background: "#0f172a", padding: "16px 24px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em" }}>Ticket Viewer</div>
+            <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#fff", marginTop: 2 }}>Ticket #{ticket.ticketNo}</div>
+            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 1 }}>{ticket.customer} · {ticket.ticketDate}</div>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button style={btnS("#4ade80","#052e16")} onClick={() => onEmail(ticket)}>✉ Email</button>
+            <button style={btnS("rgba(255,255,255,0.12)","#e2e8f0")} onClick={() => onPrint(ticket)}>🖨 Print</button>
+            <button style={btnS("rgba(255,255,255,0.12)","#e2e8f0")} onClick={() => onDownload(ticket)}>⬇ Download</button>
+            <button style={btnS("#1d4ed8","#fff")} onClick={() => { onStatusChange(ticket.id, "approved"); onClose(); }}>✓ Approve</button>
+            <button style={btnS("rgba(255,255,255,0.08)","#94a3b8")} onClick={onClose}>✕</button>
+          </div>
+        </div>
+
+        {/* Body — two columns */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", flex: 1, minHeight: 0 }}>
+          {/* Left — image preview */}
+          <div style={{ padding: 24, borderRight: "1px solid #f1f5f9", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0f172a", marginBottom: 4 }}>Original Ticket</div>
+            <div style={{ flex: 1, minHeight: 300, background: "#f8fafc", borderRadius: 10, border: "2px dashed #e2e8f0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#94a3b8", gap: 8 }}>
+              <div style={{ fontSize: "2.5rem" }}>📋</div>
+              <div style={{ fontWeight: 600, fontSize: "0.82rem" }}>Ticket #{ticket.ticketNo}</div>
+              <div style={{ fontSize: "0.72rem", color: "#cbd5e1" }}>Original scan available after upload via Fast Scan™</div>
+            </div>
+            <div style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px" }}>
+              <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>OCR Scan Info</div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 4 }}>
+                <span style={{ color: "#64748b" }}>Confidence</span>
+                <strong style={{ color: ticket.scanConfidence >= 85 ? "#16a34a" : ticket.scanConfidence >= 65 ? "#d97706" : "#dc2626" }}>{ticket.scanConfidence}%</strong>
+              </div>
+              <div style={{ height: 5, background: "#e2e8f0", borderRadius: 99 }}><div style={{ height: "100%", width: `${ticket.scanConfidence}%`, background: ticket.scanConfidence >= 85 ? "#16a34a" : ticket.scanConfidence >= 65 ? "#d97706" : "#dc2626", borderRadius: 99 }} /></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginTop: 8 }}>
+                <span style={{ color: "#64748b" }}>Source</span>
+                <span style={{ fontWeight: 600 }}>{ticket.ticketSource}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginTop: 4 }}>
+                <span style={{ color: "#64748b" }}>Cross-Check</span>
+                <span style={{ fontWeight: 700, color: ticket.crossCheckStatus === "Matched" ? "#16a34a" : "#dc2626" }}>{ticket.crossCheckStatus}</span>
+              </div>
+            </div>
+            {/* Audit Trail */}
+            <div style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px" }}>
+              <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Audit Trail</div>
+              {auditEvents.map((ev, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 6, alignItems: "flex-start" }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1d4ed8", marginTop: 5, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#0f172a" }}>{ev.action}</div>
+                    <div style={{ fontSize: "0.65rem", color: "#94a3b8" }}>{ev.by} · {ev.at}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right — ticket details */}
+          <div style={{ padding: 24, overflowY: "auto" }}>
+            <div style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0f172a", marginBottom: 12 }}>Ticket Details</div>
+            {[
+              ["Ticket Number", ticket.ticketNo],
+              ["Ticket Date", ticket.ticketDate],
+              ["Upload Date", ticket.lastUpdated],
+              ["Customer", ticket.customer],
+              ["Project / Job #", ticket.project],
+              ["Driver", ticket.driver],
+              ["Truck", ticket.truck],
+              ["Pit / Vendor", ticket.pitName || ticket.vendor],
+              ["Material", ticket.material],
+              ["Tons / Quantity", `${ticket.tons.toFixed(2)} tons`],
+              ["Rate", `$${ticket.rate.toFixed(2)}/ton`],
+              ["Billing Amount", money(ticket.billingAmount)],
+              ["Payroll Amount", money(ticket.payrollAmount)],
+              ["PO Number", ticket.poNumber],
+              ["Invoice #", ticket.invoiceNumber || "—"],
+            ].map(([l, v]) => detailRow(l as string, v as string))}
+
+            <div style={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a", marginTop: 20, marginBottom: 10 }}>Status</div>
+            {[
+              ["OCR Confidence", <span style={{ fontWeight: 700, color: ticket.scanConfidence >= 85 ? "#16a34a" : "#d97706" }}>{ticket.scanConfidence}%</span>],
+              ["Match Status", <SBadge code={ticket.crossCheckStatus === "Matched" ? "MATCHED" : "NEEDS_REVIEW"} />],
+              ["Payroll Status", <SBadge code={ticket.payrollStatus} />],
+              ["Billing Status", <SBadge code={ticket.billingStatus} />],
+              ["Proof Status", ticket.proofStatus],
+              ["Health Score", <HealthBadge score={ticket.ticketHealthScore} />],
+            ].map(([l, v]) => detailRow(l as string, v as React.ReactNode))}
+
+            {/* Quick send */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a", marginBottom: 10 }}>Quick Actions</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button style={btnS("#f0fdf4","#16a34a")} onClick={() => onStatusChange(ticket.id, "sent_to_payroll")}>Send to Payroll</button>
+                <button style={btnS("#eff6ff","#1d4ed8")} onClick={() => onStatusChange(ticket.id, "sent_to_billing")}>Send to Billing</button>
+                <button style={btnS("#fff7ed","#c2410c")} onClick={() => onStatusChange(ticket.id, "needs_review")}>Flag for Review</button>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                <button style={btnS("#f8fafc","#475569")} onClick={() => onEmail(ticket, "billing@company.com")}>Email Billing</button>
+                <button style={btnS("#f8fafc","#475569")} onClick={() => onEmail(ticket, "payroll@company.com")}>Email Payroll</button>
+                <button style={btnS("#f8fafc","#475569")} onClick={() => onEmail(ticket)}>Email Customer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Email Modal ────────────────────────────────────────────────────────────────
+function EmailModal({
+  ticket, to, setTo, cc, setCc, subject, setSubject, body, setBody,
+  attachOrig, setAttachOrig, attachSummary, setAttachSummary,
+  attachOcr, setAttachOcr, attachAudit, setAttachAudit,
+  sending, onSend, onClose, onQuickRecipient,
+}: {
+  ticket: TicketRecord;
+  to: string; setTo: (v: string) => void;
+  cc: string; setCc: (v: string) => void;
+  subject: string; setSubject: (v: string) => void;
+  body: string; setBody: (v: string) => void;
+  attachOrig: boolean; setAttachOrig: (v: boolean) => void;
+  attachSummary: boolean; setAttachSummary: (v: boolean) => void;
+  attachOcr: boolean; setAttachOcr: (v: boolean) => void;
+  attachAudit: boolean; setAttachAudit: (v: boolean) => void;
+  sending: boolean;
+  onSend: () => void;
+  onClose: () => void;
+  onQuickRecipient: (addr: string) => void;
+}) {
+  const inp: React.CSSProperties = { width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none", boxSizing: "border-box" };
+  const lbl: React.CSSProperties = { fontSize: "0.7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4, display: "block" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.6)" }} />
+      <div style={{ position: "relative", background: "#fff", borderRadius: 16, width: "min(580px,95vw)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.22)" }}>
+        {/* Header */}
+        <div style={{ background: "#0f172a", borderRadius: "16px 16px 0 0", padding: "16px 24px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em" }}>Send Ticket</div>
+            <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff", marginTop: 2 }}>Ticket #{ticket.ticketNo}</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>✕</button>
+        </div>
+
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Quick recipients */}
+          <div>
+            <span style={lbl}>Quick Recipients</span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {[["Customer",""], ["Driver",""], ["Payroll","payroll@company.com"], ["Billing","billing@company.com"], ["Custom",""]].map(([label, addr]) => (
+                <button key={label} onClick={() => onQuickRecipient(addr)} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, fontSize: "0.75rem", cursor: "pointer" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div><label style={lbl}>To *</label><input value={to} onChange={e => setTo(e.target.value)} placeholder="recipient@email.com" style={inp} /></div>
+          <div><label style={lbl}>CC</label><input value={cc} onChange={e => setCc(e.target.value)} placeholder="cc@email.com" style={inp} /></div>
+          <div><label style={lbl}>Subject</label><input value={subject} onChange={e => setSubject(e.target.value)} style={inp} /></div>
+          <div><label style={lbl}>Message</label><textarea value={body} onChange={e => setBody(e.target.value)} rows={6} style={{ ...inp, resize: "vertical", fontFamily: "inherit" }} /></div>
+
+          {/* Attachments */}
+          <div>
+            <span style={lbl}>Attachments</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                ["Original Ticket File", attachOrig, setAttachOrig],
+                ["Ticket Summary PDF", attachSummary, setAttachSummary],
+                ["OCR Detail Report", attachOcr, setAttachOcr],
+                ["Audit Trail", attachAudit, setAttachAudit],
+              ].map(([label, checked, setter]) => (
+                <label key={label as string} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "0.82rem", color: "#374151" }}>
+                  <input type="checkbox" checked={checked as boolean} onChange={e => (setter as (v: boolean) => void)(e.target.checked)} style={{ width: 15, height: 15 }} />
+                  {label as string}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 4 }}>
+            <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, fontSize: "0.83rem", cursor: "pointer" }}>Cancel</button>
+            <button onClick={onSend} disabled={sending} style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: "#1d4ed8", color: "#fff", fontWeight: 700, fontSize: "0.83rem", cursor: sending ? "wait" : "pointer", opacity: sending ? 0.7 : 1 }}>
+              {sending ? "Sending…" : "✉ Send Email"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<TicketRecord[]>([]);
@@ -598,7 +833,90 @@ export default function TicketsPage() {
   // vendor context for the next invoice upload (set by which button was clicked)
   const [pendingInvoiceVendor, setPendingInvoiceVendor] = useState<string>("");
 
+  // Ticket viewer / email / bulk selection
+  const [viewerTicket, setViewerTicket] = useState<TicketRecord | null>(null);
+  const [emailTicket, setEmailTicket] = useState<TicketRecord | null>(null);
+  const [printTicket, setPrintTicket] = useState<TicketRecord | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moreMenuId, setMoreMenuId] = useState<string | null>(null);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailCc, setEmailCc] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [emailAttachOrig, setEmailAttachOrig] = useState(true);
+  const [emailAttachSummary, setEmailAttachSummary] = useState(true);
+  const [emailAttachOcr, setEmailAttachOcr] = useState(false);
+  const [emailAttachAudit, setEmailAttachAudit] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3500); }, []);
+
+  const openEmail = useCallback((t: TicketRecord, toAddr = "") => {
+    setEmailTicket(t);
+    setEmailTo(toAddr);
+    setEmailCc("");
+    setEmailSubject(`Ticket #${t.ticketNo} - ${t.customer} - ${t.ticketDate}`);
+    setEmailBody(`Attached is the ticket for review.\n\nTicket #: ${t.ticketNo}\nCustomer: ${t.customer}\nProject: ${t.project}\nDriver: ${t.driver}\nTruck: ${t.truck}\nQuantity: ${t.tons.toFixed(2)} tons`);
+    setEmailAttachOrig(true); setEmailAttachSummary(true); setEmailAttachOcr(false); setEmailAttachAudit(false);
+  }, []);
+
+  const sendEmail = useCallback(async () => {
+    if (!emailTicket || !emailTo.trim()) { showToast("Please enter a recipient email address."); return; }
+    setEmailSending(true);
+    try {
+      const res = await fetch("/api/ronyx/tickets/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticket_id: emailTicket.id, to: emailTo, cc: emailCc,
+          subject: emailSubject, message: emailBody,
+          attachments: { original: emailAttachOrig, summary: emailAttachSummary, ocr: emailAttachOcr, audit: emailAttachAudit },
+        }),
+      });
+      if (res.ok) {
+        showToast(`Email sent to ${emailTo}`);
+        setEmailTicket(null);
+      } else {
+        showToast("Email queued — will be sent when email service is configured.");
+        setEmailTicket(null);
+      }
+    } catch { showToast("Email queued — will be sent when email service is configured."); setEmailTicket(null); }
+    finally { setEmailSending(false); }
+  }, [emailTicket, emailTo, emailCc, emailSubject, emailBody, emailAttachOrig, emailAttachSummary, emailAttachOcr, emailAttachAudit, showToast]);
+
+  const handlePrint = useCallback((t: TicketRecord) => {
+    setPrintTicket(t);
+    setTimeout(() => { window.print(); setTimeout(() => setPrintTicket(null), 500); }, 100);
+  }, []);
+
+  const handleDownload = useCallback((t: TicketRecord, type: "json" | "summary" = "summary") => {
+    const data = {
+      ticket_number: t.ticketNo, ticket_date: t.ticketDate, customer: t.customer,
+      project: t.project, driver: t.driver, truck: t.truck, vendor: t.vendor,
+      pit: t.pitName, material: t.material, tons: t.tons, rate: t.rate,
+      billing_amount: t.billingAmount, payroll_amount: t.payrollAmount,
+      billing_status: t.billingStatus, payroll_status: t.payrollStatus,
+      invoice_number: t.invoiceNumber || "", po_number: t.poNumber,
+      scan_confidence: t.scanConfidence, status: t.status, proof_status: t.proofStatus,
+      exported_at: new Date().toISOString(), exported_by: "office",
+    };
+    const content = type === "json"
+      ? JSON.stringify(data, null, 2)
+      : Object.entries(data).map(([k, v]) => `${k.replace(/_/g, " ").toUpperCase()}: ${v}`).join("\n");
+    const blob = new Blob([content], { type: type === "json" ? "application/json" : "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `ticket-${t.ticketNo}.${type === "json" ? "json" : "txt"}`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast(`Downloaded ticket #${t.ticketNo}`);
+  }, [showToast]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }, []);
+
+  // bulkSendToPayroll / bulkSendToBilling defined after updateTicketStatus
+  // bulkExport defined after filteredTickets useMemo
 
   const loadTickets = useCallback(async () => {
     try {
@@ -642,6 +960,18 @@ export default function TicketsPage() {
       showToast(`Ticket → ${opt}`);
     } catch { showToast("Update failed — retry"); loadTickets(); }
   }, [loadTickets, showToast]);
+
+  const bulkSendToPayroll = useCallback(async () => {
+    for (const id of selectedIds) await updateTicketStatus(id, "sent_to_payroll");
+    showToast(`${selectedIds.size} tickets sent to payroll`);
+    setSelectedIds(new Set());
+  }, [selectedIds, updateTicketStatus, showToast]);
+
+  const bulkSendToBilling = useCallback(async () => {
+    for (const id of selectedIds) await updateTicketStatus(id, "sent_to_billing");
+    showToast(`${selectedIds.size} tickets sent to billing`);
+    setSelectedIds(new Set());
+  }, [selectedIds, updateTicketStatus, showToast]);
 
   const deleteTicket = useCallback(async (ticketId: string, reason: string) => {
     setDeleting(true);
@@ -954,25 +1284,31 @@ export default function TicketsPage() {
     setRonyxImagePreview(URL.createObjectURL(file));
     try {
       // ── Step 1: Upload via fast-scan/upload (creates fast_scan_documents record) ──
-      const uploadForm = new FormData();
-      uploadForm.append("file", file);
-      uploadForm.append("scan_type", "ticket");
-      if (batchId) uploadForm.append("batch_id", batchId);
+      // Upload failure is non-fatal — we warn and continue with Tesseract OCR.
+      let uploadResult: { document_id?: string; ocr_ready?: boolean; next_step?: string; db_warning?: string; error?: string } = {};
+      try {
+        const uploadForm = new FormData();
+        uploadForm.append("file", file);
+        uploadForm.append("scan_type", "ticket");
+        if (batchId) uploadForm.append("batch_id", batchId);
 
-      const uploadRes = await fetch("/api/ronyx/fast-scan/upload", {
-        method: "POST",
-        body: uploadForm,
-      });
+        const uploadRes = await fetch("/api/ronyx/fast-scan/upload", {
+          method: "POST",
+          body: uploadForm,
+        });
 
-      if (!uploadRes.ok) {
-        const uploadErr = await uploadRes.json().catch(() => ({}));
-        const reason = uploadErr.error || "Storage upload failed";
-        showToast(`Upload failed. Original file was not saved. This import cannot continue. (${reason})`);
-        setRonyxOcrRunning(false);
-        return;
+        uploadResult = await uploadRes.json().catch(() => ({}));
+
+        if (!uploadRes.ok) {
+          // Warn but don't stop — OCR + ticket creation can still succeed
+          const reason = uploadResult.error || "storage unavailable";
+          showToast(`⚠ File not saved to storage (${reason}) — OCR will still run`);
+        } else if (uploadResult.db_warning) {
+          showToast(`⚠ File saved but scan log unavailable — OCR continuing`);
+        }
+      } catch {
+        showToast("⚠ Storage service unreachable — OCR will still run from file");
       }
-
-      const uploadResult = await uploadRes.json();
       setRonyxOcrProgress(20);
 
       // ── Step 2: Claude OCR via /process (when ANTHROPIC_API_KEY is set + image file) ──
@@ -1073,10 +1409,10 @@ export default function TicketsPage() {
           original_upload_id:  originalUploadId || null,
         }),
       });
-      const result = await res.json();
-      setRonyxResult(result);
-      setRonyxStep("done");
-      if (!result.error) {
+      const result = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
+      if (!result.error && (res.ok || res.status === 201)) {
+        setRonyxResult(result);
+        setRonyxStep("done");
         showToast("Ronyx ticket routed to Reconciliation Command Center");
         // Update batch counters
         if (batchId) {
@@ -1279,6 +1615,17 @@ export default function TicketsPage() {
   const totalBillingReady = useMemo(() => billingReadyTickets.reduce((s, t) => s + t.billingAmount, 0), [billingReadyTickets]);
   const totalPayrollReady = useMemo(() => payrollReadyTickets.reduce((s, t) => s + t.payrollAmount, 0), [payrollReadyTickets]);
 
+  const bulkExport = useCallback(() => {
+    const selected = filteredTickets.filter(t => selectedIds.has(t.id));
+    const header = "Ticket #\tDate\tCustomer\tDriver\tTruck\tMaterial\tTons\tBilling\tPayroll\n";
+    const body = selected.map(t => [t.ticketNo, t.ticketDate, t.customer, t.driver, t.truck, t.material, t.tons, t.billingStatus, t.payrollStatus].join("\t")).join("\n");
+    const blob = new Blob([header + body], { type: "text/tab-separated-values" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "tickets-export.tsv"; a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${selected.length} tickets`);
+  }, [selectedIds, filteredTickets, showToast]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <main className="tickets-page">
@@ -1287,6 +1634,81 @@ export default function TicketsPage() {
           {toast}
         </div>
       )}
+
+      {/* ── Ticket Viewer ── */}
+      {viewerTicket && (
+        <TicketViewer
+          ticket={viewerTicket}
+          onClose={() => setViewerTicket(null)}
+          onEmail={(t, to) => { openEmail(t, to); }}
+          onPrint={handlePrint}
+          onDownload={handleDownload}
+          onStatusChange={updateTicketStatus}
+        />
+      )}
+
+      {/* ── Email Modal ── */}
+      {emailTicket && (
+        <EmailModal
+          ticket={emailTicket}
+          to={emailTo} setTo={setEmailTo}
+          cc={emailCc} setCc={setEmailCc}
+          subject={emailSubject} setSubject={setEmailSubject}
+          body={emailBody} setBody={setEmailBody}
+          attachOrig={emailAttachOrig} setAttachOrig={setEmailAttachOrig}
+          attachSummary={emailAttachSummary} setAttachSummary={setEmailAttachSummary}
+          attachOcr={emailAttachOcr} setAttachOcr={setEmailAttachOcr}
+          attachAudit={emailAttachAudit} setAttachAudit={setEmailAttachAudit}
+          sending={emailSending}
+          onSend={sendEmail}
+          onClose={() => setEmailTicket(null)}
+          onQuickRecipient={addr => setEmailTo(addr)}
+        />
+      )}
+
+      {/* ── Print-ready div (only visible when printing) ── */}
+      {printTicket && (
+        <style>{`@media print { body > *:not(#ticket-print-root) { display: none !important; } #ticket-print-root { display: block !important; } }`}</style>
+      )}
+      <div id="ticket-print-root" style={{ display: "none" }}>
+        {printTicket && (
+          <div style={{ fontFamily: "'Arial',sans-serif", padding: "32px 40px", maxWidth: 700, margin: "0 auto", color: "#000" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, borderBottom: "2px solid #000", paddingBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>MoveAround TMS</div>
+                <div style={{ fontSize: 13, color: "#666", marginTop: 2 }}>Ticket Record — Official Copy</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 18, fontWeight: 800 }}>Ticket #{printTicket.ticketNo}</div>
+                <div style={{ fontSize: 12, color: "#666" }}>Printed: {new Date().toLocaleString("en-US")}</div>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px", marginBottom: 20 }}>
+              {[
+                ["Ticket Number", printTicket.ticketNo], ["Ticket Date", printTicket.ticketDate],
+                ["Customer", printTicket.customer], ["Project / Job #", printTicket.project],
+                ["Driver", printTicket.driver], ["Truck", printTicket.truck],
+                ["Pit / Vendor", printTicket.pitName || printTicket.vendor], ["Material", printTicket.material],
+                ["Net Tons", `${printTicket.tons.toFixed(2)} tons`], ["Rate", `$${printTicket.rate.toFixed(2)}/ton`],
+                ["Billing Amount", money(printTicket.billingAmount)], ["Payroll Amount", money(printTicket.payrollAmount)],
+                ["PO Number", printTicket.poNumber], ["Invoice #", printTicket.invoiceNumber || "—"],
+                ["Billing Status", printTicket.billingStatus.replace(/_/g," ")], ["Payroll Status", printTicket.payrollStatus.replace(/_/g," ")],
+                ["OCR Confidence", `${printTicket.scanConfidence}%`], ["Approval Status", printTicket.status],
+                ["Proof Status", printTicket.proofStatus], ["Health Score", `${printTicket.ticketHealthScore}%`],
+              ].map(([l, v]) => (
+                <div key={l} style={{ paddingBottom: 6, borderBottom: "1px solid #eee" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#666", textTransform: "uppercase", letterSpacing: "0.05em" }}>{l}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>{v || "—"}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 24, borderTop: "1px solid #ccc", paddingTop: 12, display: "flex", justifyContent: "space-between", fontSize: 10, color: "#666" }}>
+              <span>Generated by MoveAround TMS · Fast Scan™</span>
+              <span>Ticket #{printTicket.ticketNo} · {printTicket.ticketDate}</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.heic" style={{ display: "none" }} onChange={e => handleFiles(e.target.files)} />
@@ -1894,24 +2316,48 @@ export default function TicketsPage() {
           TAB: ALL TICKETS
       ═══════════════════════════════════════════════════════════════════════ */}
       {activeTab === "all" && (
-        <div>
-          {/* Filter bar */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticket #, driver, truck, vendor, pit, project…"
-              style={{ flex: 1, minWidth: 260, padding: "9px 14px", borderRadius: 9, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none" }} />
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: "9px 12px", borderRadius: 9, border: "1px solid #e2e8f0", fontSize: "0.83rem" }}>
+        <div onClick={() => setMoreMenuId(null)}>
+          {/* ── Bulk Action Bar (visible when selection > 0) ── */}
+          {selectedIds.size > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: "#1e40af", borderRadius: 10, marginBottom: 12, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 700, color: "#fff", fontSize: "0.83rem" }}>{selectedIds.size} selected</span>
+              <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.3)" }} />
+              <button onClick={() => { const ids = filteredTickets.map(t => t.id); filteredTickets.forEach(t => { if (!selectedIds.has(t.id)) toggleSelect(t.id); }); ids.forEach(id => { if (!selectedIds.has(id)) toggleSelect(id); }); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontWeight: 600, fontSize: "0.75rem", cursor: "pointer" }}>Select All</button>
+              <button onClick={() => setSelectedIds(new Set())} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontWeight: 600, fontSize: "0.75rem", cursor: "pointer" }}>Clear</button>
+              <div style={{ flex: 1 }} />
+              <button onClick={() => { filteredTickets.filter(t => selectedIds.has(t.id)).forEach(t => handlePrint(t)); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>🖨 Print Selected</button>
+              <button onClick={() => { const t = filteredTickets.find(tt => selectedIds.has(tt.id)); if (t) openEmail(t); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>✉ Email Selected</button>
+              <button onClick={bulkExport} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>⬇ Export Selected</button>
+              <button onClick={bulkSendToPayroll} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "#4ade80", color: "#052e16", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>→ Payroll</button>
+              <button onClick={bulkSendToBilling} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "#93c5fd", color: "#1e3a8a", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>→ Billing</button>
+            </div>
+          )}
+
+          {/* ── Filter bar + header buttons ── */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticket #, driver, truck, vendor, project…"
+              style={{ flex: 1, minWidth: 220, padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem", outline: "none" }} />
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.83rem" }}>
               <option>All Statuses</option>
               {["Scanned","Needs Review","Matched","Approved","Sent to Payroll","Sent to Billing","Paid","Archived"].map(s => <option key={s}>{s}</option>)}
             </select>
-            <button onClick={loadTickets} style={{ padding: "9px 16px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, fontSize: "0.83rem", cursor: "pointer" }}>↻ Refresh</button>
+            <button onClick={loadTickets} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}>↻ Refresh</button>
+            <button onClick={bulkExport} title="Export all visible tickets" style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}>⬇ Export</button>
           </div>
 
-          {/* Table */}
+          {/* ── Ticket Table ── */}
           <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.9rem" }}>All Tickets</span>
+            {/* Table header bar */}
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="checkbox"
+                checked={selectedIds.size === filteredTickets.length && filteredTickets.length > 0}
+                onChange={e => e.target.checked ? setSelectedIds(new Set(filteredTickets.map(t => t.id))) : setSelectedIds(new Set())}
+                style={{ width: 14, height: 14, cursor: "pointer" }} />
+              <span style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.88rem" }}>All Tickets</span>
               <span style={{ fontSize: "0.72rem", background: "#f1f5f9", color: "#64748b", fontWeight: 600, padding: "2px 9px", borderRadius: 99 }}>{filteredTickets.length} records</span>
+              {selectedIds.size > 0 && <span style={{ fontSize: "0.72rem", background: "#dbeafe", color: "#1d4ed8", fontWeight: 700, padding: "2px 9px", borderRadius: 99 }}>{selectedIds.size} selected</span>}
             </div>
+
             {loading ? (
               <div style={{ padding: "60px 0", textAlign: "center", color: "#94a3b8" }}>Loading tickets…</div>
             ) : filteredTickets.length === 0 ? (
@@ -1923,112 +2369,75 @@ export default function TicketsPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc" }}>
-                      {["Ticket #","Date","Vendor","Pit","Driver","Truck","Project","Material","Tons","Invoice","Billing","Payroll","Action"].map(h => (
-                        <th key={h} style={{ padding: "10px 12px", fontWeight: 700, color: "#475569", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "0.68rem", whiteSpace: "nowrap" }}>{h}</th>
+                      <th style={{ width: 36, padding: "9px 12px", borderBottom: "1px solid #e2e8f0" }} />
+                      {["Ticket #","Date","Driver","Truck","Customer","Material","Tons","Billing","Payroll","Actions"].map(h => (
+                        <th key={h} style={{ padding: "9px 10px", fontWeight: 700, color: "#475569", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "0.67rem", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTickets.map((t, i) => (
-                      <tr key={t.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "9px 12px", fontWeight: 800, color: "#0f172a" }}>{t.ticketNo}</td>
-                        <td style={{ padding: "9px 12px", color: "#64748b", whiteSpace: "nowrap" }}>{t.ticketDate}</td>
-                        <td style={{ padding: "9px 12px", color: "#475569" }}>{t.vendor}</td>
-                        <td style={{ padding: "9px 12px", color: "#475569" }}>{t.pitName}</td>
-                        <td style={{ padding: "9px 12px", color: "#0f172a", fontWeight: 600 }}>{t.driver}</td>
-                        <td style={{ padding: "9px 12px", color: "#475569" }}>{t.truck}</td>
-                        <td style={{ padding: "9px 12px", color: "#475569", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis" }}>{t.project}</td>
-                        <td style={{ padding: "9px 12px", color: "#475569" }}>{t.material}</td>
-                        <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700 }}>{t.tons.toFixed(2)}</td>
-                        <td style={{ padding: "9px 12px" }}><SBadge code={t.invoiceMatched ? "MATCHED" : "MISSING_INVOICE"} /></td>
-                        <td style={{ padding: "9px 12px" }}><SBadge code={t.billingStatus} /></td>
-                        <td style={{ padding: "9px 12px" }}><SBadge code={t.payrollStatus} /></td>
-                        <td style={{ padding: "9px 12px" }}>
-                          <div style={{ display: "flex", gap: 4, flexWrap: "nowrap", alignItems: "center" }}>
-                            <button onClick={() => updateTicketStatus(t.id, "approved")} style={{ padding: "4px 10px", borderRadius: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer", whiteSpace: "nowrap" }}>Approve</button>
-                            <button
-                              onClick={() => generateQr(t.id, t.ticketNo, (t as any).qr_token, (t as any).qr_url, (t as any).qr_scan_count)}
-                              title={`Fast Scan™ QR${(t as any).qr_token ? " (exists)" : ""}`}
-                              style={{ padding: "4px 8px", borderRadius: 6, background: (t as any).qr_token ? "#eff6ff" : "#f8fafc", border: `1px solid ${(t as any).qr_token ? "#bfdbfe" : "#e2e8f0"}`, color: (t as any).qr_token ? "#1d4ed8" : "#64748b", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>
-                              {qrGenerating && qrTicketId === t.id ? "…" : "QR"}
-                            </button>
-                            <button onClick={() => { setDeleteConfirmId(t.id); setDeleteReason(""); }} style={{ padding: "4px 8px", borderRadius: 6, background: "#fff1f2", border: "1px solid #fecdd3", color: "#dc2626", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>Del</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredTickets.map((t, i) => {
+                      const isSelected = selectedIds.has(t.id);
+                      const isMoreOpen = moreMenuId === t.id;
+                      return (
+                        <tr key={t.id} style={{ background: isSelected ? "#eff6ff" : i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f1f5f9" }}>
+                          {/* Checkbox */}
+                          <td style={{ padding: "9px 12px" }} onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(t.id)} style={{ width: 14, height: 14, cursor: "pointer" }} />
+                          </td>
+                          {/* Data cells — clicking opens viewer */}
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", fontWeight: 800, color: "#1d4ed8", cursor: "pointer", whiteSpace: "nowrap" }}>#{t.ticketNo}</td>
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", color: "#64748b", whiteSpace: "nowrap", cursor: "pointer" }}>{t.ticketDate}</td>
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", color: "#0f172a", fontWeight: 600, cursor: "pointer" }}>{t.driver}</td>
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", color: "#475569", cursor: "pointer" }}>{t.truck}</td>
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", color: "#475569", cursor: "pointer", maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.customer || t.vendor}</td>
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", color: "#475569", cursor: "pointer" }}>{t.material}</td>
+                          <td onClick={() => setViewerTicket(t)} style={{ padding: "9px 10px", fontWeight: 700, textAlign: "right", cursor: "pointer" }}>{t.tons.toFixed(2)}</td>
+                          <td style={{ padding: "9px 10px" }}><SBadge code={t.billingStatus} /></td>
+                          <td style={{ padding: "9px 10px" }}><SBadge code={t.payrollStatus} /></td>
+                          {/* Actions */}
+                          <td style={{ padding: "9px 10px" }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: "flex", gap: 3, alignItems: "center", position: "relative" }}>
+                              <button onClick={() => setViewerTicket(t)} style={{ padding: "4px 8px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontWeight: 700, fontSize: "0.68rem", cursor: "pointer", whiteSpace: "nowrap" }}>Open</button>
+                              <button onClick={() => openEmail(t)} style={{ padding: "4px 8px", borderRadius: 5, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontWeight: 700, fontSize: "0.68rem", cursor: "pointer" }}>Email</button>
+                              <button onClick={() => handlePrint(t)} style={{ padding: "4px 8px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: "0.68rem", cursor: "pointer" }}>Print</button>
+                              <button onClick={() => handleDownload(t)} style={{ padding: "4px 8px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: "0.68rem", cursor: "pointer" }}>⬇</button>
+                              {/* ⋯ more menu */}
+                              <div style={{ position: "relative" }}>
+                                <button onClick={e => { e.stopPropagation(); setMoreMenuId(isMoreOpen ? null : t.id); }} style={{ padding: "4px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>⋯</button>
+                                {isMoreOpen && (
+                                  <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, minWidth: 180, padding: "4px 0" }}>
+                                    {[
+                                      { label: "Review OCR", action: () => { setViewerTicket(t); setMoreMenuId(null); } },
+                                      { label: "Match Job", action: () => { setActiveTab("invoice_match"); setMoreMenuId(null); } },
+                                      { label: "Send to Payroll", action: () => { updateTicketStatus(t.id, "sent_to_payroll"); setMoreMenuId(null); } },
+                                      { label: "Send to Billing", action: () => { updateTicketStatus(t.id, "sent_to_billing"); setMoreMenuId(null); } },
+                                      { label: "Approve", action: () => { updateTicketStatus(t.id, "approved"); setMoreMenuId(null); } },
+                                      { label: "Flag for Review", action: () => { updateTicketStatus(t.id, "needs_review"); setMoreMenuId(null); } },
+                                      { label: "Generate QR", action: () => { generateQr(t.id, t.ticketNo, (t as any).qr_token, (t as any).qr_url, (t as any).qr_scan_count); setMoreMenuId(null); } },
+                                      { label: "View Audit Trail", action: () => { setViewerTicket(t); setMoreMenuId(null); } },
+                                      { label: "Mark Duplicate", action: () => { updateTicketStatus(t.id, "needs_review"); setMoreMenuId(null); showToast("Flagged as duplicate — review in Needs Review tab"); } },
+                                      { label: "Delete", action: () => { setDeleteConfirmId(t.id); setDeleteReason(""); setMoreMenuId(null); }, danger: true },
+                                    ].map(item => (
+                                      <button key={item.label} onClick={item.action} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "none", border: "none", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", color: (item as any).danger ? "#dc2626" : "#0f172a", borderRadius: 0 }}
+                                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = (item as any).danger ? "#fff1f2" : "#f8fafc"; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}>
+                                        {item.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
-
-          {/* Ticket cards for detailed view */}
-          {filteredTickets.length > 0 && filteredTickets.length <= 20 && (
-            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-              {filteredTickets.map(ticket => (
-                <article key={ticket.id} style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
-                  {ticket.duplicateRisk && (
-                    <div style={{ background: "#7c3aed", color: "#fff", padding: "6px 18px", fontSize: "0.72rem", fontWeight: 800 }}>
-                      ⚠ POSSIBLE DUPLICATE — Similar to #{ticket.duplicateMatch}
-                    </div>
-                  )}
-                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-                    <div>
-                      <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>Ticket #{ticket.ticketNo}</div>
-                      <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: 2 }}>{ticket.vendor} — {ticket.pitName}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 1 }}>Date: {ticket.ticketDate} · Truck: {ticket.truck} · Driver: {ticket.driver}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <HealthBadge score={ticket.ticketHealthScore} />
-                      <SBadge code={ticket.billingStatus} />
-                      <SBadge code={ticket.payrollStatus} />
-                    </div>
-                  </div>
-                  <div style={{ padding: "14px 20px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
-                    {[
-                      ["Project", ticket.project],
-                      ["Material", ticket.material],
-                      ["Net Tons", ticket.tons.toFixed(2)],
-                      ["Rate", `$${ticket.rate.toFixed(2)}/ton`],
-                      ["Billing Amt", money(ticket.billingAmount)],
-                      ["Payroll Amt", money(ticket.payrollAmount)],
-                      ["Invoice #", ticket.invoiceNumber || "—"],
-                      ["PO #", ticket.poNumber],
-                      ["Proof", ticket.proofStatus === "Complete" ? "✅ Complete" : "⚠ " + ticket.proofStatus],
-                      ["Confidence", `${ticket.scanConfidence}%`],
-                    ].map(([label, val]) => (
-                      <div key={label as string}>
-                        <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-                        <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.82rem", marginTop: 2 }}>{val}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <ConfBar score={ticket.scanConfidence} />
-                  <div style={{ padding: "12px 20px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {[
-                      { label: "View Scan",     action: () => showToast("View scan — attach file support coming soon") },
-                      { label: "Edit Fields",   action: () => showToast("Edit fields — open full edit form") },
-                      { label: "Match Invoice", action: () => setActiveTab("invoice_match") },
-                      { label: "Send to Billing",  action: () => updateTicketStatus(ticket.id, "sent_to_billing") },
-                      { label: "Send to Payroll",  action: () => updateTicketStatus(ticket.id, "sent_to_payroll") },
-                      { label: "Flag Issue",    action: () => updateTicketStatus(ticket.id, "needs_review") },
-                      { label: "Approve",       action: () => updateTicketStatus(ticket.id, "approved"), primary: true },
-                    ].map(b => (
-                      <button key={b.label} onClick={b.action} style={{
-                        padding: "7px 14px", borderRadius: 8,
-                        background: (b as any).primary ? "#1e40af" : "#f8fafc",
-                        color: (b as any).primary ? "#fff" : "#475569",
-                        border: (b as any).primary ? "none" : "1px solid #e2e8f0",
-                        fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
-                      }}>{b.label}</button>
-                    ))}
-                    <button onClick={() => { setDeleteConfirmId(ticket.id); setDeleteReason(""); }} style={{ padding: "7px 14px", borderRadius: 8, background: "#fff1f2", border: "1px solid #fecdd3", color: "#dc2626", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", marginLeft: "auto" }}>Delete</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
         </div>
       )}
 

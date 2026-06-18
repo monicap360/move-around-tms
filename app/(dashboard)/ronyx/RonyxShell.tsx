@@ -210,6 +210,12 @@ export default function RonyxShell({
   const [notifCount] = useState(3);
   const [now, setNow] = useState<string>("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set<string>());
+  const [pilotBanner, setPilotBanner] = useState<{
+    show: boolean;
+    daysRemaining: number | null;
+    expired: boolean;
+    endsAt: string | null;
+  }>({ show: false, daysRemaining: null, expired: false, endsAt: null });
 
   useEffect(() => {
     const tick = () =>
@@ -232,6 +238,18 @@ export default function RonyxShell({
       return next;
     });
   }, [pathname]);
+
+  // Fetch pilot status once on mount
+  useEffect(() => {
+    fetch("/api/ronyx/pilot-status")
+      .then(r => r.json())
+      .then(d => {
+        if (d.isPilot) {
+          setPilotBanner({ show: true, daysRemaining: d.daysRemaining, expired: d.pilotExpired, endsAt: d.pilot_ends_at });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Auto-initialize all storage buckets once per day (silent, background)
   useEffect(() => {
@@ -815,6 +833,59 @@ export default function RonyxShell({
             </button>
           </div>
         </header>
+
+        {pilotBanner.show && (
+          <div style={{
+            background: pilotBanner.expired ? "#7f1d1d" : "#1e3a5f",
+            color: "#fff",
+            padding: "8px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            fontSize: "0.8rem",
+            borderBottom: `2px solid ${pilotBanner.expired ? "#dc2626" : "#2563eb"}`,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: "1rem" }}>{pilotBanner.expired ? "⚠️" : "🚀"}</span>
+              {pilotBanner.expired ? (
+                <span>
+                  <strong>Your Ronyx free trial has ended.</strong>&nbsp;
+                  Your data is saved. Upgrade to continue using Dispatch Command Center, Dispatch Guard™, Fast Scan, tickets, payroll, billing, compliance, and reporting.
+                </span>
+              ) : (
+                <span>
+                  <strong>Ronyx Free Trial Active</strong> — Full system access enabled
+                  {pilotBanner.daysRemaining !== null && (
+                    <> · <strong>{pilotBanner.daysRemaining} day{pilotBanner.daysRemaining !== 1 ? "s" : ""}</strong> left in trial</>
+                  )}
+                  {pilotBanner.endsAt && (
+                    <> · Trial ends {new Date(pilotBanner.endsAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</>
+                  )}.
+                  &nbsp;Your data is saved — upgrade before the trial ends to keep access.
+                </span>
+              )}
+            </div>
+            {pilotBanner.expired && (
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <a href="/ronyx/settings/billing" style={{
+                  background: "#dc2626", color: "#fff", padding: "4px 14px",
+                  borderRadius: 5, fontWeight: 700, fontSize: "0.75rem", whiteSpace: "nowrap", textDecoration: "none",
+                }}>Upgrade Now</a>
+                <a href="/ronyx/settings/billing#plans" style={{
+                  background: "transparent", color: "#fff", padding: "4px 14px",
+                  borderRadius: 5, fontWeight: 600, fontSize: "0.75rem", whiteSpace: "nowrap",
+                  border: "1px solid rgba(255,255,255,0.4)", textDecoration: "none",
+                }}>View Plans</a>
+                <a href="mailto:support@movearoundtms.com" style={{
+                  background: "transparent", color: "#94a3b8", padding: "4px 14px",
+                  borderRadius: 5, fontWeight: 600, fontSize: "0.75rem", whiteSpace: "nowrap",
+                  border: "1px solid rgba(255,255,255,0.15)", textDecoration: "none",
+                }}>Contact Support</a>
+              </div>
+            )}
+          </div>
+        )}
 
         <main className="tms-content">{children}</main>
       </div>

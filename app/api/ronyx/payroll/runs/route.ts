@@ -3,7 +3,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET() {
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.from("ronyx_payroll_runs").select("*").order("created_at", { ascending: false });
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const { data, error } = await supabase
+    .from("ronyx_payroll_runs")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -12,6 +17,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient();
+  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const body = await req.json();
   const { period_start, period_end, items } = body || {};
 
@@ -22,6 +28,7 @@ export async function POST(req: NextRequest) {
   const { data: run, error: runError } = await supabase
     .from("ronyx_payroll_runs")
     .insert({
+      organization_id: orgId,
       period_start,
       period_end,
       status: "approved",
@@ -36,6 +43,7 @@ export async function POST(req: NextRequest) {
 
   if (Array.isArray(items) && items.length > 0) {
     const payload = items.map((item) => ({
+      organization_id: orgId,
       run_id: run.id,
       driver_id: item.driver_id,
       driver_name: item.driver_name,

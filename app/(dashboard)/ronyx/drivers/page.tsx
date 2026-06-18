@@ -1375,7 +1375,17 @@ export default function DriversPage() {
   useEffect(() => {
     fetch("/api/ronyx/drivers/list")
       .then((r) => r.json())
-      .then((data) => setAllDrivers((data.drivers || []).map(mapApiDriver)))
+      .then((data) => {
+        const mapped = (data.drivers || []).map(mapApiDriver);
+        const seen = new Set<string>();
+        const deduped = mapped.filter((d: ReturnType<typeof mapApiDriver>) => {
+          const key = d.name.toLowerCase().trim();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setAllDrivers(deduped);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
     loadAlerts();
@@ -1896,7 +1906,7 @@ export default function DriversPage() {
             /* ── List View ── */
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }} onClick={() => setMoreMenuId(null)}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
                       {["", "Driver", "Company / Carrier", "Type", "Status", "Truck", "CDL", "MVR", "Medical Card", "Docs", "CCB Status", "Next Action", "Actions"].map((h) => (
