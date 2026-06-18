@@ -9,6 +9,18 @@ async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClie
   return data?.id ?? null;
 }
 
+function isActiveTrial(org: Record<string, unknown> | null): boolean {
+  if (!org) return false;
+  return (
+    org.status              === "active"      &&
+    org.account_type        === "free_trial"  &&
+    org.bypass_subscription === true          &&
+    org.subscription_required === false       &&
+    !!org.pilot_ends_at &&
+    new Date(org.pilot_ends_at as string) > new Date()
+  );
+}
+
 export async function GET() {
   const supabase = createSupabaseServerClient();
 
@@ -17,17 +29,63 @@ export async function GET() {
     return NextResponse.json({ error: "No organization found" }, { status: 404 });
   }
 
-  // Fetch subscription + plan
+  // Check free-trial bypass on the org
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("status, account_type, bypass_subscription, subscription_required, pilot_ends_at")
+    .eq("id", orgId)
+    .single();
+
+  // Fetch all available modules
+  const { data: allModulesRaw } = await supabase
+    .from("modules")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  const allPlansQuery = supabase
+    .from("subscription_plans")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  // If org is on an active free trial — unlock everything, skip subscription check
+  if (isActiveTrial(orgRow)) {
+    const { data: allPlans } = await allPlansQuery;
+    const allModules = (allModulesRaw ?? []).map((m: Record<string, unknown>) => ({
+      ...m,
+      org_is_active: true,
+    }));
+    const activeModules: string[] = (allModulesRaw ?? []).map((m: Record<string, unknown>) => m.slug as string);
+
+    return NextResponse.json({
+      subscription: {
+        plan_slug:              "free_trial",
+        status:                 "trialing",
+        trial_ends_at:          orgRow?.pilot_ends_at ?? null,
+        current_period_start:   null,
+        current_period_end:     orgRow?.pilot_ends_at ?? null,
+        billing_email:          null,
+        stripe_customer_id:     null,
+        stripe_subscription_id: null,
+        plan:                   null,
+        bypass_subscription:    true,
+        account_type:           "free_trial",
+      },
+      activeModules,
+      allPlans:   allPlans ?? [],
+      allModules,
+      trialActive: true,
+    });
+  }
+
+  // Normal subscription path
   const { data: subRow } = await supabase
     .from("organization_subscriptions")
-    .select(`
-      *,
-      plan:subscription_plans (*)
-    `)
+    .select(`*, plan:subscription_plans (*)`)
     .eq("organization_id", orgId)
     .single();
 
-  // Fetch active module slugs for this org
   const { data: orgModulesRows } = await supabase
     .from("organization_modules")
     .select("module_slug, is_active")
@@ -37,19 +95,7 @@ export async function GET() {
     .filter((r: { module_slug: string; is_active: boolean }) => r.is_active)
     .map((r: { module_slug: string }) => r.module_slug);
 
-  // Fetch all plans (for upgrade comparison)
-  const { data: allPlans } = await supabase
-    .from("subscription_plans")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  // Fetch all modules with org active status
-  const { data: allModulesRaw } = await supabase
-    .from("modules")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  const { data: allPlans } = await allPlansQuery;
 
   const orgModuleMap = new Map<string, boolean>(
     (orgModulesRows ?? []).map((r: { module_slug: string; is_active: boolean }) => [r.module_slug, r.is_active])
@@ -61,21 +107,20 @@ export async function GET() {
   }));
 
   if (!subRow) {
-    // No subscription row yet — return defaults
     return NextResponse.json({
       subscription: {
-        plan_slug: "starter",
-        status: "trialing",
-        trial_ends_at: null,
-        current_period_start: null,
-        current_period_end: null,
-        billing_email: null,
-        stripe_customer_id: null,
+        plan_slug:              "starter",
+        status:                 "trialing",
+        trial_ends_at:          null,
+        current_period_start:   null,
+        current_period_end:     null,
+        billing_email:          null,
+        stripe_customer_id:     null,
         stripe_subscription_id: null,
-        plan: (allPlans ?? []).find((p: Record<string, unknown>) => p.slug === "starter") ?? null,
+        plan:                   (allPlans ?? []).find((p: Record<string, unknown>) => p.slug === "starter") ?? null,
       },
       activeModules: [],
-      allPlans: allPlans ?? [],
+      allPlans:      allPlans ?? [],
       allModules,
     });
   }
@@ -83,7 +128,7 @@ export async function GET() {
   return NextResponse.json({
     subscription: subRow,
     activeModules,
-    allPlans: allPlans ?? [],
+    allPlans:  allPlans ?? [],
     allModules,
   });
 }
