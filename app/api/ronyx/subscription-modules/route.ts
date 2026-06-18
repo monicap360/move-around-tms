@@ -73,12 +73,15 @@ export async function GET() {
   const orgId      = org.id as string;
   const trialActive = isActiveTrial(org, columnsMissing);
 
-  // ── Try new view first (migration 167) ──────────────────────────────────────
+  // ── Try new view first (migration 167+) ─────────────────────────────────────
+  // Note: sort_order is in module_registry, not in the view. Order by category
+  // + module_name so results are stable without needing that column.
   const { data: viewRows, error: viewErr } = await supabase
     .from("organization_module_marketplace")
     .select("*")
     .eq("organization_id", orgId)
-    .order("sort_order", { ascending: true });
+    .order("category", { ascending: true })
+    .order("module_name", { ascending: true });
 
   if (!viewErr && viewRows && viewRows.length > 0) {
     const trialDaysLeft = (viewRows[0] as Record<string, unknown>).trial_days_left as number | null;

@@ -1,10 +1,15 @@
 -- ============================================================
 -- Migration 168: Manual Payment Options
+-- File: db/migrations/168_manual_payment_options.sql
 -- Purpose:
--- - Add Zelle, Cash App, Cash, and Check support
+-- - Add Zelle, Cash App, Cash, Check, Wire, and Invoice Billing support
 -- - Add manual payment tracking fields to organizations
--- - Add manual payment audit table
+-- - Add manual_payment_logs table
 -- ============================================================
+
+-- ------------------------------------------------------------
+-- 1. Add billing/manual payment fields to organizations
+-- ------------------------------------------------------------
 
 alter table public.organizations
 add column if not exists billing_email text;
@@ -48,7 +53,11 @@ Cash: Accepted by approval only. Please request a receipt.
 Check: Make checks payable to the approved business name listed on your invoice.
 Please include your company name and invoice number in the payment note when available.';
 
--- Optional check constraint for payment method type
+
+-- ------------------------------------------------------------
+-- 2. Payment method check constraint
+-- ------------------------------------------------------------
+
 do $$
 begin
   if not exists (
@@ -76,7 +85,11 @@ begin
   end if;
 end $$;
 
--- Optional check constraint for manual payment status
+
+-- ------------------------------------------------------------
+-- 3. Manual payment status check constraint
+-- ------------------------------------------------------------
+
 do $$
 begin
   if not exists (
@@ -100,7 +113,11 @@ begin
   end if;
 end $$;
 
--- Manual payment log table
+
+-- ------------------------------------------------------------
+-- 4. Create manual payment logs table
+-- ------------------------------------------------------------
+
 create table if not exists public.manual_payment_logs (
   id uuid primary key default gen_random_uuid(),
 
@@ -123,7 +140,11 @@ create table if not exists public.manual_payment_logs (
   updated_at timestamptz not null default now()
 );
 
--- Status check for manual payment logs
+
+-- ------------------------------------------------------------
+-- 5. Manual payment logs status check
+-- ------------------------------------------------------------
+
 do $$
 begin
   if not exists (
@@ -146,7 +167,11 @@ begin
   end if;
 end $$;
 
--- Method check for manual payment logs
+
+-- ------------------------------------------------------------
+-- 6. Manual payment logs method check
+-- ------------------------------------------------------------
+
 do $$
 begin
   if not exists (
@@ -169,7 +194,11 @@ begin
   end if;
 end $$;
 
--- updated_at helper
+
+-- ------------------------------------------------------------
+-- 7. updated_at helper
+-- ------------------------------------------------------------
+
 create or replace function public.set_updated_at()
 returns trigger as $$
 begin
@@ -178,17 +207,27 @@ begin
 end;
 $$ language plpgsql;
 
-drop trigger if exists set_manual_payment_logs_updated_at on public.manual_payment_logs;
+
+drop trigger if exists set_manual_payment_logs_updated_at
+on public.manual_payment_logs;
 
 create trigger set_manual_payment_logs_updated_at
 before update on public.manual_payment_logs
 for each row
 execute function public.set_updated_at();
 
--- Enable RLS
+
+-- ------------------------------------------------------------
+-- 8. Enable RLS
+-- ------------------------------------------------------------
+
 alter table public.manual_payment_logs enable row level security;
 
--- Helper function, if not already there
+
+-- ------------------------------------------------------------
+-- 9. current_user_org helper
+-- ------------------------------------------------------------
+
 create or replace function public.current_user_org()
 returns uuid
 language sql
@@ -201,6 +240,11 @@ as $$
   limit 1
 $$;
 
+
+-- ------------------------------------------------------------
+-- 10. RLS policies
+-- ------------------------------------------------------------
+
 drop policy if exists "Organization members can view manual payment logs"
 on public.manual_payment_logs;
 
@@ -211,6 +255,7 @@ using (
   organization_id = public.current_user_org()
 );
 
+
 drop policy if exists "Organization members can insert manual payment logs"
 on public.manual_payment_logs;
 
@@ -220,6 +265,7 @@ for insert
 with check (
   organization_id = public.current_user_org()
 );
+
 
 drop policy if exists "Organization members can update manual payment logs"
 on public.manual_payment_logs;
@@ -234,7 +280,11 @@ with check (
   organization_id = public.current_user_org()
 );
 
--- Update Ronyx with default manual payment instructions
+
+-- ------------------------------------------------------------
+-- 11. Update Ronyx with default manual payment instructions
+-- ------------------------------------------------------------
+
 update public.organizations
 set
   payment_instructions =
@@ -248,7 +298,11 @@ Please include your company name and invoice number in the payment note when ava
 where lower(name) like '%ronyx%'
    or lower(organization_code) like '%ronyx%';
 
--- Validation
+
+-- ------------------------------------------------------------
+-- 12. Validation
+-- ------------------------------------------------------------
+
 select
   id,
   name,
