@@ -68,25 +68,25 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to");
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
-  // Include both this org's tickets AND unassigned tickets (pre-migration fallback).
-  // After migration 165 backfills all rows, organization_id IS NULL will return 0 naturally.
-  let query = supabase
-    .from("aggregate_tickets")
-    .select("*")
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
-    .order("ticket_date", { ascending: false });
+  const buildQuery = (withOrgFilter: boolean) => {
+    let q = supabase
+      .from("aggregate_tickets")
+      .select("*")
+      .order("ticket_date", { ascending: false });
+    if (withOrgFilter) q = q.or(`organization_id.eq.${orgId},organization_id.is.null`);
+    if (status) q = q.eq("status", status);
+    if (from)   q = q.gte("ticket_date", from);
+    if (to)     q = q.lte("ticket_date", to);
+    return q.limit(200);
+  };
 
-  if (status) {
-    query = query.eq("status", status);
-  }
-  if (from) {
-    query = query.gte("ticket_date", from);
-  }
-  if (to) {
-    query = query.lte("ticket_date", to);
+  let { data, error } = await buildQuery(true);
+
+  // Fallback: if organization_id column doesn't exist yet (migration 165 not run), drop the org filter
+  if (error && (error.message.includes("organization_id") || error.code === "42703")) {
+    ({ data, error } = await buildQuery(false));
   }
 
-  const { data, error } = await query.limit(200);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
