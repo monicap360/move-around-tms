@@ -137,14 +137,22 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Team (General)",       href: "/ronyx/tasks?tab=Team",   icon: "👥", color: "#0891b2" },
         { label: "All Tasks",            href: "/ronyx/tasks?tab=All",    icon: "📌", color: "#475569" },
       ]},
-      { label: "Mission Start™",    href: "/ronyx/staff/my-dashboard",   icon: "🎯", color: "#1e40af" },
+      { label: "Launch Center",      href: "/ronyx/staff/my-dashboard",   icon: "🚀", color: "#1e40af" },
       { label: "Team Momentum",     href: "/ronyx/staff/team-momentum",  icon: "📊", color: "#7c3aed" },
+    ],
+  },
+  {
+    section: "Commerce",
+    items: [
+      { label: "Merch Store", href: "/ronyx/store", icon: "🛒", color: "#16a34a", subtitle: "Powered by Shopify" },
     ],
   },
   {
     section: "System",
     items: [
       { label: "Admin Control Center", href: "/ronyx/settings", icon: "⚙️", color: "#475569", children: [
+        { label: "Billing & Subscription", href: "/ronyx/settings/billing",          icon: "💳", color: "#16a34a" },
+        { label: "Module Marketplace",     href: "/ronyx/settings/modules",          icon: "🧩", color: "#7c3aed" },
         { label: "Command Briefing",       href: "/ronyx/admin/command-briefing",    icon: "☀️", color: "#dc2626" },
         { label: "Company Profile",        href: "/ronyx/settings/company-profile",  icon: "🏢", color: "#1e40af" },
         { label: "Users & Staff",          href: "/ronyx/settings/users",            icon: "👥", color: "#0891b2" },

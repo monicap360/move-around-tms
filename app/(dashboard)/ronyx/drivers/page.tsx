@@ -39,6 +39,9 @@ type Driver = {
   drugTestStatus?: string;
   backgroundCheckStatus?: string;
   owner_operator_company?: string;
+  dispatch_blocked_at?: string | null;
+  dispatch_blocked_by?: string | null;
+  dispatch_block_reason?: string | null;
 };
 
 type ComplianceAlert = {
@@ -117,8 +120,11 @@ function mapApiDriver(d: any): Driver {
     rating:            Number(d.rating) || 0,
     safetyScore:       100,
     onTime:            100,
-    lastLoad:          "—",
-    revenueWeek:       "—",
+    lastLoad:            "—",
+    revenueWeek:         "—",
+    dispatch_blocked_at:   d.dispatch_blocked_at   || null,
+    dispatch_blocked_by:   d.dispatch_blocked_by   || null,
+    dispatch_block_reason: d.dispatch_block_reason || null,
   };
 }
 
@@ -155,12 +161,14 @@ function docBadge(state: "missing" | "expired" | "expiring" | "ok"): { label: st
   return { label: "✓ Current", color: "#166534", bg: "#dcfce7" };
 }
 
-function driverCCBStatus(driver: Driver): { label: string; color: string; bg: string } {
-  const noCompany = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
-  if (noCompany || driver.docs === "Expired") return { label: "Blocked",      color: "#991b1b", bg: "#fee2e2" };
-  if (driver.docs === "Missing")              return { label: "Needs Review", color: "#92400e", bg: "#fef3c7" };
-  if (driver.docs === "Expiring")             return { label: "Needs Review", color: "#92400e", bg: "#fef9c3" };
-  return { label: "Clear", color: "#166534", bg: "#dcfce7" };
+function driverCCBStatus(driver: Driver): { label: string; color: string; bg: string; isManualBlock: boolean } {
+  const noCompany      = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
+  const manuallyBlocked = driver.dispatchEligible === false && !!driver.dispatch_blocked_at;
+  if (manuallyBlocked) return { label: "Manually Blocked", color: "#7c2d12", bg: "#fef2f2", isManualBlock: true };
+  if (noCompany || driver.docs === "Expired") return { label: "Blocked",      color: "#991b1b", bg: "#fee2e2", isManualBlock: false };
+  if (driver.docs === "Missing")              return { label: "Needs Review", color: "#92400e", bg: "#fef3c7", isManualBlock: false };
+  if (driver.docs === "Expiring")             return { label: "Needs Review", color: "#92400e", bg: "#fef9c3", isManualBlock: false };
+  return { label: "Clear", color: "#166534", bg: "#dcfce7", isManualBlock: false };
 }
 
 function driverNextAction(driver: Driver): string {
@@ -1988,6 +1996,42 @@ export default function DriversPage() {
                                   onClick={() => showToast(`CCB review queued for ${driver.name}`)}>
                                   CCB
                                 </button>
+                                {/* Unblock button — only shown when driver is blocked */}
+                                {(ccb.label === "Blocked" || ccb.label === "Manually Blocked") && (
+                                  <button
+                                    style={{ ...btnS, background: "#fef2f2", color: "#dc2626", borderColor: "#fca5a5", fontWeight: 800 }}
+                                    onClick={() => {
+                                      if (!confirm(`Unblock ${driver.name} and restore dispatch eligibility?`)) return;
+                                      fetch(`/api/ronyx/drivers/${driver.id}`, {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                          dispatch_eligible: true,
+                                          dispatch_blocked_by: "admin",
+                                          audit_action: "unblock_dispatch",
+                                          driver_name: driver.name,
+                                          audit_metadata: { unblocked_by: "admin", previous_status: ccb.label },
+                                        }),
+                                      })
+                                        .then((r) => r.json())
+                                        .then((res) => {
+                                          if (res.ok) {
+                                            showToast(`✓ ${driver.name} unblocked — dispatch restored`);
+                                            setAllDrivers((prev) => prev.map((d) =>
+                                              d.id === driver.id
+                                                ? { ...d, dispatchEligible: true, dispatch_blocked_at: null, dispatch_blocked_by: null, dispatch_block_reason: null }
+                                                : d
+                                            ));
+                                          } else {
+                                            showToast(`Error: ${res.error || "Could not unblock driver"}`);
+                                          }
+                                        })
+                                        .catch(() => showToast("Network error — could not unblock driver"));
+                                    }}
+                                  >
+                                    🔓 Unblock
+                                  </button>
+                                )}
                                 <div style={{ position: "relative" }}>
                                   <button
                                     style={{ ...btnS, background: isMoreOpen ? "#0f172a" : "#f8fafc", color: isMoreOpen ? "#fff" : "#475569" }}
@@ -2003,6 +2047,45 @@ export default function DriversPage() {
                                         <button style={menuItemS} onClick={() => setMoreMenuId(null)}>Open Owner Operator</button>
                                       </Link>
                                       <hr style={{ border: "none", borderTop: "1px solid #f1f5f9", margin: "4px 0" }} />
+                                      {/* Block Driver — only shown when driver is NOT already manually blocked */}
+                                      {ccb.label !== "Manually Blocked" && (
+                                        <button
+                                          style={{ ...menuItemS, color: "#dc2626" }}
+                                          onClick={() => {
+                                            const reason = prompt(`Reason for blocking ${driver.name} from dispatch:`);
+                                            if (reason === null) return;
+                                            setMoreMenuId(null);
+                                            fetch(`/api/ronyx/drivers/${driver.id}`, {
+                                              method: "PATCH",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({
+                                                dispatch_eligible: false,
+                                                dispatch_block_reason: reason || "Manual block",
+                                                dispatch_blocked_by: "admin",
+                                                audit_action: "block_dispatch",
+                                                driver_name: driver.name,
+                                                audit_metadata: { blocked_by: "admin", reason: reason || "Manual block" },
+                                              }),
+                                            })
+                                              .then((r) => r.json())
+                                              .then((res) => {
+                                                if (res.ok) {
+                                                  showToast(`🔒 ${driver.name} blocked from dispatch`);
+                                                  setAllDrivers((prev) => prev.map((d) =>
+                                                    d.id === driver.id
+                                                      ? { ...d, dispatchEligible: false, dispatch_blocked_at: new Date().toISOString(), dispatch_blocked_by: "admin", dispatch_block_reason: reason || "Manual block" }
+                                                      : d
+                                                  ));
+                                                } else {
+                                                  showToast(`Error: ${res.error || "Could not block driver"}`);
+                                                }
+                                              })
+                                              .catch(() => showToast("Network error — could not block driver"));
+                                          }}
+                                        >
+                                          🔒 Block from Dispatch
+                                        </button>
+                                      )}
                                       <button style={{ ...menuItemS, color: "#d97706" }} onClick={() => { setConfirmAction({ type: "archive", driver }); setMoreMenuId(null); }}>Archive</button>
                                       <button style={{ ...menuItemS, color: "#dc2626" }} onClick={() => { setConfirmAction({ type: "delete", driver }); setMoreMenuId(null); }}>Delete</button>
                                     </div>

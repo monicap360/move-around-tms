@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey =
@@ -188,6 +190,7 @@ function SeverityBadge({ s }: { s: string }) {
 }
 
 export default function InvoiceCommandCenter() {
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("billing");
   const [tab, setTab]                     = useState<TabKey>("mission_control");
   const [kpis, setKpis]                   = useState<KPIs>(EMPTY_KPIS);
   const [ticketRows, setTicketRows]        = useState<TicketRow[]>([]);
@@ -282,6 +285,9 @@ export default function InvoiceCommandCenter() {
 
   const paySheetTotal        = paySheetRows.reduce((a, r) => a + (r.ticket_value || 0), 0);
   const paySheetPayoutTotal  = paySheetRows.reduce((a, r) => a + (r.payout || 0), 0);
+
+  if (moduleLoading) return null;
+  if (moduleBlocked) return <ModuleUpgradeCard moduleSlug="billing" />;
 
   return (
     <div style={{ fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh", background: "#f8fafc" }}>

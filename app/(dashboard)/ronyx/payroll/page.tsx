@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
 
 type PayrollStatus =
   | "Ready to Pay"
@@ -121,6 +123,7 @@ function PayrollBadge({ value }: { value: PayrollStatus | DriverType }) {
 }
 
 export default function PayrollPage() {
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("payroll");
   const [records, setRecords]         = useState<PayrollRecord[]>([]);
   const [loading, setLoading]         = useState(false);
   const [toast, setToast]             = useState("");
@@ -264,6 +267,9 @@ export default function PayrollPage() {
     : r.status === "Missing Tickets" ? 72
     : r.status === "Disputed" ? 48
     : 80;
+
+  if (moduleLoading) return null;
+  if (moduleBlocked) return <ModuleUpgradeCard moduleSlug="payroll" />;
 
   return (
     <main className="payroll-page">

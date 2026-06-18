@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
+import BrandLogo from "@/components/ronyx/BrandLogo";
 
 const SCAN_TYPES = [
   { value: "trip_proof",    label: "Trip Proof",          icon: "📋", color: "#16a34a", bg: "#f0fdf4" },
@@ -82,6 +85,7 @@ const S = {
 };
 
 export default function FastScanPage() {
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("fast-scan");
   const [scanType, setScanType]     = useState("trip_proof");
   const [driverName, setDriverName] = useState("");
   const [truckNum, setTruckNum]     = useState("");
@@ -222,6 +226,9 @@ export default function FastScanPage() {
     }
   }
 
+  if (moduleLoading) return null;
+  if (moduleBlocked) return <ModuleUpgradeCard moduleSlug="fast-scan" />;
+
   return (
     <div style={S.page}>
       {/* Header */}
@@ -250,11 +257,20 @@ export default function FastScanPage() {
               </span>
             </div>
           </div>
-          {/* Badge */}
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, padding: "8px 14px" }}>
+          {/* Certified Scanner badge + logo */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0 }}>
+            <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, padding: "8px 14px", textAlign: "center" }}>
               <div style={{ fontSize: "1.5rem", lineHeight: 1 }}>📡</div>
               <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>Live</div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "6px 10px" }}>
+              <BrandLogo
+                asset="fastScanCertifiedScanner"
+                maxHeight={28}
+                maxWidth={140}
+                style={{ opacity: 0.92 }}
+                fallbackStyle={{ color: "#94a3b8", fontSize: "0.65rem" }}
+              />
             </div>
           </div>
         </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
 
 /* ─── Types ───────────────────────────────────────────────────────── */
 type Driver = {
@@ -1152,6 +1154,7 @@ function BackupDataTab({ drivers }: { drivers: Driver[] }) {
 /*  MAIN PAGE                                                           */
 /* ═══════════════════════════════════════════════════════════════════ */
 export default function ComplianceWorkCenterPage() {
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("compliance");
   const [drivers, setDrivers]       = useState<Driver[]>([]);
   const [workItems, setWorkItems]   = useState<WorkItem[]>([]);
   const [blocks, setBlocks]         = useState<Block[]>([]);
@@ -1277,6 +1280,9 @@ export default function ComplianceWorkCenterPage() {
     flash("Item assigned to you.");
     fetchData();
   }
+
+  if (moduleLoading) return null;
+  if (moduleBlocked) return <ModuleUpgradeCard moduleSlug="compliance" />;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc" }}>

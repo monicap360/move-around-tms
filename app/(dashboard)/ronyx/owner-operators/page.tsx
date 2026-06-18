@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
 
 /* ─── Types ─────────────────────────────────────────── */
 type OODriver = {
@@ -422,6 +424,7 @@ function ticketStatusColors(s?: string): [string, string] {
 
 /* ─── Main page ──────────────────────────────────────── */
 export default function OwnerOperatorsPage() {
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("owner-operators");
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);
@@ -1083,6 +1086,9 @@ export default function OwnerOperatorsPage() {
     { key:"compliance", label:"Compliance History" },
     { key:"subs",       label:`Subs${selected?.subcontractors?.length ? ` (${selected.subcontractors.length})` : ""}` },
   ] as const;
+
+  if (moduleLoading) return null;
+  if (moduleBlocked) return <ModuleUpgradeCard moduleSlug="owner-operators" />;
 
   return (
     <div style={{ maxWidth: 1100 }}>

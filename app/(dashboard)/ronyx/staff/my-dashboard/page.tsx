@@ -280,7 +280,7 @@ export default function StaffDashboard() {
         <div style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.7)", zIndex:9000, display:"flex", alignItems:"center", justifyContent:"center" }}>
           <div style={{ background:"#fff", borderRadius:20, padding:"32px 36px", width:380, textAlign:"center" }}>
             <div style={{ fontSize:"2rem", marginBottom:12 }}>👋</div>
-            <div style={{ fontWeight:900, fontSize:"1.2rem", color:"#0f172a", marginBottom:4 }}>Welcome to Mission Start™</div>
+            <div style={{ fontWeight:900, fontSize:"1.2rem", color:"#0f172a", marginBottom:4 }}>Welcome to Launch Center</div>
             <div style={{ fontSize:"0.82rem", color:"#64748b", marginBottom:20 }}>Enter your first name to personalize your task feed and wins.</div>
             <input autoFocus value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()}
               placeholder="Your first name..."
@@ -293,13 +293,13 @@ export default function StaffDashboard() {
         </div>
       )}
 
-      {/* ══ Mission Start™ Header ══ */}
+      {/* ══ Launch Center Header ══ */}
       <div style={{ background:"linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#1e40af 100%)", borderRadius:20, padding:"24px 28px", marginBottom:20, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:-40, right:-40, width:200, height:200, background:"rgba(255,255,255,0.03)", borderRadius:"50%" }} />
         <div style={{ position:"relative", zIndex:1 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <div style={{ fontSize:"0.58rem", fontWeight:800, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.15em", marginBottom:5 }}>Mission Start™</div>
+              <div style={{ fontSize:"0.58rem", fontWeight:800, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.15em", marginBottom:5 }}>🚀 Launch Center</div>
               <h1 style={{ margin:0, fontSize:"1.5rem", fontWeight:900, color:"#f8fafc", lineHeight:1.2 }}>{greeting(staffName)}</h1>
             </div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -322,6 +322,23 @@ export default function StaffDashboard() {
             <div>
               <div style={{ fontSize:"0.58rem", fontWeight:800, color:"#34d399", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:3 }}>Recommended Next Step</div>
               <p style={{ margin:0, color:"#f0fdf4", fontSize:"0.8rem", lineHeight:1.5, fontWeight:600 }}>{mission.action}</p>
+            </div>
+          </div>
+          {/* Setup description + action buttons */}
+          <div style={{ marginTop:16, paddingTop:16, borderTop:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+            <p style={{ margin:0, color:"rgba(255,255,255,0.65)", fontSize:"0.78rem", lineHeight:1.5, maxWidth:480 }}>
+              Set up your company, activate modules, add drivers and trucks, connect billing, and get your workspace ready for go-live.
+            </p>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              <a href="/ronyx/settings/company-profile" style={{ padding:"7px 14px", background:"#2563eb", color:"#fff", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
+                Continue Setup
+              </a>
+              <a href="/ronyx/onboarding-support" style={{ padding:"7px 14px", background:"rgba(255,255,255,0.1)", color:"#c7d2fe", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
+                View Checklist
+              </a>
+              <a href="/ronyx/settings/modules" style={{ padding:"7px 14px", background:"rgba(255,255,255,0.1)", color:"#a5f3fc", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
+                Activate Modules
+              </a>
             </div>
           </div>
         </div>

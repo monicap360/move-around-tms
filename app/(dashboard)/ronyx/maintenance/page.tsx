@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -952,6 +954,7 @@ function MaintenanceAlertStrip({ alerts, onViewUnit }: { alerts: MntAlert[]; onV
 type TabKey = "board" | "fleet" | "workorders" | "pm" | "damage" | "costs" | "audit";
 
 export default function MaintenancePage() {
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("maintenance");
   const [units,      setUnits]      = useState<FleetUnit[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [activity,   setActivity]   = useState<ActivityLog[]>([]);
@@ -1066,6 +1069,9 @@ export default function MaintenancePage() {
     openRepairs:  workOrders.filter(w => !["Completed","Archived"].includes(w.status)).length,
     damage:       workOrders.filter(w => w.wo_type === "Damage").length,
   };
+
+  if (moduleLoading) return null;
+  if (moduleBlocked) return <ModuleUpgradeCard moduleSlug="maintenance" />;
 
   return (
     <div className="mnt-root">
