@@ -37,13 +37,13 @@ async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerC
     if (minimal) return { org: minimal as Record<string, unknown>, columnsMissing: true };
   }
 
-  const { data: any } = await supabase
+  const { data: anyOrg } = await supabase
     .from("organizations")
     .select("id, name, organization_code, status")
     .limit(1)
     .single();
 
-  return { org: (any ?? null) as Record<string, unknown> | null, columnsMissing: true };
+  return { org: (anyOrg ?? null) as Record<string, unknown> | null, columnsMissing: true };
 }
 
 function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: boolean): boolean {
@@ -64,38 +64,75 @@ function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: bool
   return isRonyxOrg && org.status === "active";
 }
 
+// Stable ordering for the view — sort_order lives in module_registry and is NOT
+// exposed in organization_module_marketplace, so ordering by it causes a 42703
+// error. Using category + module_name keeps results consistent.
+async function queryMarketplaceView(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  orgId: string
+) {
+  return supabase
+    .from("organization_module_marketplace")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("category", { ascending: true })
+    .order("module_name", { ascending: true });
+}
+
 // ── GET ───────────────────────────────────────────────────────────────────────
 export async function GET() {
   const supabase = createSupabaseServerClient();
   const { org, columnsMissing } = await resolveRonyxOrg(supabase);
   if (!org) return NextResponse.json({ error: "No organization found" }, { status: 404 });
 
-  const orgId      = org.id as string;
+  const orgId       = org.id as string;
   const trialActive = isActiveTrial(org, columnsMissing);
 
-  // ── Try new view first (migration 167+) ─────────────────────────────────────
-  // Note: sort_order is in module_registry, not in the view. Order by category
-  // + module_name so results are stable without needing that column.
-  const { data: viewRows, error: viewErr } = await supabase
-    .from("organization_module_marketplace")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("category", { ascending: true })
-    .order("module_name", { ascending: true });
+  // ── Marketplace view (primary path) ──────────────────────────────────────────
+  const { data: viewRows, error: viewErr } = await queryMarketplaceView(supabase, orgId);
+
+  const _debug = {
+    orgId,
+    orgCode:            org.organization_code,
+    orgStatus:          org.status,
+    accountType:        (org as Record<string, unknown>).account_type ?? "(column missing)",
+    bypassSubscription: (org as Record<string, unknown>).bypass_subscription ?? "(column missing)",
+    pilotEndsAt:        (org as Record<string, unknown>).pilot_ends_at ?? null,
+    columnsMissing,
+    trialActive,
+    viewErr:            viewErr ? `${viewErr.code}: ${viewErr.message}` : null,
+    viewRowCount:       viewRows?.length ?? 0,
+    source:             "pending",
+  };
+
+  if (viewErr) {
+    console.error("[subscription-modules] marketplace view error:", viewErr.code, viewErr.message);
+  }
 
   if (!viewErr && viewRows && viewRows.length > 0) {
     const trialDaysLeft = (viewRows[0] as Record<string, unknown>).trial_days_left as number | null;
 
-    // Stats
-    const activeOrTrial  = viewRows.filter(r => ["active","in_trial"].includes((r as Record<string,unknown>).status as string)).length;
-    const trialModules   = viewRows.filter(r => (r as Record<string,unknown>).status === "in_trial").length;
+    const activeOrTrial   = viewRows.filter(r => ["active","in_trial"].includes((r as Record<string, unknown>).status as string)).length;
+    const trialModules    = viewRows.filter(r => (r as Record<string, unknown>).status === "in_trial").length;
     const availableAddOns = viewRows.filter(r =>
-      (r as Record<string,unknown>).status === "available" &&
-      Number((r as Record<string,unknown>).price_monthly ?? 0) > 0
+      (r as Record<string, unknown>).status === "available" &&
+      Number((r as Record<string, unknown>).price_monthly ?? 0) > 0
     ).length;
     const estAddOnCost = viewRows
-      .filter(r => (r as Record<string,unknown>).status === "available")
-      .reduce((sum, r) => sum + Number((r as Record<string,unknown>).price_monthly ?? 0), 0);
+      .filter(r => (r as Record<string, unknown>).status === "available")
+      .reduce((sum, r) => sum + Number((r as Record<string, unknown>).price_monthly ?? 0), 0);
+
+    // Log module access decisions
+    for (const row of viewRows) {
+      const r = row as Record<string, unknown>;
+      console.log("[subscription-modules] module:", {
+        moduleKey:   r.module_key,
+        status:      r.status,
+        trialActive,
+        countsAsActive: ["active","in_trial"].includes(r.status as string),
+        blocked:     !trialActive && !["active","in_trial"].includes(r.status as string),
+      });
+    }
 
     return NextResponse.json({
       modules: viewRows,
@@ -103,17 +140,23 @@ export async function GET() {
       trialDaysLeft,
       stats: { activeOrTrial, trialModules, availableAddOns, estAddOnCost },
       source: "marketplace_view",
+      _debug: { ..._debug, source: "marketplace_view", viewRowCount: viewRows.length },
     });
   }
 
-  // ── Fallback: old modules table (migration 162, pre-167) ────────────────────
+  // ── Fallback: old modules table ───────────────────────────────────────────────
+  // Only reached if the view itself doesn't exist yet (pre-migration 167) or
+  // if the view returns 0 rows (org not yet seeded). A sort_order error would
+  // have surfaced as viewErr; with the correct ordering above it should not occur.
+  console.warn("[subscription-modules] falling back to legacy modules table. viewErr:", viewErr?.message, "rowCount:", viewRows?.length);
+
   const { data: allModules } = await supabase
     .from("modules")
     .select("*")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
-  const orgModules = trialActive
+  const orgModulesData = trialActive
     ? []
     : (await supabase
         .from("organization_modules")
@@ -122,7 +165,7 @@ export async function GET() {
       ).data ?? [];
 
   const orgMap = new Map<string, boolean>(
-    (orgModules as Array<Record<string, unknown>>).map(r => [
+    (orgModulesData as Array<Record<string, unknown>>).map(r => [
       ((r.module_key ?? r.module_slug) as string),
       trialActive ? true : (r.is_active as boolean),
     ])
@@ -130,14 +173,14 @@ export async function GET() {
 
   const modules = (allModules ?? []).map((m: Record<string, unknown>) => ({
     ...m,
-    module_key:    m.slug,
-    module_name:   m.name,
-    module_subtitle: null,
-    status:        trialActive ? "in_trial" : (orgMap.get(m.slug as string) ? "active" : "available"),
-    price_label:   m.monthly_price === 0
+    module_key:          m.slug,
+    module_name:         m.name,
+    module_subtitle:     null,
+    status:              trialActive ? "in_trial" : (orgMap.get(m.slug as string) ? "active" : "available"),
+    price_label:         m.monthly_price === 0
       ? `Included in ${(m.included_in_plans as string[])?.join(", ") ?? "plan"}`
       : `$${m.monthly_price}/mo add-on`,
-    features:      [],
+    features:            [],
     is_enterprise_add_on: (m.slug as string) === "ccb",
   }));
 
@@ -150,12 +193,13 @@ export async function GET() {
     trialActive,
     trialDaysLeft: null,
     stats: {
-      activeOrTrial:  modules.filter(m => ["active","in_trial"].includes(m.status)).length,
-      trialModules:   modules.filter(m => m.status === "in_trial").length,
-      availableAddOns: modules.filter(m => m.status === "available" && Number(m.monthly_price ?? 0) > 0).length,
+      activeOrTrial:    modules.filter(m => ["active","in_trial"].includes(m.status)).length,
+      trialModules:     modules.filter(m => m.status === "in_trial").length,
+      availableAddOns:  modules.filter(m => m.status === "available" && Number(m.monthly_price ?? 0) > 0).length,
       estAddOnCost,
     },
     source: "legacy_modules_table",
+    _debug: { ..._debug, source: "legacy_modules_table" },
   });
 }
 
@@ -165,7 +209,7 @@ export async function POST(request: NextRequest) {
   const { org, columnsMissing } = await resolveRonyxOrg(supabase);
   if (!org) return NextResponse.json({ error: "No organization found" }, { status: 404 });
 
-  const orgId      = org.id as string;
+  const orgId       = org.id as string;
   const trialActive = isActiveTrial(org, columnsMissing);
 
   let body: { module_key?: string; module_slug?: string; action?: string };
@@ -178,6 +222,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "module_key and action are required" }, { status: 400 });
   if (action !== "activate" && action !== "deactivate")
     return NextResponse.json({ error: "action must be 'activate' or 'deactivate'" }, { status: 400 });
+
+  console.log("[subscription-modules] toggle:", { moduleKey, action, orgId, trialActive });
 
   // ── Try new organization_modules table (module_key column) ──────────────────
   const newStatus = action === "activate" ? "active" : "inactive";
@@ -192,7 +238,7 @@ export async function POST(request: NextRequest) {
     .eq("module_key", moduleKey);
 
   if (updErr) {
-    // Fallback: old schema uses module_slug + is_active
+    console.warn("[subscription-modules] module_key update failed, trying module_slug fallback:", updErr.message);
     await supabase
       .from("organization_modules")
       .update({
@@ -204,12 +250,8 @@ export async function POST(request: NextRequest) {
       .eq("module_slug", moduleKey);
   }
 
-  // Return updated list
-  const { data: viewRows } = await supabase
-    .from("organization_module_marketplace")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("sort_order", { ascending: true });
+  // Return updated list — use the same stable ordering as GET
+  const { data: viewRows } = await queryMarketplaceView(supabase, orgId);
 
   return NextResponse.json({ modules: viewRows ?? [], success: true, trialActive });
 }
