@@ -90,8 +90,8 @@ const LOCAL_FEATURED: Module[] = [
   {
     id: "local-ccb",
     slug: "ccb",
-    name: "CCB™ — Carrier Clearance Bureau",
-    description: "Carrier vetting, clearance status, billing risk, compliance controls, dispatch holds, account blocks, and audit history for owner operators and sub-haulers.",
+    name: "Carrier Clearance Bureau™",
+    description: "Carrier vetting, clearance status, billing risk, compliance controls, dispatch holds, account blocks, and audit history for owner operators and sub-haulers. Base plan includes up to 10 owner operators. Additional owner operators: $10/month each.",
     monthly_price: 199,
     icon: "🏛️",
     category: "compliance",
@@ -112,6 +112,27 @@ const LOCAL_FEATURED: Module[] = [
     org_is_active: false,
   },
 ];
+
+// ── Plan display labels ───────────────────────────────────────────────────────
+const PLAN_LABELS: Record<string, string> = {
+  starter:          "Starter",
+  operations:       "Operations Pro",
+  pro:              "Pro",
+  enterprise:       "Enterprise",
+  "enterprise-plus":"Enterprise Plus",
+};
+
+function planLabel(slug: string): string {
+  return PLAN_LABELS[slug] ?? slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
+function includedInLabel(plans: string[]): string {
+  if (!plans.length) return "Add-on";
+  const labels = plans.map(planLabel);
+  if (labels.length === 1) return `Included in ${labels[0]}`;
+  if (labels.length === 2) return `Included in ${labels[0]} & ${labels[1]}`;
+  return `Included in ${labels[0]}, ${labels[1]} & above`;
+}
 
 // ── Module Card (regular grid) ────────────────────────────────────────────────
 
@@ -175,10 +196,12 @@ function ModuleCard({
         {module.description ?? getDefaultDescription(module.slug)}
       </div>
 
-      <div style={{ fontSize: "0.8rem", fontWeight: 700, color: includedInPlan ? "#15803d" : "#1e40af" }}>
+      <div style={{ fontSize: "0.8rem", fontWeight: 700, color: includedInPlan || module.monthly_price === 0 ? "#15803d" : "#1e40af" }}>
         {includedInPlan
-          ? `✓ Included in ${planSlug.charAt(0).toUpperCase() + planSlug.slice(1)}`
-          : module.monthly_price === 0 ? "Free" : `$${module.monthly_price}/mo add-on`}
+          ? "✓ Included in your plan"
+          : module.monthly_price === 0
+            ? `✓ ${includedInLabel(module.included_in_plans)}`
+            : `$${module.monthly_price}/mo add-on · ${includedInLabel(module.included_in_plans)}`}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
@@ -213,6 +236,7 @@ function getDefaultDescription(slug: string): string {
     "fast-scan":       "OCR ticket scanning and automatic data extraction.",
     compliance:        "Driver compliance tracking, document expiry alerts, and DOT readiness.",
     maintenance:       "Fleet maintenance scheduling, breakdown tracking, and service logs.",
+    "owner-operators": "Manage owner operators, contracts, insurance, trucks, drivers, settlements, and documents. Included in Operations Pro and above — no per-OO charge.",
     payroll:           "Driver payroll calculation, ticket-to-pay reconciliation, and export.",
     billing:           "Customer invoice generation, aging reports, and collections.",
     "owner-operators": "Owner operator onboarding, COI tracking, and settlement reports.",
@@ -249,12 +273,24 @@ function CcbCard({ mod, planSlug, onToggle, togglingSlug }: {
           <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.7)", lineHeight: 1.5, maxWidth: 480 }}>
             Carrier vetting, clearance status, billing risk, compliance controls, dispatch holds, account blocks, and audit history for owner operators and sub-haulers.
           </div>
-          <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
-            {inPlan
-              ? <span style={{ fontSize: "0.75rem", color: "#86efac", fontWeight: 700 }}>✓ Included in your plan</span>
-              : <span style={{ fontSize: "0.75rem", color: "#a5b4fc", fontWeight: 700 }}>+$199/mo add-on</span>}
-            <span style={{ fontSize: "0.75rem", color: "#4b5563" }}>·</span>
-            <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Included in Enterprise &amp; Enterprise Plus</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+            {inPlan ? (
+              <span style={{ fontSize: "0.75rem", color: "#86efac", fontWeight: 700 }}>✓ Included in your plan</span>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.75rem", color: "#a5b4fc", fontWeight: 700 }}>+$199/mo base</span>
+                  <span style={{ fontSize: "0.75rem", color: "#4b5563" }}>·</span>
+                  <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Includes up to 10 owner operators</span>
+                </div>
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.72rem", color: "#818cf8" }}>+$10/mo per additional owner operator</span>
+                  <span style={{ fontSize: "0.72rem", color: "#4b5563" }}>·</span>
+                  <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>Volume pricing available</span>
+                </div>
+                <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: 2 }}>Included in Enterprise &amp; Enterprise Plus</div>
+              </>
+            )}
           </div>
         </div>
       </div>
