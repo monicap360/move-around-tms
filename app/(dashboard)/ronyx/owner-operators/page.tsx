@@ -433,6 +433,8 @@ export default function OwnerOperatorsPage() {
   const [toast, setToast]           = useState("");
   const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string } | null>(null);
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
+  const [ooEditModal, setOoEditModal] = useState<{ form: Partial<OOCompany>; saving: boolean } | null>(null);
+  const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
 
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
@@ -1147,7 +1149,14 @@ export default function OwnerOperatorsPage() {
             </label>
           </div>
           <div style={{ flex: 1 }}>
-            <h1 style={{ margin: "0 0 4px", fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <h1 style={{ margin: 0, fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
+              <button
+                onClick={() => setOoEditModal({ form: { company_name: selected.company_name, contact_name: selected.contact_name, contact_phone: selected.contact_phone, contact_email: selected.contact_email, business_address: selected.business_address, mc_number: selected.mc_number, dot_number: selected.dot_number, ein: selected.ein, website: selected.website || "", notes: selected.notes || "", insurance_agent_name: selected.insurance_agent_name || "", insurance_agent_phone: selected.insurance_agent_phone || "", insurance_agent_email: selected.insurance_agent_email || "" }, saving: false })}
+                style={{ padding: "3px 10px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                ✏ Edit Profile
+              </button>
+            </div>
             <div style={{ fontSize: "0.82rem", color: "#64748b", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               {(["mc_number","dot_number","ein"] as const).map(field => {
                 const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN" };
@@ -2035,6 +2044,9 @@ export default function OwnerOperatorsPage() {
                               Replace CDL
                               <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`New CDL expiration (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:cdlKey,file_name:f.name,expires_on:exp||null}); await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{cdl_state:state.toUpperCase()||d.cdl_state,cdl_expiration:exp||d.cdl_expiration}); const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL replaced for ${d.name}.`); } e.target.value=""; }} />
                             </label>}
+                            <button
+                              onClick={() => setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration }, saving: false })}
+                              style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>✏ Edit</button>
                             <button onClick={() => removeDriver(d.id)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
                           </div>
                         </td>
@@ -3596,6 +3608,156 @@ export default function OwnerOperatorsPage() {
             <div style={{ display:"flex", gap:10, marginTop:18 }}>
               <button onClick={markTruckOutOfService} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:9, padding:"9px 18px", fontWeight:700, fontSize:"0.82rem", cursor:"pointer" }}>Mark Out of Service</button>
               <button onClick={() => setMaintenanceModal(null)} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:9, padding:"9px 18px", fontWeight:700, fontSize:"0.82rem", cursor:"pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── OO Profile Edit Modal ── */}
+      {ooEditModal && (
+        <div onClick={() => setOoEditModal(null)} style={{ position:"fixed", inset:0, zIndex:9200, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:"24px 28px", width:"100%", maxWidth:580, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontWeight:900, fontSize:"1rem", color:"#0f172a", marginBottom:18 }}>✏ Edit Company Profile</div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 16px" }}>
+              {([
+                ["Company Name *", "company_name", "text"],
+                ["Contact Name",   "contact_name",  "text"],
+                ["Contact Phone",  "contact_phone", "tel"],
+                ["Contact Email",  "contact_email", "email"],
+                ["MC Number",      "mc_number",     "text"],
+                ["DOT Number",     "dot_number",    "text"],
+                ["EIN / Tax ID",   "ein",           "text"],
+                ["Website",        "website",       "text"],
+                ["Insurance Agent","insurance_agent_name",  "text"],
+                ["Agent Phone",    "insurance_agent_phone", "tel"],
+                ["Agent Email",    "insurance_agent_email", "email"],
+              ] as [string, keyof typeof ooEditModal.form, string][]).map(([label, field, type]) => (
+                <div key={field} style={{ gridColumn: field === "company_name" || field === "insurance_agent_name" ? "1/-1" : undefined }}>
+                  <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>{label}</label>
+                  <input
+                    type={type}
+                    value={(ooEditModal.form[field] as string) || ""}
+                    onChange={e => setOoEditModal(m => m && ({ ...m, form: { ...m.form, [field]: e.target.value } }))}
+                    style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }}
+                  />
+                </div>
+              ))}
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Business Address</label>
+                <input
+                  value={(ooEditModal.form.business_address as string) || ""}
+                  onChange={e => setOoEditModal(m => m && ({ ...m, form: { ...m.form, business_address: e.target.value } }))}
+                  style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }}
+                  placeholder="Street, City, State ZIP"
+                />
+              </div>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Notes</label>
+                <textarea
+                  value={(ooEditModal.form.notes as string) || ""}
+                  onChange={e => setOoEditModal(m => m && ({ ...m, form: { ...m.form, notes: e.target.value } }))}
+                  rows={3}
+                  style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", resize:"vertical", fontFamily:"inherit", boxSizing:"border-box" as const }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display:"flex", gap:10, marginTop:20 }}>
+              <button
+                disabled={ooEditModal.saving || !ooEditModal.form.company_name?.trim()}
+                onClick={async () => {
+                  setOoEditModal(m => m && ({ ...m, saving: true }));
+                  const res = await apiPut(`/api/ronyx/owner-operators/${selected.id}`, ooEditModal.form);
+                  if (res.error) {
+                    flash(`Save failed: ${res.error}`);
+                    setOoEditModal(m => m && ({ ...m, saving: false }));
+                  } else {
+                    updateLocalState({ ...selected, ...ooEditModal.form });
+                    flash("Profile saved.");
+                    setOoEditModal(null);
+                  }
+                }}
+                style={{ flex:1, padding:"10px 0", borderRadius:9, border:"none", background: ooEditModal.saving ? "#94a3b8" : "#1e40af", color:"#fff", fontWeight:800, fontSize:"0.85rem", cursor: ooEditModal.saving ? "default" : "pointer" }}>
+                {ooEditModal.saving ? "Saving…" : "Save Changes"}
+              </button>
+              <button onClick={() => setOoEditModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Driver Edit Modal ── */}
+      {driverEditModal && (
+        <div onClick={() => setDriverEditModal(null)} style={{ position:"fixed", inset:0, zIndex:9200, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:"24px 28px", width:"100%", maxWidth:480, boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontWeight:900, fontSize:"1rem", color:"#0f172a", marginBottom:4 }}>✏ Edit Driver</div>
+            <div style={{ fontSize:"0.78rem", color:"#64748b", marginBottom:18 }}>{driverEditModal.driver.name}</div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 16px" }}>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Driver Name *</label>
+                <input
+                  value={driverEditModal.form.name || ""}
+                  onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, name: e.target.value } }))}
+                  style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Phone</label>
+                <input type="tel" value={driverEditModal.form.phone || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, phone: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>CDL Number</label>
+                <input value={driverEditModal.form.cdl_number || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, cdl_number: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>CDL State</label>
+                <input value={driverEditModal.form.cdl_state || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, cdl_state: e.target.value.toUpperCase().slice(0,2) } }))} maxLength={2} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} placeholder="TX" />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>CDL Class</label>
+                <select value={driverEditModal.form.cdl_class || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, cdl_class: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", background:"#fff", boxSizing:"border-box" as const }}>
+                  <option value="">— Select —</option>
+                  <option value="A">Class A</option>
+                  <option value="B">Class B</option>
+                  <option value="C">Class C</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>CDL Expiration</label>
+                <input type="date" value={driverEditModal.form.cdl_expiration || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, cdl_expiration: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
+              </div>
+              <div>
+                <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Med Card Expiration</label>
+                <input type="date" value={driverEditModal.form.med_card_expiration || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, med_card_expiration: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
+              </div>
+            </div>
+
+            <div style={{ display:"flex", gap:10, marginTop:20 }}>
+              <button
+                disabled={driverEditModal.saving || !driverEditModal.form.name?.trim()}
+                onClick={async () => {
+                  setDriverEditModal(m => m && ({ ...m, saving: true }));
+                  const res = await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${driverEditModal.driver.id}`, driverEditModal.form);
+                  if (res.error) {
+                    flash(`Save failed: ${res.error}`);
+                    setDriverEditModal(m => m && ({ ...m, saving: false }));
+                  } else {
+                    const updated = { ...driverEditModal.driver, ...driverEditModal.form };
+                    updateLocalState({ ...selected, drivers: selected.drivers.map(d => d.id === driverEditModal.driver.id ? updated : d) });
+                    flash(`${updated.name} saved.`);
+                    setDriverEditModal(null);
+                  }
+                }}
+                style={{ flex:1, padding:"10px 0", borderRadius:9, border:"none", background: driverEditModal.saving ? "#94a3b8" : "#1e40af", color:"#fff", fontWeight:800, fontSize:"0.85rem", cursor: driverEditModal.saving ? "default" : "pointer" }}>
+                {driverEditModal.saving ? "Saving…" : "Save Changes"}
+              </button>
+              <button onClick={() => setDriverEditModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
