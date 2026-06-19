@@ -99,6 +99,7 @@ const STEPS = [
     title: "Exceptions Are Flagged",
     subtitle: "Problem loads go to a dedicated review queue before payroll or billing processes. Nothing slips through.",
     icon: "🚨",
+    fields: [],
     exceptionExamples: [
       { icon: "🔴", label: "Short load",                 example: "Net tons 10.27 vs 22.5t — dispatch hold" },
       { icon: "🔴", label: "Missing ticket",             example: "Load TRK-18 · 2:15 PM — no ticket uploaded" },
@@ -230,7 +231,7 @@ export default function AccuriScaleWalkthroughPage() {
             </div>
 
             {/* Fields grid */}
-            {step.fields.length > 0 && (
+            {(step.fields ?? []).length > 0 && (
               <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: 14, padding: "20px 24px", marginBottom: 16 }}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>
                   {step.num === "01" ? "Job fields" : step.num === "02" ? "Scale data captured" : step.num === "03" ? "OCR-extracted fields" : "Fields"}
