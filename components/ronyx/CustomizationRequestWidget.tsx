@@ -178,13 +178,13 @@ export default function CustomizationRequestWidget() {
               <div style={{ textAlign: "center", padding: "12px 0 8px" }}>
                 <div style={{ fontSize: "2.4rem", marginBottom: 12 }}>✅</div>
                 <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>
-                  Request Submitted!
+                  Thank You for Your Request
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: 1.6, marginBottom: 4 }}>
-                  We received your request (#{done}) and will review it shortly.
+                  We received your request (#{done}). Our team will review it and follow up with you on whether it can be scheduled and when.
                 </div>
                 <div style={{ fontSize: "0.82rem", color: "#94a3b8", marginBottom: 24 }}>
-                  We'll follow up by email or phone.
+                  Please note this is a request only and does not guarantee implementation.
                 </div>
                 <button
                   onClick={close}
