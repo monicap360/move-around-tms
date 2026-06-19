@@ -13,7 +13,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     "company_name","contact_name","contact_phone","contact_email","business_address",
     "mc_number","dot_number","ein","insurance_agent_name","insurance_agent_email",
     "insurance_agent_phone","notes","last_contact_date","status","website",
-    "reminder_log","compliance_history","changes_log",
+    "start_date","reminder_log","compliance_history","changes_log",
   ];
   for (const f of fields) {
     if (f in body) updatePayload[f] = body[f] ?? null;

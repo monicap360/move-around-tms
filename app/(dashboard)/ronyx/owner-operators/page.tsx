@@ -433,7 +433,7 @@ export default function OwnerOperatorsPage() {
   const [toast, setToast]           = useState("");
   const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string } | null>(null);
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
-  const [ooEditModal, setOoEditModal] = useState<{ form: Partial<OOCompany>; saving: boolean } | null>(null);
+  const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
 
   // Add company form
@@ -1116,13 +1116,25 @@ export default function OwnerOperatorsPage() {
                       ⚠ {actions.length} action{actions.length>1?"s":""} required
                     </span>
                   )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteOO(oo); }}
-                    title="Delete owner operator"
-                    style={{ marginLeft: "auto", background: "#fee2e2", border: "1px solid #fecaca", color: "#991b1b", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
-                  >
-                    Delete
-                  </button>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOoEditModal({ id: oo.id, form: { company_name: oo.company_name, contact_name: oo.contact_name, contact_phone: oo.contact_phone, contact_email: oo.contact_email, business_address: oo.business_address, mc_number: oo.mc_number, dot_number: oo.dot_number, ein: oo.ein, website: oo.website || "", notes: oo.notes || "", insurance_agent_name: oo.insurance_agent_name || "", insurance_agent_phone: oo.insurance_agent_phone || "", insurance_agent_email: oo.insurance_agent_email || "" }, saving: false });
+                      }}
+                      title="Edit profile"
+                      style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                    >
+                      ✏ Edit
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteOO(oo); }}
+                      title="Delete owner operator"
+                      style={{ background: "#fee2e2", border: "1px solid #fecaca", color: "#991b1b", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1206,7 +1218,7 @@ export default function OwnerOperatorsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 5 }}>
               <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{selected.company_name}</h1>
               <button
-                onClick={() => setOoEditModal({ form: { company_name: selected.company_name, contact_name: selected.contact_name, contact_phone: selected.contact_phone, contact_email: selected.contact_email, business_address: selected.business_address, mc_number: selected.mc_number, dot_number: selected.dot_number, ein: selected.ein, website: selected.website || "", notes: selected.notes || "", insurance_agent_name: selected.insurance_agent_name || "", insurance_agent_phone: selected.insurance_agent_phone || "", insurance_agent_email: selected.insurance_agent_email || "" }, saving: false })}
+                onClick={() => setOoEditModal({ id: selected.id, form: { company_name: selected.company_name, contact_name: selected.contact_name, contact_phone: selected.contact_phone, contact_email: selected.contact_email, business_address: selected.business_address, mc_number: selected.mc_number, dot_number: selected.dot_number, ein: selected.ein, website: selected.website || "", notes: selected.notes || "", insurance_agent_name: selected.insurance_agent_name || "", insurance_agent_phone: selected.insurance_agent_phone || "", insurance_agent_email: selected.insurance_agent_email || "" }, saving: false })}
                 style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", backdropFilter: "blur(4px)" }}>
                 ✏ Edit Profile
               </button>
@@ -3562,8 +3574,18 @@ export default function OwnerOperatorsPage() {
                           const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need an updated Certificate of Insurance naming ${slot.label} as an additional insured.\n\nPlease send the updated COI as soon as possible to keep your dispatch eligibility active.\n\nThank you,\nRonyx Logistics`;
                           window.open(`mailto:${selected.contact_email || ""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
                         }} style={{ background:"#fef3c7", color:"#92400e", border:"1px solid #fde68a", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>✉ Email</button>
-                        {doc.review_status !== "approved" && (
+                        {doc.review_status !== "approved" && doc.review_status !== "flagged_fraudulent" && (
                           <button onClick={() => updateCOIStatus(doc.id, { review_status:"approved", reviewed_by:"Staff", status:"complete" })} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>✓ Approve</button>
+                        )}
+                        {doc.review_status === "flagged_fraudulent" ? (
+                          <span style={{ background:"#450a0a", color:"#f87171", border:"1px solid #7f1d1d", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:800 }}>🚨 FLAGGED FRAUDULENT</span>
+                        ) : (
+                          <button onClick={() => {
+                            if (window.confirm(`Flag this COI as potentially fraudulent?\n\nThis will:\n• Set status to "Flagged – Fraudulent"\n• Block dispatch for ${selected.company_name}\n• Log the action for audit\n\nSyvia: verify directly with the insurance carrier before flagging.`)) {
+                              updateCOIStatus(doc.id, { review_status:"flagged_fraudulent", status:"rejected", dispatch_blocked:true });
+                              flash("COI flagged as fraudulent. Dispatch blocked.");
+                            }
+                          }} style={{ background:"#fff1f2", color:"#dc2626", border:"1px solid #fca5a5", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>🚨 Flag Fraudulent</button>
                         )}
                         <button onClick={() => { pendingCoiTypeRef.current = slot.key; setShowCoiUpload(slot.key); setCoiUploadForm(f => ({ ...f, document_type:slot.key, coi_group:"ronyx_ma_mortenson" })); }}
                           style={{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Replace</button>
@@ -3763,12 +3785,15 @@ export default function OwnerOperatorsPage() {
                 disabled={ooEditModal.saving || !ooEditModal.form.company_name?.trim()}
                 onClick={async () => {
                   setOoEditModal(m => m && ({ ...m, saving: true }));
-                  const res = await apiPut(`/api/ronyx/owner-operators/${selected.id}`, ooEditModal.form);
+                  const ooId = ooEditModal.id;
+                  const res = await apiPut(`/api/ronyx/owner-operators/${ooId}`, ooEditModal.form);
                   if (res.error) {
                     flash(`Save failed: ${res.error}`);
                     setOoEditModal(m => m && ({ ...m, saving: false }));
                   } else {
-                    updateLocalState({ ...selected, ...ooEditModal.form });
+                    // Update in-memory: companies list + selected (if open)
+                    setCompanies(prev => prev.map(c => c.id === ooId ? { ...c, ...ooEditModal.form } : c));
+                    if (selected?.id === ooId) updateLocalState({ ...selected, ...ooEditModal.form });
                     flash("Profile saved.");
                     setOoEditModal(null);
                   }
