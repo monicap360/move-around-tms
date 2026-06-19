@@ -390,9 +390,9 @@ function KPI({ label, value, color, bg, onClick }: { label: string; value: strin
   const c = color || "#1e40af";
   const b = bg || "#eff6ff";
   return (
-    <div onClick={onClick} style={{ background: b, border: `1.5px solid ${c}30`, borderRadius: 14, padding: "12px 14px", cursor: onClick ? "pointer" : undefined }}>
-      <div style={{ display:"inline-block", background: `${c}18`, color: c, borderRadius: 20, padding: "2px 10px", fontSize: "0.62rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7, whiteSpace: "nowrap" }}>{label}</div>
-      <div style={{ fontSize: "1.45rem", fontWeight: 900, color: c, lineHeight: 1.1 }}>{value}</div>
+    <div onClick={onClick} style={{ background: b, border: `1.5px solid ${c}30`, borderRadius: 12, padding: "9px 12px", cursor: onClick ? "pointer" : undefined }}>
+      <div style={{ display:"inline-block", background: `${c}18`, color: c, borderRadius: 20, padding: "1px 8px", fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ fontSize: "1.1rem", fontWeight: 900, color: c, lineHeight: 1.1 }}>{value}</div>
     </div>
   );
 }
@@ -862,6 +862,16 @@ export default function OwnerOperatorsPage() {
           <KPI label="Compliance Issues"  value={complianceIssues} color={complianceIssues>0?"#d97706":"#15803d"} bg={complianceIssues>0?"#fff7ed":"#f8fafc"} />
         </div>
 
+        {/* Company list search */}
+        <div style={{ marginBottom: 14 }}>
+          <input
+            value={ooListSearch}
+            onChange={e => setOoListSearch(e.target.value)}
+            placeholder="Search by company name, contact, MC#, DOT#…"
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.875rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" as const }}
+          />
+        </div>
+
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 8 }}>
             <a href="/ronyx/owner-operators/import" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📋 Bulk Import</a>
@@ -920,16 +930,6 @@ export default function OwnerOperatorsPage() {
             </div>
           </div>
         )}
-
-        {/* Company list search */}
-        <div style={{ marginBottom: 14 }}>
-          <input
-            value={ooListSearch}
-            onChange={e => setOoListSearch(e.target.value)}
-            placeholder="Search by company name, contact, MC#, DOT#…"
-            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.875rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" as const }}
-          />
-        </div>
 
         {/* Company cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
