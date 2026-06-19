@@ -295,6 +295,15 @@ export default function CustomizationRequestWidget() {
                   </div>
                 </div>
 
+                {/* Disclaimer */}
+                <div style={{
+                  background: "#fefce8", border: "1px solid #fde68a",
+                  borderRadius: 8, padding: "10px 14px", marginBottom: 14,
+                  fontSize: "0.78rem", color: "#92400e", lineHeight: 1.5,
+                }}>
+                  <strong>Please note:</strong> Submitting this form is a request only — it does not guarantee implementation. All requests are reviewed by the MoveAround TMS team. We will follow up to let you know if and when your request will be scheduled.
+                </div>
+
                 {/* Error */}
                 {err && (
                   <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", color: "#dc2626", fontSize: "0.83rem", marginBottom: 14 }}>
