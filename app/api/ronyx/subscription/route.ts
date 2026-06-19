@@ -73,11 +73,11 @@ async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerC
 }
 
 // ── Trial check ───────────────────────────────────────────────────────────────
-// Delegates to hasOrganizationAccess — the single source of truth.
-// columnsMissing = true means trial columns weren't returned (migration not run).
-// In that case we deny rather than assume — run migration 170 first.
+// columnsMissing = true means trial columns not yet in DB (migrations not run).
+// Fail open in that case — never block users because a migration hasn't run yet.
 function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: boolean): boolean {
-  if (!org || columnsMissing) return false;
+  if (!org) return false;
+  if (columnsMissing) return true; // fail open — trial columns not deployed yet
   return hasOrganizationAccess(org as Parameters<typeof hasOrganizationAccess>[0]);
 }
 

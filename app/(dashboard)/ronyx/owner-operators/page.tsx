@@ -424,7 +424,7 @@ function ticketStatusColors(s?: string): [string, string] {
 
 /* ─── Main page ──────────────────────────────────────── */
 export default function OwnerOperatorsPage() {
-  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("owner-operators");
+  const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("owner_operator_hub");
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);

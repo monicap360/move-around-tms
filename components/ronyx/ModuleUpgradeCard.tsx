@@ -65,10 +65,10 @@ const MODULE_INFO: Record<string, ModuleInfo> = {
   },
   "owner-operators": {
     icon: "🤝",
-    name: "Owner Operators",
-    price: "$39/mo",
+    name: "Owner Operator Hub™",
+    price: "",
     description:
-      "Manage your entire owner operator network — profiles, compliance documents, contracts, W-9s, COIs, settlement history, and dispatch eligibility — in one place.",
+      "Manage your entire owner operator network — profiles, compliance documents, contracts, W-9s, COIs, settlement history, trucks, drivers, and dispatch eligibility — in one place.",
     includes: [
       "Owner operator company profiles",
       "MC/DOT/EIN and compliance tracking",
@@ -77,7 +77,23 @@ const MODULE_INFO: Record<string, ModuleInfo> = {
       "Settlement hold and block controls",
       "Compliance score and expiration tracking",
     ],
-    planNote: "Included in Operations, Pro, and Enterprise plans.",
+    planNote: "Included in Operations Pro, Enterprise, and Enterprise Plus plans.\nAvailable as a $39/mo add-on for qualifying plans.",
+  },
+  "owner_operator_hub": {
+    icon: "🤝",
+    name: "Owner Operator Hub™",
+    price: "",
+    description:
+      "Manage your entire owner operator network — profiles, compliance documents, contracts, W-9s, COIs, settlement history, trucks, drivers, and dispatch eligibility — in one place.",
+    includes: [
+      "Owner operator company profiles",
+      "MC/DOT/EIN and compliance tracking",
+      "Document management (W-9, COI, contracts)",
+      "Dispatch eligibility controls",
+      "Settlement hold and block controls",
+      "Compliance score and expiration tracking",
+    ],
+    planNote: "Included in Operations Pro, Enterprise, and Enterprise Plus plans.\nAvailable as a $39/mo add-on for qualifying plans.",
   },
   "compliance": {
     icon: "🛡️",
@@ -288,15 +304,17 @@ export default function ModuleUpgradeCard({ moduleSlug }: { moduleSlug: string }
           {info.name} is not active
         </h2>
 
-        {/* Price */}
-        <div style={{
-          fontSize: "1.1rem",
-          fontWeight: 700,
-          color: "#1e40af",
-          marginBottom: 12,
-        }}>
-          {info.price}
-        </div>
+        {/* Price — only shown if non-empty (some modules fold it into planNote) */}
+        {info.price && (
+          <div style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            color: "#1e40af",
+            marginBottom: 12,
+          }}>
+            {info.price}
+          </div>
+        )}
 
         {/* Description */}
         <p style={{
@@ -329,14 +347,11 @@ export default function ModuleUpgradeCard({ moduleSlug }: { moduleSlug: string }
           </div>
         )}
 
-        {/* Plan note */}
-        <div style={{
-          fontSize: "0.75rem",
-          color: "#64748b",
-          marginBottom: 24,
-          fontStyle: "italic",
-        }}>
-          {info.planNote}
+        {/* Plan note — split on \n so multi-line notes render as separate lines */}
+        <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: 24 }}>
+          {info.planNote.split("\n").map((line, i) => (
+            <div key={i} style={{ fontStyle: "italic", marginBottom: i < info.planNote.split("\n").length - 1 ? 4 : 0 }}>{line}</div>
+          ))}
         </div>
 
         {/* CTAs */}
@@ -356,7 +371,7 @@ export default function ModuleUpgradeCard({ moduleSlug }: { moduleSlug: string }
               letterSpacing: "0.01em",
             }}
           >
-            🧩 Activate {info.name} →
+            🧩 Activate {info.name.replace("™", "")} →
           </Link>
           <Link
             href="/ronyx/settings/billing"
