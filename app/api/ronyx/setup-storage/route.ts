@@ -3,19 +3,31 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// Every storage bucket the app needs — one source of truth
+// Every storage bucket the app needs — one source of truth.
+// All sensitive buckets are private. Signed URLs must be used for access.
+// Only oo-logos is public (company branding, no personal data).
 const REQUIRED_BUCKETS: { name: string; public: boolean; maxSize: number }[] = [
-  { name: "ronyx-imports",           public: false, maxSize: 52428800  }, // OO docs, COIs, compliance files, dispatch CSVs
-  { name: "company_assets",          public: false, maxSize: 52428800  }, // avatars, logos, templates, shared files
+  // Primary Fast Scan bucket — ALL ticket scans, OCR files, upload-original
+  { name: "tms-documents",           public: false, maxSize: 104857600 }, // Fast Scan primary: ticket images, PDFs, OCR source files
+  // Tickets
   { name: "ticket-uploads",          public: false, maxSize: 10485760  }, // ticket images, POD, delivery receipts
+  { name: "ronyx-files",             public: false, maxSize: 52428800  }, // fast scan legacy, driver doc fallback
+  // Driver documents — CDL, MVR, med cards, etc. NEVER public
   { name: "ronyx-driver-documents",  public: false, maxSize: 20971520  }, // CDL, MVR, med cards, drug tests
-  { name: "oo-logos",                public: true,  maxSize: 5242880   }, // OO company logos (public OK — not sensitive)
-  { name: "ronyx-files",             public: false, maxSize: 52428800  }, // fast scan uploads, detention photos
   { name: "driver-photos",           public: false, maxSize: 5242880   }, // driver profile photos
-  { name: "driver-logos",            public: false, maxSize: 5242880   }, // driver logos
-  { name: "documents",               public: false, maxSize: 52428800  }, // watermarked PDFs, provenance docs
   { name: "driver-applications",     public: false, maxSize: 52428800  }, // driver application resumes
+  { name: "hr_docs",                 public: false, maxSize: 52428800  }, // driver onboarding / HR portal uploads
+  // E-signatures — NEVER public (contains signed contracts, CDL images)
+  { name: "esign",                   public: false, maxSize: 20971520  }, // e-signature envelopes and signed documents
+  // Owner operators
+  { name: "ronyx-imports",           public: false, maxSize: 52428800  }, // OO docs, COIs, compliance files, dispatch CSVs
+  { name: "oo-logos",                public: true,  maxSize: 5242880   }, // OO company logos — public OK, no personal data
+  // Maintenance
   { name: "maintenance-docs",        public: false, maxSize: 52428800  }, // maintenance work order attachments
+  // General / shared
+  { name: "company_assets",          public: false, maxSize: 52428800  }, // shared assets, templates
+  { name: "avatars",                 public: false, maxSize: 5242880   }, // user profile photos — use signed URLs
+  { name: "documents",               public: false, maxSize: 52428800  }, // compliance watermarked PDFs, provenance docs
   { name: "ronyx-branding",          public: false, maxSize: 10485760  }, // company branding assets
 ];
 

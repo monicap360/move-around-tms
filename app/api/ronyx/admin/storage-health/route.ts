@@ -4,11 +4,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const BUCKETS = [
-  { name: "ronyx-fast-scan",       label: "Fast Scan Files" },
-  { name: "ronyx-driver-documents", label: "CCB / Driver Documents" },
-  { name: "ronyx-imports",          label: "Backup Vault / Imports" },
-  { name: "ronyx-files",            label: "General Files" },
-  { name: "aggregate-tickets",      label: "Aggregate Tickets" },
+  { name: "tms-documents",          label: "Fast Scan / Tickets (Primary)" },
+  { name: "ronyx-driver-documents", label: "Driver Documents" },
+  { name: "esign",                  label: "E-Signatures" },
+  { name: "ronyx-imports",          label: "Imports / COIs / Dispatch" },
+  { name: "ticket-uploads",         label: "Ticket Uploads" },
+  { name: "maintenance-docs",       label: "Maintenance Docs" },
+  { name: "ronyx-files",            label: "Legacy / General Files" },
 ];
 
 async function getBucketStats(supabase: ReturnType<typeof createSupabaseServerClient>, bucketName: string) {
