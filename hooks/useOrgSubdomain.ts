@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const CARRIER_SLUGS = new Set(["ronyx", "solis", "garcia", "ymrleah", "jjalvarado"]);
+const CARRIER_SLUGS = new Set(["ronyx", "solis", "garcia", "ymr", "leah", "jjalvarado"]);
 
 export type OrgInfo = {
   slug: string;

@@ -55,10 +55,18 @@ UPDATE public.organizations
 WHERE lower(name) LIKE '%garcia%'
   AND organization_slug IS NULL;
 
--- YMR Leah Trucking
+-- YMR Trucking (separate company from Leah Trucking)
 UPDATE public.organizations
-  SET organization_slug = 'ymrleah', slug_verified = true
-WHERE (lower(name) LIKE '%ymr%' OR lower(name) LIKE '%leah%')
+  SET organization_slug = 'ymr', slug_verified = true
+WHERE lower(name) LIKE '%ymr%'
+  AND lower(name) NOT LIKE '%leah%'
+  AND organization_slug IS NULL;
+
+-- Leah Trucking (separate company from YMR)
+UPDATE public.organizations
+  SET organization_slug = 'leah', slug_verified = true
+WHERE lower(name) LIKE '%leah%'
+  AND lower(name) NOT LIKE '%ymr%'
   AND organization_slug IS NULL;
 
 -- JJ Alvarado

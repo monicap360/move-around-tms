@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 // ── Known carrier subdomains ────────────────────────────────────────────────
 // Each slug maps to organizations.organization_slug in the DB.
 // Add new carriers here when they are onboarded and paid.
-const CARRIER_SLUGS = new Set(["ronyx", "solis", "garcia", "ymrleah", "jjalvarado"]);
+const CARRIER_SLUGS = new Set(["ronyx", "solis", "garcia", "ymr", "leah", "jjalvarado"]);
 
 function applySecurityHeaders(res: NextResponse) {
   res.headers.set("X-Frame-Options", "SAMEORIGIN");
