@@ -88,7 +88,15 @@ export async function GET() {
   const { org, columnsMissing } = await resolveRonyxOrg(supabase);
 
   if (!org) {
-    return NextResponse.json({ error: "No organization found" }, { status: 404 });
+    // No org in DB yet (migrations pending) — fail open so no page is blocked
+    return NextResponse.json({
+      trialActive:  true,
+      activeModules: FREE_TRIAL_MODULES,
+      allPlans:     [],
+      allModules:   [],
+      subscription: { plan_slug: "free_trial", status: "trialing" },
+      _debug:       { reason: "no org found — fail open" },
+    });
   }
 
   const orgId = org.id as string;
