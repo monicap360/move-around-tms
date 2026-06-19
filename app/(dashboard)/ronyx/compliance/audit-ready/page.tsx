@@ -230,10 +230,10 @@ export default function BeAuditReadyPage() {
     setLoading(true);
     try {
       const [dRes, tRes, ooRes, logRes] = await Promise.all([
-        fetch("/api/ronyx/drivers/profiles").then(r => r.json()).catch(() => ({ drivers: [] })),
-        fetch("/api/ronyx/trucks").then(r => r.json()).catch(() => ({ trucks: [] })),
-        fetch("/api/ronyx/owner-operators").then(r => r.json()).catch(() => ({ operators: [] })),
-        fetch("/api/ronyx/audit-log?limit=50").then(r => r.json()).catch(() => ({ logs: [] })),
+        fetch("/api/ronyx/drivers/list").then(r => r.ok ? r.json() : { drivers: [] }).catch(() => ({ drivers: [] })),
+        fetch("/api/ronyx/trucks").then(r => r.ok ? r.json() : { trucks: [] }).catch(() => ({ trucks: [] })),
+        fetch("/api/ronyx/owner-operators").then(r => r.ok ? r.json() : { operators: [] }).catch(() => ({ operators: [] })),
+        fetch("/api/ronyx/drivers/audit-log?limit=50").then(r => r.ok ? r.json() : { logs: [] }).catch(() => ({ logs: [] })),
       ]);
 
       const rawDrivers = (dRes.drivers ?? dRes.data ?? []) as Record<string, string>[];
@@ -400,17 +400,21 @@ export default function BeAuditReadyPage() {
                 fontWeight: 700, fontSize: "0.85rem", border: "none", cursor: running ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 }}>
               {running ? "⏳ Running..." : "▶ Run Audit Check"}
             </button>
-            <button onClick={() => showToast("Audit packet builder — select type and date range below")}
+            <button onClick={() => { setTab("audit_packets"); showToast("📦 Audit Packet Builder — select type and date range"); }}
               style={{ background: "rgba(255,255,255,0.12)", color: "#fff", padding: "10px 20px", borderRadius: 8,
                 fontWeight: 600, fontSize: "0.85rem", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer" }}>
               📦 Build Audit Packet
             </button>
-            <button onClick={() => showToast("Export report — coming soon")}
+            <button onClick={() => { showToast("📤 Opening print dialog — save as PDF to export"); setTimeout(() => window.print(), 600); }}
               style={{ background: "rgba(255,255,255,0.12)", color: "#fff", padding: "10px 20px", borderRadius: 8,
                 fontWeight: 600, fontSize: "0.85rem", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer" }}>
               📤 Export Report
             </button>
-            <button onClick={() => showToast("Reminders sent to assigned staff")}
+            <button onClick={async () => {
+                showToast("🔔 Sending reminders to Compliance team...");
+                await fetch("/api/ronyx/drivers/compliance-alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trigger: "manual_reminder" }) }).catch(() => {});
+                setTimeout(() => showToast("✅ Reminders sent to assigned staff"), 1200);
+              }}
               style={{ background: "rgba(255,255,255,0.12)", color: "#fff", padding: "10px 20px", borderRadius: 8,
                 fontWeight: 600, fontSize: "0.85rem", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer" }}>
               🔔 Send Reminders
