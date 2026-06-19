@@ -34,7 +34,7 @@ function ROICalc() {
           <h2 style={{ margin: "0 0 12px", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 900, color: "#fff" }}>
             Estimate Your Annual Recovery
           </h2>
-          <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.9rem", maxWidth: 560, margin: "0 auto" }}>
+          <p style={{ margin: "0 auto", color: "#94a3b8", fontSize: "0.9rem", maxWidth: 560 }}>
             Estimate only — actual recovery depends on ticket volume, rates, disputes, and workflow setup.
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function AccuriScalePage() {
             <span style={{ color: "#22d3ee" }}>AccuriScale</span>{" "}
             <span style={{ color: "#fff" }}>Intelligence™</span>
           </h1>
-          <p style={{ margin: "0 0 12px", fontSize: "clamp(1rem, 2vw, 1.25rem)", color: "#94a3b8", lineHeight: 1.6, maxWidth: 680, margin: "0 auto 12px" }}>
+          <p style={{ margin: "0 auto 12px", fontSize: "clamp(1rem, 2vw, 1.25rem)", color: "#94a3b8", lineHeight: 1.6, maxWidth: 680 }}>
             Ticket matching, short-load detection, scale fraud monitoring, and production tracking for aggregate and bulk material haulers.
           </p>
           <p style={{ margin: "0 0 40px", fontSize: "0.95rem", color: "#22d3ee", fontStyle: "italic", fontWeight: 600 }}>

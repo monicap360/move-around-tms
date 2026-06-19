@@ -332,7 +332,7 @@ export default function AccuriScaleWalkthroughPage() {
           <h2 style={{ margin: "0 0 10px", fontSize: "1.3rem", fontWeight: 900, color: "#fff" }}>
             From Pit Scale to Final Pay — Every Load Verified
           </h2>
-          <p style={{ margin: "0 0 28px", fontSize: "0.85rem", color: "#64748b", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 28px" }}>
+          <p style={{ margin: "0 auto 28px", fontSize: "0.85rem", color: "#64748b", lineHeight: 1.7, maxWidth: 520 }}>
             AccuriScale Intelligence™ replaces manual ticket matching, catches short loads and fraud, and gives your office real-time visibility from dispatch to invoice.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
