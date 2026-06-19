@@ -7,7 +7,7 @@ import RonyxShell from "./RonyxShell";
 export const dynamic = "force-dynamic";
 
 export default async function RonyxLayout({ children }: { children: React.ReactNode }) {
-  const demoMode = false;
+  const demoMode = true; // Auth bypass — re-enable when org/RLS/signup is wired
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
