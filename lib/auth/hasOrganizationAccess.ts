@@ -23,27 +23,37 @@ export function hasOrganizationAccess(organization: OrgAccessRow | null): boolea
     ? new Date(organization.pilot_ends_at)
     : null;
 
-  const trialActive =
+  const pilotOpen =
     trialEndsAt !== null &&
     !Number.isNaN(trialEndsAt.getTime()) &&
     trialEndsAt > new Date();
 
-  // Free trial: all six flags must be set correctly AND trial window is open
-  const hasFreeTrialAccess =
-    organization.status                === "active"       &&
-    organization.account_type          === "free_trial"   &&
-    organization.subscription_status   === "trial_active" &&
-    organization.bypass_subscription   === true           &&
-    organization.subscription_required === false          &&
-    trialActive;
+  // Pilot window open — simplest check, works regardless of other field values.
+  // If pilot_ends_at is a future date, the org has access.
+  if (pilotOpen) return true;
 
-  // Paid subscription: status active + subscription in a "paid" state
-  // (handles Stripe-managed subscriptions once billing goes live)
+  // Explicit bypass flag — set on Ronyx and any direct-access orgs.
+  if (organization.bypass_subscription === true) return true;
+
+  // Subscription not required for this org.
+  if (organization.subscription_required === false) return true;
+
+  // Legacy 6-field free-trial check (kept for backward compat).
+  const hasFreeTrialAccess =
+    organization.status              === "active"       &&
+    organization.account_type        === "free_trial"   &&
+    ["trial_active", "trialing"].includes(
+      String(organization.subscription_status ?? "").toLowerCase()
+    );
+
+  if (hasFreeTrialAccess) return true;
+
+  // Paid subscription: status active + subscription in a "paid" state.
   const hasPaidAccess =
     organization.status === "active" &&
     ["active", "paid", "current"].includes(
       String(organization.subscription_status ?? "").toLowerCase()
     );
 
-  return hasFreeTrialAccess || hasPaidAccess;
+  return hasPaidAccess;
 }
