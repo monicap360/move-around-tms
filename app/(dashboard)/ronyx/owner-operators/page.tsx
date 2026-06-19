@@ -468,6 +468,9 @@ export default function OwnerOperatorsPage() {
   const [maintenanceModal,  setMaintenanceModal]  = useState<{ truckId:string; truckNumber:string } | null>(null);
   const [maintForm, setMaintForm] = useState({ event_type:"breakdown", severity:"high", issue_title:"", issue_description:"", estimated_return_at:"", reported_by:"" });
 
+  // Company list search
+  const [ooListSearch, setOoListSearch] = useState("");
+
   // Jobs filters
   const [jobFilter,        setJobFilter]        = useState("All Projects");
   const [settlementFilter, setSettlementFilter] = useState("All");
@@ -918,9 +921,28 @@ export default function OwnerOperatorsPage() {
           </div>
         )}
 
+        {/* Company list search */}
+        <div style={{ marginBottom: 14 }}>
+          <input
+            value={ooListSearch}
+            onChange={e => setOoListSearch(e.target.value)}
+            placeholder="Search by company name, contact, MC#, DOT#…"
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.875rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" as const }}
+          />
+        </div>
+
         {/* Company cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {companies.map(oo => {
+          {(ooListSearch.trim()
+            ? companies.filter(oo =>
+                oo.company_name.toLowerCase().includes(ooListSearch.toLowerCase()) ||
+                (oo.contact_name || "").toLowerCase().includes(ooListSearch.toLowerCase()) ||
+                (oo.mc_number   || "").toLowerCase().includes(ooListSearch.toLowerCase()) ||
+                (oo.dot_number  || "").toLowerCase().includes(ooListSearch.toLowerCase()) ||
+                (oo.ein         || "").toLowerCase().includes(ooListSearch.toLowerCase())
+              )
+            : companies
+          ).map(oo => {
             const health      = ooHealthScore(oo);
             const perf        = performanceScore(oo);
             const [eligible, blocks] = ooDispatchEligible(oo);
@@ -1167,21 +1189,19 @@ export default function OwnerOperatorsPage() {
               })()}
               <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
                 <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>Since:</strong>
-                {selected.start_date ? (
-                  <input
-                    key={selected.id+"start"}
-                    type="date"
-                    defaultValue={selected.start_date}
-                    onBlur={e => { const v=e.target.value.trim(); if(v!==selected.start_date){ updateSelected({...selected,start_date:v||undefined}); flash("Start date saved."); } }}
-                    style={{ border:"none", borderBottom:"1px dashed #cbd5e1", background:"transparent", fontSize:"0.82rem", color:"#0f172a", fontWeight:600, width:110, outline:"none", padding:"1px 2px" }}
-                  />
-                ) : (
-                  <span
-                    style={{ color:"#dc2626", fontSize:"0.8rem", borderBottom:"1px dashed #fca5a5", cursor:"pointer" }}
-                    onClick={e => { const inp = document.createElement("input"); inp.type="date"; (e.target as HTMLElement).replaceWith(inp); inp.focus(); inp.onblur=()=>{ if(inp.value){ updateSelected({...selected,start_date:inp.value}); flash("Start date saved."); } }; }}>
-                    Not entered
-                  </span>
-                )}
+                <input
+                  key={selected.id + "start"}
+                  type="date"
+                  defaultValue={selected.start_date || ""}
+                  onBlur={e => {
+                    const v = e.target.value.trim();
+                    if (v !== (selected.start_date || "")) {
+                      updateSelected({ ...selected, start_date: v || undefined });
+                      flash("Start date saved.");
+                    }
+                  }}
+                  style={{ border: "none", borderBottom: "1px dashed #cbd5e1", background: "transparent", fontSize: "0.82rem", color: selected.start_date ? "#0f172a" : "#dc2626", fontWeight: 600, width: 120, outline: "none", padding: "1px 2px", cursor: "pointer" }}
+                />
               </span>
               {(selected.website?.trim()) ? (
                 <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
