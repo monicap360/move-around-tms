@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import PageProtection from "@/components/security/PageProtection";
+import CustomizationRequestWidget from "@/components/ronyx/CustomizationRequestWidget";
 
 type NavChild = {
   label:  string;
@@ -928,6 +929,9 @@ export default function RonyxShell({
         <span style={{ fontSize: "1.1rem" }}>📤</span>
         {pathname === "/ronyx/import" ? "Smart Import (active)" : "Smart Import"}
       </Link>
+
+      {/* Request a Change / Customization floating widget */}
+      <CustomizationRequestWidget />
 
       {/* Mobile bottom bar */}
       <nav className="tms-mobile-bottom" style={{ display: "none" }}>
