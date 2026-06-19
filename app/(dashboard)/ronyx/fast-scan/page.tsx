@@ -432,6 +432,31 @@ export default function FastScanPage() {
                     </div>
                   )}
 
+                  {/* AccuriScale Check — verification panel shown after OCR */}
+                  <div style={{ marginTop: 12, marginBottom: 12, padding: "12px 14px", background: "#0f172a", borderRadius: 8, border: "1px solid #334155" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#22d3ee", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>⚖️</span> AccuriScale Check
+                    </div>
+                    {[
+                      { status: "ok",      label: "Ticket image received" },
+                      { status: hasOcr ? "ok" : "hold", label: hasOcr ? "OCR completed" : "OCR pending" },
+                      { status: uploadResult.extracted?.driver_name ? "ok" : "warn", label: uploadResult.extracted?.driver_name ? `Driver matched — ${uploadResult.extracted.driver_name}` : "Driver not matched — verify manually" },
+                      { status: uploadResult.extracted?.truck_number ? "ok" : "warn", label: uploadResult.extracted?.truck_number ? `Truck matched — #${uploadResult.extracted.truck_number}` : "Truck not matched — verify manually" },
+                      { status: "warn",    label: "Tons variance: pending dispatch match" },
+                      { status: (uploadResult.missing_fields?.length ?? 0) > 0 ? "hold" : "ok", label: (uploadResult.missing_fields?.length ?? 0) > 0 ? `Payroll hold — missing: ${uploadResult.missing_fields!.join(", ")}` : "Payroll ready" },
+                      { status: uploadResult.ticket_id ? "ok" : "hold", label: uploadResult.ticket_id ? "Billing ready" : "Billing hold — ticket not created" },
+                    ].map(({ status, label }, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: i < 6 ? 5 : 0 }}>
+                        <span style={{ fontSize: "0.75rem", marginTop: 1, flexShrink: 0, color: status === "warn" ? "#fbbf24" : status === "ok" ? "#4ade80" : "#f87171" }}>
+                          {status === "warn" ? "⚠" : status === "ok" ? "✓" : "✕"}
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: status === "warn" ? "#fde68a" : status === "ok" ? "#86efac" : "#fca5a5", lineHeight: 1.4 }}>
+                          {label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {uploadResult.signed_url && (
                       <button onClick={() => window.open(uploadResult.signed_url!, "_blank")}

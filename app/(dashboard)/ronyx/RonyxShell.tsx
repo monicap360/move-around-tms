@@ -28,17 +28,12 @@ type NavGroup = {
   items:   NavItem[];
 };
 
-const TICKETS_CHILDREN: NavChild[] = [
-  { label: "All Tickets",           href: "/ronyx/tickets?tab=all",            icon: "🎫", color: "#d97706" },
-  { label: "Fast Scan™",            href: "/ronyx/tickets?tab=fastscan",        icon: "⚡", color: "#16a34a" },
-  { label: "Ticket Reconciliation", href: "/ronyx/tickets?tab=reconciliation",  icon: "🔍", color: "#4f46e5" },
-  { label: "Pit Invoice Match",     href: "/ronyx/tickets?tab=invoice_match",   icon: "🧾", color: "#1d4ed8" },
-  { label: "Excel Reconcile",       href: "/ronyx/tickets?tab=excel_reconcile", icon: "📊", color: "#9333ea" },
-  { label: "Needs Review",          href: "/ronyx/tickets?tab=needs_review",    icon: "⚠️", color: "#ea580c" },
-  { label: "Payroll Review",        href: "/ronyx/tickets?tab=payroll_review",  icon: "💵", color: "#15803d" },
-  { label: "Billing Ready",         href: "/ronyx/tickets?tab=billing_ready",   icon: "🧾", color: "#1d4ed8" },
-  { label: "Pit / Vendor Master",   href: "/ronyx/tickets?tab=pit_master",      icon: "📍", color: "#0d9488" },
-  { label: "Audit Trail",           href: "/ronyx/tickets?tab=audit_trail",     icon: "📜", color: "#64748b" },
+const TICKETS_OCR_CHILDREN: NavChild[] = [
+  { label: "Fast Scan™",             href: "/ronyx/fast-scan",                    icon: "⚡", color: "#16a34a" },
+  { label: "All Tickets",            href: "/ronyx/tickets?tab=all",              icon: "🎫", color: "#d97706" },
+  { label: "Needs Review",           href: "/ronyx/tickets?tab=needs_review",     icon: "⚠️", color: "#ea580c" },
+  { label: "Invoice Reconciliation", href: "/ronyx/tickets?tab=reconciliation",   icon: "🔍", color: "#4f46e5" },
+  { label: "AccuriScale Checks",     href: "/ronyx/accuriscale",                  icon: "⚖️", color: "#22d3ee" },
 ];
 
 const DRIVERS_CHILDREN: NavChild[] = [
@@ -64,18 +59,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Load Tracker",           href: "/ronyx/dispatch/loads",              icon: "📍", color: "#0d9488" },
         { label: "Reassign Truck",         href: "/ronyx/maintenance/breakdowns",      icon: "🔄", color: "#ea580c" },
       ]},
-      { label: "Tickets",               href: "/ronyx/tickets?tab=all",            icon: "🎫", color: "#d97706", children: TICKETS_CHILDREN },
-      { label: "Fast Scan™",            href: "/ronyx/tickets?tab=fastscan",       icon: "⚡", color: "#16a34a", subtitle: "Powered by MoveAround" },
-      { label: "Ticket Reconciliation", href: "/ronyx/tickets?tab=reconciliation", icon: "🔍", color: "#4f46e5" },
-      { label: "AccuriScale™",          href: "/ronyx/accuriscale",                icon: "⚖️", color: "#22d3ee", children: [
-        { label: "Exception Queue",     href: "/ronyx/accuriscale",                          icon: "🚨", color: "#dc2626" },
-        { label: "Loads",               href: "/ronyx/accuriscale?tab=loads",                icon: "📋", color: "#22d3ee" },
-        { label: "Scale Tickets",       href: "/ronyx/accuriscale?tab=tickets",              icon: "🎫", color: "#0891b2" },
-        { label: "Upload Ticket",       href: "/ronyx/accuriscale/upload",                   icon: "📷", color: "#15803d" },
-        { label: "Revenue Recovery",    href: "/ronyx/accuriscale/recovery",                 icon: "💰", color: "#86efac" },
-        { label: "Rules & Settings",    href: "/ronyx/accuriscale?tab=settings",             icon: "⚙️", color: "#64748b" },
-        { label: "Product Page",        href: "/products/accuriscale-intelligence",          icon: "↗", color: "#7c3aed" },
-      ]},
+      { label: "Tickets & OCR",         href: "/ronyx/fast-scan",               icon: "🎫", color: "#d97706", children: TICKETS_OCR_CHILDREN },
       { label: "Projects / Jobs",       href: "/ronyx/loads",                      icon: "📁", color: "#0d9488" },
       { label: "Maintenance",           href: "/ronyx/maintenance",                icon: "🔩", color: "#ea580c", children: [
         { label: "Overview",            href: "/ronyx/maintenance",                icon: "🔩", color: "#ea580c" },
@@ -88,7 +72,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "People & Assets",
     items: [
-      { label: "Drivers",              href: "/ronyx/drivers?tab=list",  icon: "👤", color: "#0891b2", children: DRIVERS_CHILDREN },
+      { label: "Drivers",              href: "/ronyx/drivers?tab=list",  icon: "👤", color: "#0891b2", children: [
+        ...DRIVERS_CHILDREN,
+        { label: "Driver Upload Portal", href: "/ronyx/driver-portal/upload-ticket", color: "#16a34a" },
+      ]},
       { label: "Owner Operators",      href: "/ronyx/owner-operators",   icon: "🚛", color: "#7c3aed", children: [
         { label: "Overview",           href: "/ronyx/owner-operators",                   icon: "🚛", color: "#7c3aed" },
         { label: "COI Matrix",         href: "/ronyx/owner-operators/coi-matrix",        icon: "📋", color: "#1e40af" },
@@ -265,7 +252,9 @@ export default function RonyxShell({
   useEffect(() => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (pathname.startsWith("/ronyx/tickets"))     next.add("Tickets");
+      if (pathname.startsWith("/ronyx/tickets"))     next.add("Tickets & OCR");
+      if (pathname.startsWith("/ronyx/fast-scan"))   next.add("Tickets & OCR");
+      if (pathname.startsWith("/ronyx/accuriscale")) next.add("Tickets & OCR");
       if (pathname.startsWith("/ronyx/drivers"))     next.add("Drivers");
       if (pathname.startsWith("/ronyx/maintenance")) next.add("Maintenance");
       if (pathname.startsWith("/ronyx/dispatch"))    next.add("Dispatch");
