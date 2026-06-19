@@ -42,6 +42,7 @@ type Driver = {
   dispatch_blocked_at?: string | null;
   dispatch_blocked_by?: string | null;
   dispatch_block_reason?: string | null;
+  payroll_eligible?: boolean;
 };
 
 type ComplianceAlert = {
@@ -125,6 +126,10 @@ function mapApiDriver(d: any): Driver {
     dispatch_blocked_at:   d.dispatch_blocked_at   || null,
     dispatch_blocked_by:   d.dispatch_blocked_by   || null,
     dispatch_block_reason: d.dispatch_block_reason || null,
+    payroll_eligible:      d.payroll_eligible !== undefined ? Boolean(d.payroll_eligible) : true,
+    drugTestStatus:        d.drug_test_expiration || undefined,
+    backgroundCheckStatus: d.background_check_status || undefined,
+    owner_operator_company: d.owner_operator_company || undefined,
   };
 }
 
@@ -1324,6 +1329,8 @@ export default function DriversPage() {
   const [needsFilter, setNeedsFilter]     = useState("All");
   const [moreMenuId, setMoreMenuId]       = useState<string | null>(null);
   const [ccbRunning, setCcbRunning]       = useState(false);
+  const [drawerDriver, setDrawerDriver]   = useState<Driver | null>(null);
+  const [eodReviewOpen, setEodReviewOpen] = useState(false);
 
   function showToast(msg: string) { setToast(msg); }
 
@@ -1504,36 +1511,133 @@ export default function DriversPage() {
       {/* ── Hero ── */}
       <section className="premium-hero">
         <div>
-          <p className="premium-eyebrow">Ronyx • Driver Directory</p>
-          <h1>Driver Directory</h1>
-          <p>Credential, company, truck, and document readiness for all drivers.</p>
+          <p className="premium-eyebrow">Ronyx • Driver Command Center</p>
+          <h1>Driver Command Center</h1>
+          <p>Find, clear, assign, and manage every driver from one operational workspace.</p>
+          <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "#64748b" }}>Credential · Company · Truck · Ticket · Payroll · Dispatch Readiness</p>
         </div>
-        <div className="premium-hero-actions">
-          <button
-            onClick={() => { if (!alertsLoaded) loadAlerts(); setAlertsOpen(true); }}
-            style={{ position: "relative", background: alertsList.length > 0 ? "#fff1f2" : "#f8fafc", border: `1px solid ${alertsList.length > 0 ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem", color: alertsList.length > 0 ? "#dc2626" : "#475569", display: "flex", alignItems: "center", gap: 6 }}
-          >
+        <div className="premium-hero-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <Link href="/ronyx/drivers/new" style={{ textDecoration: "none" }}>
+            <button style={{ padding: "8px 16px", borderRadius: 9, background: "#0f172a", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>+ Add Driver</button>
+          </Link>
+          <button onClick={() => { document.getElementById("driver-finder-input")?.focus(); }}
+            style={{ padding: "8px 16px", borderRadius: 9, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+            🔍 Find Driver
+          </button>
+          <button onClick={() => setImportOpen(true)}
+            style={{ padding: "8px 16px", borderRadius: 9, background: "#fff", border: "1px solid #e2e8f0", color: "#0f172a", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+            ⬆ Import Driver List
+          </button>
+          <button onClick={() => setUploadTarget({})}
+            style={{ padding: "8px 16px", borderRadius: 9, background: "#fff", border: "1px solid #e2e8f0", color: "#0f172a", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+            Upload Documents
+          </button>
+          <button onClick={() => { if (!alertsLoaded) loadAlerts(); setAlertsOpen(true); }}
+            style={{ position: "relative", background: alertsList.length > 0 ? "#fff1f2" : "#f8fafc", border: `1px solid ${alertsList.length > 0 ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem", color: alertsList.length > 0 ? "#dc2626" : "#475569", display: "flex", alignItems: "center", gap: 6 }}>
             🔔 Manager Alerts
             {alertsList.length > 0 && (
-              <span style={{ background: "#dc2626", color: "#fff", borderRadius: 99, fontSize: "0.65rem", fontWeight: 800, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>
-                {alertsList.length}
-              </span>
+              <span style={{ background: "#dc2626", color: "#fff", borderRadius: 99, fontSize: "0.65rem", fontWeight: 800, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>{alertsList.length}</span>
             )}
+          </button>
+          <button onClick={setEodReviewOpen.bind(null, true)}
+            style={{ padding: "8px 16px", borderRadius: 9, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+            📋 End of Day Review
           </button>
         </div>
       </section>
 
-      {/* ── KPIs ── */}
-      <section className="premium-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))" }}>
-        <div className="premium-kpi"><span>Total Drivers</span><strong>{loading ? "…" : allDrivers.length}</strong><p>In Ronyx system</p></div>
-        <div className={`premium-kpi${noCompanyCount > 0 ? " danger" : ""}`}><span>No Company</span><strong>{loading ? "…" : noCompanyCount}</strong><p>Unassigned company</p></div>
-        <div className={`premium-kpi${missingCDLCount > 0 ? " danger" : ""}`}><span>Missing CDL</span><strong>{loading ? "…" : missingCDLCount}</strong><p>No CDL on file</p></div>
-        <div className={`premium-kpi${missingMVRCount > 0 ? " danger" : ""}`}><span>Missing MVR</span><strong>{loading ? "…" : missingMVRCount}</strong><p>No MVR on file</p></div>
-        <div className={`premium-kpi${missingMedCount > 0 ? " danger" : ""}`}><span>Missing Medical</span><strong>{loading ? "…" : missingMedCount}</strong><p>No medical card</p></div>
-        <div className={`premium-kpi${expiredMedCount > 0 ? " danger" : ""}`}><span>Expired Medical</span><strong>{loading ? "…" : expiredMedCount}</strong><p>Card expired</p></div>
-        <div className={`premium-kpi${dispatchBlockedCount > 0 ? " danger" : ""}`}><span>Dispatch Blocked</span><strong>{loading ? "…" : dispatchBlockedCount}</strong><p>Cannot dispatch</p></div>
-        <div className="premium-kpi success"><span>Ready to Work</span><strong>{loading ? "…" : readyCount}</strong><p>All clear</p></div>
+      {/* ── Decision Strip ── */}
+      <section className="premium-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
+        <div className="premium-kpi" onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
+          <span>Total Drivers</span><strong>{loading ? "…" : allDrivers.length}</strong><p>In system</p>
+        </div>
+        <div className={`premium-kpi success`} onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
+          <span>Ready to Dispatch</span><strong>{loading ? "…" : readyCount}</strong><p>Fully eligible today</p>
+        </div>
+        <div className={`premium-kpi${dispatchBlockedCount > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Dispatch Blocked")} style={{ cursor: "pointer" }}>
+          <span>Dispatch Blocked</span><strong>{loading ? "…" : dispatchBlockedCount}</strong><p>Cannot be assigned</p>
+        </div>
+        <div className={`premium-kpi${(missingCDLCount + missingMVRCount + missingMedCount) > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Missing Docs")} style={{ cursor: "pointer" }}>
+          <span>Needs Attention</span><strong>{loading ? "…" : missingCDLCount + missingMVRCount + missingMedCount + expiredMedCount}</strong><p>Missing or expired</p>
+        </div>
+        <div className={`premium-kpi${allDrivers.filter(d => d.docs === "Expiring").length > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Expiring Soon")} style={{ cursor: "pointer" }}>
+          <span>Expiring Soon</span><strong>{loading ? "…" : allDrivers.filter(d => d.docs === "Expiring").length}</strong><p>CDL, Med, MVR</p>
+        </div>
+        <div className={`premium-kpi${noCompanyCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("No Company Assigned")} style={{ cursor: "pointer" }}>
+          <span>No Truck / Company</span><strong>{loading ? "…" : noCompanyCount}</strong><p>Unassigned</p>
+        </div>
+        <div className={`premium-kpi${allDrivers.filter(d => !d.payroll_eligible).length > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Payroll Hold")} style={{ cursor: "pointer" }}>
+          <span>Payroll Hold</span><strong>{loading ? "…" : allDrivers.filter(d => !d.payroll_eligible).length}</strong><p>Pay holds active</p>
+        </div>
+        <div className="premium-kpi">
+          <span>Missing Tickets</span><strong>—</strong><p>Connect Fast Scan™</p>
+        </div>
+        <div className="premium-kpi">
+          <span>Active Today</span><strong>{loading ? "…" : allDrivers.filter(d => d.status === "Assigned").length}</strong><p>On job or assigned</p>
+        </div>
       </section>
+
+      {/* ── Do This First Work Queue ── */}
+      {!loading && (() => {
+        const queue: { priority: "critical" | "urgent" | "warning"; driver?: string; problem: string; role: string; action: string; filter: string }[] = [];
+        const expiredMedDrivers = allDrivers.filter(d => d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired");
+        const expiredCDLDrivers = allDrivers.filter(d => d.cdlExp !== "—" && isDateExpiredOrMissing(d.cdlExp) === "expired");
+        const noCompanyDrivers  = allDrivers.filter(d => d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—");
+        const missingCDLDrivers = allDrivers.filter(d => !d.cdl || d.cdl === "—");
+        const missingMVRDrivers = allDrivers.filter(d => !d.mvrExp || d.mvrExp === "—");
+        const missingMedDrivers = allDrivers.filter(d => !d.medicalExp || d.medicalExp === "—");
+        const expiringSoon7     = allDrivers.filter(d => { const days = daysUntil(d.medicalExp) ?? daysUntil(d.cdlExp); return days !== null && days >= 0 && days <= 7; });
+        const blockedDrivers    = allDrivers.filter(d => driverCCBStatus(d).label === "Blocked" || driverCCBStatus(d).label === "Manually Blocked");
+        if (expiredMedDrivers.length > 0)
+          queue.push({ priority: "critical", problem: `${expiredMedDrivers.length} driver${expiredMedDrivers.length > 1 ? "s have" : " has"} expired medical card${expiredMedDrivers.length > 1 ? "s" : ""}`, role: "Compliance Admin", action: "Request Document", filter: "Expired Medical Card" });
+        if (expiredCDLDrivers.length > 0)
+          queue.push({ priority: "critical", problem: `${expiredCDLDrivers.length} driver${expiredCDLDrivers.length > 1 ? "s have" : " has"} expired CDL`, role: "Compliance Admin", action: "Request Document", filter: "Missing CDL" });
+        if (blockedDrivers.length > 0)
+          queue.push({ priority: "urgent", problem: `${blockedDrivers.length} driver${blockedDrivers.length > 1 ? "s are" : " is"} blocked from dispatch`, role: "Dispatch Manager", action: "Review & Clear Block", filter: "Dispatch Blocked" });
+        if (expiringSoon7.length > 0)
+          queue.push({ priority: "urgent", problem: `${expiringSoon7.length} driver${expiringSoon7.length > 1 ? "s have" : " has"} documents expiring within 7 days`, role: "Compliance Admin", action: "Verify & Renew", filter: "Expiring Soon" });
+        if (noCompanyDrivers.length > 0)
+          queue.push({ priority: "warning", problem: `${noCompanyDrivers.length} driver${noCompanyDrivers.length > 1 ? "s have" : " has"} no company or truck assigned`, role: "Driver Coordinator", action: "Assign Company / Truck", filter: "No Company Assigned" });
+        if (missingMedDrivers.length > 0)
+          queue.push({ priority: "warning", problem: `${missingMedDrivers.length} driver${missingMedDrivers.length > 1 ? "s are" : " is"} missing medical card`, role: "Compliance Admin", action: "Request Medical Card", filter: "Missing Medical Card" });
+        if (missingCDLDrivers.length > 0)
+          queue.push({ priority: "warning", problem: `${missingCDLDrivers.length} driver${missingCDLDrivers.length > 1 ? "s have" : " has"} no CDL on file`, role: "Compliance Admin", action: "Request CDL Info", filter: "Missing CDL" });
+        if (missingMVRDrivers.length > 0)
+          queue.push({ priority: "warning", problem: `${missingMVRDrivers.length} driver${missingMVRDrivers.length > 1 ? "s have" : " has"} no MVR on file`, role: "Compliance Admin", action: "Request MVR", filter: "Missing MVR" });
+        if (queue.length === 0) return null;
+        const priorityColors: Record<string, { bg: string; text: string; border: string; label: string }> = {
+          critical: { bg: "#fef2f2", text: "#991b1b", border: "#fca5a5", label: "CRITICAL" },
+          urgent:   { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa", label: "URGENT"   },
+          warning:  { bg: "#fffbeb", text: "#92400e", border: "#fde68a", label: "ATTENTION" },
+        };
+        return (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 20px", marginTop: 16, marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>⚡ Do This First</div>
+                <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Highest-priority driver tasks for office staff</div>
+              </div>
+              <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: 600 }}>{queue.length} task{queue.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {queue.slice(0, 6).map((item, i) => {
+                const c = priorityColors[item.priority];
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: c.bg, border: `1px solid ${c.border}`, borderRadius: 9, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.6rem", fontWeight: 900, color: c.text, background: c.border, borderRadius: 4, padding: "2px 7px", letterSpacing: "0.06em", flexShrink: 0 }}>{c.label}</span>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#0f172a", flex: 1, minWidth: 200 }}>{item.problem}</span>
+                    <span style={{ fontSize: "0.7rem", color: "#64748b", flexShrink: 0 }}>→ <strong>{item.role}</strong></span>
+                    <button onClick={() => setNeedsFilter(item.filter)}
+                      style={{ padding: "4px 11px", background: c.text, color: "#fff", border: "none", borderRadius: 6, fontSize: "0.68rem", fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                      {item.action} →
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Tab switcher ── */}
       <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e2e8f0", margin: "0 0 0 0", padding: "0" }}>
@@ -1554,7 +1658,7 @@ export default function DriversPage() {
               marginBottom: -2,
             }}
           >
-            {tab === "roster" ? "Driver Roster" : "Backup Data"}
+            {tab === "roster" ? "Driver Roster" : "Import / Restore Data"}
           </button>
         ))}
       </div>
@@ -1743,25 +1847,8 @@ export default function DriversPage() {
           </div>
         )}
 
-        {/* ── Primary action bar ── */}
+        {/* ── Secondary action bar ── */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
-          <Link href="/ronyx/drivers/new" style={{ textDecoration: "none" }}>
-            <button style={{ padding: "8px 16px", borderRadius: 9, background: "#0f172a", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
-              + Add Driver
-            </button>
-          </Link>
-          <button
-            onClick={() => setUploadTarget({})}
-            style={{ padding: "8px 16px", borderRadius: 9, background: "#fff", border: "1px solid #e2e8f0", color: "#0f172a", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
-          >
-            Upload Documents
-          </button>
-          <button
-            onClick={() => setImportOpen(true)}
-            style={{ padding: "8px 16px", borderRadius: 9, background: "#1d4ed8", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
-          >
-            ⬆ Import Driver List
-          </button>
           <button
             onClick={() => {
               if (allDrivers.length === 0) { showToast("No drivers to export yet."); return; }
@@ -1812,43 +1899,87 @@ export default function DriversPage() {
           </button>
         </div>
 
-        {/* ── Quick filters ── */}
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 18 }}>
-          {[
-            { label: "All",                   count: allDrivers.length,     danger: false },
-            { label: "No Company Assigned",   count: noCompanyCount,        danger: true },
-            { label: "Missing CDL",           count: missingCDLCount,       danger: true },
-            { label: "Missing MVR",           count: missingMVRCount,       danger: true },
-            { label: "Missing Medical Card",  count: missingMedCount,       danger: true },
-            { label: "Expired Medical Card",  count: expiredMedCount,       danger: true },
-            { label: "Missing Docs",          count: allDrivers.filter(d => d.docs === "Missing").length, danger: true },
-            { label: "Expiring Soon",         count: allDrivers.filter(d => d.docs === "Expiring").length, danger: false },
-            { label: "No Truck Assigned",     count: allDrivers.filter(d => d.truck === "—").length, danger: false },
-            { label: "Dispatch Blocked",      count: dispatchBlockedCount,  danger: true },
-            { label: "Payroll Hold",          count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length, danger: true },
-          ].map(({ label, count, danger }) => {
-            const active  = needsFilter === label;
-            const isDanger = danger && count > 0;
-            return (
-              <button key={label} onClick={() => setNeedsFilter(label)} style={{
-                padding: "5px 11px", borderRadius: 99,
-                border: `1px solid ${active ? "#0f172a" : isDanger ? "#fca5a5" : "#e2e8f0"}`,
-                background: active ? "#0f172a" : isDanger ? "#fff1f2" : "#fff",
-                color: active ? "#fff" : isDanger ? "#dc2626" : "#64748b",
-                fontWeight: 700, fontSize: "0.72rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+        {/* ── Driver Finder ── */}
+        <div style={{ marginBottom: 14, padding: "16px 18px", background: "#eff6ff", borderRadius: 14, border: "2px solid #3b82f6", boxShadow: "0 4px 16px rgba(30,64,175,0.13)" }}>
+          <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🔍 Driver Finder</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            <div style={{ position: "relative", flex: "1 1 280px" }}>
+              <input
+                id="driver-finder-input"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search name, phone, email, CDL#, truck#, company, or owner operator…"
+                style={{ width: "100%", padding: "11px 40px 11px 14px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.92rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, color: "#0f172a", fontWeight: 600 }}
+              />
+              {search ? (
+                <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "#1e40af", border: "none", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#fff", fontWeight: 900 }}>✕</button>
+              ) : (
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1.1rem", opacity: 0.35, pointerEvents: "none" }}>🔍</span>
+              )}
+            </div>
+            <select value={statusFilter} onChange={e => setStatus(e.target.value)}
+              style={{ padding: "11px 12px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.88rem", fontWeight: 600, color: "#0f172a", background: "#fff", cursor: "pointer", minWidth: 140 }}>
+              <option>All Statuses</option>
+              <option>Active</option>
+              <option>Available</option>
+              <option>Assigned</option>
+              <option>Inactive</option>
+              <option>Suspended</option>
+            </select>
+            <select value={docFilter} onChange={e => setDoc(e.target.value)}
+              style={{ padding: "11px 12px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.88rem", fontWeight: 600, color: "#0f172a", background: "#fff", cursor: "pointer", minWidth: 140 }}>
+              <option>All Docs</option>
+              <option>Good</option>
+              <option>Expiring</option>
+              <option>Expired</option>
+              <option>Missing</option>
+              <option>Needs Attention</option>
+            </select>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <button onClick={() => setViewMode("list")} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: viewMode === "list" ? "#0f172a" : "#fff", color: viewMode === "list" ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>☰ List</button>
+              <button onClick={() => setViewMode("cards")} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: viewMode === "cards" ? "#0f172a" : "#fff", color: viewMode === "cards" ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>⊞ Cards</button>
+            </div>
+          </div>
+          {/* Quick filter chips */}
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {[
+              { label: "Ready Now",             filter: "All",                count: readyCount,                        active: needsFilter === "All" && !search },
+              { label: "Dispatch Blocked",       filter: "Dispatch Blocked",   count: dispatchBlockedCount,              active: needsFilter === "Dispatch Blocked" },
+              { label: "Missing Docs",           filter: "Missing Docs",       count: allDrivers.filter(d => d.docs === "Missing").length, active: needsFilter === "Missing Docs" },
+              { label: "Expiring Soon",          filter: "Expiring Soon",      count: allDrivers.filter(d => d.docs === "Expiring").length, active: needsFilter === "Expiring Soon" },
+              { label: "No Company Assigned",    filter: "No Company Assigned",count: noCompanyCount,                   active: needsFilter === "No Company Assigned" },
+              { label: "No Truck Assigned",      filter: "No Truck Assigned",  count: allDrivers.filter(d => d.truck === "—").length, active: needsFilter === "No Truck Assigned" },
+              { label: "Payroll Hold",           filter: "Payroll Hold",       count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length, active: needsFilter === "Payroll Hold" },
+              { label: "Missing CDL",            filter: "Missing CDL",        count: missingCDLCount,                  active: needsFilter === "Missing CDL" },
+              { label: "Missing MVR",            filter: "Missing MVR",        count: missingMVRCount,                  active: needsFilter === "Missing MVR" },
+              { label: "Missing Medical Card",   filter: "Missing Medical Card",count: missingMedCount,                 active: needsFilter === "Missing Medical Card" },
+              { label: "Expired Medical Card",   filter: "Expired Medical Card",count: expiredMedCount,                 active: needsFilter === "Expired Medical Card" },
+            ].map(({ label, filter, count, active }) => (
+              <button key={label} onClick={() => setNeedsFilter(filter)} style={{
+                padding: "4px 10px", borderRadius: 99, border: `1px solid ${active ? "#1e40af" : "#bfdbfe"}`,
+                background: active ? "#1e40af" : "#fff", color: active ? "#fff" : "#1e40af",
+                fontWeight: 700, fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
               }}>
                 {label}
-                {count > 0 && <span style={{ background: active ? "rgba(255,255,255,0.2)" : isDanger ? "#fee2e2" : "#f1f5f9", borderRadius: 99, padding: "0 5px", fontSize: "0.63rem", fontWeight: 800, color: active ? "#fff" : isDanger ? "#dc2626" : "#64748b" }}>{count}</span>}
+                {count > 0 && <span style={{ background: active ? "rgba(255,255,255,0.25)" : "#dbeafe", borderRadius: 99, padding: "0 5px", fontSize: "0.6rem", fontWeight: 800, color: active ? "#fff" : "#1e40af" }}>{count}</span>}
               </button>
-            );
-          })}
+            ))}
+            {(search || needsFilter !== "All") && (
+              <button onClick={() => { setSearch(""); setNeedsFilter("All"); setStatus("All Statuses"); setDoc("All Docs"); }} style={{ padding: "4px 10px", borderRadius: 99, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 700, fontSize: "0.7rem", cursor: "pointer" }}>✕ Clear All</button>
+            )}
+          </div>
+          {(search || needsFilter !== "All") && (
+            <div style={{ marginTop: 8, fontSize: "0.75rem", color: filteredDrivers.length > 0 ? "#1e40af" : "#dc2626", fontWeight: 600 }}>
+              {filteredDrivers.length > 0 ? `${filteredDrivers.length} driver${filteredDrivers.length !== 1 ? "s" : ""} found` : "No drivers match — try a different search"}
+            </div>
+          )}
         </div>
 
-        {/* ── Driver Directory — full width ── */}
+        {/* ── Driver Roster — full width ── */}
         <div className="premium-panel" style={{ marginBottom: 16 }}>
           <div className="premium-panel-header">
             <div>
-              <p className="premium-eyebrow">Driver Directory</p>
+              <p className="premium-eyebrow">Driver Roster</p>
               <h2>All Drivers{needsFilter !== "All" ? ` — ${needsFilter}` : ""}</h2>
               <span>
                 {filteredDrivers.length} of {allDrivers.length} drivers shown
@@ -1858,49 +1989,24 @@ export default function DriversPage() {
             </div>
           </div>
 
-          <div className="premium-filter-bar">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone, CDL, email, or truck..." />
-            <select value={statusFilter} onChange={(e) => setStatus(e.target.value)}>
-              <option>All Statuses</option>
-              <option>Active</option>
-              <option>Available</option>
-              <option>Assigned</option>
-              <option>Inactive</option>
-              <option>Suspended</option>
-            </select>
-            <select value={docFilter} onChange={(e) => setDoc(e.target.value)}>
-              <option>All Docs</option>
-              <option>Good</option>
-              <option>Expiring</option>
-              <option>Expired</option>
-              <option>Missing</option>
-              <option>Needs Attention</option>
-            </select>
-            <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
-              <button
-                onClick={() => setViewMode("list")}
-                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: viewMode === "list" ? "#0f172a" : "#fff", color: viewMode === "list" ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                title="List view"
-              >
-                ☰ List
-              </button>
-              <button
-                onClick={() => setViewMode("cards")}
-                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: viewMode === "cards" ? "#0f172a" : "#fff", color: viewMode === "cards" ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                title="Card view"
-              >
-                ⊞ Cards
-              </button>
-            </div>
-          </div>
-
           {loading ? (
             <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>Loading drivers…</div>
           ) : filteredDrivers.length === 0 ? (
             <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
-              {allDrivers.length === 0
-                ? <>No drivers yet. <Link href="/ronyx/drivers/new" style={{ color: "#1e40af" }}>Add your first driver →</Link></>
-                : "No drivers match your filters."}
+              {allDrivers.length === 0 ? (
+                <div>
+                  <div style={{ fontSize: "2rem", marginBottom: 12 }}>👤</div>
+                  <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "1rem", marginBottom: 6 }}>No drivers added yet</div>
+                  <div style={{ color: "#64748b", fontSize: "0.82rem", marginBottom: 20 }}>Start your driver setup to build your roster.</div>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    <Link href="/ronyx/drivers/new" style={{ textDecoration: "none" }}>
+                      <button style={{ padding: "9px 18px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 9, fontWeight: 700, cursor: "pointer" }}>Add First Driver</button>
+                    </Link>
+                    <button onClick={() => setImportOpen(true)} style={{ padding: "9px 18px", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 9, fontWeight: 700, cursor: "pointer" }}>Import Driver List</button>
+                    <button onClick={() => setUploadTarget({})} style={{ padding: "9px 18px", background: "#fff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: 9, fontWeight: 700, cursor: "pointer" }}>Upload Documents</button>
+                  </div>
+                </div>
+              ) : "No drivers match your search — try clearing filters."}
             </div>
           ) : viewMode === "list" ? (
             /* ── List View ── */
@@ -1909,8 +2015,8 @@ export default function DriversPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                      {["", "Driver", "Company / Carrier", "Type", "Status", "Truck", "CDL", "MVR", "Medical Card", "Docs", "CCB Status", "Next Action", "Actions"].map((h) => (
-                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / Carrier" ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      {["", "Driver", "Company / Owner Operator", "Truck", "Dispatch Status", "CDL", "MVR", "Medical Card", "Docs", "CCB", "Quick Actions"].map((h) => (
+                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / Owner Operator" ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1936,24 +2042,24 @@ export default function DriversPage() {
                       return (
                         <React.Fragment key={driver.id}>
                           <tr
-                            onClick={() => { setExpandedId(isExpanded ? null : driver.id); setMoreMenuId(null); }}
-                            style={{ borderBottom: "1px solid #f1f5f9", background: isExpanded ? "#f0f9ff" : idx % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer" }}
+                            onClick={() => { setDrawerDriver(driver); setMoreMenuId(null); }}
+                            style={{ borderBottom: "1px solid #f1f5f9", background: drawerDriver?.id === driver.id ? "#f0f9ff" : idx % 2 === 0 ? "#fff" : "#fafafa", cursor: "pointer" }}
                           >
                             {/* Avatar */}
                             <td style={{ padding: "8px 6px", textAlign: "center", width: 32 }}>
-                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#0f172a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, margin: "0 auto" }}>
+                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: ccb.label === "Blocked" || ccb.label === "Manually Blocked" ? "#dc2626" : "#0f172a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, margin: "0 auto" }}>
                                 {driver.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
                               </div>
                             </td>
                             {/* Driver */}
                             <td style={{ padding: "8px 8px", minWidth: 130 }}>
                               <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a" }}>{driver.name}</div>
-                              <div style={{ fontSize: 10, color: "#64748b" }}>{driver.phone !== "—" ? driver.phone : driver.email}</div>
+                              <div style={{ fontSize: 10, color: "#64748b" }}>{driver.phone !== "—" && driver.phone ? driver.phone : driver.email || "Not on file"}</div>
                             </td>
-                            {/* Company */}
+                            {/* Company / OO */}
                             <td style={{ padding: "8px 8px", minWidth: 130 }}>
                               {noCompany ? (
-                                <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 7px", borderRadius: 5 }}>No Company Assigned</span>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 7px", borderRadius: 5 }}>Not assigned</span>
                               ) : (
                                 <>
                                   <div style={{ fontWeight: 700, fontSize: 11, color: "#0f172a" }}>{driver.companyName !== "—" ? driver.companyName : driver.carrierName}</div>
@@ -1961,41 +2067,47 @@ export default function DriversPage() {
                                 </>
                               )}
                             </td>
-                            {/* Type */}
-                            <td style={{ padding: "8px 8px", fontSize: 10, color: "#475569", whiteSpace: "nowrap" }}>{driver.driverType}</td>
-                            {/* Status */}
-                            <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 8, background: stBg, color: stColor, whiteSpace: "nowrap" }}>{driver.status}</span>
-                            </td>
                             {/* Truck */}
-                            <td style={{ padding: "8px 8px", fontSize: 11, fontWeight: 600, color: driver.truck === "—" ? "#94a3b8" : "#0f172a", whiteSpace: "nowrap" }}>{driver.truck}</td>
+                            <td style={{ padding: "8px 8px", fontSize: 11, fontWeight: 600, color: driver.truck === "—" || !driver.truck ? "#94a3b8" : "#0f172a", whiteSpace: "nowrap" }}>{driver.truck && driver.truck !== "—" ? driver.truck : "Not assigned"}</td>
+                            {/* Dispatch Status */}
+                            <td style={{ padding: "8px 8px", minWidth: 120 }}>
+                              {ccb.label === "Blocked" || ccb.label === "Manually Blocked" ? (
+                                <div>
+                                  <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", display: "block", marginBottom: 2 }}>🚫 BLOCKED</span>
+                                  <span style={{ fontSize: 9, color: "#dc2626" }}>{nextAct}</span>
+                                </div>
+                              ) : ccb.label === "Clear" ? (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap" }}>✓ Ready to Dispatch</span>
+                              ) : (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: stBg, color: stColor, whiteSpace: "nowrap" }}>{driver.status}</span>
+                              )}
+                            </td>
                             {/* CDL */}
                             <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: cdlBadge.bg, color: cdlBadge.color, whiteSpace: "nowrap" }}>{cdlState === "ok" ? driver.cdlExp : cdlBadge.label}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: cdlBadge.bg, color: cdlBadge.color, whiteSpace: "nowrap" }}>{cdlState === "ok" ? driver.cdlExp : cdlState === "missing" ? "Not on file" : cdlBadge.label}</span>
                             </td>
                             {/* MVR */}
                             <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: mvrBadge.bg, color: mvrBadge.color, whiteSpace: "nowrap" }}>{mvrState === "ok" ? driver.mvrExp : mvrBadge.label}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: mvrBadge.bg, color: mvrBadge.color, whiteSpace: "nowrap" }}>{mvrState === "ok" ? driver.mvrExp : mvrState === "missing" ? "Not on file" : mvrBadge.label}</span>
                             </td>
                             {/* Medical */}
                             <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: medBadge.bg, color: medBadge.color, whiteSpace: "nowrap" }}>{medState === "ok" ? driver.medicalExp : medBadge.label}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: medBadge.bg, color: medBadge.color, whiteSpace: "nowrap" }}>{medState === "ok" ? driver.medicalExp : medState === "missing" ? "Not on file" : medBadge.label}</span>
                             </td>
                             {/* Overall Docs */}
                             <td style={{ padding: "8px 8px" }}>
                               <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: overallDocBg, color: overallDocColor, whiteSpace: "nowrap" }}>
-                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "Expiring" : driver.docs === "Expired" ? "Expired" : "Missing"}
+                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "⚠ Expiring" : driver.docs === "Expired" ? "✕ Expired" : "Missing"}
                               </span>
                             </td>
-                            {/* CCB Status */}
+                            {/* CCB */}
                             <td style={{ padding: "8px 8px" }}>
                               <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: ccb.bg, color: ccb.color, whiteSpace: "nowrap" }}>{ccb.label}</span>
                             </td>
-                            {/* Next Action */}
-                            <td style={{ padding: "8px 8px", fontSize: 10, color: nextAct === "Ready to dispatch" ? "#166534" : "#92400e", fontWeight: 600, minWidth: 160, maxWidth: 200 }}>{nextAct}</td>
-                            {/* Actions */}
+                            {/* Quick Actions */}
                             <td style={{ padding: "8px 6px" }} onClick={(e) => e.stopPropagation()}>
                               <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                                <button onClick={() => setDrawerDriver(driver)} style={{ ...btnS, background: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }}>View</button>
                                 <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
                                   <button style={btnS}>Profile</button>
                                 </Link>
@@ -2406,6 +2518,175 @@ export default function DriversPage() {
       {/* ── Manager Alerts Panel ── */}
       {alertsOpen && (
         <ManagerAlertsPanel alerts={alertsList} onClose={() => setAlertsOpen(false)} />
+      )}
+
+      {/* ── Driver Profile Drawer ── */}
+      {drawerDriver && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9990, display: "flex" }} onClick={() => setDrawerDriver(null)}>
+          <div style={{ flex: 1, background: "rgba(0,0,0,0.35)" }} />
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: 420, maxWidth: "92vw", background: "#fff", boxShadow: "-8px 0 40px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column", overflowY: "auto" }}
+          >
+            {/* Drawer header */}
+            <div style={{ background: "#0f172a", padding: "18px 20px", color: "#fff" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div style={{ width: 46, height: 46, borderRadius: "50%", background: driverCCBStatus(drawerDriver).label === "Blocked" || driverCCBStatus(drawerDriver).label === "Manually Blocked" ? "#dc2626" : "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                  {drawerDriver.name.split(" ").map(p => p[0]).join("").slice(0, 2)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: "1.05rem" }}>{drawerDriver.name}</div>
+                  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 2 }}>
+                    {drawerDriver.driverType} · {drawerDriver.companyName !== "—" ? drawerDriver.companyName : drawerDriver.ownerOperatorName !== "—" ? drawerDriver.ownerOperatorName : "No company assigned"}
+                  </div>
+                </div>
+                <button onClick={() => setDrawerDriver(null)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.2rem", padding: 4 }}>✕</button>
+              </div>
+              {/* Contact */}
+              <div style={{ display: "flex", gap: 12, fontSize: "0.72rem", color: "#94a3b8" }}>
+                {drawerDriver.phone && drawerDriver.phone !== "—" && <span>📞 {drawerDriver.phone}</span>}
+                {drawerDriver.email && drawerDriver.email !== "—" && <span>✉ {drawerDriver.email}</span>}
+              </div>
+            </div>
+
+            {/* Status cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "14px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+              {(() => {
+                const ccb = driverCCBStatus(drawerDriver);
+                const isBlocked = ccb.label === "Blocked" || ccb.label === "Manually Blocked";
+                return [
+                  { label: "Dispatch", value: isBlocked ? "🚫 Blocked" : "✓ Eligible", color: isBlocked ? "#dc2626" : "#16a34a", bg: isBlocked ? "#fef2f2" : "#f0fdf4" },
+                  { label: "Payroll",  value: drawerDriver.payroll_eligible ? "✓ Eligible" : "⚠ Hold",   color: drawerDriver.payroll_eligible ? "#16a34a" : "#d97706", bg: drawerDriver.payroll_eligible ? "#f0fdf4" : "#fffbeb" },
+                  { label: "Truck",    value: drawerDriver.truck && drawerDriver.truck !== "—" ? `Truck ${drawerDriver.truck}` : "Not assigned", color: "#0f172a", bg: "#fff" },
+                  { label: "Status",   value: drawerDriver.status, color: drawerDriver.status === "Assigned" ? "#1d4ed8" : drawerDriver.status === "Suspended" ? "#dc2626" : "#16a34a", bg: "#fff" },
+                ].map(({ label, value, color, bg }) => (
+                  <div key={label} style={{ background: bg, borderRadius: 8, padding: "8px 10px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
+                    <div style={{ fontWeight: 700, fontSize: "0.82rem", color }}>{value}</div>
+                  </div>
+                ));
+              })()}
+            </div>
+
+            {/* Credentials */}
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Credentials & Compliance</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {[
+                  { label: "CDL #",            value: drawerDriver.cdl || "Not on file",         expiry: drawerDriver.cdlExp },
+                  { label: "CDL State",         value: drawerDriver.cdlState || "Not on file",    expiry: null },
+                  { label: "MVR Expiration",    value: drawerDriver.mvrExp || "Not on file",      expiry: drawerDriver.mvrExp },
+                  { label: "Medical Card Exp",  value: drawerDriver.medicalExp || "Not on file",  expiry: drawerDriver.medicalExp },
+                  { label: "Drug Test Status",  value: drawerDriver.drugTestStatus || "Not on file", expiry: null },
+                  { label: "Background Check",  value: drawerDriver.backgroundCheckStatus || "Not on file", expiry: null },
+                ].map(({ label, value, expiry }) => {
+                  const state = expiry ? isDateExpiredOrMissing(expiry) : null;
+                  const textColor = state === "expired" ? "#dc2626" : state === "expiring" ? "#d97706" : state === "missing" ? "#94a3b8" : "#0f172a";
+                  return (
+                    <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 8px", borderRadius: 6, background: state === "expired" ? "#fef2f2" : "#f8fafc" }}>
+                      <span style={{ fontSize: "0.7rem", color: "#64748b" }}>{label}</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: textColor }}>{value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tickets (placeholder — connects to Fast Scan™) */}
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Fast Scan™ Tickets</div>
+              <div style={{ fontSize: "0.75rem", color: "#64748b", padding: "10px 0" }}>
+                Connect Fast Scan™ to see verified, pending, and missing tickets for this driver.
+                <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+                  <Link href="/ronyx/fast-scan" style={{ textDecoration: "none" }}>
+                    <button style={{ padding: "5px 12px", background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", borderRadius: 7, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}>Open Fast Scan™</button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Drawer action buttons */}
+            <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                <button onClick={() => { setAssignTarget({ driver: drawerDriver }); setDrawerDriver(null); }}
+                  style={{ padding: "8px 0", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>Assign Truck</button>
+                <button onClick={() => { setUploadTarget({ driver: drawerDriver }); setDrawerDriver(null); }}
+                  style={{ padding: "8px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>Upload Document</button>
+                <Link href={`/ronyx/drivers/${drawerDriver.id}`} style={{ textDecoration: "none" }}>
+                  <button style={{ width: "100%", padding: "8px 0", background: "#fff", color: "#0f172a", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>Open Full Profile</button>
+                </Link>
+                <Link href={`/ronyx/drivers/${drawerDriver.id}?tab=documents`} style={{ textDecoration: "none" }}>
+                  <button style={{ width: "100%", padding: "8px 0", background: "#fff", color: "#0f172a", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>Open Compliance</button>
+                </Link>
+              </div>
+              {(driverCCBStatus(drawerDriver).label === "Blocked" || driverCCBStatus(drawerDriver).label === "Manually Blocked") && (
+                <button
+                  onClick={() => {
+                    if (!confirm(`Unblock ${drawerDriver.name} and restore dispatch eligibility?`)) return;
+                    fetch(`/api/ronyx/drivers/${drawerDriver.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dispatch_eligible: true, dispatch_blocked_by: "admin", audit_action: "unblock_dispatch", driver_name: drawerDriver.name, audit_metadata: { unblocked_by: "admin" } }) })
+                      .then(r => r.json())
+                      .then(res => {
+                        if (res.ok) { showToast(`✓ ${drawerDriver.name} unblocked`); setAllDrivers(prev => prev.map(d => d.id === drawerDriver.id ? { ...d, dispatchEligible: true } : d)); setDrawerDriver(null); }
+                        else showToast(`Error: ${res.error || "Could not unblock"}`);
+                      });
+                  }}
+                  style={{ width: "100%", padding: "9px 0", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
+                  ✓ Clear Dispatch Block
+                </button>
+              )}
+              <button onClick={() => { setDrawerDriver(null); setConfirmAction({ type: "archive", driver: drawerDriver }); }}
+                style={{ width: "100%", padding: "7px 0", background: "#fff", color: "#d97706", border: "1px solid #fde68a", borderRadius: 8, fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}>
+                Archive Driver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── End of Day Review Modal ── */}
+      {eodReviewOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9995, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 560, maxHeight: "80vh", overflow: "auto", boxShadow: "0 16px 48px rgba(0,0,0,0.25)" }}>
+            <div style={{ background: "#0f172a", padding: "18px 22px", borderRadius: "14px 14px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontWeight: 800, fontSize: "1rem", color: "#fff" }}>📋 End of Day Driver Review</div>
+              <button onClick={() => setEodReviewOpen(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
+            </div>
+            <div style={{ padding: "20px 22px" }}>
+              {[
+                { label: "Still on active jobs", drivers: allDrivers.filter(d => d.status === "Assigned"), color: "#1d4ed8" },
+                { label: "Blocked from dispatch", drivers: allDrivers.filter(d => driverCCBStatus(d).label === "Blocked" || driverCCBStatus(d).label === "Manually Blocked"), color: "#dc2626" },
+                { label: "Missing documents", drivers: allDrivers.filter(d => d.docs === "Missing"), color: "#d97706" },
+                { label: "Expiring credentials", drivers: allDrivers.filter(d => d.docs === "Expiring"), color: "#ca8a04" },
+                { label: "Payroll hold", drivers: allDrivers.filter(d => !d.payroll_eligible), color: "#7c3aed" },
+                { label: "No company assigned", drivers: allDrivers.filter(d => d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—"), color: "#dc2626" },
+              ].map(({ label, drivers, color }) => drivers.length > 0 && (
+                <div key={label} style={{ marginBottom: 12, padding: "10px 14px", background: "#f8fafc", borderRadius: 9, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 800, color, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{label} ({drivers.length})</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    {drivers.slice(0, 8).map(d => (
+                      <span key={d.id} onClick={() => { setEodReviewOpen(false); setDrawerDriver(d); }} style={{ padding: "3px 9px", background: "#fff", border: `1px solid ${color}30`, borderRadius: 6, fontSize: "0.72rem", fontWeight: 600, color: "#0f172a", cursor: "pointer" }}>{d.name}</span>
+                    ))}
+                    {drivers.length > 8 && <span style={{ fontSize: "0.7rem", color: "#94a3b8", alignSelf: "center" }}>+{drivers.length - 8} more</span>}
+                  </div>
+                </div>
+              ))}
+              {allDrivers.filter(d => d.status === "Assigned" || driverCCBStatus(d).label === "Blocked" || d.docs === "Missing" || d.docs === "Expiring" || !d.payroll_eligible).length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "#16a34a" }}>
+                  <div style={{ fontSize: "2rem", marginBottom: 8 }}>✓</div>
+                  <div style={{ fontWeight: 700 }}>All clear — no end-of-day issues to review</div>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <button onClick={() => {
+                  const active = allDrivers.filter(d => d.status === "Assigned" || driverCCBStatus(d).label !== "Clear");
+                  const csv = ["Driver,Status,Truck,Company,Dispatch,Docs"].concat(active.map(d => `"${d.name}","${d.status}","${d.truck}","${d.companyName}","${driverCCBStatus(d).label}","${d.docs}"`)).join("\n");
+                  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `eod-driver-review-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                }} style={{ flex: 1, padding: "9px 0", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>Export Status Report</button>
+                <button onClick={() => setEodReviewOpen(false)} style={{ flex: 1, padding: "9px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Toast ── */}
