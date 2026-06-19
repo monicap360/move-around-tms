@@ -83,6 +83,12 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Settlement",        href: "/ronyx/owner-operators",              icon: "💵", color: "#15803d" },
         { label: "Compliance Monitor",href: "/ronyx/compliance",                  icon: "🛡️", color: "#dc2626" },
       ]},
+      { label: "Driver Network™",    href: "/ronyx/driver-network",   icon: "🌐", color: "#0891b2", children: [
+        { label: "Browse Drivers",    href: "/ronyx/driver-network",           icon: "🔍", color: "#0891b2" },
+        { label: "Shortlist",         href: "/ronyx/driver-network#shortlist", icon: "★",  color: "#7c3aed" },
+        { label: "Unlocked Profiles", href: "/ronyx/driver-network#unlocked",  icon: "🔓", color: "#15803d" },
+        { label: "Driver Finder™",    href: "/ronyx/settings/billing",         icon: "💼", color: "#dc2626" },
+      ]},
       { label: "Fleet / Equipment", href: "/ronyx/fleet",            icon: "🔧", color: "#0284c7" },
       { label: "Maintenance",       href: "/ronyx/maintenance",      icon: "🔩", color: "#ea580c", children: [
         { label: "Overview",              href: "/ronyx/maintenance",                    icon: "🔩", color: "#ea580c" },
