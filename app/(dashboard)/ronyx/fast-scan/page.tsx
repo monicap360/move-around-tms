@@ -97,6 +97,10 @@ export default function FastScanPage() {
   const [error, setError]           = useState("");
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [loadingScans, setLoadingScans] = useState(true);
+  const [scanPreviewModal, setScanPreviewModal] = useState<{ url: string; filename: string } | null>(null);
+  const [scanEmailModal, setScanEmailModal] = useState<{ scan: any; to: string; subject: string; message: string; sending: boolean } | null>(null);
+  const [scanEditModal, setScanEditModal] = useState<{ scan: any; form: { ticket_number: string; truck_number: string; driver_name: string; amount: string }; saving: boolean } | null>(null);
+  const [scanVoidConfirm, setScanVoidConfirm] = useState<{ id: string; filename: string } | null>(null);
 
   // File upload state
   const [uploadFile, setUploadFile]         = useState<File | null>(null);
@@ -110,6 +114,79 @@ export default function FastScanPage() {
   const [dragOver, setDragOver]             = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+
+  async function openScanPreview(s: any, print?: boolean) {
+    if (!s.object_path) { alert("No file stored for this scan."); return; }
+    try {
+      const res = await fetch(`/api/ronyx/fast-scan/${s.id}`);
+      const data = await res.json();
+      if (!data.signed_url) { alert("Could not load preview — file may have been deleted."); return; }
+      if (print) {
+        const win = window.open(data.signed_url, "_blank");
+        if (win) win.addEventListener("load", () => { try { win.print(); } catch {} });
+      } else {
+        setScanPreviewModal({ url: data.signed_url, filename: s.original_filename || "Ticket Scan" });
+      }
+    } catch { alert("Failed to load preview. Check your connection."); }
+  }
+
+  async function saveScanEdit() {
+    if (!scanEditModal) return;
+    setScanEditModal(m => m && { ...m, saving: true });
+    try {
+      const res = await fetch(`/api/ronyx/fast-scan/${scanEditModal.scan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scanEditModal.form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      setRecentScans(prev => prev.map(s => s.id === scanEditModal.scan.id ? { ...s, ...scanEditModal.form } : s));
+      setScanEditModal(null);
+    } catch (e: any) {
+      setScanEditModal(m => m && { ...m, saving: false });
+      alert(e.message);
+    }
+  }
+
+  async function confirmVoid() {
+    if (!scanVoidConfirm) return;
+    try {
+      const res = await fetch(`/api/ronyx/fast-scan/${scanVoidConfirm.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scan_status: "voided" }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed to void"); }
+      setRecentScans(prev => prev.map(s => s.id === scanVoidConfirm.id ? { ...s, scan_status: "voided" } : s));
+      setScanVoidConfirm(null);
+    } catch (e: any) { alert(e.message); }
+  }
+
+  async function sendScanEmail() {
+    if (!scanEmailModal) return;
+    setScanEmailModal(m => m && { ...m, sending: true });
+    try {
+      const res = await fetch("/api/ronyx/fast-scan/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_id: scanEmailModal.scan.id,
+          to: scanEmailModal.to,
+          subject: scanEmailModal.subject,
+          message: scanEmailModal.message,
+          filename: scanEmailModal.scan.original_filename,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok && !data.queued) throw new Error(data.error || "Email failed");
+      setScanEmailModal(null);
+      alert(data.queued ? "SMTP not configured — email queued." : `Email sent to ${scanEmailModal.to}`);
+    } catch (e: any) {
+      setScanEmailModal(m => m && { ...m, sending: false });
+      alert(e.message);
+    }
+  }
 
   function loadRecentScans() {
     // Try new pipeline table first, fall back to old table
@@ -606,15 +683,18 @@ export default function FastScanPage() {
                     : st === "on_hold" || st === "needs_review" ? "#d97706"
                     : st === "ready" ? "#2563eb"
                     : "#64748b";
+                  const isVoided = s.scan_status === "voided";
                   return (
-                    <div key={s.id} style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #dbeafe", background: "#f8fafc" }}>
+                    <div key={s.id} style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${isVoided ? "#fecaca" : "#dbeafe"}`, background: isVoided ? "#fff5f5" : "#f8fafc", opacity: isVoided ? 0.75 : 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: "1rem" }}>📄</span>
-                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e40af" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: isVoided ? "#dc2626" : "#1e40af", textDecoration: isVoided ? "line-through" : undefined }}>
                           {s.original_filename || s.document_kind || "Ticket"}
                         </span>
-                        <span style={{ marginLeft: "auto", fontSize: "0.65rem", fontWeight: 700, padding: "2px 7px", borderRadius: 99, background: "#eff6ff", color: "#1e40af" }}>
-                          {s.scan_status}
+                        <span style={{ marginLeft: "auto", fontSize: "0.65rem", fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+                          background: isVoided ? "#fef2f2" : "#eff6ff",
+                          color:      isVoided ? "#dc2626" : "#1e40af" }}>
+                          {isVoided ? "🚫 VOIDED" : s.scan_status}
                         </span>
                       </div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
@@ -629,6 +709,35 @@ export default function FastScanPage() {
                         <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "#94a3b8" }}>
                           {new Date(s.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                         </span>
+                      </div>
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
+                        {s.object_path && (<>
+                          <button onClick={() => openScanPreview(s)}
+                            style={{ padding: "3px 9px", background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                            👁 Preview
+                          </button>
+                          <button onClick={() => setScanEmailModal({ scan: s, to: "", subject: `Ticket Scan — ${s.ticket_number || s.original_filename || "Scan"}`, message: `Please find the attached ticket scan.\n\nTruck: ${s.truck_number || "N/A"}\nDriver: ${s.driver_name || "N/A"}\n\n— MoveAround TMS`, sending: false })}
+                            style={{ padding: "3px 9px", background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                            ✉ Email
+                          </button>
+                          <button onClick={() => openScanPreview(s, true)}
+                            style={{ padding: "3px 9px", background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                            🖨 Print
+                          </button>
+                        </>)}
+                        {!isVoided && (
+                          <button onClick={() => setScanEditModal({ scan: s, form: { ticket_number: s.ticket_number || "", truck_number: s.truck_number || "", driver_name: s.driver_name || "", amount: s.amount?.toString() || "" }, saving: false })}
+                            style={{ padding: "3px 9px", background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                            ✏ Edit
+                          </button>
+                        )}
+                        {!isVoided && (
+                          <button onClick={() => setScanVoidConfirm({ id: s.id, filename: s.original_filename || "this scan" })}
+                            style={{ padding: "3px 9px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                            🚫 Void
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -666,6 +775,120 @@ export default function FastScanPage() {
           <strong style={{ color: "#64748b" }}>MoveAround TMS</strong> platform.
         </p>
       </div>
+
+      {/* ── In-system Preview Modal ── */}
+      {scanPreviewModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "92vw", maxWidth: 960, height: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderBottom: "1px solid #e2e8f0", flexShrink: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                <span>📄</span> {scanPreviewModal.filename}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => { const w = window.open(scanPreviewModal.url, "_blank"); if (w) w.addEventListener("load", () => { try { w.print(); } catch {} }); }}
+                  style={{ padding: "5px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                  🖨 Print
+                </button>
+                <button onClick={() => setScanPreviewModal(null)}
+                  style={{ padding: "5px 14px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+            <iframe src={scanPreviewModal.url} style={{ flex: 1, border: "none", borderRadius: "0 0 14px 14px", width: "100%" }} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Email Modal ── */}
+      {scanEmailModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 480, padding: 28, boxShadow: "0 16px 48px rgba(0,0,0,0.25)" }}>
+            <div style={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", marginBottom: 18 }}>✉ Email Ticket Scan</div>
+            {([
+              { label: "To (email)", key: "to",      type: "email"  },
+              { label: "Subject",    key: "subject",  type: "text"   },
+            ] as const).map(f => (
+              <div key={f.key} style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>{f.label}</label>
+                <input type={f.type} value={(scanEmailModal as any)[f.key] || ""}
+                  onChange={e => setScanEmailModal(m => m && ({ ...m, [f.key]: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: "0.88rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>Message</label>
+              <textarea value={scanEmailModal.message} onChange={e => setScanEmailModal(m => m && ({ ...m, message: e.target.value }))}
+                style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: "0.88rem", resize: "vertical", height: 90, outline: "none", background: "#f8fafc", fontFamily: "inherit", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <button disabled={scanEmailModal.sending || !scanEmailModal.to} onClick={sendScanEmail}
+                style={{ flex: 1, padding: "10px 0", background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", opacity: (!scanEmailModal.to || scanEmailModal.sending) ? 0.6 : 1 }}>
+                {scanEmailModal.sending ? "Sending…" : "✉ Send Email"}
+              </button>
+              <button onClick={() => setScanEmailModal(null)}
+                style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Scan Modal ── */}
+      {scanEditModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 440, padding: 28, boxShadow: "0 16px 48px rgba(0,0,0,0.25)" }}>
+            <div style={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", marginBottom: 18 }}>✏ Edit Scan Record</div>
+            {([
+              { label: "Ticket #",   key: "ticket_number" },
+              { label: "Truck #",    key: "truck_number"  },
+              { label: "Driver",     key: "driver_name"   },
+              { label: "Amount ($)", key: "amount"        },
+            ] as const).map(f => (
+              <div key={f.key} style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>{f.label}</label>
+                <input value={(scanEditModal.form as any)[f.key] || ""}
+                  onChange={e => setScanEditModal(m => m && ({ ...m, form: { ...m.form, [f.key]: e.target.value } }))}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: "0.88rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+              <button disabled={scanEditModal.saving} onClick={saveScanEdit}
+                style={{ flex: 1, padding: "10px 0", background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", opacity: scanEditModal.saving ? 0.6 : 1 }}>
+                {scanEditModal.saving ? "Saving…" : "Save Changes"}
+              </button>
+              <button onClick={() => setScanEditModal(null)}
+                style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Void Confirmation Modal ── */}
+      {scanVoidConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 380, padding: 28, boxShadow: "0 16px 48px rgba(0,0,0,0.25)", textAlign: "center" }}>
+            <div style={{ fontSize: "2rem", marginBottom: 10 }}>⚠️</div>
+            <div style={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", marginBottom: 8 }}>Void This Scan?</div>
+            <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: 22, lineHeight: 1.5 }}>
+              <strong>{scanVoidConfirm.filename}</strong> will be marked as voided and excluded from payroll and billing. This cannot be undone.
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={confirmVoid}
+                style={{ flex: 1, padding: "11px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>
+                Yes, Void It
+              </button>
+              <button onClick={() => setScanVoidConfirm(null)}
+                style={{ flex: 1, padding: "11px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
