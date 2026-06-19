@@ -881,17 +881,21 @@ export default function OwnerOperatorsPage() {
         </div>
 
         {/* Company list search */}
-        <div style={{ marginBottom: 14, position: "relative" }}>
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: "1rem", pointerEvents: "none", opacity: 0.5 }}>🔍</span>
-          <input
-            value={ooListSearch}
-            onChange={e => setOoListSearch(e.target.value)}
-            placeholder="Search companies, contacts, drivers, MC#, DOT#…"
-            style={{ width: "100%", padding: "12px 40px 12px 40px", borderRadius: 12, border: "2px solid #1e40af", fontSize: "0.9rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, boxShadow: "0 2px 8px rgba(30,64,175,0.10)", color: "#0f172a", fontWeight: 500 }}
-          />
-          {ooListSearch && (
-            <button onClick={() => setOoListSearch("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "#e2e8f0", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#64748b", fontWeight: 900, lineHeight: 1 }}>✕</button>
-          )}
+        <div style={{ marginBottom: 16, padding: "14px 16px", background: "#eff6ff", borderRadius: 14, border: "2px solid #3b82f6", boxShadow: "0 4px 16px rgba(30,64,175,0.13)" }}>
+          <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>🔍 Search Owner Operators</div>
+          <div style={{ position: "relative" }}>
+            <input
+              value={ooListSearch}
+              onChange={e => setOoListSearch(e.target.value)}
+              placeholder="Company name, contact, driver name, MC#, DOT#…"
+              style={{ width: "100%", padding: "11px 40px 11px 14px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.95rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, color: "#0f172a", fontWeight: 600, boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06)" }}
+            />
+            {ooListSearch ? (
+              <button onClick={() => setOoListSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "#1e40af", border: "none", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#fff", fontWeight: 900 }}>✕</button>
+            ) : (
+              <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1.1rem", opacity: 0.35, pointerEvents: "none" }}>🔍</span>
+            )}
+          </div>
         </div>
         {ooListSearch.trim() && (
           <div style={{ marginBottom: 10, fontSize: "0.78rem", color: filteredCompanies.length > 0 ? "#1e40af" : "#dc2626", fontWeight: 600 }}>
@@ -1979,18 +1983,22 @@ export default function OwnerOperatorsPage() {
           </div>
 
           {/* Driver search */}
-          {selected.drivers.length > 2 && (
-            <div style={{ position: "relative", marginBottom: 14 }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: "0.9rem", pointerEvents: "none", opacity: 0.45 }}>🔍</span>
-              <input
-                value={driverSearch}
-                onChange={e => setDriverSearch(e.target.value)}
-                placeholder="Search drivers by name, CDL#, phone…"
-                style={{ width: "100%", padding: "10px 36px 10px 36px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.875rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, boxShadow: "0 2px 8px rgba(30,64,175,0.10)", color: "#0f172a", fontWeight: 500 }}
-              />
-              {driverSearch && (
-                <button onClick={() => setDriverSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "#e2e8f0", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#64748b", fontWeight: 900 }}>✕</button>
-              )}
+          {selected.drivers.length > 0 && (
+            <div style={{ marginBottom: 16, padding: "14px 16px", background: "#eff6ff", borderRadius: 14, border: "2px solid #3b82f6", boxShadow: "0 4px 16px rgba(30,64,175,0.13)" }}>
+              <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>🔍 Search Drivers</div>
+              <div style={{ position: "relative" }}>
+                <input
+                  value={driverSearch}
+                  onChange={e => setDriverSearch(e.target.value)}
+                  placeholder="Driver name, CDL#, phone, truck#…"
+                  style={{ width: "100%", padding: "11px 40px 11px 14px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.95rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, color: "#0f172a", fontWeight: 600, boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06)" }}
+                />
+                {driverSearch ? (
+                  <button onClick={() => setDriverSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "#1e40af", border: "none", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#fff", fontWeight: 900 }}>✕</button>
+                ) : (
+                  <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1.1rem", opacity: 0.35, pointerEvents: "none" }}>🔍</span>
+                )}
+              </div>
             </div>
           )}
 
