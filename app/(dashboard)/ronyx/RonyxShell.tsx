@@ -103,6 +103,13 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Unpaid Tickets",           href: "/ronyx/billing?tab=unpaid",           icon: "⚠️", color: "#dc2626" },
         { label: "Reconciliation",           href: "/ronyx/billing?tab=exceptions",       icon: "🔴", color: "#b45309" },
       ]},
+      { label: "Accounting Hub",     href: "/ronyx/accounting", icon: "📒", color: "#7c3aed", children: [
+        { label: "Billing Pipeline",    href: "/ronyx/accounting",           icon: "⚡", color: "#1d4ed8" },
+        { label: "Invoices",            href: "/ronyx/accounting",           icon: "📄", color: "#1d4ed8" },
+        { label: "AR Aging",            href: "/ronyx/accounting",           icon: "📊", color: "#f59e0b" },
+        { label: "QuickBooks Sync",     href: "/ronyx/accounting",           icon: "🔗", color: "#7c3aed" },
+        { label: "Accounts Receivable", href: "/ronyx/accounts-receivable",  icon: "💰", color: "#16a34a" },
+      ]},
       { label: "IFTA / Fuel Tax",    href: "/ronyx/ifta",     icon: "⛽", color: "#ca8a04" },
     ],
   },
@@ -145,6 +152,13 @@ const NAV_GROUPS: NavGroup[] = [
     section: "Commerce",
     items: [
       { label: "Merch Store", href: "/ronyx/store", icon: "🛒", color: "#16a34a", subtitle: "Powered by Shopify" },
+    ],
+  },
+  {
+    section: "Setup",
+    items: [
+      { label: "Implementation Hub", href: "/ronyx/implementation", icon: "🚀", color: "#1d4ed8", subtitle: "Data transfer & staff training" },
+      { label: "Onboarding Support", href: "/ronyx/onboarding-support", icon: "🎓", color: "#16a34a" },
     ],
   },
   {
@@ -232,9 +246,12 @@ export default function RonyxShell({
       if (pathname.startsWith("/ronyx/drivers"))     next.add("Drivers");
       if (pathname.startsWith("/ronyx/maintenance")) next.add("Maintenance");
       if (pathname.startsWith("/ronyx/dispatch"))    next.add("Dispatch");
-      if (pathname.startsWith("/ronyx/admin"))       next.add("Admin Control Center");
-      if (pathname.startsWith("/ronyx/backup"))      next.add("Backup Vault");
-      if (pathname.startsWith("/ronyx/compliance"))  next.add("HR / DOT Compliance");
+      if (pathname.startsWith("/ronyx/admin"))          next.add("Admin Control Center");
+      if (pathname.startsWith("/ronyx/backup"))         next.add("Backup Vault");
+      if (pathname.startsWith("/ronyx/compliance"))     next.add("HR / DOT Compliance");
+      if (pathname.startsWith("/ronyx/accounting"))     next.add("Accounting Hub");
+      if (pathname.startsWith("/ronyx/billing"))        next.add("Invoice Command Center");
+      if (pathname.startsWith("/ronyx/implementation")) next.add("Implementation Hub");
       return next;
     });
   }, [pathname]);

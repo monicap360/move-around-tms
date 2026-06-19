@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { brandAssets, BrandAssetKey } from "@/lib/brandAssets";
+import CcbShieldLogo from "@/components/ronyx/CcbShieldLogo";
 
 type Props = {
   asset: BrandAssetKey;
@@ -20,6 +21,16 @@ export default function BrandLogo({
 }: Props) {
   const [failed, setFailed] = useState(false);
   const info = brandAssets[asset];
+
+  // CCB uses an inline SVG — no PNG file needed.
+  if (asset === "ccb") {
+    return (
+      <CcbShieldLogo
+        height={maxHeight}
+        style={{ maxWidth: maxWidth ?? "100%", display: "block", ...style }}
+      />
+    );
+  }
 
   if (failed) {
     return (

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasOrganizationAccess } from "@/lib/auth/hasOrganizationAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -12,14 +13,15 @@ const FREE_TRIAL_MODULES = [
   "owner-operators", "fast-scan", "maintenance", "compliance",
   "billing", "payroll", "dispatch", "tickets", "drivers",
   "loads", "reports", "hr-compliance", "dispatch-guard",
+  // Driver module slugs — all variants included so no driver page ever blocks
+  "driver_management", "driver_compliance", "driver_documents",
+  "drivers", "driver-compliance", "driver-documents",
   // New module_registry keys
   "owner_operator_hub", "fast_scan", "driver_management",
   "load_management", "maintenance_hub", "driver_compliance",
   "payroll_settlements", "billing_invoicing", "dispatch_guard",
   "reporting_analytics", "hr_compliance",
 ];
-
-const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
 
 // ── Resolve org ───────────────────────────────────────────────────────────────
 // Tries: env var ID → organization_code RONYX → first org in table.
@@ -71,29 +73,12 @@ async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerC
 }
 
 // ── Trial check ───────────────────────────────────────────────────────────────
+// Delegates to hasOrganizationAccess — the single source of truth.
+// columnsMissing = true means trial columns weren't returned (migration not run).
+// In that case we deny rather than assume — run migration 170 first.
 function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: boolean): boolean {
-  if (!org) return false;
-
-  // If trial columns exist: use them
-  if (!columnsMissing) {
-    return (
-      org.status               === "active" &&
-      org.bypass_subscription  === true     &&
-      org.subscription_required === false   &&
-      TRIAL_ACCOUNT_TYPES.includes(org.account_type as string) &&
-      !!org.pilot_ends_at &&
-      new Date(org.pilot_ends_at as string) > new Date()
-    );
-  }
-
-  // Columns missing (migration 166 not run yet):
-  // Trust that Ronyx org code means trial access during this bootstrap period.
-  // Remove this fallback after migration 166 has been confirmed to run.
-  const isRonyxOrg =
-    (org.organization_code as string)?.toUpperCase() === "RONYX" ||
-    (org.name as string)?.toLowerCase().includes("ronyx");
-
-  return isRonyxOrg && org.status === "active";
+  if (!org || columnsMissing) return false;
+  return hasOrganizationAccess(org as Parameters<typeof hasOrganizationAccess>[0]);
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -167,45 +152,65 @@ export async function GET() {
     .eq("organization_id", orgId)
     .single();
 
+  // Fetch org modules — select both old (module_slug/is_active) and new (module_key/status) columns.
+  // Rows with status='in_trial' or status='active' are granted access even if the org-level
+  // trial flags haven't been set yet (e.g. migration ran modules but not the org UPDATE).
   const { data: orgModulesRows } = await supabase
     .from("organization_modules")
-    .select("module_slug, is_active")
+    .select("module_slug, module_key, is_active, status")
     .eq("organization_id", orgId);
 
-  const activeModules: string[] = (orgModulesRows ?? [])
-    .filter((r: { module_slug: string; is_active: boolean }) => r.is_active)
-    .map((r: { module_slug: string }) => r.module_slug);
+  type OrgModuleRow = { module_slug?: string; module_key?: string; is_active?: boolean; status?: string };
+  const rows: OrgModuleRow[] = (orgModulesRows ?? []) as OrgModuleRow[];
+
+  // A module counts as active if: is_active=true (legacy), OR status is 'active'/'in_trial' (new)
+  const activeRows = rows.filter(r =>
+    r.is_active === true ||
+    r.status === "active" ||
+    r.status === "in_trial"
+  );
+
+  // Collect both slug formats so both useModuleAccess("owner-operators") and
+  // useModuleAccess("owner_operator_hub") resolve correctly.
+  const activeModules: string[] = [
+    ...new Set(
+      activeRows.flatMap(r => [r.module_slug, r.module_key].filter((v): v is string => !!v))
+    ),
+  ];
+
+  // If any modules are in_trial, treat the org as trial-active for the hook
+  const hasInTrialModules = rows.some(r => r.status === "in_trial");
 
   const { data: allPlans } = await allPlansQuery;
 
-  const orgModuleMap = new Map<string, boolean>(
-    (orgModulesRows ?? []).map((r: { module_slug: string; is_active: boolean }) => [r.module_slug, r.is_active])
-  );
-
+  const activeSet = new Set(activeModules);
   const allModules = (allModulesRaw ?? []).map((m: Record<string, unknown>) => ({
     ...m,
-    org_is_active: orgModuleMap.has(m.slug as string) ? orgModuleMap.get(m.slug as string) : false,
+    org_is_active: activeSet.has(m.slug as string),
   }));
 
   if (!subRow) {
     return NextResponse.json({
       subscription: {
-        plan_slug: "starter", status: "trialing",
+        plan_slug:     hasInTrialModules ? "free_trial" : "starter",
+        status:        "trialing",
         trial_ends_at: null, current_period_start: null, current_period_end: null,
         billing_email: null, stripe_customer_id: null, stripe_subscription_id: null,
         plan: (allPlans ?? []).find((p: Record<string, unknown>) => p.slug === "starter") ?? null,
       },
-      activeModules: [],
-      allPlans:      allPlans ?? [],
+      activeModules,
+      trialActive: hasInTrialModules,
+      allPlans:    allPlans ?? [],
       allModules,
-      _debug: { orgId, columnsMissing, reason: "no subscription row, trial check failed" },
+      _debug: { orgId, columnsMissing, hasInTrialModules, reason: "no subscription row" },
     });
   }
 
   return NextResponse.json({
-    subscription: subRow,
+    subscription:  subRow,
     activeModules,
-    allPlans:  allPlans ?? [],
+    trialActive:   hasInTrialModules,
+    allPlans:      allPlans ?? [],
     allModules,
   });
 }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireOrgRole } from "@/lib/auth/requireOrgRole";
+import { hasOrganizationAccess } from "@/lib/auth/hasOrganizationAccess";
 
 export const dynamic = "force-dynamic";
-
-const TRIAL_ACCOUNT_TYPES = ["free_trial", "paid_pilot"];
 
 // ── Resolve Ronyx org (by env UUID or organization_code) ─────────────────────
 async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
@@ -47,21 +47,8 @@ async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerC
 }
 
 function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: boolean): boolean {
-  if (!org) return false;
-  if (!columnsMissing) {
-    return (
-      org.status               === "active" &&
-      org.bypass_subscription  === true     &&
-      org.subscription_required === false   &&
-      TRIAL_ACCOUNT_TYPES.includes(org.account_type as string) &&
-      !!org.pilot_ends_at &&
-      new Date(org.pilot_ends_at as string) > new Date()
-    );
-  }
-  const isRonyxOrg =
-    (org.organization_code as string)?.toUpperCase() === "RONYX" ||
-    (org.name as string)?.toLowerCase().includes("ronyx");
-  return isRonyxOrg && org.status === "active";
+  if (!org || columnsMissing) return false;
+  return hasOrganizationAccess(org as Parameters<typeof hasOrganizationAccess>[0]);
 }
 
 // Stable ordering for the view — sort_order lives in module_registry and is NOT
@@ -204,13 +191,18 @@ export async function GET() {
 }
 
 // ── POST (activate / deactivate) ──────────────────────────────────────────────
-export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
-  const { org, columnsMissing } = await resolveRonyxOrg(supabase);
-  if (!org) return NextResponse.json({ error: "No organization found" }, { status: 404 });
+const BILLING_ADMIN_ROLES = ["owner", "super_admin", "admin"];
 
-  const orgId       = org.id as string;
-  const trialActive = isActiveTrial(org, columnsMissing);
+export async function POST(request: NextRequest) {
+  const auth = await requireOrgRole(BILLING_ADMIN_ROLES);
+  if (!auth.ok) return auth.response;
+
+  const { supabase, organization } = auth;
+  const orgId = organization.id;
+
+  // Derive trialActive from the resolved org (same logic as GET path)
+  const { org: resolvedOrg, columnsMissing } = await resolveRonyxOrg(supabase);
+  const trialActive = isActiveTrial(resolvedOrg, columnsMissing);
 
   let body: { module_key?: string; module_slug?: string; action?: string };
   try { body = await request.json(); }
