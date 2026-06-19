@@ -44,6 +44,58 @@ export async function GET() {
     return NextResponse.json({ drivers: [], error: error.message }, { status: 200 });
   }
 
+  // Also pull OO drivers from ronyx_oo_drivers so they appear in Driver Command Center
+  const { data: ooDriverData } = await supabase
+    .from("ronyx_oo_drivers")
+    .select("*, ronyx_owner_operators(company_name)")
+    .eq("status", "active")
+    .limit(2000);
+
+  const ooDrivers = (ooDriverData || []).map((d: any) => ({
+    id:                      d.id,
+    full_name:               d.name || "",
+    name:                    d.name || "",
+    phone:                   d.phone || "",
+    email:                   "",
+    driver_type:             "Owner Operator" as const,
+    status:                  d.status || "active",
+    license_number:          d.cdl_number || "",
+    license_state:           d.cdl_state  || "",
+    license_expiration_date: d.cdl_expiration || "",
+    mvr_expiration:          "",
+    medical_card_expiration: d.med_card_expiration || "",
+    medical_card_number:     d.med_card_number || "",
+    assigned_truck_number:   d.truck_number || "",
+    job_assignment:          d.job_assignment || "",
+    company_name:            d.ronyx_owner_operators?.company_name || "",
+    owner_operator_company:  d.ronyx_owner_operators?.company_name || "",
+    hire_date:               "",
+    pay_rate:                "",
+    pay_type:                "",
+    background_check_status: "pending",
+    drug_test_expiration:    "",
+    dispatch_eligible:       true,
+    payroll_eligible:        true,
+    compliance_flags:        [],
+    notes:                   d.notes || "",
+    organization_id:         orgId,
+    updated_by:              "",
+    updated_at:              d.updated_at || "",
+    created_at:              d.created_at || "",
+    rating:                  0,
+    last_ticket_date:        "",
+    photo_url:               "",
+    address:                 "",
+    emergency_contact_name:  "",
+    emergency_contact_phone: "",
+    position_role:           "",
+    supervisor_name:         "",
+    orientation_completed:   false,
+    hazmat_training:         false,
+    driver_scorecard:        "",
+    _source:                 "oo" as const,
+  }));
+
   const drivers = (data || []).map((d: any) => ({
     id:                      d.id,
     full_name:               d.full_name               || "",
@@ -88,5 +140,9 @@ export async function GET() {
     driver_scorecard:        "",
   }));
 
-  return NextResponse.json({ drivers });
+  // Merge: deduplicate by name so OO drivers already in main table don't appear twice
+  const mainNames = new Set(drivers.map((d: any) => (d.full_name || "").toLowerCase().trim()));
+  const merged = [...drivers, ...ooDrivers.filter((d: any) => !mainNames.has((d.full_name || "").toLowerCase().trim()))];
+
+  return NextResponse.json({ drivers: merged });
 }

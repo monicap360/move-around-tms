@@ -518,10 +518,9 @@ export default function OwnerOperatorsPage() {
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
   function persist(updated: OOCompany[]) { setCompanies(updated); }
   function updateLocalState(oo: OOCompany) { setSelected(oo); setCompanies(prev => prev.map(c => c.id === oo.id ? oo : c)); }
-  function updateSelected(oo: OOCompany) {
+  async function updateSelected(oo: OOCompany) {
     updateLocalState(oo);
-    // Sync scalar / JSONB fields to DB (fire-and-forget)
-    apiPut(`/api/ronyx/owner-operators/${oo.id}`, {
+    const res = await apiPut(`/api/ronyx/owner-operators/${oo.id}`, {
       notes: oo.notes, last_contact_date: oo.last_contact_date,
       mc_number: oo.mc_number, dot_number: oo.dot_number, ein: oo.ein,
       contact_name: oo.contact_name, contact_phone: oo.contact_phone, contact_email: oo.contact_email,
@@ -530,6 +529,7 @@ export default function OwnerOperatorsPage() {
       reminder_log: oo.reminder_log, compliance_history: oo.compliance_history, changes_log: oo.changes_log,
       start_date: oo.start_date || null, website: oo.website || null,
     });
+    if (res?.error) flash(`Save error: ${res.error}`);
   }
   function openOO(oo: OOCompany) { setSelected(oo); setView("detail"); setActiveTab("overview"); }
 
@@ -913,6 +913,19 @@ export default function OwnerOperatorsPage() {
         {showAddCompany && (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "20px 24px", marginBottom: 16 }}>
             <h3 style={{ margin: "0 0 14px", fontWeight: 800 }}>New Owner Operator Company</h3>
+            {/* Duplicate check warning */}
+            {newCompanyForm.company_name.trim().length > 1 && companies.filter(c =>
+              c.company_name.toLowerCase().includes(newCompanyForm.company_name.trim().toLowerCase()) ||
+              newCompanyForm.company_name.trim().toLowerCase().includes(c.company_name.toLowerCase().slice(0,5))
+            ).length > 0 && (
+              <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "#fef3c7", border: "1px solid #f59e0b", fontSize: "0.8rem", fontWeight: 700, color: "#92400e" }}>
+                ⚠️ Possible duplicate detected — these companies already exist:&nbsp;
+                {companies.filter(c =>
+                  c.company_name.toLowerCase().includes(newCompanyForm.company_name.trim().toLowerCase()) ||
+                  newCompanyForm.company_name.trim().toLowerCase().includes(c.company_name.toLowerCase().slice(0,5))
+                ).map(c => c.company_name).join(", ")}
+              </div>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px 16px" }}>
               {([["Company Name *","company_name","Smith Trucking LLC"],["Contact Name","contact_name","John Smith"],["Contact Phone","contact_phone","(555) 000-0000"],["Contact Email","contact_email","dispatch@co.com"],["MC Number","mc_number","MC-123456"],["DOT Number","dot_number","DOT-1234567"],["EIN / Tax ID","ein","XX-XXXXXXX"]] as [string, keyof typeof EMPTY_COMPANY, string][]).map(([l,f,ph]) => (
                 <div key={f}><label style={lbl}>{l}</label><input value={newCompanyForm[f] as string} onChange={e => setNewCompanyForm(x=>({...x,[f]:e.target.value}))} style={inp} placeholder={ph} /></div>
@@ -944,6 +957,7 @@ export default function OwnerOperatorsPage() {
                     <select value={d.cdl_class || ""} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_class: e.target.value } : x))} style={inp}>
                       <option value="">—</option>
                       <option value="A">A</option>
+                      <option value="AM1">AM1</option>
                       <option value="B">B</option>
                       <option value="C">C</option>
                     </select>
@@ -961,6 +975,14 @@ export default function OwnerOperatorsPage() {
             </div>
           </div>
         )}
+
+        {/* Color legend */}
+        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12, fontSize: "0.72rem", flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem" }}>Card color:</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#dcfce7", border:"1px solid #86efac", borderRadius:20, padding:"3px 10px", color:"#15803d", fontWeight:700 }}>🟢 Dispatch Eligible — all compliance passed</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#fefce8", border:"1px solid #fde68a", borderRadius:20, padding:"3px 10px", color:"#92400e", fontWeight:700 }}>🟡 Needs Attention — docs expiring or incomplete</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:20, padding:"3px 10px", color:"#dc2626", fontWeight:700 }}>🔴 Dispatch Blocked — missing insurance, contract, or compliance</span>
+        </div>
 
         {/* Company cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -987,17 +1009,19 @@ export default function OwnerOperatorsPage() {
             const insDoc      = oo.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
             const insExpDays  = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
 
+            const cardBg    = eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
+            const stripBorder = eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
             return (
-              <div key={oo.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden", cursor: "pointer" }} onClick={() => openOO(oo)}>
-                {/* Header strip */}
-                <div style={{ background: health>=85?"#f0fdf4":health>=70?"#fefce8":"#fff1f2", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: "1px solid #e2e8f0" }}>
+              <div key={oo.id} style={{ background: "#fff", border: `1px solid ${stripBorder}`, borderRadius: 16, overflow: "hidden", cursor: "pointer" }} onClick={() => openOO(oo)}>
+                {/* Header strip — green=eligible, yellow=needs attention, red=blocked */}
+                <div style={{ background: cardBg, padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: `1px solid ${stripBorder}` }}>
                   <div style={{ width: 46, height: 46, borderRadius: "50%", background: oo.logo_url ? "#fff" : "#1e40af", border: oo.logo_url ? "1px solid #e2e8f0" : "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.1rem", flexShrink: 0, overflow: "hidden" }}>
                     {oo.logo_url ? <img src={oo.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : oo.company_name.charAt(0)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                       <h3 style={{ margin: 0, fontWeight: 900, color: "#0f172a", fontSize: "1.05rem" }}>{oo.company_name}</h3>
-                      <span style={{ background: eligible?"#f0fdf4":"#fff1f2", color: eligible?"#15803d":"#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800 }}>
+                      <span style={{ background: eligible?"#dcfce7":"#fee2e2", color: eligible?"#15803d":"#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: `1px solid ${eligible?"#86efac":"#fca5a5"}` }}>
                         {eligible ? "🟢 Dispatch Eligible" : "🔴 Dispatch Blocked"}
                       </span>
                       {holdJobs > 0 && <span style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 8px", borderRadius: 12, fontSize: "0.7rem", fontWeight: 700 }}>{holdJobs} settlement hold{holdJobs>1?"s":""}</span>}
@@ -1150,17 +1174,18 @@ export default function OwnerOperatorsPage() {
       {/* Breadcrumb */}
       <button onClick={() => setView("list")} style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", fontSize:"0.83rem", padding:0, marginBottom:14 }}>← Owner Operators</button>
 
-      {/* Company header */}
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 22px", marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+      {/* Company header — redesigned */}
+      <div style={{ borderRadius: 14, marginBottom: 12, overflow: "hidden", border: "1px solid #1e293b" }}>
+        {/* Dark top band */}
+        <div style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e2d45 100%)", padding: "20px 24px", display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Logo */}
           <div style={{ position: "relative", flexShrink: 0 }}>
-            <div style={{ width: 64, height: 64, borderRadius: 14, background: selected.logo_url ? "#fff" : "#1e40af", border: selected.logo_url ? "2px solid #e2e8f0" : "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.5rem", overflow: "hidden" }}>
+            <div style={{ width: 76, height: 76, borderRadius: 16, background: selected.logo_url ? "#fff" : "#1e40af", border: "3px solid rgba(255,255,255,0.12)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "2.1rem", overflow: "hidden" }}>
               {selected.logo_url
                 ? <img src={selected.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                 : selected.company_name.charAt(0)}
             </div>
-            {/* Logo upload button */}
-            <label title="Upload logo" style={{ position: "absolute", bottom: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", cursor: "pointer", border: "2px solid #fff" }}>
+            <label title="Upload logo" style={{ position: "absolute", bottom: -5, right: -5, width: 24, height: 24, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", cursor: "pointer", border: "2px solid #0f172a" }}>
               📷
               <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
                 const f = e.target.files?.[0];
@@ -1175,92 +1200,106 @@ export default function OwnerOperatorsPage() {
               }} />
             </label>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <h1 style={{ margin: 0, fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
+
+          {/* Name + meta */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 5 }}>
+              <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{selected.company_name}</h1>
               <button
                 onClick={() => setOoEditModal({ form: { company_name: selected.company_name, contact_name: selected.contact_name, contact_phone: selected.contact_phone, contact_email: selected.contact_email, business_address: selected.business_address, mc_number: selected.mc_number, dot_number: selected.dot_number, ein: selected.ein, website: selected.website || "", notes: selected.notes || "", insurance_agent_name: selected.insurance_agent_name || "", insurance_agent_phone: selected.insurance_agent_phone || "", insurance_agent_email: selected.insurance_agent_email || "" }, saving: false })}
-                style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: "#1e40af", color: "#fff", fontSize: "0.78rem", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
+                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", backdropFilter: "blur(4px)" }}>
                 ✏ Edit Profile
               </button>
+              {selected.logo_url && (
+                <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ background: "none", border: "none", color: "#475569", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
+              )}
             </div>
-            <div style={{ fontSize: "0.82rem", color: "#64748b", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              {(["mc_number","dot_number","ein"] as const).map(field => {
-                const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN" };
-                const val = selected[field]?.trim();
-                return (
-                  <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-                    <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>{labels[field]}:</strong>
-                    <input
-                      key={selected.id+field}
-                      defaultValue={val||""}
-                      placeholder="Not on file"
-                      onBlur={e => {
-                        const v = e.target.value.trim();
-                        if (v !== (selected[field]||"")) { updateSelected({ ...selected, [field]: v || "" }); flash(`${labels[field]} saved.`); }
-                      }}
-                      onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                      style={{ border:"none", borderBottom:`1px dashed ${val?"#cbd5e1":"#fca5a5"}`, background:"transparent", fontSize:"0.82rem", color:val?"#0f172a":"#dc2626", fontWeight:val?600:400, width:field==="ein"?100:90, outline:"none", padding:"1px 2px" }}
-                    />
-                  </span>
-                );
-              })}
-              {selected.contact_phone && <span style={{ color:"#0f172a" }}>📞 {selected.contact_phone}</span>}
-              {selected.contact_email && <span style={{ color:"#0f172a" }}>✉ {selected.contact_email}</span>}
-              {(() => {
-                // Show structured address if available, fall back to business_address
-                const addr = [selected.company_address_line1, [selected.company_city, selected.company_state].filter(Boolean).join(", "), selected.company_zip].filter(Boolean).join(" · ") || selected.business_address;
-                if (!addr) return null;
-                return (
-                  <span style={{ display:"inline-flex", alignItems:"center", gap:4, color:"#0f172a" }}>
-                    📍 {addr}
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(addr); flash("Address copied."); }}
-                      title="Copy address"
-                      style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.7rem", color:"#94a3b8", padding:"0 2px" }}>⎘</button>
-                    <a href={`https://maps.google.com/?q=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
-                      title="Open in Google Maps"
-                      style={{ color:"#1e40af", fontSize:"0.7rem", textDecoration:"none" }}>🗺</a>
-                  </span>
-                );
-              })()}
-              <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-                <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>Since:</strong>
-                <input
-                  key={selected.id + "start"}
-                  type="date"
-                  defaultValue={selected.start_date || ""}
-                  onBlur={e => {
-                    const v = e.target.value.trim();
-                    if (v !== (selected.start_date || "")) {
-                      updateSelected({ ...selected, start_date: v || undefined });
-                      flash("Start date saved.");
-                    }
-                  }}
-                  style={{ border: "none", borderBottom: "1px dashed #cbd5e1", background: "transparent", fontSize: "0.82rem", color: selected.start_date ? "#0f172a" : "#dc2626", fontWeight: 600, width: 120, outline: "none", padding: "1px 2px", cursor: "pointer" }}
-                />
-              </span>
-              {(selected.website?.trim()) ? (
-                <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}>
-                  <strong style={{ color:"#94a3b8", fontSize:"0.75rem" }}>Web:</strong>
-                  <a href={selected.website.startsWith("http")?selected.website:`https://${selected.website}`} target="_blank" rel="noreferrer"
-                    style={{ color:"#1e40af", fontSize:"0.82rem" }}>{selected.website}</a>
-                </span>
-              ) : null}
-            </div>
-            {selected.logo_url && (
-              <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ marginTop: 6, background: "none", border: "none", color: "#94a3b8", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
+            {selected.contact_name && (
+              <div style={{ color: "#94a3b8", fontSize: "0.82rem", marginBottom: 3 }}>Contact: <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{selected.contact_name}</span></div>
             )}
+            <div style={{ color: "#475569", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              {selected.start_date ? (
+                <span>Since <strong style={{ color: "#94a3b8" }}>{new Date(selected.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</strong></span>
+              ) : (
+                <span style={{ color: "#ef4444" }}>⚠ Start date not set</span>
+              )}
+              <input
+                key={selected.id + "start"}
+                type="date"
+                defaultValue={selected.start_date || ""}
+                title="Set or change start date"
+                onBlur={e => {
+                  const v = e.target.value.trim();
+                  if (v !== (selected.start_date || "")) { updateSelected({ ...selected, start_date: v || undefined }); flash("Start date saved."); }
+                }}
+                style={{ border: "none", borderBottom: "1px dashed #334155", background: "transparent", color: "#475569", fontSize: "0.68rem", outline: "none", cursor: "pointer", padding: "1px 2px", width: 110 }}
+              />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>OO Health</div><ScoreBadge score={health} size="lg" /></div>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>Performance</div><ScoreBadge score={perf} size="lg" /></div>
-            <span style={{ background: eligible?"#f0fdf4":"#fff1f2", color: eligible?"#15803d":"#dc2626", padding: "8px 16px", borderRadius: 20, fontWeight: 800, fontSize: "0.85rem" }}>
-              {eligible ? "🟢 Dispatch Eligible" : "🔴 Dispatch Blocked"}
-            </span>
+
+          {/* Score cards */}
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch", flexShrink: 0, flexWrap: "wrap" }}>
+            <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px 16px", textAlign: "center", minWidth: 80 }}>
+              <div style={{ fontSize: "0.58rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>OO HEALTH</div>
+              <ScoreBadge score={health} size="lg" />
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px 16px", textAlign: "center", minWidth: 80 }}>
+              <div style={{ fontSize: "0.58rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>PERFORMANCE</div>
+              <ScoreBadge score={perf} size="lg" />
+            </div>
+            <div style={{ background: eligible ? "rgba(21,128,61,0.18)" : "rgba(220,38,38,0.18)", border: `1px solid ${eligible ? "rgba(74,222,128,0.3)" : "rgba(248,113,113,0.3)"}`, borderRadius: 12, padding: "10px 18px", textAlign: "center", minWidth: 100 }}>
+              <div style={{ fontSize: "0.58rem", fontWeight: 800, color: eligible ? "#4ade80" : "#f87171", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>DISPATCH</div>
+              <div style={{ fontSize: "0.95rem", fontWeight: 900, color: eligible ? "#4ade80" : "#f87171", letterSpacing: "0.01em" }}>{eligible ? "✓ ELIGIBLE" : "✗ BLOCKED"}</div>
+            </div>
           </div>
         </div>
-        {!eligible && <div style={{ marginTop: 10, background: "#fff1f2", border: "1px solid #fda4af", borderRadius: 8, padding: "8px 14px", fontSize: "0.78rem", color: "#dc2626" }}><strong>Blocked:</strong> {blocks.join(" · ")}</div>}
+
+        {/* Info strip */}
+        <div style={{ background: "#1e293b", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 24px", display: "flex", gap: 0, flexWrap: "wrap", alignItems: "center" }}>
+          {(["mc_number","dot_number","ein"] as const).map((field, i) => {
+            const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN" };
+            const val = selected[field]?.trim();
+            return (
+              <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4, paddingRight: 16, marginRight: 16, borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                <span style={{ color:"#475569", fontSize:"0.7rem", fontWeight:700, textTransform:"uppercase" }}>{labels[field]}</span>
+                <input
+                  key={selected.id+field}
+                  defaultValue={val||""}
+                  placeholder="—"
+                  onBlur={e => {
+                    const v = e.target.value.trim();
+                    if (v !== (selected[field]||"")) { updateSelected({ ...selected, [field]: v || "" }); flash(`${labels[field]} saved.`); }
+                  }}
+                  onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  style={{ border:"none", borderBottom:`1px dashed ${val?"#334155":"#7f1d1d"}`, background:"transparent", fontSize:"0.82rem", color:val?"#e2e8f0":"#ef4444", fontWeight:600, width:field==="ein"?95:80, outline:"none", padding:"1px 2px" }}
+                />
+              </span>
+            );
+          })}
+          {selected.contact_phone && <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16 }}>📞 <span style={{ color:"#cbd5e1" }}>{selected.contact_phone}</span></span>}
+          {selected.contact_email && <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16 }}>✉ <span style={{ color:"#cbd5e1" }}>{selected.contact_email}</span></span>}
+          {(() => {
+            const addr = [selected.company_address_line1, [selected.company_city, selected.company_state].filter(Boolean).join(", "), selected.company_zip].filter(Boolean).join(" · ") || selected.business_address;
+            if (!addr) return null;
+            return (
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4, color:"#94a3b8", fontSize:"0.82rem", marginRight:16 }}>
+                📍 <span style={{ color:"#cbd5e1" }}>{addr}</span>
+                <button onClick={() => { navigator.clipboard.writeText(addr); flash("Address copied."); }} title="Copy" style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.7rem", color:"#475569", padding:"0 2px" }}>⎘</button>
+                <a href={`https://maps.google.com/?q=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer" title="Google Maps" style={{ color:"#1d4ed8", fontSize:"0.7rem", textDecoration:"none" }}>🗺</a>
+              </span>
+            );
+          })()}
+          {selected.website?.trim() && (
+            <span style={{ color:"#94a3b8", fontSize:"0.82rem" }}>🌐 <a href={selected.website.startsWith("http")?selected.website:`https://${selected.website}`} target="_blank" rel="noreferrer" style={{ color:"#3b82f6" }}>{selected.website}</a></span>
+          )}
+        </div>
+
+        {/* Blocked reason banner */}
+        {!eligible && (
+          <div style={{ background: "#450a0a", borderTop: "1px solid #7f1d1d", padding: "8px 24px", fontSize: "0.78rem", color: "#fca5a5" }}>
+            <strong style={{ color: "#f87171" }}>Dispatch Blocked: </strong>{blocks.join(" · ")}
+          </div>
+        )}
       </div>
 
       {/* Quick KPIs */}
@@ -1359,9 +1398,12 @@ export default function OwnerOperatorsPage() {
       {/* ── Overview ── */}
       {activeTab === "overview" && (() => {
         // ── insurance doc lookups ──
-        const autoIns   = selected.documents.find(d => d.type==="Auto Liability Insurance" || d.type==="Insurance Certificate" || d.type==="Insurance Certificate (COI)");
-        const glIns     = selected.documents.find(d => d.type==="General Liability Insurance");
-        const cargoIns  = selected.documents.find(d => d.type==="Cargo Insurance");
+        const autoIns   = selected.documents.find(d => d.type==="Auto Liability Insurance" || d.type==="Insurance Certificate" || d.type==="Insurance Certificate (COI)")
+          || (selected.coi_documents || []).find(d => d.document_type.includes("auto_liability") && d.status !== "missing") as any;
+        const glIns     = selected.documents.find(d => d.type==="General Liability Insurance")
+          || (selected.coi_documents || []).find(d => d.document_type.includes("general_liability") && d.status !== "missing") as any;
+        const cargoIns  = selected.documents.find(d => d.type==="Cargo Insurance" || d.type==="Cargo / Motor Truck Cargo COI")
+          || (selected.coi_documents || []).find(d => d.document_type.includes("cargo") && d.status !== "missing") as any;
         const wcIns     = selected.documents.find(d => d.type==="Workers Comp Insurance");
         const contract  = selected.documents.find(d => d.type==="Contract");
         const w9        = selected.documents.find(d => d.type==="W-9 / Tax Form");
@@ -2040,6 +2082,7 @@ export default function OwnerOperatorsPage() {
                   <select value={addDriverForm.cdl_class || ""} onChange={e=>setAddDriverForm(f=>({...f,cdl_class:e.target.value}))} style={inp}>
                     <option value="">— Select —</option>
                     <option value="A">Class A</option>
+                    <option value="AM1">Class AM1</option>
                     <option value="B">Class B</option>
                     <option value="C">Class C</option>
                   </select>
@@ -2588,14 +2631,33 @@ export default function OwnerOperatorsPage() {
                     <>
                       <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
                       {docType === "Contract" ? (
-                        <div style={{ fontSize:"0.72rem", color:"#475569", marginBottom:4 }}>
-                          <span style={{ fontWeight:700 }}>Period: </span>
-                          {existing.issued_on ? fmtDate(existing.issued_on) : <span style={{ color:"#cbd5e1" }}>no start</span>}
-                          {" → "}
-                          {existing.expires_on
-                            ? <span style={{ background:expBg(expDays), color:expColor(expDays)||"#475569", padding:"1px 6px", borderRadius:4, fontWeight:700 }}>{fmtDate(existing.expires_on)}{expDays!==null && expDays<=90 ? ` (${expDays<0?"EXPIRED":expDays+"d"})` : ""}</span>
-                            : <span style={{ color:"#cbd5e1" }}>no end date</span>
-                          }
+                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 10px", marginBottom:6 }}>
+                          <div>
+                            <div style={{ fontSize:"0.58rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:2 }}>Start Date *</div>
+                            <input type="date" defaultValue={existing.issued_on?.slice(0,10)||""} title="Contract start / effective date"
+                              onBlur={async e => {
+                                const v = e.target.value || null;
+                                if (v === (existing.issued_on?.slice(0,10)||null)) return;
+                                await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:docType,issued_on:v});
+                                updateLocalState({...selected, documents:selected.documents.map(x => x.type===docType ? {...x,issued_on:v||undefined} : x)});
+                                flash("Contract start date saved.");
+                              }}
+                              style={{ width:"100%", border:`1px solid ${existing.issued_on?"#e2e8f0":"#fca5a5"}`, borderRadius:6, padding:"4px 6px", fontSize:"0.72rem", color:existing.issued_on?"#0f172a":"#dc2626", fontWeight:600, outline:"none", boxSizing:"border-box" as const, cursor:"pointer", background:existing.issued_on?"#fff":"#fff1f2" }}
+                            />
+                          </div>
+                          <div>
+                            <div style={{ fontSize:"0.58rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", marginBottom:2 }}>End Date</div>
+                            <input type="date" defaultValue={existing.expires_on?.slice(0,10)||""} title="Contract expiration date"
+                              onBlur={async e => {
+                                const v = e.target.value || null;
+                                if (v === (existing.expires_on?.slice(0,10)||null)) return;
+                                await apiPut(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:docType,expires_on:v});
+                                updateLocalState({...selected, documents:selected.documents.map(x => x.type===docType ? {...x,expires_on:v||undefined} : x)});
+                                flash("Contract end date saved.");
+                              }}
+                              style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 6px", fontSize:"0.72rem", color: expDays!==null&&expDays<0?"#dc2626":expDays!==null&&expDays<=90?"#ca8a04":"#475569", fontWeight:600, outline:"none", boxSizing:"border-box" as const, cursor:"pointer", background: expDays!==null&&expDays<0?"#fff1f2":expDays!==null&&expDays<=90?"#fefce8":"#fff" }}
+                            />
+                          </div>
                         </div>
                       ) : existing.expires_on ? (
                         <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:4 }}>
@@ -2613,7 +2675,7 @@ export default function OwnerOperatorsPage() {
                       )}
                     </>
                   ) : (
-                    <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginBottom:6 }}>Not uploaded</div>
+                    <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginBottom:6 }}>{docType === "Contract" ? <span style={{ color:"#dc2626", fontWeight:600 }}>⚠ Contract not uploaded</span> : "Not uploaded"}</div>
                   )}
                   <label style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:4, background:"#0f172a", color:"#fff", padding:"5px 14px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
                     {existing ? "🔄 Replace" : "📤 Upload"}
@@ -3416,199 +3478,146 @@ export default function OwnerOperatorsPage() {
               e.target.value = "";
             }}
           />
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+
+          {/* Header */}
+          <div style={{ background:"#0f172a", borderRadius:14, padding:"18px 22px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:10 }}>
             <div>
-              <div style={eyebrow}>Insurance / COI Requirements</div>
-              <div style={{ fontSize:"0.8rem", color:"#64748b", marginTop:2 }}>
-                {coiDocs.filter(d=>d.status==="complete").length}/{COI_TYPES_CONST.length} documents complete · missing or expired COIs block dispatch
-              </div>
+              <div style={{ fontSize:"0.62rem", fontWeight:800, color:"#475569", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4 }}>Insurance / COI Requirements</div>
+              <div style={{ fontSize:"1.05rem", fontWeight:900, color:"#f8fafc" }}>📄 Certificates of Insurance (COI)</div>
+              <div style={{ fontSize:"0.75rem", color:"#64748b", marginTop:3 }}>Each company that hauls for Ronyx requires its own named COI. Upload one certificate per slot below.</div>
             </div>
-            <a href="/ronyx/owner-operators/coi-matrix" style={{ background:"#eff6ff", color:"#1d4ed8", padding:"7px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none" }}>View COI Matrix →</a>
-          </div>
-
-          {/* ── Split button: primary company + dropdown to add more ── */}
-          <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:18, position:"relative" }}>
-            {/* Main button — always active: Ronyx, MA. Mortenson COI */}
-            <button
-              onClick={() => setActiveCoiCompanies(prev => prev.includes("ronyx_ma_mortenson") ? prev.filter(k=>k!=="ronyx_ma_mortenson") : [...prev,"ronyx_ma_mortenson"])}
-              style={{ background: activeCoiCompanies.includes("ronyx_ma_mortenson")?"#1e40af":"#f1f5f9", color: activeCoiCompanies.includes("ronyx_ma_mortenson")?"#fff":"#374151", border:"1px solid #1e40af", borderRight:"none", borderRadius:"8px 0 0 8px", padding:"9px 18px", fontWeight:800, fontSize:"0.82rem", cursor:"pointer" }}>
-              📋 Ronyx, MA. Mortenson COI
-              {activeCoiCompanies.includes("ronyx_ma_mortenson") && <span style={{ marginLeft:8, background:"rgba(255,255,255,0.25)", borderRadius:10, padding:"1px 7px", fontSize:"0.65rem" }}>
-                {COI_TYPES_CONST.filter(t=>t.group==="ronyx_ma_mortenson").filter(t=>coiDocs.find(d=>d.document_type===t.value&&d.status==="complete"&&["standard","ronyx","ma_morrison","ronyx_ma_mortenson"].includes(d.coi_group))).length}/{COI_TYPES_CONST.filter(t=>t.group==="ronyx_ma_mortenson").length}
-              </span>}
-            </button>
-
-            {/* Show Bass Equipment button if already active */}
-            {activeCoiCompanies.includes("bass_equipment") && (
-              <button
-                onClick={() => setActiveCoiCompanies(prev => prev.filter(k=>k!=="bass_equipment"))}
-                style={{ background:"#0891b2", color:"#fff", border:"1px solid #0891b2", borderRight:"none", borderLeft:"1px solid rgba(255,255,255,0.3)", padding:"9px 16px", fontWeight:800, fontSize:"0.82rem", cursor:"pointer" }}>
-                🏗️ Bass Equipment COI
-                <span style={{ marginLeft:8, background:"rgba(255,255,255,0.25)", borderRadius:10, padding:"1px 7px", fontSize:"0.65rem" }}>
-                  {COI_TYPES_CONST.filter(t=>t.group==="bass_equipment").filter(t=>coiDocs.find(d=>d.document_type===t.value&&d.status==="complete")).length}/{COI_TYPES_CONST.filter(t=>t.group==="bass_equipment").length}
-                </span>
-                <span style={{ marginLeft:8, opacity:0.7, fontSize:"0.7rem" }}>✕</span>
-              </button>
-            )}
-
-            {/* Dropdown toggle */}
-            <div style={{ position:"relative" }}>
-              <button
-                onClick={() => setShowCoiDropdown(s=>!s)}
-                style={{ background:"#1e40af", color:"#fff", border:"1px solid #1e40af", borderRadius:"0 8px 8px 0", padding:"9px 13px", fontWeight:800, fontSize:"0.85rem", cursor:"pointer", minWidth:36 }}>
-                ▾
-              </button>
-              {showCoiDropdown && (
-                <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, zIndex:200, background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:220, overflow:"hidden" }}
-                  onMouseLeave={()=>setShowCoiDropdown(false)}>
-                  <div style={{ padding:"8px 12px 4px", fontSize:"0.6rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em" }}>Add Customer COI</div>
-                  {COI_COMPANIES.filter(c => !activeCoiCompanies.includes(c.key)).map(c => (
-                    <button key={c.key}
-                      onClick={() => { setActiveCoiCompanies(prev=>[...prev, c.key]); setShowCoiDropdown(false); }}
-                      style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 14px", background:"none", border:"none", cursor:"pointer", fontSize:"0.82rem", fontWeight:700, color:c.color }}>
-                      + {c.label}
-                    </button>
-                  ))}
-                  {COI_COMPANIES.every(c => activeCoiCompanies.includes(c.key)) && (
-                    <div style={{ padding:"10px 14px", fontSize:"0.78rem", color:"#94a3b8" }}>All companies added</div>
-                  )}
-                </div>
-              )}
+            <div style={{ display:"flex", gap:8 }}>
+              <a href="/ronyx/owner-operators/coi-matrix" style={{ background:"rgba(255,255,255,0.07)", color:"#94a3b8", padding:"7px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, textDecoration:"none", border:"1px solid rgba(255,255,255,0.1)" }}>COI Matrix →</a>
+              <button onClick={() => window.print()} style={{ background:"rgba(255,255,255,0.07)", color:"#94a3b8", padding:"7px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, cursor:"pointer", border:"1px solid rgba(255,255,255,0.1)" }}>🖨 Print All</button>
             </div>
           </div>
 
-          {/* ── COI panels for each active company ── */}
-          {activeCoiCompanies.map(companyKey => {
-            const company = COI_COMPANIES.find(c => c.key === companyKey);
-            if (!company) return null;
-            const types  = COI_TYPES_CONST.filter(t => t.group === companyKey);
-            const gDocs  = companyKey === "ronyx_ma_mortenson"
-              ? coiDocs.filter(d => ["standard","ronyx","ma_morrison","ronyx_ma_mortenson"].includes(d.coi_group))
-              : coiDocs.filter(d => d.coi_group === companyKey);
-            const allOK  = types.every(t => gDocs.find(d => d.document_type === t.value && d.status === "complete"));
+          {/* Three named COI slots */}
+          {([
+            { key:"named_coi_ma_mortenson",  label:"M.A. Mortenson",   icon:"🏗️", color:"#1e40af", bg:"#eff6ff",
+              legacyTypes:["ma_morrison_auto_liability_coi","ma_morrison_general_liability_coi","ma_morrison_cargo_coi"] },
+            { key:"named_coi_ronyx",          label:"Ronyx Logistics",  icon:"🚚", color:"#15803d", bg:"#f0fdf4",
+              legacyTypes:["ronyx_contractor_auto_liability_coi","ronyx_contractor_general_liability_coi","ronyx_contractor_cargo_coi","auto_liability_coi"] },
+            { key:"named_coi_bas_equipment",  label:"BAS Equipment",    icon:"🚜", color:"#0891b2", bg:"#f0f9ff",
+              legacyTypes:["bass_equipment_auto_liability_coi","bass_equipment_general_liability_coi","bass_equipment_cargo_coi"] },
+          ] as const).map(slot => {
+            const doc = coiDocs.find(d => d.document_type === slot.key)
+              || coiDocs.find(d => (slot.legacyTypes as readonly string[]).includes(d.document_type));
+            const days = daysUntil(doc?.expiration_date);
+            const isExpired = days !== null && days < 0;
+            const isExpiring = days !== null && days >= 0 && days <= 30;
+            const isUploading = showCoiUpload === slot.key;
+
             return (
-              <div key={companyKey} style={{ background:"#fff", border:`1px solid ${allOK?"#bbf7d0":"#e2e8f0"}`, borderRadius:14, padding:"18px 20px", marginBottom:14 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-                  <div>
-                    <div style={{ fontWeight:900, fontSize:"0.9rem", color:company.color }}>{company.label}</div>
-                    <div style={{ fontSize:"0.75rem", color:"#64748b" }}>{company.desc}</div>
+              <div key={slot.key} style={{ background:"#fff", border:`2px solid ${doc ? (isExpired?"#fda4af":isExpiring?"#fde68a":"#bbf7d0") : "#e2e8f0"}`, borderRadius:16, marginBottom:14, overflow:"hidden" }}>
+                {/* Card header */}
+                <div style={{ background: doc ? (isExpired?"#fff1f2":isExpiring?"#fefce8":"#f0fdf4") : "#f8fafc", padding:"14px 20px", display:"flex", alignItems:"center", gap:12, borderBottom:"1px solid #f1f5f9" }}>
+                  <span style={{ fontSize:"1.4rem" }}>{slot.icon}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:900, fontSize:"0.95rem", color:"#0f172a" }}>COI</div>
+                    <div style={{ fontSize:"0.78rem", color:"#475569" }}>Named: <strong style={{ color:slot.color }}>{slot.label}</strong> &nbsp;·&nbsp; For: <strong>{selected.company_name}</strong></div>
                   </div>
-                  <span style={{ background:allOK?"#f0fdf4":"#fff1f2", color:allOK?"#15803d":"#dc2626", padding:"4px 12px", borderRadius:20, fontSize:"0.72rem", fontWeight:800 }}>
-                    {allOK ? "✓ Complete" : `${gDocs.filter(d=>d.status==="complete").length}/${types.length} docs`}
+                  <span style={{ padding:"4px 12px", borderRadius:20, fontSize:"0.7rem", fontWeight:800,
+                    background: doc ? (isExpired?"#fee2e2":isExpiring?"#fef3c7":"#dcfce7") : "#f1f5f9",
+                    color: doc ? (isExpired?"#dc2626":isExpiring?"#92400e":"#15803d") : "#64748b",
+                    border: `1px solid ${doc ? (isExpired?"#fca5a5":isExpiring?"#fde68a":"#86efac") : "#e2e8f0"}` }}>
+                    {doc ? (isExpired ? "⚠ EXPIRED" : isExpiring ? `⚠ Expires in ${days}d` : "✓ On File") : "Not Uploaded"}
                   </span>
                 </div>
 
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:10 }}>
-                  {types.map(t => {
-                    const doc = gDocs.find(d => d.document_type === t.value);
-                    const days = daysUntil(doc?.expiration_date);
-                    const st   = doc?.status || "missing";
-                    const [stBg, stColor] = COI_STATUS_COLORS[st] || COI_STATUS_COLORS.missing;
-                    const isUploading = showCoiUpload === t.value;
-
-                    return (
-                      <div key={t.value} style={{ background:stBg, border:`1px solid ${stColor}33`, borderRadius:12, padding:"14px 16px" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
-                          <div style={{ fontWeight:700, fontSize:"0.82rem", color:"#0f172a", flex:1 }}>{t.label}</div>
-                          <span style={{ background:"#fff", color:stColor, border:`1px solid ${stColor}66`, padding:"2px 8px", borderRadius:20, fontSize:"0.62rem", fontWeight:800, flexShrink:0, marginLeft:8 }}>
-                            {st.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}
-                          </span>
+                {/* Card body */}
+                <div style={{ padding:"14px 20px" }}>
+                  {doc ? (
+                    <div style={{ display:"flex", gap:24, flexWrap:"wrap", alignItems:"flex-start" }}>
+                      <div style={{ flex:1, minWidth:200 }}>
+                        <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:"0.78rem", color:"#475569" }}>
+                          {doc.insurance_provider && <div><span style={{ color:"#94a3b8" }}>Provider:</span> <strong style={{ color:"#0f172a" }}>{doc.insurance_provider}</strong></div>}
+                          {doc.policy_number     && <div><span style={{ color:"#94a3b8" }}>Policy #:</span> {doc.policy_number}</div>}
+                          {doc.effective_date    && <div><span style={{ color:"#94a3b8" }}>Effective:</span> {fmtDate(doc.effective_date)}</div>}
+                          {doc.expiration_date   && (
+                            <div>
+                              <span style={{ color:"#94a3b8" }}>Expires:</span>{" "}
+                              <strong style={{ color: isExpired?"#dc2626":isExpiring?"#ca8a04":"#15803d" }}>
+                                {fmtDate(doc.expiration_date)} {days !== null ? (days < 0 ? `(${Math.abs(days)}d ago)` : `(${days}d)`) : ""}
+                              </strong>
+                            </div>
+                          )}
+                          {doc.file_name && <div><span style={{ color:"#94a3b8" }}>File:</span> {doc.file_name}</div>}
+                          {doc.reviewed_by && <div style={{ color:"#15803d", fontSize:"0.68rem" }}>✓ Reviewed by {doc.reviewed_by}</div>}
                         </div>
-
-                        {doc ? (
-                          <div style={{ fontSize:"0.72rem", color:"#475569", display:"flex", flexDirection:"column", gap:3 }}>
-                            {doc.insurance_provider && <div><span style={{ color:"#94a3b8" }}>Provider:</span> <strong>{doc.insurance_provider}</strong></div>}
-                            {doc.policy_number     && <div><span style={{ color:"#94a3b8" }}>Policy #:</span> {doc.policy_number}</div>}
-                            {doc.effective_date    && <div><span style={{ color:"#94a3b8" }}>Effective:</span> {fmtDate(doc.effective_date)}</div>}
-                            {doc.expiration_date   && (
-                              <div>
-                                <span style={{ color:"#94a3b8" }}>Expires:</span>{" "}
-                                <strong style={{ color: days !== null && days < 0 ? "#dc2626" : days !== null && days <= 30 ? "#ca8a04" : "#15803d" }}>
-                                  {fmtDate(doc.expiration_date)} {days !== null ? (days < 0 ? `(${Math.abs(days)}d ago)` : `(${days}d)`) : ""}
-                                </strong>
-                              </div>
-                            )}
-                            {doc.reviewed_by && <div style={{ color:"#15803d", fontSize:"0.65rem" }}>✓ Reviewed by {doc.reviewed_by}</div>}
-                          </div>
-                        ) : (
-                          <div style={{ fontSize:"0.72rem", color:"#dc2626", fontWeight:600, marginBottom:8 }}>Not uploaded</div>
-                        )}
-
-                        {!isUploading ? (
-                          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:10 }}>
-                            <button
-                              onClick={() => { pendingCoiTypeRef.current = t.value; setShowCoiUpload(t.value); setCoiUploadForm(f => ({ ...f, document_type:t.value, coi_group:companyKey })); }}
-                              style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
-                              {doc ? "Replace" : "Upload"}
-                            </button>
-                            {doc?.file_url && (
-                              <>
-                                <button onClick={()=>openDoc(doc.file_url!)} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>View</button>
-                                <a href={doc.file_url} download={doc.file_name||"coi"} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer", textDecoration:"none" }}>Download</a>
-                              </>
-                            )}
-                            {doc && doc.review_status !== "approved" && (
-                              <button onClick={() => updateCOIStatus(doc.id, { review_status:"approved", reviewed_by:"Staff", status:"complete" })} style={{ background:"#f0fdf4", color:"#15803d", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>Approve</button>
-                            )}
-                            {doc && (
-                              <button onClick={() => updateCOIStatus(doc.id, { review_status:"rejected", status:"rejected" })} style={{ background:"#fff1f2", color:"#dc2626", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>Reject</button>
-                            )}
-                            <button
-                              onClick={() => {
-                                const sub = `${company.label} Required — ${selected.company_name}`;
-                                const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need an updated ${t.label} for your file.\n\nPlease send the updated Certificate of Insurance as soon as possible.\n\nThank you.`;
-                                window.open(`mailto:${selected.contact_email||""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
-                              }}
-                              style={{ background:"#fef3c7", color:"#92400e", border:"none", borderRadius:6, padding:"5px 10px", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
-                              Request
-                            </button>
-                          </div>
-                        ) : (
-                          <div style={{ marginTop:10, background:"rgba(255,255,255,0.7)", borderRadius:8, padding:"10px 12px" }}>
-                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 10px", marginBottom:8 }}>
-                              <div>
-                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Insurance Provider</label>
-                                <input value={coiUploadForm.insurance_provider} onChange={e=>setCoiUploadForm(f=>({...f,insurance_provider:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem", boxSizing:"border-box" }} placeholder="State Farm, Zurich…" />
-                              </div>
-                              <div>
-                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Policy Number</label>
-                                <input value={coiUploadForm.policy_number} onChange={e=>setCoiUploadForm(f=>({...f,policy_number:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem", boxSizing:"border-box" }} placeholder="POL-12345" />
-                              </div>
-                              <div>
-                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Effective Date</label>
-                                <input type="date" value={coiUploadForm.effective_date} onChange={e=>setCoiUploadForm(f=>({...f,effective_date:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem" }} />
-                              </div>
-                              <div>
-                                <label style={{ fontSize:"0.6rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Expiration Date</label>
-                                <input type="date" value={coiUploadForm.expiration_date} onChange={e=>setCoiUploadForm(f=>({...f,expiration_date:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 7px", fontSize:"0.75rem" }} />
-                              </div>
-                            </div>
-                            <div style={{ display:"flex", gap:6 }}>
-                              <button onClick={() => { pendingCoiTypeRef.current = t.value; coiFileRef.current?.click(); }} style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:6, padding:"6px 12px", fontSize:"0.7rem", fontWeight:700, cursor:"pointer" }}>Choose File & Upload</button>
-                              <button onClick={() => setShowCoiUpload("")} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:6, padding:"6px 10px", fontSize:"0.7rem", fontWeight:700, cursor:"pointer" }}>Cancel</button>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"flex-start", flexShrink:0 }}>
+                        {doc.file_url && (
+                          <>
+                            <button onClick={() => openDoc(doc.file_url!)} style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>👁 Preview</button>
+                            <button onClick={() => {
+                              const win = window.open(doc.file_url!, "_blank");
+                              win?.addEventListener("load", () => win.print());
+                            }} style={{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>🖨 Print</button>
+                            <a href={doc.file_url} download={doc.file_name || "coi"} style={{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer", textDecoration:"none" }}>⬇ Download</a>
+                          </>
+                        )}
+                        <button onClick={() => {
+                          const sub = `COI for ${slot.label} — ${selected.company_name}`;
+                          const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need an updated Certificate of Insurance naming ${slot.label} as an additional insured.\n\nPlease send the updated COI as soon as possible to keep your dispatch eligibility active.\n\nThank you,\nRonyx Logistics`;
+                          window.open(`mailto:${selected.contact_email || ""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
+                        }} style={{ background:"#fef3c7", color:"#92400e", border:"1px solid #fde68a", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>✉ Email</button>
+                        {doc.review_status !== "approved" && (
+                          <button onClick={() => updateCOIStatus(doc.id, { review_status:"approved", reviewed_by:"Staff", status:"complete" })} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>✓ Approve</button>
+                        )}
+                        <button onClick={() => { pendingCoiTypeRef.current = slot.key; setShowCoiUpload(slot.key); setCoiUploadForm(f => ({ ...f, document_type:slot.key, coi_group:"ronyx_ma_mortenson" })); }}
+                          style={{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Replace</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <span style={{ fontSize:"1.4rem" }}>⚠️</span>
+                        <div>
+                          <div style={{ fontWeight:700, color:"#dc2626", fontSize:"0.85rem" }}>COI for {slot.label} not uploaded</div>
+                          <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:1 }}>Required for dispatch eligibility</div>
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", gap:6 }}>
+                        <button onClick={() => { pendingCoiTypeRef.current = slot.key; setShowCoiUpload(slot.key); setCoiUploadForm(f => ({ ...f, document_type:slot.key, coi_group:"ronyx_ma_mortenson" })); }}
+                          style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:"0.78rem", fontWeight:700, cursor:"pointer" }}>📤 Upload COI</button>
+                        <button onClick={() => {
+                          const sub = `COI Required for ${slot.label} — ${selected.company_name}`;
+                          const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need a Certificate of Insurance naming ${slot.label} as an additional insured on your policy.\n\nPlease provide this document as soon as possible to remain dispatch-eligible.\n\nThank you,\nRonyx Logistics`;
+                          window.open(`mailto:${selected.contact_email || ""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
+                        }} style={{ background:"#fef3c7", color:"#92400e", border:"1px solid #fde68a", borderRadius:8, padding:"8px 16px", fontSize:"0.78rem", fontWeight:700, cursor:"pointer" }}>✉ Request by Email</button>
+                      </div>
+                    </div>
+                  )}
 
-                <div style={{ display:"flex", gap:8, marginTop:12 }}>
-                  <button
-                    onClick={() => {
-                      const missing = types.filter(t => !gDocs.find(d => d.document_type === t.value && d.status === "complete")).map(t => `• ${t.label}`).join("\n");
-                      if (!missing) { flash("All COIs complete."); return; }
-                      const sub = `${company.label} Required — ${selected.company_name}`;
-                      const bod = `Hi ${selected.contact_name || selected.company_name},\n\nWe need the following insurance documents:\n\n${missing}\n\nPlease provide updated COIs as soon as possible.\n\nThank you.`;
-                      window.open(`mailto:${selected.contact_email||""}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(bod)}`);
-                    }}
-                    style={{ background:company.bg, color:company.color, border:`1px solid ${company.color}33`, borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
-                    Request Missing COIs
-                  </button>
-                  <button onClick={() => window.print()} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:8, padding:"6px 14px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
-                    Print COI Packet
-                  </button>
+                  {/* Upload form */}
+                  {isUploading && (
+                    <div style={{ marginTop:14, background:"#f8fafc", borderRadius:10, padding:"14px 16px", border:"1px solid #e2e8f0" }}>
+                      <div style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", marginBottom:10, textTransform:"uppercase", letterSpacing:"0.05em" }}>Upload COI — {slot.label}</div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:10 }}>
+                        <div>
+                          <label style={{ fontSize:"0.62rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Insurance Provider</label>
+                          <input value={coiUploadForm.insurance_provider} onChange={e=>setCoiUploadForm(f=>({...f,insurance_provider:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.78rem", boxSizing:"border-box" as const }} placeholder="State Farm, Zurich…" />
+                        </div>
+                        <div>
+                          <label style={{ fontSize:"0.62rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Policy Number</label>
+                          <input value={coiUploadForm.policy_number} onChange={e=>setCoiUploadForm(f=>({...f,policy_number:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.78rem", boxSizing:"border-box" as const }} placeholder="POL-12345" />
+                        </div>
+                        <div>
+                          <label style={{ fontSize:"0.62rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Effective Date</label>
+                          <input type="date" value={coiUploadForm.effective_date} onChange={e=>setCoiUploadForm(f=>({...f,effective_date:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.78rem" }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize:"0.62rem", fontWeight:700, color:"#64748b", display:"block", marginBottom:2 }}>Expiration Date</label>
+                          <input type="date" value={coiUploadForm.expiration_date} onChange={e=>setCoiUploadForm(f=>({...f,expiration_date:e.target.value}))} style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"6px 8px", fontSize:"0.75rem" }} />
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <button onClick={() => { pendingCoiTypeRef.current = slot.key; coiFileRef.current?.click(); }} style={{ background:"#1e40af", color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Choose File & Upload</button>
+                        <button onClick={() => setShowCoiUpload("")} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:8, padding:"8px 12px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -3808,6 +3817,7 @@ export default function OwnerOperatorsPage() {
                 <select value={driverEditModal.form.cdl_class || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, cdl_class: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", background:"#fff", boxSizing:"border-box" as const }}>
                   <option value="">— Select —</option>
                   <option value="A">Class A</option>
+                  <option value="AM1">Class AM1</option>
                   <option value="B">Class B</option>
                   <option value="C">Class C</option>
                 </select>

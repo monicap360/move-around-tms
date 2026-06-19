@@ -185,7 +185,7 @@ function fmtTime(ts?: string | null) {
 }
 function fmtDate(ts?: string | null) {
   if (!ts) return "—";
-  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 function minutesAgo(ts?: string | null) {
   if (!ts) return null;
