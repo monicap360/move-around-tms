@@ -473,6 +473,8 @@ export default function OwnerOperatorsPage() {
 
   // Company list search
   const [ooListSearch, setOoListSearch] = useState("");
+  // Driver tab search (within selected OO)
+  const [driverSearch, setDriverSearch] = useState("");
   const filteredCompanies = React.useMemo(() => {
     const q = ooListSearch.trim().toLowerCase();
     if (!q) return companies;
@@ -1968,13 +1970,29 @@ export default function OwnerOperatorsPage() {
       {/* ── Drivers ── */}
       {activeTab === "drivers" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div>
               <div style={eyebrow}>Driver Roster</div>
               <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2 }}>{selected.drivers.length} driver{selected.drivers.length!==1?"s":""} · CDL and med card tracked individually</div>
             </div>
             <button onClick={() => setShowAddDriver(s=>!s)} style={primaryBtn}>+ Add Driver</button>
           </div>
+
+          {/* Driver search */}
+          {selected.drivers.length > 2 && (
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: "0.9rem", pointerEvents: "none", opacity: 0.45 }}>🔍</span>
+              <input
+                value={driverSearch}
+                onChange={e => setDriverSearch(e.target.value)}
+                placeholder="Search drivers by name, CDL#, phone…"
+                style={{ width: "100%", padding: "10px 36px 10px 36px", borderRadius: 10, border: "2px solid #1e40af", fontSize: "0.875rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, boxShadow: "0 2px 8px rgba(30,64,175,0.10)", color: "#0f172a", fontWeight: 500 }}
+              />
+              {driverSearch && (
+                <button onClick={() => setDriverSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "#e2e8f0", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#64748b", fontWeight: 900 }}>✕</button>
+              )}
+            </div>
+          )}
 
           {showAddDriver && (
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "16px 20px", marginBottom: 14 }}>
@@ -2042,7 +2060,11 @@ export default function OwnerOperatorsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selected.drivers.map(d => {
+                  {selected.drivers.filter(d => {
+                    if (!driverSearch.trim()) return true;
+                    const q = driverSearch.toLowerCase();
+                    return d.name.toLowerCase().includes(q) || (d.cdl_number||"").toLowerCase().includes(q) || (d.phone||"").toLowerCase().includes(q) || (d.truck_number||"").toLowerCase().includes(q);
+                  }).map(d => {
                     const cdlD   = daysUntil(d.cdl_expiration);
                     const medD   = daysUntil(d.med_card_expiration);
                     const cdlKey = `[${d.name}] CDL License`;
