@@ -390,9 +390,9 @@ function KPI({ label, value, color, bg, onClick }: { label: string; value: strin
   const c = color || "#1e40af";
   const b = bg || "#eff6ff";
   return (
-    <div onClick={onClick} style={{ background: b, border: `1.5px solid ${c}30`, borderRadius: 12, padding: "9px 12px", cursor: onClick ? "pointer" : undefined }}>
-      <div style={{ display:"inline-block", background: `${c}18`, color: c, borderRadius: 20, padding: "1px 8px", fontSize: "0.58rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, whiteSpace: "nowrap" }}>{label}</div>
-      <div style={{ fontSize: "1.1rem", fontWeight: 900, color: c, lineHeight: 1.1 }}>{value}</div>
+    <div onClick={onClick} style={{ background: b, border: `1.5px solid ${c}30`, borderRadius: 10, padding: "7px 10px", cursor: onClick ? "pointer" : undefined }}>
+      <div style={{ display:"inline-block", background: `${c}18`, color: c, borderRadius: 20, padding: "1px 7px", fontSize: "0.55rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ fontSize: "0.92rem", fontWeight: 900, color: c, lineHeight: 1.1 }}>{value}</div>
     </div>
   );
 }
@@ -1174,7 +1174,7 @@ export default function OwnerOperatorsPage() {
               <h1 style={{ margin: 0, fontSize: "1.3rem", fontWeight: 900, color: "#0f172a" }}>{selected.company_name}</h1>
               <button
                 onClick={() => setOoEditModal({ form: { company_name: selected.company_name, contact_name: selected.contact_name, contact_phone: selected.contact_phone, contact_email: selected.contact_email, business_address: selected.business_address, mc_number: selected.mc_number, dot_number: selected.dot_number, ein: selected.ein, website: selected.website || "", notes: selected.notes || "", insurance_agent_name: selected.insurance_agent_name || "", insurance_agent_phone: selected.insurance_agent_phone || "", insurance_agent_email: selected.insurance_agent_email || "" }, saving: false })}
-                style={{ padding: "3px 10px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: "#1e40af", color: "#fff", fontSize: "0.78rem", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
                 ✏ Edit Profile
               </button>
             </div>
@@ -1273,16 +1273,16 @@ export default function OwnerOperatorsPage() {
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 16px", marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 4 }}>Quick Upload</span>
         {[
-          { label: "🛡️ Auto Liability",  type: "Auto Liability Insurance",    hasExpiry: true  },
-          { label: "🛡️ General Liability", type: "General Liability Insurance", hasExpiry: true  },
-          { label: "📦 Cargo Insurance",   type: "Cargo Insurance",             hasExpiry: true  },
-          { label: "📄 COI",               type: "Insurance Certificate (COI)", hasExpiry: true  },
-          { label: "📝 Contract",          type: "Contract",                    hasExpiry: true  },
-          { label: "🧾 W-9",               type: "W-9 / Tax Form",              hasExpiry: false },
-          { label: "💳 Voided Check",      type: "Voided Check",                hasExpiry: false },
-          { label: "🏛️ MC Auth Letter",     type: "MC Authority Letter",         hasExpiry: false },
-        ].map(({ label, type }) => {
-          const onFile = selected.documents.find(d => d.type === type);
+          { label: "🛡️ Auto Liability",    type: "Auto Liability Insurance",    altTypes: ["Auto Liability","Automobile Liability Insurance"],         hasExpiry: true  },
+          { label: "🛡️ General Liability",  type: "General Liability Insurance", altTypes: ["General Liability","GL Insurance"],                        hasExpiry: true  },
+          { label: "📦 Cargo Insurance",    type: "Cargo Insurance",             altTypes: ["Cargo","Cargo Ins"],                                       hasExpiry: true  },
+          { label: "📄 COI",               type: "Insurance Certificate (COI)", altTypes: ["Insurance Certificate","COI","Certificate of Insurance"],   hasExpiry: true  },
+          { label: "📝 Contract",          type: "Contract",                    altTypes: ["Subhauler Agreement","Carrier Agreement","Service Contract"],hasExpiry: true  },
+          { label: "🧾 W-9",               type: "W-9 / Tax Form",              altTypes: ["W-9","W9","Tax Form"],                                     hasExpiry: false },
+          { label: "💳 Voided Check",      type: "Voided Check",                altTypes: ["Voided check","Void Check","Bank Void Check","Direct Deposit"],hasExpiry: false },
+          { label: "🏛️ MC Auth Letter",     type: "MC Authority Letter",         altTypes: ["MC Auth Letter","MC Letter","Authority Letter"],            hasExpiry: false },
+        ].map(({ label, type, altTypes }) => {
+          const onFile = selected.documents.find(d => d.type === type || (altTypes || []).includes(d.type));
           return (
             <div key={type} style={{ display: "inline-flex", alignItems: "center", gap: 0, borderRadius: 8, border: `1px solid ${onFile ? "#86efac" : "#e2e8f0"}`, background: onFile ? "#f0fdf4" : "#f8fafc", overflow: "hidden" }}>
               <label style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", fontSize: "0.75rem", fontWeight: 700, color: onFile ? "#15803d" : "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
