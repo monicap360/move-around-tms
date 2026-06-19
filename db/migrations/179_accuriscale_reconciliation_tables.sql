@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.accuriscale_invoice_reconciliation (
   variance_amount           numeric(12,2) GENERATED ALWAYS AS (
     COALESCE(invoice_amount, 0) - COALESCE(ticket_tons * ticket_rate, 0)
   ) STORED,
-  reconciliation_status     text          NOT NULL DEFAULT 'not_billed'
+  reconciliation_status     text          NOT NULL DEFAULT 'unbilled'
     CHECK (reconciliation_status IN (
       'ready_to_bill','billing_hold','invoiced','paid',
       'invoice_mismatch','unbilled','duplicate_billing','dispute'
