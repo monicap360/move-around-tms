@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request, { params }: { params: { organization_code: string } }) {
   const client = createSupabaseServerClient();
   const { organization_code } = params;

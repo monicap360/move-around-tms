@@ -3,6 +3,8 @@ import { requireSameOrigin } from "@/lib/security";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 async function resolveOrganizationId(
   supabase: ReturnType<typeof createSupabaseServerClient>,
   userId: string,

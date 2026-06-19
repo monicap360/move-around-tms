@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 // POST: Transcribe speech to text
 // In production, this would use a cloud STT service (Google, AWS, Azure)
 export async function POST(request: NextRequest) {

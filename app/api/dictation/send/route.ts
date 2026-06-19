@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 // POST: Send dictated message to driver
 // Messages are delivered as TEXT or SYSTEM VOICE, NOT live dispatcher voice
 export async function POST(request: NextRequest) {

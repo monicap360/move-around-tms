@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("ronyx_loads")
     .select("*")
-    .eq("organization_id", orgId)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .order("created_at", { ascending: false });
   if (status) {
     query = query.eq("status", status);
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
     const { data: seeded } = await supabase
       .from("ronyx_loads")
       .select("*")
-      .eq("organization_id", orgId)
+      .or(`organization_id.eq.${orgId},organization_id.is.null`)
       .order("created_at", { ascending: false });
     return NextResponse.json({ loads: seeded || [] });
   }

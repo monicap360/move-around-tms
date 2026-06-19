@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
+export const dynamic = "force-dynamic";
+
 // GET: Generate PDF for evidence packet
 export async function GET(
   request: NextRequest,

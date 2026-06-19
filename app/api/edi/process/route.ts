@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { parseEDI, parse204LoadTender, parse210FreightInvoice, parse214ShipmentStatus } from "@/lib/edi/edi-parser";
 
+export const dynamic = "force-dynamic";
+
 // POST: Process incoming EDI document
 export async function POST(request: NextRequest) {
   try {

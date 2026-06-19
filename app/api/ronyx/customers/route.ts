@@ -32,7 +32,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("ronyx_customers")
     .select("*")
-    .eq("organization_id", orgId)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .order("customer_name", { ascending: true });
 
   if (error) {
@@ -48,7 +48,7 @@ export async function GET() {
     const { data: seeded } = await supabase
       .from("ronyx_customers")
       .select("*")
-      .eq("organization_id", orgId)
+      .or(`organization_id.eq.${orgId},organization_id.is.null`)
       .order("customer_name", { ascending: true });
     return NextResponse.json({ customers: seeded || [] });
   }
@@ -63,7 +63,7 @@ export async function GET() {
     const { data: refreshed } = await supabase
       .from("ronyx_customers")
       .select("*")
-      .eq("organization_id", orgId)
+      .or(`organization_id.eq.${orgId},organization_id.is.null`)
       .order("customer_name", { ascending: true });
     return NextResponse.json({ customers: refreshed || [] });
   }
@@ -100,7 +100,7 @@ export async function PUT(request: Request) {
     .from("ronyx_customers")
     .update(payload)
     .eq("id", payload.id)
-    .eq("organization_id", orgId)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .select("*")
     .single();
 

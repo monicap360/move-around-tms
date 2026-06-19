@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 async function resolveOrganizationId(
   supabase: ReturnType<typeof createSupabaseServerClient>,
   userId: string,

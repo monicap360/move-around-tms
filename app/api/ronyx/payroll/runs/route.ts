@@ -9,7 +9,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("ronyx_payroll_runs")
     .select("*")
-    .eq("organization_id", orgId)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .order("created_at", { ascending: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

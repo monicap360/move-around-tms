@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculateRate, DEFAULT_ACCESSORIALS } from "@/lib/rating/rating-engine";
 
+export const dynamic = "force-dynamic";
+
 // POST: Calculate rate for a ticket
 export async function POST(
   request: NextRequest,

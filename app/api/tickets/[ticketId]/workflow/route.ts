@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { evaluateApprovalWorkflow } from "@/lib/workflows/ticket-approval-rules";
 
+export const dynamic = "force-dynamic";
+
 // POST: Evaluate workflow rules for a ticket
 export async function POST(
   request: NextRequest,

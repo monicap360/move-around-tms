@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../_supabase";
 
+export const dynamic = "force-dynamic";
+
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();

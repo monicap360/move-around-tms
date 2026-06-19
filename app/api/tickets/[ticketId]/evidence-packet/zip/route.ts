@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import JSZip from "jszip";
 
+export const dynamic = "force-dynamic";
+
 // GET: Generate ZIP for evidence packet
 export async function GET(
   request: NextRequest,

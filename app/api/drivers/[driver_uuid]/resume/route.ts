@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request, { params }: any) {
   const supa = createSupabaseServerClient();
   const { driver_uuid } = params;

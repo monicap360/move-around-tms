@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       assigned_vehicle:assigned_vehicle_id(unit_number, status, dispatch_eligible),
       latest_assignment:dispatch_assignments(acceptance_status, sent_at, no_response_at)
     `)
-    .eq("organization_id", orgId)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .order("pickup_time", { ascending: true });
 
   if (date)   query = query.gte("pickup_time", `${date}T00:00:00`).lte("pickup_time", `${date}T23:59:59`);
