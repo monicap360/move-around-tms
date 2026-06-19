@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateInvoiceFromTickets } from "@/lib/ronyx/phase1/invoiceEngine";
 
+export const dynamic = "force-dynamic";
+
 function buildInvoiceNumber() {
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   return `RNYX-INV-${stamp}-${Math.floor(Math.random() * 9000 + 1000)}`;

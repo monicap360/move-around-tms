@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_LOADS = [
   {
     load_number: "LD-6121",

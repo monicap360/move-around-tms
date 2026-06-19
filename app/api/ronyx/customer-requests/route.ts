@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_REQUESTS = [
   {
     request_number: "CR-1204",

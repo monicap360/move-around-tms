@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const numericFields = ["pay_rate", "mileage_rate", "miles_driven", "pay_period_earnings", "deductions", "bonuses_reimbursements"];
 
 function normalizePayload(payload: Record<string, unknown>) {

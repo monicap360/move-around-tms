@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_ROWS: Record<string, { title: string; subtitle: string; status: string }[]> = {
   dispatch: [
     { title: "LD-5081 • Pit 7 → I‑45 Jobsite", subtitle: "Driver: D. Perez", status: "In Transit" },
