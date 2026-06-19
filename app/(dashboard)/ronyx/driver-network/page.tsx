@@ -32,6 +32,19 @@ type AnonymousDriver = {
 
 type UnlockState = Record<string, "idle" | "requesting" | "requested" | "unlocked">;
 
+type OOPartner = {
+  id: string;
+  company_name: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  business_address?: string;
+  mc_number?: string;
+  dot_number?: string;
+  status?: string;
+  start_date?: string;
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const AVAIL_LABEL: Record<string, string> = {
@@ -215,6 +228,106 @@ function DriverCard({
   );
 }
 
+// ─── OO Partner Card ─────────────────────────────────────────────────────────
+
+function OOPartnerCard({ oo, shortlisted, onShortlist }: {
+  oo: OOPartner;
+  shortlisted: boolean;
+  onShortlist: () => void;
+}) {
+  const initials = (oo.company_name || "??").split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const isActive = !oo.status || oo.status === "active";
+
+  return (
+    <div style={{
+      background: "#fff", border: `1.5px solid ${isActive ? "#86efac" : "#e2e8f0"}`,
+      borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14,
+      position: "relative", boxShadow: isActive ? "0 0 0 3px #f0fdf4" : "none",
+    }}>
+      {/* Status badge */}
+      <div style={{ position: "absolute", top: 14, right: 14, background: isActive ? "#dcfce7" : "#f1f5f9",
+        color: isActive ? "#15803d" : "#64748b", padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 700 }}>
+        {isActive ? "✓ Active Partner" : "Inactive"}
+      </div>
+      {shortlisted && (
+        <div style={{ position: "absolute", top: 38, right: 14, background: "#dbeafe", color: "#1d4ed8",
+          padding: "3px 10px", borderRadius: 20, fontSize: "0.68rem", fontWeight: 700 }}>
+          ★ Shortlisted
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+        <div style={{ width: 52, height: 52, borderRadius: 12, background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem",
+          fontWeight: 900, color: "#93c5fd", flexShrink: 0, letterSpacing: 1 }}>
+          {initials}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 900, fontSize: "0.97rem", color: "#1e293b", marginBottom: 2, lineHeight: 1.3 }}>
+            {oo.company_name}
+          </div>
+          {oo.contact_name && (
+            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>👤 {oo.contact_name}</div>
+          )}
+          {oo.business_address && (
+            <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              📍 {oo.business_address}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MC / DOT row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 10px", fontSize: "0.75rem" }}>
+        <div style={{ background: "#f8fafc", borderRadius: 7, padding: "6px 10px" }}>
+          <div style={{ color: "#94a3b8", fontWeight: 600, fontSize: "0.63rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>MC #</div>
+          <div style={{ color: "#1e293b", fontWeight: 800 }}>{oo.mc_number || "—"}</div>
+        </div>
+        <div style={{ background: "#f8fafc", borderRadius: 7, padding: "6px 10px" }}>
+          <div style={{ color: "#94a3b8", fontWeight: 600, fontSize: "0.63rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>DOT #</div>
+          <div style={{ color: "#1e293b", fontWeight: 800 }}>{oo.dot_number || "—"}</div>
+        </div>
+        {oo.contact_phone && (
+          <div style={{ background: "#f0fdf4", borderRadius: 7, padding: "6px 10px", gridColumn: "1 / -1" }}>
+            <div style={{ color: "#94a3b8", fontWeight: 600, fontSize: "0.63rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Contact</div>
+            <div style={{ color: "#15803d", fontWeight: 700 }}>📞 {oo.contact_phone}</div>
+          </div>
+        )}
+        {oo.contact_email && (
+          <div style={{ background: "#f0fdf4", borderRadius: 7, padding: "6px 10px", gridColumn: "1 / -1" }}>
+            <div style={{ color: "#15803d", fontWeight: 700, fontSize: "0.75rem" }}>✉ {oo.contact_email}</div>
+          </div>
+        )}
+        {oo.start_date && (
+          <div style={{ background: "#f8fafc", borderRadius: 7, padding: "6px 10px" }}>
+            <div style={{ color: "#94a3b8", fontWeight: 600, fontSize: "0.63rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Partner Since</div>
+            <div style={{ color: "#1e293b", fontWeight: 700 }}>
+              {new Date(oo.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 4 }}>
+        <a href={`/ronyx/owner-operators?id=${oo.id}`}
+          style={{ flex: 1, minWidth: 120, padding: "9px 14px", background: "#1e293b", color: "#fff",
+            border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer",
+            textDecoration: "none", textAlign: "center" }}>
+          View Full Profile →
+        </a>
+        <button onClick={onShortlist}
+          style={{ padding: "9px 14px", background: shortlisted ? "#dbeafe" : "#f1f5f9",
+            color: shortlisted ? "#1d4ed8" : "#475569", border: `1px solid ${shortlisted ? "#93c5fd" : "#e2e8f0"}`,
+            borderRadius: 8, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
+          {shortlisted ? "★ Saved" : "☆ Save"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DriverNetworkPage() {
@@ -227,7 +340,12 @@ export default function DriverNetworkPage() {
   const [unlockStates, setUnlock]     = useState<UnlockState>({});
   const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
   const [toast, setToast]             = useState("");
-  const [activeTab, setTab]           = useState<"search" | "shortlist" | "unlocked" | "about">("search");
+  const [activeTab, setTab]           = useState<"search" | "oo" | "shortlist" | "unlocked" | "about">("search");
+  const [ooPartners, setOOPartners]   = useState<OOPartner[]>([]);
+  const [ooLoading, setOOLoading]     = useState(false);
+  const [ooLoaded, setOOLoaded]       = useState(false);
+  const [ooSearch, setOOSearch]       = useState("");
+  const [ooShortlisted, setOOShortlisted] = useState<Set<string>>(new Set());
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 4000); };
 
@@ -275,6 +393,31 @@ export default function DriverNetworkPage() {
   const handleRequestIntro = (driver: AnonymousDriver) => {
     showToast(`📨 Introduction requested for ${driver.anonymous_driver_id} — MoveAround will facilitate`);
   };
+
+  // Lazy-load OO partners when that tab is first opened
+  useEffect(() => {
+    if (activeTab !== "oo" || ooLoaded) return;
+    setOOLoading(true);
+    fetch("/api/ronyx/owner-operators")
+      .then(r => r.json())
+      .then(d => { setOOPartners(d.companies ?? []); setOOLoaded(true); })
+      .catch(() => setOOLoaded(true))
+      .finally(() => setOOLoading(false));
+  }, [activeTab, ooLoaded]);
+
+  const handleOOShortlist = (oo: OOPartner) => {
+    const next = new Set(ooShortlisted);
+    if (next.has(oo.id)) { next.delete(oo.id); showToast(`${oo.company_name} removed from saved list`); }
+    else { next.add(oo.id); showToast(`${oo.company_name} saved`); }
+    setOOShortlisted(next);
+  };
+
+  const filteredOOs = ooPartners.filter(oo => {
+    if (!ooSearch) return true;
+    const q = ooSearch.toLowerCase();
+    return [oo.company_name, oo.contact_name, oo.business_address, oo.mc_number, oo.dot_number]
+      .some(v => (v || "").toLowerCase().includes(q));
+  });
 
   const shortlistedDrivers = filtered.filter(d => shortlisted.has(d.id));
   const unlockedDrivers    = drivers.filter(d => !d._identity_locked);
@@ -328,7 +471,7 @@ export default function DriverNetworkPage() {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 2 }}>
-          {([["search","🔍 Browse Drivers"],["shortlist","★ Shortlist"],["unlocked","✓ Unlocked"],["about","ℹ About"]] as [typeof activeTab, string][]).map(([key, label]) => (
+          {([["search","🔍 Browse Drivers"],["oo","🏢 Owner Operators"],["shortlist","★ Shortlist"],["unlocked","✓ Unlocked"],["about","ℹ About"]] as [typeof activeTab, string][]).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               style={{ padding: "10px 18px", background: "transparent", border: "none", cursor: "pointer",
                 color: activeTab === key ? "#fff" : "rgba(255,255,255,0.5)",
@@ -338,6 +481,11 @@ export default function DriverNetworkPage() {
               {key === "shortlist" && shortlisted.size > 0 && (
                 <span style={{ background: "#0891b2", color: "#fff", padding: "1px 7px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, marginLeft: 6 }}>
                   {shortlisted.size}
+                </span>
+              )}
+              {key === "oo" && ooShortlisted.size > 0 && (
+                <span style={{ background: "#15803d", color: "#fff", padding: "1px 7px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, marginLeft: 6 }}>
+                  {ooShortlisted.size}
                 </span>
               )}
             </button>
@@ -420,6 +568,66 @@ export default function DriverNetworkPage() {
                     onShortlist={() => handleShortlist(driver)}
                     onUnlock={() => handleUnlock(driver)}
                     onRequestIntro={() => handleRequestIntro(driver)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── OWNER OPERATORS TAB ──────────────────────────────────── */}
+        {activeTab === "oo" && (
+          <>
+            <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#1e293b" }}>
+                  Owner Operator Fleet Partners ({filteredOOs.length})
+                </h2>
+                <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                  Owner operator companies working with Ronyx. View profiles, contact info, and compliance status.
+                </p>
+              </div>
+              <input type="text" placeholder="Search company, MC#, DOT#, contact..."
+                value={ooSearch} onChange={e => setOOSearch(e.target.value)}
+                style={{ padding: "9px 14px", borderRadius: 9, border: "1px solid #e2e8f0", fontSize: "0.85rem", minWidth: 280 }} />
+              <a href="/ronyx/owner-operators"
+                style={{ padding: "9px 16px", background: "#1e293b", color: "#fff", borderRadius: 8,
+                  fontWeight: 700, fontSize: "0.78rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+                + Add OO Partner
+              </a>
+            </div>
+
+            {ooLoading && (
+              <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>Loading owner operator partners...</div>
+            )}
+
+            {!ooLoading && filteredOOs.length === 0 && (
+              <div style={{ background: "#fff", border: "2px dashed #cbd5e1", borderRadius: 14, padding: "56px 32px", textAlign: "center" }}>
+                <div style={{ fontSize: "3rem", marginBottom: 14 }}>🏢</div>
+                <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>
+                  {ooSearch ? "No owner operators match your search" : "No owner operators on file yet"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: 24 }}>
+                  {ooSearch ? "Try a different search term." : "Add owner operators from the Owner Operators page."}
+                </div>
+                {!ooSearch && (
+                  <a href="/ronyx/owner-operators"
+                    style={{ background: "#0891b2", color: "#fff", padding: "12px 28px", borderRadius: 9,
+                      fontWeight: 700, fontSize: "0.9rem", textDecoration: "none" }}>
+                    Go to Owner Operators →
+                  </a>
+                )}
+              </div>
+            )}
+
+            {!ooLoading && filteredOOs.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 16 }}>
+                {filteredOOs.map(oo => (
+                  <OOPartnerCard
+                    key={oo.id}
+                    oo={oo}
+                    shortlisted={ooShortlisted.has(oo.id)}
+                    onShortlist={() => handleOOShortlist(oo)}
                   />
                 ))}
               </div>

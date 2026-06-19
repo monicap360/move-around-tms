@@ -2012,11 +2012,11 @@ export default function DriversPage() {
             /* ── List View ── */
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }} onClick={() => setMoreMenuId(null)}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 580 }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                      {["", "Driver", "Company / Owner Operator", "Truck", "Dispatch Status", "CDL", "MVR", "Medical Card", "Docs", "CCB", "Quick Actions"].map((h) => (
-                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / Owner Operator" ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      {["", "Driver", "Company / OO", "Truck", "Dispatch", "Compliance", "Actions"].map((h) => (
+                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / OO" ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -2069,56 +2069,40 @@ export default function DriversPage() {
                             </td>
                             {/* Truck */}
                             <td style={{ padding: "8px 8px", fontSize: 11, fontWeight: 600, color: driver.truck === "—" || !driver.truck ? "#94a3b8" : "#0f172a", whiteSpace: "nowrap" }}>{driver.truck && driver.truck !== "—" ? driver.truck : "Not assigned"}</td>
-                            {/* Dispatch Status */}
-                            <td style={{ padding: "8px 8px", minWidth: 120 }}>
+                            {/* Dispatch */}
+                            <td style={{ padding: "8px 8px" }}>
                               {ccb.label === "Blocked" || ccb.label === "Manually Blocked" ? (
-                                <div>
-                                  <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", display: "block", marginBottom: 2 }}>🚫 BLOCKED</span>
-                                  <span style={{ fontSize: 9, color: "#dc2626" }}>{nextAct}</span>
-                                </div>
+                                <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", whiteSpace: "nowrap" }}>🚫 Blocked</span>
                               ) : ccb.label === "Clear" ? (
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap" }}>✓ Ready to Dispatch</span>
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap" }}>✓ Ready</span>
                               ) : (
                                 <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: stBg, color: stColor, whiteSpace: "nowrap" }}>{driver.status}</span>
                               )}
                             </td>
-                            {/* CDL */}
+                            {/* Compliance — CDL / MVR / Medical combined */}
                             <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: cdlBadge.bg, color: cdlBadge.color, whiteSpace: "nowrap" }}>{cdlState === "ok" ? driver.cdlExp : cdlState === "missing" ? "Not on file" : cdlBadge.label}</span>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, width: 26 }}>CDL</span>
+                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: cdlBadge.bg, color: cdlBadge.color, whiteSpace: "nowrap" }}>{cdlState === "ok" ? driver.cdlExp : cdlState === "missing" ? "Not on file" : cdlBadge.label}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, width: 26 }}>MVR</span>
+                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: mvrBadge.bg, color: mvrBadge.color, whiteSpace: "nowrap" }}>{mvrState === "ok" ? driver.mvrExp : mvrState === "missing" ? "Not on file" : mvrBadge.label}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, width: 26 }}>Med</span>
+                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: medBadge.bg, color: medBadge.color, whiteSpace: "nowrap" }}>{medState === "ok" ? driver.medicalExp : medState === "missing" ? "Not on file" : medBadge.label}</span>
+                                </div>
+                              </div>
                             </td>
-                            {/* MVR */}
-                            <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: mvrBadge.bg, color: mvrBadge.color, whiteSpace: "nowrap" }}>{mvrState === "ok" ? driver.mvrExp : mvrState === "missing" ? "Not on file" : mvrBadge.label}</span>
-                            </td>
-                            {/* Medical */}
-                            <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: medBadge.bg, color: medBadge.color, whiteSpace: "nowrap" }}>{medState === "ok" ? driver.medicalExp : medState === "missing" ? "Not on file" : medBadge.label}</span>
-                            </td>
-                            {/* Overall Docs */}
-                            <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: overallDocBg, color: overallDocColor, whiteSpace: "nowrap" }}>
-                                {driver.docs === "Good" ? "✓ Good" : driver.docs === "Expiring" ? "⚠ Expiring" : driver.docs === "Expired" ? "✕ Expired" : "Missing"}
-                              </span>
-                            </td>
-                            {/* CCB */}
-                            <td style={{ padding: "8px 8px" }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: ccb.bg, color: ccb.color, whiteSpace: "nowrap" }}>{ccb.label}</span>
-                            </td>
-                            {/* Quick Actions */}
+                            {/* Actions */}
                             <td style={{ padding: "8px 6px" }} onClick={(e) => e.stopPropagation()}>
                               <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
                                 <button onClick={() => setDrawerDriver(driver)} style={{ ...btnS, background: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }}>View</button>
                                 <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
                                   <button style={btnS}>Profile</button>
                                 </Link>
-                                <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ textDecoration: "none" }}>
-                                  <button style={btnS}>Docs</button>
-                                </Link>
-                                <button style={{ ...btnS, background: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }}
-                                  onClick={() => showToast(`CCB review queued for ${driver.name}`)}>
-                                  CCB
-                                </button>
-                                {/* Unblock button — only shown when driver is blocked */}
                                 {(ccb.label === "Blocked" || ccb.label === "Manually Blocked") && (
                                   <button
                                     style={{ ...btnS, background: "#fef2f2", color: "#dc2626", borderColor: "#fca5a5", fontWeight: 800 }}
@@ -2163,6 +2147,11 @@ export default function DriversPage() {
                                   </button>
                                   {isMoreOpen && (
                                     <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 2, zIndex: 50, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.13)", minWidth: 176, padding: 6 }}>
+                                      <Link href={`/ronyx/drivers/${driver.id}?tab=documents`} style={{ textDecoration: "none" }}>
+                                        <button style={menuItemS} onClick={() => setMoreMenuId(null)}>📄 Documents</button>
+                                      </Link>
+                                      <button style={menuItemS} onClick={() => { showToast(`CCB review queued for ${driver.name}`); setMoreMenuId(null); }}>🔍 CCB Review</button>
+                                      <hr style={{ border: "none", borderTop: "1px solid #f1f5f9", margin: "4px 0" }} />
                                       <button style={menuItemS} onClick={() => { setAssignTarget({ driver }); setMoreMenuId(null); }}>Assign Truck</button>
                                       <button style={menuItemS} onClick={() => { setAssignOOTarget(driver); setOOSearch(""); setMoreMenuId(null); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}>Assign Company</button>
                                       <Link href={`/ronyx/drivers/${driver.id}?tab=oo`} style={{ textDecoration: "none" }}>

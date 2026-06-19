@@ -97,7 +97,7 @@ export default function FastScanPage() {
   const [error, setError]           = useState("");
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [loadingScans, setLoadingScans] = useState(true);
-  const [scanPreviewModal, setScanPreviewModal] = useState<{ url: string; filename: string } | null>(null);
+  const [scanPreviewModal, setScanPreviewModal] = useState<{ url: string; filename: string; rotation: number } | null>(null);
   const [scanEmailModal, setScanEmailModal] = useState<{ scan: any; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [scanEditModal, setScanEditModal] = useState<{ scan: any; form: { ticket_number: string; truck_number: string; driver_name: string; amount: string }; saving: boolean } | null>(null);
   const [scanVoidConfirm, setScanVoidConfirm] = useState<{ id: string; filename: string } | null>(null);
@@ -125,7 +125,7 @@ export default function FastScanPage() {
         const win = window.open(data.signed_url, "_blank");
         if (win) win.addEventListener("load", () => { try { win.print(); } catch {} });
       } else {
-        setScanPreviewModal({ url: data.signed_url, filename: s.original_filename || "Ticket Scan" });
+        setScanPreviewModal({ url: data.signed_url, filename: s.original_filename || "Ticket Scan", rotation: 0 });
       }
     } catch { alert("Failed to load preview. Check your connection."); }
   }
@@ -777,28 +777,66 @@ export default function FastScanPage() {
       </div>
 
       {/* ── In-system Preview Modal ── */}
-      {scanPreviewModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "#fff", borderRadius: 14, width: "92vw", maxWidth: 960, height: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderBottom: "1px solid #e2e8f0", flexShrink: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
-                <span>📄</span> {scanPreviewModal.filename}
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
+      {scanPreviewModal && (() => {
+        const isImage = /\.(jpe?g|png|gif|webp|bmp)(\?|$)/i.test(scanPreviewModal.url) || /\.(jpe?g|png|gif|webp|bmp)$/i.test(scanPreviewModal.filename);
+        const rot = scanPreviewModal.rotation;
+        const rotateLeft  = () => setScanPreviewModal(m => m && { ...m, rotation: (m.rotation - 90 + 360) % 360 });
+        const rotateRight = () => setScanPreviewModal(m => m && { ...m, rotation: (m.rotation + 90) % 360 });
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.80)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div style={{ background: "#fff", borderRadius: 14, width: "min(96vw, 1200px)", height: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
+              {/* Toolbar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderBottom: "1px solid #e2e8f0", flexShrink: 0, background: "#0f172a", borderRadius: "14px 14px 0 0" }}>
+                <span style={{ fontSize: "1rem" }}>📄</span>
+                <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#fff", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{scanPreviewModal.filename}</span>
+                {isImage && (
+                  <>
+                    <button onClick={rotateLeft} title="Rotate left"
+                      style={{ padding: "5px 12px", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
+                      ↺ Rotate Left
+                    </button>
+                    <button onClick={rotateRight} title="Rotate right"
+                      style={{ padding: "5px 12px", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
+                      ↻ Rotate Right
+                    </button>
+                  </>
+                )}
                 <button onClick={() => { const w = window.open(scanPreviewModal.url, "_blank"); if (w) w.addEventListener("load", () => { try { w.print(); } catch {} }); }}
-                  style={{ padding: "5px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                  style={{ padding: "5px 12px", background: "#1e40af", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
                   🖨 Print
                 </button>
+                <a href={scanPreviewModal.url} download={scanPreviewModal.filename}
+                  style={{ padding: "5px 12px", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", textDecoration: "none" }}>
+                  ⬇ Download
+                </a>
                 <button onClick={() => setScanPreviewModal(null)}
-                  style={{ padding: "5px 14px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
+                  style={{ padding: "5px 12px", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
                   ✕ Close
                 </button>
               </div>
+              {/* Content */}
+              <div style={{ flex: 1, overflow: "auto", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", borderRadius: "0 0 14px 14px", padding: isImage ? 16 : 0 }}>
+                {isImage ? (
+                  <img
+                    src={scanPreviewModal.url}
+                    alt={scanPreviewModal.filename}
+                    style={{
+                      maxWidth: rot % 180 === 0 ? "100%" : "90vh",
+                      maxHeight: rot % 180 === 0 ? "100%" : "90vw",
+                      objectFit: "contain",
+                      transform: `rotate(${rot}deg)`,
+                      transition: "transform 0.25s ease",
+                      borderRadius: 6,
+                    }}
+                  />
+                ) : (
+                  <iframe src={scanPreviewModal.url} style={{ flex: 1, border: "none", width: "100%", height: "100%", borderRadius: "0 0 14px 14px" }} />
+                )}
+              </div>
             </div>
-            <iframe src={scanPreviewModal.url} style={{ flex: 1, border: "none", borderRadius: "0 0 14px 14px", width: "100%" }} />
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Email Modal ── */}
       {scanEmailModal && (

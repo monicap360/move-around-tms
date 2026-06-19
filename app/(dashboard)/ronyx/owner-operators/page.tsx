@@ -2566,54 +2566,50 @@ export default function OwnerOperatorsPage() {
             })}
           </div>
 
-          {/* COI — 3 dedicated slots: one per named company */}
+          {/* COI — 3 named-entity buttons */}
           <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📄 Certificates of Insurance (COI)</div>
-          <div style={{ background:"#fefce8", border:"2px solid #fde68a", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:"0.72rem", color:"#92400e" }}>
-            ⚠️ Each company that hauls for Ronyx requires its own named COI. Upload one certificate per slot below.
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12, marginBottom:20 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
             {[
-              { type:"COI — M.A. Mortenson",   label:"M.A. Mortenson",   icon:"🏗️" },
-              { type:"COI — Ronyx Logistics",  label:"Ronyx Logistics",  icon:"🚚" },
-              { type:"COI — BAS Equipment",    label:"BAS Equipment",    icon:"🚜" },
-            ].map(({ type: docType, label, icon }) => {
+              { type:"COI — Ronyx Logistics",  label:"Ronyx",           fullLabel:"Ronyx Logistics",  icon:"🚚", color:"#15803d", bg:"#f0fdf4", border:"#86efac" },
+              { type:"COI — M.A. Mortenson",   label:"M.A. Mortenson", fullLabel:"M.A. Mortenson",   icon:"🏗️", color:"#1e40af", bg:"#eff6ff", border:"#93c5fd" },
+              { type:"COI — BAS Equipment",    label:"BAS Equipment",  fullLabel:"BAS Equipment",    icon:"🚜", color:"#0891b2", bg:"#f0f9ff", border:"#7dd3fc" },
+            ].map(({ type: docType, label, fullLabel, icon, color, bg, border }) => {
               const existing = selected.documents.find(d => d.type === docType);
               const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
               return (
-                <div key={docType} style={{ background:existing?"#f0fdf4":"#fff1f2", border:`2px solid ${existing?"#86efac":"#fca5a5"}`, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                    <span style={{ fontSize:18 }}>{icon}</span>
-                    <div>
-                      <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.78rem" }}>COI</div>
-                      <div style={{ fontWeight:700, color:"#1e40af", fontSize:"0.72rem" }}>Named: {label}</div>
-                    </div>
+                <div key={docType} style={{ display:"flex", alignItems:"center", gap:12, background:existing?bg:"#fff1f2", border:`1.5px solid ${existing?border:"#fca5a5"}`, borderRadius:10, padding:"10px 14px" }}>
+                  {/* Label */}
+                  <span style={{ fontSize:18, flexShrink:0 }}>{icon}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:800, color:existing?color:"#dc2626", fontSize:"0.82rem" }}>{fullLabel}</div>
+                    {existing ? (
+                      <div style={{ fontSize:"0.7rem", color:"#64748b", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        ✓ {existing.file_name}
+                        {existing.expires_on && <span style={{ marginLeft:8, fontWeight:700, color:expColor(expDays) }}>{expLabel(expDays, existing.expires_on)}</span>}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize:"0.7rem", color:"#dc2626", fontWeight:600 }}>Not uploaded</div>
+                    )}
                   </div>
-                  <div style={{ fontSize:"0.7rem", color:"#64748b", marginBottom:4 }}>For: <strong style={{ color:"#0f172a" }}>{selected.company_name}</strong></div>
-                  {existing ? (
-                    <>
-                      <div style={{ fontSize:"0.72rem", color:"#15803d", fontWeight:600, marginBottom:4 }}>✓ {existing.file_name}</div>
-                      {existing.expires_on && (
-                        <div style={{ background:expBg(expDays), color:expColor(expDays), padding:"3px 8px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, display:"inline-block", marginBottom:6 }}>
-                          {expLabel(expDays, existing.expires_on)}
-                        </div>
-                      )}
-                      {existing.file_url ? (
-                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
-                          <button onClick={()=>openDoc(existing.file_url!,true,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
-                          <a href={`mailto:?subject=${encodeURIComponent("COI for "+label+" — "+selected.company_name)}&body=${encodeURIComponent("COI File: "+existing.file_name+"\n\nNamed insured: "+label+"\nUploaded for: "+selected.company_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
-                        </div>
-                      ) : (
-                        <div style={{ fontSize:"0.7rem", color:"#92400e", background:"#fef3c7", border:"1px solid #fde68a", padding:"4px 8px", borderRadius:6, marginBottom:6 }}>⚠ File not stored — click Replace below to re-upload</div>
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ fontSize:"0.72rem", color:"#dc2626", fontWeight:600, marginBottom:6 }}>⚠ COI for {label} not uploaded</div>
-                  )}
-                  <label style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:4, background:existing?"#0f172a":"#dc2626", color:"#fff", padding:"6px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>
-                    {existing ? "🔄 Replace" : "📤 Upload COI"}
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
-                  </label>
+                  {/* Single action area */}
+                  <div style={{ display:"flex", gap:6, flexShrink:0, alignItems:"center" }}>
+                    {existing?.file_url && (
+                      <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)}
+                        style={{ fontSize:"0.72rem", fontWeight:700, color:color, background:bg, padding:"5px 12px", borderRadius:7, border:`1px solid ${border}`, cursor:"pointer" }}>
+                        👁 View / Print
+                      </button>
+                    )}
+                    {existing?.file_url && (
+                      <a href={`mailto:?subject=${encodeURIComponent("COI for "+fullLabel+" — "+selected.company_name)}&body=${encodeURIComponent("COI File: "+existing.file_name+"\n\nNamed insured: "+fullLabel+"\nUploaded for: "+selected.company_name+"\n\nView / download:\n"+existing.file_url)}`}
+                        style={{ fontSize:"0.72rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"5px 12px", borderRadius:7, border:"1px solid #6ee7b7", textDecoration:"none" }}>
+                        📧 Email
+                      </a>
+                    )}
+                    <label style={{ display:"inline-flex", alignItems:"center", gap:4, background:existing?"#0f172a":"#dc2626", color:"#fff", padding:"5px 14px", borderRadius:8, fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>
+                      {existing ? "🔄 Replace" : "📤 Upload"}
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
+                    </label>
+                  </div>
                 </div>
               );
             })}
