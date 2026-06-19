@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
@@ -473,6 +473,19 @@ export default function OwnerOperatorsPage() {
 
   // Company list search
   const [ooListSearch, setOoListSearch] = useState("");
+  const filteredCompanies = React.useMemo(() => {
+    const q = ooListSearch.trim().toLowerCase();
+    if (!q) return companies;
+    return companies.filter(oo =>
+      oo.company_name.toLowerCase().includes(q) ||
+      (oo.contact_name  || "").toLowerCase().includes(q) ||
+      (oo.mc_number     || "").toLowerCase().includes(q) ||
+      (oo.dot_number    || "").toLowerCase().includes(q) ||
+      (oo.ein           || "").toLowerCase().includes(q) ||
+      (oo.business_address || "").toLowerCase().includes(q) ||
+      oo.drivers.some(d => d.name.toLowerCase().includes(q))
+    );
+  }, [companies, ooListSearch]);
 
   // Jobs filters
   const [jobFilter,        setJobFilter]        = useState("All Projects");
@@ -866,14 +879,23 @@ export default function OwnerOperatorsPage() {
         </div>
 
         {/* Company list search */}
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 14, position: "relative" }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: "1rem", pointerEvents: "none", opacity: 0.5 }}>🔍</span>
           <input
             value={ooListSearch}
             onChange={e => setOoListSearch(e.target.value)}
-            placeholder="Search by company name, contact, MC#, DOT#…"
-            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: "0.875rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" as const }}
+            placeholder="Search companies, contacts, drivers, MC#, DOT#…"
+            style={{ width: "100%", padding: "12px 40px 12px 40px", borderRadius: 12, border: "2px solid #1e40af", fontSize: "0.9rem", outline: "none", background: "#fff", boxSizing: "border-box" as const, boxShadow: "0 2px 8px rgba(30,64,175,0.10)", color: "#0f172a", fontWeight: 500 }}
           />
+          {ooListSearch && (
+            <button onClick={() => setOoListSearch("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "#e2e8f0", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "0.7rem", color: "#64748b", fontWeight: 900, lineHeight: 1 }}>✕</button>
+          )}
         </div>
+        {ooListSearch.trim() && (
+          <div style={{ marginBottom: 10, fontSize: "0.78rem", color: filteredCompanies.length > 0 ? "#1e40af" : "#dc2626", fontWeight: 600 }}>
+            {filteredCompanies.length > 0 ? `${filteredCompanies.length} result${filteredCompanies.length !== 1 ? "s" : ""} for "${ooListSearch.trim()}"` : `No companies match "${ooListSearch.trim()}"`}
+          </div>
+        )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 8 }}>
@@ -936,16 +958,15 @@ export default function OwnerOperatorsPage() {
 
         {/* Company cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {(ooListSearch.trim()
-            ? companies.filter(oo =>
-                oo.company_name.toLowerCase().includes(ooListSearch.toLowerCase()) ||
-                (oo.contact_name || "").toLowerCase().includes(ooListSearch.toLowerCase()) ||
-                (oo.mc_number   || "").toLowerCase().includes(ooListSearch.toLowerCase()) ||
-                (oo.dot_number  || "").toLowerCase().includes(ooListSearch.toLowerCase()) ||
-                (oo.ein         || "").toLowerCase().includes(ooListSearch.toLowerCase())
-              )
-            : companies
-          ).map(oo => {
+          {filteredCompanies.length === 0 && ooListSearch.trim() ? (
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "40px 0", textAlign: "center" }}>
+              <div style={{ fontSize: "1.8rem", marginBottom: 8 }}>🔍</div>
+              <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>No companies found</div>
+              <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Try a different name, contact, driver, MC#, or DOT#</div>
+              <button onClick={() => setOoListSearch("")} style={{ marginTop: 14, padding: "6px 18px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>Clear Search</button>
+            </div>
+          ) : null}
+          {filteredCompanies.map(oo => {
             const health      = ooHealthScore(oo);
             const perf        = performanceScore(oo);
             const [eligible, blocks] = ooDispatchEligible(oo);
