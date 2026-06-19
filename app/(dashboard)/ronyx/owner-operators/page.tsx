@@ -432,6 +432,7 @@ export default function OwnerOperatorsPage() {
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
   const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string } | null>(null);
+  const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
 
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
@@ -1262,12 +1263,33 @@ export default function OwnerOperatorsPage() {
                   e.target.value = "";
                 }} />
               </label>
-              {onFile?.file_url && (
-                <button onClick={()=>openDoc(onFile.file_url!,false,onFile.file_name)}
-                  style={{ padding: "5px 8px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #bfdbfe", cursor: "pointer", whiteSpace: "nowrap" }}>
+              {onFile?.file_url && (<>
+                <button onClick={() => openDoc(onFile.file_url!, false, onFile.file_name)}
+                  title="View document"
+                  style={{ padding: "5px 7px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #bfdbfe", cursor: "pointer" }}>
                   👁
                 </button>
-              )}
+                <button
+                  title="Email document"
+                  onClick={() => setDocEmailModal({
+                    docType:  type,
+                    fileUrl:  onFile.file_url!,
+                    fileName: onFile.file_name || `${type}.pdf`,
+                    to:       selected.contact_email || "",
+                    subject:  `${type} — ${selected.company_name}`,
+                    message:  `Please find the attached ${type} for ${selected.company_name}.\n\nIf you have any questions, contact us at dispatch@ronyxlogistics.com.\n\n— Ronyx Logistics / MoveAround TMS`,
+                    sending:  false,
+                  })}
+                  style={{ padding: "5px 7px", background: "#fef3c7", color: "#92400e", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #fde68a", cursor: "pointer" }}>
+                  ✉
+                </button>
+                <button
+                  title="Print document"
+                  onClick={() => openDoc(onFile.file_url!, true, onFile.file_name)}
+                  style={{ padding: "5px 7px", background: "#f0fdf4", color: "#15803d", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #86efac", cursor: "pointer" }}>
+                  🖨
+                </button>
+              </>)}
             </div>
           );
         })}
@@ -3574,6 +3596,83 @@ export default function OwnerOperatorsPage() {
             <div style={{ display:"flex", gap:10, marginTop:18 }}>
               <button onClick={markTruckOutOfService} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:9, padding:"9px 18px", fontWeight:700, fontSize:"0.82rem", cursor:"pointer" }}>Mark Out of Service</button>
               <button onClick={() => setMaintenanceModal(null)} style={{ background:"#f1f5f9", color:"#475569", border:"none", borderRadius:9, padding:"9px 18px", fontWeight:700, fontSize:"0.82rem", cursor:"pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Email document modal ── */}
+      {docEmailModal && (
+        <div onClick={() => setDocEmailModal(null)} style={{ position:"fixed", inset:0, zIndex:9100, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:"24px 28px", width:"100%", maxWidth:460, boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontWeight:900, fontSize:"1rem", color:"#0f172a", marginBottom:4 }}>✉ Email Document</div>
+            <div style={{ fontSize:"0.78rem", color:"#64748b", marginBottom:18 }}>{docEmailModal.docType} — {selected?.company_name}</div>
+
+            <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:4 }}>To</label>
+            <input
+              value={docEmailModal.to}
+              onChange={e => setDocEmailModal(m => m && ({ ...m, to: e.target.value }))}
+              placeholder="recipient@email.com"
+              style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.85rem", outline:"none", marginBottom:12, boxSizing:"border-box" as const }}
+            />
+
+            <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:4 }}>Subject</label>
+            <input
+              value={docEmailModal.subject}
+              onChange={e => setDocEmailModal(m => m && ({ ...m, subject: e.target.value }))}
+              style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.85rem", outline:"none", marginBottom:12, boxSizing:"border-box" as const }}
+            />
+
+            <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:4 }}>Message</label>
+            <textarea
+              value={docEmailModal.message}
+              onChange={e => setDocEmailModal(m => m && ({ ...m, message: e.target.value }))}
+              rows={4}
+              style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.82rem", outline:"none", resize:"vertical", fontFamily:"inherit", marginBottom:16, boxSizing:"border-box" as const }}
+            />
+
+            <div style={{ fontSize:"0.72rem", color:"#64748b", marginBottom:16 }}>
+              📎 Attachment: <strong>{docEmailModal.fileName}</strong>
+            </div>
+
+            <div style={{ display:"flex", gap:10 }}>
+              <button
+                disabled={docEmailModal.sending || !docEmailModal.to.trim()}
+                onClick={async () => {
+                  setDocEmailModal(m => m && ({ ...m, sending: true }));
+                  try {
+                    const res = await fetch("/api/ronyx/owner-operators/send-doc", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        to:       docEmailModal.to.trim(),
+                        subject:  docEmailModal.subject,
+                        message:  docEmailModal.message,
+                        doc_type: docEmailModal.docType,
+                        file_url: docEmailModal.fileUrl,
+                        file_name: docEmailModal.fileName,
+                        oo_name:  selected?.company_name,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                      flash(`Sent to ${docEmailModal.to}`);
+                      setDocEmailModal(null);
+                    } else {
+                      flash(data.message || data.error || "Send failed");
+                      setDocEmailModal(m => m && ({ ...m, sending: false }));
+                    }
+                  } catch {
+                    flash("Send failed — check connection");
+                    setDocEmailModal(m => m && ({ ...m, sending: false }));
+                  }
+                }}
+                style={{ flex:1, padding:"10px 0", borderRadius:9, border:"none", background: docEmailModal.sending ? "#94a3b8" : "#1e40af", color:"#fff", fontWeight:800, fontSize:"0.85rem", cursor: docEmailModal.sending ? "default" : "pointer" }}>
+                {docEmailModal.sending ? "Sending…" : "Send Email"}
+              </button>
+              <button onClick={() => setDocEmailModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
