@@ -1592,23 +1592,55 @@ export default function OwnerOperatorsPage() {
                     const c=daysUntil(d.cdl_expiration); const m=daysUntil(d.med_card_expiration);
                     const warn=(c!==null&&c>=0&&c<=30)||(m!==null&&m>=0&&m<=30);
                     const compliant=(c===null||c>0)&&(m===null||m>0);
+                    const cdlFrontKey = `[${d.name}] CDL Front`;
+                    const cdlBackKey  = `[${d.name}] CDL Back`;
+                    const cdlFront = selected.documents.find(doc => doc.type === cdlFrontKey);
+                    const cdlBack  = selected.documents.find(doc => doc.type === cdlBackKey);
+                    const docActionBtns = (doc: OODoc | undefined, key: string) => doc ? (
+                      <div style={{ display:"inline-flex", borderRadius:6, border:"1px solid #e2e8f0", overflow:"hidden" }}>
+                        <button onClick={() => doc.file_url ? openDoc(doc.file_url, false, doc.file_name) : flash("No file stored — re-upload to view.")} title={doc.file_url ? "View" : "No file"} style={{ padding:"2px 7px", background:doc.file_url?"#dbeafe":"#f1f5f9", color:doc.file_url?"#1e40af":"#94a3b8", border:"none", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>👁</button>
+                        <button disabled={!doc.file_url} onClick={() => doc.file_url && setDocEmailModal({ docType:key, fileUrl:doc.file_url, fileName:doc.file_name||`${key}.pdf`, to:selected.contact_email||"", subject:`${key} — ${selected.company_name}`, message:`Please find the attached ${key} for ${selected.company_name}.\n\n— Ronyx Logistics`, sending:false })} title={doc.file_url ? "Email" : "No file"} style={{ padding:"2px 7px", background:doc.file_url?"#fef3c7":"#f1f5f9", color:doc.file_url?"#92400e":"#94a3b8", border:"none", borderLeft:"1px solid #e2e8f0", fontSize:"0.65rem", fontWeight:700, cursor:doc.file_url?"pointer":"default" }}>✉</button>
+                        <button disabled={!doc.file_url} onClick={() => doc.file_url && openDoc(doc.file_url, true, doc.file_name)} title={doc.file_url ? "Print" : "No file"} style={{ padding:"2px 7px", background:doc.file_url?"#f0fdf4":"#f1f5f9", color:doc.file_url?"#15803d":"#94a3b8", border:"none", borderLeft:"1px solid #e2e8f0", fontSize:"0.65rem", fontWeight:700, cursor:doc.file_url?"pointer":"default" }}>🖨</button>
+                      </div>
+                    ) : (
+                      <label style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 8px", borderRadius:6, border:"1px dashed #cbd5e1", background:"#f8fafc", color:"#64748b", fontSize:"0.65rem", fontWeight:700, cursor:"pointer" }}>
+                        📎 Upload
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e => { const f=e.target.files?.[0]; if(f) handleDocUpload(key,f); e.target.value=""; }} />
+                      </label>
+                    );
                     return (
-                      <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #f1f5f9" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize:"1rem" }}>{compliant&&!warn?"✓":warn?"⚠":"✗"}</span>
-                          <div>
-                            <div style={{ fontWeight:700, color:"#0f172a" }}>{d.name}</div>
-                            {!compliant && <div style={{ fontSize:"0.7rem", color:"#dc2626", fontWeight:600 }}>
-                              {c!==null&&c<=0&&"CDL expired "}{m!==null&&m<=0&&"Med card expired"}
-                            </div>}
-                            {compliant&&warn && <div style={{ fontSize:"0.7rem", color:"#d97706", fontWeight:600 }}>
-                              {c!==null&&c<=30&&c>0?`CDL in ${c}d `:""}{m!==null&&m<=30&&m>0?`Med card in ${m}d`:""}
-                            </div>}
+                      <div key={d.id} style={{ padding:"10px 0", borderBottom:"1px solid #f1f5f9" }}>
+                        {/* Status row */}
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:"1rem" }}>{compliant&&!warn?"✓":warn?"⚠":"✗"}</span>
+                            <div>
+                              <div style={{ fontWeight:700, color:"#0f172a" }}>{d.name}</div>
+                              {!compliant && <div style={{ fontSize:"0.7rem", color:"#dc2626", fontWeight:600 }}>
+                                {c!==null&&c<=0&&"CDL expired "}{m!==null&&m<=0&&"Med card expired"}
+                              </div>}
+                              {compliant&&warn && <div style={{ fontSize:"0.7rem", color:"#d97706", fontWeight:600 }}>
+                                {c!==null&&c<=30&&c>0?`CDL in ${c}d `:""}{m!==null&&m<=30&&m>0?`Med card in ${m}d`:""}
+                              </div>}
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", gap:4 }}>
+                            <span style={{ background:expBg(c), color:expColor(c), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700 }}>CDL {c===null?"—":c<0?"EXP":c+"d"}</span>
+                            <span style={{ background:expBg(m), color:expColor(m), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700 }}>Med {m===null?"—":m<0?"EXP":m+"d"}</span>
                           </div>
                         </div>
-                        <div style={{ display:"flex", gap:4 }}>
-                          <span style={{ background:expBg(c), color:expColor(c), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700 }}>CDL {c===null?"—":c<0?"EXP":c+"d"}</span>
-                          <span style={{ background:expBg(m), color:expColor(m), padding:"2px 6px", borderRadius:5, fontSize:"0.65rem", fontWeight:700 }}>Med {m===null?"—":m<0?"EXP":m+"d"}</span>
+                        {/* CDL front / back */}
+                        <div style={{ display:"flex", flexDirection:"column", gap:5, paddingLeft:28 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", width:60, flexShrink:0 }}>CDL Front</span>
+                            {cdlFront && <span style={{ fontSize:"0.65rem", color:"#15803d", fontWeight:600 }}>✓ {cdlFront.file_name}</span>}
+                            {docActionBtns(cdlFront, cdlFrontKey)}
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:"0.65rem", fontWeight:700, color:"#64748b", width:60, flexShrink:0 }}>CDL Back</span>
+                            {cdlBack && <span style={{ fontSize:"0.65rem", color:"#15803d", fontWeight:600 }}>✓ {cdlBack.file_name}</span>}
+                            {docActionBtns(cdlBack, cdlBackKey)}
+                          </div>
                         </div>
                       </div>
                     );
