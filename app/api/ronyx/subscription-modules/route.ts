@@ -160,20 +160,21 @@ export async function GET() {
 
   const modules = (allModules ?? []).map((m: Record<string, unknown>) => ({
     ...m,
-    module_key:          m.slug,
-    module_name:         m.name,
-    module_subtitle:     null,
-    status:              trialActive ? "in_trial" : (orgMap.get(m.slug as string) ? "active" : "available"),
-    price_label:         m.monthly_price === 0
+    module_key:           m.slug,
+    module_name:          m.name,
+    module_subtitle:      null,
+    price_monthly:        m.price_monthly ?? 0,
+    status:               trialActive ? "in_trial" : (orgMap.get(m.slug as string) ? "active" : "available"),
+    price_label:          m.price_monthly === 0
       ? `Included in ${(m.included_in_plans as string[])?.join(", ") ?? "plan"}`
-      : `$${m.monthly_price}/mo add-on`,
-    features:            [],
+      : `$${m.price_monthly}/mo add-on`,
+    features:             [],
     is_enterprise_add_on: (m.slug as string) === "ccb",
   }));
 
   const estAddOnCost = modules
     .filter(m => m.status === "available")
-    .reduce((sum, m) => sum + Number(m.monthly_price ?? 0), 0);
+    .reduce((sum, m) => sum + Number(m.price_monthly ?? 0), 0);
 
   return NextResponse.json({
     modules,
@@ -182,7 +183,7 @@ export async function GET() {
     stats: {
       activeOrTrial:    modules.filter(m => ["active","in_trial"].includes(m.status)).length,
       trialModules:     modules.filter(m => m.status === "in_trial").length,
-      availableAddOns:  modules.filter(m => m.status === "available" && Number(m.monthly_price ?? 0) > 0).length,
+      availableAddOns:  modules.filter(m => m.status === "available" && Number(m.price_monthly ?? 0) > 0).length,
       estAddOnCost,
     },
     source: "legacy_modules_table",
