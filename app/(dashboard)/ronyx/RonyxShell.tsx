@@ -341,7 +341,7 @@ export default function RonyxShell({
 
         /* ── Sidebar ─────────────────────────────────── */
         .tms-sidebar {
-          width: 236px;
+          width: 214px;
           min-height: 100vh;
           background: #1e3a8a;
           color: #e2e8f0;
@@ -354,12 +354,12 @@ export default function RonyxShell({
           overflow-y: auto;
           overflow-x: hidden;
           z-index: 30;
+          scrollbar-width: none;
         }
-        .tms-sidebar::-webkit-scrollbar { width: 3px; }
-        .tms-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 4px; }
+        .tms-sidebar::-webkit-scrollbar { display: none; }
 
         .tms-sidebar-brand {
-          padding: 16px 16px 12px;
+          padding: 12px 14px 10px;
           border-bottom: 1px solid rgba(255,255,255,0.12);
           flex-shrink: 0;
         }
@@ -377,26 +377,26 @@ export default function RonyxShell({
 
         /* ── Quick Actions ───────────────────────────── */
         .tms-quick-actions {
-          padding: 8px 10px 6px;
+          padding: 6px 8px 4px;
           border-bottom: 1px solid rgba(255,255,255,0.12);
           flex-shrink: 0;
         }
         .tms-qa-label {
-          font-size: 0.57rem;
+          font-size: 0.55rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
           color: rgba(255,255,255,0.45);
-          padding: 0 4px 5px;
+          padding: 0 4px 4px;
         }
         .tms-qa-item {
           display: flex;
           align-items: center;
-          gap: 7px;
-          padding: 4px 8px;
+          gap: 6px;
+          padding: 3px 7px;
           border-radius: 5px;
           color: rgba(255,255,255,0.75);
-          font-size: 0.74rem;
+          font-size: 0.72rem;
           font-weight: 500;
           transition: background 120ms, color 120ms;
         }
@@ -407,15 +407,15 @@ export default function RonyxShell({
         .tms-qa-icon { font-size: 0.82rem; flex-shrink: 0; }
 
         /* ── Nav Groups ──────────────────────────────── */
-        .tms-nav-group { padding: 7px 10px 2px; }
+        .tms-nav-group { padding: 5px 8px 1px; }
         .tms-nav-section {
-          font-size: 0.57rem;
+          font-size: 0.54rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
           color: rgba(255,255,255,0.4);
-          padding: 0 4px 4px;
-          margin-top: 2px;
+          padding: 0 4px 3px;
+          margin-top: 1px;
         }
 
         /* ── Nav Item Row ────────────────────────────── */
@@ -430,11 +430,11 @@ export default function RonyxShell({
         .tms-nav-link {
           display: flex;
           align-items: center;
-          gap: 7px;
+          gap: 6px;
           flex: 1;
-          padding: 6px 6px 6px 8px;
+          padding: 4px 6px 4px 7px;
           color: rgba(255,255,255,0.8);
-          font-size: 0.79rem;
+          font-size: 0.75rem;
           font-weight: 500;
           min-width: 0;
           transition: color 120ms;
@@ -500,18 +500,18 @@ export default function RonyxShell({
 
         /* ── Sub Items ───────────────────────────────── */
         .tms-nav-sub {
-          margin: 1px 0 3px 13px;
-          padding-left: 9px;
+          margin: 1px 0 2px 12px;
+          padding-left: 8px;
           border-left: 1px solid rgba(255,255,255,0.18);
         }
         .tms-nav-sub-row {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 4px 8px;
+          gap: 5px;
+          padding: 3px 7px;
           border-radius: 5px;
           color: rgba(255,255,255,0.65);
-          font-size: 0.75rem;
+          font-size: 0.71rem;
           font-weight: 500;
           margin-bottom: 1px;
           transition: background 120ms, color 120ms;
@@ -646,7 +646,7 @@ export default function RonyxShell({
         .tms-time { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
 
         /* ── Content ─────────────────────────────────── */
-        .tms-content { flex: 1; padding: 24px; }
+        .tms-content { flex: 1; padding: 16px 20px; }
 
         /* ── Mobile ──────────────────────────────────── */
         @media (max-width: 900px) {
@@ -668,7 +668,7 @@ export default function RonyxShell({
           .tms-overlay.open { display: block; }
           .tms-menu-btn { display: flex; }
           .tms-topbar-search { width: 160px; }
-          .tms-content { padding: 16px; }
+          .tms-content { padding: 12px 14px; }
           .tms-main { padding-bottom: 56px; }
           .tms-mobile-bottom { display: flex !important; }
         }
