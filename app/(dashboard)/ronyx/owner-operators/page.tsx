@@ -1272,30 +1272,33 @@ export default function OwnerOperatorsPage() {
                   e.target.value = "";
                 }} />
               </label>
-              {onFile?.file_url && (<>
-                <button onClick={() => openDoc(onFile.file_url!, false, onFile.file_name)}
-                  title="View document"
-                  style={{ padding: "5px 7px", background: "#dbeafe", color: "#1e40af", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #bfdbfe", cursor: "pointer" }}>
+              {onFile && (<>
+                <button
+                  onClick={() => onFile.file_url ? openDoc(onFile.file_url, false, onFile.file_name) : flash("No file stored — click the document name to re-upload.")}
+                  title={onFile.file_url ? "View document" : "No file stored — click to re-upload"}
+                  style={{ padding: "5px 7px", background: onFile.file_url ? "#dbeafe" : "#f1f5f9", color: onFile.file_url ? "#1e40af" : "#94a3b8", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #e2e8f0", cursor: "pointer" }}>
                   👁
                 </button>
                 <button
-                  title="Email document"
-                  onClick={() => setDocEmailModal({
+                  title={onFile.file_url ? "Email document" : "No file stored"}
+                  disabled={!onFile.file_url}
+                  onClick={() => onFile.file_url && setDocEmailModal({
                     docType:  type,
-                    fileUrl:  onFile.file_url!,
+                    fileUrl:  onFile.file_url,
                     fileName: onFile.file_name || `${type}.pdf`,
                     to:       selected.contact_email || "",
                     subject:  `${type} — ${selected.company_name}`,
                     message:  `Please find the attached ${type} for ${selected.company_name}.\n\nIf you have any questions, contact us at dispatch@ronyxlogistics.com.\n\n— Ronyx Logistics / MoveAround TMS`,
                     sending:  false,
                   })}
-                  style={{ padding: "5px 7px", background: "#fef3c7", color: "#92400e", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #fde68a", cursor: "pointer" }}>
+                  style={{ padding: "5px 7px", background: onFile.file_url ? "#fef3c7" : "#f1f5f9", color: onFile.file_url ? "#92400e" : "#94a3b8", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #e2e8f0", cursor: onFile.file_url ? "pointer" : "default" }}>
                   ✉
                 </button>
                 <button
-                  title="Print document"
-                  onClick={() => openDoc(onFile.file_url!, true, onFile.file_name)}
-                  style={{ padding: "5px 7px", background: "#f0fdf4", color: "#15803d", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #86efac", cursor: "pointer" }}>
+                  title={onFile.file_url ? "Print document" : "No file stored"}
+                  disabled={!onFile.file_url}
+                  onClick={() => onFile.file_url && openDoc(onFile.file_url, true, onFile.file_name)}
+                  style={{ padding: "5px 7px", background: onFile.file_url ? "#f0fdf4" : "#f1f5f9", color: onFile.file_url ? "#15803d" : "#94a3b8", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #e2e8f0", cursor: onFile.file_url ? "pointer" : "default" }}>
                   🖨
                 </button>
               </>)}
