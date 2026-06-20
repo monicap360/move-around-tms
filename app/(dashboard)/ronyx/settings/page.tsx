@@ -28,6 +28,8 @@ const SECTIONS = [
   { id: "tasks",         label: "Staff Task Assignment Rules",      icon: "📌", color: "#475569", href: "/ronyx/settings/system-rules#tasks",    desc: "Auto-assign tasks by issue type — CDL missing → Compliance Admin, etc." },
   { id: "ai",            label: "AI Office Assistant",             icon: "🤖", color: "#7c3aed", href: "/ronyx/settings/system-rules#ai",       desc: "Toggle AI-guided next actions, auto-task creation, dispatch suggestions." },
   { id: "ai-team",      label: "Build Your AI Team",             icon: "✨", color: "#7c3aed", href: "/ronyx/settings/ai-team",              desc: "Name your assistants, set avatar styles, customize greetings and tone. Intelligence stays protected." },
+  { id: "custom-fields",label: "Custom Fields",                   icon: "🧩", color: "#0891b2", href: "/ronyx/settings/custom-fields",         desc: "Add custom fields to jobs, tickets, drivers, trucks, customers, and more — without code." },
+  { id: "integrations", label: "Integration Hub",                  icon: "🔌", color: "#16a34a", href: "/ronyx/settings/integrations",          desc: "Connectors, webhooks, API keys, and CSV import mapping profiles for third-party systems." },
   { id: "security",      label: "Security & Page Protection",       icon: "🔒", color: "#dc2626", href: "/ronyx/settings/system-rules#security", desc: "Right-click/copy/print controls, watermarks, export role permissions." },
   { id: "audit",         label: "Audit Log",                       icon: "📜", color: "#475569", href: "/ronyx/settings/audit-log",             desc: "Full history of role changes, setting updates, override approvals, user actions." },
 ];
