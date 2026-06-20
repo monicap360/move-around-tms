@@ -13,6 +13,7 @@ type Phase = {
   exampleRow: string[];
   endpoint: string;
   table: string;
+  dispatchMode?: boolean;
 };
 
 type SessionRow = {
@@ -79,6 +80,17 @@ const PHASES: Phase[] = [
     endpoint: "/api/ronyx/implementation/import",
     table: "aggregate_tickets",
   },
+  {
+    key: "daily_dispatch",
+    label: "Daily Dispatch",
+    subtitle: "Import today's dispatch sheet — populates Dispatch Command Center",
+    icon: "📋",
+    csvHeaders: ["Driver", "Truck Number", "See Notes!!", "Customer", "Start Time", "Pickup Site Name", "Dropoff Site Name", "Job Quantity", "Job Quantity Unit", "Material", "Friendly Job ID", "Vendor", "Equipment License Number", "Job Status"],
+    exampleRow: ["John Doe", "T-101", "Have DL & Medical", "Martin Marietta", "2026-06-20 06:00", "Vulcan Materials - Port Arthur", "Martin Marietta Galveston", "1", "Load", "Crushed Limestone", "MM-001", "Vulcan", "TX AB1234", "scheduled"],
+    endpoint: "/api/ronyx/dispatch-import",
+    table: "",
+    dispatchMode: true,
+  },
 ];
 
 const TRAINING_ROLES = [
@@ -131,14 +143,35 @@ function buildCsv(headers: string[], example: string[]): string {
   return [headers.map(escape).join(","), example.map(escape).join(",")].join("\n");
 }
 
+function parseCsvLine(line: string): string[] {
+  const vals: string[] = []; let cur = "", inQ = false;
+  for (const c of line) {
+    if (c === '"') { inQ = !inQ; }
+    else if (c === "," && !inQ) { vals.push(cur.trim()); cur = ""; }
+    else { cur += c; }
+  }
+  vals.push(cur.trim());
+  return vals;
+}
+
 function parseCsv(text: string): ParsedRow[] {
-  const lines = text.trim().split("\n").filter(Boolean);
+  const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
+  const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase());
   return lines.slice(1).map(line => {
-    const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+    const vals = parseCsvLine(line);
     return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? ""]));
-  });
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+function parseCsvRaw(text: string): ParsedRow[] {
+  const lines = text.trim().split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = parseCsvLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseCsvLine(line);
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? ""]));
+  }).filter(r => Object.values(r).some(v => v));
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -149,7 +182,8 @@ export default function ImplementationHubPage() {
   const [importing, setImporting]           = useState(false);
   const [importResult, setImportResult]     = useState<{ inserted: number; errors: string[] } | null>(null);
   const [preview, setPreview]               = useState<ParsedRow[]>([]);
-  const [activeTraining, setActiveTraining] = useState<string | null>(null);
+  const [activeTraining, setActiveTraining]     = useState<string | null>(null);
+  const [dispatchImportId, setDispatchImportId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { void loadSessions(); }, []);
@@ -188,22 +222,56 @@ export default function ImplementationHubPage() {
   }, []);
 
   async function runImport(phase: Phase) {
-    if (!fileRef.current?.files?.[0]) return;
-    const text = await fileRef.current.files[0].text();
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
+    const text = await file.text();
     const rows = parseCsv(text);
     if (!rows.length) return;
 
     setImporting(true);
     setImportResult(null);
+    setDispatchImportId(null);
+
     try {
-      const res = await fetch("/api/ronyx/implementation/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phase: phase.key, table: phase.table, rows }),
-      });
-      const data = await res.json();
-      setImportResult({ inserted: data.inserted ?? 0, errors: data.errors ?? [] });
-      await loadSessions();
+      if (phase.dispatchMode) {
+        const dispatchRows = parseCsvRaw(text);
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await fetch("/api/ronyx/dispatch-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rows: dispatchRows,
+            file_name: file.name,
+            schedule_date: today,
+            import_name: `Dispatch ${today}`,
+            create_tasks: true,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Dispatch import failed");
+        setDispatchImportId(data.import_id ?? null);
+        setImportResult({ inserted: data.jobs_created ?? 0, errors: [] });
+        setSessions(prev => ({
+          ...prev,
+          daily_dispatch: {
+            phase: "daily_dispatch",
+            status: "complete",
+            import_count: data.jobs_created ?? 0,
+            error_count: 0,
+            last_error: null,
+            completed_at: new Date().toISOString(),
+          },
+        }));
+      } else {
+        const res = await fetch("/api/ronyx/implementation/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phase: phase.key, table: phase.table, rows }),
+        });
+        const data = await res.json();
+        setImportResult({ inserted: data.inserted ?? 0, errors: data.errors ?? [] });
+        await loadSessions();
+      }
     } catch (err) {
       setImportResult({ inserted: 0, errors: [(err as Error).message] });
     } finally {
@@ -295,8 +363,9 @@ export default function ImplementationHubPage() {
                   {isOpen && (
                     <div style={{ padding: "0 18px 18px", borderTop: "1px solid rgba(30,64,175,0.1)" }}>
                       <p style={{ fontSize: 13, color: "#475569", marginTop: 12, marginBottom: 14 }}>
-                        Download the CSV template, fill it with your real {phase.label.toLowerCase()} data, then upload it here.
-                        Each row becomes a record in your system.
+                        {phase.dispatchMode
+                          ? "Upload your dispatch CSV to populate the Dispatch Command Center. Each row becomes a job with RMIS compliance classification and compliance alerts automatically created."
+                          : `Download the CSV template, fill it with your real ${phase.label.toLowerCase()} data, then upload it here. Each row becomes a record in your system.`}
                       </p>
 
                       {/* Template download */}
@@ -380,12 +449,24 @@ export default function ImplementationHubPage() {
                         }}>
                           <div style={{ fontWeight: 700, color: importResult.errors.length === 0 ? "#15803d" : "#dc2626", fontSize: 14 }}>
                             {importResult.errors.length === 0
-                              ? `✓ ${importResult.inserted} records imported successfully`
+                              ? `✓ ${importResult.inserted} ${phase.dispatchMode ? "jobs" : "records"} imported successfully`
                               : `⚠ ${importResult.inserted} imported, ${importResult.errors.length} errors`}
                           </div>
                           {importResult.errors.slice(0, 3).map((e, i) => (
                             <div key={i} style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>• {e}</div>
                           ))}
+                          {phase.dispatchMode && dispatchImportId && importResult.errors.length === 0 && (
+                            <a
+                              href="/ronyx/dispatch/daily-import"
+                              style={{
+                                display: "inline-block", marginTop: 10, padding: "7px 14px",
+                                background: "#1d4ed8", color: "#fff", borderRadius: 7,
+                                fontSize: 13, fontWeight: 700, textDecoration: "none",
+                              }}
+                            >
+                              → View in Dispatch Command Center
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>
