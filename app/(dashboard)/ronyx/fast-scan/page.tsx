@@ -6,6 +6,7 @@ import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
 import BrandLogo from "@/components/ronyx/BrandLogo";
 
 const SCAN_TYPES = [
+  { value: "ticket",        label: "Ticket",              icon: "🎫", color: "#d97706", bg: "#fffbeb" },
   { value: "trip_proof",    label: "Trip Proof",          icon: "📋", color: "#16a34a", bg: "#f0fdf4" },
   { value: "fuel",          label: "Fuel / Toll",         icon: "⛽", color: "#2563eb", bg: "#eff6ff" },
   { value: "receipt",       label: "Receipt / Expense",   icon: "🧾", color: "#7c3aed", bg: "#f5f3ff" },
@@ -101,6 +102,7 @@ export default function FastScanPage() {
   const [scanEmailModal, setScanEmailModal] = useState<{ scan: any; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [scanEditModal, setScanEditModal] = useState<{ scan: any; form: { ticket_number: string; truck_number: string; driver_name: string; amount: string }; saving: boolean } | null>(null);
   const [scanVoidConfirm, setScanVoidConfirm] = useState<{ id: string; filename: string } | null>(null);
+  const [scanDeleteConfirm, setScanDeleteConfirm] = useState<{ id: string; filename: string } | null>(null);
 
   // File upload state
   const [uploadFile, setUploadFile]         = useState<File | null>(null);
@@ -147,6 +149,16 @@ export default function FastScanPage() {
       setScanEditModal(m => m && { ...m, saving: false });
       alert(e.message);
     }
+  }
+
+  async function confirmDelete() {
+    if (!scanDeleteConfirm) return;
+    try {
+      const res = await fetch(`/api/ronyx/fast-scan/${scanDeleteConfirm.id}`, { method: "DELETE" });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed to delete"); }
+      setRecentScans(prev => prev.filter(s => s.id !== scanDeleteConfirm.id));
+      setScanDeleteConfirm(null);
+    } catch (e: any) { alert(e.message); }
   }
 
   async function confirmVoid() {
@@ -353,7 +365,7 @@ export default function FastScanPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 20, alignItems: "start" }}>
         {/* Left: form */}
         <div>
 
@@ -738,6 +750,10 @@ export default function FastScanPage() {
                             🚫 Void
                           </button>
                         )}
+                        <button onClick={() => setScanDeleteConfirm({ id: s.id, filename: s.original_filename || "this scan" })}
+                          style={{ padding: "3px 9px", background: "#fff1f2", color: "#be123c", border: "1px solid #fecdd3", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                          🗑 Delete
+                        </button>
                       </div>
                     </div>
                   );
@@ -755,9 +771,15 @@ export default function FastScanPage() {
                         {s.upload_status}
                       </span>
                     </div>
-                    <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                    <div style={{ fontSize: "0.72rem", color: "#64748b", marginBottom: 6 }}>
                       {s.detected_vehicle && <span>Truck {s.detected_vehicle} · </span>}
                       {new Date(s.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                    <div style={{ display: "flex", gap: 5 }}>
+                      <button onClick={() => setScanDeleteConfirm({ id: s.id, filename: t.label })}
+                        style={{ padding: "3px 9px", background: "#fff1f2", color: "#be123c", border: "1px solid #fecdd3", borderRadius: 6, fontSize: "0.63rem", fontWeight: 700, cursor: "pointer" }}>
+                        🗑 Delete
+                      </button>
                     </div>
                   </div>
                 );
@@ -920,6 +942,29 @@ export default function FastScanPage() {
                 Yes, Void It
               </button>
               <button onClick={() => setScanVoidConfirm(null)}
+                style={{ flex: 1, padding: "11px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {scanDeleteConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 380, padding: 28, boxShadow: "0 16px 48px rgba(0,0,0,0.25)", textAlign: "center" }}>
+            <div style={{ fontSize: "2rem", marginBottom: 10 }}>🗑</div>
+            <div style={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", marginBottom: 8 }}>Delete This Scan?</div>
+            <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: 22, lineHeight: 1.5 }}>
+              <strong>{scanDeleteConfirm.filename}</strong> will be permanently deleted and cannot be recovered.
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={confirmDelete}
+                style={{ flex: 1, padding: "11px 0", background: "#be123c", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>
+                Yes, Delete It
+              </button>
+              <button onClick={() => setScanDeleteConfirm(null)}
                 style={{ flex: 1, padding: "11px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>
                 Cancel
               </button>

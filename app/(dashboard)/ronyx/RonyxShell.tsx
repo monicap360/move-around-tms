@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import PageProtection from "@/components/security/PageProtection";
 import CustomizationRequestWidget from "@/components/ronyx/CustomizationRequestWidget";
+import IntelImportCenter from "@/components/ronyx/IntelImportCenter";
 
 type NavChild = {
   label:  string;
@@ -193,7 +194,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: "Smart Import",          icon: "📤", href: "/ronyx/import" },
+  { label: "Intel Import Center™",  icon: "📥", href: "/ronyx/import" },
   { label: "Start Fast Scan Batch", icon: "⚡", href: "/ronyx/tickets?tab=fastscan&action=start_batch" },
   { label: "New Ticket",            icon: "🎫", href: "/ronyx/tickets?action=new" },
   { label: "Upload Driver Sheet",   icon: "⬆️", href: "/ronyx/drivers?tab=import" },
@@ -232,6 +233,7 @@ export default function RonyxShell({
   const currentTab   = searchParams.get("tab");
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [notifCount] = useState(3);
   const [now, setNow] = useState<string>("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set<string>());
@@ -749,12 +751,24 @@ export default function RonyxShell({
 
         <div className="tms-quick-actions">
           <div className="tms-qa-label">Quick Actions</div>
-          {QUICK_ACTIONS.map((qa) => (
-            <Link key={qa.href} href={qa.href} className="tms-qa-item" onClick={() => setMobileOpen(false)}>
-              <span className="tms-qa-icon">{qa.icon}</span>
-              <span>{qa.label}</span>
-            </Link>
-          ))}
+          {QUICK_ACTIONS.map((qa) =>
+            qa.label === "Intel Import Center™" ? (
+              <button
+                key="intel-import"
+                className="tms-qa-item"
+                style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", width: "100%", padding: "3px 7px" }}
+                onClick={() => { setMobileOpen(false); setImportOpen(true); }}
+              >
+                <span className="tms-qa-icon">{qa.icon}</span>
+                <span>{qa.label}</span>
+              </button>
+            ) : (
+              <Link key={qa.href} href={qa.href} className="tms-qa-item" onClick={() => setMobileOpen(false)}>
+                <span className="tms-qa-icon">{qa.icon}</span>
+                <span>{qa.label}</span>
+              </Link>
+            )
+          )}
         </div>
 
         {NAV_GROUPS.map((group) => (
@@ -920,15 +934,17 @@ export default function RonyxShell({
         <main className="tms-content">{children}</main>
       </div>
 
-      {/* Smart Import floating button */}
-      <Link
-        href="/ronyx/import"
-        className={`tms-smart-import-fab${pathname === "/ronyx/import" ? " on-import-page" : ""}`}
-        onClick={() => setMobileOpen(false)}
+      {/* Intel Import Center™ floating button */}
+      <button
+        className="tms-smart-import-fab"
+        onClick={() => { setMobileOpen(false); setImportOpen(true); }}
       >
-        <span style={{ fontSize: "1.1rem" }}>📤</span>
-        {pathname === "/ronyx/import" ? "Smart Import (active)" : "Smart Import"}
-      </Link>
+        <span style={{ fontSize: "1.1rem" }}>📥</span>
+        Intel Import Center™
+      </button>
+
+      {/* Intel Import Center™ slide-over */}
+      <IntelImportCenter open={importOpen} onClose={() => setImportOpen(false)} />
 
       {/* Request a Change / Customization floating widget */}
       <CustomizationRequestWidget />

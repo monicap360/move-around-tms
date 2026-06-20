@@ -65,3 +65,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ document: data });
 }
+
+// DELETE /api/ronyx/fast-scan/[id] — permanently remove a scan record
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const sb = adminClient();
+
+  const { error } = await sb
+    .from("fast_scan_documents")
+    .delete()
+    .eq("id", params.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
