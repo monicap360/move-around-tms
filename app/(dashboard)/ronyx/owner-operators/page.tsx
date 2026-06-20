@@ -426,6 +426,8 @@ function ticketStatusColors(s?: string): [string, string] {
 export default function OwnerOperatorsPage() {
   const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("owner_operator_hub");
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
+  const [ooLoading, setOoLoading]   = useState(true);
+  const [ooError, setOoError]       = useState<string | null>(null);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);
   const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs" | "coi">("overview");
@@ -499,10 +501,16 @@ export default function OwnerOperatorsPage() {
   const pendingDocRef = useRef<string>("");
 
   const loadCompanies = useCallback(() => {
+    setOoLoading(true);
+    setOoError(null);
     fetch("/api/ronyx/owner-operators")
       .then(r => r.json())
-      .then(({ companies: data }) => { setCompanies(data || []); })
-      .catch(() => setCompanies([]));
+      .then((res) => {
+        if (res.error) { setOoError(res.error); setCompanies([]); }
+        else { setCompanies(res.companies || []); }
+      })
+      .catch((e) => { setOoError(e?.message || "Network error — could not load owner operators"); setCompanies([]); })
+      .finally(() => setOoLoading(false));
   }, []);
 
   useEffect(() => { loadCompanies(); }, [loadCompanies]);
@@ -1139,7 +1147,21 @@ export default function OwnerOperatorsPage() {
               </div>
             );
           })}
-          {companies.length === 0 && (
+          {ooLoading && companies.length === 0 && (
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, padding: "60px 0", textAlign: "center", color: "#94a3b8" }}>
+              Loading owner operators…
+            </div>
+          )}
+          {!ooLoading && ooError && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 14, padding: "24px 28px", color: "#dc2626" }}>
+              <div style={{ fontWeight: 800, marginBottom: 6 }}>⚠️ Could not load owner operators</div>
+              <div style={{ fontSize: "0.82rem", marginBottom: 12, fontFamily: "monospace", color: "#991b1b" }}>{ooError}</div>
+              <button onClick={loadCompanies} style={{ padding: "7px 18px", borderRadius: 8, background: "#dc2626", color: "#fff", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+                Retry
+              </button>
+            </div>
+          )}
+          {!ooLoading && !ooError && companies.length === 0 && (
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, padding: "60px 0", textAlign: "center", color: "#94a3b8" }}>
               No owner operators yet. Click <strong>+ Add Owner Operator</strong>.
             </div>

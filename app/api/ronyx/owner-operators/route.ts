@@ -60,27 +60,27 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
   if (!oos.length) return NextResponse.json({ companies: [] });
 
   const ids = oos.map((o) => o.id);
-  const [driversRes, trucksRes, docsRes, jobsRes, subsRes, dtaRes, coisRes] = await Promise.all([
-    sb.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name"),
-    sb.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number"),
-    sb.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }),
-    sb.from("ronyx_oo_jobs").select("*").in("oo_id", ids).order("load_date", { ascending: false }),
-    sb.from("ronyx_oo_subcontractors").select("*, drivers:ronyx_oo_subcontractor_drivers(*)").in("oo_id", ids).order("company_name"),
-    sb.from("ronyx_driver_truck_assignments")
+
+  // Each query is independent — fetch individually so one missing table can't break all others
+  const safeQuery = async (q: Promise<{ data: any[] | null; error: any }>) => {
+    try { const r = await q; return r.data || []; } catch { return []; }
+  };
+
+  const [drivers, trucks, docs, jobs, subs, dta, cois] = await Promise.all([
+    safeQuery(sb.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name") as any),
+    safeQuery(sb.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number") as any),
+    safeQuery(sb.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }) as any),
+    safeQuery(sb.from("ronyx_oo_jobs").select("*").in("oo_id", ids).order("load_date", { ascending: false }) as any),
+    safeQuery(sb.from("ronyx_oo_subcontractors").select("*, drivers:ronyx_oo_subcontractor_drivers(*)").in("oo_id", ids).order("company_name") as any),
+    safeQuery(sb.from("ronyx_driver_truck_assignments")
       .select("id, oo_id, driver_id, truck_id, priority, assignment_type, requires_manager_approval, notes")
       .in("oo_id", ids)
       .eq("is_active", true)
-      .order("priority"),
-    sb.from("ronyx_oo_coi_documents").select("*").in("oo_id", ids).order("coi_group").order("document_type"),
+      .order("priority") as any),
+    safeQuery(sb.from("ronyx_oo_coi_documents").select("*").in("oo_id", ids).order("coi_group") as any),
   ]);
 
-  const drivers = driversRes.data || [];
-  const trucks  = trucksRes.data  || [];
-  const docs    = docsRes.data    || [];
-  const jobs    = jobsRes.data    || [];
-  const subs    = subsRes.data    || [];
-  const dta     = dtaRes.data     || [];
-  const cois    = coisRes.data    || [];
+  // drivers, trucks, docs, jobs, subs, dta, cois are already arrays from safeQuery
 
   const companies = oos.map((oo) => ({
     ...oo,
@@ -125,6 +125,7 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
 
 /* ── GET /api/ronyx/owner-operators ─────────────────────────── */
 export async function GET() {
+  try {
   const sb = createSupabaseServerClient();
 
   const { data: oos, error } = await sb
@@ -173,6 +174,9 @@ export async function GET() {
   }
 
   return buildResponse(sb, existing);
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || "Unexpected server error loading owner operators" }, { status: 500 });
+  }
 }
 
 /* ── POST /api/ronyx/owner-operators ── create new OO company */
