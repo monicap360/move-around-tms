@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { getNextFriday } from "@/lib/ronyx/payRateService";
 
+export const dynamic = "force-dynamic";
+
 function getWeekStart(date: Date) {
   const day = date.getDay();
   const diff = (day === 0 ? -6 : 1) - day;

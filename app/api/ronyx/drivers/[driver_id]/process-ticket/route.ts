@@ -7,6 +7,8 @@ import {
   getWeeklySummary,
 } from "@/lib/ronyx/payRateService";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: Request,
   { params }: { params: { driver_id: string } },
