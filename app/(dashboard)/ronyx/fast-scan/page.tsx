@@ -548,9 +548,10 @@ export default function FastScanPage() {
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {uploadResult.signed_url && (
-                      <button onClick={() => window.open(uploadResult.signed_url!, "_blank")}
+                      <button
+                        onClick={() => setScanPreviewModal({ url: uploadResult.signed_url!, filename: uploadFile?.name || "Ticket Scan", rotation: 0 })}
                         style={{ padding: "5px 14px", background: "#eff6ff", color: "#1e40af", border: "none", borderRadius: 7, fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>
-                        👁 Preview File
+                        👁 Preview &amp; Rotate
                       </button>
                     )}
                     {uploadResult.qr_url && (
