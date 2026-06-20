@@ -1499,7 +1499,7 @@ export default function FleetReadinessCenterPage() {
               <button key={a.label} onClick={a.fn} style={{ padding: "7px 14px", background: "#f8fafc", color: "#1e293b", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{a.label}</button>
             ))}
             <Link href="/ronyx/compliance" style={{ padding: "7px 14px", background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 8, fontWeight: 700, fontSize: 12, textDecoration: "none" }}>Compliance Center →</Link>
-            <Link href="/ronyx/ifta-fuel"  style={{ padding: "7px 14px", background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 8, fontWeight: 700, fontSize: 12, textDecoration: "none" }}>IFTA / Fuel Logs →</Link>
+            <Link href="/ronyx/fleet/ifta" style={{ padding: "7px 14px", background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 8, fontWeight: 700, fontSize: 12, textDecoration: "none" }}>FuelIQ™ Command Center →</Link>
           </div>
         </div>
       )}

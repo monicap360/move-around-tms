@@ -1,37 +1,50 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { ASSISTANT_CATALOG, ASSISTANT_KEYS } from "@/lib/ai/assistantCatalog";
 
 export const dynamic = "force-dynamic";
 
-const ORG_ID = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+async function resolveOrgId(req: NextRequest): Promise<string | null> {
+  const sb = createSupabaseServerClient();
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error || !user) return null;
+
+  const { data: seat } = await supabaseAdmin
+    .from("user_seats")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  return seat?.organization_id ?? null;
+}
 
 /**
  * GET /api/ronyx/ai-team
  * Seeds all 12 default assistant records for the org (no-op if already present).
  * Returns merged catalog + org-custom branding for all assistants.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const sb = createSupabaseServerClient();
+    const orgId = await resolveOrgId(req);
+    if (!orgId) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-    // Fetch existing rows for this org
-    const { data: existing, error: fetchErr } = await sb
+    const { data: existing, error: fetchErr } = await supabaseAdmin
       .from("organization_ai_assistants")
       .select("*")
-      .eq("organization_id", ORG_ID);
+      .eq("organization_id", orgId);
 
     if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
 
     const existingKeys = new Set((existing || []).map((r: any) => r.assistant_key));
 
-    // Seed any missing assistants (preserves existing custom settings)
     const missing = ASSISTANT_KEYS.filter(k => !existingKeys.has(k));
     if (missing.length > 0) {
       const seeds = missing.map(key => {
         const catalog = ASSISTANT_CATALOG.find(c => c.assistant_key === key)!;
         return {
-          organization_id: ORG_ID,
+          organization_id: orgId,
           assistant_key:   key,
           avatar_style:    catalog.default_avatar_style,
           tone:            "professional",
@@ -39,7 +52,7 @@ export async function GET() {
         };
       });
 
-      const { error: seedErr } = await sb
+      const { error: seedErr } = await supabaseAdmin
         .from("organization_ai_assistants")
         .insert(seeds);
 
@@ -48,35 +61,33 @@ export async function GET() {
       }
     }
 
-    // Re-fetch all rows after seeding
-    const { data: rows, error: refetchErr } = await sb
+    const { data: rows, error: refetchErr } = await supabaseAdmin
       .from("organization_ai_assistants")
       .select("*")
-      .eq("organization_id", ORG_ID);
+      .eq("organization_id", orgId);
 
     if (refetchErr) return NextResponse.json({ error: refetchErr.message }, { status: 500 });
 
     const rowMap = new Map<string, any>();
     for (const r of (rows || [])) rowMap.set(r.assistant_key, r);
 
-    // Merge catalog + db rows, preserving catalog order
     const assistants = ASSISTANT_CATALOG.map(catalog => {
       const row = rowMap.get(catalog.assistant_key) || {};
       return {
-        id:               row.id            || null,
-        assistant_key:    catalog.assistant_key,
-        default_name:     catalog.default_name,
-        role_title:       catalog.role_title,
-        description:      catalog.description,
-        filter_category:  catalog.filter_category,
-        example_prompt:   catalog.example_prompt,
-        custom_name:      row.custom_name   || null,
-        display_name:     row.custom_name   || catalog.default_name,
-        avatar_style:     row.avatar_style  || catalog.default_avatar_style,
-        greeting:         row.greeting      || null,
-        tone:             row.tone          || "professional",
-        is_enabled:       row.is_enabled !== false,
-        updated_at:       row.updated_at    || null,
+        id:              row.id            || null,
+        assistant_key:   catalog.assistant_key,
+        default_name:    catalog.default_name,
+        role_title:      catalog.role_title,
+        description:     catalog.description,
+        filter_category: catalog.filter_category,
+        example_prompt:  catalog.example_prompt,
+        custom_name:     row.custom_name   || null,
+        display_name:    row.custom_name   || catalog.default_name,
+        avatar_style:    row.avatar_style  || catalog.default_avatar_style,
+        greeting:        row.greeting      || null,
+        tone:            row.tone          || "professional",
+        is_enabled:      row.is_enabled !== false,
+        updated_at:      row.updated_at    || null,
       };
     });
 

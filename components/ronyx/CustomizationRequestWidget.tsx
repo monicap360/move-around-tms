@@ -118,30 +118,37 @@ export default function CustomizationRequestWidget() {
 
   return (
     <>
-      {/* Floating button */}
+      <style>{`
+        .crw-fab {
+          position: fixed;
+          bottom: 84px;
+          right: 20px;
+          z-index: 9998;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 24px;
+          background: linear-gradient(135deg, #7c3aed, #6d28d9);
+          color: #fff;
+          font-size: 0.82rem;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 4px 16px rgba(109,40,217,0.45);
+          font-family: Inter, sans-serif;
+          white-space: nowrap;
+        }
+        @media (max-width: 900px) {
+          .crw-fab { bottom: 128px; right: 16px; }
+        }
+      `}</style>
+
+      {/* Floating button — sits above the Intel Import Center™ FAB */}
       <button
         onClick={() => { setOpen(true); setDone(null); setErr(null); }}
         title="Request a customization or change"
-        style={{
-          position: "fixed",
-          bottom: 76,
-          right: 20,
-          zIndex: 9998,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "10px 16px",
-          borderRadius: 24,
-          background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-          color: "#fff",
-          fontSize: "0.82rem",
-          fontWeight: 700,
-          border: "none",
-          cursor: "pointer",
-          boxShadow: "0 4px 16px rgba(109,40,217,0.45)",
-          fontFamily: "Inter, sans-serif",
-          whiteSpace: "nowrap",
-        }}
+        className="crw-fab"
       >
         <span style={{ fontSize: "1rem" }}>🔧</span>
         Request a Change

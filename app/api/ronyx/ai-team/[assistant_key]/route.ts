@@ -1,13 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { ASSISTANT_CATALOG, ASSISTANT_KEYS } from "@/lib/ai/assistantCatalog";
 
 export const dynamic = "force-dynamic";
 
-const ORG_ID = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+const VALID_TONE  = ["professional","friendly","direct","upbeat","concise"] as const;
+const VALID_STYLE = ["default","command","logistics","finance","compliance","fleet","people","analytics"] as const;
+const ADMIN_ROLES = ["owner","admin","system_admin"];
 
-const VALID_TONE   = ["professional", "friendly", "direct", "upbeat", "concise"] as const;
-const VALID_STYLE  = ["default", "command", "logistics", "finance", "compliance", "fleet", "people", "analytics"] as const;
+async function resolveSession(req: NextRequest) {
+  const sb = createSupabaseServerClient();
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error || !user) return null;
+
+  const { data: seat } = await supabaseAdmin
+    .from("user_seats")
+    .select("organization_id, role")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!seat) return null;
+  return { user, orgId: seat.organization_id as string, role: seat.role as string };
+}
 
 /**
  * PATCH /api/ronyx/ai-team/[assistant_key]
@@ -20,17 +36,20 @@ export async function PATCH(
   { params }: { params: { assistant_key: string } },
 ) {
   try {
-    const key = params.assistant_key;
-    if (!ASSISTANT_KEYS.includes(key as any)) {
-      return NextResponse.json({ error: `Unknown assistant key: ${key}` }, { status: 400 });
-    }
+    const session = await resolveSession(req);
+    if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    if (!ADMIN_ROLES.includes(session.role))
+      return NextResponse.json({ error: "Only Owner or Admin can customize AI assistants." }, { status: 403 });
 
-    const sb   = createSupabaseServerClient();
+    const key = params.assistant_key;
+    if (!ASSISTANT_KEYS.includes(key as any))
+      return NextResponse.json({ error: `Unknown assistant key: ${key}` }, { status: 400 });
+
+    const { orgId, user } = session;
     const body = await req.json();
 
-    // Reset path: clear all custom fields
     if (body.action === "reset") {
-      const { error } = await sb
+      const { error } = await supabaseAdmin
         .from("organization_ai_assistants")
         .update({
           custom_name:  null,
@@ -38,19 +57,24 @@ export async function PATCH(
           tone:         "professional",
           is_enabled:   true,
           avatar_style: ASSISTANT_CATALOG.find(c => c.assistant_key === key)?.default_avatar_style || "default",
-          updated_at:   new Date().toISOString(),
         })
-        .eq("organization_id", ORG_ID)
+        .eq("organization_id", orgId)
         .eq("assistant_key",   key);
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-      await logAssistantAudit(sb, { key, action: "reset", metadata: {} });
+      void supabaseAdmin.from("platform_admin_audit_log").insert({
+        actor_id:    user.id,
+        actor_email: user.email,
+        org_id:      orgId,
+        event_type:  "ai_assistant.reset",
+        details:     { assistant_key: key },
+      });
+
       return NextResponse.json({ success: true, action: "reset" });
     }
 
-    // Validate fields
-    const patch: Record<string, any> = { updated_at: new Date().toISOString() };
+    const patch: Record<string, unknown> = {};
 
     if ("custom_name" in body) {
       const name = body.custom_name === null ? null : String(body.custom_name || "").trim();
@@ -74,57 +98,36 @@ export async function PATCH(
       patch.is_enabled = Boolean(body.is_enabled);
     }
 
-    if (Object.keys(patch).length <= 1) {
+    if (Object.keys(patch).length === 0)
       return NextResponse.json({ error: "No valid fields to update." }, { status: 400 });
-    }
 
-    // Get current value for audit before/after
-    const { data: before } = await sb
+    const { data: before } = await supabaseAdmin
       .from("organization_ai_assistants")
       .select("custom_name, avatar_style, greeting, tone, is_enabled")
-      .eq("organization_id", ORG_ID)
+      .eq("organization_id", orgId)
       .eq("assistant_key",   key)
       .single();
 
-    const { data: updated, error: updateErr } = await sb
+    const { data: updated, error: updateErr } = await supabaseAdmin
       .from("organization_ai_assistants")
       .update(patch)
-      .eq("organization_id", ORG_ID)
+      .eq("organization_id", orgId)
       .eq("assistant_key",   key)
       .select("*")
       .single();
 
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
-    await logAssistantAudit(sb, {
-      key,
-      action: "update",
-      metadata: { before: before || {}, after: patch },
+    void supabaseAdmin.from("platform_admin_audit_log").insert({
+      actor_id:    user.id,
+      actor_email: user.email,
+      org_id:      orgId,
+      event_type:  "ai_assistant.updated",
+      details:     { assistant_key: key, before: before || {}, after: patch },
     });
 
     return NextResponse.json({ success: true, assistant: updated });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Unexpected error" }, { status: 500 });
-  }
-}
-
-async function logAssistantAudit(
-  sb: ReturnType<typeof import("@/lib/supabase/server").createSupabaseServerClient>,
-  opts: { key: string; action: string; metadata: Record<string, any> },
-) {
-  try {
-    // Use ticket_audit_log or platform_admin_audit_log as fallback — both exist in this project.
-    // We write to platform_admin_audit_log since this is a settings-level change.
-    await sb.from("platform_admin_audit_log").insert({
-      admin_user_id:  "00000000-0000-0000-0000-000000000000",
-      admin_email:    "system",
-      action:         `ai_assistant_${opts.action}`,
-      target_org_id:  ORG_ID,
-      target_entity:  "organization_ai_assistants",
-      target_id:      opts.key,
-      metadata:       { assistant_key: opts.key, ...opts.metadata },
-    });
-  } catch {
-    // Non-fatal — audit logging should never break the main operation
   }
 }
