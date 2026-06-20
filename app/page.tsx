@@ -6725,6 +6725,124 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
         </div>
       </section>
 
+      {/* ── Why MoveAround Actually Fits the Way You Work ── */}
+      <section style={{ padding: "80px 0", background: "#f8fafc", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+        <div className="container" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
+
+          {/* Section header */}
+          <div style={{ textAlign: "center", marginBottom: 52 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
+              The Anti-Template TMS
+            </div>
+            <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)", fontWeight: 900, color: "#0f172a", lineHeight: 1.15, marginBottom: 14, letterSpacing: "-0.04em" }}>
+              Why MoveAround TMS Actually Fits<br />the Way You Work
+            </h2>
+            <p style={{ fontSize: "1.05rem", color: "#475569", maxWidth: 600, margin: "0 auto", lineHeight: 1.65 }}>
+              Built for dispatch teams that need to move fast—not wait on software.
+            </p>
+          </div>
+
+          {/* Comparison table */}
+          <div style={{ overflowX: "auto", marginBottom: 60, borderRadius: 16, border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Inter','Segoe UI',sans-serif", minWidth: 700 }}>
+              <thead>
+                <tr style={{ background: "#0f172a" }}>
+                  <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", width: "22%" }}>Feature</th>
+                  <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 13, fontWeight: 800, color: "#60a5fa", width: "26%" }}>MoveAround TMS</th>
+                  <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#94a3b8", width: "26%" }}>Typical Cloud TMS</th>
+                  <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#94a3b8", width: "26%" }}>Custom Build / ERP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ["Go-Live Time","Operational rollout designed in phases—not a year-long implementation","Often months of setup, data cleanup, and vendor configuration","12–24+ months before full rollout"],
+                  ["Configuration Speed","Custom fields, workflows, boards, alerts, and task rules built around your operation","Limited to available settings and vendor roadmap","Every adjustment requires development work"],
+                  ["Your Real-World Edge Cases","Configure your own dispatch, ticket, payroll, billing, compliance, and owner-operator workflows","Often forced into a preset workflow","Can be custom-built, but expensive to maintain"],
+                  ["Tickets to Payroll & Billing","Fast Scan reads tickets, catches errors, and routes approved work into payroll and billing review","Usually requires manual review, imports, or separate tools","Must be built and maintained from scratch"],
+                  ["Boards & Views","Build operational boards for dispatch, compliance, maintenance, tickets, payroll, billing, and more","Fixed screens with limited customization","Custom screens require design and development time"],
+                  ["AI Assistance","Your own named AI team helps execute, route, flag, and prioritize work","Generic chat or limited automation","Requires separate AI development and integration"],
+                  ["Scalability","Add companies, drivers, projects, equipment, workflows, and locations as you grow","May become restrictive as your operation gets more complex","Costs rise each time the business changes"],
+                  ["Cost Model","Built to grow with your business—not trap you in implementation fees","Lower upfront cost, but add-ons and workarounds add up","Large upfront build cost plus ongoing development expense"],
+                ].map(([feature, mav, typical, custom], i) => (
+                  <tr key={feature} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "14px 20px", fontSize: 12.5, fontWeight: 700, color: "#0f172a", verticalAlign: "top" }}>{feature}</td>
+                    <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#166534", lineHeight: 1.55, verticalAlign: "top", background: i % 2 === 0 ? "#f0fdf4" : "#f0fdf4" }}>
+                      <span style={{ display: "inline-block", width: 16, height: 16, background: "#22c55e", borderRadius: "50%", fontSize: 9, lineHeight: "16px", textAlign: "center", color: "#fff", fontWeight: 700, marginRight: 7, verticalAlign: "middle", flexShrink: 0 }}>✓</span>
+                      {mav}
+                    </td>
+                    <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#64748b", lineHeight: 1.55, verticalAlign: "top" }}>{typical}</td>
+                    <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#64748b", lineHeight: 1.55, verticalAlign: "top" }}>{custom}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* MoveAround Is Built to Adapt */}
+          <div style={{ marginBottom: 56 }}>
+            <h3 style={{ fontSize: "1.4rem", fontWeight: 900, color: "#0f172a", marginBottom: 28, letterSpacing: "-0.03em" }}>
+              MoveAround TMS Is Built to Adapt
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 20 }}>
+              {[
+                { icon: "⚡", title: "Configure in days—not months", desc: "Build the workflows your office already uses, then improve them as you grow." },
+                { icon: "🔗", title: "Your business logic stays in the system", desc: "Dispatch rules, ticket checks, driver compliance, payroll holds, billing requirements, and owner-operator processes work together." },
+                { icon: "🎯", title: "No more disconnected tools", desc: "Fast Scan, dispatch, tickets, payroll, billing, compliance, fleet, maintenance, and customer follow-up live in one operational command center." },
+                { icon: "🤖", title: "Your AI team helps get work done", desc: "Leo, Rory, Toni, Peyton, Bella, Nia, Wrench, Atlas, Nova, Pat, Breanna, and Shamsa help your team identify what needs attention and move it forward." },
+              ].map(item => (
+                <div key={item.title} style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "22px 22px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <div style={{ fontSize: 26, marginBottom: 10 }}>{item.icon}</div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: "#0f172a", marginBottom: 7, lineHeight: 1.3 }}>{item.title}</div>
+                  <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Built for the Work Other Systems Leave Behind */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 60, alignItems: "start" }}>
+            <div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#0f172a", marginBottom: 18, letterSpacing: "-0.03em" }}>
+                Built for the Work Other Systems Leave Behind
+              </h3>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  "Dispatch exceptions and blocked assignments",
+                  "Pit tickets, invoices, scale tickets, and proof of delivery",
+                  "Ticket-to-payroll and ticket-to-billing controls",
+                  "Driver, vehicle, and owner-operator compliance",
+                  "Maintenance, inspections, repairs, and downtime prevention",
+                  "Customer communication, escalations, and office task routing",
+                  "Real-time accountability across the entire operation",
+                ].map(item => (
+                  <li key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13.5, color: "#1e293b", lineHeight: 1.5 }}>
+                    <span style={{ color: "#1d4ed8", fontWeight: 800, fontSize: 15, lineHeight: 1.3, flexShrink: 0 }}>→</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #0891b2 100%)", borderRadius: 18, padding: "32px 30px", color: "#fff" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#93c5fd", marginBottom: 14 }}>
+                Stop Forcing Your Business Into a Template
+              </div>
+              <div style={{ fontSize: "1.35rem", fontWeight: 900, lineHeight: 1.25, marginBottom: 16, letterSpacing: "-0.02em" }}>
+                Build a transportation operating system that moves the way you do.
+              </div>
+              <div style={{ fontSize: 13.5, color: "#bfdbfe", lineHeight: 1.65, marginBottom: 24 }}>
+                Every company operates differently. Customize how your MoveAround TMS looks, works,
+                and speaks while MoveAround protects the workflows, permissions, and operational
+                intelligence behind the scenes.
+              </div>
+              <a href="#demo" style={{ display: "inline-block", background: "#fff", color: "#1d4ed8", padding: "12px 26px", borderRadius: 10, fontWeight: 800, fontSize: 14, textDecoration: "none", letterSpacing: "-0.02em" }}>
+                See It in Action →
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       <footer className="footer-performance">
         <div className="container">
           <div className="footer-grid">
