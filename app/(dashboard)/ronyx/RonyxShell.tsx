@@ -141,6 +141,7 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { label: "Insurance Expiry Report", href: "/ronyx/compliance/expired-insurance", icon: "🔴", color: "#dc2626" },
       { label: "Documents",           href: "/ronyx/documents",    icon: "📄", color: "#64748b" },
+      { label: "Excel Sync Center™",  href: "/ronyx/excel-center", icon: "📊", color: "#16a34a" },
       { label: "Backup Vault",        href: "/ronyx/backup",       icon: "💾", color: "#0f766e", children: [
         { label: "Archive Center",    href: "/ronyx/backup/archive-center", icon: "🗃️", color: "#0f766e" },
       ]},
