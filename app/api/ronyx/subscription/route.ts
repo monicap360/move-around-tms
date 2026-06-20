@@ -21,6 +21,8 @@ const FREE_TRIAL_MODULES = [
   "load_management", "maintenance_hub", "driver_compliance",
   "payroll_settlements", "billing_invoicing", "dispatch_guard",
   "reporting_analytics", "hr_compliance",
+  // Store / Merch module
+  "store",
 ];
 
 // ── Resolve org ───────────────────────────────────────────────────────────────
