@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// Known owner operator companies — always ensure these exist
+// ── Org resolution ─────────────────────────────────────────────────────────
+
+async function resolveOrgId(): Promise<string | null> {
+  const envId = process.env.RONYX_ORG_ID;
+  const orFilter = envId
+    ? `id.eq.${envId},organization_code.eq.RONYX`
+    : `organization_code.eq.RONYX`;
+
+  const { data } = await supabaseAdmin
+    .from("organizations")
+    .select("id")
+    .or(orFilter)
+    .limit(1)
+    .single();
+
+  return data?.id ?? null;
+}
+
+// ── Known owner operator companies — seeded on first load ──────────────────
+
 const REQUIRED_OOS = [
   { company_name: "TC Redwine Services, LLC",          business_address: "",                                    status: "active" },
   { company_name: "BAS Equipment & Trucking LLC",       business_address: "P.O. Box 36, Throckmorton, TX 76483", status: "active" },
@@ -56,43 +75,41 @@ const REQUIRED_OOS = [
   { company_name: "AGA Trucking LLC",                  status: "active" },
 ];
 
-async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, oos: any[]) {
+// ── Build full response with related data ──────────────────────────────────
+
+async function buildResponse(oos: any[]) {
   if (!oos.length) return NextResponse.json({ companies: [] });
 
   const ids = oos.map((o) => o.id);
 
-  // Each query is independent — fetch individually so one missing table can't break all others
-  const safeQuery = async (q: Promise<{ data: any[] | null; error: any }>) => {
+  const safe = async (q: Promise<{ data: any[] | null; error: any }>) => {
     try { const r = await q; return r.data || []; } catch { return []; }
   };
 
   const [drivers, trucks, docs, jobs, subs, dta, cois] = await Promise.all([
-    safeQuery(sb.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name") as any),
-    safeQuery(sb.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number") as any),
-    safeQuery(sb.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }) as any),
-    safeQuery(sb.from("ronyx_oo_jobs").select("*").in("oo_id", ids).order("load_date", { ascending: false }) as any),
-    safeQuery(sb.from("ronyx_oo_subcontractors").select("*, drivers:ronyx_oo_subcontractor_drivers(*)").in("oo_id", ids).order("company_name") as any),
-    safeQuery(sb.from("ronyx_driver_truck_assignments")
+    safe(supabaseAdmin.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name") as any),
+    safe(supabaseAdmin.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number") as any),
+    safe(supabaseAdmin.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }) as any),
+    safe(supabaseAdmin.from("ronyx_oo_jobs").select("*").in("oo_id", ids).order("load_date", { ascending: false }) as any),
+    safe(supabaseAdmin.from("ronyx_oo_subcontractors").select("*, drivers:ronyx_oo_subcontractor_drivers(*)").in("oo_id", ids).order("company_name") as any),
+    safe(supabaseAdmin.from("ronyx_driver_truck_assignments")
       .select("id, oo_id, driver_id, truck_id, priority, assignment_type, requires_manager_approval, notes")
       .in("oo_id", ids)
       .eq("is_active", true)
       .order("priority") as any),
-    safeQuery(sb.from("ronyx_oo_coi_documents").select("*").in("oo_id", ids).order("coi_group") as any),
+    safe(supabaseAdmin.from("ronyx_oo_coi_documents").select("*").in("oo_id", ids).order("coi_group") as any),
   ]);
-
-  // drivers, trucks, docs, jobs, subs, dta, cois are already arrays from safeQuery
 
   const companies = oos.map((oo) => ({
     ...oo,
-    drivers:   drivers.filter((d) => d.oo_id === oo.id),
-    trucks:    trucks.filter((t)  => t.oo_id === oo.id).map((t) => ({
+    drivers:   drivers.filter((d: any) => d.oo_id === oo.id),
+    trucks:    trucks.filter((t: any) => t.oo_id === oo.id).map((t: any) => ({
       ...t,
-      // approved drivers for this truck (denormalized for display in Fleet tab)
       approved_driver_ids: dta.filter((a: any) => a.truck_id === t.id).map((a: any) => a.driver_id),
     })),
     driver_truck_assignments: dta.filter((a: any) => a.oo_id === oo.id),
     coi_documents: cois.filter((c: any) => c.oo_id === oo.id),
-    documents: docs.filter((d) => d.oo_id === oo.id).map((d) => ({
+    documents: docs.filter((d: any) => d.oo_id === oo.id).map((d: any) => ({
       type:        d.doc_type,
       uploaded_at: d.uploaded_at,
       file_name:   d.file_name  || "",
@@ -101,8 +118,8 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
       file_url:    d.file_url   || undefined,
       _db_id:      d.id,
     })),
-    jobs: jobs.filter((j) => j.oo_id === oo.id),
-    subcontractors: (subs as any[]).filter(s => s.oo_id === oo.id).map(s => ({
+    jobs: jobs.filter((j: any) => j.oo_id === oo.id),
+    subcontractors: (subs as any[]).filter((s: any) => s.oo_id === oo.id).map((s: any) => ({
       id:            s.id,
       company_name:  s.company_name,
       contact_name:  s.contact_name  || "",
@@ -123,89 +140,112 @@ async function buildResponse(sb: ReturnType<typeof createSupabaseServerClient>, 
   return NextResponse.json({ companies });
 }
 
-/* ── GET /api/ronyx/owner-operators ─────────────────────────── */
+/* ── GET /api/ronyx/owner-operators ──────────────────────────────────────── */
 export async function GET() {
   try {
-  const sb = createSupabaseServerClient();
-
-  const { data: oos, error } = await sb
-    .from("ronyx_owner_operators")
-    .select("*")
-    .order("company_name", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  // Ensure required OO companies exist and have their known fields filled in
-  const existing = oos || [];
-  const missing: typeof REQUIRED_OOS = [];
-  const updates: { id: string; patch: Record<string, string> }[] = [];
-
-  for (const req of REQUIRED_OOS) {
-    const found = existing.find(
-      (o: any) => o.company_name.toLowerCase() === req.company_name.toLowerCase()
-    );
-    if (!found) {
-      missing.push(req);
-    } else {
-      // Back-fill any known fields the DB record is missing
-      const patch: Record<string, string> = {};
-      if (!found.ein              && (req as any).ein)              patch.ein              = (req as any).ein;
-      if (!found.business_address && (req as any).business_address) patch.business_address = (req as any).business_address;
-      if (!found.contact_name     && (req as any).contact_name)     patch.contact_name     = (req as any).contact_name;
-      if (!found.contact_email    && (req as any).contact_email)    patch.contact_email    = (req as any).contact_email;
-      if (!found.contact_phone    && (req as any).contact_phone)    patch.contact_phone    = (req as any).contact_phone;
-      if (!found.dot_number       && (req as any).dot_number)       patch.dot_number       = (req as any).dot_number;
-      if (Object.keys(patch).length > 0) updates.push({ id: found.id, patch });
+    // Resolve org
+    const orgId = await resolveOrgId();
+    if (!orgId) {
+      console.error("[OO] Could not resolve org ID — RONYX_ORG_ID env:", process.env.RONYX_ORG_ID);
+      // Fall through without org filter rather than blocking
     }
-  }
 
-  const needsRefresh = missing.length > 0 || updates.length > 0;
-  if (missing.length > 0) await sb.from("ronyx_owner_operators").insert(missing);
-  for (const { id, patch } of updates) {
-    await sb.from("ronyx_owner_operators").update(patch).eq("id", id);
-  }
-
-  if (needsRefresh) {
-    const { data: refreshed } = await sb
+    // Build query — filter by org when we have an ID
+    let q = supabaseAdmin
       .from("ronyx_owner_operators")
       .select("*")
       .order("company_name", { ascending: true });
-    return buildResponse(sb, refreshed || []);
-  }
+    if (orgId) q = (q as any).or(`organization_id.eq.${orgId},organization_id.is.null`);
 
-  return buildResponse(sb, existing);
+    const { data: oos, error } = await q;
+
+    if (error) {
+      console.error("[OO] DB error loading owner operators:", error.message, error.code);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const existing = oos || [];
+
+    // Seed any missing required OO companies
+    if (orgId) {
+      const missing: Record<string, unknown>[] = [];
+      const updates: { id: string; patch: Record<string, string> }[] = [];
+
+      for (const req of REQUIRED_OOS) {
+        const found = existing.find(
+          (o: any) => o.company_name.toLowerCase() === req.company_name.toLowerCase()
+        );
+        if (!found) {
+          missing.push({ ...req, organization_id: orgId });
+        } else {
+          const patch: Record<string, string> = {};
+          if (!found.ein              && (req as any).ein)              patch.ein              = (req as any).ein;
+          if (!found.business_address && (req as any).business_address) patch.business_address = (req as any).business_address;
+          if (!found.contact_name     && (req as any).contact_name)     patch.contact_name     = (req as any).contact_name;
+          if (!found.contact_email    && (req as any).contact_email)    patch.contact_email    = (req as any).contact_email;
+          if (!found.contact_phone    && (req as any).contact_phone)    patch.contact_phone    = (req as any).contact_phone;
+          if (!found.dot_number       && (req as any).dot_number)       patch.dot_number       = (req as any).dot_number;
+          if (Object.keys(patch).length > 0) updates.push({ id: found.id, patch });
+        }
+      }
+
+      if (missing.length > 0) {
+        const { error: insertErr } = await supabaseAdmin.from("ronyx_owner_operators").insert(missing);
+        if (insertErr) console.warn("[OO] Could not seed missing OOs:", insertErr.message);
+      }
+      for (const { id, patch } of updates) {
+        void supabaseAdmin.from("ronyx_owner_operators").update(patch).eq("id", id);
+      }
+
+      if (missing.length > 0) {
+        const { data: refreshed } = await supabaseAdmin
+          .from("ronyx_owner_operators")
+          .select("*")
+          .or(`organization_id.eq.${orgId},organization_id.is.null`)
+          .order("company_name", { ascending: true });
+        return buildResponse(refreshed || []);
+      }
+    }
+
+    return buildResponse(existing);
   } catch (err: any) {
+    console.error("[OO] Unexpected error:", err?.message, err?.stack);
     return NextResponse.json({ error: err?.message || "Unexpected server error loading owner operators" }, { status: 500 });
   }
 }
 
-/* ── POST /api/ronyx/owner-operators ── create new OO company */
+/* ── POST /api/ronyx/owner-operators — create new OO company ─────────────── */
 export async function POST(req: Request) {
-  const sb   = createSupabaseServerClient();
-  const body = await req.json();
+  try {
+    const orgId = await resolveOrgId();
+    const body  = await req.json();
 
-  const { data, error } = await sb
-    .from("ronyx_owner_operators")
-    .insert({
-      company_name:          body.company_name,
-      contact_name:          body.contact_name          || null,
-      contact_phone:         body.contact_phone         || null,
-      contact_email:         body.contact_email         || null,
-      business_address:      body.business_address      || null,
-      mc_number:             body.mc_number             || null,
-      dot_number:            body.dot_number            || null,
-      ein:                   body.ein                   || null,
-      insurance_agent_name:  body.insurance_agent_name  || null,
-      insurance_agent_email: body.insurance_agent_email || null,
-      insurance_agent_phone: body.insurance_agent_phone || null,
-      notes:                 body.notes                 || null,
-      last_contact_date:     body.last_contact_date     || null,
-      status:                body.status                || "active",
-    })
-    .select("*")
-    .single();
+    const { data, error } = await supabaseAdmin
+      .from("ronyx_owner_operators")
+      .insert({
+        organization_id:       orgId,
+        company_name:          body.company_name,
+        contact_name:          body.contact_name          || null,
+        contact_phone:         body.contact_phone         || null,
+        contact_email:         body.contact_email         || null,
+        business_address:      body.business_address      || null,
+        mc_number:             body.mc_number             || null,
+        dot_number:            body.dot_number            || null,
+        ein:                   body.ein                   || null,
+        insurance_agent_name:  body.insurance_agent_name  || null,
+        insurance_agent_email: body.insurance_agent_email || null,
+        insurance_agent_phone: body.insurance_agent_phone || null,
+        notes:                 body.notes                 || null,
+        last_contact_date:     body.last_contact_date     || null,
+        status:                body.status                || "active",
+      })
+      .select("*")
+      .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ company: { ...data, drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [] } });
+    return NextResponse.json({ company: { ...data, drivers: [], trucks: [], documents: [], jobs: [], subcontractors: [] } });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || "Unexpected error" }, { status: 500 });
+  }
 }

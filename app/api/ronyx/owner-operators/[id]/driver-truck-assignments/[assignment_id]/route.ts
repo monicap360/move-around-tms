@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string; assignment_id: string } }
 ) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_driver_truck_assignments")
     .delete()
@@ -24,7 +24,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string; assignment_id: string } }
 ) {
-  const sb   = createSupabaseServerClient();
+  const sb   = supabaseAdmin;
   const body = await req.json();
 
   const { data, error } = await sb

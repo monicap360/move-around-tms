@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 /* ── PUT /api/ronyx/owner-operators/[id] ── update OO fields */
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -32,7 +32,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 /* ── DELETE /api/ronyx/owner-operators/[id] ── delete OO company */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { error } = await sb
     .from("ronyx_owner_operators")

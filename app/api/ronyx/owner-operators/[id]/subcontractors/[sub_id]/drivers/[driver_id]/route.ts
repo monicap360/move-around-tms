@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 /* DELETE — remove a driver from a subcontractor */
 export async function DELETE(_req: Request, { params }: { params: { id: string; sub_id: string; driver_id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_oo_subcontractor_drivers")
     .delete()

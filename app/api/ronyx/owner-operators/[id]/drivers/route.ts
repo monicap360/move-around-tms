@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 /* ── POST /api/ronyx/owner-operators/[id]/drivers ── add driver to OO */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const { data, error } = await sb
@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
 /* ── PUT /api/ronyx/owner-operators/[id]/drivers ── bulk upsert (import) */
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { drivers } = await req.json();
 
   if (!Array.isArray(drivers)) return NextResponse.json({ error: "drivers must be an array" }, { status: 400 });

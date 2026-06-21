@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 const BUCKET = "ronyx-imports";
 
 export async function POST(req: NextRequest) {
-  const sb   = createSupabaseServerClient();
+  const sb   = supabaseAdmin;
   const form = await req.formData();
 
   const rowsJson = form.get("rows") as string | null;

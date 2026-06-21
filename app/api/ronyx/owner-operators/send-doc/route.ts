@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing to or file_url" }, { status: 400 });
   }
 
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   // Get a short-lived signed URL so we can fetch the file bytes
   let downloadUrl = file_url;

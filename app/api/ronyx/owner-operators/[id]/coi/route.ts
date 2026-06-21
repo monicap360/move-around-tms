@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ function dayOffset(days: number) {
 }
 
 async function syncTaskForDoc(
-  sb: ReturnType<typeof createSupabaseServerClient>,
+  sb: typeof supabaseAdmin,
   ooId: string, ooName: string,
   doc: { id: string; document_type: string; status: string; expiration_date?: string | null; coi_group?: string }
 ) {
@@ -121,7 +121,7 @@ async function syncTaskForDoc(
 
 /* GET — all COI docs for an OO */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_oo_coi_documents")
     .select("*")
@@ -135,7 +135,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 /* POST — create or upsert a COI document record */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const sb   = createSupabaseServerClient();
+  const sb   = supabaseAdmin;
   const body = await req.json();
 
   if (!body.coi_group || !body.document_type) {

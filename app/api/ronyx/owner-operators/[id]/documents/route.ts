@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   // Upsert: remove existing doc of same type, then insert
@@ -41,7 +41,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
 // PUT — update expiry date (or other scalar) on an existing document record
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const sb   = createSupabaseServerClient();
+  const sb   = supabaseAdmin;
   const body = await req.json();
   if (!body.doc_type) return NextResponse.json({ error: "Missing doc_type" }, { status: 400 });
 
@@ -62,7 +62,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { doc_type } = await req.json();
   const { error } = await sb.from("ronyx_oo_documents").delete().eq("oo_id", params.id).eq("doc_type", doc_type);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
