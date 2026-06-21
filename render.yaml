@@ -5,7 +5,7 @@ services:
     plan: starter
     runtime: node
     numInstances: 1
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci && npm run build 2>&1
     startCommand: npm run start
     autoDeploy: true
     healthCheckPath: /api/health
@@ -13,7 +13,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_OPTIONS
-        value: "--max-old-space-size=460"
+        value: "--max-old-space-size=1536"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
       - key: NEXT_PUBLIC_SUPABASE_URL
