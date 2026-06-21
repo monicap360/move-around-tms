@@ -63,9 +63,10 @@ export async function GET(_request: NextRequest, { params }: { params: { ticketI
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
+  try {
   const supabase = createSupabaseServerClient();
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
 
   const updates = {
     ticket_number: body.ticket_number || null,
@@ -148,6 +149,9 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
   };
 
   return NextResponse.json({ ticket: enriched });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || "Unexpected error updating ticket" }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { ticketId: string } }) {

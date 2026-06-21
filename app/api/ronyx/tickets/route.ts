@@ -101,8 +101,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  try {
   const supabase = createSupabaseServerClient();
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
 
   let ticket_id = body.ticket_id as string | undefined;
   if (!ticket_id) {
@@ -307,4 +308,8 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ ticket: newTicket });
+  } catch (err: any) {
+    console.error("[POST /api/ronyx/tickets]", err);
+    return NextResponse.json({ error: err?.message || "Unexpected error creating ticket" }, { status: 500 });
+  }
 }
