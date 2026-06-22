@@ -144,14 +144,13 @@ export async function GET() {
       // Fall through without org filter rather than blocking
     }
 
-    // Build query — filter by org when we have an ID
-    let q = supabaseAdmin
+    // Service-role client bypasses RLS — return all OOs (single-tenant).
+    // Org filter is intentionally skipped: an org ID mismatch between Render
+    // env and DB rows silently returns zero results and hides Sylvia's data.
+    const { data: oos, error } = await supabaseAdmin
       .from("ronyx_owner_operators")
       .select("*")
       .order("company_name", { ascending: true });
-    if (orgId) q = (q as any).or(`organization_id.eq.${orgId},organization_id.is.null`);
-
-    const { data: oos, error } = await q;
 
     if (error) {
       console.error("[OO] DB error loading owner operators:", error.message, error.code);
@@ -195,7 +194,6 @@ export async function GET() {
         const { data: refreshed } = await supabaseAdmin
           .from("ronyx_owner_operators")
           .select("*")
-          .or(`organization_id.eq.${orgId},organization_id.is.null`)
           .order("company_name", { ascending: true });
         return buildResponse(refreshed || []);
       }
