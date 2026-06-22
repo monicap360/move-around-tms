@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import * as XLSX from "xlsx";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type TruckStatus = "Available" | "Assigned" | "In Maintenance" | "Out of Service" | "Inactive";
@@ -517,64 +516,58 @@ function buildColumnMap(headers: string[]): Record<string, number> {
   return map;
 }
 
-function parseTruckFile(file: File, existingNumbers: Set<string>): Promise<TruckImportRow[]> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const wb   = XLSX.read(data, { type: "array", cellDates: true });
-        const ws   = wb.Sheets[wb.SheetNames[0]];
-        const raw  = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, raw: false, dateNF: "yyyy-mm-dd" });
+async function parseTruckFile(file: File, existingNumbers: Set<string>): Promise<TruckImportRow[]> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch("/api/parse-excel", { method: "POST", body: fd });
+  if (!res.ok) throw new Error("Failed to parse file");
+  const { headers: rawHeaders = [], rows: rawRows = [] } = await res.json();
 
-        if (raw.length < 2) { resolve([]); return; }
+  const raw: string[][] = [rawHeaders, ...(rawRows as (string | number | boolean | null)[][])].map(
+    (r) => r.map((c) => String(c ?? ""))
+  );
 
-        const headers  = (raw[0] as string[]).map(String);
-        const colMap   = buildColumnMap(headers);
-        const get = (row: string[], field: string) => String(row[colMap[field]] ?? "").trim();
+  if (raw.length < 2) return [];
 
-        const rows: TruckImportRow[] = [];
-        for (let i = 1; i < raw.length; i++) {
-          const row = raw[i] as string[];
-          if (!row || row.every((c) => !String(c ?? "").trim())) continue;
-          const num = get(row, "truck_number");
-          if (!num) continue;
-          rows.push({
-            truck_number:            num,
-            make:                    get(row, "make"),
-            model:                   get(row, "model"),
-            year:                    get(row, "year"),
-            vin:                     get(row, "vin"),
-            plate:                   get(row, "plate"),
-            plate_state:             get(row, "plate_state"),
-            axle_config:             get(row, "axle_config"),
-            axle_count:              get(row, "axle_count"),
-            gvwr:                    get(row, "gvwr"),
-            tare_weight:             get(row, "tare_weight"),
-            max_payload_tons:        get(row, "max_payload_tons"),
-            max_payload_lbs:         get(row, "max_payload_lbs"),
-            body_type:               get(row, "body_type"),
-            truck_size:              get(row, "truck_size"),
-            dot_class:               get(row, "dot_class"),
-            bed_capacity_yards:      get(row, "bed_capacity_yards"),
-            registration_expiration: get(row, "registration_expiration"),
-            insurance_expiration:    get(row, "insurance_expiration"),
-            status:                  get(row, "status"),
-            notes:                   get(row, "notes"),
-            assigned_driver:         get(row, "assigned_driver"),
-            fuel_type:               get(row, "fuel_type"),
-            _isDuplicate: existingNumbers.has(num.toLowerCase()),
-            _action:      existingNumbers.has(num.toLowerCase()) ? "update" : "import",
-          });
-        }
-        resolve(rows);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  });
+  const headers = raw[0].map(String);
+  const colMap  = buildColumnMap(headers);
+  const get = (row: string[], field: string) => String(row[colMap[field]] ?? "").trim();
+
+  const rows: TruckImportRow[] = [];
+  for (let i = 1; i < raw.length; i++) {
+    const row = raw[i];
+    if (!row || row.every((c) => !c.trim())) continue;
+    const num = get(row, "truck_number");
+    if (!num) continue;
+    rows.push({
+      truck_number:            num,
+      make:                    get(row, "make"),
+      model:                   get(row, "model"),
+      year:                    get(row, "year"),
+      vin:                     get(row, "vin"),
+      plate:                   get(row, "plate"),
+      plate_state:             get(row, "plate_state"),
+      axle_config:             get(row, "axle_config"),
+      axle_count:              get(row, "axle_count"),
+      gvwr:                    get(row, "gvwr"),
+      tare_weight:             get(row, "tare_weight"),
+      max_payload_tons:        get(row, "max_payload_tons"),
+      max_payload_lbs:         get(row, "max_payload_lbs"),
+      body_type:               get(row, "body_type"),
+      truck_size:              get(row, "truck_size"),
+      dot_class:               get(row, "dot_class"),
+      bed_capacity_yards:      get(row, "bed_capacity_yards"),
+      registration_expiration: get(row, "registration_expiration"),
+      insurance_expiration:    get(row, "insurance_expiration"),
+      status:                  get(row, "status"),
+      notes:                   get(row, "notes"),
+      assigned_driver:         get(row, "assigned_driver"),
+      fuel_type:               get(row, "fuel_type"),
+      _isDuplicate: existingNumbers.has(num.toLowerCase()),
+      _action:      existingNumbers.has(num.toLowerCase()) ? "update" : "import",
+    });
+  }
+  return rows;
 }
 
 function ImportTrucksModal({ existingTrucks, onClose, onImported, showToast }: {

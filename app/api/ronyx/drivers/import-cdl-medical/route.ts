@@ -1,6 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 export const dynamic = "force-dynamic";
 
@@ -62,10 +62,14 @@ export async function POST(req: NextRequest) {
   const file = form.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-  const buffer  = Buffer.from(await file.arrayBuffer());
-  const wb      = XLSX.read(buffer, { type: "buffer", cellDates: false });
-  const sheet   = wb.Sheets[wb.SheetNames[0]];
-  const rows    = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1, defval: "" });
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const ws = workbook.worksheets[0];
+  const rows: unknown[][] = [];
+  ws?.eachRow({ includeEmpty: true }, (row) => {
+    rows.push((row.values as unknown[]).slice(1).map((v) => (v === null || v === undefined ? "" : v)));
+  });
 
   if (rows.length < 2) return NextResponse.json({ error: "Spreadsheet appears empty" }, { status: 400 });
 

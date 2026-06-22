@@ -2,7 +2,6 @@
 
 import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
-import * as XLSX from "xlsx";
 import Papa from "papaparse";
 
 /* ─── OO field definitions ─────────────────────────────────────────────────── */
@@ -49,17 +48,17 @@ function autoDetect(headers: string[]): Mapping {
 }
 
 /* ─── Parse helpers ─────────────────────────────────────────────────────────── */
-function parseXLSX(buffer: ArrayBuffer): { headers: string[]; rows: ParsedRow[] } {
-  const wb   = XLSX.read(buffer, { type: "array" });
-  const ws   = wb.Sheets[wb.SheetNames[0]];
-  const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" });
-  if (data.length < 1) return { headers: [], rows: [] };
-  const headers = data[0].map(String);
-  const rows = data.slice(1).map(row => {
+async function parseXLSX(file: File): Promise<{ headers: string[]; rows: ParsedRow[] }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch("/api/parse-excel", { method: "POST", body: fd });
+  if (!res.ok) return { headers: [], rows: [] };
+  const { headers = [], rows: raw = [] } = await res.json();
+  const rows = (raw as (string | number | boolean | null)[][]).map(row => {
     const r: ParsedRow = {};
-    headers.forEach((h, i) => { r[h] = String((row as string[])[i] ?? "").trim(); });
+    headers.forEach((h: string, i: number) => { r[h] = String(row[i] ?? "").trim(); });
     return r;
-  }).filter(r => Object.values(r).some(v => v));
+  }).filter((r: ParsedRow) => Object.values(r).some(v => v));
   return { headers, rows };
 }
 
@@ -146,8 +145,7 @@ export default function BulkImportPage() {
     try {
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (ext === "xlsx" || ext === "xls") {
-        const buf = await file.arrayBuffer();
-        const { headers: h, rows: r } = parseXLSX(buf);
+        const { headers: h, rows: r } = await parseXLSX(file);
         applyParsed(h, r, file);
       } else if (ext === "csv") {
         const text = await file.text();

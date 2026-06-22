@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import Anthropic from "@anthropic-ai/sdk";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -119,18 +119,41 @@ export async function POST(req: NextRequest) {
 
   try {
     if (isExcel || isCSV) {
-      // ── Spreadsheet: parse with xlsx ──────────────────────────
-      const ab  = await file.arrayBuffer();
-      const wb  = XLSX.read(new Uint8Array(ab), { type: "array", raw: false });
-      const ws  = wb.Sheets[wb.SheetNames[0]];
-      const arr = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { raw: false, defval: "" });
-      const headers = arr.length > 0 ? Object.keys(arr[0]) : [];
+      // ── Spreadsheet: parse with exceljs ───────────────────────
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      const ws = workbook.worksheets[0];
+
+      const sheetHeaders: string[] = [];
+      const arr: Record<string, string>[] = [];
+
+      if (ws) {
+        ws.getRow(1).eachCell({ includeEmpty: false }, (cell, col) => {
+          sheetHeaders[col - 1] = String(cell.value ?? "");
+        });
+        ws.eachRow({ includeEmpty: false }, (row, rowNum) => {
+          if (rowNum === 1) return;
+          const obj: Record<string, string> = {};
+          row.eachCell({ includeEmpty: true }, (cell, col) => {
+            const h = sheetHeaders[col - 1];
+            if (h) {
+              const v = cell.value;
+              obj[h] = v instanceof Date
+                ? `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`
+                : String(v ?? "");
+            }
+          });
+          arr.push(obj);
+        });
+      }
+
+      const headers = sheetHeaders.filter(Boolean);
       detectedDocType = docTypeOvr ?? detectDocType(file.name, headers.join(" "));
       rawTextPreview  = headers.join(", ");
 
       fields = headers.map((h, i) => {
         const key = h.toLowerCase().replace(/\s+/g,"_").replace(/[^a-z0-9_]/g,"").slice(0, 40);
-        const sample = arr.slice(0, 5).map(r => r[h]).filter(Boolean).join(", ").slice(0, 60);
         return {
           key:        key || `col_${i}`,
           label:      h,

@@ -20,37 +20,41 @@ export async function POST(req: Request) {
   // ── Excel: XLSX / XLS ───────────────────────────────────────────────
   if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".xlsm")) {
     try {
-      const bytes = await file.arrayBuffer();
-      const XLSX = (await import("xlsx")).default;
-      const wb = XLSX.read(bytes, { type: "array", cellDates: true });
+      const bytes = Buffer.from(await file.arrayBuffer());
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(bytes);
 
-      // Use the first sheet
-      const sheetName = wb.SheetNames[0];
-      const ws = wb.Sheets[sheetName];
+      const sheets = workbook.worksheets.map((s) => s.name);
+      const ws = workbook.worksheets[0];
+      const sheetName = ws?.name ?? "Sheet1";
 
-      // Convert to array-of-arrays
-      const aoa: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      const aoa: string[][] = [];
+      ws?.eachRow({ includeEmpty: false }, (row) => {
+        const vals = row.values as ExcelJS.CellValue[];
+        const cells: string[] = [];
+        for (let i = 1; i < vals.length; i++) {
+          const v = vals[i];
+          if (v instanceof Date) {
+            const y = v.getFullYear();
+            const m = String(v.getMonth() + 1).padStart(2, "0");
+            const d = String(v.getDate()).padStart(2, "0");
+            cells.push(`${y}-${m}-${d}`);
+          } else if (v !== null && v !== undefined && typeof v === "object" && "text" in v) {
+            cells.push(String((v as any).text));
+          } else {
+            cells.push(String(v ?? "").replace(/\t/g, " ").replace(/\n/g, " "));
+          }
+        }
+        aoa.push(cells);
+      });
 
-      // Convert to TSV
       const tsv = aoa
-        .filter((row) => row.some((c) => String(c).trim()))
-        .map((row) =>
-          row
-            .map((c) => {
-              // Format dates properly
-              if (c instanceof Date) {
-                const y = c.getFullYear();
-                const m = String(c.getMonth() + 1).padStart(2, "0");
-                const d = String(c.getDate()).padStart(2, "0");
-                return `${y}-${m}-${d}`;
-              }
-              return String(c ?? "").replace(/\t/g, " ").replace(/\n/g, " ");
-            })
-            .join("\t")
-        )
+        .filter((row) => row.some((c) => c.trim()))
+        .map((row) => row.join("\t"))
         .join("\n");
 
-      return NextResponse.json({ text: tsv, type: "xlsx", sheet: sheetName, sheets: wb.SheetNames });
+      return NextResponse.json({ text: tsv, type: "xlsx", sheet: sheetName, sheets });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       return NextResponse.json({ error: `Excel parse failed: ${msg}` }, { status: 500 });

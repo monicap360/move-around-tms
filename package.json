@@ -60,7 +60,6 @@
     "tesseract.js": "^7.0.0",
     "twilio": "^4.23.0",
     "uuid": "^14.0.1",
-    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

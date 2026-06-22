@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import * as XLSX from "xlsx";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -357,45 +356,39 @@ function getNextAction(module: ModuleType, safety: Safety): string {
 // ─── File parsing ────────────────────────────────────────────────────────────
 
 async function parseFile(file: File): Promise<Intel> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const wb = XLSX.read(data, { type: "binary", raw: false, cellDates: false });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const arr = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { raw: false, defval: "" });
-        const headers = arr.length > 0 ? Object.keys(arr[0]) : [];
-        const rows = arr as Record<string, string>[];
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch("/api/parse-excel", { method: "POST", body: fd });
+  if (!res.ok) throw new Error("File could not be read.");
+  const { headers = [], rows: rawRows = [] } = await res.json();
 
-        const ext = (file.name.split(".").pop() ?? "file").toUpperCase();
-        const { module, confidence } = detectModule(file.name, headers);
-        const mappings = mapColumns(headers, module, rows);
-        const { issues, safety, safetyMsg } = assessQuality(mappings, rows, module);
-
-        resolve({
-          fileName:    file.name,
-          ext,
-          module,
-          moduleLabel: MODULE_LABELS[module],
-          confidence,
-          rowCount:    rows.length,
-          colCount:    headers.length,
-          headers,
-          mappings,
-          issues,
-          safety,
-          safetyMsg,
-          nextAction:  getNextAction(module, safety),
-          rows,
-        });
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(new Error("File could not be read."));
-    reader.readAsBinaryString(file);
+  const rows: Record<string, string>[] = (rawRows as (string | number | boolean | null)[][]).map((row) => {
+    const obj: Record<string, string> = {};
+    (headers as string[]).forEach((h, i) => { obj[h] = String(row[i] ?? ""); });
+    return obj;
   });
+
+  const ext = (file.name.split(".").pop() ?? "file").toUpperCase();
+  const { module, confidence } = detectModule(file.name, headers);
+  const mappings = mapColumns(headers, module, rows);
+  const { issues, safety, safetyMsg } = assessQuality(mappings, rows, module);
+
+  return {
+    fileName:    file.name,
+    ext,
+    module,
+    moduleLabel: MODULE_LABELS[module],
+    confidence,
+    rowCount:    rows.length,
+    colCount:    headers.length,
+    headers,
+    mappings,
+    issues,
+    safety,
+    safetyMsg,
+    nextAction:  getNextAction(module, safety),
+    rows,
+  };
 }
 
 // ─── Transform rows for import ───────────────────────────────────────────────

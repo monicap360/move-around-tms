@@ -3,7 +3,6 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import * as XLSX from "xlsx";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type DriverStatus = "Active" | "Available" | "Assigned" | "Inactive" | "Suspended";
@@ -642,18 +641,12 @@ function DriverImportModal({ existingDrivers, onClose, onImported, showToast }: 
     setIsPdf(false);
 
     try {
-      let wb: XLSX.WorkBook;
-
-      if (nameLower.endsWith(".csv")) {
-        const text = await file.text();
-        wb = XLSX.read(text, { type: "string" });
-      } else {
-        const buffer = await file.arrayBuffer();
-        wb = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
-      }
-
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      const fd = new FormData();
+      fd.append("file", file);
+      const parseRes = await fetch("/api/parse-excel", { method: "POST", body: fd });
+      if (!parseRes.ok) throw new Error("Could not parse file");
+      const { headers: parsedHeaders = [], rows: parsedRows = [] } = await parseRes.json();
+      const raw: any[][] = [parsedHeaders, ...parsedRows];
 
       if (raw.length < 2) {
         showToast("File appears empty — no data rows found below the header.");

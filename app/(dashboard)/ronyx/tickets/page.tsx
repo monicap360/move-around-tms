@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "react-qr-code";
-import * as XLSX from "xlsx";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TicketStatus = "Scanned" | "Needs Review" | "Matched" | "Approved" | "Sent to Payroll" | "Sent to Billing" | "Paid" | "Archived";
@@ -1079,14 +1078,14 @@ export default function TicketsPage() {
     return lower.replace(/[^a-z0-9]/g, "_");
   }, []);
 
-  const processExcelFile = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+  const processExcelFile = useCallback(async (file: File) => {
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/parse-excel", { method: "POST", body: fd });
+      if (!res.ok) { showToast("Could not parse file — check format."); return; }
+      const { headers: parsedH = [], rows: parsedR = [] } = await res.json();
+      const raw: any[][] = [parsedH, ...parsedR];
         if (raw.length < 2) { showToast("Sheet appears empty — check the file and try again."); return; }
 
         // Map header row
@@ -1220,8 +1219,6 @@ export default function TicketsPage() {
       } catch (err: any) {
         showToast(`Failed to parse file: ${err?.message || "check format"}`);
       }
-    };
-    reader.readAsArrayBuffer(file);
   }, [tickets, normalizeHeader, showToast]);
 
   const applyCorrection = useCallback((rowId: string, source: "scan" | "invoice" | "suggested" | "keep" | "flag", customValue?: string) => {
@@ -1238,7 +1235,7 @@ export default function TicketsPage() {
     }));
   }, []);
 
-  const downloadCorrectedExcel = useCallback(() => {
+  const downloadCorrectedExcel = useCallback(async () => {
     const resolved = reconRows.filter(r => r.status !== "pending");
     const pending  = reconRows.filter(r => r.status === "pending" || r.status === "flagged");
     const headers  = ["Ticket #","Date","Driver","Truck","Material","Field","Error Type","Original Excel Value","Corrected Value","Correction Source","Correction Note","Updated By","Updated At","Reconciliation Status"];
@@ -1249,32 +1246,25 @@ export default function TicketsPage() {
       r.correctionSource || "Pending", r.correctionNote || "",
       r.correctedBy || "", r.correctedAt || "", r.status.toUpperCase(),
     ]);
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
-
-    // Column widths
-    ws["!cols"] = [10,12,18,10,16,14,18,20,20,18,40,14,20,18].map(w => ({ wch: w }));
-
-    // Color corrected cells green, flagged yellow, errors red, overrides blue
-    dataRows.forEach((row, ri) => {
-      const status = reconRows[ri]?.status;
-      const statusCell = XLSX.utils.encode_cell({ r: ri + 1, c: 13 });
-      const corrCell   = XLSX.utils.encode_cell({ r: ri + 1, c: 8  });
-      const fill =
-        status === "corrected"  ? { fgColor: { rgb: "C6EFCE" } } :
-        status === "overridden" ? { fgColor: { rgb: "BDD7EE" } } :
-        status === "flagged"    ? { fgColor: { rgb: "FFEB9C" } } :
-        status === "kept"       ? { fgColor: { rgb: "D9D9D9" } } :
-                                  { fgColor: { rgb: "FFC7CE" } };
-      if (ws[statusCell]) ws[statusCell].s = { fill };
-      if (ws[corrCell])   ws[corrCell].s   = { fill };
-    });
-
-    XLSX.utils.book_append_sheet(wb, ws, "Corrected Reconciliation");
-    const date = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `Ronyx_Corrected_Reconciliation_${date}.xlsx`);
-    showToast(`Downloaded .xlsx — ${resolved.length} corrections, ${pending.length} unresolved`);
+    const statuses = reconRows.map(r => r.status);
+    try {
+      const res = await fetch("/api/ronyx/tickets/export-reconciliation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ headers, dataRows, statuses }),
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `Ronyx_Corrected_Reconciliation_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded .xlsx — ${resolved.length} corrections, ${pending.length} unresolved`);
+    } catch {
+      showToast("Export failed — please try again.");
+    }
   }, [reconRows, showToast]);
 
   const runRonyxOcr = useCallback(async (file: File) => {
@@ -1517,50 +1507,47 @@ export default function TicketsPage() {
   }, [scanType, scanDriver, scanTruck, scanJob, scanVendor, scanPit, scanTicketNo, scanDate, scanMaterial, scanGross, scanTare, scanNets, scanRate, scanPO, scanAmount, scanDelivery, scanNotes, loadTickets, showToast]);
 
   // Parse Excel file and open import modal — captures ALL columns
-  const processImportFile = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array", cellDates: true });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" }) as unknown[][];
-        if (raw.length < 2) { showToast("File appears empty — no rows to import."); return; }
+  const processImportFile = useCallback(async (file: File) => {
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/parse-excel", { method: "POST", body: fd });
+      if (!res.ok) { showToast("Failed to parse file — check format."); return; }
+      const { headers: parsedH = [], rows: parsedR = [] } = await res.json();
+      const raw: unknown[][] = [parsedH, ...parsedR];
+      if (raw.length < 2) { showToast("File appears empty — no rows to import."); return; }
 
-        const origHeaders = (raw[0] as string[]).map(h => String(h || "").trim()).filter(Boolean);
-        const normHeaders = origHeaders.map(h => {
-          const lower = h.toLowerCase();
-          for (const [key, aliases] of Object.entries(IMPORT_MAP)) {
-            if (aliases.some(a => lower.includes(a))) return key;
-          }
-          // keep original header as the key (space→underscore) so no data is lost
-          return lower.replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
-        });
+      const origHeaders = (raw[0] as string[]).map(h => String(h || "").trim()).filter(Boolean);
+      const normHeaders = origHeaders.map(h => {
+        const lower = h.toLowerCase();
+        for (const [key, aliases] of Object.entries(IMPORT_MAP)) {
+          if (aliases.some(a => lower.includes(a))) return key;
+        }
+        return lower.replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+      });
 
-        const rows: Array<Record<string, string>> = raw.slice(1)
-          .map(row => {
-            const obj: Record<string, string> = {};
-            (row as unknown[]).forEach((cell, i) => {
-              const key = normHeaders[i];
-              if (key) obj[key] = String(cell ?? "").trim();
-            });
-            return obj;
-          })
-          .filter(row => Object.values(row).some(v => v !== ""));
+      const rows: Array<Record<string, string>> = raw.slice(1)
+        .map(row => {
+          const obj: Record<string, string> = {};
+          (row as unknown[]).forEach((cell, i) => {
+            const key = normHeaders[i];
+            if (key) obj[key] = String(cell ?? "").trim();
+          });
+          return obj;
+        })
+        .filter(row => Object.values(row).some(v => v !== ""));
 
-        setImportOrigHeaders(origHeaders);
-        setImportNormHeaders(normHeaders);
-        setImportRows(rows);
-        setImportFileName(file.name);
-        setImportResult(null);
-        setImportDoneCount(0);
-        setImportOpen(true);
-        showToast(`${file.name} parsed — ${rows.length} rows, ${origHeaders.length} columns detected`);
-      } catch (err: any) {
-        showToast(`Failed to parse file: ${err?.message || "check format"}`);
-      }
-    };
-    reader.readAsArrayBuffer(file);
+      setImportOrigHeaders(origHeaders);
+      setImportNormHeaders(normHeaders);
+      setImportRows(rows);
+      setImportFileName(file.name);
+      setImportResult(null);
+      setImportDoneCount(0);
+      setImportOpen(true);
+      showToast(`${file.name} parsed — ${rows.length} rows, ${origHeaders.length} columns detected`);
+    } catch (err: any) {
+      showToast(`Failed to parse file: ${err?.message || "check format"}`);
+    }
   }, [showToast]);
 
   // Batch import rows directly into aggregate_tickets
