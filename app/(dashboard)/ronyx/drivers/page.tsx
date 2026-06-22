@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -167,7 +167,7 @@ function docBadge(state: "missing" | "expired" | "expiring" | "ok"): { label: st
 }
 
 function driverCCBStatus(driver: Driver): { label: string; color: string; bg: string; isManualBlock: boolean } {
-  const noCompany      = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
+  const noCompany       = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
   const manuallyBlocked = driver.dispatchEligible === false && !!driver.dispatch_blocked_at;
   if (manuallyBlocked) return { label: "Manually Blocked", color: "#7c2d12", bg: "#fef2f2", isManualBlock: true };
   if (noCompany || driver.docs === "Expired") return { label: "Blocked",      color: "#991b1b", bg: "#fee2e2", isManualBlock: false };
@@ -176,17 +176,58 @@ function driverCCBStatus(driver: Driver): { label: string; color: string; bg: st
   return { label: "Clear", color: "#166534", bg: "#dcfce7", isManualBlock: false };
 }
 
+function isDispatchEligible(driver: Driver): boolean {
+  const noCompany       = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
+  const noTruck         = !driver.truck || driver.truck === "—";
+  const manuallyBlocked = driver.dispatchEligible === false && !!driver.dispatch_blocked_at;
+  return !noCompany && !noTruck && !manuallyBlocked && driver.docs !== "Expired" && driver.docs !== "Missing";
+}
+
+function compactDocSummary(driver: Driver): { summary: string; color: string; bg: string } {
+  const items = [
+    { name: "CDL", state: isDateExpiredOrMissing(driver.cdlExp), days: daysUntil(driver.cdlExp) },
+    { name: "MVR", state: isDateExpiredOrMissing(driver.mvrExp), days: daysUntil(driver.mvrExp) },
+    { name: "Med", state: isDateExpiredOrMissing(driver.medicalExp), days: daysUntil(driver.medicalExp) },
+  ];
+  const expired  = items.filter(i => i.state === "expired");
+  const missing  = items.filter(i => i.state === "missing");
+  const expiring = items.filter(i => i.state === "expiring").sort((a, b) => (a.days ?? 999) - (b.days ?? 999));
+  if (expired.length)  return { summary: `${expired.length} Expired`,  color: "#991b1b", bg: "#fee2e2" };
+  if (missing.length)  return { summary: `${missing.length} Missing`,  color: "#475569", bg: "#f1f5f9" };
+  if (expiring.length) return { summary: `${expiring[0].name}: ${expiring[0].days}d`, color: "#854d0e", bg: "#fef9c3" };
+  return { summary: "✓ All Good", color: "#166534", bg: "#dcfce7" };
+}
+
+function nextExpirationLabel(driver: Driver): string {
+  const candidates = [
+    { name: "CDL", days: daysUntil(driver.cdlExp), exp: driver.cdlExp },
+    { name: "MVR", days: daysUntil(driver.mvrExp), exp: driver.mvrExp },
+    { name: "Med", days: daysUntil(driver.medicalExp), exp: driver.medicalExp },
+  ].filter(c => c.days !== null && c.days > 0) as { name: string; days: number; exp: string }[];
+  if (!candidates.length) return "—";
+  const soonest = candidates.sort((a, b) => a.days - b.days)[0];
+  return `${soonest.name}: ${soonest.exp}`;
+}
+
 function driverNextAction(driver: Driver): string {
   const noCompany = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
-  const parts: string[] = [];
-  if (noCompany) parts.push("Assign company");
-  if (driver.cdlExp     === "—") parts.push("Upload CDL");
-  if (driver.mvrExp     === "—") parts.push("Upload MVR");
-  if (driver.medicalExp === "—") parts.push("Upload medical card");
-  if (parts.length === 0 && driver.docs === "Expired")  return "Renew expired docs";
-  if (parts.length === 0 && driver.docs === "Expiring") return "Renew docs soon";
-  if (parts.length === 0) return "Ready to dispatch";
-  return parts.join(" • ");
+  const noTruck   = !driver.truck || driver.truck === "—";
+  if (noCompany) return "Assign company/carrier";
+  if (driver.cdlExp     === "—") return "Upload CDL";
+  if (driver.mvrExp     === "—") return "Upload MVR";
+  if (driver.medicalExp === "—") return "Upload medical card";
+  if (noTruck) return "Assign truck";
+  const medDays = daysUntil(driver.medicalExp);
+  if (medDays !== null && medDays >= 0 && medDays <= 7)  return `Medical exp. in ${medDays}d`;
+  const cdlDays = daysUntil(driver.cdlExp);
+  if (cdlDays !== null && cdlDays >= 0 && cdlDays <= 14) return `CDL exp. in ${cdlDays}d`;
+  const mvrDays = daysUntil(driver.mvrExp);
+  if (mvrDays !== null && mvrDays >= 0 && mvrDays <= 14) return `MVR exp. in ${mvrDays}d`;
+  if (driver.docs === "Expired")  return "Renew expired docs";
+  if (driver.docs === "Expiring") return "Renew docs soon";
+  if (driverCCBStatus(driver).label === "Manually Blocked") return "Review CCB block";
+  if (driver.payroll_eligible === false) return "Review payroll hold";
+  return "Ready";
 }
 
 function exportDriversCSV(drivers: Driver[]) {
@@ -1297,7 +1338,6 @@ function ManagerAlertsPanel({ alerts, onClose }: { alerts: ManagerAlert[]; onClo
 
 /* ─── Main page ─────────────────────────────────────────── */
 export default function DriversPage() {
-  const router       = useRouter();
   const searchParams = useSearchParams();
   const [allDrivers, setAllDrivers]   = useState<Driver[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -1324,7 +1364,7 @@ export default function DriversPage() {
   const [alertsOpen, setAlertsOpen]       = useState(false);
   const [alertsLoaded, setAlertsLoaded]   = useState(false);
   const [viewMode, setViewMode]           = useState<"cards" | "list">("list");
-  const [expandedId, setExpandedId]       = useState<string | null>(null);
+
   const [toolsOpen, setToolsOpen]         = useState(false);
   const [needsFilter, setNeedsFilter]     = useState("All");
   const [moreMenuId, setMoreMenuId]       = useState<string | null>(null);
@@ -1468,18 +1508,24 @@ export default function DriversPage() {
   }), [allDrivers, search, statusFilter, docFilter, needsFilter]);
 
   const complianceAlerts  = useMemo(() => buildAlerts(allDrivers), [allDrivers]);
-  const activeDrivers     = allDrivers.filter((d) => d.status !== "Inactive").length;
-  const availableDrivers  = allDrivers.filter((d) => d.status === "Available").length;
-  const assignedDrivers   = allDrivers.filter((d) => d.status === "Assigned").length;
-  const documentIssues    = allDrivers.filter((d) => ["Expiring", "Expired", "Missing"].includes(d.docs)).length;
-  const topDriver         = useMemo(() => [...allDrivers].sort((a, b) => b.rating - a.rating)[0] ?? null, [allDrivers]);
-  const noCompanyCount    = allDrivers.filter((d) => d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—").length;
-  const missingCDLCount   = allDrivers.filter((d) => d.cdlExp === "—").length;
-  const missingMVRCount   = allDrivers.filter((d) => d.mvrExp === "—").length;
-  const missingMedCount   = allDrivers.filter((d) => d.medicalExp === "—").length;
-  const expiredMedCount   = allDrivers.filter((d) => d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired").length;
-  const dispatchBlockedCount = allDrivers.filter((d) => driverCCBStatus(d).label === "Blocked").length;
-  const readyCount           = allDrivers.filter((d) => driverCCBStatus(d).label === "Clear").length;
+  const activeDriversCount    = allDrivers.filter((d) => d.status !== "Inactive" && d.status !== "Suspended").length;
+  const documentIssues        = allDrivers.filter((d) => ["Expiring", "Expired", "Missing"].includes(d.docs)).length;
+  const topDriver             = useMemo(() => [...allDrivers].sort((a, b) => b.rating - a.rating)[0] ?? null, [allDrivers]);
+  const noCompanyCount        = allDrivers.filter((d) => d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—").length;
+  const noTruckCount          = allDrivers.filter((d) => !d.truck || d.truck === "—").length;
+  const missingCDLCount       = allDrivers.filter((d) => d.cdlExp === "—").length;
+  const missingMVRCount       = allDrivers.filter((d) => d.mvrExp === "—").length;
+  const missingMedCount       = allDrivers.filter((d) => d.medicalExp === "—").length;
+  const expiredMedCount       = allDrivers.filter((d) => d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired").length;
+  const missingDocsCount      = allDrivers.filter((d) => d.docs === "Missing").length;
+  const expiringSoonCount     = allDrivers.filter((d) => d.docs === "Expiring").length;
+  const payrollHoldCount      = allDrivers.filter((d) => d.payroll_eligible === false).length;
+  const dispatchBlockedCount  = allDrivers.filter((d) => driverCCBStatus(d).label === "Blocked" || driverCCBStatus(d).label === "Manually Blocked").length;
+  const dispatchEligibleCount = allDrivers.filter(isDispatchEligible).length;
+  const readyCount            = allDrivers.filter((d) => driverCCBStatus(d).label === "Clear").length;
+  const needsAttentionCount   = allDrivers.filter((d) => missingCDLCount > 0 || missingMVRCount > 0 || missingMedCount > 0 || expiredMedCount > 0
+    ? (d.cdlExp === "—" || d.mvrExp === "—" || d.medicalExp === "—" || (d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired"))
+    : false).length;
 
   async function handleRunCCBReview() {
     if (ccbRunning) return;
@@ -1547,38 +1593,41 @@ export default function DriversPage() {
         </div>
       </section>
 
-      {/* ── Decision Strip ── */}
-      <section className="premium-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
-        <div className="premium-kpi" onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
-          <span>Total Drivers</span><strong>{loading ? "…" : allDrivers.length}</strong><p>In system</p>
-        </div>
-        <div className={`premium-kpi success`} onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
-          <span>Ready to Dispatch</span><strong>{loading ? "…" : readyCount}</strong><p>Fully eligible today</p>
+      {/* ── Driver Mission Control KPIs ── */}
+      <section className="premium-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(115px, 1fr))", gap: 8 }}>
+        <div className={`premium-kpi${dispatchEligibleCount === allDrivers.filter(d => d.status !== "Inactive").length && allDrivers.length > 0 ? " success" : ""}`} onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
+          <span>Dispatch Eligible</span><strong>{loading ? "…" : dispatchEligibleCount}</strong><p>All gates pass</p>
         </div>
         <div className={`premium-kpi${dispatchBlockedCount > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Dispatch Blocked")} style={{ cursor: "pointer" }}>
           <span>Dispatch Blocked</span><strong>{loading ? "…" : dispatchBlockedCount}</strong><p>Cannot be assigned</p>
         </div>
-        <div className={`premium-kpi${(missingCDLCount + missingMVRCount + missingMedCount) > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Missing Docs")} style={{ cursor: "pointer" }}>
-          <span>Needs Attention</span><strong>{loading ? "…" : missingCDLCount + missingMVRCount + missingMedCount + expiredMedCount}</strong><p>Missing or expired</p>
-        </div>
-        <div className={`premium-kpi${allDrivers.filter(d => d.docs === "Expiring").length > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Expiring Soon")} style={{ cursor: "pointer" }}>
-          <span>Expiring Soon</span><strong>{loading ? "…" : allDrivers.filter(d => d.docs === "Expiring").length}</strong><p>CDL, Med, MVR</p>
+        <div className={`premium-kpi${needsAttentionCount > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Missing Docs")} style={{ cursor: "pointer" }}>
+          <span>Needs Attention</span><strong>{loading ? "…" : needsAttentionCount}</strong><p>Missing or expired</p>
         </div>
         <div className={`premium-kpi${noCompanyCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("No Company Assigned")} style={{ cursor: "pointer" }}>
-          <span>No Truck / Company</span><strong>{loading ? "…" : noCompanyCount}</strong><p>Unassigned</p>
+          <span>No Company</span><strong>{loading ? "…" : noCompanyCount}</strong><p>Unassigned</p>
         </div>
-        <div className={`premium-kpi${allDrivers.filter(d => !d.payroll_eligible).length > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Payroll Hold")} style={{ cursor: "pointer" }}>
-          <span>Payroll Hold</span><strong>{loading ? "…" : allDrivers.filter(d => !d.payroll_eligible).length}</strong><p>Pay holds active</p>
+        <div className={`premium-kpi${missingDocsCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Missing Docs")} style={{ cursor: "pointer" }}>
+          <span>Missing Docs</span><strong>{loading ? "…" : missingDocsCount}</strong><p>CDL, MVR, Medical</p>
         </div>
-        <div className="premium-kpi">
-          <span>Missing Tickets</span><strong>—</strong><p>Connect Fast Scan™</p>
+        <div className={`premium-kpi${expiringSoonCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Expiring Soon")} style={{ cursor: "pointer" }}>
+          <span>Expiring Soon</span><strong>{loading ? "…" : expiringSoonCount}</strong><p>Within 30 days</p>
         </div>
-        <div className="premium-kpi">
-          <span>Active Today</span><strong>{loading ? "…" : allDrivers.filter(d => d.status === "Assigned").length}</strong><p>On job or assigned</p>
+        <div className={`premium-kpi${noTruckCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("No Truck Assigned")} style={{ cursor: "pointer" }}>
+          <span>No Truck</span><strong>{loading ? "…" : noTruckCount}</strong><p>Needs assignment</p>
+        </div>
+        <div className={`premium-kpi${payrollHoldCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Payroll Hold")} style={{ cursor: "pointer" }}>
+          <span>Payroll Hold</span><strong>{loading ? "…" : payrollHoldCount}</strong><p>Pay holds active</p>
+        </div>
+        <div className="premium-kpi" onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
+          <span>Active Drivers</span><strong>{loading ? "…" : activeDriversCount}</strong><p>Not inactive</p>
+        </div>
+        <div className="premium-kpi" onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
+          <span>Total Drivers</span><strong>{loading ? "…" : allDrivers.length}</strong><p>In system</p>
         </div>
       </section>
 
-      {/* ── Do This First Work Queue ── */}
+      {/* ── CCB Action Queue ── */}
       {!loading && (() => {
         const queue: { priority: "critical" | "urgent" | "warning"; driver?: string; problem: string; role: string; action: string; filter: string }[] = [];
         const expiredMedDrivers = allDrivers.filter(d => d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired");
@@ -1615,8 +1664,8 @@ export default function DriversPage() {
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 20px", marginTop: 16, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <div>
-                <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>⚡ Do This First</div>
-                <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Highest-priority driver tasks for office staff</div>
+                <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>⚡ CCB Action Queue</div>
+                <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Critical driver issues affecting dispatch, payroll, or customer eligibility</div>
               </div>
               <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: 600 }}>{queue.length} task{queue.length !== 1 ? "s" : ""}</span>
             </div>
@@ -2013,29 +2062,21 @@ export default function DriversPage() {
             /* ── List View ── */
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }} onClick={() => setMoreMenuId(null)}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 580 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                      {["", "Driver", "Company / OO", "Truck", "Dispatch", "Compliance", "Actions"].map((h) => (
-                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / OO" ? "#1d4ed8" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      {["", "Driver", "Company / Carrier", "Type", "Truck", "Dispatch Eligible", "CCB", "Docs", "Next Exp.", "Payroll", "Next Action", "Actions"].map((h) => (
+                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / Carrier" ? "#1d4ed8" : h === "Next Action" ? "#7c3aed" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDrivers.map((driver, idx) => {
-                      const isExpanded = expandedId === driver.id;
                       const noCompany  = driver.companyName === "—" && driver.carrierName === "—" && driver.ownerOperatorName === "—";
-                      const stColor    = driver.status === "Active" || driver.status === "Available" ? "#166534" : driver.status === "Assigned" ? "#1e40af" : driver.status === "Suspended" ? "#991b1b" : "#475569";
-                      const stBg       = driver.status === "Active" || driver.status === "Available" ? "#dcfce7" : driver.status === "Assigned" ? "#dbeafe" : driver.status === "Suspended" ? "#fee2e2" : "#f1f5f9";
-                      const cdlState   = isDateExpiredOrMissing(driver.cdlExp);
-                      const mvrState   = isDateExpiredOrMissing(driver.mvrExp);
-                      const medState   = isDateExpiredOrMissing(driver.medicalExp);
-                      const cdlBadge   = docBadge(cdlState);
-                      const mvrBadge   = docBadge(mvrState);
-                      const medBadge   = docBadge(medState);
-                      const overallDocColor = driver.docs === "Good" ? "#166534" : driver.docs === "Expiring" ? "#854d0e" : driver.docs === "Expired" ? "#991b1b" : "#475569";
-                      const overallDocBg    = driver.docs === "Good" ? "#dcfce7" : driver.docs === "Expiring" ? "#fef9c3" : driver.docs === "Expired" ? "#fee2e2" : "#f1f5f9";
                       const ccb        = driverCCBStatus(driver);
+                      const eligible   = isDispatchEligible(driver);
+                      const docSummary = compactDocSummary(driver);
+                      const nextExp    = nextExpirationLabel(driver);
                       const nextAct    = driverNextAction(driver);
                       const btnS: React.CSSProperties = { padding: "3px 7px", borderRadius: 5, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" };
                       const menuItemS: React.CSSProperties = { display: "block", width: "100%", textAlign: "left", padding: "7px 12px", background: "none", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", borderRadius: 6, color: "#0f172a" };
@@ -2057,7 +2098,7 @@ export default function DriversPage() {
                               <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a" }}>{driver.name}</div>
                               <div style={{ fontSize: 10, color: "#64748b" }}>{driver.phone !== "—" && driver.phone ? driver.phone : driver.email || "Not on file"}</div>
                             </td>
-                            {/* Company / OO */}
+                            {/* Company / Carrier */}
                             <td style={{ padding: "8px 8px", minWidth: 130 }}>
                               {noCompany ? (
                                 <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 7px", borderRadius: 5 }}>Not assigned</span>
@@ -2068,34 +2109,54 @@ export default function DriversPage() {
                                 </>
                               )}
                             </td>
-                            {/* Truck */}
-                            <td style={{ padding: "8px 8px", fontSize: 11, fontWeight: 600, color: driver.truck === "—" || !driver.truck ? "#94a3b8" : "#0f172a", whiteSpace: "nowrap" }}>{driver.truck && driver.truck !== "—" ? driver.truck : "Not assigned"}</td>
-                            {/* Dispatch */}
+                            {/* Type */}
+                            <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: driver.driverType === "Owner Operator" ? "#ede9fe" : driver.driverType === "1099" ? "#fef9c3" : "#dbeafe", color: driver.driverType === "Owner Operator" ? "#7c3aed" : driver.driverType === "1099" ? "#854d0e" : "#1e40af" }}>
+                                {driver.driverType}
+                              </span>
+                            </td>
+                            {/* Primary Truck */}
+                            <td style={{ padding: "8px 8px", fontSize: 11, fontWeight: 600, color: !driver.truck || driver.truck === "—" ? "#94a3b8" : "#0f172a", whiteSpace: "nowrap" }}>
+                              {driver.truck && driver.truck !== "—" ? driver.truck : <span style={{ color: "#f59e0b", fontWeight: 700 }}>Not assigned</span>}
+                            </td>
+                            {/* Dispatch Eligible */}
                             <td style={{ padding: "8px 8px" }}>
-                              {ccb.label === "Blocked" || ccb.label === "Manually Blocked" ? (
+                              {eligible ? (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap" }}>✓ Eligible</span>
+                              ) : ccb.label === "Blocked" || ccb.label === "Manually Blocked" ? (
                                 <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 5, background: "#fef2f2", color: "#dc2626", whiteSpace: "nowrap" }}>🚫 Blocked</span>
-                              ) : ccb.label === "Clear" ? (
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap" }}>✓ Ready</span>
                               ) : (
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: stBg, color: stColor, whiteSpace: "nowrap" }}>{driver.status}</span>
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "#fef9c3", color: "#854d0e", whiteSpace: "nowrap" }}>⚠ Not Eligible</span>
                               )}
                             </td>
-                            {/* Compliance — CDL / MVR / Medical combined */}
+                            {/* CCB Status */}
                             <td style={{ padding: "8px 8px" }}>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, width: 26 }}>CDL</span>
-                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: cdlBadge.bg, color: cdlBadge.color, whiteSpace: "nowrap" }}>{cdlState === "ok" ? driver.cdlExp : cdlState === "missing" ? "Not on file" : cdlBadge.label}</span>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, width: 26 }}>MVR</span>
-                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: mvrBadge.bg, color: mvrBadge.color, whiteSpace: "nowrap" }}>{mvrState === "ok" ? driver.mvrExp : mvrState === "missing" ? "Not on file" : mvrBadge.label}</span>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, width: 26 }}>Med</span>
-                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: medBadge.bg, color: medBadge.color, whiteSpace: "nowrap" }}>{medState === "ok" ? driver.medicalExp : medState === "missing" ? "Not on file" : medBadge.label}</span>
-                                </div>
-                              </div>
+                              <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: ccb.bg, color: ccb.color, whiteSpace: "nowrap" }}>{ccb.label}</span>
+                            </td>
+                            {/* Docs — compact */}
+                            <td style={{ padding: "8px 8px" }}>
+                              <span
+                                title="Click row to open driver drawer with full doc details"
+                                style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: docSummary.bg, color: docSummary.color, whiteSpace: "nowrap", cursor: "help" }}
+                              >
+                                {docSummary.summary}
+                              </span>
+                            </td>
+                            {/* Next Expiration */}
+                            <td style={{ padding: "8px 8px", fontSize: 10, color: "#64748b", whiteSpace: "nowrap" }}>{nextExp}</td>
+                            {/* Payroll Eligibility */}
+                            <td style={{ padding: "8px 6px" }}>
+                              {driver.payroll_eligible === false ? (
+                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#fef2f2", color: "#dc2626" }}>Hold</span>
+                              ) : (
+                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#dcfce7", color: "#166534" }}>OK</span>
+                              )}
+                            </td>
+                            {/* Next Action */}
+                            <td style={{ padding: "8px 8px", minWidth: 140 }}>
+                              <span style={{ fontSize: 10, fontWeight: 600, color: nextAct === "Ready" ? "#166534" : nextAct.startsWith("Review CCB") ? "#7c2d12" : "#92400e" }}>
+                                {nextAct}
+                              </span>
                             </td>
                             {/* Actions */}
                             <td style={{ padding: "8px 6px" }} onClick={(e) => e.stopPropagation()}>
@@ -2206,34 +2267,6 @@ export default function DriversPage() {
                               </div>
                             </td>
                           </tr>
-                          {isExpanded && (
-                            <tr key={`${driver.id}-exp`} style={{ background: "#f8fafc", borderBottom: "1px solid #e0f2fe" }}>
-                              <td colSpan={13} style={{ padding: "14px 20px" }}>
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
-                                  {[
-                                    { label: "Email",          value: driver.email },
-                                    { label: "Phone",          value: driver.phone },
-                                    { label: "Location",       value: driver.location },
-                                    { label: "CDL #",          value: driver.cdl },
-                                    { label: "CDL State",      value: driver.cdlState },
-                                    { label: "CDL Exp",        value: driver.cdlExp },
-                                    { label: "MVR Exp",        value: driver.mvrExp },
-                                    { label: "Medical Exp",    value: driver.medicalExp },
-                                    { label: "Truck",          value: driver.truck },
-                                    { label: "Employment",     value: driver.employmentType },
-                                    { label: "Rating",         value: driver.rating > 0 ? `★ ${driver.rating}` : "—" },
-                                    { label: "Carrier",        value: driver.carrierName },
-                                    { label: "Owner Operator", value: driver.ownerOperatorName },
-                                  ].map(({ label, value }) => (
-                                    <div key={label} style={{ background: "#fff", borderRadius: 8, padding: "7px 10px", border: "1px solid #e2e8f0" }}>
-                                      <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
-                                      <div style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{value}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
                         </React.Fragment>
                       );
                     })}
