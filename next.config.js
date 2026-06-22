@@ -23,7 +23,12 @@ const nextConfig = {
 
   webpack: (config, { isServer, dev }) => {
     if (!dev) {
-      config.cache = false;
+      // Filesystem cache reuses compiled chunks across all pages in the same build run
+      // without holding everything in RAM (which caused OOM with the memory cache).
+      config.cache = {
+        type: "filesystem",
+        allowCollectingMemory: false,
+      };
     }
     if (!isServer) {
       config.resolve.fallback = {
