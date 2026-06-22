@@ -43,7 +43,7 @@
     "lucide-react": "^0.548.0",
     "mapbox-gl": "^3.17.0",
     "next": "^14.2.33",
-    "nodemailer": "^7.0.10",
+    "nodemailer": "^9.0.1",
     "papaparse": "^5.5.3",
     "pdf-lib": "^1.17.1",
     "react": "18.2.0",
@@ -59,7 +59,7 @@
     "tailwind-merge": "^3.3.1",
     "tesseract.js": "^7.0.0",
     "twilio": "^4.23.0",
-    "uuid": "^9.0.1",
+    "uuid": "^14.0.1",
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
