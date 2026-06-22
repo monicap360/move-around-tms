@@ -79,6 +79,7 @@ export default function ComplianceOverridesPage() {
     setLoading(false);
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void load(); }, [statusFilter]);
 
   async function submit(e: React.FormEvent) {

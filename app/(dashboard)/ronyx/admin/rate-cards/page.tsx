@@ -84,6 +84,7 @@ export default function RateCardsPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadCards(); }, []);
 
   function openCreate() {

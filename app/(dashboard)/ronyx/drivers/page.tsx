@@ -1412,6 +1412,7 @@ export default function DriversPage() {
       .finally(() => setBackupLoading(false));
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (activeTab === "backup" && backupRows.length === 0 && !backupLoading) {
       loadBackupData();

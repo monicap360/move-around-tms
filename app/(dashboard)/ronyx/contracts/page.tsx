@@ -80,6 +80,7 @@ export default function ContractsPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [overriding, setOverriding] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void Promise.all([loadContracts(), loadCustomers()]);
   }, []);

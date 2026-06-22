@@ -73,8 +73,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "No file provided" }, { status: 400 });
   }
 
-  const module      = moduleOverride || detectModule(file.name, file.type);
-  const filePath    = generalUploadPath(module, file.name);
+  const fileModule  = moduleOverride || detectModule(file.name, file.type);
+  const filePath    = generalUploadPath(fileModule, file.name);
   const arrayBuffer = await file.arrayBuffer();
   const contentType = file.type || "application/octet-stream";
 

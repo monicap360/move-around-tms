@@ -617,12 +617,12 @@ function TicketViewer({
 
             <div style={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a", marginTop: 20, marginBottom: 10 }}>Status</div>
             {[
-              ["OCR Confidence", <span style={{ fontWeight: 700, color: ticket.scanConfidence >= 85 ? "#16a34a" : "#d97706" }}>{ticket.scanConfidence}%</span>],
-              ["Match Status", <SBadge code={ticket.crossCheckStatus === "Matched" ? "MATCHED" : "NEEDS_REVIEW"} />],
-              ["Payroll Status", <SBadge code={ticket.payrollStatus} />],
-              ["Billing Status", <SBadge code={ticket.billingStatus} />],
+              ["OCR Confidence", <span key="ocr" style={{ fontWeight: 700, color: ticket.scanConfidence >= 85 ? "#16a34a" : "#d97706" }}>{ticket.scanConfidence}%</span>],
+              ["Match Status", <SBadge key="match" code={ticket.crossCheckStatus === "Matched" ? "MATCHED" : "NEEDS_REVIEW"} />],
+              ["Payroll Status", <SBadge key="payroll" code={ticket.payrollStatus} />],
+              ["Billing Status", <SBadge key="billing" code={ticket.billingStatus} />],
               ["Proof Status", ticket.proofStatus],
-              ["Health Score", <HealthBadge score={ticket.ticketHealthScore} />],
+              ["Health Score", <HealthBadge key="health" score={ticket.ticketHealthScore} />],
             ].map(([l, v]) => detailRow(l as string, v as React.ReactNode))}
 
             {/* Quick send */}
