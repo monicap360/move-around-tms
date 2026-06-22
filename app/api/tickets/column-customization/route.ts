@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data, error } = await supabase
       .from("ticket_view_customizations")
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data, error } = await supabase
       .from("ticket_view_customizations")

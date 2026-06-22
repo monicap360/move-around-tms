@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_subhauler_agreements")
     .select("id, subhauler_name, subhauler_email, status, sign_token, sent_at, created_at, prime_carrier_signed_at, subhauler_signed_at, general_contractor, project_name")
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => null);
   if (!body?.subhauler_name) return NextResponse.json({ error: "subhauler_name required" }, { status: 400 });
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => null);
   if (!body?.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
@@ -76,7 +76,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { id } = await req.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import nodemailer from "nodemailer";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ function getTransport() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await request.json();
 
   const {
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
 // GET: list requests for the admin console
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("platform_customization_requests")
     .select("*")

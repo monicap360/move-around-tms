@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ function validateRonyx(f: RonyxPayload): ValidationResult {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const body: RonyxPayload = await req.json();
     const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +79,7 @@ function driverReasons(driver: any): string[] {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export async function GET(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date") || new Date().toISOString().slice(0, 10);
   const now  = new Date();

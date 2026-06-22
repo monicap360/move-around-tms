@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,7 @@ function dayOffset(days: number) {
    - Returns counts of created/closed/skipped tasks.
 */
 export async function POST() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   // Fetch all OOs with their COI documents
   const { data: oos, error: ooErr } = await sb

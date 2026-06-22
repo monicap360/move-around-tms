@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // POST — runs the compliance check, blocks expired drivers, returns summary.
 // Call this from a cron job, a manual "Run Audit" button, or on page load.
 export async function POST() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const today    = new Date().toISOString().slice(0, 10);
 
   const { data: drivers, error } = await supabase

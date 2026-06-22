@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(request.url);
   const unitId = searchParams.get("unit_id");
   const limit  = parseInt(searchParams.get("limit") || "50");
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await request.json();
 
   const { data, error } = await supabase

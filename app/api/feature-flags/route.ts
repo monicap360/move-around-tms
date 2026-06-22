@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const key = searchParams.get("key");
   const scope = searchParams.get("scope") || "global";
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   if (key) {
     const { data, error } = await supabase
@@ -45,7 +45,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing key or enabled" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("feature_flags")
     .upsert(

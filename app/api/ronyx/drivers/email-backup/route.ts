@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import nodemailer from "nodemailer";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +83,7 @@ async function buildBackupExcel(rows: any[]): Promise<Buffer> {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body     = await req.json().catch(() => ({}));
   const toEmail  = body.to || process.env.DRIVER_BACKUP_EMAIL || "sylviaypena@yahoo.com";
 

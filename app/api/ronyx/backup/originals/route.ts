@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { data, error } = await supabase
       .from("original_uploads")
       .select("id, file_name, upload_source, entity_type, file_size, upload_status, created_at")

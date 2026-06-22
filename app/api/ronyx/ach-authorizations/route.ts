@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_ach_authorizations")
     .select("id, recipient_name, company_name, email, status, sign_token, sent_at, signed_at, created_at")
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => null);
   if (!body?.recipient_name) return NextResponse.json({ error: "recipient_name required" }, { status: 400 });
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => null);
   if (!body?.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
@@ -53,7 +53,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { id } = await req.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 

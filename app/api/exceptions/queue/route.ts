@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "open";
     const severity = searchParams.get("severity");
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     let query = supabase
       .from("exception_queue")
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const updateData: any = {
       updated_at: new Date().toISOString(),

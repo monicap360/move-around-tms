@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +91,7 @@ function addStyledSheet(
 }
 
 export async function GET(_req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const now = new Date();
 
   // Fetch via view (migration 113 required); fall back gracefully

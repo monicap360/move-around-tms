@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/ronyx/backup/download?path=...&bucket=...
 // Returns a signed download URL for an original uploaded file
 export async function GET(req: Request) {
-  const sb     = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const url    = new URL(req.url);
   const path   = url.searchParams.get("path");
   const bucket = url.searchParams.get("bucket") || "ronyx-original-uploads";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ const VALID_FIELD_TYPES = [
 const ADMIN_ROLES = ["owner","admin","system_admin","integration_admin"];
 
 async function resolveSession(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data: { user }, error } = await sb.auth.getUser();
   if (error || !user) return null;
   const { data: seat } = await supabaseAdmin

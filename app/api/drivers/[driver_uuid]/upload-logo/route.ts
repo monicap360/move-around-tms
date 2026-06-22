@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { v4 as uuidv4 } from "uuid";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export async function POST(
   { params }: { params: { driver_uuid: string } },
 ) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     // Validate driver_uuid
     const { driver_uuid } = params;
     if (!driver_uuid || typeof driver_uuid !== "string") {

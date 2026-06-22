@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase.from("tickets").select("*").eq("id", params.id).single();
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
   return NextResponse.json({ ticket: data });
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   const allowed: Record<string, boolean> = {
@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { error } = await supabase.from("tickets").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ deleted: true });

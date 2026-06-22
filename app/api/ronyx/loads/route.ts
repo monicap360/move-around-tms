@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +43,7 @@ const DEFAULT_LOADS = [
 ];
 
 export async function GET(request: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const route =
     payload?.route ||
@@ -114,7 +114,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing load id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const now = new Date().toISOString();
   const resolvedUpdates = { ...updates };

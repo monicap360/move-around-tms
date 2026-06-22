@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ function chunkArray<T>(items: T[], size: number): T[][] {
 export async function GET(req: NextRequest) {
   try {
     const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { searchParams } = new URL(req.url);
     const timeframe = searchParams.get("timeframe") || "30d";
 

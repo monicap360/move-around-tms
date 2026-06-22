@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { searchParams } = new URL(req.url);
   const date   = searchParams.get("date");
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const body = await req.json().catch(() => ({}));
 

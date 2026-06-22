@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const token = new URL(req.url).searchParams.get("token");
   if (!token) return NextResponse.json({ error: "token required" }, { status: 400 });
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_subhauler_agreements")
     .select("*")
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body?.token || !body?.signature) return NextResponse.json({ error: "token and signature required" }, { status: 400 });
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data: existing } = await supabase
     .from("ronyx_subhauler_agreements")

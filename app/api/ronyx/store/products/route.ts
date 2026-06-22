@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClient>): Promise<string | null> {
+async function resolveOrgId(supabase: typeof supabaseAdmin): Promise<string | null> {
   const fromEnv = process.env.RONYX_ORG_ID;
   if (fromEnv) return fromEnv;
 
@@ -18,7 +18,7 @@ async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClie
 }
 
 export async function GET(_request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const orgId = await resolveOrgId(supabase);
   if (!orgId) {
@@ -40,7 +40,7 @@ export async function GET(_request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const orgId = await resolveOrgId(supabase);
   if (!orgId) {

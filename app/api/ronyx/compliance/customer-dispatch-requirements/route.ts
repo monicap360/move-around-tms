@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const customer = searchParams.get("customer");
   const activeOnly = searchParams.get("active_only") !== "false";
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
   const { id, ...updates } = body;
 

@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { requireOrgRole } from "@/lib/auth/requireOrgRole";
 import { hasOrganizationAccess } from "@/lib/auth/hasOrganizationAccess";
 
 export const dynamic = "force-dynamic";
 
 // ── Resolve Ronyx org (by env UUID or organization_code) ─────────────────────
-async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function resolveRonyxOrg(supabase: typeof supabaseAdmin) {
   const envOrgId = process.env.RONYX_ORG_ID;
   const orFilter = envOrgId
     ? `id.eq.${envOrgId},organization_code.eq.RONYX`
@@ -55,7 +55,7 @@ function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: bool
 // exposed in organization_module_marketplace, so ordering by it causes a 42703
 // error. Using category + module_name keeps results consistent.
 async function queryMarketplaceView(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   orgId: string
 ) {
   return supabase
@@ -68,7 +68,7 @@ async function queryMarketplaceView(
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { org, columnsMissing } = await resolveRonyxOrg(supabase);
   if (!org) return NextResponse.json({ error: "No organization found" }, { status: 404 });
 

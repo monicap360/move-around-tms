@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +62,7 @@ function mapJobStatus(raw: string) {
 
 // ─── POST /api/ronyx/dispatch-import ──────────────────────
 export async function POST(req: Request) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
   const { rows, file_name, schedule_date, import_name, original_upload_id } = body as {
     rows:                 Record<string, string>[];
@@ -217,7 +217,7 @@ export async function POST(req: Request) {
 
 // ─── GET /api/ronyx/dispatch-import ── list imports ───────
 export async function GET() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("dispatch_imports")
     .select("*")

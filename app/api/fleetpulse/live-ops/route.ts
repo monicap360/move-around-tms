@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = 'force-dynamic';
 
 // Example: Live operational intelligence feed (aggregate latest data)
 export async function GET() {
-  const supa = createSupabaseServerClient();
+  const supa = supabaseAdmin;
 
   const [ticketsRes, driversRes, trucksRes, loadsRes] = await Promise.all([
     supa

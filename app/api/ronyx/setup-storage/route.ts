@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,7 @@ const REQUIRED_BUCKETS: { name: string; public: boolean; maxSize: number }[] = [
 ];
 
 export async function GET() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   // Get list of existing buckets
   const { data: existing, error: listErr } = await sb.storage.listBuckets();

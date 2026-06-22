@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing driverId" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("driver_hr_profiles")
     .select("*")
@@ -37,7 +37,7 @@ export async function PUT(request: Request) {
   const payload = await request.json();
   const { id, created_at, updated_at, driver_id, organization_id, ...rest } = payload || {};
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: driver, error: driverError } = await supabase
     .from("drivers")
     .select("organization_id")

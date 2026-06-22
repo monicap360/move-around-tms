@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "full_name is required" }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // 1. Insert core driver row — only columns guaranteed to exist in drivers table
     const { data: driver, error: driverErr } = await supabase
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing driverId" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("driver_profiles")
     .select("*")
@@ -147,7 +147,7 @@ export async function PUT(request: Request) {
   const payload = await request.json();
   const cleaned = normalizePayload(payload || {});
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("driver_profiles")

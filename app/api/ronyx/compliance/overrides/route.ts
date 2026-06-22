@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // Auto-expire overrides on every read
-async function expireStale(sb: ReturnType<typeof createSupabaseServerClient>) {
+async function expireStale(sb: typeof supabaseAdmin) {
   await sb
     .from("ronyx_compliance_overrides")
     .update({ status: "expired", updated_at: new Date().toISOString() })
@@ -13,7 +13,7 @@ async function expireStale(sb: ReturnType<typeof createSupabaseServerClient>) {
 }
 
 export async function GET(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   await expireStale(sb);
 
   const { searchParams } = new URL(req.url);
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   try {
     const body = await req.json();
 
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   try {
     const body = await req.json();
     const { id, action, revoked_by_name, revoke_reason } = body;

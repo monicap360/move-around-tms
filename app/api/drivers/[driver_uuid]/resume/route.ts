@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: any) {
-  const supa = createSupabaseServerClient();
+  const supa = supabaseAdmin;
   const { driver_uuid } = params;
 
   const { data } = await supa

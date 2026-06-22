@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body     = await req.json().catch(() => ({}));
   const jobId    = params.id;
 
@@ -160,7 +160,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: job } = await supabase
     .from("dispatch_jobs").select("job_status").eq("id", params.id).single();
 

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ function normalizePayload(payload: Record<string, unknown>) {
 }
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("aggregate_material_profiles")
     .select("*")
@@ -58,7 +58,7 @@ export async function PUT(request: Request) {
   const payload = await request.json();
   const cleaned = normalizePayload(payload || {});
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("aggregate_material_profiles")
     .upsert(

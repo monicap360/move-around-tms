@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ function scoreName(full: string, target: string): number {
 }
 
 export async function POST(req: Request) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
   const drivers: string[] = body.drivers || [];
   const trucks:  string[] = body.trucks  || [];

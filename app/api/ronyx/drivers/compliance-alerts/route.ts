@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // Returns all drivers with expired or expiring docs — computed live from driver_profiles.
 // No notification table needed; this is the source of truth for the alert strip.
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const today = new Date().toISOString().slice(0, 10);
   const in30  = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
 

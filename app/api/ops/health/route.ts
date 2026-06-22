@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { HealthMonitor } from "@/lib/ops/healthMonitor";
 import { IncidentResponseAgent } from "@/lib/ops/incidentResponseAgent";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get('organization_id') || undefined;
 

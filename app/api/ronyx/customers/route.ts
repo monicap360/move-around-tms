@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ const REQUIRED_COMPANIES = [
 ];
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { data, error } = await supabase
     .from("ronyx_customers")
@@ -73,7 +73,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
   const { data, error } = await supabase
@@ -94,7 +94,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing customer id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const { data, error } = await supabase
     .from("ronyx_customers")

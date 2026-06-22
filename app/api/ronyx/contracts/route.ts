@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_contracts")
     .select("*")
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const payload = await request.json().catch(() => null);
   if (!payload?.company_name) {
     return NextResponse.json({ error: "company_name is required" }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const payload = await request.json().catch(() => null);
   if (!payload?.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { id } = await request.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 

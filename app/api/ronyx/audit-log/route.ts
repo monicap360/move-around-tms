@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const entity_id   = searchParams.get("entity_id");
   const limit       = parseInt(searchParams.get("limit") || "100", 10);
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   let query = supabase
     .from("audit_logs")
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "entity_type and action are required" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("audit_logs")

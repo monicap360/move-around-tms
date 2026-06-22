@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
   const limit           = parseInt(searchParams.get("limit") || "50", 10);
   const org_id          = searchParams.get("org_id");
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   // Fetch network-visible drivers
   let query = supabase

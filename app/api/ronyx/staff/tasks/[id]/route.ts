@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 /* GET /api/ronyx/staff/tasks/[id] */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_staff_tasks")
     .select("*")
@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
    If completing a COI task: validates underlying COI is resolved (warns but allows manager_override).
 */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   // Fetch current task
@@ -76,7 +76,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 /* DELETE /api/ronyx/staff/tasks/[id] — cancel */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_staff_tasks")
     .update({ status: "cancelled", updated_at: new Date().toISOString() })

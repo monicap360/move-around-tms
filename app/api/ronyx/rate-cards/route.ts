@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,7 @@ function normalizePayload(payload: Record<string, unknown>) {
 }
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase.from("ronyx_rate_cards").select("*").order("updated_at", { ascending: false });
 
   if (error) {
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   const payload = await request.json();
   const cleaned = normalizePayload(payload || {});
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_rate_cards")
     .insert({ ...cleaned, updated_at: new Date().toISOString() })
@@ -67,7 +67,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing rate card id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_rate_cards")
     .update({ ...cleaned, updated_at: new Date().toISOString() })

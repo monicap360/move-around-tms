@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import Papa from "papaparse";
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 // Admin-only endpoint to reconcile tickets against material plant CSV files
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { ticketId, csvUrl } = await req.json();
 
     if (!ticketId) {
@@ -176,7 +176,7 @@ function editDistance(a: string, b: string) {
 // GET endpoint to auto-reconcile all missing tickets
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Get all unreconciled missing tickets
     const { data: tickets, error } = await supabase

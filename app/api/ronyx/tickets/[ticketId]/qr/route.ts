@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export async function POST(
   { params }: { params: { ticketId: string } }
 ) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { ticketId } = params;
     const body = await req.json().catch(() => ({}));
     const createdBy = body.created_by || "office";
@@ -81,7 +81,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { ticketId: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data } = await supabase
     .from("aggregate_tickets")
     .select("id, ticket_number, qr_token, qr_url, qr_created_at, qr_scan_count, last_qr_scanned_at")

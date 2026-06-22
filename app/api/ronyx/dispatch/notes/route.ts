@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 const VALID_CATEGORIES = new Set(["customer","driver","manager","payment","delay","complaint","internal"]);
 
 export async function POST(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   if (!body.job_id || !body.body) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("job_id");
   if (!jobId) return NextResponse.json({ notes: [] });

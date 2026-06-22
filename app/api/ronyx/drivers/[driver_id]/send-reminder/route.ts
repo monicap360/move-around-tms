@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import nodemailer from "nodemailer";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ function makeTransport() {
 }
 
 export async function POST(req: Request, { params }: { params: { driver_id: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   // Load driver + profile

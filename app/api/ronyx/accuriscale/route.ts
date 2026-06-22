@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const status    = searchParams.get("status");
   const view      = searchParams.get("view") ?? "summary";
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   if (view === "summary") {
     // KPI summary — parallel fetch
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const { action, ...payload } = body;
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   if (action === "resolve_exception") {
     const { exception_id, resolution_notes, resolved_by } = payload;

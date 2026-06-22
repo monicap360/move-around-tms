@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // ── Resolve org ───────────────────────────────────────────────────────────────
-async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function resolveRonyxOrg(supabase: typeof supabaseAdmin) {
   const envOrgId = process.env.RONYX_ORG_ID;
   const orFilter = envOrgId
     ? `id.eq.${envOrgId},organization_code.eq.RONYX`
@@ -22,7 +22,7 @@ async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerC
 
 // ── GET — current payment status + log ───────────────────────────────────────
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const org = await resolveRonyxOrg(supabase);
   if (!org) return NextResponse.json({ error: "No organization found" }, { status: 404 });
 
@@ -48,7 +48,7 @@ export async function GET() {
 
 // ── POST — submit or verify ───────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const org = await resolveRonyxOrg(supabase);
   if (!org) return NextResponse.json({ error: "No organization found" }, { status: 404 });
 

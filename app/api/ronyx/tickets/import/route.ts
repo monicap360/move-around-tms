@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ type RowInput = Record<string, unknown>;
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const body = await req.json();
     const rows: RowInput[] = Array.isArray(body.rows) ? body.rows : [];
 

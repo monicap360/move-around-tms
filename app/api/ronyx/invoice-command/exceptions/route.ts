@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { data, error } = await supabase
       .from("invoice_reconciliation_exceptions")
       .select("id, exception_type, severity, issue, dollar_impact, next_best_action, status, contractor_name, truck_number, ticket_number")

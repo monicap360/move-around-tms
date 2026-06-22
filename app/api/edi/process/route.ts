@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { parseEDI, parse204LoadTender, parse210FreightInvoice, parse214ShipmentStatus } from "@/lib/edi/edi-parser";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Parse EDI document
     const ediDoc = parseEDI(raw_content);

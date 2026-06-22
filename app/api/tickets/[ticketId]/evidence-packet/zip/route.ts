@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import JSZip from "jszip";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { ticketId } = params;
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Get evidence packet data
     const { data: packet } = await supabase

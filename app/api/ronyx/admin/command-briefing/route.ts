@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ async function safe<T>(promise: PromiseLike<{ data: T | null; error: any }>): Pr
 }
 
 export async function GET() {
-  const sb  = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const today = new Date().toISOString().slice(0, 10);
   const in7  = new Date(Date.now() + 7  * 86400000).toISOString();
   const in30 = new Date(Date.now() + 30 * 86400000).toISOString();

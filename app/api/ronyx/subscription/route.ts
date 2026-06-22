@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { hasOrganizationAccess } from "@/lib/auth/hasOrganizationAccess";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ const FREE_TRIAL_MODULES = [
 // ── Resolve org ───────────────────────────────────────────────────────────────
 // Tries: env var ID → organization_code RONYX → first org in table.
 // Returns the org row with trial columns if available, otherwise just id/name.
-async function resolveRonyxOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function resolveRonyxOrg(supabase: typeof supabaseAdmin) {
   const envOrgId = process.env.RONYX_ORG_ID;
 
   // Build OR filter: match by env UUID if set, always also match by org code
@@ -85,7 +85,7 @@ function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: bool
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { org, columnsMissing } = await resolveRonyxOrg(supabase);
 

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 //   - Dedup: skip rows where same oo_id + truck_number + load_date already exists
 //   - raw_row JSON stored on every job row
 export async function POST(req: Request) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const { project_name, week_start, week_end, loads, file_name, original_upload_id } = body as {
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
 
 // GET /api/ronyx/payout-import — list payout batches
 export async function GET() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("payout_import_batches")
     .select("*")

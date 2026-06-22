@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // POST — start a new scan batch
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   const { batch_name, scanner_used, uploaded_by, notes } = body;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
 // PATCH — update batch counters or end batch
 export async function PATCH(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
   const { batch_id, ...updates } = body;
 
@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest) {
 
 // GET — fetch batch(es)
 export async function GET(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const batchId = searchParams.get("id");
 

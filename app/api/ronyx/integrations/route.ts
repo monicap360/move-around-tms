@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ const DEFAULT_INTEGRATIONS = [
 ];
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase.from("ronyx_integrations").select("*").order("category", { ascending: true });
 
   if (error) {
@@ -41,7 +41,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing integration id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_integrations")
     .update({ enabled: Boolean(enabled), status: enabled ? "connected" : "disconnected", updated_at: new Date().toISOString() })

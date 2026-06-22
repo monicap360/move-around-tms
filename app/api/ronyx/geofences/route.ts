@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("location_geofences")
     .select("*")
@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("location_geofences")
@@ -39,7 +39,7 @@ export async function PUT(request: Request) {
   if (!payload?.geofence_id) {
     return NextResponse.json({ error: "Missing geofence_id" }, { status: 400 });
   }
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("location_geofences")

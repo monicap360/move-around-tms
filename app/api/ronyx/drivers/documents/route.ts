@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ const PRIMARY_BUCKET = "ronyx-driver-documents";
 const FALLBACK_BUCKETS = [PRIMARY_BUCKET, "ronyx-imports", "ronyx-files"];
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
-async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, bucket: string): Promise<boolean> {
+async function ensureBucket(sb: typeof supabaseAdmin, bucket: string): Promise<boolean> {
   try {
     const { error } = await sb.storage.from(bucket).list("", { limit: 1 });
     if (!error) return true;
@@ -21,7 +21,7 @@ async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, b
 
 // GET /api/ronyx/drivers/documents?driverId=<uuid>
 export async function GET(request: NextRequest) {
-  const sb       = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const driverId = new URL(request.url).searchParams.get("driverId");
   if (!driverId) return NextResponse.json({ error: "Missing driverId" }, { status: 400 });
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
 // POST — multipart file upload OR JSON metadata-only
 export async function POST(request: NextRequest) {
-  const sb          = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const contentType = request.headers.get("content-type") || "";
 
   if (contentType.includes("multipart/form-data")) {
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
 
 // PUT — update a document record
 export async function PUT(request: NextRequest) {
-  const sb      = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const payload = await request.json().catch(() => null);
   if (!payload?.id) return NextResponse.json({ error: "Missing document id" }, { status: 400 });
 

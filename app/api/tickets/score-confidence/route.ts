@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { 
   scoreFieldConfidenceWithVertical, 
   isAnomaly, 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get ticket data - try aggregate_tickets first, then tickets table
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     let ticket: any = null;
     let ticketError: any = null;
     

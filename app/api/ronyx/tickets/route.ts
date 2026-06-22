@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import {
   buildTicketId,
   calculateDistanceMiles,
@@ -61,7 +61,7 @@ function deriveProofStatus(ticket: any) {
 }
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "";
   const from = searchParams.get("from");
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await request.json().catch(() => ({}));
 
   let ticket_id = body.ticket_id as string | undefined;

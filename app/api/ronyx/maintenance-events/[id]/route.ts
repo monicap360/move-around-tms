@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 /* PATCH — update maintenance event (change status, resolve, etc.) */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const patch: Record<string, unknown> = { ...body, updated_at: new Date().toISOString() };
@@ -37,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 /* GET — single event */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_maintenance_events")
     .select("*")

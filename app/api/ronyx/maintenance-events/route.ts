@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const oo_id  = searchParams.get("oo_id");
   const status = searchParams.get("status") || "open";
 
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   let query = sb
     .from("ronyx_maintenance_events")
     .select("*")
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
 /* POST — create a maintenance event (e.g., breakdown, mark out of service) */
 export async function POST(req: Request) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   if (!body.event_type || !body.issue_title) {

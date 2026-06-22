@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request, { params }: { params: { driver_uuid: string } }) {
-  const client = createSupabaseServerClient();
+  const client = supabaseAdmin;
   const { driver_uuid } = params;
   const body = await req.json();
   const { truck_skin, custom_logo_url } = body;

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import crypto from "crypto";
 
@@ -19,7 +19,7 @@ const ADMIN_ROLES = ["owner","admin","system_admin","integration_admin"];
 
 /** Resolve the calling user's org and role. Returns null on auth failure. */
 async function resolveSession(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data: { user }, error } = await sb.auth.getUser();
   if (error || !user) return null;
 

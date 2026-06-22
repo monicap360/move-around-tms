@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // PATCH /api/ronyx/staff-tasks/[id]
 // Body: { status, completed_by, completion_notes, priority, assigned_to_name, notes }
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -37,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 // DELETE /api/ronyx/staff-tasks/[id]
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { error } = await sb.from("ronyx_staff_tasks").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

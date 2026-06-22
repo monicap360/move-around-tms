@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   const rawPath   = match[2];
   const cleanPath = rawPath.split("?")[0]; // strip any existing token
 
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data, error } = await sb.storage.from(bucket).createSignedUrl(cleanPath, 3600);
 
   if (error) {

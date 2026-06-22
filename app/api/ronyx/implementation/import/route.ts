@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ const ORG_FILTER = process.env.RONYX_ORG_ID
   ? `id.eq.${process.env.RONYX_ORG_ID},organization_code.eq.RONYX`
   : `organization_code.eq.RONYX`;
 
-async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function resolveOrgId(supabase: typeof supabaseAdmin) {
   const { data } = await supabase
     .from("organizations")
     .select("id")
@@ -27,7 +27,7 @@ async function resolveOrgId(supabase: ReturnType<typeof createSupabaseServerClie
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = await resolveOrgId(supabase);
   if (!orgId) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 

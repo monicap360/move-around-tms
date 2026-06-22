@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { TMS_BUCKET, generalUploadPath } from "@/lib/storage-paths";
 
 export const dynamic = "force-dynamic";
@@ -33,14 +33,12 @@ function detectModule(fileName: string, mimeType: string): string {
 }
 
 // ─── Get or create a storage bucket ──────────────────────
-async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, bucket: string): Promise<boolean> {
+async function ensureBucket(bucket: string): Promise<boolean> {
   try {
-    // Try to list — if bucket exists this succeeds
-    const { error } = await sb.storage.from(bucket).list("", { limit: 1 });
+    const { error } = await supabaseAdmin.storage.from(bucket).list("", { limit: 1 });
     if (!error) return true;
 
-    // Bucket doesn't exist — try to create it
-    const { error: createErr } = await sb.storage.createBucket(bucket, {
+    const { error: createErr } = await supabaseAdmin.storage.createBucket(bucket, {
       public: true,
       fileSizeLimit: 52428800, // 50MB
     });
@@ -51,19 +49,7 @@ async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, b
 }
 
 // ─── POST /api/ronyx/upload-file ─────────────────────────
-// Universal file upload for all Ronyx modules.
-// Accepts ANY file type. Auto-detects module from filename.
-// Self-healing: creates storage bucket if needed.
-// Works even if original_uploads table hasn't been migrated yet.
-//
-// FormData fields:
-//   file    — the File (required)
-//   module  — override auto-detection (optional)
-//   oo_id   — owner operator ID if this is a compliance/contract doc (optional)
-//
-// Returns: { ok, upload_id, path, bucket, url, module, file_name, file_type }
 export async function POST(req: Request) {
-  const sb       = createSupabaseServerClient();
   const formData = await req.formData();
   const file     = formData.get("file") as File | null;
   const moduleOverride = formData.get("module") as string | null;
@@ -87,11 +73,13 @@ export async function POST(req: Request) {
 
   for (const candidateBucket of BUCKET_ORDER) {
     if (storageOk) break;
-    const candidatePath = candidateBucket === TMS_BUCKET ? filePath : `ronyx/${module}/${Date.now()}_${file.name.replace(/[<>:"/\\|?*]/g, "_")}`;
-    const ready = await ensureBucket(sb, candidateBucket);
+    const candidatePath = candidateBucket === TMS_BUCKET
+      ? filePath
+      : `ronyx/${fileModule}/${Date.now()}_${file.name.replace(/[<>:"/\\|?*]/g, "_")}`;
+    const ready = await ensureBucket(candidateBucket);
     if (!ready) continue;
 
-    const { error: uploadErr } = await sb.storage
+    const { error: uploadErr } = await supabaseAdmin.storage
       .from(candidateBucket)
       .upload(candidatePath, arrayBuffer, { contentType, upsert: false });
 
@@ -99,9 +87,8 @@ export async function POST(req: Request) {
       storageOk   = true;
       usedBucket  = candidateBucket;
       storagePath = candidatePath;
-      // tms-documents is private — no public URL; caller uses view-doc to get signed URL
       if (candidateBucket !== TMS_BUCKET) {
-        const { data } = sb.storage.from(candidateBucket).getPublicUrl(candidatePath);
+        const { data } = supabaseAdmin.storage.from(candidateBucket).getPublicUrl(candidatePath);
         publicUrl = data?.publicUrl || null;
       }
     }
@@ -119,8 +106,8 @@ export async function POST(req: Request) {
   // ── Track in original_uploads (graceful — table may not exist yet) ──
   let uploadId: string | null = null;
   try {
-    const row: Record<string, any> = {
-      module,
+    const row: Record<string, unknown> = {
+      module:            fileModule,
       source_file_name:  file.name,
       storage_bucket:    storageOk ? usedBucket : "pending",
       storage_path:      storagePath,
@@ -130,10 +117,8 @@ export async function POST(req: Request) {
       is_original:       true,
       is_deleted:        false,
     };
-    if (ooId) {
-      row.notes = `oo_id:${ooId}`;
-    }
-    const { data } = await sb
+    if (ooId) row.notes = `oo_id:${ooId}`;
+    const { data } = await supabaseAdmin
       .from("original_uploads")
       .insert(row)
       .select("id")
@@ -144,42 +129,40 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({
-    ok:        storageOk,
-    upload_id: uploadId,
-    path:      storagePath,
-    bucket:    storageOk ? usedBucket : null,
-    url:       publicUrl,
-    module,
-    file_name: file.name,
-    file_type: fileType,
-    storage_ok: storageOk,
-    db_tracked: !!uploadId,
-    // Hint for caller about what to do with this file
-    routing_hint: getRoutingHint(module, fileType, file.name),
+    ok:           storageOk,
+    upload_id:    uploadId,
+    path:         storagePath,
+    bucket:       storageOk ? usedBucket : null,
+    url:          publicUrl,
+    module:       fileModule,
+    file_name:    file.name,
+    file_type:    fileType,
+    storage_ok:   storageOk,
+    db_tracked:   !!uploadId,
+    routing_hint: getRoutingHint(fileModule, fileType, file.name),
   });
 }
 
 // ─── Routing hints for callers ────────────────────────────
-function getRoutingHint(module: string, fileType: string, fileName: string): string {
-  if (module === "dispatch")   return "dispatch-import";
-  if (module === "payout")     return "payout-import";
-  if (module === "compliance" && fileName.toLowerCase().includes("w-9")) return "oo-w9";
-  if (module === "compliance") return "oo-compliance-doc";
-  if (module === "contracts")  return "oo-contract";
-  if (module === "fastscan")   return "ticket-scan";
-  if (module === "drivers")    return "driver-doc";
-  if (fileType === "image")    return "ticket-scan";
+function getRoutingHint(fileModule: string, fileType: string, fileName: string): string {
+  if (fileModule === "dispatch")   return "dispatch-import";
+  if (fileModule === "payout")     return "payout-import";
+  if (fileModule === "compliance" && fileName.toLowerCase().includes("w-9")) return "oo-w9";
+  if (fileModule === "compliance") return "oo-compliance-doc";
+  if (fileModule === "contracts")  return "oo-contract";
+  if (fileModule === "fastscan")   return "ticket-scan";
+  if (fileModule === "drivers")    return "driver-doc";
+  if (fileType === "image")        return "ticket-scan";
   return "general";
 }
 
 // ─── GET /api/ronyx/upload-file — list original uploads ──
 export async function GET(req: Request) {
-  const sb  = createSupabaseServerClient();
   const url = new URL(req.url);
   const mod = url.searchParams.get("module");
 
   try {
-    let query = sb
+    let query = supabaseAdmin
       .from("original_uploads")
       .select("*")
       .eq("is_deleted", false)

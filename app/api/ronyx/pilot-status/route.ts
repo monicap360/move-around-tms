@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { checkPilotAccess } from "@/lib/ronyx/pilotAccess";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
   let org: Record<string, unknown> | null = null;

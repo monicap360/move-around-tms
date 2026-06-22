@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ const VALID_TYPES = new Set([
 ]);
 
 export async function POST(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   if (!body.incident_type || !VALID_TYPES.has(body.incident_type)) {
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const jobId   = searchParams.get("job_id");
   const open    = searchParams.get("open"); // "true" = unresolved only
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });

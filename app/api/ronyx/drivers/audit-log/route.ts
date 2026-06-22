@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ const DRIVER_ACTIONS = [
 ];
 
 export async function GET(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const limit  = Math.min(Number(searchParams.get("limit")  || 200), 500);
   const offset = Number(searchParams.get("offset") || 0);

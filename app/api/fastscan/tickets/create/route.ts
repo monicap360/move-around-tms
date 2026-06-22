@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const client = createSupabaseServerClient();
+  const client = supabaseAdmin;
   const body = await req.json();
   const { driver_uuid, load_id, weight_in, weight_out, plant_id, material_id } =
     body;

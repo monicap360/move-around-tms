@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireSameOrigin } from "@/lib/security";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 async function resolveOrganizationId(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   userId: string,
   requestedOrgId?: string | null,
 ) {
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ invoice: { id: "demo-inv", status: "Draft" } });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const projectId = searchParams.get("project_id");
     const customerId = searchParams.get("customer_id");
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data: authData } = await supabase.auth.getUser();
     let organizationId = organizationIdParam || null;

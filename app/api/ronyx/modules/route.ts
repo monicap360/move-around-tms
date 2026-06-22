@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -168,7 +168,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing section" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   if (section === "tickets") {
     const ronyxTickets = await supabase
       .from("ronyx.tickets")
@@ -268,7 +268,7 @@ export async function PUT(request: Request) {
   const payload = await request.json();
   const rows = Array.isArray(payload?.rows) ? payload.rows : [];
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { error: deleteError } = await supabase.from("ronyx_module_items").delete().eq("section", section);
 
   if (deleteError) {

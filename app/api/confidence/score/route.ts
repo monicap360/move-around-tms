@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { scoreFieldConfidence, isAnomaly, getAnomalySeverity } from "@/lib/data-confidence/confidence-scorer";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Record confidence event in database
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     await supabase.rpc("record_confidence_event", {
       p_entity_type: entityType,
       p_entity_id: entityId,

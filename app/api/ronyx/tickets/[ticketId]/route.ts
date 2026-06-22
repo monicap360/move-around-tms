@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ function deriveProofStatus(ticket: any) {
 }
 
 export async function GET(_request: NextRequest, { params }: { params: { ticketId: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
 
   const { data, error } = await supabase
@@ -64,7 +64,7 @@ export async function GET(_request: NextRequest, { params }: { params: { ticketI
 
 export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
   try {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const body = await request.json().catch(() => ({}));
 
@@ -155,7 +155,7 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { ticketId: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
   const body = await request.json().catch(() => ({}));
   const deletedBy = (body.deleted_by as string) || "dispatcher";

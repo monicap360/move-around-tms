@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ const CUSTOMER_FIELDS = `
 
 // GET — look up ticket by QR token
 export async function GET(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("t");
   const role  = (searchParams.get("r") || "unknown") as string;
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
 
 // POST — customer signature submission
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("t");
 

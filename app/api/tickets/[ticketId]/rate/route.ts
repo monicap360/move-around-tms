@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { calculateRate, DEFAULT_ACCESSORIALS } from "@/lib/rating/rating-engine";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export async function POST(
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Get ticket
     const { data: ticket, error: ticketError } = await supabase

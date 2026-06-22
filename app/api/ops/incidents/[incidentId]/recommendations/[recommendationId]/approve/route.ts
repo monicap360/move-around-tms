@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { IncidentResponseAgent } from "@/lib/ops/incidentResponseAgent";
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export async function POST(
 ) {
   try {
     const { incidentId, recommendationId } = params;
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

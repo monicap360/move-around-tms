@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const assignee  = searchParams.get("assignee") || "CCB";
   const limit     = parseInt(searchParams.get("limit") || "100", 10);
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   let query = supabase
     .from("ronyx_staff_tasks")
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("ronyx_staff_tasks")
@@ -49,7 +49,7 @@ export async function PATCH(request: Request) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_staff_tasks")
     .update({ ...updates, updated_at: new Date().toISOString() })

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ function normalizePayload(payload: Record<string, unknown>) {
 }
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase.from("ronyx_job_sites").select("*").order("updated_at", { ascending: false });
 
   if (error) {
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const payload = await request.json();
   const cleaned = normalizePayload(payload || {});
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_job_sites")
     .insert({ ...cleaned, updated_at: new Date().toISOString() })
@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing job site id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_job_sites")
     .update({ ...cleaned, updated_at: new Date().toISOString() })

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ interface DriverRow {
 }
 
 export async function POST() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   let created = 0;
   let closed  = 0;
 

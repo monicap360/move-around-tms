@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/ronyx/dispatch-import/[importId] — jobs + alerts for one import batch
 export async function GET(_req: Request, { params }: { params: { importId: string } }) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   const [jobsRes, alertsRes, batchRes] = await Promise.all([
     sb.from("dispatch_jobs")

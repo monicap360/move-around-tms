@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { generateInvoiceFromTickets } from "@/lib/ronyx/phase1/invoiceEngine";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ function buildInvoiceNumber() {
 }
 
 export async function GET(request: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("project_id");
   const customerId = searchParams.get("customer_id");
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   const action = payload?.action;
   const projectId = payload?.project_id;
   const customerId = payload?.customer_id;
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -204,7 +204,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing invoice id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

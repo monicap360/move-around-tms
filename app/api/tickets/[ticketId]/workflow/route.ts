@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { evaluateApprovalWorkflow } from "@/lib/workflows/ticket-approval-rules";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export async function POST(
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Get ticket with all related data
     const { data: ticket, error: ticketError } = await supabase
@@ -119,7 +119,7 @@ export async function GET(
   try {
     const { ticketId } = params;
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Get ticket
     const { data: ticket } = await supabase

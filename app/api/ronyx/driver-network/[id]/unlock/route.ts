@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export async function POST(
     return NextResponse.json({ error: "organization_id required" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   // Verify driver is network-visible and has granted consent
   const { data: driver, error: dErr } = await supabase
@@ -96,7 +96,7 @@ export async function PATCH(
     return NextResponse.json({ error: "unlock_id required" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data: unlock, error } = await supabase
     .from("driver_network_unlocks")

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { ASSISTANT_CATALOG, ASSISTANT_KEYS } from "@/lib/ai/assistantCatalog";
 
@@ -10,7 +10,7 @@ const VALID_STYLE = ["default","command","logistics","finance","compliance","fle
 const ADMIN_ROLES = ["owner","admin","system_admin"];
 
 async function resolveSession(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data: { user }, error } = await sb.auth.getUser();
   if (error || !user) return null;
 

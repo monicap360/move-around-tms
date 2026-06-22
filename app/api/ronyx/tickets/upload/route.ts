@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ const EXT_TO_MIME: Record<string, string> = {
   pdf: "application/pdf",
 };
 
-async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, bucket: string): Promise<boolean> {
+async function ensureBucket(sb: typeof supabaseAdmin, bucket: string): Promise<boolean> {
   try {
     const { error } = await sb.storage.from(bucket).list("", { limit: 1 });
     if (!error) return true;
@@ -32,7 +32,7 @@ async function ensureBucket(sb: ReturnType<typeof createSupabaseServerClient>, b
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase  = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const formData  = await req.formData();
     const file      = formData.get("file")      as File   | null;
     const ticketId  = formData.get("ticket_id") as string | null;

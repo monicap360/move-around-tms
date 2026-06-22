@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 const BUCKET = "ronyx-files";
 
 async function resolveOrganizationId(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   userId: string,
   requestedOrgId?: string | null,
 ) {
@@ -29,7 +29,7 @@ async function resolveOrganizationId(
   return orgMember?.organization_id || null;
 }
 
-async function ensureBucket(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function ensureBucket(supabase: typeof supabaseAdmin) {
   const { data: buckets } = await supabase.storage.listBuckets();
   const exists = buckets?.some((bucket) => bucket.name === BUCKET);
   if (!exists) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const {
       data: { user },
       error: authError,

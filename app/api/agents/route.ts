@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { AgentRouter } from "@/lib/agents/agentRouter";
 import { ResolutionAgent } from "@/lib/agents/agents/resolutionAgent";
 import { GenericAgent } from "@/lib/agents/agents/genericAgent";
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const body = await req.json();
     const { message, ticketId, violationId, currentPage } = body;
 
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
    &limit=100
 */
 export async function GET(req: Request) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { searchParams } = new URL(req.url);
 
   let q = sb.from("ronyx_staff_tasks").select("*")
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
    Create or find existing open task (idempotent by oo_id+document_type+task_type).
 */
 export async function POST(req: Request) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   if (!body.task_type || !body.title) {

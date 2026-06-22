@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     // Pull approved tickets that haven't been invoiced yet
     const { data: tickets } = await supabase
       .from("aggregate_tickets")

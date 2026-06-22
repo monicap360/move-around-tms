@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ const FILING_TASKS = [
 ];
 
 async function resolveSession(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { data: { user }, error } = await sb.auth.getUser();
   if (error || !user) return null;
   const { data: seat } = await supabaseAdmin

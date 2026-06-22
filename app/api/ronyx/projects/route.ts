@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ function normalizePayload(payload: Record<string, unknown>) {
 }
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_projects")
     .select("*")
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   const payload = await request.json();
   const cleaned = normalizePayload(payload || {});
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_projects")
     .insert(cleaned)
@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing project id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_projects")
     .update(cleaned)

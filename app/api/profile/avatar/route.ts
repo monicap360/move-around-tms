@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "../../_supabase";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseAdmin;
 
   // Get the current user
   const { data: userData } = await supabase.auth.getUser();
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseAdmin;
 
   // Get the current user
   const { data: userData } = await supabase.auth.getUser();

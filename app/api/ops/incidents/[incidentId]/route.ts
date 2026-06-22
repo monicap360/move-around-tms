@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { IncidentResponseAgent } from "@/lib/ops/incidentResponseAgent";
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export async function GET(
 ) {
   try {
     const { incidentId } = params;
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     // Get incident
     const { data: incident, error: incidentError } = await supabase
@@ -82,7 +82,7 @@ export async function PATCH(
   try {
     const { incidentId } = params;
     const body = await req.json();
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

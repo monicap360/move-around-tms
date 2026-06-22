@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { driver_id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
   const driverId = params.driver_id;
 
@@ -138,7 +138,7 @@ export async function DELETE(
   req: Request,
   { params }: { params: { driver_id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
   const driverId = params.driver_id;
 

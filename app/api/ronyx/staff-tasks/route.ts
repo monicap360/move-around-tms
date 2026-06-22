@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ function routeTaskAssignee(taskType: string, title: string): string {
 // GET /api/ronyx/staff-tasks
 // ?assignee=CCB|Sylvia|Team|All  &status=open|completed|all  &limit=100
 export async function GET(req: Request) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const assignee = searchParams.get("assignee") || "All";
   const status   = searchParams.get("status")   || "open";
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
 // POST /api/ronyx/staff-tasks
 // Create a task (or upsert if entity_type + entity_id + task_type match an open task)
 export async function POST(req: Request) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   const assignee = body.assigned_to_name || routeTaskAssignee(body.task_type || "", body.title || "");

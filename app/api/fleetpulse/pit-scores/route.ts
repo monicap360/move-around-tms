@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // List all pit scores
 export async function GET() {
-  const supa = createSupabaseServerClient();
+  const supa = supabaseAdmin;
   const { data, error } = await supa
     .from("fleetpulse_pit_scores")
     .select("*")
@@ -16,7 +16,7 @@ export async function GET() {
 
 // Create a new pit score
 export async function POST(req: Request) {
-  const supa = createSupabaseServerClient();
+  const supa = supabaseAdmin;
   const body = await req.json();
   const { data, error } = await supa
     .from("fleetpulse_pit_scores")

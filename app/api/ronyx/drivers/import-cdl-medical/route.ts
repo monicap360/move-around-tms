@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,7 @@ function findCol(headers: string[], aliases: string[]): number {
 }
 
 export async function POST(req: NextRequest) {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   const form = await req.formData();
   const file = form.get("file") as File | null;

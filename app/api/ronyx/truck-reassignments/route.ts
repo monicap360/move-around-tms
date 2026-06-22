@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 /* POST — log a truck reassignment and update driver's current truck */
 export async function POST(req: Request) {
-  const sb   = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const body = await req.json();
 
   if (!body.driver_id || !body.new_truck_id) {
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const oo_id = searchParams.get("oo_id");
-  const sb    = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   let query = sb
     .from("ronyx_truck_reassignment_logs")

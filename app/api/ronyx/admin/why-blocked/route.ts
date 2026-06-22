@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ type BlockReason = {
 };
 
 export async function GET(req: Request) {
-  const sb  = createSupabaseServerClient();
+  const sb = supabaseAdmin;
   const url = new URL(req.url);
   const type = url.searchParams.get("type") || "";
   const id   = url.searchParams.get("id")   || "";

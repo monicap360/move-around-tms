@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { IncidentResponseAgent } from "@/lib/ops/incidentResponseAgent";
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get('organization_id');
     const status = searchParams.get('status'); // 'open', 'resolved', etc.
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Manual incident creation
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

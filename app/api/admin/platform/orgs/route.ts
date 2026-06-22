@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // Returns all organizations with subscription + subdomain info for the
 // Platform Admin Console at admin.movearoundtms.app
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("organizations")
@@ -47,7 +47,7 @@ export async function GET() {
 
 // Update org subscription/onboarding fields from admin console
 export async function PATCH(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await request.json();
   const { org_id, ...updates } = body;
 

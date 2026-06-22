@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import nodemailer from "nodemailer";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +106,7 @@ function createTransport() {
 export async function POST(request: NextRequest) {
   try {
     // Fetch all current drivers from the DB
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { data: rows, error: dbErr } = await supabase
       .from("drivers")
       .select("id, name, phone, email, driver_profiles(*)")

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +44,7 @@ const DEFAULT_REQUESTS = [
 ];
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_customer_requests")
     .select("*")
@@ -71,7 +71,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase.from("ronyx_customer_requests").insert(payload).select("*").single();
 
   if (error) {
@@ -89,7 +89,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing request id" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data, error } = await supabase
     .from("ronyx_customer_requests")
     .update({ ...updates, updated_at: new Date().toISOString() })

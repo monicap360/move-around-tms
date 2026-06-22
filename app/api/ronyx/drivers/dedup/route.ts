@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // POST /api/ronyx/drivers/dedup
 // Removes duplicate driver records, keeping the oldest (first imported) per name.
 export async function POST() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   // 1. Find all drivers grouped by normalized name
   const { data: allDrivers, error: fetchErr } = await supabase
@@ -66,7 +66,7 @@ export async function POST() {
 
 // GET /api/ronyx/drivers/dedup — preview only, no deletions
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data: allDrivers, error } = await supabase
     .from("drivers")

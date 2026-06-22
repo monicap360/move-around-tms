@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "../../../../../lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: { driver_uuid: string } }) {
   const { driver_uuid } = params;
-  const client = createSupabaseServerClient();
+  const client = supabaseAdmin;
 
   const { data, error } = await client
     .from("drivers")

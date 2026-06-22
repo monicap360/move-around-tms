@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { TMS_BUCKET, fastScanPath, generalUploadPath } from "@/lib/storage-paths";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const EXT_MIME: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   let form: FormData;
   try {

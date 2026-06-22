@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { checkGeofencesInternal } from "@/app/api/geofencing/integration/route";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ function hashKey(key: string) {
 }
 
 async function authenticateApiKey(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   apiKey: string,
 ) {
   const { data, error } = await supabase
@@ -32,7 +32,7 @@ async function authenticateApiKey(
 }
 
 async function updateDetentionFromGeofence(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   organizationId: string,
   geofenceId: string,
   eventType: "entry" | "exit",
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing API key" }, { status: 401 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const organizationId = await authenticateApiKey(supabase, apiKey);
     if (!organizationId) {
       return NextResponse.json({ error: "Invalid API key" }, { status: 401 });

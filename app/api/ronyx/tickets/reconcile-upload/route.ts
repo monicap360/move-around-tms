@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import Papa from "papaparse";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     );
     const ticketIds = Array.from(new Set(rows.map((row) => toString(row.ticket_id)).filter(Boolean)));
 
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const ticketByNumber = new Map<string, any>();
     const ticketById = new Map<string, any>();
 

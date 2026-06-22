@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ const BUCKETS = [
   { name: "ronyx-files",            label: "Legacy / General Files" },
 ];
 
-async function getBucketStats(supabase: ReturnType<typeof createSupabaseServerClient>, bucketName: string) {
+async function getBucketStats(supabase: typeof supabaseAdmin, bucketName: string) {
   try {
     // List files recursively (up to 1000 per call — adequate for monitoring)
     const { data: files, error } = await supabase.storage
@@ -43,7 +43,7 @@ async function getBucketStats(supabase: ReturnType<typeof createSupabaseServerCl
   }
 }
 
-async function getTableCount(supabase: ReturnType<typeof createSupabaseServerClient>, table: string): Promise<number> {
+async function getTableCount(supabase: typeof supabaseAdmin, table: string): Promise<number> {
   try {
     const { count, error } = await (supabase as any).from(table).select("id", { count: "exact", head: true });
     return error ? 0 : (count ?? 0);
@@ -51,7 +51,7 @@ async function getTableCount(supabase: ReturnType<typeof createSupabaseServerCli
 }
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   // Parallel: bucket stats + table counts
   const [bucketResults, tableCounts] = await Promise.all([

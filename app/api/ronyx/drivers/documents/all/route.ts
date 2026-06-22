@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/ronyx/drivers/documents/all
 // Returns all documents from ronyx_driver_documents for the hub view
 export async function GET() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   const { data, error } = await sb
     .from("ronyx_driver_documents")

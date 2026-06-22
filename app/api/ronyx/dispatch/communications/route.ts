@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import nodemailer from "nodemailer";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ const TEMPLATES: Record<string, (job: any) => string> = {
 };
 
 export async function POST(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   if (!body.job_id || !body.message_type) {
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("job_id");
   if (!jobId) return NextResponse.json({ messages: [] });

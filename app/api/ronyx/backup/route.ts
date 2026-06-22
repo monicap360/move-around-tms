@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/ronyx/backup — returns all data needed for the Backup Center
 export async function GET() {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   const [uploadsRes, dispatchRes, payoutRes, driversRes, ooRes] = await Promise.all([
     sb.from("original_uploads")

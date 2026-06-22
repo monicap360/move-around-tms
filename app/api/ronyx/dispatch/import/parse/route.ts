@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -145,7 +145,7 @@ function computeRowStatus(
 
 export async function POST(req: Request) {
   try {
-    const sb = createSupabaseServerClient();
+    const sb = supabaseAdmin;
     const body = await req.json();
     const { dispatch_import_id, rows } = body as {
       dispatch_import_id: string;

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const [unitRes, woRes] = await Promise.all([
     supabase

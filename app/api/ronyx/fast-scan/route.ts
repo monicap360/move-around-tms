@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +99,7 @@ const SCAN_RULES: Record<string, ScanRule> = {
 
 // ── GET: list fast scan uploads ────────────────────────────────────────────────
 export async function GET(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
 
@@ -113,7 +113,7 @@ export async function GET(req: Request) {
 
 // ── POST: process a fast scan upload ──────────────────────────────────────────
 export async function POST(req: Request) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
   if (!body.file_url) {
