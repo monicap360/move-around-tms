@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
 const DATA_TYPES = ["tickets","drivers","trucks","owner_operators","payroll","customers","dispatch","custom"] as const;
 
-async function resolveOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function resolveOrg(supabase: typeof supabaseAdmin) {
   const envId = process.env.RONYX_ORG_ID;
   const orFilter = envId ? `id.eq.${envId},organization_code.eq.RONYX` : `organization_code.eq.RONYX`;
   const { data } = await supabase.from("organizations").select("id, name").or(orFilter).limit(1).single();
@@ -22,7 +22,7 @@ async function resolveOrg(supabase: ReturnType<typeof createSupabaseServerClient
 
 export async function POST(req: NextRequest) {
   try {
-    const sb  = createSupabaseServerClient();
+    const sb  = supabaseAdmin;
     const org = await resolveOrg(sb);
     if (!org) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 

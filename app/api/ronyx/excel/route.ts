@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import ExcelJS from "exceljs";
 
@@ -52,7 +52,7 @@ function titleRow(ws: ExcelJS.Worksheet, title: string, subtitle: string, cols: 
   ws.getRow(2).height = 18;
 }
 
-async function resolveOrg(supabase: ReturnType<typeof createSupabaseServerClient>) {
+async function resolveOrg(supabase: typeof supabaseAdmin) {
   const envId = process.env.RONYX_ORG_ID;
   const orFilter = envId ? `id.eq.${envId},organization_code.eq.RONYX` : `organization_code.eq.RONYX`;
   const { data } = await supabase.from("organizations").select("id, name").or(orFilter).limit(1).single();
@@ -409,7 +409,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const type = searchParams.get("type") || "tickets";
 
-  const sb  = createSupabaseServerClient();
+  const sb  = supabaseAdmin;
   const org = await resolveOrg(sb);
   if (!org.id) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
@@ -467,7 +467,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const sb   = createSupabaseServerClient();
+    const sb   = supabaseAdmin;
     const org  = await resolveOrg(sb);
     if (!org.id) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
