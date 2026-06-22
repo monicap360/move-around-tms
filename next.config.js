@@ -22,10 +22,9 @@ const nextConfig = {
 
   webpack: (config, { isServer, dev }) => {
     if (!dev) {
-      config.cache = {
-        type: "filesystem",
-        allowCollectingMemory: false,
-      };
+      // Disable persistent cache — Render's filesystem is ephemeral so it
+      // never survives between builds, and it's the biggest build-RAM consumer.
+      config.cache = false;
     }
     if (!isServer) {
       config.resolve.fallback = {
