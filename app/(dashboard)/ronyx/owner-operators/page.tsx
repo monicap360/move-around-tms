@@ -407,6 +407,104 @@ function ScoreBadge({ score, size = "sm" }: { score: number; size?: "sm" | "lg" 
   );
 }
 
+/* ─── FMCSA Verify Button ─────────────────────────────
+   Calls /api/ronyx/fmcsa/lookup (key stored in DB, never exposed to browser).
+   Shows a result card in-line; guides admin to Settings if key not configured. */
+type FmcsaResult = {
+  found: boolean; legal_name?: string | null; operating_status?: string | null;
+  allowed_to_operate?: boolean; safety_rating?: string | null;
+  bipd_insurance_on_file?: string | null; cargo_insurance_on_file?: string | null;
+  address?: string | null; telephone?: string | null;
+  total_drivers?: string | number | null; total_power_units?: string | number | null;
+  data_note?: string; verified_at?: string; error?: string; needsSetup?: boolean;
+};
+
+function FmcsaVerifyButton({ dotNumber, mcNumber, ooId, ooName, onVerified }: {
+  dotNumber?: string | null; mcNumber?: string | null;
+  ooId: string; ooName: string;
+  onVerified: (r: FmcsaResult) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [result,  setResult]  = useState<FmcsaResult | null>(null);
+
+  async function verify() {
+    if (!dotNumber && !mcNumber) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/ronyx/fmcsa/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dot_number: dotNumber || undefined, mc_number: mcNumber || undefined, oo_id: ooId }),
+      });
+      const data: FmcsaResult = await res.json();
+      setResult(data);
+      if (!data.error) onVerified(data);
+    } catch {
+      setResult({ found: false, error: "Request failed — check your connection" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const statusColor = result?.allowed_to_operate === false ? "#dc2626"
+    : result?.found ? "#15803d" : "#6b7280";
+
+  return (
+    <div>
+      <button
+        onClick={verify}
+        disabled={loading || (!dotNumber && !mcNumber)}
+        style={{
+          padding: "6px 14px", borderRadius: 8, border: "1.5px solid #1e3a8a",
+          background: loading ? "#f3f4f6" : "#1e3a8a", color: loading ? "#6b7280" : "#fff",
+          fontWeight: 700, fontSize: "0.75rem", cursor: loading ? "default" : "pointer",
+        }}
+      >
+        {loading ? "Verifying…" : "🔍 CCB™ FMCSA Verify"}
+      </button>
+
+      {result && (
+        <div style={{
+          marginTop: 10, padding: "12px 14px", borderRadius: 10,
+          background: result.error ? "#fef2f2" : result.found ? "#f0fdf4" : "#fefce8",
+          border: `1px solid ${result.error ? "#fecaca" : result.found ? "#bbf7d0" : "#fde68a"}`,
+          fontSize: "0.78rem", lineHeight: 1.6,
+        }}>
+          {result.needsSetup ? (
+            <div>
+              <strong style={{ color: "#c2410c" }}>FMCSA key not configured.</strong>{" "}
+              <a href="/ronyx/settings/integrations" style={{ color: "#1e40af" }}>Go to Settings → Integrations</a> to add your FMCSA web key.
+            </div>
+          ) : result.error ? (
+            <div style={{ color: "#dc2626" }}>⚠️ {result.error}</div>
+          ) : result.found ? (
+            <>
+              <div style={{ fontWeight: 800, color: statusColor, marginBottom: 4 }}>
+                {result.allowed_to_operate ? "✅ Active — Allowed to Operate" : "⛔ NOT Allowed to Operate"}
+              </div>
+              {result.legal_name && <div><strong>Legal Name:</strong> {result.legal_name}</div>}
+              {result.safety_rating && <div><strong>Safety Rating:</strong> {result.safety_rating}</div>}
+              {result.bipd_insurance_on_file && <div><strong>BIPD Insurance on File:</strong> {result.bipd_insurance_on_file}</div>}
+              {result.cargo_insurance_on_file && <div><strong>Cargo Insurance on File:</strong> {result.cargo_insurance_on_file}</div>}
+              {result.address && <div><strong>Address:</strong> {result.address}</div>}
+              {result.total_drivers && <div><strong>Drivers:</strong> {result.total_drivers} &nbsp;|&nbsp; <strong>Power Units:</strong> {result.total_power_units}</div>}
+              <div style={{ marginTop: 6, fontSize: "0.68rem", color: "#6b7280" }}>
+                ℹ️ {result.data_note}
+              </div>
+              <div style={{ fontSize: "0.65rem", color: "#9ca3af" }}>
+                Verified {new Date(result.verified_at!).toLocaleString()} · Source: FMCSA QCMobile
+              </div>
+            </>
+          ) : (
+            <div style={{ color: "#92400e" }}>⚠️ {result.data_note ?? "Carrier not found in FMCSA database."}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Settlement status helpers ──────────────────────── */
 function settlementColors(s: string): [string, string] {
   if (s === "Paid")       return ["#f0fdf4", "#15803d"];
@@ -2526,9 +2624,25 @@ export default function OwnerOperatorsPage() {
               <div style={{ fontSize:"0.75rem", color:"#92400e" }}>Confirm the carrier's policy is active and not fraudulent via FMCSA or ACORD database.</div>
             </div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-              <button onClick={() => { window.open(`https://safer.fmcsa.dot.gov/query.asp?query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${selected.dot_number?.replace(/[^0-9]/g,"")}`, "_blank"); flash("FMCSA SAFER opened — verify carrier registration and insurance."); }} style={{ ...primaryBtn, background:"#c2410c", fontSize:"0.75rem" }}>
-                FMCSA SAFER Verify
-              </button>
+              {/* CCB™ FMCSA Live Verify — uses API key stored in integrations table */}
+              <FmcsaVerifyButton
+                dotNumber={selected.dot_number}
+                mcNumber={selected.mc_number}
+                ooId={selected.id}
+                ooName={selected.company_name}
+                onVerified={(result) => {
+                  if (result.operating_status) {
+                    updateLocalState({
+                      ...selected,
+                      fmcsa_verified_at:      result.verified_at,
+                      fmcsa_operating_status: result.operating_status,
+                      fmcsa_safety_rating:    result.safety_rating,
+                      fmcsa_legal_name:       result.legal_name,
+                    } as any);
+                  }
+                  flash(`FMCSA verified: ${result.legal_name ?? selected.company_name} — ${result.operating_status ?? "status unknown"}`);
+                }}
+              />
               <button onClick={() => { window.open(`https://www.acord.org/`, "_blank"); flash("ACORD certificate verification opened."); }} style={{ ...ghostBtn, fontSize:"0.75rem" }}>
                 ACORD COI Lookup
               </button>
