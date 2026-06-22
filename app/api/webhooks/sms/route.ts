@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
         },
         body: JSON.stringify({

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -137,7 +137,7 @@ export default function MissingTicketUpload() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
             kind: "ticket",

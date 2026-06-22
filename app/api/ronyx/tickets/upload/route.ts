@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
         if (signed?.signedUrl) {
           fetch(`${supabaseUrl}/functions/v1/ocr-scan`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${serviceKey}` },
             body: JSON.stringify({ file_url: signed.signedUrl, ticket_id: ticketId, kind: "ticket" }),
           }).catch(() => { /* OCR is best-effort */ });
         }
