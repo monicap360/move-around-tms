@@ -23,12 +23,14 @@ const nextConfig = {
 
   webpack: (config, { isServer, dev }) => {
     if (!dev) {
-      // Filesystem cache reuses compiled chunks across all pages in the same build run
-      // without holding everything in RAM (which caused OOM with the memory cache).
+      // Filesystem cache keeps compiled modules on disk instead of RAM.
       config.cache = {
         type: "filesystem",
         allowCollectingMemory: false,
       };
+      // Limit parallel workers so peak RSS stays under Render's container limit.
+      // Sequential compilation uses more wall-time but ~40% less peak memory.
+      config.parallelism = 1;
     }
     if (!isServer) {
       config.resolve.fallback = {
