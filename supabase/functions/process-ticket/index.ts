@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+﻿import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { GoogleAuth } from "https://esm.sh/google-auth-library@8.8.0";
 
 const corsHeaders = {
@@ -18,10 +18,16 @@ Deno.serve(async (req) => {
     );
 
     const { ticketId, imageUrl } = await req.json();
+    if (!ticketId || !imageUrl) {
+      return new Response(JSON.stringify({ success: false, error: "ticketId and imageUrl are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const { data: imageData, error: downloadError } = await supabaseClient
-      .storage
-      .from("ronyx-tickets")
+    // Download image from storage (supports private buckets)
+    const { data: imageData, error: downloadError } = await supabaseClient.storage
+      .from("ronyx-files")
       .download(imageUrl);
 
     if (downloadError) throw downloadError;
@@ -31,45 +37,44 @@ Deno.serve(async (req) => {
       new Uint8Array(imageBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""),
     );
 
+    // Call Vision REST API
     const auth = new GoogleAuth({
       credentials: JSON.parse(Deno.env.get("GOOGLE_VISION_CREDENTIALS") || "{}"),
       scopes: ["https://www.googleapis.com/auth/cloud-vision"],
     });
 
+    const token = (await auth.getAccessToken()).token;
     const visionResponse = await fetch("https://vision.googleapis.com/v1/images:annotate", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${(await auth.getAccessToken()).token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        requests: [
-          {
-            image: { content: imageBase64 },
-            features: [{ type: "TEXT_DETECTION" }],
-          },
-        ],
+        requests: [{ image: { content: imageBase64 }, features: [{ type: "TEXT_DETECTION" }] }],
       }),
     });
 
     const visionData = await visionResponse.json();
-    const extractedText = visionData.responses?.[0]?.fullTextAnnotation?.text || "";
+    if (visionData.error) throw new Error(`Vision API error: ${JSON.stringify(visionData.error)}`);
 
-    const ticketData = parseRonyxTicket(extractedText);
+    const extractedText =
+      visionData.responses?.[0]?.fullTextAnnotation?.text ??
+      visionData.responses?.[0]?.textAnnotations?.[0]?.description ??
+      "";
+
+    const ticketData = parseTicket(extractedText);
 
     const { error: updateError } = await supabaseClient
-      .from("ronyx.tickets")
+      .from("aggregate_tickets")
       .update({
-        gross_weight: ticketData.grossWeight,
-        tare_weight: ticketData.tareWeight,
-        net_weight: ticketData.netWeight,
-        rate_amount: ticketData.rate,
-        total_amount: ticketData.total,
-        status: "processed",
-        processed_at: new Date().toISOString(),
+        gross_weight:    ticketData.grossWeight,
+        tare_weight:     ticketData.tareWeight,
+        net_weight:      ticketData.netWeight,
+        rate_amount:     ticketData.rate,
+        total_amount:    ticketData.total,
+        ocr_raw_text:    extractedText,
+        ocr_processed_at: new Date().toISOString(),
+        status:          "ocr_completed",
       })
-      .eq("id", ticketId)
-      .eq("tenant_id", "ronyx");
+      .eq("id", ticketId);
 
     if (updateError) throw updateError;
 
@@ -79,7 +84,6 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error processing ticket:", error);
-
     return new Response(
       JSON.stringify({ success: false, error: (error as Error).message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
@@ -87,26 +91,20 @@ Deno.serve(async (req) => {
   }
 });
 
-function parseRonyxTicket(text: string) {
-  const patterns = {
-    ticketNumber: /Ticket\s*#?\s*:?\s*(\w+\d+)/i,
-    grossWeight: /Gross\s*:?\s*(\d+\.?\d*)/i,
-    tareWeight: /Tare\s*:?\s*(\d+\.?\d*)/i,
-    material: /Material\s*:?\s*(\w+)/i,
-  };
+function parseTicket(text: string) {
+  const extract = (pattern: RegExp) => text.match(pattern)?.[1] ?? null;
 
-  const extract = (pattern: RegExp) => {
-    const match = text.match(pattern);
-    return match ? match[1] : null;
-  };
+  const grossWeight = parseFloat(extract(/Gross\s*:?\s*(\d+\.?\d*)/i) || "0");
+  const tareWeight  = parseFloat(extract(/Tare\s*:?\s*(\d+\.?\d*)/i)  || "0");
+  const netWeight   = grossWeight - tareWeight;
 
   return {
-    ticketNumber: extract(patterns.ticketNumber),
-    grossWeight: parseFloat(extract(patterns.grossWeight) || "0"),
-    tareWeight: parseFloat(extract(patterns.tareWeight) || "0"),
-    netWeight: 0,
-    material: extract(patterns.material),
-    rate: 0,
+    ticketNumber: extract(/Ticket\s*#?\s*:?\s*(\w+\d+)/i),
+    grossWeight,
+    tareWeight,
+    netWeight,
+    material: extract(/Material\s*:?\s*(\w+)/i),
+    rate:  0,
     total: 0,
   };
 }

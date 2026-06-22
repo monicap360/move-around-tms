@@ -1,14 +1,14 @@
-// Supabase Edge Function: Unified OCR Scan
-// Handles both Aggregate Tickets and HR Documents in one endpoint.
+﻿// Supabase Edge Function: Unified OCR Scan
+// Handles Aggregate Tickets, HR Documents, and Detention in one endpoint.
+// Uses Google Vision REST API (not the Node.js SDK — incompatible with Deno).
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import vision from "https://esm.sh/@google-cloud/vision@3.2.1";
+import { GoogleAuth } from "https://esm.sh/google-auth-library@8.8.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface Partner {
@@ -22,11 +22,45 @@ interface Partner {
   active: boolean;
 }
 
-const visionClient = new (vision as any).ImageAnnotatorClient();
+// ── Vision REST API helper ────────────────────────────────────────────────────
+async function runVisionOCR(
+  fileUrl: string | null,
+  imageBase64: string | null,
+): Promise<{ rawText: string; hasFullText: boolean }> {
+  const credsRaw = Deno.env.get("GOOGLE_VISION_CREDENTIALS");
+  if (!credsRaw) throw new Error("GOOGLE_VISION_CREDENTIALS env var not set");
+
+  const auth = new GoogleAuth({
+    credentials: JSON.parse(credsRaw),
+    scopes: ["https://www.googleapis.com/auth/cloud-vision"],
+  });
+  const token = (await auth.getAccessToken()).token;
+
+  const imagePayload = imageBase64
+    ? { content: imageBase64 }
+    : { source: { imageUri: fileUrl! } };
+
+  const res = await fetch("https://vision.googleapis.com/v1/images:annotate", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [{ image: imagePayload, features: [{ type: "TEXT_DETECTION" }] }],
+    }),
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(`Vision API error: ${JSON.stringify(data.error)}`);
+
+  const rawText =
+    data.responses?.[0]?.fullTextAnnotation?.text ??
+    data.responses?.[0]?.textAnnotations?.[0]?.description ??
+    "";
+  const hasFullText = !!data.responses?.[0]?.fullTextAnnotation;
+  return { rawText, hasFullText };
+}
 
 serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const supabase = createClient(
@@ -35,50 +69,25 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const kind: "ticket" | "hr" | undefined = body.kind;
+    const kind: "ticket" | "hr" | "detention" | undefined = body.kind;
 
-    // Normalize inputs
-    const fileUrl = body.file_url || body.imageUrl || null;
-    const imageBase64 = body.imageBase64 || null;
+    const fileUrl: string | null = body.file_url || body.imageUrl || null;
+    const imageBase64: string | null = body.imageBase64 || null;
     if (!fileUrl && !imageBase64)
       return json({ error: "Missing file_url/imageUrl or imageBase64" }, 400);
 
-    // OCR via Google Vision
-    const [result] = await visionClient.textDetection(
-      fileUrl || { content: imageBase64 },
-    );
-    const rawText = result?.textAnnotations?.[0]?.description ?? "";
+    const { rawText, hasFullText } = await runVisionOCR(fileUrl, imageBase64);
+    const ocrConfidence = hasFullText ? 95 : 80;
 
-    // Dispatch by kind or inference
     if (kind === "detention") {
-      const out = await handleDetention({
-        rawText,
-        fileUrl,
-        body,
-        result,
-      });
-      return json(out);
+      return json(await handleDetention({ rawText, fileUrl, body, ocrConfidence }));
     }
 
     if (kind === "hr" || (!kind && shouldTreatAsHr(rawText, body))) {
-      const out = await handleHrDoc({
-        rawText,
-        fileUrl,
-        body,
-        supabase,
-        result,
-      });
-      return json(out);
-    } else {
-      const out = await handleTicket({
-        rawText,
-        fileUrl,
-        body,
-        supabase,
-        result,
-      });
-      return json(out);
+      return json(await handleHrDoc({ rawText, fileUrl, body, supabase, ocrConfidence }));
     }
+
+    return json(await handleTicket({ rawText, fileUrl, body, supabase, ocrConfidence }));
   } catch (error: any) {
     console.error("Unified OCR error:", error);
     return json({ error: error.message }, 500);
@@ -94,31 +103,27 @@ function json(body: any, status = 200) {
 
 function shouldTreatAsHr(rawText: string, body: any) {
   if (body.kind === "hr") return true;
-  // Heuristics: keywords that indicate license/medical context
   return /license|medical|exam|mvr/i.test(rawText);
 }
 
 function extractTimes(rawText: string) {
-  const matches = rawText.match(
-    /\b([01]?\d|2[0-3])[:.][0-5]\d(\s?[APMapm]{2})?\b/g,
-  );
+  const matches = rawText.match(/\b([01]?\d|2[0-3])[:.][0-5]\d(\s?[APMapm]{2})?\b/g);
   return matches ? Array.from(new Set(matches.map((m) => m.trim()))) : [];
 }
 
-async function handleDetention({ rawText, fileUrl, body, result }: any) {
-  const detectedTimes = extractTimes(rawText);
+async function handleDetention({ rawText, fileUrl, body, ocrConfidence }: any) {
   return {
     success: true,
     kind: "detention",
     raw_text: rawText,
-    detected_times: detectedTimes,
-    ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
+    detected_times: extractTimes(rawText),
+    ocr_confidence: ocrConfidence,
     file_url: fileUrl || null,
     detention_event_id: body.detention_event_id || null,
   };
 }
 
-async function handleHrDoc({ rawText, fileUrl, body, supabase, result }: any) {
+async function handleHrDoc({ rawText, fileUrl, body, supabase, ocrConfidence }: any) {
   const docType = /medical|exam/i.test(rawText)
     ? "Medical Certificate"
     : /driver|license/i.test(rawText)
@@ -128,166 +133,108 @@ async function handleHrDoc({ rawText, fileUrl, body, supabase, result }: any) {
   const expMatch = rawText.match(/(Exp.*?:?\s*)(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
   const expiration_date = expMatch ? expMatch[2] : null;
   const nameMatch = rawText.match(/Name[:\s]+([A-Za-z\s]+)/i);
-  const licenseMatch = rawText.match(
-    /(DL|License|Lic\.?)[#:\s]*([A-Z0-9\-]+)/i,
-  );
+  const licenseMatch = rawText.match(/(DL|License|Lic\.?)[#:\s]*([A-Z0-9\-]+)/i);
   const stateMatch = rawText.match(/State[:\s]+([A-Z]{2})/i);
-  const issueMatch = rawText.match(
-    /Issue(?:d)?[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i,
-  );
+  const issueMatch = rawText.match(/Issue(?:d)?[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
 
-  const full_name =
-    (body.full_name_hint || nameMatch?.[1] || "").trim() || null;
+  const full_name = (body.full_name_hint || nameMatch?.[1] || "").trim() || null;
   const license_number = licenseMatch?.[2] || null;
   const state = stateMatch?.[1] || null;
   const issue_date = issueMatch?.[1] || null;
 
-  const { data: drivers } = await supabase
-    .from("drivers")
-    .select("id, name, license_number");
-  const matched = await matchDriverFromOcr(
-    rawText,
-    drivers || [],
-    supabase,
+  const { data: drivers } = await supabase.from("drivers").select("id, name, license_number");
+  const matched = await matchDriverFromOcr(rawText, drivers || [], supabase, full_name, license_number);
+
+  const { data: inserted, error } = await supabase.from("driver_documents").insert({
+    driver_id: matched?.id || body.driverId || null,
+    doc_type: docType,
     full_name,
     license_number,
-  );
-
-  const { data: inserted, error } = await supabase
-    .from("driver_documents")
-    .insert({
-      driver_id: matched?.id || body.driverId || null,
-      doc_type: docType,
-      full_name,
-      license_number,
-      state,
-      issue_date: issue_date
-        ? new Date(issue_date).toISOString().slice(0, 10)
-        : null,
-      expiration_date: expiration_date
-        ? new Date(expiration_date).toISOString().slice(0, 10)
-        : null,
-      image_url: fileUrl || null,
-      ocr_raw_text: rawText,
-      ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
-      auto_matched: Boolean(matched),
-      driver_matched_confidence: matched?.confidence || null,
-      status: "Pending Manager Review",
-    })
-    .select();
+    state,
+    issue_date: issue_date ? new Date(issue_date).toISOString().slice(0, 10) : null,
+    expiration_date: expiration_date ? new Date(expiration_date).toISOString().slice(0, 10) : null,
+    image_url: fileUrl || null,
+    ocr_raw_text: rawText,
+    ocr_confidence: ocrConfidence,
+    auto_matched: Boolean(matched),
+    driver_matched_confidence: matched?.confidence || null,
+    status: "Pending Manager Review",
+  }).select();
 
   if (error) throw error;
-  return {
-    success: true,
-    kind: "hr",
-    docType,
-    expiration_date,
-    matched_driver: matched || null,
-    inserted,
-  };
+  return { success: true, kind: "hr", docType, expiration_date, matched_driver: matched || null, inserted };
 }
 
-async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
-  // Fetch partners
+async function handleTicket({ rawText, fileUrl, body, supabase, ocrConfidence }: any) {
   const { data: partners, error: partnersError } = await supabase
     .from("aggregate_partners")
     .select("*")
     .eq("active", true);
   if (partnersError) throw partnersError;
 
-  // Match partner
   let matchedPartner: Partner | null = null;
   for (const p of (partners || []) as Partner[]) {
-    if (rawText.toLowerCase().includes(p.name.toLowerCase())) {
-      matchedPartner = p;
-      break;
-    }
+    if (rawText.toLowerCase().includes(p.name.toLowerCase())) { matchedPartner = p; break; }
     if (p.regex_patterns?.company_hint) {
-      const regex = new RegExp(p.regex_patterns.company_hint, "i");
-      if (regex.test(rawText)) {
-        matchedPartner = p;
-        break;
-      }
+      if (new RegExp(p.regex_patterns.company_hint, "i").test(rawText)) { matchedPartner = p; break; }
     }
   }
 
-  // Extract ticket data
   const ticketData = extractTicketData(rawText, matchedPartner);
 
   const ocrFieldsConfidence = {
-    ticket_number: ticketData.ticketNumber ? 0.9 : 0.4,
-    material: ticketData.material ? 0.85 : 0.4,
-    quantity: ticketData.quantity ? 0.85 : 0.4,
-    unit_type: ticketData.unitType ? 0.75 : 0.4,
-    ticket_date: ticketData.ticketDate ? 0.75 : 0.4,
-    plant: ticketData.plant ? 0.75 : 0.4,
-    truck_identifier: ticketData.truckIdentifier ? 0.7 : 0.4,
-    job_name: ticketData.jobName ? 0.7 : 0.4,
+    ticket_number:    ticketData.ticketNumber     ? 0.9  : 0.4,
+    material:         ticketData.material         ? 0.85 : 0.4,
+    quantity:         ticketData.quantity         ? 0.85 : 0.4,
+    unit_type:        ticketData.unitType         ? 0.75 : 0.4,
+    ticket_date:      ticketData.ticketDate       ? 0.75 : 0.4,
+    plant:            ticketData.plant            ? 0.75 : 0.4,
+    truck_identifier: ticketData.truckIdentifier  ? 0.7  : 0.4,
+    job_name:         ticketData.jobName          ? 0.7  : 0.4,
   };
 
-  // Match driver
   const { data: drivers } = await supabase.from("drivers").select("id, name");
-  const matchedDriver = await matchDriverFromOcr(
-    rawText,
-    drivers || [],
-    supabase,
-  );
+  const matchedDriver = await matchDriverFromOcr(rawText, drivers || [], supabase);
 
-  // Rates
-  const defaultPayRate = 25;
-  const defaultBillRate = 35;
-  const payRate = matchedPartner?.pay_rate ?? defaultPayRate;
-  const billRate = matchedPartner?.bill_rate ?? defaultBillRate;
-
-  let finalPayRate = payRate;
-  let finalBillRate = billRate;
+  const payRate  = matchedPartner?.pay_rate  ?? 25;
+  const billRate = matchedPartner?.bill_rate ?? 35;
+  let finalPayRate = payRate, finalBillRate = billRate;
   if (matchedPartner?.material_codes && ticketData.material) {
     const adj = matchedPartner.material_codes[ticketData.material];
-    if (adj) {
-      finalPayRate = adj.pay_rate ?? payRate;
-      finalBillRate = adj.bill_rate ?? billRate;
-    }
+    if (adj) { finalPayRate = adj.pay_rate ?? payRate; finalBillRate = adj.bill_rate ?? billRate; }
   }
 
   const quantity = ticketData.quantity || 0;
-  const totalPay = quantity * finalPayRate;
-  const totalBill = quantity * finalBillRate;
-  const totalProfit = quantity * (finalBillRate - finalPayRate);
-
   const { data: ticket, error: insertError } = await supabase
     .from("aggregate_tickets")
     .insert({
-      partner_id: matchedPartner?.id || null,
-      driver_id: matchedDriver?.id || body.driverId || null,
-      driver_name_ocr: ticketData.driverName || null,
+      partner_id:               matchedPartner?.id || null,
+      driver_id:                matchedDriver?.id || body.driverId || null,
+      driver_name_ocr:          ticketData.driverName || null,
       driver_matched_confidence: matchedDriver?.confidence || null,
-      auto_matched: Boolean(matchedDriver),
-      ticket_number: ticketData.ticketNumber,
-      material: ticketData.material,
-      quantity: quantity,
-      unit_type: ticketData.unitType || "Ton",
-      pay_rate: finalPayRate,
-      bill_rate: finalBillRate,
-      total_pay: totalPay,
-      total_bill: totalBill,
-      total_profit: totalProfit,
-      fleet_id: body.fleetId || null,
-      ticket_date: ticketData.ticketDate || new Date().toISOString(),
-      status: "Pending Manager Review",
-      recon_status: "ingest_queue",
-      ocr_raw_text: rawText,
-      ocr_confidence: result?.fullTextAnnotation ? 95 : 80,
-      ocr_processed_at: new Date().toISOString(),
+      auto_matched:             Boolean(matchedDriver),
+      ticket_number:            ticketData.ticketNumber,
+      material:                 ticketData.material,
+      quantity,
+      unit_type:                ticketData.unitType || "Ton",
+      pay_rate:                 finalPayRate,
+      bill_rate:                finalBillRate,
+      total_pay:                quantity * finalPayRate,
+      total_bill:               quantity * finalBillRate,
+      total_profit:             quantity * (finalBillRate - finalPayRate),
+      fleet_id:                 body.fleetId || null,
+      ticket_date:              ticketData.ticketDate || new Date().toISOString(),
+      status:                   "Pending Manager Review",
+      recon_status:             "ingest_queue",
+      ocr_raw_text:             rawText,
+      ocr_confidence:           ocrConfidence,
+      ocr_processed_at:         new Date().toISOString(),
       ocr_json: {
         extracted_data: {
-          ticket_number: ticketData.ticketNumber,
-          material: ticketData.material,
-          quantity: ticketData.quantity,
-          unit_type: ticketData.unitType,
-          ticket_date: ticketData.ticketDate,
-          plant: ticketData.plant,
-          truck_identifier: ticketData.truckIdentifier,
-          job_name: ticketData.jobName,
+          ticket_number: ticketData.ticketNumber, material: ticketData.material,
+          quantity: ticketData.quantity, unit_type: ticketData.unitType,
+          ticket_date: ticketData.ticketDate, plant: ticketData.plant,
+          truck_identifier: ticketData.truckIdentifier, job_name: ticketData.jobName,
         },
         confidence_scores: ocrFieldsConfidence,
         raw_text_preview: rawText.slice(0, 5000),
@@ -300,35 +247,20 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
 
   if (insertError) throw insertError;
 
-  // Score confidence for the new ticket (async, non-blocking)
-  // Use Deno's fetch to call the API endpoint
-  const driver_id = matchedDriver?.id || body.driverId || ticket.driver_id;
-  if (ticket.id && (ticket.quantity || ticket.pay_rate || ticket.bill_rate)) {
-    const appUrl = Deno.env.get("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
+  // Score confidence async (non-blocking)
+  const appUrl = Deno.env.get("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
+  if (ticket.id) {
     fetch(`${appUrl}/api/tickets/score-confidence`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ticketId: ticket.id,
-        driverId: driver_id,
-      }),
-    }).catch((err) => 
-      console.error(`Error scoring confidence for ticket ${ticket.id}:`, err)
-    );
+      body: JSON.stringify({ ticketId: ticket.id, driverId: matchedDriver?.id || body.driverId || ticket.driver_id }),
+    }).catch((err) => console.error(`Error scoring confidence for ticket ${ticket.id}:`, err));
   }
 
   return {
-    success: true,
-    kind: "ticket",
-    ticket,
+    success: true, kind: "ticket", ticket,
     matched_partner: matchedPartner?.name || null,
-    matched_driver: matchedDriver
-      ? {
-          id: matchedDriver.id,
-          name: matchedDriver.name,
-          confidence: matchedDriver.confidence,
-        }
-      : null,
+    matched_driver: matchedDriver ? { id: matchedDriver.id, name: matchedDriver.name, confidence: matchedDriver.confidence } : null,
     extracted_data: ticketData,
     rates: { pay_rate: finalPayRate, bill_rate: finalBillRate },
   };
@@ -336,53 +268,33 @@ async function handleTicket({ rawText, fileUrl, body, supabase, result }: any) {
 
 function extractTicketData(text: string, partner: Partner | null): any {
   const data: any = {};
-  const ticketRegex = partner?.regex_patterns?.ticket_no
-    ? new RegExp(partner.regex_patterns.ticket_no, "i")
-    : /ticket\s*#?\s*:?\s*(\w+)/i;
-  const ticketMatch = text.match(ticketRegex);
-  data.ticketNumber = ticketMatch ? ticketMatch[1] : null;
 
-  const materialRegex = partner?.regex_patterns?.material
-    ? new RegExp(partner.regex_patterns.material, "i")
-    : /material\s*:?\s*([^\n]+)/i;
-  const materialMatch = text.match(materialRegex);
-  data.material = materialMatch ? materialMatch[1].trim() : null;
+  const ticketRegex = partner?.regex_patterns?.ticket_no ? new RegExp(partner.regex_patterns.ticket_no, "i") : /ticket\s*#?\s*:?\s*(\w+)/i;
+  data.ticketNumber = text.match(ticketRegex)?.[1] ?? null;
 
-  const quantityRegex = partner?.regex_patterns?.quantity
-    ? new RegExp(partner.regex_patterns.quantity, "i")
-    : /(\d+(?:\.\d+)?)\s*(tons?|yards?|loads?)/i;
-  const quantityMatch = text.match(quantityRegex);
-  data.quantity = quantityMatch ? parseFloat(quantityMatch[1]) : null;
-  data.unitType = quantityMatch ? quantityMatch[2].replace(/s$/, "") : "Ton";
+  const materialRegex = partner?.regex_patterns?.material ? new RegExp(partner.regex_patterns.material, "i") : /material\s*:?\s*([^\n]+)/i;
+  data.material = text.match(materialRegex)?.[1]?.trim() ?? null;
 
-  const dateRegex = partner?.regex_patterns?.date
-    ? new RegExp(partner.regex_patterns.date, "i")
-    : /date\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
-  const dateMatch = text.match(dateRegex);
-  data.ticketDate = dateMatch ? new Date(dateMatch[1]).toISOString() : null;
+  const quantityRegex = partner?.regex_patterns?.quantity ? new RegExp(partner.regex_patterns.quantity, "i") : /(\d+(?:\.\d+)?)\s*(tons?|yards?|loads?)/i;
+  const qm = text.match(quantityRegex);
+  data.quantity = qm ? parseFloat(qm[1]) : null;
+  data.unitType = qm ? qm[2].replace(/s$/, "") : "Ton";
 
-  const driverRegex =
-    /(?:driver|operator|hauler)\s*:?\s*([a-z]+(?:\s+[a-z]+)*)/i;
-  const driverMatch = text.match(driverRegex);
-  data.driverName = driverMatch ? driverMatch[1].trim() : null;
+  const dateRegex = partner?.regex_patterns?.date ? new RegExp(partner.regex_patterns.date, "i") : /date\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+  const dm = text.match(dateRegex);
+  data.ticketDate = dm ? new Date(dm[1]).toISOString() : null;
 
-  const plantRegex = partner?.regex_patterns?.plant
-    ? new RegExp(partner.regex_patterns.plant, "i")
-    : /(pit|plant|source)\s*:?\s*([^\n]+)/i;
-  const plantMatch = text.match(plantRegex);
-  data.plant = plantMatch ? plantMatch[2]?.trim?.() || plantMatch[1]?.trim?.() : null;
+  data.driverName = text.match(/(?:driver|operator|hauler)\s*:?\s*([a-z]+(?:\s+[a-z]+)*)/i)?.[1]?.trim() ?? null;
 
-  const truckRegex = partner?.regex_patterns?.truck_identifier
-    ? new RegExp(partner.regex_patterns.truck_identifier, "i")
-    : /(truck|unit|hauler)\s*:?\s*([A-Z0-9\-]+)/i;
-  const truckMatch = text.match(truckRegex);
-  data.truckIdentifier = truckMatch ? truckMatch[2]?.trim?.() : null;
+  const plantRegex = partner?.regex_patterns?.plant ? new RegExp(partner.regex_patterns.plant, "i") : /(pit|plant|source)\s*:?\s*([^\n]+)/i;
+  const pm = text.match(plantRegex);
+  data.plant = pm ? (pm[2]?.trim() || pm[1]?.trim()) : null;
 
-  const jobRegex = partner?.regex_patterns?.job_name
-    ? new RegExp(partner.regex_patterns.job_name, "i")
-    : /(job|site)\s*:?\s*([^\n]+)/i;
-  const jobMatch = text.match(jobRegex);
-  data.jobName = jobMatch ? jobMatch[2]?.trim?.() : null;
+  const truckRegex = partner?.regex_patterns?.truck_identifier ? new RegExp(partner.regex_patterns.truck_identifier, "i") : /(truck|unit|hauler)\s*:?\s*([A-Z0-9\-]+)/i;
+  data.truckIdentifier = text.match(truckRegex)?.[2]?.trim() ?? null;
+
+  const jobRegex = partner?.regex_patterns?.job_name ? new RegExp(partner.regex_patterns.job_name, "i") : /(job|site)\s*:?\s*([^\n]+)/i;
+  data.jobName = text.match(jobRegex)?.[2]?.trim() ?? null;
 
   return data;
 }
@@ -397,22 +309,17 @@ async function matchDriverFromOcr(
   const lower = text.toLowerCase();
 
   if (licenseNumberHint) {
-    const hit = (drivers || []).find(
-      (d: any) => d.license_number && d.license_number === licenseNumberHint,
-    );
+    const hit = drivers.find((d: any) => d.license_number && d.license_number === licenseNumberHint);
     if (hit) return { id: hit.id, name: hit.name, confidence: 98 };
   }
 
   if (fullNameHint) {
-    const hit = (drivers || []).find((d: any) =>
-      d.name.toLowerCase().includes(fullNameHint.toLowerCase()),
-    );
+    const hit = drivers.find((d: any) => d.name.toLowerCase().includes(fullNameHint.toLowerCase()));
     if (hit) return { id: hit.id, name: hit.name, confidence: 92 };
   }
 
-  for (const d of drivers || []) {
-    if (lower.includes(d.name?.toLowerCase?.() || ""))
-      return { id: d.id, name: d.name, confidence: 95 };
+  for (const d of drivers) {
+    if (lower.includes(d.name?.toLowerCase?.() || "")) return { id: d.id, name: d.name, confidence: 95 };
   }
 
   const { data: aliases } = await supabase
@@ -422,20 +329,15 @@ async function matchDriverFromOcr(
   if (aliases) {
     for (const a of aliases) {
       if (lower.includes(a.alias.toLowerCase())) {
-        return {
-          id: a.drivers.id,
-          name: a.drivers.name,
-          confidence: Math.min(95, 70 + (a.confidence_boost || 0)),
-        };
+        return { id: a.drivers.id, name: a.drivers.name, confidence: Math.min(95, 70 + (a.confidence_boost || 0)) };
       }
     }
   }
 
-  for (const d of drivers || []) {
+  for (const d of drivers) {
     const parts = (d.name || "").toLowerCase().split(" ");
     for (const p of parts)
-      if (p.length > 3 && lower.includes(p))
-        return { id: d.id, name: d.name, confidence: 60 };
+      if (p.length > 3 && lower.includes(p)) return { id: d.id, name: d.name, confidence: 60 };
   }
 
   return null;
