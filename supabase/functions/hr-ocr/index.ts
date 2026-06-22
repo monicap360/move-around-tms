@@ -5,8 +5,6 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { GoogleAuth } from "https://esm.sh/google-auth-library@8.8.0";
-
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -16,22 +14,34 @@ async function runVisionOCR(
   fileUrl: string | null,
   imageBase64: string | null,
 ): Promise<{ rawText: string; hasFullText: boolean }> {
+  const apiKey   = Deno.env.get("GOOGLE_VISION_API_KEY");
   const credsRaw = Deno.env.get("GOOGLE_VISION_CREDENTIALS");
-  if (!credsRaw) throw new Error("GOOGLE_VISION_CREDENTIALS env var not set");
 
-  const auth = new GoogleAuth({
-    credentials: JSON.parse(credsRaw),
-    scopes: ["https://www.googleapis.com/auth/cloud-vision"],
-  });
-  const token = (await auth.getAccessToken()).token;
+  if (!apiKey && !credsRaw) {
+    throw new Error("Set GOOGLE_VISION_API_KEY or GOOGLE_VISION_CREDENTIALS in Supabase Edge Function secrets.");
+  }
 
   const imagePayload = imageBase64
     ? { content: imageBase64 }
     : { source: { imageUri: fileUrl! } };
 
-  const res = await fetch("https://vision.googleapis.com/v1/images:annotate", {
+  let fetchUrl = "https://vision.googleapis.com/v1/images:annotate";
+  const fetchHeaders: Record<string, string> = { "Content-Type": "application/json" };
+
+  if (apiKey) {
+    fetchUrl += `?key=${apiKey}`;
+  } else {
+    const { GoogleAuth } = await import("https://esm.sh/google-auth-library@8.8.0");
+    const auth = new GoogleAuth({
+      credentials: JSON.parse(credsRaw!),
+      scopes: ["https://www.googleapis.com/auth/cloud-vision"],
+    });
+    fetchHeaders["Authorization"] = `Bearer ${(await auth.getAccessToken()).token}`;
+  }
+
+  const res = await fetch(fetchUrl, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: fetchHeaders,
     body: JSON.stringify({
       requests: [{ image: imagePayload, features: [{ type: "TEXT_DETECTION" }] }],
     }),
