@@ -2,334 +2,265 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PageProtection from "@/components/security/PageProtection";
 import CustomizationRequestWidget from "@/components/ronyx/CustomizationRequestWidget";
 import IntelImportCenter from "@/components/ronyx/IntelImportCenter";
 
-type NavChild = {
-  label:  string;
-  href:   string;
-  icon?:  string;
-  color?: string;
-  badge?: number;
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type NavChild = { label: string; href: string; icon?: string };
+type NavItem  = { label: string; href: string; icon?: string; color?: string; children?: NavChild[] };
+type NavGroup = { section: string; color?: string; items: NavItem[] };
+
+type DailyCommand = {
+  criticalItems: { text: string; href: string; category: string }[];
+  pulse: {
+    activeLoads: number; dispatchBlocks: number; ticketsNeedingReview: number;
+    payrollHolds: number; trucksDown: number; expiringDocs: number; missingTickets: number;
+  };
+  smartActions: { label: string; href: string; count: number }[];
 };
 
-type NavItem = {
-  label:     string;
-  href:      string;
-  icon?:     string;
-  color?:    string;
-  badge?:    number;
-  subtitle?: string;
-  children?: NavChild[];
-};
+type RonyxUser = { first_name?: string | null; last_name?: string | null; email?: string | null };
 
-type NavGroup = {
-  section: string;
-  items:   NavItem[];
-};
-
-const TICKETS_OCR_CHILDREN: NavChild[] = [
-  { label: "Fast Scan™",             href: "/ronyx/fast-scan",                    icon: "⚡", color: "#16a34a" },
-  { label: "All Tickets",            href: "/ronyx/tickets?tab=all",              icon: "🎫", color: "#d97706" },
-  { label: "Needs Review",           href: "/ronyx/tickets?tab=needs_review",     icon: "⚠️", color: "#ea580c" },
-  { label: "Invoice Reconciliation", href: "/ronyx/tickets?tab=reconciliation",   icon: "🔍", color: "#4f46e5" },
-  { label: "AccuriScale Checks",     href: "/ronyx/accuriscale",                  icon: "⚖️", color: "#22d3ee" },
-];
-
-const DRIVERS_CHILDREN: NavChild[] = [
-  { label: "Driver Command Center", href: "/ronyx/drivers?tab=command",    color: "#0891b2" },
-  { label: "Driver List",           href: "/ronyx/drivers?tab=list",       color: "#0891b2" },
-  { label: "Import Drivers",        href: "/ronyx/drivers?tab=import",     color: "#16a34a" },
-  { label: "Compliance",            href: "/ronyx/drivers?tab=compliance", color: "#dc2626" },
-  { label: "Documents",             href: "/ronyx/drivers?tab=documents",  color: "#64748b" },
-  { label: "Backup Data",           href: "/ronyx/drivers?tab=backup",     color: "#0f766e" },
-  { label: "Audit Trail",           href: "/ronyx/drivers?tab=audit",      color: "#64748b" },
-];
+// ── Nav structure (tighter — 4 groups) ───────────────────────────────────────
 
 const NAV_GROUPS: NavGroup[] = [
   {
     section: "Operations",
     items: [
-      { label: "Command Center",        href: "/ronyx",                            icon: "⊕",  color: "#1e293b" },
-      { label: "Command Briefing",      href: "/ronyx/admin/command-briefing",     icon: "☀️", color: "#dc2626" },
-      { label: "Dispatch",              href: "/ronyx/dispatch/board",             icon: "📋", color: "#2563eb", children: [
-        { label: "Dispatch Board",         href: "/ronyx/dispatch/board",              icon: "📋", color: "#2563eb" },
-        { label: "Daily Dispatch Import",  href: "/ronyx/dispatch/daily-import",       icon: "📥", color: "#7c3aed" },
-        { label: "Dispatch Guard™",        href: "/ronyx/dispatch/dispatch-guard",     icon: "🛡️", color: "#dc2626" },
-        { label: "Load Tracker",           href: "/ronyx/dispatch/loads",              icon: "📍", color: "#0d9488" },
-        { label: "Reassign Truck",         href: "/ronyx/maintenance/breakdowns",      icon: "🔄", color: "#ea580c" },
+      { label: "Dispatch",         href: "/ronyx/dispatch/board",          icon: "📋", color: "#2563eb", children: [
+        { label: "Dispatch Board",        href: "/ronyx/dispatch/board",           icon: "📋" },
+        { label: "Daily Import",          href: "/ronyx/dispatch/daily-import",    icon: "📥" },
+        { label: "Dispatch Guard™",       href: "/ronyx/dispatch/dispatch-guard",  icon: "🛡️" },
+        { label: "Load Tracker",          href: "/ronyx/dispatch/loads",           icon: "📍" },
       ]},
-      { label: "Tickets & OCR",         href: "/ronyx/fast-scan",               icon: "🎫", color: "#d97706", children: TICKETS_OCR_CHILDREN },
-      { label: "Projects / Jobs",       href: "/ronyx/loads",                      icon: "📁", color: "#0d9488" },
-      { label: "Maintenance",           href: "/ronyx/maintenance",                icon: "🔩", color: "#ea580c", children: [
-        { label: "Overview",            href: "/ronyx/maintenance",                icon: "🔩", color: "#ea580c" },
-        { label: "Breakdowns / OOS",    href: "/ronyx/maintenance/breakdowns",    icon: "🚨", color: "#dc2626" },
-        { label: "Truck Availability",  href: "/ronyx/maintenance/availability",  icon: "✅", color: "#15803d" },
-        { label: "Reassignment Log",    href: "/ronyx/maintenance/reassignments", icon: "🔄", color: "#7c3aed" },
+      { label: "Fast Scan™",       href: "/ronyx/fast-scan",               icon: "⚡", color: "#16a34a" },
+      { label: "All Tickets",      href: "/ronyx/tickets",                 icon: "🎫", color: "#d97706", children: [
+        { label: "All Tickets",           href: "/ronyx/tickets?tab=all",          icon: "🎫" },
+        { label: "Needs Review",          href: "/ronyx/tickets?tab=needs_review", icon: "⚠️" },
+        { label: "Reconciliation",        href: "/ronyx/tickets?tab=reconciliation", icon: "🔍" },
       ]},
-    ],
-  },
-  {
-    section: "People & Assets",
-    items: [
-      { label: "Drivers",              href: "/ronyx/drivers?tab=list",  icon: "👤", color: "#0891b2", children: [
-        ...DRIVERS_CHILDREN,
-        { label: "Driver Upload Portal", href: "/ronyx/driver-portal/upload-ticket", color: "#16a34a" },
+      { label: "CCB™",             href: "/ronyx/compliance",              icon: "🛡️", color: "#dc2626", children: [
+        { label: "Compliance Center",     href: "/ronyx/compliance",               icon: "🛡️" },
+        { label: "Be Audit Ready™",       href: "/ronyx/compliance/audit-ready",   icon: "✅" },
+        { label: "Clearance Check™",      href: "/ronyx/compliance/customer-dispatch-requirements", icon: "🔍" },
+        { label: "Expiring Docs",         href: "/ronyx/compliance/expiring",      icon: "⏰" },
+        { label: "RMIS Monitor",          href: "/ronyx/compliance/rmis-monitor",  icon: "📡" },
       ]},
-      { label: "Owner Operators",      href: "/ronyx/owner-operators",   icon: "🚛", color: "#7c3aed", children: [
-        { label: "Overview",           href: "/ronyx/owner-operators",                   icon: "🚛", color: "#7c3aed" },
-        { label: "Settlements",        href: "/ronyx/owner-operators/settlements",       icon: "💵", color: "#15803d" },
-        { label: "COI Matrix",         href: "/ronyx/owner-operators/coi-matrix",        icon: "📋", color: "#1e40af" },
-        { label: "Bulk Import",        href: "/ronyx/owner-operators/bulk-import",       icon: "📥", color: "#0891b2" },
-        { label: "Expired Insurance",  href: "/ronyx/compliance/expired-insurance",      icon: "🔴", color: "#dc2626" },
-        { label: "Compliance Monitor", href: "/ronyx/compliance",                        icon: "🛡️", color: "#dc2626" },
+      { label: "Drivers",          href: "/ronyx/drivers",                 icon: "👤", color: "#0891b2", children: [
+        { label: "Driver List",           href: "/ronyx/drivers?tab=list",         icon: "👤" },
+        { label: "Compliance",            href: "/ronyx/drivers?tab=compliance",   icon: "🛡️" },
+        { label: "Import Drivers",        href: "/ronyx/drivers?tab=import",       icon: "📥" },
+        { label: "Documents",             href: "/ronyx/drivers?tab=documents",    icon: "📄" },
       ]},
-      { label: "Fleet & Equipment",    href: "/ronyx/fleet",             icon: "🔧", color: "#0284c7" },
-      { label: "Driver Network™",      href: "/ronyx/driver-network",    icon: "🌐", color: "#0891b2", children: [
-        { label: "Browse Drivers",     href: "/ronyx/driver-network",           icon: "🔍", color: "#0891b2" },
-        { label: "Shortlist",          href: "/ronyx/driver-network#shortlist", icon: "★",  color: "#7c3aed" },
-        { label: "Unlocked Profiles",  href: "/ronyx/driver-network#unlocked",  icon: "🔓", color: "#15803d" },
-        { label: "Driver Finder™",     href: "/ronyx/settings/billing",         icon: "💼", color: "#dc2626" },
+      { label: "Owner Operators",  href: "/ronyx/owner-operators",         icon: "🚛", color: "#7c3aed", children: [
+        { label: "Overview",              href: "/ronyx/owner-operators",          icon: "🚛" },
+        { label: "Settlements",          href: "/ronyx/owner-operators/settlements", icon: "💵" },
+        { label: "COI Matrix",            href: "/ronyx/owner-operators/coi-matrix", icon: "📋" },
+        { label: "Bulk Import",           href: "/ronyx/owner-operators/bulk-import", icon: "📥" },
       ]},
-      { label: "Documents & Compliance", href: "/ronyx/documents",       icon: "📄", color: "#64748b", children: [
-        { label: "Documents",            href: "/ronyx/documents",                         icon: "📄", color: "#64748b" },
-        { label: "Compliance Center",    href: "/ronyx/compliance",                        icon: "🛡️", color: "#dc2626" },
-        { label: "Driver Docs",          href: "/ronyx/compliance/driver-docs",            icon: "👤", color: "#0891b2" },
-        { label: "Expiring Docs",        href: "/ronyx/compliance/expiring",               icon: "⏰", color: "#ea580c" },
-        { label: "Expired Insurance",    href: "/ronyx/compliance/expired-insurance",      icon: "🔴", color: "#dc2626" },
-        { label: "Audit Packets",        href: "/ronyx/compliance/audit-packets",          icon: "📦", color: "#64748b" },
+      { label: "Fleet & Maintenance", href: "/ronyx/fleet",               icon: "🔧", color: "#0284c7", children: [
+        { label: "Fleet",                 href: "/ronyx/fleet",                    icon: "🔧" },
+        { label: "Maintenance",           href: "/ronyx/maintenance",              icon: "🔩" },
+        { label: "Breakdowns / OOS",      href: "/ronyx/maintenance/breakdowns",   icon: "🚨" },
+        { label: "Availability",          href: "/ronyx/maintenance/availability", icon: "✅" },
       ]},
+      { label: "Projects / Jobs",   href: "/ronyx/loads",                  icon: "📁", color: "#0d9488" },
     ],
   },
   {
     section: "Money",
     items: [
-      { label: "Payroll",            href: "/ronyx/payroll",  icon: "💵", color: "#15803d" },
-      { label: "Invoice Command Center", href: "/ronyx/billing", icon: "🧾", color: "#1d4ed8", children: [
-        { label: "Customer Billing",         href: "/ronyx/billing?tab=customer_billing", icon: "💵", color: "#1e40af" },
-        { label: "Payroll Invoices",         href: "/ronyx/billing?tab=payroll_queue",    icon: "📋", color: "#7c3aed" },
-        { label: "Contractor Pay Sheets",    href: "/ronyx/billing?tab=pay_sheet",        icon: "🧾", color: "#0f766e" },
-        { label: "Unpaid Tickets",           href: "/ronyx/billing?tab=unpaid",           icon: "⚠️", color: "#dc2626" },
-        { label: "Reconciliation",           href: "/ronyx/billing?tab=exceptions",       icon: "🔴", color: "#b45309" },
+      { label: "Invoice Center",   href: "/ronyx/billing",                 icon: "🧾", color: "#1d4ed8", children: [
+        { label: "Customer Billing",      href: "/ronyx/billing?tab=customer_billing", icon: "💵" },
+        { label: "Payroll Invoices",      href: "/ronyx/billing?tab=payroll_queue",    icon: "📋" },
+        { label: "Unpaid Tickets",        href: "/ronyx/billing?tab=unpaid",           icon: "⚠️" },
       ]},
-      { label: "Accounting Hub",     href: "/ronyx/accounting", icon: "📒", color: "#7c3aed", children: [
-        { label: "Billing Pipeline",    href: "/ronyx/accounting",           icon: "⚡", color: "#1d4ed8" },
-        { label: "Invoices",            href: "/ronyx/accounting",           icon: "📄", color: "#1d4ed8" },
-        { label: "AR Aging",            href: "/ronyx/accounting",           icon: "📊", color: "#f59e0b" },
-        { label: "QuickBooks Sync",     href: "/ronyx/accounting",           icon: "🔗", color: "#7c3aed" },
-        { label: "Accounts Receivable", href: "/ronyx/accounts-receivable",  icon: "💰", color: "#16a34a" },
-      ]},
-      { label: "IFTA / Fuel Tax",    href: "/ronyx/ifta",     icon: "⛽", color: "#ca8a04" },
+      { label: "Payroll",          href: "/ronyx/payroll",                 icon: "💵", color: "#15803d" },
+      { label: "Settlements",      href: "/ronyx/owner-operators/settlements", icon: "🤝", color: "#059669" },
+      { label: "Accounting Hub",   href: "/ronyx/accounting",              icon: "📒", color: "#7c3aed" },
     ],
   },
   {
-    section: "Compliance & Records",
+    section: "Insights",
     items: [
-      { label: "HR / DOT Compliance", href: "/ronyx/compliance",  icon: "🛡️", color: "#dc2626", children: [
-        { label: "Compliance Center",       href: "/ronyx/compliance",                                        icon: "🛡️", color: "#dc2626" },
-        { label: "Be Audit Ready™",         href: "/ronyx/compliance/audit-ready",                            icon: "✅", color: "#15803d" },
-        { label: "Clearance Check™",        href: "/ronyx/compliance/customer-dispatch-requirements",         icon: "🔍", color: "#1e40af" },
-        { label: "Driver Docs",             href: "/ronyx/compliance/driver-docs",                            icon: "📄", color: "#0891b2" },
-        { label: "Expiring Docs",           href: "/ronyx/compliance/expiring",                               icon: "⏰", color: "#ea580c" },
-        { label: "RMIS Monitor",            href: "/ronyx/compliance/rmis-monitor",                           icon: "📡", color: "#7c3aed" },
-        { label: "Overrides",               href: "/ronyx/compliance/overrides",                              icon: "🔓", color: "#ea580c" },
-        { label: "Expired Insurance",       href: "/ronyx/compliance/expired-insurance",                      icon: "🔴", color: "#dc2626" },
-        { label: "Owner Operator COIs",     href: "/ronyx/owner-operators/coi-matrix",                       icon: "📋", color: "#1e40af" },
-        { label: "Audit Packets",           href: "/ronyx/compliance/audit-packets",                          icon: "📦", color: "#64748b" },
-      ]},
-      { label: "Insurance Expiry Report", href: "/ronyx/compliance/expired-insurance", icon: "🔴", color: "#dc2626" },
-      { label: "Documents",           href: "/ronyx/documents",    icon: "📄", color: "#64748b" },
-      { label: "Excel Sync Center™",  href: "/ronyx/excel-center", icon: "📊", color: "#16a34a" },
-      { label: "Backup Vault",        href: "/ronyx/backup",       icon: "💾", color: "#0f766e", children: [
-        { label: "Archive Center",    href: "/ronyx/backup/archive-center", icon: "🗃️", color: "#0f766e" },
-      ]},
-      { label: "Reports",             href: "/ronyx/reports",      icon: "📊", color: "#9333ea" },
-    ],
-  },
-  {
-    section: "Staff",
-    items: [
-      { label: "Staff To-Do Lists", href: "/ronyx/tasks",                icon: "✅", color: "#15803d", children: [
-        { label: "CCB (Insurance)",      href: "/ronyx/tasks?tab=CCB",    icon: "🛡️", color: "#1d4ed8" },
-        { label: "Sylvia (Compliance)",  href: "/ronyx/tasks?tab=Sylvia", icon: "📋", color: "#7c3aed" },
-        { label: "Team (General)",       href: "/ronyx/tasks?tab=Team",   icon: "👥", color: "#0891b2" },
-        { label: "All Tasks",            href: "/ronyx/tasks?tab=All",    icon: "📌", color: "#475569" },
-      ]},
-      { label: "Launch Center",      href: "/ronyx/staff/my-dashboard",   icon: "🚀", color: "#1e40af" },
-      { label: "Team Momentum",     href: "/ronyx/staff/team-momentum",  icon: "📊", color: "#7c3aed" },
-    ],
-  },
-  {
-    section: "Commerce",
-    items: [
-      { label: "Merch Store", href: "/ronyx/store", icon: "🛒", color: "#16a34a", subtitle: "Powered by Shopify" },
-    ],
-  },
-  {
-    section: "Setup",
-    items: [
-      { label: "Implementation Hub", href: "/ronyx/implementation", icon: "🚀", color: "#1d4ed8", subtitle: "Data transfer & staff training" },
-      { label: "Onboarding Support", href: "/ronyx/onboarding-support", icon: "🎓", color: "#16a34a" },
+      { label: "Team Momentum",    href: "/ronyx/staff/team-momentum",     icon: "📊", color: "#7c3aed" },
+      { label: "Reports",          href: "/ronyx/reports",                 icon: "📈", color: "#9333ea" },
+      { label: "Excel Sync™",      href: "/ronyx/excel-center",            icon: "📊", color: "#16a34a" },
+      { label: "Staff Tasks",      href: "/ronyx/tasks",                   icon: "✅", color: "#15803d" },
+      { label: "Backup Vault",     href: "/ronyx/backup",                  icon: "💾", color: "#0f766e" },
     ],
   },
   {
     section: "System",
     items: [
-      { label: "Admin Control Center", href: "/ronyx/settings", icon: "⚙️", color: "#475569", children: [
-        { label: "Billing & Subscription", href: "/ronyx/settings/billing",          icon: "💳", color: "#16a34a" },
-        { label: "Module Marketplace",     href: "/ronyx/settings/modules",          icon: "🧩", color: "#7c3aed" },
-        { label: "Command Briefing",       href: "/ronyx/admin/command-briefing",    icon: "☀️", color: "#dc2626" },
-        { label: "Company Profile",        href: "/ronyx/settings/company-profile",  icon: "🏢", color: "#1e40af" },
-        { label: "Users & Staff",          href: "/ronyx/settings/users",            icon: "👥", color: "#0891b2" },
-        { label: "Roles & Permissions",    href: "/ronyx/settings/roles",            icon: "🔐", color: "#7c3aed" },
-        { label: "System Rules",           href: "/ronyx/settings/system-rules",     icon: "⚡", color: "#1e40af" },
-        { label: "Document Routing",       href: "/ronyx/settings/document-routing", icon: "📂", color: "#d97706" },
-        { label: "Notification Rules",     href: "/ronyx/settings/notifications",    icon: "🔔", color: "#d97706" },
-        { label: "Storage Health",         href: "/ronyx/admin/storage-health",      icon: "🗄️", color: "#0891b2" },
-        { label: "Audit Log",              href: "/ronyx/settings/audit-log",        icon: "📜", color: "#475569" },
+      { label: "Admin Control",    href: "/ronyx/settings",                icon: "⚙️", color: "#475569", children: [
+        { label: "Company Profile",       href: "/ronyx/settings/company-profile", icon: "🏢" },
+        { label: "Users & Staff",         href: "/ronyx/settings/users",          icon: "👥" },
+        { label: "Billing",               href: "/ronyx/settings/billing",        icon: "💳" },
+        { label: "System Rules",          href: "/ronyx/settings/system-rules",   icon: "⚡" },
+        { label: "Audit Log",             href: "/ronyx/settings/audit-log",      icon: "📜" },
       ]},
+      { label: "Implementation",   href: "/ronyx/implementation",          icon: "🚀", color: "#1d4ed8" },
+      { label: "Command Briefing", href: "/ronyx/admin/command-briefing",  icon: "☀️", color: "#dc2626" },
     ],
   },
 ];
 
-const QUICK_ACTIONS = [
-  { label: "Intel Import Center™",  icon: "📥", href: "/ronyx/import" },
-  { label: "Start Fast Scan Batch", icon: "⚡", href: "/ronyx/tickets?tab=fastscan&action=start_batch" },
-  { label: "New Ticket",            icon: "🎫", href: "/ronyx/tickets?action=new" },
-  { label: "Upload Driver Sheet",   icon: "⬆️", href: "/ronyx/drivers?tab=import" },
-  { label: "Open Reconciliation",   icon: "🔍", href: "/ronyx/tickets?tab=reconciliation" },
-  { label: "Payroll Holds",         icon: "💵", href: "/ronyx/payroll?filter=holds" },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function parseHref(href: string): { path: string; tab: string | null } {
+function parseHref(href: string) {
   const [path, qs = ""] = href.split("?");
-  const tab = new URLSearchParams(qs).get("tab");
-  return { path, tab };
+  return { path, tab: new URLSearchParams(qs).get("tab") };
 }
 
-function colorBg(hex: string, alpha: number): string {
+function colorBg(hex: string, alpha: number) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-type RonyxUser = {
-  first_name?: string | null;
-  last_name?:  string | null;
-  email?:      string | null;
+const CATEGORY_COLOR: Record<string, string> = {
+  compliance: "#dc2626", dispatch: "#2563eb", tickets: "#d97706",
+  payroll: "#15803d", task: "#7c3aed",
 };
 
-export default function RonyxShell({
-  children,
-  user,
-}: {
-  children: React.ReactNode;
-  user: RonyxUser;
-}) {
+// ── Shell ─────────────────────────────────────────────────────────────────────
+
+export default function RonyxShell({ children, user }: { children: React.ReactNode; user: RonyxUser }) {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
   const currentTab   = searchParams.get("tab");
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const [notifCount] = useState(3);
-  const [now, setNow] = useState<string>("");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set<string>());
-  const [pilotBanner, setPilotBanner] = useState<{
-    show: boolean;
-    daysRemaining: number | null;
-    expired: boolean;
-    endsAt: string | null;
-  }>({ show: false, daysRemaining: null, expired: false, endsAt: null });
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [importOpen,   setImportOpen]   = useState(false);
+  const [now,          setNow]          = useState("");
+  const [expanded,     setExpanded]     = useState<Set<string>>(new Set());
+  const [searchOpen,   setSearchOpen]   = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [searchResults, setSearchResults] = useState<{ label: string; href: string; type: string }[]>([]);
+  const [cmdLoading,   setCmdLoading]   = useState(false);
+  const [daily,        setDaily]        = useState<DailyCommand | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [pilotBanner, setPilotBanner] = useState<{ show: boolean; daysRemaining: number | null; expired: boolean; endsAt: string | null }>({ show: false, daysRemaining: null, expired: false, endsAt: null });
 
+  // Clock
   useEffect(() => {
-    const tick = () =>
-      setNow(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    const tick = () => setNow(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     tick();
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
   }, []);
 
+  // Fetch daily command on mount + every 5 min
   useEffect(() => {
-    setExpanded((prev) => {
+    const load = () => {
+      setCmdLoading(true);
+      fetch("/api/ronyx/daily-command")
+        .then(r => r.json())
+        .then(d => setDaily(d))
+        .catch(() => {})
+        .finally(() => setCmdLoading(false));
+    };
+    load();
+    const id = setInterval(load, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-expand active nav section
+  useEffect(() => {
+    setExpanded(prev => {
       const next = new Set(prev);
-      if (pathname.startsWith("/ronyx/tickets"))     next.add("Tickets & OCR");
-      if (pathname.startsWith("/ronyx/fast-scan"))   next.add("Tickets & OCR");
-      if (pathname.startsWith("/ronyx/accuriscale")) next.add("Tickets & OCR");
-      if (pathname.startsWith("/ronyx/drivers"))     next.add("Drivers");
-      if (pathname.startsWith("/ronyx/maintenance")) next.add("Maintenance");
       if (pathname.startsWith("/ronyx/dispatch"))    next.add("Dispatch");
-      if (pathname.startsWith("/ronyx/admin"))          next.add("Admin Control Center");
-      if (pathname.startsWith("/ronyx/backup"))         next.add("Backup Vault");
-      if (pathname.startsWith("/ronyx/compliance"))     next.add("HR / DOT Compliance");
-      if (pathname.startsWith("/ronyx/accounting"))     next.add("Accounting Hub");
-      if (pathname.startsWith("/ronyx/billing"))        next.add("Invoice Command Center");
-      if (pathname.startsWith("/ronyx/implementation")) next.add("Implementation Hub");
+      if (pathname.startsWith("/ronyx/tickets"))     next.add("All Tickets");
+      if (pathname.startsWith("/ronyx/fast-scan"))   next.add("All Tickets");
+      if (pathname.startsWith("/ronyx/drivers"))     next.add("Drivers");
+      if (pathname.startsWith("/ronyx/compliance"))  next.add("CCB™");
+      if (pathname.startsWith("/ronyx/maintenance")) next.add("Fleet & Maintenance");
+      if (pathname.startsWith("/ronyx/fleet"))       next.add("Fleet & Maintenance");
+      if (pathname.startsWith("/ronyx/settings"))    next.add("Admin Control");
+      if (pathname.startsWith("/ronyx/billing"))     next.add("Invoice Center");
+      if (pathname.startsWith("/ronyx/owner-operators")) next.add("Owner Operators");
       return next;
     });
   }, [pathname]);
 
-  // Fetch pilot status once on mount
+  // Pilot banner
   useEffect(() => {
-    fetch("/api/ronyx/pilot-status")
-      .then(r => r.json())
-      .then(d => {
-        if (d.isPilot) {
-          setPilotBanner({ show: true, daysRemaining: d.daysRemaining, expired: d.pilotExpired, endsAt: d.pilot_ends_at });
-        }
-      })
-      .catch(() => {});
+    fetch("/api/ronyx/pilot-status").then(r => r.json()).then(d => {
+      if (d.isPilot) setPilotBanner({ show: true, daysRemaining: d.daysRemaining, expired: d.pilotExpired, endsAt: d.pilot_ends_at });
+    }).catch(() => {});
   }, []);
 
-  // Auto-initialize all storage buckets once per day (silent, background)
+  // Storage init (once/day)
   useEffect(() => {
     const KEY = "ronyx_storage_setup_at";
     const last = localStorage.getItem(KEY);
-    const oneDayAgo = Date.now() - 86400000;
-    if (last && Number(last) > oneDayAgo) return; // already ran today
-    fetch("/api/ronyx/setup-storage")
-      .then(r => r.json())
-      .then(d => { if (d.created > 0) console.info(`[storage] ${d.created} bucket(s) initialized`); })
-      .catch(() => {}) // never block the UI
-      .finally(() => localStorage.setItem(KEY, String(Date.now())));
+    if (last && Number(last) > Date.now() - 86400000) return;
+    fetch("/api/ronyx/setup-storage").then(r => r.json()).then(d => {
+      if (d.created > 0) console.info(`[storage] ${d.created} bucket(s) initialized`);
+    }).catch(() => {}).finally(() => localStorage.setItem(KEY, String(Date.now())));
   }, []);
 
-  const displayName =
-    user.first_name || user.last_name
-      ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
-      : user.email?.split("@")[0] ?? "Account";
+  // ⌘K search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(s => !s);
+      }
+      if (e.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
-  function isItemActive(href: string): boolean {
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50);
+  }, [searchOpen]);
+
+  // Search handler
+  useEffect(() => {
+    if (!searchQuery.trim()) { setSearchResults([]); return; }
+    const q = searchQuery.toLowerCase();
+    const id = setTimeout(() => {
+      Promise.all([
+        fetch(`/api/ronyx/search?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => ({ results: [] })),
+      ]).then(([res]) => setSearchResults(res.results ?? []));
+    }, 180);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
+  const displayName = user.first_name || user.last_name
+    ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+    : user.email?.split("@")[0] ?? "Account";
+
+  function isItemActive(href: string) {
     const { path, tab } = parseHref(href);
     if (href === "/ronyx") return pathname === "/ronyx";
     if (tab) return pathname === path && currentTab === tab;
     return pathname.startsWith(path);
   }
-
-  function isChildActive(href: string): boolean {
+  function isChildActive(href: string) {
     const { path, tab } = parseHref(href);
     if (tab) return pathname === path && currentTab === tab;
     return pathname === path || pathname.startsWith(path + "/");
   }
-
-  function isOnSection(item: NavItem): boolean {
-    const { path } = parseHref(item.href);
-    return pathname.startsWith(path);
-  }
-
+  function isOnSection(item: NavItem) { return pathname.startsWith(parseHref(item.href).path); }
   function toggleItem(label: string, e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
+    e.preventDefault(); e.stopPropagation();
+    setExpanded(prev => { const n = new Set(prev); n.has(label) ? n.delete(label) : n.add(label); return n; });
   }
+
+  const totalCritical = daily?.criticalItems.length ?? 0;
+  const totalPulse = daily ? (
+    (daily.pulse.dispatchBlocks > 0 ? 1 : 0) +
+    (daily.pulse.payrollHolds > 0 ? 1 : 0) +
+    (daily.pulse.trucksDown > 0 ? 1 : 0)
+  ) : 0;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
@@ -339,454 +270,294 @@ export default function RonyxShell({
         body { margin: 0; }
         a { text-decoration: none; }
 
-        /* ── Sidebar ─────────────────────────────────── */
+        /* ── Sidebar ─────────────────── */
         .tms-sidebar {
-          width: 214px;
-          min-height: 100vh;
-          background: #1e3a8a;
-          color: #e2e8f0;
-          display: flex;
-          flex-direction: column;
-          flex-shrink: 0;
-          position: sticky;
-          top: 0;
-          height: 100vh;
-          overflow-y: auto;
-          overflow-x: hidden;
-          z-index: 30;
+          width: 224px; min-height: 100vh;
+          background: #1e3a8a; color: #e2e8f0;
+          display: flex; flex-direction: column; flex-shrink: 0;
+          position: sticky; top: 0; height: 100vh;
+          overflow-y: auto; overflow-x: hidden; z-index: 30;
           scrollbar-width: none;
         }
         .tms-sidebar::-webkit-scrollbar { display: none; }
 
-        .tms-sidebar-brand {
-          padding: 12px 14px 10px;
-          border-bottom: 1px solid rgba(255,255,255,0.12);
+        /* Brand */
+        .tms-brand { padding: 12px 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .tms-brand-name { font-size: 0.88rem; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+        .tms-brand-sub  { font-size: 0.62rem; color: rgba(255,255,255,0.5); margin-top: 1px; }
+
+        /* Search */
+        .tms-search-row {
+          padding: 7px 10px 6px;
+          border-bottom: 1px solid rgba(255,255,255,0.1);
           flex-shrink: 0;
         }
-        .tms-sidebar-brand-name {
-          font-size: 0.9rem;
-          font-weight: 800;
-          color: #ffffff;
-          letter-spacing: -0.3px;
-        }
-        .tms-sidebar-brand-sub {
-          font-size: 0.65rem;
-          color: rgba(255,255,255,0.55);
-          margin-top: 2px;
-        }
-
-        /* ── Quick Actions ───────────────────────────── */
-        .tms-quick-actions {
-          padding: 6px 8px 4px;
-          border-bottom: 1px solid rgba(255,255,255,0.12);
-          flex-shrink: 0;
-        }
-        .tms-qa-label {
-          font-size: 0.55rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.45);
-          padding: 0 4px 4px;
-        }
-        .tms-qa-item {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 3px 7px;
-          border-radius: 5px;
-          color: rgba(255,255,255,0.75);
-          font-size: 0.72rem;
-          font-weight: 500;
-          transition: background 120ms, color 120ms;
-        }
-        .tms-qa-item:hover {
-          background: rgba(255,255,255,0.1);
-          color: #ffffff;
-        }
-        .tms-qa-icon { font-size: 0.82rem; flex-shrink: 0; }
-
-        /* ── Nav Groups ──────────────────────────────── */
-        .tms-nav-group { padding: 5px 8px 1px; }
-        .tms-nav-section {
-          font-size: 0.54rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: rgba(255,255,255,0.4);
-          padding: 0 4px 3px;
-          margin-top: 1px;
-        }
-
-        /* ── Nav Item Row ────────────────────────────── */
-        .tms-nav-row {
-          display: flex;
-          align-items: stretch;
-          border-radius: 7px;
-          margin-bottom: 1px;
+        .tms-search-btn {
+          display: flex; align-items: center; gap: 7px;
+          width: 100%; padding: 7px 10px; border-radius: 7px;
+          background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+          color: rgba(255,255,255,0.6); font-size: 0.75rem; cursor: pointer;
           transition: background 120ms;
         }
-        .tms-nav-row:hover { background: rgba(255,255,255,0.1); }
+        .tms-search-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+        .tms-search-kbd {
+          margin-left: auto; font-size: 0.6rem; background: rgba(255,255,255,0.1);
+          border-radius: 4px; padding: 1px 5px; color: rgba(255,255,255,0.5);
+        }
+
+        /* Do This First */
+        .tms-dtf {
+          margin: 8px 10px 4px;
+          background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 9px; overflow: hidden;
+        }
+        .tms-dtf-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 7px 10px; cursor: pointer;
+        }
+        .tms-dtf-title { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #fca5a5; }
+        .tms-dtf-count { font-size: 0.72rem; font-weight: 800; color: #f87171; background: rgba(239,68,68,0.25); padding: 1px 7px; border-radius: 10px; }
+        .tms-dtf-item { display: flex; align-items: flex-start; gap: 6px; padding: 5px 10px; border-top: 1px solid rgba(239,68,68,0.15); transition: background 100ms; }
+        .tms-dtf-item:hover { background: rgba(239,68,68,0.1); }
+        .tms-dtf-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .tms-dtf-text { font-size: 0.68rem; color: rgba(255,255,255,0.8); line-height: 1.4; }
+        .tms-dtf-open { padding: 5px 10px 7px; border-top: 1px solid rgba(239,68,68,0.15); }
+        .tms-dtf-open-btn { font-size: 0.65rem; color: #f87171; font-weight: 700; background: none; border: none; cursor: pointer; padding: 0; }
+
+        /* Daily pulse strip */
+        .tms-pulse { padding: 7px 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .tms-pulse-label { font-size: 0.54rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.38); margin-bottom: 5px; }
+        .tms-pulse-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+        .tms-pulse-cell { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 5px 6px; text-align: center; }
+        .tms-pulse-val { font-size: 0.88rem; font-weight: 800; color: #fff; line-height: 1; }
+        .tms-pulse-val.warn { color: #fbbf24; }
+        .tms-pulse-val.danger { color: #f87171; }
+        .tms-pulse-key { font-size: 0.54rem; color: rgba(255,255,255,0.45); margin-top: 2px; line-height: 1.2; }
+
+        /* Smart Actions */
+        .tms-smart { padding: 6px 10px 5px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .tms-smart-label { font-size: 0.54rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.38); margin-bottom: 4px; }
+        .tms-smart-item {
+          display: flex; align-items: center; gap: 6px;
+          padding: 5px 8px; border-radius: 6px; margin-bottom: 1px;
+          color: rgba(255,255,255,0.78); font-size: 0.71rem; font-weight: 500;
+          transition: background 100ms, color 100ms;
+        }
+        .tms-smart-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .tms-smart-count { margin-left: auto; font-size: 0.62rem; font-weight: 800; background: rgba(239,68,68,0.3); color: #fca5a5; padding: 1px 6px; border-radius: 8px; }
+
+        /* Quick actions */
+        .tms-qa { padding: 4px 10px 5px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .tms-qa-label { font-size: 0.54rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.38); margin-bottom: 4px; }
+        .tms-qa-item {
+          display: flex; align-items: center; gap: 6px;
+          padding: 4px 8px; border-radius: 6px; margin-bottom: 1px;
+          color: rgba(255,255,255,0.65); font-size: 0.71rem;
+          background: none; border: none; cursor: pointer; width: 100%; text-align: left;
+          transition: background 100ms, color 100ms;
+        }
+        .tms-qa-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        /* Nav */
+        .tms-nav-group { padding: 6px 8px 2px; }
+        .tms-nav-section { font-size: 0.52rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); padding: 0 5px 3px; margin-top: 2px; }
+        .tms-nav-row { display: flex; align-items: stretch; border-radius: 7px; margin-bottom: 1px; transition: background 100ms; }
+        .tms-nav-row:hover { background: rgba(255,255,255,0.08); }
         .tms-nav-link {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex: 1;
-          padding: 4px 6px 4px 7px;
-          color: rgba(255,255,255,0.8);
-          font-size: 0.75rem;
-          font-weight: 500;
-          min-width: 0;
-          transition: color 120ms;
+          display: flex; align-items: center; gap: 6px; flex: 1;
+          padding: 5px 6px 5px 8px; color: rgba(255,255,255,0.78);
+          font-size: 0.75rem; font-weight: 500; min-width: 0; transition: color 100ms;
         }
-        .tms-nav-link:hover { color: #ffffff; }
-        .tms-nav-link.active,
-        .tms-nav-link.section-on { color: #ffffff; font-weight: 700; background: rgba(255,255,255,0.15); border-radius: 6px; }
-        .tms-nav-icon {
-          font-size: 0.88rem;
-          flex-shrink: 0;
-          width: 17px;
-          text-align: center;
-        }
-        .tms-nav-label-wrap { flex: 1; min-width: 0; overflow: hidden; }
-        .tms-nav-label-text {
-          display: block;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .tms-nav-icon { color: rgba(255,255,255,0.7); }
-        .tms-nav-link:hover .tms-nav-icon, .tms-nav-link.active .tms-nav-icon { color: #ffffff; }
-        .tms-nav-subtitle {
-          display: block;
-          font-size: 0.6rem;
-          color: rgba(255,255,255,0.45);
-          font-weight: 400;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .tms-nav-link.active .tms-nav-subtitle,
-        .tms-nav-link.section-on .tms-nav-subtitle { color: rgba(255,255,255,0.65); }
-        .tms-nav-badge {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 17px;
-          height: 17px;
-          padding: 0 4px;
-          border-radius: 9px;
-          font-size: 0.62rem;
-          font-weight: 700;
-          flex-shrink: 0;
-          background: #ef4444;
-          color: #fff;
-        }
-        .tms-nav-toggle {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 26px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: rgba(255,255,255,0.5);
-          font-size: 0.7rem;
-          flex-shrink: 0;
-          padding: 0;
-          transition: color 120ms;
-        }
-        .tms-nav-toggle:hover { color: rgba(255,255,255,0.9); }
-
-        /* ── Sub Items ───────────────────────────────── */
-        .tms-nav-sub {
-          margin: 1px 0 2px 12px;
-          padding-left: 8px;
-          border-left: 1px solid rgba(255,255,255,0.18);
-        }
+        .tms-nav-link:hover { color: #fff; }
+        .tms-nav-link.active, .tms-nav-link.section-on { color: #fff; font-weight: 700; }
+        .tms-nav-icon { font-size: 0.85rem; flex-shrink: 0; width: 18px; text-align: center; }
+        .tms-nav-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tms-nav-toggle { display: flex; align-items: center; justify-content: center; width: 24px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); font-size: 0.65rem; padding: 0; transition: color 100ms; }
+        .tms-nav-toggle:hover { color: rgba(255,255,255,0.8); }
+        .tms-nav-sub { margin: 1px 0 2px 14px; padding-left: 8px; border-left: 1px solid rgba(255,255,255,0.15); }
         .tms-nav-sub-row {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 7px;
-          border-radius: 5px;
-          color: rgba(255,255,255,0.65);
-          font-size: 0.71rem;
-          font-weight: 500;
-          margin-bottom: 1px;
-          transition: background 120ms, color 120ms;
+          display: flex; align-items: center; gap: 5px; padding: 4px 7px;
+          border-radius: 5px; color: rgba(255,255,255,0.6); font-size: 0.7rem;
+          font-weight: 500; margin-bottom: 1px; transition: background 100ms, color 100ms;
         }
-        .tms-nav-sub-row:hover {
-          background: rgba(255,255,255,0.1);
-          color: #ffffff;
-        }
-        .tms-nav-sub-row.active { font-weight: 700; color: #ffffff; background: rgba(255,255,255,0.15); }
-        .tms-sub-icon { font-size: 0.78rem; flex-shrink: 0; width: 15px; text-align: center; }
-        .tms-sub-label {
-          flex: 1;
-          min-width: 0;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .tms-sub-badge {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 15px;
-          height: 15px;
-          padding: 0 4px;
-          border-radius: 8px;
-          font-size: 0.58rem;
-          font-weight: 700;
-          flex-shrink: 0;
-          background: #ef4444;
-          color: #fff;
-        }
+        .tms-nav-sub-row:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .tms-nav-sub-row.active { font-weight: 700; color: #fff; background: rgba(255,255,255,0.13); }
+        .tms-sub-icon { font-size: 0.75rem; flex-shrink: 0; width: 14px; text-align: center; }
+        .tms-sub-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* ── Sidebar Footer ──────────────────────────── */
-        .tms-sidebar-footer {
-          margin-top: auto;
-          padding: 10px 14px;
-          border-top: 1px solid rgba(255,255,255,0.12);
-          font-size: 0.65rem;
-          color: rgba(255,255,255,0.4);
-          flex-shrink: 0;
-        }
+        /* Footer */
+        .tms-sidebar-footer { margin-top: auto; padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.6rem; color: rgba(255,255,255,0.3); flex-shrink: 0; }
 
-        /* ── Main ────────────────────────────────────── */
-        .tms-main {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          background: #f1f5f9;
-          min-width: 0;
-        }
-
-        /* ── Top Bar ─────────────────────────────────── */
-        .tms-topbar {
-          height: 56px;
-          background: #fff;
-          border-bottom: 1px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 24px;
-          position: sticky;
-          top: 0;
-          z-index: 20;
-          gap: 16px;
-        }
+        /* Main */
+        .tms-main { flex: 1; display: flex; flex-direction: column; background: #f1f5f9; min-width: 0; }
+        .tms-topbar { height: 52px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 20; gap: 16px; }
         .tms-topbar-left { display: flex; align-items: center; gap: 12px; }
-        .tms-menu-btn {
-          display: none;
-          background: none;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 6px 10px;
-          cursor: pointer;
-          font-size: 1.1rem;
-          color: #475569;
-        }
-        .tms-topbar-search {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 7px 14px;
-          font-size: 0.82rem;
-          color: #0f172a;
-          width: 240px;
-          outline: none;
-        }
-        .tms-topbar-search:focus { border-color: #2563eb; }
+        .tms-menu-btn { display: none; background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 1rem; color: #475569; }
         .tms-topbar-right { display: flex; align-items: center; gap: 8px; }
-        .tms-icon-btn {
-          position: relative;
-          background: #f1f5f9;
-          border: none;
-          border-radius: 8px;
-          padding: 7px 10px;
-          cursor: pointer;
-          font-size: 1rem;
-          color: #475569;
-        }
-        .tms-notif-badge {
-          position: absolute;
-          top: 4px; right: 4px;
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #ef4444;
-          border: 1.5px solid #fff;
-        }
-        .tms-user-chip {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #f1f5f9;
-          border: none;
-          border-radius: 8px;
-          padding: 6px 12px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: #0f172a;
-        }
-        .tms-user-avatar {
-          width: 26px; height: 26px;
-          border-radius: 50%;
-          background: #1e40af;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.72rem;
-          font-weight: 700;
-          flex-shrink: 0;
-        }
+        .tms-icon-btn { position: relative; background: #f1f5f9; border: none; border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 1rem; color: #475569; }
+        .tms-notif-badge { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; border: 1.5px solid #fff; }
+        .tms-user-chip { display: flex; align-items: center; gap: 8px; background: #f1f5f9; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: #0f172a; }
+        .tms-user-avatar { width: 26px; height: 26px; border-radius: 50%; background: #1e40af; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
         .tms-time { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
-
-        /* ── Content ─────────────────────────────────── */
         .tms-content { flex: 1; padding: 16px 20px; }
 
-        /* ── Mobile ──────────────────────────────────── */
+        /* Search overlay */
+        .tms-search-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(15,23,42,0.6); display: flex; align-items: flex-start; justify-content: center; padding-top: 80px; }
+        .tms-search-box { width: 560px; max-width: 92vw; background: #fff; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); overflow: hidden; }
+        .tms-search-input-wrap { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #f1f5f9; }
+        .tms-search-icon { font-size: 1.1rem; color: #94a3b8; flex-shrink: 0; }
+        .tms-search-input { flex: 1; border: none; outline: none; font-size: 1rem; color: #0f172a; }
+        .tms-search-close { background: none; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; font-size: 0.72rem; color: #64748b; cursor: pointer; }
+        .tms-search-results { max-height: 360px; overflow-y: auto; }
+        .tms-search-result { display: flex; align-items: center; gap: 10px; padding: 11px 18px; transition: background 80ms; cursor: pointer; }
+        .tms-search-result:hover { background: #f8fafc; }
+        .tms-search-type { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; min-width: 64px; }
+        .tms-search-label { font-size: 0.85rem; color: #0f172a; }
+        .tms-search-empty { padding: 28px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
+        .tms-search-hint { padding: 10px 18px; font-size: 0.7rem; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+
+        /* Smart Import FAB */
+        .tms-smart-import-fab {
+          position: fixed; bottom: 28px; right: 28px; z-index: 100;
+          display: flex; align-items: center; gap: 8px;
+          background: linear-gradient(135deg, #1e40af 0%, #4f46e5 100%);
+          color: #fff; border: none; border-radius: 50px; padding: 13px 20px;
+          font-size: 0.85rem; font-weight: 800; cursor: pointer;
+          box-shadow: 0 8px 25px rgba(79,70,229,0.45); white-space: nowrap;
+          transition: transform 140ms ease, box-shadow 140ms ease;
+        }
+        .tms-smart-import-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(79,70,229,0.55); }
+
+        /* Mobile */
         @media (max-width: 900px) {
-          .tms-sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            transform: translateX(-100%);
-            transition: transform 200ms ease;
-            z-index: 50;
-          }
+          .tms-sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 200ms ease; z-index: 50; }
           .tms-sidebar.open { transform: translateX(0); }
-          .tms-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.5);
-            z-index: 45;
-          }
+          .tms-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 45; }
           .tms-overlay.open { display: block; }
           .tms-menu-btn { display: flex; }
-          .tms-topbar-search { width: 160px; }
-          .tms-content { padding: 12px 14px; }
           .tms-main { padding-bottom: 56px; }
-          .tms-mobile-bottom { display: flex !important; }
-        }
-        @media (max-width: 600px) {
-          .tms-topbar-search { display: none; }
-          .tms-time { display: none; }
-        }
-
-        /* ── Mobile Bottom Bar ───────────────────────── */
-        .tms-mobile-bottom {
-          display: none;
-          position: fixed;
-          bottom: 0; left: 0; right: 0;
-          height: 56px;
-          background: #f1f5f9;
-          border-top: 1px solid rgba(0,0,0,0.1);
-          z-index: 40;
-          align-items: stretch;
-        }
-        .tms-mbb-btn {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #64748b;
-          font-size: 0.6rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          gap: 2px;
-          transition: color 120ms;
-        }
-        .tms-mbb-btn:hover { color: #334155; }
-        .tms-mbb-btn.active { color: #16a34a; }
-        .tms-mbb-icon { font-size: 1.25rem; }
-
-        /* ── Smart Import FAB ────────────────────────── */
-        .tms-smart-import-fab {
-          position: fixed;
-          bottom: 28px;
-          right: 28px;
-          z-index: 100;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: linear-gradient(135deg, #1e40af 0%, #4f46e5 100%);
-          color: #fff;
-          border: none;
-          border-radius: 50px;
-          padding: 13px 20px;
-          font-size: 0.85rem;
-          font-weight: 800;
-          cursor: pointer;
-          box-shadow: 0 8px 25px rgba(79,70,229,0.45);
-          text-decoration: none;
-          transition: transform 140ms ease, box-shadow 140ms ease;
-          letter-spacing: -0.2px;
-          white-space: nowrap;
-        }
-        .tms-smart-import-fab:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(79,70,229,0.55);
-        }
-        .tms-smart-import-fab.on-import-page {
-          background: linear-gradient(135deg, #166534 0%, #15803d 100%);
-          box-shadow: 0 8px 25px rgba(22,101,52,0.4);
-        }
-        @media (max-width: 900px) {
           .tms-smart-import-fab { bottom: 68px; right: 16px; padding: 11px 16px; font-size: 0.78rem; }
         }
+        @media (max-width: 600px) { .tms-time { display: none; } }
       `}</style>
 
-      {/* ── Sidebar ─────────────────────────────────── */}
+      {/* ── Sidebar ─────────────────────────────────────────────────── */}
       <aside className={`tms-sidebar${mobileOpen ? " open" : ""}`}>
 
-        <div className="tms-sidebar-brand">
-          <div className="tms-sidebar-brand-name">MoveAround TMS</div>
-          <div className="tms-sidebar-brand-sub">Ronyx Logistics Portal</div>
+        {/* Zone 1: Brand + Search */}
+        <div className="tms-brand">
+          <div className="tms-brand-name">MoveAround TMS</div>
+          <div className="tms-brand-sub">Ronyx Logistics Portal</div>
         </div>
 
-        <div className="tms-quick-actions">
-          <div className="tms-qa-label">Quick Actions</div>
-          {QUICK_ACTIONS.map((qa) =>
-            qa.label === "Intel Import Center™" ? (
-              <button
-                key="intel-import"
-                className="tms-qa-item"
-                style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", width: "100%", padding: "3px 7px" }}
-                onClick={() => { setMobileOpen(false); setImportOpen(true); }}
-              >
-                <span className="tms-qa-icon">{qa.icon}</span>
-                <span>{qa.label}</span>
-              </button>
-            ) : (
-              <Link key={qa.href} href={qa.href} className="tms-qa-item" onClick={() => setMobileOpen(false)}>
-                <span className="tms-qa-icon">{qa.icon}</span>
-                <span>{qa.label}</span>
+        <div className="tms-search-row">
+          <button className="tms-search-btn" onClick={() => setSearchOpen(true)}>
+            🔍 <span>Search everything…</span>
+            <span className="tms-search-kbd">⌘K</span>
+          </button>
+        </div>
+
+        {/* Zone 1: Daily Command — DO THIS FIRST */}
+        {(cmdLoading || (daily && daily.criticalItems.length > 0)) && (
+          <div className="tms-dtf" style={{ marginBottom: 2 }}>
+            <div className="tms-dtf-header">
+              <span className="tms-dtf-title">⚑ DO THIS FIRST</span>
+              {!cmdLoading && <span className="tms-dtf-count">{totalCritical}</span>}
+              {cmdLoading && <span style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)" }}>loading…</span>}
+            </div>
+            {daily?.criticalItems.map((item, i) => (
+              <Link key={i} href={item.href} className="tms-dtf-item" onClick={() => setMobileOpen(false)}>
+                <span className="tms-dtf-dot" style={{ background: CATEGORY_COLOR[item.category] ?? "#94a3b8" }} />
+                <span className="tms-dtf-text">{item.text}</span>
               </Link>
-            )
-          )}
+            ))}
+            {daily && daily.criticalItems.length > 0 && (
+              <div className="tms-dtf-open">
+                <Link href="/ronyx/tasks" className="tms-dtf-open-btn" onClick={() => setMobileOpen(false)}>
+                  Open Priority Queue →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Zone 1: Global Pulse */}
+        {daily && (
+          <div className="tms-pulse">
+            <div className="tms-pulse-label">Daily Command</div>
+            <div className="tms-pulse-grid">
+              <div className="tms-pulse-cell">
+                <div className="tms-pulse-val">{daily.pulse.activeLoads}</div>
+                <div className="tms-pulse-key">Active Loads</div>
+              </div>
+              <div className="tms-pulse-cell">
+                <div className={`tms-pulse-val${daily.pulse.dispatchBlocks > 0 ? " danger" : ""}`}>{daily.pulse.dispatchBlocks}</div>
+                <div className="tms-pulse-key">Dispatch Blocks</div>
+              </div>
+              <div className="tms-pulse-cell">
+                <div className={`tms-pulse-val${daily.pulse.ticketsNeedingReview > 0 ? " warn" : ""}`}>{daily.pulse.ticketsNeedingReview}</div>
+                <div className="tms-pulse-key">Review Queue</div>
+              </div>
+              <div className="tms-pulse-cell">
+                <div className={`tms-pulse-val${daily.pulse.payrollHolds > 0 ? " danger" : ""}`}>{daily.pulse.payrollHolds}</div>
+                <div className="tms-pulse-key">Payroll Holds</div>
+              </div>
+              <div className="tms-pulse-cell">
+                <div className={`tms-pulse-val${daily.pulse.trucksDown > 0 ? " danger" : ""}`}>{daily.pulse.trucksDown}</div>
+                <div className="tms-pulse-key">Trucks Down</div>
+              </div>
+              <div className="tms-pulse-cell">
+                <div className={`tms-pulse-val${daily.pulse.expiringDocs > 0 ? " warn" : ""}`}>{daily.pulse.expiringDocs}</div>
+                <div className="tms-pulse-key">Expiring Docs</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Zone 1: Smart Actions */}
+        {daily && daily.smartActions.length > 0 && (
+          <div className="tms-smart">
+            <div className="tms-smart-label">Smart Actions</div>
+            {daily.smartActions.map((a, i) => (
+              <Link key={i} href={a.href} className="tms-smart-item" onClick={() => setMobileOpen(false)}>
+                <span>↗</span>
+                <span>{a.label}</span>
+                <span className="tms-smart-count">{a.count}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Zone 1: Quick Tools */}
+        <div className="tms-qa">
+          <div className="tms-qa-label">Quick Tools</div>
+          <button className="tms-qa-item" onClick={() => { setMobileOpen(false); setImportOpen(true); }}>
+            <span>📥</span><span>Intel Import Center™</span>
+          </button>
+          <Link href="/ronyx/fast-scan" className="tms-qa-item" onClick={() => setMobileOpen(false)}>
+            <span>⚡</span><span>Fast Scan™</span>
+          </Link>
+          <Link href="/ronyx/dispatch/dispatch-guard" className="tms-qa-item" onClick={() => setMobileOpen(false)}>
+            <span>🛡️</span><span>Dispatch Guard™</span>
+          </Link>
+          <Link href="/ronyx/payroll?filter=holds" className="tms-qa-item" onClick={() => setMobileOpen(false)}>
+            <span>💵</span><span>Payroll Review</span>
+          </Link>
         </div>
 
+        {/* Zone 2: Main Navigation */}
         {NAV_GROUPS.map((group) => (
           <div key={group.section} className="tms-nav-group">
             <div className="tms-nav-section">{group.section}</div>
-
             {group.items.map((item) => {
-              const hasChildren = !!item.children;
-              const isOpen      = expanded.has(item.label);
-              const sectionOn   = hasChildren && isOnSection(item);
+              const hasChildren  = !!item.children;
+              const isOpen       = expanded.has(item.label);
+              const sectionOn    = hasChildren && isOnSection(item);
               const directActive = !hasChildren && isItemActive(item.href);
               const color        = item.color ?? "#64748b";
-
-              const rowStyle: React.CSSProperties =
-                directActive || sectionOn
-                  ? { background: colorBg(color, 0.14), boxShadow: `inset 3px 0 0 ${color}` }
-                  : {};
+              const rowStyle: React.CSSProperties = directActive || sectionOn
+                ? { background: colorBg(color, 0.15), boxShadow: `inset 3px 0 0 ${color}` }
+                : {};
 
               return (
                 <div key={item.label}>
@@ -797,48 +568,28 @@ export default function RonyxShell({
                       onClick={() => setMobileOpen(false)}
                     >
                       {item.icon && <span className="tms-nav-icon">{item.icon}</span>}
-                      <span className="tms-nav-label-wrap">
-                        <span className="tms-nav-label-text">{item.label}</span>
-                        {item.subtitle && <span className="tms-nav-subtitle">{item.subtitle}</span>}
-                      </span>
-                      {!!item.badge && item.badge > 0 && (
-                        <span className="tms-nav-badge">{item.badge}</span>
-                      )}
+                      <span className="tms-nav-label">{item.label}</span>
                     </Link>
                     {hasChildren && (
-                      <button
-                        className="tms-nav-toggle"
-                        onClick={(e) => toggleItem(item.label, e)}
+                      <button className="tms-nav-toggle" onClick={(e) => toggleItem(item.label, e)}
                         aria-label={isOpen ? `Collapse ${item.label}` : `Expand ${item.label}`}
-                        style={sectionOn ? { color: color } : {}}
-                      >
+                        style={sectionOn ? { color } : {}}>
                         {isOpen ? "▾" : "▸"}
                       </button>
                     )}
                   </div>
-
                   {hasChildren && isOpen && (
                     <div className="tms-nav-sub">
                       {item.children!.map((child) => {
                         const childOn    = isChildActive(child.href);
-                        const childColor = child.color ?? "#64748b";
+                        const childColor = "#64748b";
                         return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
+                          <Link key={child.href} href={child.href}
                             className={`tms-nav-sub-row${childOn ? " active" : ""}`}
-                            style={childOn ? {
-                              color:      childColor,
-                              background: colorBg(childColor, 0.1),
-                              boxShadow:  `inset 2px 0 0 ${childColor}`,
-                            } : {}}
-                            onClick={() => setMobileOpen(false)}
-                          >
+                            style={childOn ? { background: "rgba(255,255,255,0.13)", color: "#fff" } : {}}
+                            onClick={() => setMobileOpen(false)}>
                             {child.icon && <span className="tms-sub-icon">{child.icon}</span>}
                             <span className="tms-sub-label">{child.label}</span>
-                            {!!child.badge && child.badge > 0 && (
-                              <span className="tms-sub-badge">{child.badge}</span>
-                            )}
                           </Link>
                         );
                       })}
@@ -850,27 +601,70 @@ export default function RonyxShell({
           </div>
         ))}
 
-        <div className="tms-sidebar-footer">MoveAround TMS · IGOTTA Technologies</div>
+        {/* Zone 3: Personal / System footer */}
+        <div className="tms-sidebar-footer">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.68rem", fontWeight: 700 }}>
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
+          </div>
+          MoveAround TMS · IGOTTA Technologies
+        </div>
       </aside>
 
       {/* Mobile overlay */}
       <div className={`tms-overlay${mobileOpen ? " open" : ""}`} onClick={() => setMobileOpen(false)} />
 
-      {/* ── Main ─────────────────────────────────────── */}
+      {/* ── Search Overlay ───────────────────────────────────────────── */}
+      {searchOpen && (
+        <div className="tms-search-overlay" onClick={() => setSearchOpen(false)}>
+          <div className="tms-search-box" onClick={e => e.stopPropagation()}>
+            <div className="tms-search-input-wrap">
+              <span className="tms-search-icon">🔍</span>
+              <input
+                ref={searchRef}
+                className="tms-search-input"
+                placeholder="Search drivers, trucks, tickets, OOs, MC/DOT, phone…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && searchResults.length > 0) {
+                    window.location.href = searchResults[0].href;
+                    setSearchOpen(false);
+                  }
+                }}
+              />
+              <button className="tms-search-close" onClick={() => setSearchOpen(false)}>Esc</button>
+            </div>
+            <div className="tms-search-results">
+              {searchQuery && searchResults.length === 0 && (
+                <div className="tms-search-empty">No results for "{searchQuery}"</div>
+              )}
+              {searchResults.map((r, i) => (
+                <Link key={i} href={r.href} className="tms-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); }}>
+                  <span className="tms-search-type">{r.type}</span>
+                  <span className="tms-search-label">{r.label}</span>
+                </Link>
+              ))}
+            </div>
+            <div className="tms-search-hint">
+              Try: driver name · truck # · ticket # · MC/DOT number · phone · customer name
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Main ─────────────────────────────────────────────────────── */}
       <div className="tms-main">
         <header className="tms-topbar">
           <div className="tms-topbar-left">
-            <button className="tms-menu-btn" onClick={() => setMobileOpen((p) => !p)} aria-label="Toggle menu">
-              ☰
-            </button>
-            <input className="tms-topbar-search" placeholder="Search drivers, loads, tickets…" />
+            <button className="tms-menu-btn" onClick={() => setMobileOpen(p => !p)} aria-label="Toggle menu">☰</button>
+            <span style={{ fontSize: "0.82rem", color: "#94a3b8" }}>{now}</span>
           </div>
           <div className="tms-topbar-right">
-            <span className="tms-time">{now}</span>
-            <button className="tms-icon-btn" aria-label="Notifications">
-              🔔
-              {notifCount > 0 && <span className="tms-notif-badge" />}
-            </button>
+            <button className="tms-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search (⌘K)">🔍</button>
+            <button className="tms-icon-btn" aria-label="Notifications">🔔<span className="tms-notif-badge" /></button>
             <button className="tms-icon-btn" aria-label="Help">?</button>
             <button className="tms-user-chip">
               <div className="tms-user-avatar">{displayName.charAt(0).toUpperCase()}</div>
@@ -880,54 +674,17 @@ export default function RonyxShell({
         </header>
 
         {pilotBanner.show && (
-          <div style={{
-            background: pilotBanner.expired ? "#7f1d1d" : "#1e3a5f",
-            color: "#fff",
-            padding: "8px 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            fontSize: "0.8rem",
-            borderBottom: `2px solid ${pilotBanner.expired ? "#dc2626" : "#2563eb"}`,
-          }}>
+          <div style={{ background: pilotBanner.expired ? "#7f1d1d" : "#1e3a5f", color: "#fff", padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: "0.8rem", borderBottom: `2px solid ${pilotBanner.expired ? "#dc2626" : "#2563eb"}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: "1rem" }}>{pilotBanner.expired ? "⚠️" : "🚀"}</span>
               {pilotBanner.expired ? (
-                <span>
-                  <strong>Your Ronyx free trial has ended.</strong>&nbsp;
-                  Your data is saved. Upgrade to continue using Dispatch Command Center, Dispatch Guard™, Fast Scan, tickets, payroll, billing, compliance, and reporting.
-                </span>
+                <span><strong>Your Ronyx free trial has ended.</strong> Your data is saved. Upgrade to continue.</span>
               ) : (
-                <span>
-                  <strong>Ronyx Free Trial Active</strong> — Full system access enabled
-                  {pilotBanner.daysRemaining !== null && (
-                    <> · <strong>{pilotBanner.daysRemaining} day{pilotBanner.daysRemaining !== 1 ? "s" : ""}</strong> left in trial</>
-                  )}
-                  {pilotBanner.endsAt && (
-                    <> · Trial ends {new Date(pilotBanner.endsAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</>
-                  )}.
-                  &nbsp;Your data is saved — upgrade before the trial ends to keep access.
-                </span>
+                <span><strong>Ronyx Free Trial Active</strong> — Full system access{pilotBanner.daysRemaining !== null && <> · <strong>{pilotBanner.daysRemaining}d</strong> left</>}</span>
               )}
             </div>
             {pilotBanner.expired && (
-              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                <a href="/ronyx/settings/billing" style={{
-                  background: "#dc2626", color: "#fff", padding: "4px 14px",
-                  borderRadius: 5, fontWeight: 700, fontSize: "0.75rem", whiteSpace: "nowrap", textDecoration: "none",
-                }}>Upgrade Now</a>
-                <a href="/ronyx/settings/billing#plans" style={{
-                  background: "transparent", color: "#fff", padding: "4px 14px",
-                  borderRadius: 5, fontWeight: 600, fontSize: "0.75rem", whiteSpace: "nowrap",
-                  border: "1px solid rgba(255,255,255,0.4)", textDecoration: "none",
-                }}>View Plans</a>
-                <a href="mailto:support@movearoundtms.com" style={{
-                  background: "transparent", color: "#94a3b8", padding: "4px 14px",
-                  borderRadius: 5, fontWeight: 600, fontSize: "0.75rem", whiteSpace: "nowrap",
-                  border: "1px solid rgba(255,255,255,0.15)", textDecoration: "none",
-                }}>Contact Support</a>
-              </div>
+              <a href="/ronyx/settings/billing" style={{ background: "#dc2626", color: "#fff", padding: "4px 14px", borderRadius: 5, fontWeight: 700, fontSize: "0.75rem", textDecoration: "none" }}>Upgrade Now</a>
             )}
           </div>
         )}
@@ -935,56 +692,14 @@ export default function RonyxShell({
         <main className="tms-content">{children}</main>
       </div>
 
-      {/* Intel Import Center™ floating button */}
-      <button
-        className="tms-smart-import-fab"
-        onClick={() => { setMobileOpen(false); setImportOpen(true); }}
-      >
+      {/* Intel Import Center™ FAB */}
+      <button className="tms-smart-import-fab" onClick={() => { setMobileOpen(false); setImportOpen(true); }}>
         <span style={{ fontSize: "1.1rem" }}>📥</span>
         Intel Import Center™
       </button>
 
-      {/* Intel Import Center™ slide-over */}
       <IntelImportCenter open={importOpen} onClose={() => setImportOpen(false)} />
-
-      {/* Request a Change / Customization floating widget */}
       <CustomizationRequestWidget />
-
-      {/* Mobile bottom bar */}
-      <nav className="tms-mobile-bottom" style={{ display: "none" }}>
-        <Link
-          href="/ronyx/tickets?tab=fastscan"
-          className={`tms-mbb-btn${pathname === "/ronyx/tickets" && currentTab === "fastscan" ? " active" : ""}`}
-          onClick={() => setMobileOpen(false)}
-        >
-          <span className="tms-mbb-icon">⚡</span>
-          <span>Fast Scan</span>
-        </Link>
-        <Link
-          href="/ronyx/tickets"
-          className={`tms-mbb-btn${pathname === "/ronyx/tickets" && !currentTab ? " active" : ""}`}
-          onClick={() => setMobileOpen(false)}
-        >
-          <span className="tms-mbb-icon">🎫</span>
-          <span>Tickets</span>
-        </Link>
-        <Link
-          href="/ronyx/dispatch/board"
-          className={`tms-mbb-btn${pathname.startsWith("/ronyx/dispatch") ? " active" : ""}`}
-          onClick={() => setMobileOpen(false)}
-        >
-          <span className="tms-mbb-icon">📋</span>
-          <span>Dispatch</span>
-        </Link>
-        <Link
-          href="/ronyx/payroll"
-          className={`tms-mbb-btn${pathname.startsWith("/ronyx/payroll") ? " active" : ""}`}
-          onClick={() => setMobileOpen(false)}
-        >
-          <span className="tms-mbb-icon">💵</span>
-          <span>Payroll</span>
-        </Link>
-      </nav>
     </div>
   );
 }
