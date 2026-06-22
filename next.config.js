@@ -10,14 +10,16 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  serverExternalPackages: [
-    "exceljs",
-    "archiver",
-    "unzipper",
-    "nodemailer",
-    "tmp",
-    "jszip",
-  ],
+  experimental: {
+    serverComponentsExternalPackages: [
+      "exceljs",
+      "archiver",
+      "unzipper",
+      "nodemailer",
+      "tmp",
+      "jszip",
+    ],
+  },
 
   webpack: (config, { isServer, dev }) => {
     if (!dev) {
