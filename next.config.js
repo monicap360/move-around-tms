@@ -6,10 +6,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  turbopack: {
-    root: __dirname,
-  },
-
   serverExternalPackages: [
     "exceljs",
     "archiver",
