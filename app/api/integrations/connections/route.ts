@@ -1,129 +1,30 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-async function resolveOrganizationId(
-  supabase: typeof supabaseAdmin,
-  userId: string,
-  requestedOrgId?: string | null,
-) {
-  if (!requestedOrgId) {
-    const { data: orgMember } = await supabase
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", userId)
-      .single();
-    return orgMember?.organization_id || null;
-  }
+const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
 
-  const { data: orgMember } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .eq("organization_id", requestedOrgId)
-    .single();
-
-  return orgMember?.organization_id || null;
-}
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-    if (demoMode) {
-      return NextResponse.json({
-        connections: [
-          { provider: "motive", status: "connected", last_synced_at: null },
-          { provider: "geotab", status: "not_configured", last_synced_at: null },
-          { provider: "quickbooks", status: "pending", last_synced_at: null },
-          { provider: "xero", status: "not_configured", last_synced_at: null },
-          { provider: "dat", status: "not_configured", last_synced_at: null },
-          { provider: "truckstop", status: "not_configured", last_synced_at: null },
-        ],
-      });
-    }
-
-    const supabase = supabaseAdmin;
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const requestedOrgId = searchParams.get("organization_id");
-    const organizationId = await resolveOrganizationId(
-      supabase,
-      user.id,
-      requestedOrgId,
-    );
-
-    if (!organizationId) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-    }
-
-    const { data: connections, error } = await supabase
+    const orgId = getOrgId();
+    let q = supabaseAdmin
       .from("integration_connections")
-      .select("provider, status, last_synced_at, metadata")
-      .eq("organization_id", organizationId);
+      .select("id,provider,status,settings,last_sync_at,last_sync_status,last_sync_error,created_at,updated_at");
+    if (orgId) q = (q as any).eq("organization_id", orgId);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    const { data, error } = await q.order("provider");
+    if (error) throw error;
 
-    return NextResponse.json({ connections });
-  } catch (error: any) {
-    console.error("Integrations error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+    const PROVIDERS = ["rmis", "saferwatch", "mycarrierportal"];
+    const connected = data ?? [];
+    const result = PROVIDERS.map(p => {
+      const existing = connected.find((c: any) => c.provider === p);
+      return existing ?? { provider: p, status: "disconnected", settings: {}, last_sync_at: null };
+    });
 
-export async function POST(req: NextRequest) {
-  try {
-    const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-    if (demoMode) {
-      return NextResponse.json({ success: true });
-    }
-
-    const supabase = supabaseAdmin;
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const organizationId = await resolveOrganizationId(
-      supabase,
-      user.id,
-      body.organization_id,
-    );
-
-    if (!organizationId) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-    }
-
-    const { error } = await supabase
-      .from("integration_connections")
-      .upsert({
-        organization_id: organizationId,
-        provider: body.provider,
-        status: body.status || "pending",
-        metadata: body.metadata || {},
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "organization_id,provider" });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Integrations update error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ connections: result });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

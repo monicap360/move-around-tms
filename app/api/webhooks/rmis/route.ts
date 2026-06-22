@@ -1,0 +1,42 @@
+﻿import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
+import { normalizeRMIS, deriveCCBTasks } from "@/lib/integrations/normalize";
+
+export const dynamic = "force-dynamic";
+const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
+
+export async function POST(req: Request) {
+  try {
+    const orgId = getOrgId();
+    const raw = await req.json();
+    const eventType = raw?.event_type ?? raw?.eventType ?? "carrier_update";
+    const mcNumber  = raw?.mc_number  ?? raw?.mcNumber  ?? null;
+    const dotNumber = raw?.dot_number ?? raw?.dotNumber ?? null;
+
+    let ooId: string | null = null;
+    let ooName = "Carrier";
+    if (orgId && (mcNumber || dotNumber)) {
+      let q = supabaseAdmin.from("ronyx_owner_operators").select("id,company_name") as any;
+      q = q.eq("organization_id", orgId);
+      if (mcNumber) q = q.eq("mc_number", mcNumber); else q = q.eq("dot_number", dotNumber);
+      const { data: oo } = await q.limit(1).single();
+      if (oo) { ooId = oo.id; ooName = oo.company_name; }
+    }
+
+    const normalized = normalizeRMIS(raw?.carrier ?? raw);
+    const vsData: any = { organization_id: orgId ?? "00000000-0000-0000-0000-000000000000", provider: "rmis", owner_operator_id: ooId, mc_number: mcNumber, dot_number: dotNumber, raw_response: raw, normalized_data: normalized, verification_status: normalized.overall_status === "clear" ? "clear" : normalized.overall_status === "blocked" ? "blocked" : "needs_attention", authority_status: normalized.authority.status, safety_status: normalized.safety.rating };
+    const { data: snap } = await supabaseAdmin.from("carrier_verification_snapshots").insert(vsData).select("id").single();
+
+    if (orgId) {
+      await supabaseAdmin.from("carrier_verification_events").insert({ organization_id: orgId, owner_operator_id: ooId, provider: "rmis", event_type: eventType, severity: normalized.overall_status === "blocked" ? "critical" : "high", title: "RMIS alert - " + (normalized.legal_name || mcNumber || dotNumber), details: { issues: normalized.compliance_issues }, source_snapshot_id: snap?.id });
+    }
+
+    if (orgId && ooId && normalized.compliance_issues.length > 0) {
+      const taskSpecs = deriveCCBTasks(normalized, ooId, ooName);
+      for (const spec of taskSpecs) {
+        await supabaseAdmin.from("ronyx_staff_tasks").upsert({ task_type: spec.task_type, title: spec.title, description: spec.description, priority: spec.priority, status: "open", assigned_to_name: "CCB", due_date: spec.due_date || null, owner_operator_id: ooId, owner_operator_name: ooName, entity_type: "owner_operator", entity_id: ooId, source_type: "carrier_verification", source_label: "RMIS" }, { onConflict: "entity_type,entity_id,task_type", ignoreDuplicates: false });
+      }
+    }
+    return NextResponse.json({ ok: true, snapshot_id: snap?.id });
+  } catch (err: any) { return NextResponse.json({ error: err.message }, { status: 500 }); }
+}
