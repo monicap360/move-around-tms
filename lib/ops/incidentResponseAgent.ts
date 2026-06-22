@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Incident Response Agent
  * Detects, stabilizes, classifies, and generates calm decision summaries
  * SAFETY FIRST: Only safe, reversible actions
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { HealthMonitor, HealthMetrics } from "./healthMonitor";
 import { AuditLogger } from "@/lib/agents/auditLogger";
 
@@ -46,7 +46,7 @@ export interface DecisionSummary {
 }
 
 export class IncidentResponseAgent {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
   private healthMonitor = new HealthMonitor();
   private auditLogger = new AuditLogger();
 

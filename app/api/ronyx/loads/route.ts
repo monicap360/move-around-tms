@@ -44,7 +44,7 @@ const DEFAULT_LOADS = [
 
 export async function GET(request: Request) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const driverName = searchParams.get("driver_name");
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("ronyx_loads")
     .select("*")
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
     .order("created_at", { ascending: false });
   if (status) {
     query = query.eq("status", status);
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
     const { data: seeded } = await supabase
       .from("ronyx_loads")
       .select("*")
-      .or(`organization_id.eq.${orgId},organization_id.is.null`)
+      .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
       .order("created_at", { ascending: false });
     return NextResponse.json({ loads: seeded || [] });
   }
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const route =
     payload?.route ||
     (payload?.pickup_location && payload?.delivery_location
@@ -115,7 +115,7 @@ export async function PUT(request: Request) {
   }
 
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const now = new Date().toISOString();
   const resolvedUpdates = { ...updates };
 

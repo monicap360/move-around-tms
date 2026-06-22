@@ -20,7 +20,7 @@ function adminClient() {
   );
 }
 
-async function resolveOrgId(sb: ReturnType<typeof adminClient>): Promise<string> {
+async function resolveOrgId(sb: ReturnType<typeof adminClient>): Promise<string | null> {
   const fromEnv = process.env.RONYX_ORG_ID;
   if (fromEnv && fromEnv !== "00000000-0000-0000-0000-000000000000" && fromEnv.length > 10) {
     return fromEnv;
@@ -40,8 +40,7 @@ async function resolveOrgId(sb: ReturnType<typeof adminClient>): Promise<string>
     const { data } = await sb.from("user_seats").select("organization_id").limit(1).single();
     if (data?.organization_id) return data.organization_id;
   } catch { /* table might not exist */ }
-  // Stable placeholder — matches the Ronyx org inserted by migration 165
-  return "00000000-0000-0000-0000-000000000001";
+  return null;
 }
 
 // GET — list recent fast_scan_documents
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
   }
 
   const safeName   = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const objectPath = `${orgId}/fastscan/raw/${Date.now()}_${safeName}`;
+  const objectPath = `${orgId ?? "unassigned"}/fastscan/raw/${Date.now()}_${safeName}`;
   const bytes      = await file.arrayBuffer();
 
   // Ensure bucket exists — try to list; if that fails, create

@@ -66,14 +66,14 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status") || "";
   const from = searchParams.get("from");
   const to = searchParams.get("to");
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
 
   const buildQuery = (withOrgFilter: boolean) => {
     let q = supabase
       .from("aggregate_tickets")
       .select("*")
       .order("ticket_date", { ascending: false });
-    if (withOrgFilter) q = q.or(`organization_id.eq.${orgId},organization_id.is.null`);
+    if (withOrgFilter) q = q.or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`);
     if (status) q = q.eq("status", status);
     if (from)   q = q.gte("ticket_date", from);
     if (to)     q = q.lte("ticket_date", to);
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       ? Number(body.waiting_minutes)
       : calculateWaitingMinutes(body.load_time, body.dump_time);
 
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
 
   // Core payload — columns that exist in all migration versions (003 + 069 baseline)
   const corePayload = {

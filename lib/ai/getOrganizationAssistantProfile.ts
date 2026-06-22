@@ -1,4 +1,4 @@
-/**
+﻿/**
  * getOrganizationAssistantProfile
  *
  * Returns the merged assistant profile for an org: catalog capabilities + org custom branding.
@@ -9,7 +9,7 @@
  *   // profile.display_name might be "Big Mike" but profile.assistant_key is always "rory"
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import {
   ASSISTANT_CATALOG,
   AssistantKey,
@@ -35,7 +35,7 @@ export interface AssistantProfile {
 }
 
 export async function getOrganizationAssistantProfile(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   organizationId: string,
   assistantKey: AssistantKey,
 ): Promise<AssistantProfile | null> {
@@ -77,7 +77,7 @@ export async function getOrganizationAssistantProfile(
 }
 
 export async function getAllOrganizationAssistantProfiles(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: typeof supabaseAdmin,
   organizationId: string,
 ): Promise<AssistantProfile[]> {
   const { data: rows } = await supabase

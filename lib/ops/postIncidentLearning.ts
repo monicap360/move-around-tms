@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Post-Incident Learning System
  * Reviews incidents, identifies root causes, proposes prevention
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export interface IncidentReview {
   incidentId: string;
@@ -15,7 +15,7 @@ export interface IncidentReview {
 }
 
 export class PostIncidentLearning {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
 
   /**
    * Review resolved incident and generate learnings

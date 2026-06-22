@@ -16,13 +16,13 @@ const DRIVER_SELECT = `
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
 
   // Try org-scoped query first (requires migration 165 to have run)
   let { data, error } = await supabase
     .from("drivers")
     .select(DRIVER_SELECT)
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
     .or("status.is.null,and(status.neq.archived,status.neq.deleted)")
     .order("full_name", { ascending: true })
     .limit(5000);

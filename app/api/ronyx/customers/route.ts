@@ -28,11 +28,11 @@ const REQUIRED_COMPANIES = [
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const { data, error } = await supabase
     .from("ronyx_customers")
     .select("*")
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
     .order("customer_name", { ascending: true });
 
   if (error) {
@@ -48,7 +48,7 @@ export async function GET() {
     const { data: seeded } = await supabase
       .from("ronyx_customers")
       .select("*")
-      .or(`organization_id.eq.${orgId},organization_id.is.null`)
+      .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
       .order("customer_name", { ascending: true });
     return NextResponse.json({ customers: seeded || [] });
   }
@@ -63,7 +63,7 @@ export async function GET() {
     const { data: refreshed } = await supabase
       .from("ronyx_customers")
       .select("*")
-      .or(`organization_id.eq.${orgId},organization_id.is.null`)
+      .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
       .order("customer_name", { ascending: true });
     return NextResponse.json({ customers: refreshed || [] });
   }
@@ -74,7 +74,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
 
   const { data, error } = await supabase
     .from("ronyx_customers")
@@ -95,12 +95,12 @@ export async function PUT(request: Request) {
   }
 
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const { data, error } = await supabase
     .from("ronyx_customers")
     .update(payload)
     .eq("id", payload.id)
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
     .select("*")
     .single();
 

@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export type AggregateReconciliationConfig = {
   organizationId: string;
@@ -97,7 +97,7 @@ function matchMasterLoad(ticket: any, masterLoads: any[]) {
 }
 
 export async function runAggregateReconciliation(config: AggregateReconciliationConfig) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const runInsert = await supabase
     .from("aggregate_reconciliation_runs")

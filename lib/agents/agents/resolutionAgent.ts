@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Resolution Agent - Support Killer
  * Diagnoses ticket failures, explains violations, walks onboarding
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { ToolRegistry } from "../toolRegistry";
 import { AuditLogger } from "../auditLogger";
 import { PermissionGate } from "../permissionGate";
@@ -30,7 +30,7 @@ export interface ResolutionResponse {
 }
 
 export class ResolutionAgent {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
   private toolRegistry = new ToolRegistry();
   private auditLogger = new AuditLogger();
   private permissionGate = new PermissionGate();

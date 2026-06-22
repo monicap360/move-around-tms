@@ -1,5 +1,5 @@
 // Dispatch logic utilities
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 export interface Truck {
   id: string;
   number: string;
@@ -24,7 +24,7 @@ export async function autoAssignBackupTruck(
   loadId: string,
 ) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
 
     const { data: load, error: loadError } = await supabase
       .from("loads")

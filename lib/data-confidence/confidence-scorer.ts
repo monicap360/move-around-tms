@@ -1,9 +1,9 @@
-// Data Confidence Scorer
+﻿// Data Confidence Scorer
 // Compares new data against historical averages (driver, site, global)
 // Scores confidence (0-1), not correctness
 // Integrates with vertical system for industry-specific baseline windows
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { getVerticalProfile, getBaselineWindowDays, VerticalTypeString } from "@/lib/verticals";
 
 export interface ConfidenceScore {
@@ -92,7 +92,7 @@ async function getDriverHistoricalAverage(
   fieldName: string,
   days: number
 ): Promise<HistoricalAverage | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   
   // Map field names to database columns
   const columnMap: Record<string, string> = {
@@ -145,7 +145,7 @@ async function getSiteHistoricalAverage(
   fieldName: string,
   days: number
 ): Promise<HistoricalAverage | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const columnMap: Record<string, string> = {
     'quantity': 'quantity',
@@ -198,7 +198,7 @@ async function getGlobalHistoricalAverage(
   fieldName: string,
   days: number
 ): Promise<HistoricalAverage | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   
   const columnMap: Record<string, string> = {
     'quantity': 'quantity',
@@ -279,7 +279,7 @@ export function getAnomalySeverity(confidenceScore: ConfidenceScore): 'low' | 'm
  */
 export async function getOrganizationVerticalType(organizationId: string): Promise<VerticalTypeString | null> {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = supabaseAdmin;
     const { data, error } = await supabase
       .from('organizations')
       .select('vertical_type')

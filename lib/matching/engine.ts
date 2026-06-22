@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export type MatchingConfig = {
   organizationId: string;
@@ -43,7 +43,7 @@ function convertQuantity(quantity: number, uom: string) {
 }
 
 export async function runMatching(config: MatchingConfig) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const runInsert = await supabase
     .from("matching_runs")
     .insert({

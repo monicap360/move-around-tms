@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Agent Router - Routes user intent to correct agent
  * Organization-scoped, RLS-enforced
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export type AgentType = 'resolution' | 'ops' | 'sales' | 'growth' | 'health' | 'learning';
 
@@ -34,7 +34,7 @@ export interface AgentAction {
 }
 
 export class AgentRouter {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
 
   /**
    * Route user message to appropriate agent based on context

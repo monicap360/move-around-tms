@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, DollarSign, Shield, Clock, ArrowUp } from "lucide-react";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 interface Exception {
   id: string;

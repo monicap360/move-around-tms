@@ -1,9 +1,9 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = 'force-dynamic';
 
 export default async function Jobs() {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: jobs } = await supabase.from("jobs").select("*");
   return (
     <div className="p-8 bg-black text-white min-h-screen">

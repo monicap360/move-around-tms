@@ -1,10 +1,10 @@
-/**
+﻿/**
  * TMS Health Monitor
  * Early warning system for incidents
  * Monitors: app health, uploads, PM2, memory, disk, errors
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import os from "os";
 import fs from "fs";
 
@@ -28,7 +28,7 @@ export interface AlertThreshold {
 }
 
 export class HealthMonitor {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
   private defaultThresholds: AlertThreshold = {
     memory: 85,
     disk: 80,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export type OrgRecord = {
   id: string;
@@ -26,7 +26,7 @@ export type ProfileRecord = {
 export type RequireOrgRoleResult =
   | {
       ok: true;
-      supabase: ReturnType<typeof createSupabaseServerClient>;
+      supabase: typeof supabaseAdmin;
       user: { id: string; email?: string };
       profile: ProfileRecord;
       organization: OrgRecord;
@@ -42,7 +42,7 @@ const AUTH_REQUIRED = process.env.RONYX_AUTH_REQUIRED === "true";
 export async function requireOrgRole(
   allowedRoles: string[] = DEFAULT_ALLOWED_ROLES
 ): Promise<RequireOrgRoleResult> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   // ── Demo / single-tenant bypass ──────────────────────────────────────────────
   // Remove this block and set RONYX_AUTH_REQUIRED=true in Render once login is stable.

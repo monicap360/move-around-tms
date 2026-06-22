@@ -1,4 +1,4 @@
-// resolveCompany — single source of truth for looking up a company/carrier
+﻿// resolveCompany — single source of truth for looking up a company/carrier
 // from a truck number, driver name, or both.
 //
 // Called by:
@@ -15,7 +15,7 @@
 //   5. Vendor name from latest dispatch import → dispatch_jobs.vendor_name
 //   6. Returns needs_review if no match
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export type CompanyResolution = {
   company_name:        string | null;
@@ -48,7 +48,7 @@ export async function resolveCompany({
   driverName?:  string | null;
   vendorName?:  string | null;
 }): Promise<CompanyResolution> {
-  const sb = createSupabaseServerClient();
+  const sb = supabaseAdmin;
 
   // ── 1. Exact truck number → ronyx_trucks ──────────────────────────────────
   if (truckNumber?.trim()) {

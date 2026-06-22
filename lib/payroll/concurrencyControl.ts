@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Payroll Concurrency Control
  * Enforces global limits to prevent system overload
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import os from "os";
 import fs from "fs";
 
@@ -13,7 +13,7 @@ export interface PayrollSlot {
 }
 
 export class PayrollConcurrencyControl {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
   private readonly MAX_CONCURRENT_JOBS = 2;
   private readonly MAX_JOBS_PER_ORG = 1;
 

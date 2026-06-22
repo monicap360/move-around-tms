@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
 
   let org: Record<string, unknown> | null = null;
   try {

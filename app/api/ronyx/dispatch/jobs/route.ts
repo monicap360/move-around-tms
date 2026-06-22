@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const { searchParams } = new URL(req.url);
   const date   = searchParams.get("date");
   const status = searchParams.get("status");
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       assigned_vehicle:assigned_vehicle_id(unit_number, status, dispatch_eligible),
       latest_assignment:dispatch_assignments(acceptance_status, sent_at, no_response_at)
     `)
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
     .order("pickup_time", { ascending: true });
 
   if (date)   query = query.gte("pickup_time", `${date}T00:00:00`).lte("pickup_time", `${date}T23:59:59`);
@@ -81,7 +81,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const body = await req.json().catch(() => ({}));
 
   const { data, error } = await supabase

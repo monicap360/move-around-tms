@@ -5,11 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const { data, error } = await supabase
     .from("ronyx_payroll_runs")
     .select("*")
-    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(orgId ? `organization_id.eq.${orgId},organization_id.is.null` : `id.not.is.null`)
     .order("created_at", { ascending: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const body = await req.json();
   const { period_start, period_end, items } = body || {};
 

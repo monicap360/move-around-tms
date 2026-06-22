@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -33,12 +33,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 /* ── DELETE /api/ronyx/owner-operators/[id] ── delete OO company */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const sb = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
-  const { error } = await sb
-    .from("ronyx_owner_operators")
-    .delete()
-    .eq("id", params.id)
-    .eq("organization_id", orgId);
+  const orgId = process.env.RONYX_ORG_ID ?? null;
+  let delQ = sb.from("ronyx_owner_operators").delete().eq("id", params.id);
+  if (orgId) delQ = delQ.eq("organization_id", orgId);
+  const { error } = await delQ;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

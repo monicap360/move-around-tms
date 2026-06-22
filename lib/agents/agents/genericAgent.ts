@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Generic Agent - Handles ops/sales/growth/health/learning with data summaries.
  */
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export interface GenericAgentContext {
   organizationId: string;
@@ -23,7 +23,7 @@ export interface GenericAgentResponse {
 }
 
 export class GenericAgent {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
 
   async respond(context: GenericAgentContext): Promise<GenericAgentResponse> {
     switch (context.agentType) {

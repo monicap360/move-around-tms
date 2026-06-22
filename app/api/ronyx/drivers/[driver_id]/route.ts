@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -62,12 +62,10 @@ export async function PATCH(
       }
     }
 
-    const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
-    const { error } = await supabase
-      .from("drivers")
-      .update({ status: newStatus })
-      .eq("id", driverId)
-      .eq("organization_id", orgId);
+    const orgId = process.env.RONYX_ORG_ID ?? null;
+    let archQ = supabase.from("drivers").update({ status: newStatus }).eq("id", driverId);
+    if (orgId) archQ = archQ.eq("organization_id", orgId);
+    const { error } = await archQ;
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
@@ -79,13 +77,11 @@ export async function PATCH(
   for (const field of directFields) {
     if (body[field] !== undefined) directUpdate[field] = body[field];
   }
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   if (Object.keys(directUpdate).length > 0) {
-    const { error: directErr } = await supabase
-      .from("drivers")
-      .update(directUpdate)
-      .eq("id", driverId)
-      .eq("organization_id", orgId);
+    let dirQ = supabase.from("drivers").update(directUpdate).eq("id", driverId);
+    if (orgId) dirQ = dirQ.eq("organization_id", orgId);
+    const { error: directErr } = await dirQ;
     if (directErr) return NextResponse.json({ error: directErr.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }

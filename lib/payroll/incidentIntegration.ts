@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Payroll Incident Integration
  * Auto-pauses payroll during incidents
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 import { PayrollConcurrencyControl } from "./concurrencyControl";
 
 export class PayrollIncidentIntegration {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
   private concurrencyControl = new PayrollConcurrencyControl();
 
   /**

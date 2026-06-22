@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Customer Protection
  * Detects customer-facing impact and drafts safe status messages
  * NEVER auto-sends without approval
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export interface CustomerImpact {
   affectedCustomers: number;
@@ -22,7 +22,7 @@ export interface StatusMessage {
 }
 
 export class CustomerProtection {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
 
   /**
    * Detect customer-facing impact from incident

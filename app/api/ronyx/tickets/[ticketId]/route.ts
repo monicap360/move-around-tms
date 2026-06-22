@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -40,14 +40,11 @@ function deriveProofStatus(ticket: any) {
 
 export async function GET(_request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
 
-  const { data, error } = await supabase
-    .from("aggregate_tickets")
-    .select("*")
-    .eq("id", params.ticketId)
-    .eq("organization_id", orgId)
-    .single();
+  let getQ = supabase.from("aggregate_tickets").select("*").eq("id", params.ticketId);
+  if (orgId) getQ = getQ.eq("organization_id", orgId);
+  const { data, error } = await getQ.single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -65,7 +62,7 @@ export async function GET(_request: NextRequest, { params }: { params: { ticketI
 export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
   try {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const body = await request.json().catch(() => ({}));
 
   const updates = {
@@ -130,13 +127,9 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
     total_amount: body.total_amount ? Number(body.total_amount) : null,
   };
 
-  const { data, error } = await supabase
-    .from("aggregate_tickets")
-    .update(updates)
-    .eq("id", params.ticketId)
-    .eq("organization_id", orgId)
-    .select()
-    .single();
+  let putQ = supabase.from("aggregate_tickets").update(updates).eq("id", params.ticketId);
+  if (orgId) putQ = putQ.eq("organization_id", orgId);
+  const { data, error } = await putQ.select().single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -156,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
 
 export async function DELETE(request: NextRequest, { params }: { params: { ticketId: string } }) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID ?? null;
   const body = await request.json().catch(() => ({}));
   const deletedBy = (body.deleted_by as string) || "dispatcher";
   const reason = (body.reason as string) || null;
@@ -169,22 +162,16 @@ export async function DELETE(request: NextRequest, { params }: { params: { ticke
     status: "voided",
   };
 
-  let result = await supabase
-    .from("aggregate_tickets")
-    .update(fullUpdate)
-    .eq("id", params.ticketId)
-    .eq("organization_id", orgId)
-    .select("id, ticket_number, driver_name, truck_number")
-    .single();
+  let delQ = supabase.from("aggregate_tickets").update(fullUpdate).eq("id", params.ticketId);
+  if (orgId) delQ = delQ.eq("organization_id", orgId);
+  let result = await delQ.select("id, ticket_number, driver_name, truck_number").single();
 
   if (result.error && result.error.message.includes("column")) {
-    result = await supabase
-      .from("aggregate_tickets")
+    let delQ2 = supabase.from("aggregate_tickets")
       .update({ voided: true, voided_at: new Date().toISOString(), status: "voided" })
-      .eq("id", params.ticketId)
-      .eq("organization_id", orgId)
-      .select("id, ticket_number, driver_name, truck_number")
-      .single();
+      .eq("id", params.ticketId);
+    if (orgId) delQ2 = delQ2.eq("organization_id", orgId);
+    result = await delQ2.select("id, ticket_number, driver_name, truck_number").single();
   }
 
   if (result.error) {

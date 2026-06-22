@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = supabaseAdmin;
     const body: RonyxPayload = await req.json();
-    const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+    const orgId = process.env.RONYX_ORG_ID ?? null;
 
     const { missing_fields, exception_flags } = validateRonyx(body);
     const loadsNum = body.loads ? parseInt(String(body.loads)) || null : null;

@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Audit Logger - Logs every agent action
  * Immutable, append-only
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export interface AuditLog {
   agentId: string;
@@ -15,7 +15,7 @@ export interface AuditLog {
 }
 
 export class AuditLogger {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
 
   /**
    * Log agent conversation

@@ -12,7 +12,7 @@ function adminClient() {
   );
 }
 
-const RONYX_ORG_ID = "00000000-0000-0000-0000-000000000001";
+const RONYX_ORG_ID = process.env.RONYX_ORG_ID ?? null;
 
 // Role constants
 const READ_ROLES  = ["owner", "super_admin", "admin", "payroll", "billing", "viewer"];

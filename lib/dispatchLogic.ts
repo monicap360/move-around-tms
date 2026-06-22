@@ -1,5 +1,5 @@
-// --- Types and Utilities ---
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿// --- Types and Utilities ---
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export interface Truck {
   id: string;
@@ -30,7 +30,7 @@ export interface Assignment {
 
 // --- Mock-based dispatch logic ---
 export async function dispatchNextLoad(driverId: string) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   const { data: load, error } = await supabase
     .from("loads")
     .select("*")
@@ -64,7 +64,7 @@ export async function autoAssignBackupTruck(
   originalTruckIdOrDriverId: string,
   loadId?: string,
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   if (loadId) {
     const { data: backup, error: backupError } = await supabase
       .from("trucks")
@@ -111,7 +111,7 @@ export async function autoAssignBackupTruck(
 }
 
 export async function findBackupTruck(driverId: string) {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
   // Get the driver's qualified truck types
   const { data: driverQuals, error: dqError } = await supabase
     .from("driver_qualifications")

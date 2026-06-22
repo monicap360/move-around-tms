@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Permission Gate - Enforces agent permissions
  * NO CROSS-TENANT VISIBILITY, EVER
  */
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export interface PermissionCheck {
   canRead: boolean;
@@ -13,7 +13,7 @@ export interface PermissionCheck {
 }
 
 export class PermissionGate {
-  private supabase = createSupabaseServerClient();
+  private supabase = supabaseAdmin;
 
   /**
    * Check if agent can read from a table/field
