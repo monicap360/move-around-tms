@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import {
   Card,
@@ -48,11 +48,12 @@ interface TemplateAsset {
   description?: string;
 }
 
-export default function TemplateEditorPage({
-  params,
-}: {
-  params: { assetId?: string };
-}) {
+export default function TemplateEditorPage(
+  props: {
+    params: Promise<{ assetId?: string }>;
+  }
+) {
+  const params = use(props.params);
   const [asset, setAsset] = useState<TemplateAsset | null>(null);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");

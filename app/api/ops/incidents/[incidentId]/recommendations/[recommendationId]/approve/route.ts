@@ -10,8 +10,9 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { incidentId: string; recommendationId: string } }
+  props: { params: Promise<{ incidentId: string; recommendationId: string }> }
 ) {
+  const params = await props.params;
   try {
     const { incidentId, recommendationId } = params;
     const supabase = supabaseAdmin;

@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardCard from "@/components/dashboard/DashboardCard";
@@ -11,11 +11,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export default function CompanyOwnerDashboard({
-  params,
-}: {
-  params: { companyId: string };
-}) {
+export default function CompanyOwnerDashboard(
+  props: {
+    params: Promise<{ companyId: string }>;
+  }
+) {
+  const params = use(props.params);
   const companyId = params.companyId;
   const [company, setCompany] = useState<any>(null);
   const [drivers, setDrivers] = useState<any[]>([]);

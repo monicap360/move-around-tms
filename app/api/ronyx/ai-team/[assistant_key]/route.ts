@@ -30,10 +30,8 @@ async function resolveSession(req: NextRequest) {
  * Body: { custom_name?, avatar_style?, greeting?, tone?, is_enabled? }
  * Body: { action: "reset" } — clears all custom fields, restores defaults
  */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { assistant_key: string } },
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ assistant_key: string }> }) {
+  const params = await props.params;
   try {
     const session = await resolveSession(req);
     if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

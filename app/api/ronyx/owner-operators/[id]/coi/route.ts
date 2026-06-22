@@ -120,7 +120,8 @@ async function syncTaskForDoc(
 }
 
 /* GET — all COI docs for an OO */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_oo_coi_documents")
@@ -134,7 +135,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 /* POST — create or upsert a COI document record */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 

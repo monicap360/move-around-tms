@@ -4,10 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // GET: Get all legs for a ticket
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
 
@@ -50,10 +48,8 @@ export async function GET(
 }
 
 // POST: Create a new leg for a ticket
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
     const body = await request.json();

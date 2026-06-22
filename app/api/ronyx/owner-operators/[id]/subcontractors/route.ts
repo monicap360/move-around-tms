@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* POST /api/ronyx/owner-operators/[id]/subcontractors — add a subcontractor */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 

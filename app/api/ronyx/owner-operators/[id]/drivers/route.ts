@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* ── POST /api/ronyx/owner-operators/[id]/drivers ── add driver to OO */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
 
@@ -33,7 +34,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 /* ── PUT /api/ronyx/owner-operators/[id]/drivers ── bulk upsert (import) */
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { drivers } = await req.json();
 

@@ -4,10 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // POST: Generate evidence packet for a ticket
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
     const body = await request.json();
@@ -148,10 +146,8 @@ RELATED TICKETS:
 }
 
 // GET: Get evidence packet
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
 

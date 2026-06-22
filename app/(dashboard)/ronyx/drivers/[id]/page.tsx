@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -802,7 +802,8 @@ function exportDOTPacket(profile: Profile, documents: Document[]) {
 }
 
 /* ─── Main page ──────────────────────────────────── */
-export default function DriverProfilePage({ params }: { params: { id: string } }) {
+export default function DriverProfilePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab]   = useState<Tab>((searchParams.get("tab") as Tab) || "Overview");
   const [profile, setProfile]       = useState<Profile | null>(null);

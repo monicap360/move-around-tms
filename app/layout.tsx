@@ -17,7 +17,7 @@ export default async function RootLayout(props: { children: ReactNode }) {
   // On server, get domain from next/headers
   let domain = "";
   try {
-    const h = headers();
+    const h = await headers();
     domain = h.get("host") || "";
     branding = await getBrandingConfig(domain);
   } catch {}

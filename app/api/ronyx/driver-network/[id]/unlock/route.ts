@@ -3,10 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const driver_profile_id = params.id;
   const body = await request.json().catch(() => ({}));
   const { organization_id, request_type = "unlock", notes } = body;
@@ -84,10 +82,8 @@ export async function POST(
 }
 
 // PATCH — admin approves an unlock after payment
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const driver_profile_id = params.id;
   const body = await request.json().catch(() => ({}));
   const { unlock_id, approved_by = "Admin", release_identity = true, release_contact = true } = body;

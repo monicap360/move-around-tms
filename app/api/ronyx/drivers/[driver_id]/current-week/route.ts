@@ -13,10 +13,8 @@ function getWeekStart(date: Date) {
   return start.toISOString().slice(0, 10);
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { driver_id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ driver_id: string }> }) {
+  const params = await props.params;
   const driverId = params.driver_id;
   if (!driverId) {
     return NextResponse.json(

@@ -4,10 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // GET: Get a specific saved view
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { viewId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ viewId: string }> }) {
+  const params = await props.params;
   try {
     const { viewId } = params;
 
@@ -44,10 +42,8 @@ export async function GET(
 }
 
 // PUT: Update a saved view
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { viewId: string } }
-) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ viewId: string }> }) {
+  const params = await props.params;
   try {
     const { viewId } = params;
     const body = await request.json();
@@ -98,10 +94,8 @@ export async function PUT(
 }
 
 // DELETE: Delete a saved view
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { viewId: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ viewId: string }> }) {
+  const params = await props.params;
   try {
     const { viewId } = params;
 

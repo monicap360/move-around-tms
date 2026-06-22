@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, use } from "react";
 import { can, driverSeesAll, UserRole, ROLE_LABELS } from "@/lib/driverPermissions";
 
 type Driver = {
@@ -91,11 +91,12 @@ function expBadge(days: number | null): { label: string; color: string } {
   return { label: "Valid", color: "#16a34a" };
 }
 
-export default function CompanyDriversPage({
-  params,
-}: {
-  params: { company: string };
-}) {
+export default function CompanyDriversPage(
+  props: {
+    params: Promise<{ company: string }>;
+  }
+) {
+  const params = use(props.params);
   const { company } = params;
 
   const [drivers, setDrivers]         = useState<Driver[]>([]);
@@ -263,7 +264,6 @@ export default function CompanyDriversPage({
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: "#111827" }}>
-
       {/* Page header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
         <div>
@@ -297,7 +297,6 @@ export default function CompanyDriversPage({
           )}
         </div>
       </div>
-
       {/* Expiring alert */}
       {expiring.length > 0 && (
         <div style={{ ...card, background: "#fffbeb", borderLeft: "4px solid #f59e0b", padding: "14px 18px" }}>
@@ -327,7 +326,6 @@ export default function CompanyDriversPage({
           })}
         </div>
       )}
-
       {/* Filters */}
       <div style={{ ...card, padding: 14 }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -351,7 +349,6 @@ export default function CompanyDriversPage({
           </select>
         </div>
       </div>
-
       {/* Driver table */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
@@ -421,7 +418,6 @@ export default function CompanyDriversPage({
           </div>
         )}
       </div>
-
       {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 18 }}>
         {[
@@ -437,12 +433,10 @@ export default function CompanyDriversPage({
           </div>
         ))}
       </div>
-
       {/* Footer brand */}
       <p style={{ textAlign: "center", fontSize: "0.72rem", color: "#d1d5db", marginTop: 24 }}>
         MoveAround TMS™ · powered by IGOTTA Technologies
       </p>
-
       {/* ── Add Driver Modal ──────────────────────────────────────────────── */}
       {showAdd && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
@@ -498,7 +492,6 @@ export default function CompanyDriversPage({
           </div>
         </div>
       )}
-
       {/* ── Driver Profile Drawer ─────────────────────────────────────────── */}
       {selected && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", justifyContent: "flex-end", zIndex: 200 }}>

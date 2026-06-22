@@ -19,7 +19,8 @@ const COI_LABEL: Record<string,string> = {
    Logs a COI request email, updates last_reminder_sent_at, increments staff task reminder count.
    Body: { coi_group, document_types: string[], sent_by?, message? }
 */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 

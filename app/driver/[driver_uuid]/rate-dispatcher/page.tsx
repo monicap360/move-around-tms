@@ -1,8 +1,9 @@
 // @ts-nocheck
 "use client";
-import { useState } from "react";
+import { useState, use } from "react";
 
-export default function RateDispatcherPage({ params }) {
+export default function RateDispatcherPage(props) {
+  const params = use(props.params);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);

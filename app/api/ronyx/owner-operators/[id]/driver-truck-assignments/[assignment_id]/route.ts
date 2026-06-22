@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 /* DELETE — remove a driver-truck assignment */
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string; assignment_id: string } }
+  props: { params: Promise<{ id: string; assignment_id: string }> }
 ) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_driver_truck_assignments")
@@ -22,8 +23,9 @@ export async function DELETE(
 /* PATCH — update assignment (e.g., change priority or manager approval) */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string; assignment_id: string } }
+  props: { params: Promise<{ id: string; assignment_id: string }> }
 ) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 

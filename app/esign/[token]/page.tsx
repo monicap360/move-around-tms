@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, use } from "react";
 
 type EnvelopeInfo = {
   envelope: {
@@ -14,7 +14,8 @@ type EnvelopeInfo = {
   pdfUrl: string;
 };
 
-export default function SignPage({ params }: { params: { token: string } }) {
+export default function SignPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const token = params.token;
   const [info, setInfo] = useState<EnvelopeInfo | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -5,10 +5,8 @@ export const dynamic = "force-dynamic";
 
 // Resolves an organization by its slug (subdomain identifier).
 // Used by the middleware, login pages, and the subdomain guard.
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { slug: string } },
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const slug = params.slug?.toLowerCase().trim();
   if (!slug) {
     return NextResponse.json({ error: "slug is required" }, { status: 400 });

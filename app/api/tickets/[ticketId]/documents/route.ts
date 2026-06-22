@@ -4,10 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // GET: Get all documents related to a ticket
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
 

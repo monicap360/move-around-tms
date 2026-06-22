@@ -26,7 +26,7 @@ export default async function RonyxLayout({ children }: { children: React.ReactN
   }
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {

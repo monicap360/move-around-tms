@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // GET /api/ronyx/dispatch-import/[importId] — jobs + alerts for one import batch
-export async function GET(_req: Request, { params }: { params: { importId: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ importId: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
 
   const [jobsRes, alertsRes, batchRes] = await Promise.all([

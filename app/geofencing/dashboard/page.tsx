@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import GeofenceManager from "@/components/geofencing/GeofenceManager";
 import GeofenceAlerts from "@/components/geofencing/GeofenceAlerts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Bell, Settings } from "lucide-react";
 
-export default function GeofencingDashboard({
-  params,
-}: {
-  params: { organizationId?: string };
-}) {
+export default function GeofencingDashboard(
+  props: {
+    params: Promise<{ organizationId?: string }>;
+  }
+) {
+  const params = use(props.params);
   // In a real app, get organizationId from auth context
   const organizationId =
     params.organizationId || "default-org"; // Replace with actual org ID

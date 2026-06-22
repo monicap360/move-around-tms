@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 
 type SectionPageProps = {
-  params: { section: string };
+  params: Promise<{ section: string }>;
 };
 
 const sectionConfig: Record<
@@ -305,7 +305,8 @@ const sectionConfig: Record<
   },
 };
 
-export default function RonyxSectionPage({ params }: SectionPageProps) {
+export default function RonyxSectionPage(props: SectionPageProps) {
+  const params = use(props.params);
   const [rows, setRows] = useState<{ title: string; subtitle: string; status: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");

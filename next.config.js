@@ -6,24 +6,22 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  serverExternalPackages: [
+    "exceljs",
+    "archiver",
+    "unzipper",
+    "nodemailer",
+    "tmp",
+    "jszip",
+  ],
 
-  experimental: {
-    serverComponentsExternalPackages: [
-      "exceljs",
-      "archiver",
-      "unzipper",
-      "nodemailer",
-      "tmp",
-      "jszip",
-    ],
+  // Acknowledge Turbopack (default in Next.js 16).
+  turbopack: {
+    root: __dirname,
   },
 
   webpack: (config, { isServer, dev }) => {
     if (!dev) {
-      // Filesystem cache keeps compiled modules on disk instead of RAM.
       config.cache = {
         type: "filesystem",
         allowCollectingMemory: false,

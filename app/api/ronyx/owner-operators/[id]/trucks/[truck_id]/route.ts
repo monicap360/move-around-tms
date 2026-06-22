@@ -3,14 +3,19 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function DELETE(_req: Request, { params }: { params: { id: string; truck_id: string } }) {
+export async function DELETE(
+  _req: Request,
+  props: { params: Promise<{ id: string; truck_id: string }> }
+) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb.from("ronyx_oo_trucks").delete().eq("id", params.truck_id).eq("oo_id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string; truck_id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string; truck_id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
   const fields = ["truck_number","year","make","model","vin","last_inspection","inspection_result","status"];

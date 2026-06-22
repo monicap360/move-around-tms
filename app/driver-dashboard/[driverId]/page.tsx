@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardCard from "@/components/dashboard/DashboardCard";
@@ -11,11 +11,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export default function DriverDashboard({
-  params,
-}: {
-  params: { driverId: string };
-}) {
+export default function DriverDashboard(
+  props: {
+    params: Promise<{ driverId: string }>;
+  }
+) {
+  const params = use(props.params);
   const driverId = params.driverId;
   const [driver, setDriver] = useState<any>(null);
   const [tickets, setTickets] = useState<any[]>([]);

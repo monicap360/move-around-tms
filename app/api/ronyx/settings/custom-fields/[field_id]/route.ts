@@ -24,10 +24,8 @@ async function resolveSession(req: NextRequest) {
 }
 
 /** PATCH /api/ronyx/settings/custom-fields/[field_id] — update a field */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { field_id: string } },
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ field_id: string }> }) {
+  const params = await props.params;
   const session = await resolveSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   if (!ADMIN_ROLES.includes(session.role))
@@ -91,10 +89,8 @@ export async function PATCH(
 }
 
 /** DELETE /api/ronyx/settings/custom-fields/[field_id] — archives the field */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { field_id: string } },
-) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ field_id: string }> }) {
+  const params = await props.params;
   const session = await resolveSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   if (!ADMIN_ROLES.includes(session.role))

@@ -1,8 +1,9 @@
 // @ts-nocheck
 "use client";
-import { useState } from "react";
+import { useState, use } from "react";
 
-export default function FastScanTicketPage({ params }) {
+export default function FastScanTicketPage(props) {
+  const params = use(props.params);
   const { organization_code } = params;
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");

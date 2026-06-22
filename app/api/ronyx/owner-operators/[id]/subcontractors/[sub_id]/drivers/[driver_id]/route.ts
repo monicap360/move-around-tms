@@ -4,7 +4,11 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* DELETE — remove a driver from a subcontractor */
-export async function DELETE(_req: Request, { params }: { params: { id: string; sub_id: string; driver_id: string } }) {
+export async function DELETE(
+  _req: Request,
+  props: { params: Promise<{ id: string; sub_id: string; driver_id: string }> }
+) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_oo_subcontractor_drivers")

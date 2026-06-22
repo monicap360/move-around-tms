@@ -3,10 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const body     = await req.json().catch(() => ({}));
   const jobId    = params.id;
@@ -156,10 +154,8 @@ export async function PATCH(
   return NextResponse.json({ job: data });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const { data: job } = await supabase
     .from("dispatch_jobs").select("job_status").eq("id", params.id).single();

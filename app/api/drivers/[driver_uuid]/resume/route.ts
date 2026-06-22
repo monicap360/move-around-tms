@@ -3,7 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request, { params }: any) {
+export async function GET(req: Request, props: any) {
+  const params = await props.params;
   const supa = supabaseAdmin;
   const { driver_uuid } = params;
 

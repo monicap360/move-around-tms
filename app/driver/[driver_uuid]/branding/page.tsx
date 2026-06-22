@@ -1,9 +1,10 @@
 // @ts-nocheck
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 
-export default function TruckBrandingPage({ params }) {
+export default function TruckBrandingPage(props) {
+  const params = use(props.params);
   const [driver, setDriver] = useState(null);
   const [truckSkin, setTruckSkin] = useState("");
   const [logoUrl, setLogoUrl] = useState("");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -97,7 +97,8 @@ function FieldRow({
 }
 
 /* ─── Main page ──────────────────────────────────── */
-export default function TicketDetailPage({ params }: { params: { id: string } }) {
+export default function TicketDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [draft, setDraft] = useState<Partial<Ticket>>({});

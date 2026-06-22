@@ -7,10 +7,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/ops/incidents/[incidentId]/review
  * Review incident and generate learnings
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { incidentId: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ incidentId: string }> }) {
+  const params = await props.params;
   try {
     const { incidentId } = params;
     const learning = new PostIncidentLearning();

@@ -1,12 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import ComplianceTab from "@/components/compliance/ComplianceTab";
 
-export default function DriverProfilePage({ params }: { params: { driverId: string } }) {
+export default function DriverProfilePage(props: { params: Promise<{ driverId: string }> }) {
+  const params = use(props.params);
   const [profile, setProfile] = useState<any>({});
   const [documents, setDocuments] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);

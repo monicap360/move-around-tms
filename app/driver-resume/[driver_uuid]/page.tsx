@@ -3,11 +3,12 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { getDriverResume } from "@/lib/driver";
 
-export default async function DriverResumePage({
-  params,
-}: {
-  params: { driver_uuid: string };
-}) {
+export default async function DriverResumePage(
+  props: {
+    params: Promise<{ driver_uuid: string }>;
+  }
+) {
+  const params = await props.params;
   const { driver_uuid } = params;
   const resume = await getDriverResume(driver_uuid);
   if (!resume) return notFound();

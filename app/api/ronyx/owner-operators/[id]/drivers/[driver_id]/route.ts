@@ -4,7 +4,11 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* ── PUT /api/ronyx/owner-operators/[id]/drivers/[driver_id] ── update driver */
-export async function PUT(req: Request, { params }: { params: { id: string; driver_id: string } }) {
+export async function PUT(
+  req: Request,
+  props: { params: Promise<{ id: string; driver_id: string }> }
+) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
 
@@ -27,7 +31,11 @@ export async function PUT(req: Request, { params }: { params: { id: string; driv
 }
 
 /* ── DELETE /api/ronyx/owner-operators/[id]/drivers/[driver_id] ── remove driver */
-export async function DELETE(_req: Request, { params }: { params: { id: string; driver_id: string } }) {
+export async function DELETE(
+  _req: Request,
+  props: { params: Promise<{ id: string; driver_id: string }> }
+) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb.from("ronyx_oo_drivers").delete().eq("id", params.driver_id).eq("oo_id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

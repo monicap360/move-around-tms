@@ -8,10 +8,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/ops/incidents/[incidentId]
  * Get incident details with decision summary
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { incidentId: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ incidentId: string }> }) {
+  const params = await props.params;
   try {
     const { incidentId } = params;
     const supabase = supabaseAdmin;
@@ -75,10 +73,8 @@ export async function GET(
  * PATCH /api/ops/incidents/[incidentId]
  * Update incident status or resolve
  */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { incidentId: string } }
-) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ incidentId: string }> }) {
+  const params = await props.params;
   try {
     const { incidentId } = params;
     const body = await req.json();

@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* POST — add a driver to a subcontractor */
-export async function POST(req: Request, { params }: { params: { id: string; sub_id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string; sub_id: string }> }) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 

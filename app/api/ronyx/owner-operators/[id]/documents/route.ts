@@ -3,7 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
 
@@ -40,7 +41,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 // PUT — update expiry date (or other scalar) on an existing document record
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
   if (!body.doc_type) return NextResponse.json({ error: "Missing doc_type" }, { status: 400 });
@@ -61,7 +63,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { doc_type } = await req.json();
   const { error } = await sb.from("ronyx_oo_documents").delete().eq("oo_id", params.id).eq("doc_type", doc_type);

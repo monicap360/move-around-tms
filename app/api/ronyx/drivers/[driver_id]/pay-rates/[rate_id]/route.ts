@@ -5,8 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { driver_id: string; rate_id: string } },
+  props: { params: Promise<{ driver_id: string; rate_id: string }> }
 ) {
+  const params = await props.params;
   const body = await req.json();
   const { driver_id, rate_id } = params;
 
@@ -37,8 +38,9 @@ export async function PUT(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { driver_id: string; rate_id: string } },
+  props: { params: Promise<{ driver_id: string; rate_id: string }> }
 ) {
+  const params = await props.params;
   const { driver_id, rate_id } = params;
   const { error } = await supabaseAdmin
     .from("driver_pay_rates")

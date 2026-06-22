@@ -1,13 +1,18 @@
 import React from "react";
 import Link from "next/link";
 
-export default function CompanyLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { company: string };
-}) {
+export default async function CompanyLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ company: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const navItems = [
     { href: `/company/${params.company}/fast-scan`, label: "Fast Scan" },
     { href: `/company/${params.company}`, label: "Overview" },

@@ -5,10 +5,8 @@ import JSZip from "jszip";
 export const dynamic = "force-dynamic";
 
 // GET: Generate ZIP for evidence packet
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
 

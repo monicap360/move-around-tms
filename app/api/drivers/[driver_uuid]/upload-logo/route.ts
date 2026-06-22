@@ -13,10 +13,8 @@ const ALLOWED_TYPES = [
   "image/webp",
 ];
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { driver_uuid: string } },
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ driver_uuid: string }> }) {
+  const params = await props.params;
   try {
     const supabase = supabaseAdmin;
     // Validate driver_uuid

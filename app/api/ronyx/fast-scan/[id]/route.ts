@@ -13,7 +13,8 @@ function adminClient() {
 }
 
 // GET /api/ronyx/fast-scan/[id] — return signed URL for the scan's stored file
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = adminClient();
 
   const { data: doc, error } = await sb
@@ -41,7 +42,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 // PATCH /api/ronyx/fast-scan/[id] — update editable fields on a scan record
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = adminClient();
   const body = await req.json().catch(() => ({}));
 
@@ -67,7 +69,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE /api/ronyx/fast-scan/[id] — permanently remove a scan record
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = adminClient();
 
   const { error } = await sb

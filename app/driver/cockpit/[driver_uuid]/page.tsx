@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import GridLayout from "react-grid-layout";
 import LiveTelemetry from "@/components/cockpit/LiveTelemetry";
@@ -16,7 +16,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export default function DriverCockpit({ params }) {
+export default function DriverCockpit(props) {
+  const params = use(props.params);
   const [driver, setDriver] = useState(null);
   const [layout, setLayout] = useState([]);
 

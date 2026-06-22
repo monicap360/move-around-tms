@@ -7,10 +7,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/ops/incidents/[incidentId]/customer-impact
  * Get customer impact assessment and draft status message
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { incidentId: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ incidentId: string }> }) {
+  const params = await props.params;
   try {
     const { incidentId } = params;
     const protection = new CustomerProtection();
@@ -35,10 +33,8 @@ export async function GET(
  * POST /api/ops/incidents/[incidentId]/customer-impact
  * Save draft status message (requires approval before sending)
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { incidentId: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ incidentId: string }> }) {
+  const params = await props.params;
   try {
     const { incidentId } = params;
     const body = await req.json();

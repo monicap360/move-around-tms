@@ -3,10 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { driver_id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ driver_id: string }> }) {
+  const params = await props.params;
   const driverId = params.driver_id;
   const { data, error } = await supabaseAdmin
     .from("driver_pay_rates")
@@ -21,10 +19,8 @@ export async function GET(
   return NextResponse.json({ rates: data || [] });
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: { driver_id: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ driver_id: string }> }) {
+  const params = await props.params;
   const driverId = params.driver_id;
   const body = await req.json();
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, use } from "react";
 const SKINS = [
   { name: "Matte Black", value: "matte-black", color: "#222" },
   { name: "Chrome", value: "chrome", color: "#e5e5e5" },
@@ -13,7 +13,8 @@ const SKINS = [
   { name: "Pearl White", value: "pearl-white", color: "#f8fafc" },
 ];
 
-export default function TruckSkinSelector({ params }) {
+export default function TruckSkinSelector(props) {
+  const params = use(props.params);
   const [selected, setSelected] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoFile, setLogoFile] = useState(null);

@@ -8,10 +8,8 @@ const BUCKET = "driver-photos";
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { driver_uuid: string } },
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ driver_uuid: string }> }) {
+  const params = await props.params;
   try {
     const supabase = supabaseAdmin;
     // Validate driver_uuid

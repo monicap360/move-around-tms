@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* ── PUT /api/ronyx/owner-operators/[id] ── update OO fields */
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
 
@@ -31,7 +32,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 /* ── DELETE /api/ronyx/owner-operators/[id] ── delete OO company */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID ?? null;
   let delQ = sb.from("ronyx_owner_operators").delete().eq("id", params.id);

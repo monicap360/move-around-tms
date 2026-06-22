@@ -2,7 +2,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // Shared components
@@ -16,11 +16,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export default function PartnerDashboard({
-  params,
-}: {
-  params: { [key: string]: string };
-}) {
+export default function PartnerDashboard(
+  props: {
+    params: Promise<{ [key: string]: string }>;
+  }
+) {
+  const params = use(props.params);
   const partnerSlug = params["slug"]; // ronyx, elite, meighoo, garza
 
   const [partner, setPartner] = useState<any>(null);

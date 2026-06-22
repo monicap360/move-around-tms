@@ -1,9 +1,10 @@
 // @ts-nocheck
 "use client";
-import { useState } from "react";
+import { useState, use } from "react";
 import { motion } from "framer-motion";
 
-export default function FastScanPage({ params }) {
+export default function FastScanPage(props) {
+  const params = use(props.params);
   const [code, setCode] = useState("");
   const [driver, setDriver] = useState(null);
   const companyCode = params.organization_code;

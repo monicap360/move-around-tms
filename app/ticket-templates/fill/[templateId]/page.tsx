@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 /* eslint-disable @next/next/no-img-element */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, use } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import {
   Card,
@@ -54,11 +54,12 @@ interface FormData {
   [fieldName: string]: string | number;
 }
 
-export default function TicketFormFillPage({
-  params,
-}: {
-  params: { templateId?: string };
-}) {
+export default function TicketFormFillPage(
+  props: {
+    params: Promise<{ templateId?: string }>;
+  }
+) {
+  const params = use(props.params);
   const [template, setTemplate] = useState<TicketTemplate | null>(null);
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});

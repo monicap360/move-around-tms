@@ -1,9 +1,10 @@
 // Company Dashboard Entry Point
-export default function CompanyPage({
-  params,
-}: {
-  params: { company: string };
-}) {
+export default async function CompanyPage(
+  props: {
+    params: Promise<{ company: string }>;
+  }
+) {
+  const params = await props.params;
   return (
     <div style={{ padding: 40 }}>
       <h1>Company Dashboard: {params.company}</h1>

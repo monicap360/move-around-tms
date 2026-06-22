@@ -2,7 +2,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardCard from "@/components/dashboard/DashboardCard";
@@ -12,11 +12,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export default function FleetManagerDashboard({
-  params,
-}: {
-  params: { fleetId: string };
-}) {
+export default function FleetManagerDashboard(
+  props: {
+    params: Promise<{ fleetId: string }>;
+  }
+) {
+  const params = use(props.params);
   const fleetId = params.fleetId;
   const [fleet, setFleet] = useState<any>(null);
   const [loads, setLoads] = useState<any[]>([]);

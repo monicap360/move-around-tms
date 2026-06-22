@@ -11,7 +11,8 @@ function createServerAdmin() {
   );
 }
 
-export async function GET(req: NextRequest, { params }: { params: { ticketId: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   const supabase = createServerAdmin();
   const ticketId = params.ticketId;
 

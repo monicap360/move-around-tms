@@ -2,7 +2,7 @@
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import GridLayout from "react-grid-layout";
 import LiveTelemetry from "@/components/hud/LiveTelemetry";
@@ -15,7 +15,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export default function DriverHUD({ params }) {
+export default function DriverHUD(props) {
+  const params = use(props.params);
   const [layout, setLayout] = useState([]);
   const [driver, setDriver] = useState(null);
 

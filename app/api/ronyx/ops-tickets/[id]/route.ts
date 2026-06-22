@@ -3,14 +3,16 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const { data, error } = await supabase.from("tickets").select("*").eq("id", params.id).single();
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
   return NextResponse.json({ ticket: data });
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 
@@ -35,7 +37,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ ticket: data });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const { error } = await supabase.from("tickets").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

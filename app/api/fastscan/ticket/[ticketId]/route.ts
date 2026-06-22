@@ -5,10 +5,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // Auth: authenticated only (Bearer token required, RLS enforced)
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { ticketId: string } },
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   const ticketId = params.ticketId;
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {

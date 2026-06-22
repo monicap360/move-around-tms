@@ -3,7 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const body = await request.json();
 
@@ -18,7 +19,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   return NextResponse.json({ unit: data });
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const { error } = await supabase
     .from("maintenance_units")

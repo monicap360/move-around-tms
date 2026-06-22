@@ -18,8 +18,9 @@ const COI_LABEL: Record<string,string> = {
 /* PATCH — update a COI document (approve, reject, update dates, etc.) */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string; documentId: string } }
+  props: { params: Promise<{ id: string; documentId: string }> }
 ) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 
@@ -118,8 +119,9 @@ export async function PATCH(
 /* GET — single COI document */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string; documentId: string } }
+  props: { params: Promise<{ id: string; documentId: string }> }
 ) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_oo_coi_documents")
@@ -135,8 +137,9 @@ export async function GET(
 /* DELETE */
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string; documentId: string } }
+  props: { params: Promise<{ id: string; documentId: string }> }
 ) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_oo_coi_documents")

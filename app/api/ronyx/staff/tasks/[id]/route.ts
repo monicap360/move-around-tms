@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* GET /api/ronyx/staff/tasks/[id] */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_staff_tasks")
@@ -20,7 +21,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
    Supports: status change, completion, adding notes, reminder increment, reassign.
    If completing a COI task: validates underlying COI is resolved (warns but allows manager_override).
 */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
 
@@ -75,7 +77,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 /* DELETE /api/ronyx/staff/tasks/[id] — cancel */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb
     .from("ronyx_staff_tasks")

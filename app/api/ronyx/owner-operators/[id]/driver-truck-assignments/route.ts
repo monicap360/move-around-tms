@@ -4,7 +4,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 /* GET — list all driver-truck assignments for an OO */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { data, error } = await sb
     .from("ronyx_driver_truck_assignments")
@@ -22,7 +23,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 /* POST — assign a truck to a driver */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb   = supabaseAdmin;
   const body = await req.json();
 

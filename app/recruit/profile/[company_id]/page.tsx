@@ -2,7 +2,8 @@
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
-export default async function RecruiterProfile({ params }) {
+export default async function RecruiterProfile(props) {
+  const params = await props.params;
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

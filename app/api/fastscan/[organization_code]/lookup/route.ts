@@ -3,7 +3,8 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request, { params }: { params: { organization_code: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ organization_code: string }> }) {
+  const params = await props.params;
   const client = supabaseAdmin;
   const { organization_code } = params;
   const body = await req.json();

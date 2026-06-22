@@ -5,10 +5,8 @@ import { calculateRate, DEFAULT_ACCESSORIALS } from "@/lib/rating/rating-engine"
 export const dynamic = "force-dynamic";
 
 // POST: Calculate rate for a ticket
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
     const body = await request.json();

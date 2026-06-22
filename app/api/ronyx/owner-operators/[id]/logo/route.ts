@@ -14,7 +14,8 @@ function adminClient() {
 }
 
 /* ── POST: upload logo ── */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = adminClient();
 
   // Ensure bucket exists
@@ -68,7 +69,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 /* ── DELETE: remove logo ── */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = adminClient();
 
   // Remove all files under this OO's folder

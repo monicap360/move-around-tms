@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitDispatcherRating } from "@/lib/driver";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { driver_uuid: string } },
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ driver_uuid: string }> }) {
+  const params = await props.params;
   try {
     const { score, feedback } = await req.json();
     if (!score || score < 1 || score > 5) {

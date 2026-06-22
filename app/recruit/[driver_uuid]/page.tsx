@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import DriverCard from "../../components/recruiter/DriverCard";
 import RankBadge from "../../components/recruiter/RankBadge";
@@ -8,7 +8,8 @@ import EndorsementBadge from "../../components/recruiter/EndorsementBadge";
 import RecruiterActionBar from "../../components/recruiter/RecruiterActionBar";
 import TruckPreview from "../../components/recruiter/TruckPreview";
 
-export default function RecruiterDriverView({ params }) {
+export default function RecruiterDriverView(props) {
+  const params = use(props.params);
   const [driver, setDriver] = useState(null);
   useEffect(() => {
     async function fetchDriver() {

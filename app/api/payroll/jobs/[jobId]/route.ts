@@ -7,10 +7,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/payroll/jobs/[jobId]
  * Get payroll job status
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { jobId: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ jobId: string }> }) {
+  const params = await props.params;
   try {
     const supabase = supabaseAdmin;
     const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -1,11 +1,12 @@
 // @ts-nocheck
 "use client";
-import { useState } from "react";
+import { useState, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const steps = ["weight", "photo", "ticket", "plant", "material", "review"];
 
-export default function FastTicketPage({ params }) {
+export default function FastTicketPage(props) {
+  const params = use(props.params);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     weight_in: "",

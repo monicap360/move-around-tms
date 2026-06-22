@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 import GridLayout from "react-grid-layout";
 import { WidthProvider } from "react-grid-layout";
@@ -18,7 +18,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export default function FleetCockpitPage({ params }: { params: { manager_uuid: string } }) {
+export default function FleetCockpitPage(props: { params: Promise<{ manager_uuid: string }> }) {
+  const params = use(props.params);
   const [manager, setManager] = useState<any>(null);
   const [layout, setLayout] = useState<any[]>([]);
   const [party, setParty] = useState(false);

@@ -4,11 +4,12 @@ import { notFound } from "next/navigation";
 import { getRecruiterProfile, getActiveJobPostings } from "@/lib/recruiter";
 
 // This page is public and SEO-friendly
-export default async function RecruiterProfilePage({
-  searchParams,
-}: {
-  searchParams: { id?: string };
-}) {
+export default async function RecruiterProfilePage(
+  props: {
+    searchParams: Promise<{ id?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const recruiterId = searchParams?.id;
   if (!recruiterId) return notFound();
 

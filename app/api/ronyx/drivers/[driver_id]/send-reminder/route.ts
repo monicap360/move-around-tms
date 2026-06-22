@@ -16,7 +16,8 @@ function makeTransport() {
   });
 }
 
-export async function POST(req: Request, { params }: { params: { driver_id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ driver_id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
 

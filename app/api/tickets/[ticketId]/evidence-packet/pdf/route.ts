@@ -5,10 +5,8 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 export const dynamic = "force-dynamic";
 
 // GET: Generate PDF for evidence packet
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
 

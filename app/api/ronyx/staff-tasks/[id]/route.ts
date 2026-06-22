@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 
 // PATCH /api/ronyx/staff-tasks/[id]
 // Body: { status, completed_by, completion_notes, priority, assigned_to_name, notes }
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const body = await req.json();
 
@@ -36,7 +37,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/ronyx/staff-tasks/[id]
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = supabaseAdmin;
   const { error } = await sb.from("ronyx_staff_tasks").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

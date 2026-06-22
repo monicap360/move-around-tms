@@ -4,14 +4,11 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 function normalizeTicketSource(ticket: any) {
-  return (
-    ticket.ticket_source ||
-    ticket.scan_source ||
-    ticket.source ||
-    ticket.upload_source ||
-    ticket.ticket_notes?.match(/source:\s*([A-Za-z0-9\s]+)/i)?.[1]?.trim() ||
-    "FastScan"
-  );
+  return (ticket.ticket_source ||
+  ticket.scan_source ||
+  ticket.source ||
+  ticket.upload_source ||
+  ticket.ticket_notes?.match(/source:\s*([A-Za-z0-9\s]+)/i)?.[1]?.trim() || "FastScan");
 }
 
 function deriveProofStatus(ticket: any) {
@@ -38,7 +35,8 @@ function deriveProofStatus(ticket: any) {
   return documentsComplete ? "Complete" : "Missing Required Documents";
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { ticketId: string } }) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID ?? null;
 
@@ -59,7 +57,8 @@ export async function GET(_request: NextRequest, { params }: { params: { ticketI
   return NextResponse.json({ ticket: enriched });
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { ticketId: string } }) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
   const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID ?? null;
@@ -147,7 +146,8 @@ export async function PUT(request: NextRequest, { params }: { params: { ticketId
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { ticketId: string } }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const orgId = process.env.RONYX_ORG_ID ?? null;
   const body = await request.json().catch(() => ({}));

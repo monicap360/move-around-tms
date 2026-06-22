@@ -5,10 +5,8 @@ export const dynamic = "force-dynamic";
 
 // PATCH /api/ronyx/drivers/[driver_id]
 // Handles: archive/restore (action field) OR driver_profiles compliance update
-export async function PATCH(
-  req: Request,
-  { params }: { params: { driver_id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ driver_id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
   const driverId = params.driver_id;
@@ -130,10 +128,8 @@ export async function PATCH(
 
 // DELETE /api/ronyx/drivers/[driver_id]
 // Soft-deletes the driver (status = 'deleted') so it disappears from all lists.
-export async function DELETE(
-  req: Request,
-  { params }: { params: { driver_id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ driver_id: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
   const driverId = params.driver_id;

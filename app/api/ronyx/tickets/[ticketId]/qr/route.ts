@@ -5,10 +5,8 @@ import { randomBytes } from "crypto";
 export const dynamic = "force-dynamic";
 
 // POST — generate (or return existing) QR token for a ticket
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const supabase = supabaseAdmin;
     const { ticketId } = params;
@@ -77,10 +75,8 @@ export async function POST(
 }
 
 // GET — retrieve current QR info for a ticket
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   const supabase = supabaseAdmin;
   const { data } = await supabase
     .from("aggregate_tickets")

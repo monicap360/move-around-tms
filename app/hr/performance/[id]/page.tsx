@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import {
@@ -74,11 +74,12 @@ type PerformanceGoal = {
   description: string;
 };
 
-export default function DriverPerformancePage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function DriverPerformancePage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = use(props.params);
   const [performance, setPerformance] = useState<DriverPerformance | null>(
     null,
   );

@@ -5,10 +5,8 @@ import { evaluateApprovalWorkflow } from "@/lib/workflows/ticket-approval-rules"
 export const dynamic = "force-dynamic";
 
 // POST: Evaluate workflow rules for a ticket
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
     const body = await request.json();
@@ -112,10 +110,8 @@ export async function POST(
 }
 
 // GET: Get workflow evaluation for a ticket
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ticketId: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
+  const params = await props.params;
   try {
     const { ticketId } = params;
 
