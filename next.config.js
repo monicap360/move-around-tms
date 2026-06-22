@@ -28,9 +28,6 @@ const nextConfig = {
         type: "filesystem",
         allowCollectingMemory: false,
       };
-      // Limit parallel workers so peak RSS stays under Render's container limit.
-      // Sequential compilation uses more wall-time but ~40% less peak memory.
-      config.parallelism = 1;
     }
     if (!isServer) {
       config.resolve.fallback = {
