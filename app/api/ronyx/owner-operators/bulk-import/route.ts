@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
 */
 export async function POST(req: Request) {
   const sb = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || "00000000-0000-0000-0000-000000000001";
+  const orgId = process.env.RONYX_ORG_ID || null;
   const { companies } = await req.json();
 
   if (!Array.isArray(companies)) {

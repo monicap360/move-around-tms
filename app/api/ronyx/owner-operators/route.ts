@@ -4,21 +4,15 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // ── Org resolution ─────────────────────────────────────────────────────────
+// Returns the explicit RONYX_ORG_ID env var when set.
+// Falls back to null (no filter) so the GET query returns all OOs.
+// This is safe: the Ronyx namespace is single-tenant and supabaseAdmin
+// (service role) bypasses RLS. Migrations 165/200 can leave the
+// organizations table with a synthetic ID that doesn't match OO rows —
+// doing no filter is safer than filtering to the wrong ID.
 
-async function resolveOrgId(): Promise<string | null> {
-  const envId = process.env.RONYX_ORG_ID;
-  const orFilter = envId
-    ? `id.eq.${envId},organization_code.eq.RONYX`
-    : `organization_code.eq.RONYX`;
-
-  const { data } = await supabaseAdmin
-    .from("organizations")
-    .select("id")
-    .or(orFilter)
-    .limit(1)
-    .single();
-
-  return data?.id ?? null;
+function resolveOrgId(): string | null {
+  return process.env.RONYX_ORG_ID ?? null;
 }
 
 // ── Known owner operator companies — seeded on first load ──────────────────
@@ -143,8 +137,8 @@ async function buildResponse(oos: any[]) {
 /* ── GET /api/ronyx/owner-operators ──────────────────────────────────────── */
 export async function GET() {
   try {
-    // Resolve org
-    const orgId = await resolveOrgId();
+    // Resolve org — returns env var or null (no filter)
+    const orgId = resolveOrgId();
     if (!orgId) {
       console.error("[OO] Could not resolve org ID — RONYX_ORG_ID env:", process.env.RONYX_ORG_ID);
       // Fall through without org filter rather than blocking
@@ -217,7 +211,7 @@ export async function GET() {
 /* ── POST /api/ronyx/owner-operators — create new OO company ─────────────── */
 export async function POST(req: Request) {
   try {
-    const orgId = await resolveOrgId();
+    const orgId = resolveOrgId();
     const body  = await req.json();
 
     const { data, error } = await supabaseAdmin
