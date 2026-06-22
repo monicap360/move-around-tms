@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
+import IntelVerifyPanel from "@/components/ronyx/IntelVerifyPanel";
 
 /* ─── Types ─────────────────────────────────────────── */
 type OODriver = {
@@ -437,6 +438,7 @@ export default function OwnerOperatorsPage() {
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
+  const [verifyDrawerOO, setVerifyDrawerOO] = useState<{ id: string; name: string } | null>(null);
 
   // Add company form
   const [newCompanyForm, setNewCompanyForm] = useState({ ...EMPTY_COMPANY });
@@ -1125,6 +1127,13 @@ export default function OwnerOperatorsPage() {
                     </span>
                   )}
                   <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setVerifyDrawerOO({ id: oo.id, name: oo.company_name }); }}
+                      title="Open Intel Verify to verify a document for this owner operator"
+                      style={{ background: "#faf5ff", border: "1px solid #ddd6fe", color: "#7c3aed", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                    >
+                      🔍 Verify Doc
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -4026,6 +4035,43 @@ export default function OwnerOperatorsPage() {
         );
       })()}
 
+      {/* ── Intel Verify drawer ── */}
+      {verifyDrawerOO && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9000, display: "flex" }}
+          onClick={() => setVerifyDrawerOO(null)}>
+          {/* Backdrop */}
+          <div style={{ flex: 1, background: "rgba(15,23,42,0.45)" }} />
+          {/* Panel */}
+          <div style={{ width: 520, maxWidth: "100vw", background: "#fff", height: "100%", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "-8px 0 32px rgba(0,0,0,0.18)" }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 12, background: "#faf5ff" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>MoveAround Intel Verify™</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a" }}>{verifyDrawerOO.name}</div>
+              </div>
+              <a href="/ronyx/intel-verify" target="_blank" rel="noopener noreferrer"
+                style={{ padding: "6px 12px", background: "#ede9fe", border: "1px solid #ddd6fe", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "#7c3aed", textDecoration: "none", whiteSpace: "nowrap" }}>
+                Open Full Workbench ↗
+              </a>
+              <button onClick={() => setVerifyDrawerOO(null)}
+                style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 800, fontSize: 16, color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                ×
+              </button>
+            </div>
+            {/* Panel body */}
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              <IntelVerifyPanel
+                ooId={verifyDrawerOO.id}
+                ooName={verifyDrawerOO.name}
+                compact={true}
+                onClose={() => setVerifyDrawerOO(null)}
+                onDone={() => { loadCompanies(); }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

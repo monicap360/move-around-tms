@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import supabaseAdmin from "@/lib/supabaseAdmin";
 import { ASSISTANT_CATALOG, ASSISTANT_KEYS } from "@/lib/ai/assistantCatalog";
 
 export const dynamic = "force-dynamic";

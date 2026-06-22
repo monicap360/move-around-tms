@@ -1,7 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { requireSameOrigin } from "@/lib/security";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 

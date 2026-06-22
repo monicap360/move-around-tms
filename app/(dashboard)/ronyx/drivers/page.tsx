@@ -1336,6 +1336,67 @@ function ManagerAlertsPanel({ alerts, onClose }: { alerts: ManagerAlert[]; onClo
   );
 }
 
+/* ─── i18n ──────────────────────────────────────────────── */
+const L = {
+  en: {
+    dispatchEligible: "Dispatch Eligible",  dispatchBlocked: "Dispatch Blocked",
+    needsAttention: "Needs Attention",      noCompany: "No Company",
+    missingDocs: "Missing Docs",            expiringSoon: "Expiring Soon",
+    noTruck: "No Truck",                    payrollHold: "Payroll Hold",
+    activeDrivers: "Active Drivers",        totalDrivers: "Total Drivers",
+    allGatesPass: "All gates pass",         cannotBeAssigned: "Cannot be assigned",
+    missingOrExpired: "Missing or expired", unassigned: "Unassigned",
+    cdlMvrMedical: "CDL, MVR, Medical",     within30: "Within 30 days",
+    needsAssignment: "Needs assignment",    payHoldsActive: "Pay holds active",
+    notInactive: "Not inactive",            inSystem: "In system",
+    readyNow: "Ready Now",                  missingMVR: "Missing MVR",
+    missingCDL: "Missing CDL",             missingMed: "Missing Medical Card",
+    expiredMed: "Expired Medical Card",     noCompanyFilter: "No Company Assigned",
+    noTruckFilter: "No Truck Assigned",
+    colDriver: "Driver",                    colCompany: "Company / Carrier",
+    colType: "Type",                        colTruck: "Truck",
+    colEligible: "Dispatch Eligible",       colCCB: "CCB",
+    colDocs: "Docs",                        colNextExp: "Next Exp.",
+    colPayroll: "Payroll",                  colNextAction: "Next Action",
+    colActions: "Actions",
+    assistantTitle: "Operations Assistant",
+    criticalTitle: "CRITICAL — drivers cannot be dispatched today",
+    resolveNow: "Resolve Now",
+    briefing: "Morning Briefing",
+    doThisFirst: "Do This First",
+    nlHint: "Try: \"blocked drivers\", \"no medical card\", \"expiring soon\"",
+  },
+  es: {
+    dispatchEligible: "Elegible Despacho",  dispatchBlocked: "Bloqueado",
+    needsAttention: "Necesita Atención",    noCompany: "Sin Empresa",
+    missingDocs: "Docs Faltantes",          expiringSoon: "Próximo a Vencer",
+    noTruck: "Sin Camión",                  payrollHold: "Retención de Pago",
+    activeDrivers: "Conductores Activos",   totalDrivers: "Total Conductores",
+    allGatesPass: "Todos los requisitos",   cannotBeAssigned: "No puede asignarse",
+    missingOrExpired: "Faltante o vencido", unassigned: "Sin asignar",
+    cdlMvrMedical: "CDL, MVR, Médica",     within30: "En 30 días",
+    needsAssignment: "Necesita asignación", payHoldsActive: "Retenciones activas",
+    notInactive: "No inactivo",             inSystem: "En sistema",
+    readyNow: "Listo Ahora",               missingMVR: "Sin MVR",
+    missingCDL: "Sin CDL",                missingMed: "Sin Tarjeta Médica",
+    expiredMed: "Tarjeta Médica Vencida",   noCompanyFilter: "Sin Empresa Asignada",
+    noTruckFilter: "Sin Camión Asignado",
+    colDriver: "Conductor",                 colCompany: "Empresa / Transportista",
+    colType: "Tipo",                        colTruck: "Camión",
+    colEligible: "Elegible Despacho",       colCCB: "CCB",
+    colDocs: "Docs",                        colNextExp: "Próx. Vence",
+    colPayroll: "Nómina",                   colNextAction: "Próx. Acción",
+    colActions: "Acciones",
+    assistantTitle: "Asistente de Operaciones",
+    criticalTitle: "CRÍTICO — conductores no pueden ser despachados hoy",
+    resolveNow: "Resolver Ahora",
+    briefing: "Informe Matutino",
+    doThisFirst: "Hacer Primero",
+    nlHint: "Intenta: \"bloqueados\", \"sin médica\", \"próximo a vencer\"",
+  },
+} as const;
+type LKey = keyof typeof L.en;
+
 /* ─── Main page ─────────────────────────────────────────── */
 export default function DriversPage() {
   const searchParams = useSearchParams();
@@ -1371,6 +1432,10 @@ export default function DriversPage() {
   const [ccbRunning, setCcbRunning]       = useState(false);
   const [drawerDriver, setDrawerDriver]   = useState<Driver | null>(null);
   const [eodReviewOpen, setEodReviewOpen] = useState(false);
+  const [lang, setLang]                   = useState<"en" | "es">("en");
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const T = L[lang];
+  const t = (k: LKey) => T[k];
 
   function showToast(msg: string) { setToast(msg); }
 
@@ -1590,42 +1655,73 @@ export default function DriversPage() {
             style={{ padding: "8px 16px", borderRadius: 9, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
             📋 End of Day Review
           </button>
+          <button onClick={() => setLang(l => l === "en" ? "es" : "en")}
+            title={lang === "en" ? "Cambiar a Español" : "Switch to English"}
+            style={{ padding: "8px 13px", borderRadius: 9, background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0369a1", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
+            {lang === "en" ? "ES" : "EN"}
+          </button>
+          <button onClick={() => setAssistantOpen(o => !o)}
+            style={{ padding: "8px 14px", borderRadius: 9, background: assistantOpen ? "#1e40af" : "#eff6ff", border: "1px solid #bfdbfe", color: assistantOpen ? "#fff" : "#1e40af", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+            ⚡ {t("assistantTitle")}
+          </button>
         </div>
       </section>
 
       {/* ── Driver Mission Control KPIs ── */}
       <section className="premium-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(115px, 1fr))", gap: 8 }}>
         <div className={`premium-kpi${dispatchEligibleCount === allDrivers.filter(d => d.status !== "Inactive").length && allDrivers.length > 0 ? " success" : ""}`} onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
-          <span>Dispatch Eligible</span><strong>{loading ? "…" : dispatchEligibleCount}</strong><p>All gates pass</p>
+          <span>{t("dispatchEligible")}</span><strong>{loading ? "…" : dispatchEligibleCount}</strong><p>{t("allGatesPass")}</p>
         </div>
         <div className={`premium-kpi${dispatchBlockedCount > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Dispatch Blocked")} style={{ cursor: "pointer" }}>
-          <span>Dispatch Blocked</span><strong>{loading ? "…" : dispatchBlockedCount}</strong><p>Cannot be assigned</p>
+          <span>{t("dispatchBlocked")}</span><strong>{loading ? "…" : dispatchBlockedCount}</strong><p>{t("cannotBeAssigned")}</p>
         </div>
         <div className={`premium-kpi${needsAttentionCount > 0 ? " danger" : ""}`} onClick={() => setNeedsFilter("Missing Docs")} style={{ cursor: "pointer" }}>
-          <span>Needs Attention</span><strong>{loading ? "…" : needsAttentionCount}</strong><p>Missing or expired</p>
+          <span>{t("needsAttention")}</span><strong>{loading ? "…" : needsAttentionCount}</strong><p>{t("missingOrExpired")}</p>
         </div>
         <div className={`premium-kpi${noCompanyCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("No Company Assigned")} style={{ cursor: "pointer" }}>
-          <span>No Company</span><strong>{loading ? "…" : noCompanyCount}</strong><p>Unassigned</p>
+          <span>{t("noCompany")}</span><strong>{loading ? "…" : noCompanyCount}</strong><p>{t("unassigned")}</p>
         </div>
         <div className={`premium-kpi${missingDocsCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Missing Docs")} style={{ cursor: "pointer" }}>
-          <span>Missing Docs</span><strong>{loading ? "…" : missingDocsCount}</strong><p>CDL, MVR, Medical</p>
+          <span>{t("missingDocs")}</span><strong>{loading ? "…" : missingDocsCount}</strong><p>{t("cdlMvrMedical")}</p>
         </div>
         <div className={`premium-kpi${expiringSoonCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Expiring Soon")} style={{ cursor: "pointer" }}>
-          <span>Expiring Soon</span><strong>{loading ? "…" : expiringSoonCount}</strong><p>Within 30 days</p>
+          <span>{t("expiringSoon")}</span><strong>{loading ? "…" : expiringSoonCount}</strong><p>{t("within30")}</p>
         </div>
         <div className={`premium-kpi${noTruckCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("No Truck Assigned")} style={{ cursor: "pointer" }}>
-          <span>No Truck</span><strong>{loading ? "…" : noTruckCount}</strong><p>Needs assignment</p>
+          <span>{t("noTruck")}</span><strong>{loading ? "…" : noTruckCount}</strong><p>{t("needsAssignment")}</p>
         </div>
         <div className={`premium-kpi${payrollHoldCount > 0 ? " warning" : ""}`} onClick={() => setNeedsFilter("Payroll Hold")} style={{ cursor: "pointer" }}>
-          <span>Payroll Hold</span><strong>{loading ? "…" : payrollHoldCount}</strong><p>Pay holds active</p>
+          <span>{t("payrollHold")}</span><strong>{loading ? "…" : payrollHoldCount}</strong><p>{t("payHoldsActive")}</p>
         </div>
         <div className="premium-kpi" onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
-          <span>Active Drivers</span><strong>{loading ? "…" : activeDriversCount}</strong><p>Not inactive</p>
+          <span>{t("activeDrivers")}</span><strong>{loading ? "…" : activeDriversCount}</strong><p>{t("notInactive")}</p>
         </div>
         <div className="premium-kpi" onClick={() => setNeedsFilter("All")} style={{ cursor: "pointer" }}>
-          <span>Total Drivers</span><strong>{loading ? "…" : allDrivers.length}</strong><p>In system</p>
+          <span>{t("totalDrivers")}</span><strong>{loading ? "…" : allDrivers.length}</strong><p>{t("inSystem")}</p>
         </div>
       </section>
+
+      {/* ── Critical Alert Banner ── */}
+      {!loading && (dispatchBlockedCount > 0 || expiredMedCount > 0) && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderLeft: "4px solid #dc2626", borderRadius: 12, padding: "12px 20px", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>🚫</span>
+            <div>
+              <div style={{ fontWeight: 900, color: "#dc2626", fontSize: 13, letterSpacing: "-0.01em" }}>{t("criticalTitle")}</div>
+              <div style={{ fontSize: 12, color: "#7f1d1d", marginTop: 2 }}>
+                {[
+                  dispatchBlockedCount > 0 && `${dispatchBlockedCount} blocked for dispatch`,
+                  expiredMedCount > 0 && `${expiredMedCount} expired medical card${expiredMedCount > 1 ? "s" : ""}`,
+                ].filter(Boolean).join(" · ")}
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setNeedsFilter("Dispatch Blocked")}
+            style={{ padding: "7px 16px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 800, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+            {t("resolveNow")} →
+          </button>
+        </div>
+      )}
 
       {/* ── CCB Action Queue ── */}
       {!loading && (() => {
@@ -1993,17 +2089,17 @@ export default function DriversPage() {
           {/* Quick filter chips */}
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {[
-              { label: "Ready Now",             filter: "All",                count: readyCount,                        active: needsFilter === "All" && !search },
-              { label: "Dispatch Blocked",       filter: "Dispatch Blocked",   count: dispatchBlockedCount,              active: needsFilter === "Dispatch Blocked" },
-              { label: "Missing Docs",           filter: "Missing Docs",       count: allDrivers.filter(d => d.docs === "Missing").length, active: needsFilter === "Missing Docs" },
-              { label: "Expiring Soon",          filter: "Expiring Soon",      count: allDrivers.filter(d => d.docs === "Expiring").length, active: needsFilter === "Expiring Soon" },
-              { label: "No Company Assigned",    filter: "No Company Assigned",count: noCompanyCount,                   active: needsFilter === "No Company Assigned" },
-              { label: "No Truck Assigned",      filter: "No Truck Assigned",  count: allDrivers.filter(d => d.truck === "—").length, active: needsFilter === "No Truck Assigned" },
-              { label: "Payroll Hold",           filter: "Payroll Hold",       count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length, active: needsFilter === "Payroll Hold" },
-              { label: "Missing CDL",            filter: "Missing CDL",        count: missingCDLCount,                  active: needsFilter === "Missing CDL" },
-              { label: "Missing MVR",            filter: "Missing MVR",        count: missingMVRCount,                  active: needsFilter === "Missing MVR" },
-              { label: "Missing Medical Card",   filter: "Missing Medical Card",count: missingMedCount,                 active: needsFilter === "Missing Medical Card" },
-              { label: "Expired Medical Card",   filter: "Expired Medical Card",count: expiredMedCount,                 active: needsFilter === "Expired Medical Card" },
+              { label: t("readyNow"),         filter: "All",                 count: readyCount,                                                        active: needsFilter === "All" && !search },
+              { label: t("dispatchBlocked"),  filter: "Dispatch Blocked",    count: dispatchBlockedCount,                                              active: needsFilter === "Dispatch Blocked" },
+              { label: t("missingDocs"),      filter: "Missing Docs",        count: allDrivers.filter(d => d.docs === "Missing").length,               active: needsFilter === "Missing Docs" },
+              { label: t("expiringSoon"),     filter: "Expiring Soon",       count: allDrivers.filter(d => d.docs === "Expiring").length,              active: needsFilter === "Expiring Soon" },
+              { label: t("noCompanyFilter"),  filter: "No Company Assigned", count: noCompanyCount,                                                    active: needsFilter === "No Company Assigned" },
+              { label: t("noTruckFilter"),    filter: "No Truck Assigned",   count: allDrivers.filter(d => d.truck === "—").length,                   active: needsFilter === "No Truck Assigned" },
+              { label: t("payrollHold"),      filter: "Payroll Hold",        count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length, active: needsFilter === "Payroll Hold" },
+              { label: t("missingCDL"),       filter: "Missing CDL",         count: missingCDLCount,                                                   active: needsFilter === "Missing CDL" },
+              { label: t("missingMVR"),       filter: "Missing MVR",         count: missingMVRCount,                                                   active: needsFilter === "Missing MVR" },
+              { label: t("missingMed"),       filter: "Missing Medical Card", count: missingMedCount,                                                  active: needsFilter === "Missing Medical Card" },
+              { label: t("expiredMed"),       filter: "Expired Medical Card", count: expiredMedCount,                                                  active: needsFilter === "Expired Medical Card" },
             ].map(({ label, filter, count, active }) => (
               <button key={label} onClick={() => setNeedsFilter(filter)} style={{
                 padding: "4px 10px", borderRadius: 99, border: `1px solid ${active ? "#1e40af" : "#bfdbfe"}`,
@@ -2065,8 +2161,21 @@ export default function DriversPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                      {["", "Driver", "Company / Carrier", "Type", "Truck", "Dispatch Eligible", "CCB", "Docs", "Next Exp.", "Payroll", "Next Action", "Actions"].map((h) => (
-                        <th key={h} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: h === "Company / Carrier" ? "#1d4ed8" : h === "Next Action" ? "#7c3aed" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      {[
+                        { h: "",                   key: "" },
+                        { h: t("colDriver"),       key: "driver" },
+                        { h: t("colCompany"),      key: "company" },
+                        { h: t("colType"),         key: "type" },
+                        { h: t("colTruck"),        key: "truck" },
+                        { h: t("colEligible"),     key: "eligible" },
+                        { h: t("colCCB"),          key: "ccb" },
+                        { h: t("colDocs"),         key: "docs" },
+                        { h: t("colNextExp"),      key: "nextExp" },
+                        { h: t("colPayroll"),      key: "payroll" },
+                        { h: t("colNextAction"),   key: "nextAction" },
+                        { h: t("colActions"),      key: "actions" },
+                      ].map(({ h, key }) => (
+                        <th key={key} style={{ padding: "9px 8px", textAlign: "left", fontSize: 10, fontWeight: 700, color: key === "company" ? "#1d4ed8" : key === "nextAction" ? "#7c3aed" : "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -2714,6 +2823,133 @@ export default function DriversPage() {
 
       {/* ── Toast ── */}
       {toast && <Toast msg={toast} onDone={() => setToast("")} />}
+
+      {/* ── Operations Assistant Panel ── */}
+      {assistantOpen && (() => {
+        const expiredMedDrivers = allDrivers.filter(d => d.medicalExp !== "—" && isDateExpiredOrMissing(d.medicalExp) === "expired");
+        const expiredCDLDrivers = allDrivers.filter(d => d.cdlExp !== "—" && isDateExpiredOrMissing(d.cdlExp) === "expired");
+        const noCompanyDrivers  = allDrivers.filter(d => d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—");
+        const missingMedDrivers = allDrivers.filter(d => !d.medicalExp || d.medicalExp === "—");
+        const missingCDLDrivers = allDrivers.filter(d => !d.cdl || d.cdl === "—");
+        const missingMVRDrivers = allDrivers.filter(d => !d.mvrExp || d.mvrExp === "—");
+        const expiringSoon7     = allDrivers.filter(d => { const days = daysUntil(d.medicalExp) ?? daysUntil(d.cdlExp); return days !== null && days >= 0 && days <= 7; });
+        const blockedDrivers    = allDrivers.filter(d => driverCCBStatus(d).label === "Blocked" || driverCCBStatus(d).label === "Manually Blocked");
+
+        const tasks: { priority: "critical"|"urgent"|"warning"; title: string; detail: string; role: string; filter: string; action: string; count: number }[] = [];
+        if (expiredMedDrivers.length)  tasks.push({ priority: "critical", title: `${expiredMedDrivers.length} expired medical card${expiredMedDrivers.length > 1 ? "s" : ""}`, detail: "These drivers cannot be legally dispatched. Obtain renewed cards immediately.", role: "Compliance Admin", filter: "Expired Medical Card", action: "View drivers →", count: expiredMedDrivers.length });
+        if (expiredCDLDrivers.length)  tasks.push({ priority: "critical", title: `${expiredCDLDrivers.length} expired CDL${expiredCDLDrivers.length > 1 ? "s" : ""}`, detail: "CDL expired — driver is not legally licensed to operate. Pull from dispatch.", role: "Compliance Admin", filter: "Missing CDL", action: "View drivers →", count: expiredCDLDrivers.length });
+        if (blockedDrivers.length)     tasks.push({ priority: "urgent",   title: `${blockedDrivers.length} blocked from dispatch`, detail: "CCB block is active. Confirm reason and resolve or clear the block.", role: "Dispatch Manager", filter: "Dispatch Blocked", action: "Review blocks →", count: blockedDrivers.length });
+        if (expiringSoon7.length)      tasks.push({ priority: "urgent",   title: `${expiringSoon7.length} doc${expiringSoon7.length > 1 ? "s" : ""} expiring within 7 days`, detail: "Contact drivers now — once expired, dispatch is blocked automatically.", role: "Compliance Admin", filter: "Expiring Soon", action: "View expiring →", count: expiringSoon7.length });
+        if (noCompanyDrivers.length)   tasks.push({ priority: "warning",  title: `${noCompanyDrivers.length} driver${noCompanyDrivers.length > 1 ? "s" : ""} without company`, detail: "Cannot be dispatched. Assign a carrier or owner-operator company.", role: "Driver Coordinator", filter: "No Company Assigned", action: "Assign company →", count: noCompanyDrivers.length });
+        if (missingMedDrivers.length)  tasks.push({ priority: "warning",  title: `${missingMedDrivers.length} missing medical card`, detail: "Upload or request DOT medical card from driver.", role: "Compliance Admin", filter: "Missing Medical Card", action: "Upload doc →", count: missingMedDrivers.length });
+        if (missingCDLDrivers.length)  tasks.push({ priority: "warning",  title: `${missingCDLDrivers.length} missing CDL info`, detail: "Enter CDL number and expiration date in the driver's profile.", role: "Compliance Admin", filter: "Missing CDL", action: "Add CDL →", count: missingCDLDrivers.length });
+        if (missingMVRDrivers.length)  tasks.push({ priority: "warning",  title: `${missingMVRDrivers.length} missing MVR`, detail: "Request MVR from DMV or motor carrier. Required for compliance.", role: "Compliance Admin", filter: "Missing MVR", action: "Request MVR →", count: missingMVRDrivers.length });
+
+        const colors: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+          critical: { bg: "#fef2f2", border: "#fca5a5", text: "#991b1b", badge: "#dc2626" },
+          urgent:   { bg: "#fff7ed", border: "#fed7aa", text: "#c2410c", badge: "#ea580c" },
+          warning:  { bg: "#fffbeb", border: "#fde68a", text: "#92400e", badge: "#d97706" },
+        };
+        const nlSuggestions = [
+          { phrase: lang === "en" ? "blocked drivers"      : "conductores bloqueados",   filter: "Dispatch Blocked" },
+          { phrase: lang === "en" ? "no medical card"      : "sin tarjeta médica",        filter: "Missing Medical Card" },
+          { phrase: lang === "en" ? "expiring soon"        : "próximo a vencer",          filter: "Expiring Soon" },
+          { phrase: lang === "en" ? "no company assigned"  : "sin empresa asignada",      filter: "No Company Assigned" },
+          { phrase: lang === "en" ? "missing CDL"          : "sin CDL",                   filter: "Missing CDL" },
+          { phrase: lang === "en" ? "expired medical"      : "tarjeta médica vencida",    filter: "Expired Medical Card" },
+          { phrase: lang === "en" ? "payroll hold"         : "retención de pago",         filter: "Payroll Hold" },
+        ];
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 400, display: "flex", pointerEvents: "none" }}>
+            <div style={{ flex: 1, pointerEvents: "auto" }} onClick={() => setAssistantOpen(false)} />
+            <div style={{ width: 440, maxWidth: "95vw", background: "#fff", height: "100vh", overflowY: "auto", boxShadow: "-8px 0 48px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column", pointerEvents: "auto" }}>
+              {/* Header */}
+              <div style={{ background: "#0f172a", padding: "20px 22px", flexShrink: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>MoveAround TMS</div>
+                    <h2 style={{ margin: 0, color: "#fff", fontSize: "1.1rem", fontWeight: 900 }}>⚡ {t("assistantTitle")}</h2>
+                    <p style={{ margin: "3px 0 0", color: "#94a3b8", fontSize: "0.75rem" }}>
+                      {tasks.length === 0 ? (lang === "en" ? "All clear — no critical issues." : "Todo en orden — sin problemas críticos.") : `${tasks.length} ${lang === "en" ? "item" : "tarea"}${tasks.length !== 1 ? "s" : ""} ${lang === "en" ? "need attention" : "necesita atención"}`}
+                    </p>
+                  </div>
+                  <button onClick={() => setAssistantOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.4rem", cursor: "pointer", lineHeight: 1 }}>✕</button>
+                </div>
+              </div>
+
+              <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Morning briefing stats */}
+                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>{t("briefing")}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {[
+                      { label: t("dispatchEligible"), value: dispatchEligibleCount, color: "#16a34a" },
+                      { label: t("dispatchBlocked"),  value: dispatchBlockedCount,  color: dispatchBlockedCount > 0 ? "#dc2626" : "#64748b" },
+                      { label: t("expiringSoon"),      value: expiringSoonCount,     color: expiringSoonCount > 0 ? "#d97706" : "#64748b" },
+                      { label: t("totalDrivers"),      value: allDrivers.length,     color: "#0f172a" },
+                    ].map(s => (
+                      <div key={s.label} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: "1.35rem", fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                        <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 3 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Do This First tasks */}
+                <div>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>⚡ {t("doThisFirst")}</div>
+                  {tasks.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "28px 0", color: "#94a3b8" }}>
+                      <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
+                      <div style={{ fontWeight: 700, color: "#16a34a" }}>{lang === "en" ? "All clear — nothing critical right now." : "Todo en orden — nada crítico ahora."}</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {tasks.map((task, i) => {
+                        const c = colors[task.priority];
+                        return (
+                          <div key={i} style={{ background: c.bg, border: `1px solid ${c.border}`, borderLeft: `3px solid ${c.badge}`, borderRadius: 10, padding: "12px 14px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+                              <div style={{ fontWeight: 800, fontSize: 13, color: "#0f172a" }}>{task.title}</div>
+                              <span style={{ fontSize: "0.58rem", fontWeight: 900, background: c.badge, color: "#fff", borderRadius: 4, padding: "2px 6px", whiteSpace: "nowrap", letterSpacing: "0.04em", flexShrink: 0 }}>{task.priority.toUpperCase()}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5, marginBottom: 8 }}>{task.detail}</div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.68rem", color: "#64748b" }}>→ <strong>{task.role}</strong></span>
+                              <button onClick={() => { setNeedsFilter(task.filter); setAssistantOpen(false); }}
+                                style={{ padding: "4px 10px", background: c.badge, color: "#fff", border: "none", borderRadius: 6, fontSize: "0.68rem", fontWeight: 700, cursor: "pointer" }}>
+                                {task.action}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Natural language quick filters */}
+                <div>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                    {lang === "en" ? "Quick Filters" : "Filtros Rápidos"}
+                  </div>
+                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 8 }}>{t("nlHint")}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {nlSuggestions.map(s => (
+                      <button key={s.phrase} onClick={() => { setNeedsFilter(s.filter); setSearch(""); setAssistantOpen(false); }}
+                        style={{ padding: "5px 10px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 99, fontSize: "0.7rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}>
+                        {s.phrase}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </main>
   );
 }

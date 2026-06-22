@@ -1,6 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import supabaseAdmin from "@/lib/supabaseAdmin";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
