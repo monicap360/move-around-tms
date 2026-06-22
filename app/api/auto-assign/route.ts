@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { autoAssignBackupTruck } from "../../lib/dispatchLogic";
+import { autoAssignBackupTruck } from "@/lib/dispatchLogic";
 
 export async function POST(req: Request) {
   try {
