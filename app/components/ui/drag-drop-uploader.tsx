@@ -1,5 +1,7 @@
+// components/ui/drag-drop-uploader.tsx
+// Drag & drop file uploader with progress display.
+
 "use client";
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useState } from "react";
 import {
   Upload as UploadIcon,
@@ -7,7 +9,6 @@ import {
   Image as ImageIcon,
   X,
 } from "lucide-react";
-import { safeAlert } from "@/lib/utils/alert";
 
 interface FileWithPreview extends File {
   preview?: string;
@@ -34,10 +35,11 @@ export default function DragDropUploader({
   const [isDragActive, setIsDragActive] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
 
-  const validateFile = (file: File): boolean => {
+  const validateFile = useCallback(
+    (file: File): boolean => {
     // Check file size
     if (file.size > maxFileSize * 1024 * 1024) {
-      safeAlert(
+      alert(
         `File ${file.name} is too large. Maximum size is ${maxFileSize}MB.`,
       );
       return false;
@@ -52,32 +54,37 @@ export default function DragDropUploader({
     });
 
     if (!isValidType) {
-      safeAlert(`File ${file.name} is not a supported format.`);
+      alert(`File ${file.name} is not a supported format.`);
       return false;
     }
 
     return true;
-  };
+    },
+    [acceptedTypes, maxFileSize],
+  );
 
-  const processFiles = (fileList: FileList | File[]): FileWithPreview[] => {
-    const files = Array.from(fileList);
-    const validFiles = files.filter(validateFile);
+  const processFiles = useCallback(
+    (fileList: FileList | File[]): FileWithPreview[] => {
+      const files = Array.from(fileList);
+      const validFiles = files.filter(validateFile);
 
-    if (validFiles.length > maxFiles) {
-      safeAlert(`You can only upload up to ${maxFiles} files at once.`);
-      validFiles.splice(maxFiles);
-    }
+      if (validFiles.length > maxFiles) {
+        alert(`You can only upload up to ${maxFiles} files at once.`);
+        validFiles.splice(maxFiles);
+      }
 
-    return validFiles.map((file) => {
-      const fileWithPreview: FileWithPreview = Object.assign(file, {
-        id: Math.random().toString(36).substr(2, 9),
-        preview: file.type.startsWith("image/")
-          ? URL.createObjectURL(file)
-          : undefined,
+      return validFiles.map((file) => {
+        const fileWithPreview: FileWithPreview = Object.assign(file, {
+          id: Math.random().toString(36).substr(2, 9),
+          preview: file.type.startsWith("image/")
+            ? URL.createObjectURL(file)
+            : undefined,
+        });
+        return fileWithPreview;
       });
-      return fileWithPreview;
-    });
-  };
+    },
+    [maxFiles, validateFile],
+  );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -116,7 +123,7 @@ export default function DragDropUploader({
         onFilesAdded(processedFiles);
       }
     },
-    [onFilesAdded, maxFileSize, maxFiles, acceptedTypes],
+    [onFilesAdded, processFiles],
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -8,56 +8,21 @@ export interface Load {
   weight: number;
   rate: number;
   status: "pending" | "assigned" | "in_progress" | "completed";
-  driverId?: string;
-  truckId?: string;
 }
 
 export interface Driver {
   id: string;
   name: string;
   status: "available" | "on_duty" | "off_duty";
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
   truckId?: string;
 }
 
 export interface Truck {
   id: string;
-  number: string;
-  status: "available" | "in_use" | "maintenance";
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
+  unit?: string;
+  unit_number?: string;
+  status: "available" | "ready" | "in_use" | "maintenance";
   driverId?: string;
-}
-
-export async function autoScheduleLoads() {
-  try {
-    // This would integrate with your database
-    console.log("Auto-scheduling loads...");
-
-    // Mock implementation - in real app, this would:
-    // 1. Fetch pending loads
-    // 2. Fetch available drivers/trucks
-    // 3. Calculate optimal assignments
-    // 4. Update database with assignments
-
-    return {
-      success: true,
-      message: "Loads scheduled successfully",
-      assignedLoads: 0,
-    };
-  } catch (error) {
-    console.error("Auto-schedule error:", error);
-    return {
-      success: false,
-      message: "Failed to schedule loads",
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
 }
 
 export function calculateDistance(
@@ -130,3 +95,6 @@ export function findOptimalAssignment(
 
   return assignments;
 }
+
+// Re-export autoScheduleLoads from app/lib/scheduler.ts for compatibility
+export { autoScheduleLoads } from "../app/lib/scheduler";
