@@ -23,6 +23,7 @@
       "react",
       "react-dom"
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
