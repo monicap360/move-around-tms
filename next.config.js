@@ -74,8 +74,13 @@ const nextConfig = {
   },
 
   webpack: (config, { isServer, dev }) => {
+    // Explicitly wire @/ → project root so Linux (Render) resolves it correctly.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@": path.resolve(__dirname),
+    };
+
     if (!dev) {
-      // Disable persistent cache — Render's filesystem is ephemeral.
       config.cache = false;
     }
     if (!isServer) {
