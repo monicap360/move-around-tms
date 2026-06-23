@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchTrackingData } from "@/app/tracking/trackingDataProvider";
+import { fetchTrackingData } from "@/tracking/trackingDataProvider";
 
 // IMPORTANT: Replace with your Mapbox access token
 const MAPBOX_TOKEN = "YOUR_MAPBOX_ACCESS_TOKEN";
