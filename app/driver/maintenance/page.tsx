@@ -124,7 +124,7 @@ export default function DriverMaintenancePage() {
       for (const photo of photos) {
         const path = `maintenance/${driverId}/${Date.now()}-${photo.name}`;
         const { data: uploadData, error: uploadErr } = await supabase.storage
-          .from("hr_docs")
+          .from("hr")
           .upload(path, photo);
 
         if (uploadErr) {
@@ -132,7 +132,7 @@ export default function DriverMaintenancePage() {
         } else {
           const {
             data: { publicUrl },
-          } = supabase.storage.from("hr_docs").getPublicUrl(uploadData.path);
+          } = supabase.storage.from("hr").getPublicUrl(uploadData.path);
           photoUrls.push(publicUrl);
         }
       }

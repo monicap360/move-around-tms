@@ -241,7 +241,7 @@ export default function DriverOnboardingPage() {
       const path = `onboarding-docs/${userEmail}/${documentKey}/${Date.now()}-${file.name}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("hr_docs")
+        .from("hr")
         .upload(path, file, { upsert: false });
 
       if (uploadError) {
@@ -251,7 +251,7 @@ export default function DriverOnboardingPage() {
       // Get public URL
       const {
         data: { publicUrl },
-      } = supabase.storage.from("hr_docs").getPublicUrl(uploadData.path);
+      } = supabase.storage.from("hr").getPublicUrl(uploadData.path);
 
       // Update document status
       setOnboardingData((prev) => ({

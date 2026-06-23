@@ -43,14 +43,14 @@ export default function DriverApplicationPage() {
     const filePath = `driver_applications/${email}/${folder}/${fileName}`;
 
     const { data, error } = await supabase.storage
-      .from("hr_docs")
+      .from("hr")
       .upload(filePath, file);
 
     if (error) throw error;
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from("hr_docs").getPublicUrl(filePath);
+    } = supabase.storage.from("hr").getPublicUrl(filePath);
 
     return publicUrl;
   }
