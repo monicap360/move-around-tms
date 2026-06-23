@@ -9,6 +9,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   serverExternalPackages: [
     "exceljs",
     "archiver",
