@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { brandAssets, BrandAssetKey } from "@/lib/brandAssets";
-import CcbShieldLogo from "@/components/ronyx/CcbShieldLogo";
+import CcbShieldLogo from "@/app/components/ronyx/CcbShieldLogo";
 
 type Props = {
   asset: BrandAssetKey;

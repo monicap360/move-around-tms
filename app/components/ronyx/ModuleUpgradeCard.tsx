@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import BrandLogo from "@/components/ronyx/BrandLogo";
+import BrandLogo from "@/app/components/ronyx/BrandLogo";
 import { MODULE_LOGO_MAP, BrandAssetKey } from "@/lib/brandAssets";
 
 type ModuleInfo = {

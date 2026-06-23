@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import PageProtection from "@/components/security/PageProtection";
-import CustomizationRequestWidget from "@/components/ronyx/CustomizationRequestWidget";
-import IntelImportCenter from "@/components/ronyx/IntelImportCenter";
+import PageProtection from "@/app/components/security/PageProtection";
+import CustomizationRequestWidget from "@/app/components/ronyx/CustomizationRequestWidget";
+import IntelImportCenter from "@/app/components/ronyx/IntelImportCenter";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

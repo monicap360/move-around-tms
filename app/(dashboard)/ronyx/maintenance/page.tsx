@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useModuleAccess } from "@/hooks/useModuleAccess";
-import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
+import { useModuleAccess } from "@/app/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/app/components/ronyx/ModuleUpgradeCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

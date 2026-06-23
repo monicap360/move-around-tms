@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useModuleAccess } from "@/hooks/useModuleAccess";
-import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
+import { useModuleAccess } from "@/app/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/app/components/ronyx/ModuleUpgradeCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

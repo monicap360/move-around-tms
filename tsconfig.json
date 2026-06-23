@@ -44,6 +44,7 @@
   ],
   "exclude": [
     "node_modules",
+    "src",
     "api-backup",
     "siteground-deploy",
     "_disabled_routes",

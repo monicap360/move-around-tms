@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import IntelVerifyPanel from "@/components/ronyx/IntelVerifyPanel";
+import IntelVerifyPanel from "@/app/components/ronyx/IntelVerifyPanel";
 import Link from "next/link";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────

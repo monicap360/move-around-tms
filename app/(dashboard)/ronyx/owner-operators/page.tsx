@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
-import { useModuleAccess } from "@/hooks/useModuleAccess";
-import ModuleUpgradeCard from "@/components/ronyx/ModuleUpgradeCard";
-import IntelVerifyPanel from "@/components/ronyx/IntelVerifyPanel";
+import { useModuleAccess } from "@/app/hooks/useModuleAccess";
+import ModuleUpgradeCard from "@/app/components/ronyx/ModuleUpgradeCard";
+import IntelVerifyPanel from "@/app/components/ronyx/IntelVerifyPanel";
 
 /* ─── Types ─────────────────────────────────────────── */
 type OODriver = {

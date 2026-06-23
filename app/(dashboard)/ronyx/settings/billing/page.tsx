@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import BrandLogo from "@/components/ronyx/BrandLogo";
+import BrandLogo from "@/app/components/ronyx/BrandLogo";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
