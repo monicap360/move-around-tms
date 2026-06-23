@@ -1,4 +1,3 @@
-// @ts-nocheck
 export default function RecruiterActionBar({ driver_uuid }) {
   return (
     <div className="flex gap-4 mt-6">

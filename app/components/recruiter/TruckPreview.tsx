@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* eslint-disable @next/next/no-img-element */
 export default function TruckPreview({ truck_skin, custom_logo_url }) {
   return (

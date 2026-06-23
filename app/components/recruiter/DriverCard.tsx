@@ -1,4 +1,3 @@
-// @ts-nocheck
 export default function DriverCard({ driver }) {
   return (
     <div className="p-4 rounded-xl bg-gray-900 border border-gray-700 hover:bg-gray-800">

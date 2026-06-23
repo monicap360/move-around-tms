@@ -1,7 +1,6 @@
 // @ts-nocheck
 "use client";
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -12,18 +11,18 @@ const supabase = createClient(
 export default function TicketPayrollView({ driver }) {
   const [tickets, setTickets] = useState([]);
 
-  useEffect(() => {
-    loadTickets();
-  }, []);
-
-  async function loadTickets() {
+  const loadTickets = useCallback(async () => {
     const { data } = await supabase
       .from("tickets")
       .select("*")
       .eq("driver_id", driver.id);
 
     setTickets(data);
-  }
+  }, [driver.id]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
 
   return (
     <div>

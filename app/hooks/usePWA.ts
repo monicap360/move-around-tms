@@ -8,7 +8,54 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Service worker intentionally disabled to avoid cache issues.
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.log("Service Worker registered:", registration.scope);
+
+          // Handle service worker updates
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
+                  // New content is available, prompt user to refresh
+                  if (
+                    confirm("New version available! Would you like to update?")
+                  ) {
+                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                    window.location.reload();
+                  }
+                }
+              });
+            }
+          });
+        })
+        .catch((error) => {
+          console.error("Service Worker registration failed:", error);
+        });
+
+      // Listen for service worker messages
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type) {
+          switch (event.data.type) {
+            case "NOTIFICATIONS_UPDATED":
+              // Handle notification updates
+              window.dispatchEvent(
+                new CustomEvent("notificationsUpdated", {
+                  detail: event.data.data,
+                }),
+              );
+              break;
+          }
+        }
+      });
+    }
 
     // Handle online/offline status
     const handleOnline = () => setIsOnline(true);
@@ -53,7 +100,16 @@ export function usePWA() {
   }, []);
 
   const installPWA = async () => {
-    return;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log("PWA install outcome:", outcome);
+
+      if (outcome === "accepted") {
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+      }
+    }
   };
 
   const shareContent = async (data: {
@@ -74,11 +130,22 @@ export function usePWA() {
   };
 
   const requestBackgroundSync = async (tag: string) => {
-    return;
+    if (
+      "serviceWorker" in navigator &&
+      "sync" in window.ServiceWorkerRegistration.prototype
+    ) {
+      const registration = await navigator.serviceWorker.ready;
+      return (registration as any).sync.register(tag);
+    }
   };
 
   const cacheTicketOffline = (ticket: any) => {
-    return;
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.controller?.postMessage({
+        type: "CACHE_TICKET_OFFLINE",
+        ticket,
+      });
+    }
   };
 
   return {

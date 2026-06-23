@@ -1,4 +1,3 @@
-// @ts-nocheck
 export default function RankBadge({ rank }) {
   const rankColors = {
     Operator: "bg-gray-700",
