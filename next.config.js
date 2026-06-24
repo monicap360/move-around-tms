@@ -5,6 +5,14 @@ const nextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname),
 
+  // Build-memory guard for the 512 MB Render Starter plan: run static generation
+  // in a single process (no per-worker heap multiplication) instead of 5 workers.
+  // Slower build, far lower peak RAM. Remove if the plan is upgraded to >=2 GB.
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },
