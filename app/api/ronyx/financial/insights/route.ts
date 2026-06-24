@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("users")
+      .from("organization_members")
       .select("organization_id")
-      .eq("id", authData.user.id)
+      .eq("user_id", authData.user.id)
       .single();
 
     if (profileError || !profile?.organization_id) {

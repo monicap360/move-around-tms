@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('users')
+      .from('organization_members')
       .select('organization_id')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (!profile?.organization_id) {
@@ -111,9 +111,9 @@ export async function GET(req: NextRequest) {
     }
 
     const { data: profile } = await supabase
-      .from('users')
+      .from('organization_members')
       .select('organization_id')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (!profile?.organization_id) {

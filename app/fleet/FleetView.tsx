@@ -604,10 +604,18 @@ export default function FleetPage({
     try {
       setLoading(true);
 
-      // Load vehicles from Supabase
+      // Load vehicles from Supabase. `vehicles` never existed as a table; the
+      // canonical fleet entity is `trucks` (extended in migration 214). Alias
+      // truck_number→unit_number and plate_number→license_plate so the Vehicle
+      // type and downstream rendering need no changes.
       const { data: vehiclesData, error } = await supabase
-        .from('vehicles')
-        .select('*');
+        .from('trucks')
+        .select(
+          'id, unit_number:truck_number, make, model, year, vin, ' +
+          'license_plate:plate_number, registration_expiry, insurance_expiry, ' +
+          'dot_inspection_due, last_maintenance, next_maintenance_due, ' +
+          'current_mileage, status, driver_assigned, location'
+        );
       if (error) throw error;
       setVehicles(vehiclesData || []);
 

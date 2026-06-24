@@ -1,0 +1,33 @@
+name: RLS Gate
+
+# Live-DB security gate (reads pg_class / pg_policies). Runs on a schedule, on
+# merges to main, and on demand — NOT on every PR, so live-DB drift can't block
+# unrelated PRs. Make this a non-required (informational) check, or wire its
+# failure to an alert.
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # daily at 08:00 UTC
+  push:
+    branches: [main]
+  workflow_dispatch:        # manual "Run workflow" button
+
+jobs:
+  rls-gate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: RLS CI gate
+        if: ${{ env.DATABASE_URL != '' }}
+        run: |
+          chmod +x db/checks/rls_gate.sh
+          db/checks/rls_gate.sh

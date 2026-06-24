@@ -45,7 +45,7 @@ export function useRoleBasedAuth() {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("user_id", userId)
         .single();
 
       if (profileError) throw profileError;

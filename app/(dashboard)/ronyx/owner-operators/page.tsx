@@ -149,6 +149,7 @@ type OOCompany = {
   website?: string;
   dispatch_blocked_override?: boolean;
   settlement_hold_override?: boolean;
+  status?: string; // 'active' | 'inactive' | 'suspended' — set 'inactive' when an OO quits Ronyx
 };
 
 /* ─── helpers ────────────────────────────────────────── */
@@ -575,12 +576,18 @@ export default function OwnerOperatorsPage() {
 
   // Company list search
   const [ooListSearch, setOoListSearch] = useState("");
+  // Active/inactive filter — quit OOs (status='inactive') hidden by default
+  const [ooStatusFilter, setOoStatusFilter] = useState<"active" | "inactive" | "all">("active");
   // Driver tab search (within selected OO)
   const [driverSearch, setDriverSearch] = useState("");
+  const ooIsActive = (oo: OOCompany) => (oo.status ?? "active").toLowerCase() === "active";
   const filteredCompanies = React.useMemo(() => {
+    let list = companies;
+    if (ooStatusFilter === "active") list = list.filter(ooIsActive);
+    else if (ooStatusFilter === "inactive") list = list.filter(oo => !ooIsActive(oo));
     const q = ooListSearch.trim().toLowerCase();
-    if (!q) return companies;
-    return companies.filter(oo =>
+    if (!q) return list;
+    return list.filter(oo =>
       oo.company_name.toLowerCase().includes(q) ||
       (oo.contact_name  || "").toLowerCase().includes(q) ||
       (oo.mc_number     || "").toLowerCase().includes(q) ||
@@ -589,7 +596,7 @@ export default function OwnerOperatorsPage() {
       (oo.business_address || "").toLowerCase().includes(q) ||
       oo.drivers.some(d => d.name.toLowerCase().includes(q))
     );
-  }, [companies, ooListSearch]);
+  }, [companies, ooListSearch, ooStatusFilter]);
 
   // Jobs filters
   const [jobFilter,        setJobFilter]        = useState("All Projects");
@@ -626,6 +633,21 @@ export default function OwnerOperatorsPage() {
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
   function persist(updated: OOCompany[]) { setCompanies(updated); }
   function updateLocalState(oo: OOCompany) { setSelected(oo); setCompanies(prev => prev.map(c => c.id === oo.id ? oo : c)); }
+  // Mark an owner-operator active/inactive (e.g. when a company quits Ronyx).
+  async function setOOActive(oo: OOCompany, active: boolean) {
+    const status = active ? "active" : "inactive";
+    // Audit trail: record the status change in the OO's changes_log.
+    const change: ChangeEntry = {
+      date: new Date().toISOString().slice(0, 10),
+      type: active ? "Reactivated" : "Deactivated",
+      detail: active ? "Marked Active" : "Marked Not Active — no longer working for Ronyx",
+    };
+    const changes_log = [change, ...(oo.changes_log || [])];
+    updateLocalState({ ...oo, status, changes_log });
+    const res = await apiPut(`/api/ronyx/owner-operators/${oo.id}`, { status, changes_log });
+    setToast(res?.error ? `Could not update status: ${res.error}` : (active ? "Company reactivated" : "Company marked Not Active"));
+    loadCompanies();
+  }
   async function updateSelected(oo: OOCompany) {
     updateLocalState(oo);
     const res = await apiPut(`/api/ronyx/owner-operators/${oo.id}`, {
@@ -1004,6 +1026,14 @@ export default function OwnerOperatorsPage() {
               <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1.1rem", opacity: 0.35, pointerEvents: "none" }}>🔍</span>
             )}
           </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+            {(["active", "inactive", "all"] as const).map(s => (
+              <button key={s} onClick={() => setOoStatusFilter(s)}
+                style={{ padding: "5px 12px", borderRadius: 8, border: "1.5px solid #1e40af", background: ooStatusFilter === s ? "#1e40af" : "#fff", color: ooStatusFilter === s ? "#fff" : "#1e40af", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", textTransform: "capitalize" }}>
+                {s === "all" ? "All" : s === "inactive" ? "Not Active" : "Active"}
+              </button>
+            ))}
+          </div>
         </div>
         {ooListSearch.trim() && (
           <div style={{ marginBottom: 10, fontSize: "0.78rem", color: filteredCompanies.length > 0 ? "#1e40af" : "#dc2626", fontWeight: 600 }}>
@@ -1351,6 +1381,15 @@ export default function OwnerOperatorsPage() {
                 style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", backdropFilter: "blur(4px)" }}>
                 ✏ Edit Profile
               </button>
+              <button
+                onClick={() => setOOActive(selected, !ooIsActive(selected))}
+                title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
+                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {ooIsActive(selected) ? "● Mark Not Active" : "○ Reactivate"}
+              </button>
+              {!ooIsActive(selected) && (
+                <span style={{ padding: "3px 10px", borderRadius: 999, background: "rgba(239,68,68,0.18)", color: "#fca5a5", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.04em" }}>NOT ACTIVE</span>
+              )}
               {selected.logo_url && (
                 <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ background: "none", border: "none", color: "#475569", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
               )}

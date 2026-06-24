@@ -1,0 +1,21 @@
+name: DB Guards
+
+# PR-required, repo-only checks. No database access, so this never blocks a PR
+# on live-DB drift — safe as a required status check on main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  migration-prefix-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Duplicate migration prefix guard
+        run: |
+          chmod +x db/checks/duplicate_prefix_guard.sh
+          db/checks/duplicate_prefix_guard.sh

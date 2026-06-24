@@ -59,17 +59,17 @@ export class CustomerProtection {
     let affectedCustomers = 0;
     if (organizationId) {
       const { count } = await this.supabase
-        .from('users')
+        .from('organization_members')
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', organizationId)
-        .eq('active', true);
+        .eq('status', 'active');
       affectedCustomers = count || 0;
     } else {
       // Platform-wide incident
       const { count } = await this.supabase
-        .from('users')
+        .from('organization_members')
         .select('id', { count: 'exact', head: true })
-        .eq('active', true);
+        .eq('status', 'active');
       affectedCustomers = count || 0;
     }
 

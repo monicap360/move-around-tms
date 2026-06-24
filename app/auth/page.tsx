@@ -49,7 +49,7 @@ export default function AuthPage() {
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("role, full_name")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (error) {

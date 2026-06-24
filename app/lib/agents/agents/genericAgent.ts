@@ -108,7 +108,7 @@ export class GenericAgent {
   private async handleGrowth(organizationId: string): Promise<GenericAgentResponse> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const { count } = await this.supabase
-      .from("users")
+      .from("organization_members")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", organizationId)
       .gte("created_at", thirtyDaysAgo.toISOString());

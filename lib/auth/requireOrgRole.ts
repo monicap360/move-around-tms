@@ -119,8 +119,8 @@ export async function requireOrgRole(
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, organization_id, role, email, full_name")
-    .eq("id", user.id)
+    .select("user_id, organization_id, role, full_name")
+    .eq("user_id", user.id)
     .single();
 
   if (profileError || !profile?.organization_id) {

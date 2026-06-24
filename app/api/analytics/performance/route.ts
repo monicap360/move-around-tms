@@ -17,9 +17,9 @@ export async function GET(req: NextRequest) {
     let organizationId = organizationIdParam || null;
     if (authData?.user) {
       const { data: profile } = await supabase
-        .from("users")
+        .from("organization_members")
         .select("organization_id")
-        .eq("id", authData.user.id)
+        .eq("user_id", authData.user.id)
         .single();
       if (profile?.organization_id) {
         organizationId = profile.organization_id;

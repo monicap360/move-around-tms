@@ -68,7 +68,7 @@ export default function SettingsPage() {
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .single();
 
       if (profileData) {
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                       await supabase
                         .from("profiles")
                         .update({ avatar_url: urlData.publicUrl })
-                        .eq("id", profile.id);
+                        .eq("user_id", profile.user_id);
                       // Optionally update local state
                       window.location.reload();
                     }

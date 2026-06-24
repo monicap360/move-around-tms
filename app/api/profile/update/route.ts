@@ -89,7 +89,7 @@ export async function POST(req: Request) {
   // First, ensure the profiles table exists and has the right structure
   const { error: upsertErr } = await supabase
     .from("profiles")
-    .upsert({ id: user.id, ...patch }, { onConflict: "id" });
+    .upsert({ user_id: user.id, ...patch }, { onConflict: "user_id" });
 
   if (upsertErr) {
     // If profiles table doesn't exist, fall back to updating user metadata

@@ -21,9 +21,9 @@ export async function GET(request: Request) {
   }
 
   const { data: profile } = await supabase
-    .from("users")
+    .from("organization_members")
     .select("organization_id")
-    .eq("id", authData.user.id)
+    .eq("user_id", authData.user.id)
     .single();
 
   if (!profile?.organization_id) {
@@ -64,9 +64,9 @@ export async function POST(request: Request) {
   }
 
   const { data: profile } = await supabase
-    .from("users")
+    .from("organization_members")
     .select("organization_id")
-    .eq("id", authData.user.id)
+    .eq("user_id", authData.user.id)
     .single();
 
   if (!profile?.organization_id) {
@@ -211,9 +211,9 @@ export async function PUT(request: Request) {
   }
 
   const { data: profile } = await supabase
-    .from("users")
+    .from("organization_members")
     .select("organization_id")
-    .eq("id", authData.user.id)
+    .eq("user_id", authData.user.id)
     .single();
 
   if (!profile?.organization_id) {

@@ -202,7 +202,7 @@ ALTER TABLE public.fast_scan_uploads
 ALTER TABLE public.tickets
   ADD COLUMN IF NOT EXISTS fast_scan_id uuid REFERENCES public.fast_scan_uploads(id) ON DELETE SET NULL;
 
-CREATE INDEX IF NOT EXISTS idx_fsu_status     ON public.fast_scan_uploads(upload_status);
+CREATE INDEX IF NOT EXISTS idx_fsu_status     ON public.fast_scan_uploads(scan_status);
 CREATE INDEX IF NOT EXISTS idx_fsu_scan_type  ON public.fast_scan_uploads(scan_type);
 CREATE INDEX IF NOT EXISTS idx_fsu_created    ON public.fast_scan_uploads(created_at DESC);
 
