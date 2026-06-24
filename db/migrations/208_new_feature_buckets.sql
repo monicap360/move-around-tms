@@ -62,5 +62,5 @@ begin
   if not exists (select 1 from storage.buckets where id = 'safety-records') then
     perform storage.create_bucket('safety-records', public := false);
   end if;
-end
+end;
 $$;
