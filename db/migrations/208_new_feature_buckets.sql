@@ -18,3 +18,5 @@
 -- - override-log
 -- - violations
 -- - safety-records
+
+SELECT 1;
