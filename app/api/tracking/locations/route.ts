@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { geotab, keepTruckin, samsara } from "@/integrations/eld";
-import type { TrackingRecord, TrackingStatus } from "@/tracking/trackingDataProvider";
+import type { TrackingRecord, TrackingStatus } from "@/app/tracking/trackingDataProvider";
 
 type ProviderLocation = {
   id?: string;
