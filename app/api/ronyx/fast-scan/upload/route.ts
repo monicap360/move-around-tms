@@ -13,9 +13,10 @@ const ALLOWED_MIME: Record<string, boolean> = {
 };
 
 function adminClient() {
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    key!,
     { auth: { persistSession: false } }
   );
 }
