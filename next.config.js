@@ -5,9 +5,11 @@ const nextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname),
 
-  // Build-memory guard for the 512 MB Render Starter plan: run static generation
-  // in a single process (no per-worker heap multiplication) instead of 5 workers.
-  // Slower build, far lower peak RAM. Remove if the plan is upgraded to >=2 GB.
+  // Serialize static generation into one process for reliable memory use.
+  // On the 4 CPU / 8 GB plan with NODE_OPTIONS=--max-old-space-size=4096 this is
+  // bulletproof (one process, <=4 GB heap, well under 8 GB). To trade some safety
+  // for faster parallel builds, raise `cpus` and lower the heap cap so
+  // workers*cap stays under 8 GB.
   experimental: {
     workerThreads: false,
     cpus: 1,
