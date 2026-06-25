@@ -12,6 +12,9 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
+    // Lower peak webpack memory during the build (helps the Render build container
+    // avoid OOM-kill during "Collecting page data" on this large route set).
+    webpackMemoryOptimizations: true,
   },
 
   typescript: {
