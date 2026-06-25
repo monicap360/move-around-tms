@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import { TMS_BUCKET, generalUploadPath } from "@/lib/storage-paths";
+import { TMS_BUCKET, tenantDatedPath } from "@/lib/storage-paths";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -59,8 +60,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "No file provided" }, { status: 400 });
   }
 
+  const orgId = await resolveOrgId();
+  if (!orgId) return NextResponse.json({ ok: false, error: "Organization not resolved" }, { status: 400 });
+
   const fileModule  = moduleOverride || detectModule(file.name, file.type);
-  const filePath    = generalUploadPath(fileModule, file.name);
+  const filePath    = tenantDatedPath(orgId, fileModule, file.name);
   const arrayBuffer = await file.arrayBuffer();
   const contentType = file.type || "application/octet-stream";
 
@@ -75,7 +79,7 @@ export async function POST(req: Request) {
     if (storageOk) break;
     const candidatePath = candidateBucket === TMS_BUCKET
       ? filePath
-      : `ronyx/${fileModule}/${Date.now()}_${file.name.replace(/[<>:"/\\|?*]/g, "_")}`;
+      : `${orgId}/${fileModule}/${Date.now()}_${file.name.replace(/[<>:"/\\|?*]/g, "_")}`;
     const ready = await ensureBucket(candidateBucket);
     if (!ready) continue;
 
@@ -107,6 +111,7 @@ export async function POST(req: Request) {
   let uploadId: string | null = null;
   try {
     const row: Record<string, unknown> = {
+      organization_id:   orgId,
       module:            fileModule,
       source_file_name:  file.name,
       storage_bucket:    storageOk ? usedBucket : "pending",

@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
-import { TMS_BUCKET, fastScanPath, generalUploadPath } from "@/lib/storage-paths";
+import { TMS_BUCKET, tenantPath, tenantDatedPath } from "@/lib/storage-paths";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -47,10 +48,13 @@ export async function POST(request: NextRequest) {
   // ── Step 1: Upload original to Supabase Storage ──────────────────────────
   // Path: {org_id}/fastscan/{ticketId_or_unknown}/{timestamp}_{filename}
   // If a ticket ID is provided use fastScanPath, otherwise fall back to generalUploadPath.
+  const orgId = await resolveOrgId();
+  if (!orgId) return NextResponse.json({ error: "Organization not resolved" }, { status: 400 });
+
   const ticketId    = form.get("ticket_id") as string | null;
   const storagePath = ticketId
-    ? fastScanPath(ticketId, file.name)
-    : generalUploadPath(uploadSource || "fastscan", file.name);
+    ? tenantPath(orgId, "fastscan", ticketId, file.name)
+    : tenantDatedPath(orgId, uploadSource || "fastscan", file.name);
   const bytes     = await file.arrayBuffer();
 
   // Ensure bucket exists (tms-documents is created by migration 158;
@@ -75,6 +79,7 @@ export async function POST(request: NextRequest) {
   const { data: record, error: dbErr } = await supabase
     .from("original_uploads")
     .insert({
+      organization_id: orgId,
       file_name:      file.name,
       storage_bucket: BUCKET,
       storage_path:   storagePath,
