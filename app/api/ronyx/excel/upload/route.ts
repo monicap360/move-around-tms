@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,9 @@ const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 const DATA_TYPES = ["tickets","drivers","trucks","owner_operators","payroll","customers","dispatch","custom"] as const;
 
 async function resolveOrg(supabase: typeof supabaseAdmin) {
-  const envId = process.env.RONYX_ORG_ID;
-  const orFilter = envId ? `id.eq.${envId},organization_code.eq.RONYX` : `organization_code.eq.RONYX`;
-  const { data } = await supabase.from("organizations").select("id, name").or(orFilter).limit(1).single();
+  const orgId = await resolveOrgId();
+  if (!orgId) return null;
+  const { data } = await supabase.from("organizations").select("id, name").eq("id", orgId).single();
   return data ?? null;
 }
 

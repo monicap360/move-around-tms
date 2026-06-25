@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +54,9 @@ function titleRow(ws: ExcelJS.Worksheet, title: string, subtitle: string, cols: 
 }
 
 async function resolveOrg(supabase: typeof supabaseAdmin) {
-  const envId = process.env.RONYX_ORG_ID;
-  const orFilter = envId ? `id.eq.${envId},organization_code.eq.RONYX` : `organization_code.eq.RONYX`;
-  const { data } = await supabase.from("organizations").select("id, name").or(orFilter).limit(1).single();
+  const orgId = await resolveOrgId();
+  if (!orgId) return { id: "", name: "MoveAround TMS" };
+  const { data } = await supabase.from("organizations").select("id, name").eq("id", orgId).single();
   return data ?? { id: "", name: "MoveAround TMS" };
 }
 

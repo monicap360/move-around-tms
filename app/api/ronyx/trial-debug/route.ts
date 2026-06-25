@@ -78,7 +78,7 @@ export async function GET() {
       has_trial_access:  hasTrialAccess,
       failing_checks:    failingChecks,
       redirect_reason:   redirectReason,
-      env_RONYX_ORG_ID:  orgId,
+      resolved_org_id:   orgId,
     },
 
     // ── Summary ──────────────────────────────────────────────────────────────

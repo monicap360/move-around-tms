@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { TMS_BUCKET } from "@/lib/storage-paths";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -21,33 +22,12 @@ function adminClient() {
   );
 }
 
-async function resolveOrgId(sb: ReturnType<typeof adminClient>): Promise<string | null> {
-  const fromEnv = process.env.RONYX_ORG_ID;
-  if (fromEnv && fromEnv !== "00000000-0000-0000-0000-000000000000" && fromEnv.length > 10) {
-    return fromEnv;
-  }
-  // Look up Ronyx org by organization_code (set by migration 165)
-  try {
-    const { data } = await sb.from("organizations").select("id").eq("organization_code", "RONYX").limit(1).single();
-    if (data?.id) return data.id;
-  } catch { /* table might not exist yet */ }
-  // Fall back: find by name
-  try {
-    const { data } = await sb.from("organizations").select("id").ilike("name", "ronyx").limit(1).single();
-    if (data?.id) return data.id;
-  } catch { /* table might not exist */ }
-  // Fall back to user_seats
-  try {
-    const { data } = await sb.from("user_seats").select("organization_id").limit(1).single();
-    if (data?.organization_id) return data.organization_id;
-  } catch { /* table might not exist */ }
-  return null;
-}
+// org resolved per-request from the authenticated user via shared resolveOrgId()
 
 // GET — list recent fast_scan_documents
 export async function GET(req: NextRequest) {
   const sb = adminClient();
-  const orgId = process.env.RONYX_ORG_ID;
+  const orgId = await resolveOrgId();
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get("limit") || "30");
 
