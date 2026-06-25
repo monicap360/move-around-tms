@@ -2,48 +2,31 @@
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { requireOrgRole } from "@/lib/auth/requireOrgRole";
 import { hasOrganizationAccess } from "@/lib/auth/hasOrganizationAccess";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
 // ── Resolve Ronyx org (by env UUID or organization_code) ─────────────────────
 async function resolveRonyxOrg(supabase: typeof supabaseAdmin) {
-  const envOrgId = process.env.RONYX_ORG_ID;
-  const orFilter = envOrgId
-    ? `id.eq.${envOrgId},organization_code.eq.RONYX`
-    : `organization_code.eq.RONYX`;
+  // Resolve the caller's org (auth-based; demo → Ronyx) — never a random org.
+  const orgId = await resolveOrgId();
+  if (!orgId) return { org: null as Record<string, unknown> | null, columnsMissing: false };
 
   const { data: full, error: fullErr } = await supabase
     .from("organizations")
     .select("id, name, organization_code, status, account_type, bypass_subscription, subscription_required, pilot_ends_at")
-    .or(orFilter)
-    .limit(1)
+    .eq("id", orgId)
     .single();
 
   if (!fullErr && full) return { org: full as Record<string, unknown>, columnsMissing: false };
 
-  const colMissing =
-    fullErr?.message?.includes("account_type") ||
-    fullErr?.message?.includes("bypass_subscription") ||
-    fullErr?.code === "42703" ||
-    fullErr?.message?.includes("does not exist");
-
-  if (colMissing || !full) {
-    const { data: minimal } = await supabase
-      .from("organizations")
-      .select("id, name, organization_code, status")
-      .or(orFilter)
-      .limit(1)
-      .single();
-    if (minimal) return { org: minimal as Record<string, unknown>, columnsMissing: true };
-  }
-
-  const { data: anyOrg } = await supabase
+  const { data: minimal } = await supabase
     .from("organizations")
     .select("id, name, organization_code, status")
-    .limit(1)
+    .eq("id", orgId)
     .single();
 
-  return { org: (anyOrg ?? null) as Record<string, unknown> | null, columnsMissing: true };
+  return { org: (minimal ?? null) as Record<string, unknown> | null, columnsMissing: true };
 }
 
 function isActiveTrial(org: Record<string, unknown> | null, columnsMissing: boolean): boolean {

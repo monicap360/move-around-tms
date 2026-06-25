@@ -1,26 +1,13 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
-
-async function resolveOrgId(supabase: typeof supabaseAdmin): Promise<string | null> {
-  const fromEnv = process.env.RONYX_ORG_ID;
-  if (fromEnv) return fromEnv;
-
-  const { data, error } = await supabase
-    .from("organizations")
-    .select("id")
-    .limit(1)
-    .single();
-
-  if (error || !data) return null;
-  return data.id as string;
-}
 
 export async function GET(_request: NextRequest) {
   const supabase = supabaseAdmin;
 
-  const orgId = await resolveOrgId(supabase);
+  const orgId = await resolveOrgId();
   if (!orgId) {
     return NextResponse.json({ error: "Organization not found" }, { status: 404 });
   }
@@ -42,7 +29,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   const supabase = supabaseAdmin;
 
-  const orgId = await resolveOrgId(supabase);
+  const orgId = await resolveOrgId();
   if (!orgId) {
     return NextResponse.json({ error: "Organization not found" }, { status: 404 });
   }

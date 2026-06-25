@@ -1,20 +1,18 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
 // ── Resolve org ───────────────────────────────────────────────────────────────
 async function resolveRonyxOrg(supabase: typeof supabaseAdmin) {
-  const envOrgId = process.env.RONYX_ORG_ID;
-  const orFilter = envOrgId
-    ? `id.eq.${envOrgId},organization_code.eq.RONYX`
-    : `organization_code.eq.RONYX`;
+  const orgId = await resolveOrgId();
+  if (!orgId) return null;
 
   const { data } = await supabase
     .from("organizations")
     .select("id, name, organization_code, status, manual_payment_status, manual_payment_method, manual_payment_reference, manual_payment_amount, manual_payment_notes, manual_payment_submitted_at, manual_payment_confirmed_at")
-    .or(orFilter)
-    .limit(1)
+    .eq("id", orgId)
     .single();
 
   return data as Record<string, unknown> | null;

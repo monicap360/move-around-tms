@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { hasOrganizationAccess } from "@/lib/auth/hasOrganizationAccess";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -29,49 +30,28 @@ const FREE_TRIAL_MODULES = [
 // Tries: env var ID → organization_code RONYX → first org in table.
 // Returns the org row with trial columns if available, otherwise just id/name.
 async function resolveRonyxOrg(supabase: typeof supabaseAdmin) {
-  const envOrgId = process.env.RONYX_ORG_ID;
-
-  // Build OR filter: match by env UUID if set, always also match by org code
-  const orFilter = envOrgId
-    ? `id.eq.${envOrgId},organization_code.eq.RONYX`
-    : `organization_code.eq.RONYX`;
+  // Resolve the caller's org (auth-based in real mode; demo → Ronyx) — never a
+  // random org. Then fetch THAT org's row.
+  const orgId = await resolveOrgId();
+  if (!orgId) return { org: null as Record<string, unknown> | null, columnsMissing: false };
 
   // First attempt: full select including trial columns (requires migration 166)
   const { data: full, error: fullErr } = await supabase
     .from("organizations")
     .select("id, name, organization_code, status, account_type, bypass_subscription, subscription_required, pilot_ends_at")
-    .or(orFilter)
-    .limit(1)
+    .eq("id", orgId)
     .single();
 
   if (!fullErr && full) return { org: full, columnsMissing: false };
 
-  // Second attempt: columns may not exist yet (migration 166 not run) — try minimal select
-  const colMissing = fullErr?.message?.includes("account_type") ||
-                     fullErr?.message?.includes("bypass_subscription") ||
-                     fullErr?.code === "42703" ||
-                     // also catches "column X of relation Y does not exist"
-                     fullErr?.message?.includes("does not exist");
-
-  if (colMissing || !full) {
-    const { data: minimal } = await supabase
-      .from("organizations")
-      .select("id, name, organization_code, status")
-      .or(orFilter)
-      .limit(1)
-      .single();
-
-    if (minimal) return { org: minimal, columnsMissing: true };
-  }
-
-  // Last resort: grab any org (single-tenant assumption)
-  const { data: any } = await supabase
+  // Trial columns may not exist yet (migration 166 not run) — minimal select
+  const { data: minimal } = await supabase
     .from("organizations")
     .select("id, name, organization_code, status")
-    .limit(1)
+    .eq("id", orgId)
     .single();
 
-  return { org: any ?? null, columnsMissing: true };
+  return { org: minimal ?? null, columnsMissing: true };
 }
 
 // ── Trial check ───────────────────────────────────────────────────────────────

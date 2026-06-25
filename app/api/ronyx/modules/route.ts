@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -183,24 +184,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ rows: (ronyxTickets.data || []).map(formatTicketRow) });
     }
 
-    const envOrgId =
-      process.env.RONYX_ORGANIZATION_ID ||
-      process.env.RONYX_ORG_ID ||
-      process.env.NEXT_PUBLIC_RONYX_ORGANIZATION_ID ||
-      "";
-
-    let organizationId = envOrgId;
-
-    if (!organizationId) {
-      const { data: orgData } = await supabase
-        .from("organizations")
-        .select("id")
-        .or("organization_code.eq.ronyx-logistics-llc,name.eq.Ronyx Logistics LLC")
-        .limit(1)
-        .maybeSingle();
-
-      organizationId = orgData?.id || "";
-    }
+    // Tenant org from the authenticated caller (demo mode → Ronyx). Empty string
+    // when unresolved keeps the existing downstream `if (organizationId)` guard.
+    const organizationId = (await resolveOrgId()) ?? "";
 
     let aggregateQuery = supabase
       .from("aggregate_tickets")
