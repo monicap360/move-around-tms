@@ -273,7 +273,12 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         /* ── Sidebar ─────────────────── */
         .tms-sidebar {
           width: 224px; min-height: 100vh;
-          background: #1e3a8a; color: #e2e8f0;
+          background:
+            radial-gradient(120% 55% at 0% 0%, rgba(56,189,248,0.10), transparent 60%),
+            radial-gradient(90% 50% at 100% 100%, rgba(139,92,246,0.14), transparent 60%),
+            linear-gradient(168deg, #0a1228 0%, #111a3d 45%, #0a0f24 100%);
+          color: #e2e8f0;
+          box-shadow: inset -1px 0 0 rgba(56,189,248,0.20), 6px 0 28px rgba(2,6,23,0.55);
           display: flex; flex-direction: column; flex-shrink: 0;
           position: sticky; top: 0; height: 100vh;
           overflow-y: auto; overflow-x: hidden; z-index: 30;
@@ -283,7 +288,12 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
 
         /* Brand */
         .tms-brand { padding: 12px 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
-        .tms-brand-name { font-size: 0.88rem; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+        .tms-brand-name {
+          font-size: 0.9rem; font-weight: 800; letter-spacing: 0.6px;
+          background: linear-gradient(90deg, #e0f2fe, #67e8f9 55%, #a78bfa);
+          -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+          text-shadow: 0 0 18px rgba(103,232,249,0.25);
+        }
         .tms-brand-sub  { font-size: 0.62rem; color: rgba(255,255,255,0.5); margin-top: 1px; }
 
         /* Search */
@@ -361,8 +371,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         /* Nav */
         .tms-nav-group { padding: 6px 8px 2px; }
         .tms-nav-section { font-size: 0.52rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); padding: 0 5px 3px; margin-top: 2px; }
-        .tms-nav-row { display: flex; align-items: stretch; border-radius: 7px; margin-bottom: 1px; transition: background 100ms; }
-        .tms-nav-row:hover { background: rgba(255,255,255,0.08); }
+        .tms-nav-row { display: flex; align-items: stretch; border-radius: 7px; margin-bottom: 1px; transition: background 120ms, box-shadow 120ms; }
+        .tms-nav-row:hover { background: linear-gradient(90deg, rgba(56,189,248,0.16), rgba(56,189,248,0.03)); box-shadow: inset 2px 0 0 rgba(103,232,249,0.75); }
         .tms-nav-link {
           display: flex; align-items: center; gap: 6px; flex: 1;
           padding: 5px 6px 5px 8px; color: rgba(255,255,255,0.78);
