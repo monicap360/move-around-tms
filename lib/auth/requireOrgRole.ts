@@ -16,7 +16,7 @@ export type OrgRecord = {
 };
 
 export type ProfileRecord = {
-  id: string;
+  user_id: string;
   organization_id: string;
   role: string;
   email?: string;
@@ -87,7 +87,7 @@ export async function requireOrgRole(
   }
 
   // ── Real auth path ────────────────────────────────────────────────────────────
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
