@@ -33,7 +33,7 @@ export default function DictationButton({
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   // Start dictation session
   const startDictation = async () => {

@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 export async function POST(request: NextRequest) {
   const sb = adminClient();
 
-  const orgId = await resolveOrgId(sb);
+  const orgId = await resolveOrgId();
 
   let form: FormData;
   try { form = await request.formData(); }

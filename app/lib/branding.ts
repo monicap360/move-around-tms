@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { BrandingConfig } from "../branding.config";
+import type { BrandingConfig } from "@/branding.config";
 
 export async function getBrandingConfig(
   domain: string,
@@ -18,7 +18,7 @@ export async function getBrandingConfig(
     .single();
   if (error || !data) {
     // fallback to default
-    const { defaultBranding } = await import("../branding.config");
+    const { defaultBranding } = await import("@/branding.config");
     return defaultBranding;
   }
   return data as BrandingConfig;

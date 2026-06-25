@@ -9,7 +9,7 @@ export default function RankBadge({ rank }: { rank: any }) {
   };
   return (
     <span
-      className={`inline-block px-3 py-1 rounded-lg mt-3 ${rankColors[rank] || "bg-gray-800"}`}
+      className={`inline-block px-3 py-1 rounded-lg mt-3 ${(rankColors as any)[rank] || "bg-gray-800"}`}
     >
       {rank}
     </span>

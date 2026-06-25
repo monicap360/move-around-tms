@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         messages:   [{ role: "user", content: [contentBlock, { type: "text", text: prompt }] }],
       } as any);
 
-      const text = response.content.find((c: any) => c.type === "text")?.text ?? "";
+      const text = (response.content.find((c: any) => c.type === "text") as any)?.text ?? "";
       rawTextPreview = text.slice(0, 500);
 
       const jsonMatch = text.match(/\[[\s\S]*?\]/);

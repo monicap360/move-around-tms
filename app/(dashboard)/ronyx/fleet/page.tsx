@@ -524,7 +524,7 @@ async function parseTruckFile(file: File, existingNumbers: Set<string>): Promise
   const { headers: rawHeaders = [], rows: rawRows = [] } = await res.json();
 
   const raw: string[][] = [rawHeaders, ...(rawRows as (string | number | boolean | null)[][])].map(
-    (r) => r.map((c) => String(c ?? ""))
+    (r) => r.map((c: any) => String(c ?? ""))
   );
 
   if (raw.length < 2) return [];
