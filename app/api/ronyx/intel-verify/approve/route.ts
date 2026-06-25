@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   // ── 4. Audit log ──────────────────────────────────────────────────────────
   try {
     await supabaseAdmin.from("intel_verify_audit").insert({
-      org_id,
+      org_id: orgId,
       extraction_id,
       oo_id,
       file_name,

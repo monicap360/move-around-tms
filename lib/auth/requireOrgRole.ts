@@ -76,7 +76,7 @@ export async function requireOrgRole(
       supabase,
       user:    { id: "demo", email: "demo@ronyx.movearoundtms.com" },
       profile: {
-        id:              "demo",
+        user_id:         "demo",
         organization_id: org.id,
         role:            "owner",
         email:           "demo@ronyx.movearoundtms.com",
