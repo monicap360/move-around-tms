@@ -18,7 +18,9 @@ export const dynamic = "force-dynamic";
 const DB_TIMEOUT_MS = 2500;
 
 async function probeDb(): Promise<{ ok: boolean; error?: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // Resolve exactly like lib/supabaseAdmin so the probe can't 503 a healthy
+  // deploy over an env-var-name mismatch.
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
