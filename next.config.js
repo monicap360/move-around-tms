@@ -6,10 +6,9 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
 
   // Serialize static generation into one process for reliable memory use.
-  // On the 4 CPU / 8 GB plan with NODE_OPTIONS=--max-old-space-size=4096 this is
-  // bulletproof (one process, <=4 GB heap, well under 8 GB). To trade some safety
-  // for faster parallel builds, raise `cpus` and lower the heap cap so
-  // workers*cap stays under 8 GB.
+  // On the Pro plan (4 GB) with NODE_OPTIONS=--max-old-space-size=3072 the build
+  // fits with ~1 GB headroom (build floor verified ~1.5-3 GB). If page count /
+  // deps grow and the build OOMs, bump the plan and the cap together.
   experimental: {
     workerThreads: false,
     cpus: 1,
