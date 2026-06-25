@@ -13,7 +13,21 @@ const supabaseAdmin = createClient<Database>(
   { auth: { persistSession: false } },
 );
 
-export async function getDriverResume(driver_uuid: string) {
+export type DriverResume = {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  licenseType: string | null;
+  experienceYears: number | null;
+  email: string | null;
+  phone: string | null;
+  bio: string | null;
+  badges: any;
+  history: any;
+  certifications: any;
+};
+
+export async function getDriverResume(driver_uuid: string): Promise<DriverResume | null> {
   const { data, error } = await supabase
     .from("drivers")
     .select(

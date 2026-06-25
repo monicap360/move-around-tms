@@ -51,6 +51,7 @@
     "_git_backup_2025-12-13",
     "_git_backup*",
     "supabase/functions",
+    "app/supabase/functions",
     "temp-backup-api.disabled",
 
     // Pre-App-Router root-level route trees: duplicated under app/, NOT routed by
