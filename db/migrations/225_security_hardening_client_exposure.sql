@@ -10,6 +10,18 @@
 -- Idempotent. REVIEW the GraphQL + bucket sections against actual feature usage
 -- before applying (see the VERIFY notes). Apply in the Supabase SQL editor.
 
+-- ── 0. Ledger table (self-bootstrap) ────────────────────────────────────────
+-- The repo's migrations record themselves in public.schema_migrations, but it was
+-- never created — so the ledger insert at the end of every migration has been
+-- failing, and (since the SQL editor runs the file as ONE transaction) rolling the
+-- whole migration back. Create it FIRST, in this same transaction, so the final
+-- insert succeeds and 225 actually persists.
+create table if not exists public.schema_migrations (
+  version    bigint primary key,
+  name       text,
+  applied_at timestamptz not null default now()
+);
+
 -- ── 1. SECURITY DEFINER helper callable by anon (advisor 0028) ───────────────
 -- is_super_admin is a privilege check; anon should never call it.
 do $$ begin
