@@ -1,4 +1,4 @@
-export default function RecruiterActionBar({ driver_uuid }) {
+export default function RecruiterActionBar({ driver_uuid }: { driver_uuid: any }) {
   return (
     <div className="flex gap-4 mt-6">
       <a

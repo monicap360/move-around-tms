@@ -1,4 +1,4 @@
-export default function RankBadge({ rank }) {
+export default function RankBadge({ rank }: { rank: any }) {
   const rankColors = {
     Operator: "bg-gray-700",
     "Certified Operator": "bg-blue-700",

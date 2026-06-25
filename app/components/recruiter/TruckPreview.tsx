@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-export default function TruckPreview({ truck_skin, custom_logo_url }) {
+export default function TruckPreview({ truck_skin, custom_logo_url }: { truck_skin: any; custom_logo_url: any }) {
   return (
     <div className="mt-4 text-center">
       <img

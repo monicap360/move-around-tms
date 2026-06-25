@@ -18,7 +18,7 @@ export default function IntelligenceOverview() {
   );
 }
 
-function Panel({ title, metric, desc }) {
+function Panel({ title, metric, desc }: { title: any; metric: any; desc: any }) {
   return (
     <div
       className="

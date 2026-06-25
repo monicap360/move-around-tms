@@ -1,4 +1,4 @@
-export default function DriverCard({ driver }) {
+export default function DriverCard({ driver }: { driver: any }) {
   return (
     <div className="p-4 rounded-xl bg-gray-900 border border-gray-700 hover:bg-gray-800">
       <h2 className="text-2xl">{driver.full_name}</h2>

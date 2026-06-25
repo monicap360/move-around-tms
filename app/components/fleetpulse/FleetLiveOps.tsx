@@ -19,7 +19,7 @@ export default function FleetLiveOps() {
   );
 }
 
-function DriverTile({ name, score, status }) {
+function DriverTile({ name, score, status }: { name: any; score: any; status: any }) {
   return (
     <div
       className="
