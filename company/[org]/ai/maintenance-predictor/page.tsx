@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Wrench, Truck, AlertTriangle, Gauge, RefreshCcw } from "lucide-react";
-import Card from "@/components/ui/Card";
+import { Card } from "@/components/ui/card";
 
 export default function AIMaintenancePredictor({ params }: any) {
   const org = params.org;

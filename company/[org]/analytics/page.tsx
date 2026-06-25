@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
-import Card from "@/components/ui/Card";
+import { Card } from "@/components/ui/card";
 import {
   Flame,
   MapPin,

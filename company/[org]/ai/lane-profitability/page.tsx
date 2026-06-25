@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, MapPin, DollarSign, RefreshCcw } from "lucide-react";
-import Card from "@/components/ui/Card";
+import { Card } from "@/components/ui/card";
 
 export default function AILaneProfitability({ params }: any) {
   const org = params.org;

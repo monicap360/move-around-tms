@@ -39,9 +39,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      # REPORT-ONLY: ~332 pre-existing type errors (that is why next.config has
-      # ignoreBuildErrors:true). Most trace to one @/components/ui/card import.
-      # Burn this count down, then promote this step to a blocking gate.
+      # REPORT-ONLY: ~136 pre-existing type errors in the real app (down from 332;
+      # tsconfig now excludes dead pre-App-Router root trees). Mostly implicit-any.
+      # Burn this count to 0, then promote this step to a blocking gate.
       - name: Type check (report-only)
         continue-on-error: true
         run: |

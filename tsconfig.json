@@ -51,6 +51,25 @@
     "_git_backup_2025-12-13",
     "_git_backup*",
     "supabase/functions",
-    "temp-backup-api.disabled"
+    "temp-backup-api.disabled",
+
+    // Pre-App-Router root-level route trees: duplicated under app/, NOT routed by
+    // Next, NOT imported by the real app (verified). Excluded so tsc reflects the
+    // live app. Dead code; safe to delete later.
+    "company",
+    "driver",
+    "driver-resume",
+    "recruit",
+    "fastscan",
+    "performance-test",
+    "recruiter-profile",
+    "driver_upload_document",
+    "mobile",
+    "veronica",
+    "sales-dashboard",
+    "hiring",
+    "fleet-dashboard",
+    "driver-dashboard",
+    "company-dashboard"
   ]
 }

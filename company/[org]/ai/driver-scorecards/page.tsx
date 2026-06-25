@@ -8,7 +8,7 @@ import {
   Clock,
   RefreshCcw,
 } from "lucide-react";
-import Card from "@/components/ui/Card";
+import { Card } from "@/components/ui/card";
 
 export default function AIDriverScorecards({ params }: any) {
   const org = params.org;
