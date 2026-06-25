@@ -1,0 +1,64 @@
+name: Build Gate
+
+# The REAL pre-merge gate for the Next.js app. Replaces the old webpack.yml,
+# which ran `npx webpack` and never actually built this Next app (false green).
+#
+# Mark "Build (required gate)" as a required status check in branch protection
+# for `main` so broken imports / missing exports / OOM / syntax errors cannot
+# reach Render (autoDeploy:true deploys straight to prod on push).
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: build-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (required gate) + typecheck/guard (report)
+    runs-on: ubuntu-latest
+    env:
+      # Placeholders only — the production build is static analysis and never
+      # connects to Supabase. Real secrets live in Render, not in CI.
+      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key"
+      SUPABASE_SERVICE_KEY: "placeholder-service-key"
+      SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-key"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      # REPORT-ONLY: ~332 pre-existing type errors (that is why next.config has
+      # ignoreBuildErrors:true). Most trace to one @/components/ui/card import.
+      # Burn this count down, then promote this step to a blocking gate.
+      - name: Type check (report-only)
+        continue-on-error: true
+        run: |
+          echo "::group::tsc --noEmit (informational)"
+          count=$(npx tsc --noEmit 2>&1 | grep -cE "error TS" || true)
+          echo "TypeScript error count: $count"
+          echo "::endgroup::"
+
+      # REPORT-ONLY until multi-tenant cutover. Flip REPORT_ONLY=false in the
+      # script (or here) to make tenant-isolation regressions blocking.
+      - name: Multi-tenant guard (report-only)
+        continue-on-error: true
+        run: bash scripts/ci-multitenant-guard.sh || true
+
+      # THE GATE. Same NODE_OPTIONS heap as Render so CI reproduces prod build
+      # memory. A failure here blocks the merge.
+      - name: Build (required gate)
+        run: npm run build
+        env:
+          NODE_OPTIONS: "--max-old-space-size=3072"
