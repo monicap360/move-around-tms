@@ -12,7 +12,8 @@ function adminClient() {
   );
 }
 
-const RONYX_ORG_ID = process.env.RONYX_ORG_ID ?? null;
+// Org is resolved per-request from the authenticated user via requireOrgRole
+// (auth.organization.id) — never a global env var. See multi-tenant isolation.
 
 // Role constants
 const READ_ROLES  = ["owner", "super_admin", "admin", "payroll", "billing", "viewer"];
@@ -394,7 +395,7 @@ export async function POST(req: NextRequest) {
     const { data: newPeriod } = await sb
       .from("ronyx_payroll_periods")
       .insert({
-        organization_id: RONYX_ORG_ID,
+        organization_id: auth.organization.id,
         period_start,
         period_end,
         status: "calculating",
@@ -441,7 +442,7 @@ export async function POST(req: NextRequest) {
         : "Unknown Driver";
 
       const upsertData = {
-        organization_id: RONYX_ORG_ID,
+        organization_id: auth.organization.id,
         period_id,
         driver_id: did,
         driver_name,
@@ -488,7 +489,7 @@ export async function POST(req: NextRequest) {
         // Log status change in audit
         if (existing.status !== calc.payroll_status) {
           await sb.from("ronyx_payroll_audit").insert({
-            organization_id: RONYX_ORG_ID,
+            organization_id: auth.organization.id,
             payroll_item_id: existing.id,
             period_id,
             driver_id: did,
@@ -511,7 +512,7 @@ export async function POST(req: NextRequest) {
         payroll_item_id = newItem?.id;
 
         await sb.from("ronyx_payroll_audit").insert({
-          organization_id: RONYX_ORG_ID,
+          organization_id: auth.organization.id,
           payroll_item_id,
           period_id,
           driver_id: did,
@@ -530,7 +531,7 @@ export async function POST(req: NextRequest) {
         if (calc.validations.length > 0) {
           await sb.from("ronyx_payroll_validations").insert(
             calc.validations.map(v => ({
-              organization_id: RONYX_ORG_ID,
+              organization_id: auth.organization.id,
               payroll_item_id,
               ...v,
               evaluated_at: new Date().toISOString(),
@@ -646,7 +647,7 @@ export async function PATCH(req: NextRequest) {
     }).eq("id", item_id);
 
     await sb.from("ronyx_payroll_audit").insert({
-      organization_id: RONYX_ORG_ID,
+      organization_id: auth.organization.id,
       payroll_item_id: item_id,
       period_id: item.period_id,
       driver_id: item.driver_id,
@@ -683,7 +684,7 @@ export async function PATCH(req: NextRequest) {
       .eq("status", "approved");
 
     await sb.from("ronyx_payroll_audit").insert({
-      organization_id: RONYX_ORG_ID,
+      organization_id: auth.organization.id,
       period_id,
       event_type: "lock",
       to_status: "locked",
@@ -698,7 +699,7 @@ export async function PATCH(req: NextRequest) {
   if (action === "unlock" && period_id) {
     await sb.from("ronyx_payroll_periods").update({ status: "approved" }).eq("id", period_id);
     await sb.from("ronyx_payroll_audit").insert({
-      organization_id: RONYX_ORG_ID,
+      organization_id: auth.organization.id,
       period_id,
       event_type: "status_change",
       from_status: "locked",
