@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
-const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
-
 export async function GET() {
   try {
-    const orgId = getOrgId();
+    const orgId = (await resolveOrgId());
     let q = supabaseAdmin
       .from("integration_connections")
       .select("id,provider,status,settings,last_sync_at,last_sync_status,last_sync_error,created_at,updated_at");

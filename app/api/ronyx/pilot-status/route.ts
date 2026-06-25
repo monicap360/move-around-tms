@@ -1,12 +1,13 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { checkPilotAccess } from "@/lib/ronyx/pilotAccess";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   let org: Record<string, unknown> | null = null;
   try {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export const dynamic = "force-dynamic";
 */
 export async function POST(req: Request) {
   const sb = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID || null;
+  const orgId = await resolveOrgId();
   const { companies } = await req.json();
 
   if (!Array.isArray(companies)) {

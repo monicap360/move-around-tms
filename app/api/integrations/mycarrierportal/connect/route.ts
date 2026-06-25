@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
-
-const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
 
 // POST /api/integrations/mycarrierportal/connect
 // MyCarrierPortal (Descartes) — marks as pending/requested until Descartes provides API access.
 export async function POST(req: Request) {
   try {
-    const orgId = getOrgId();
+    const orgId = (await resolveOrgId());
     if (!orgId) return NextResponse.json({ error: "Organization not resolved." }, { status: 400 });
 
     const body = await req.json();

@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
-
-const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
 
 // POST /api/integrations/saferwatch/connect
 // Body: { api_key, user_key, api_url?, webhook_secret? }
 export async function POST(req: Request) {
   try {
-    const orgId = getOrgId();
+    const orgId = (await resolveOrgId());
     if (!orgId) return NextResponse.json({ error: "Organization not resolved." }, { status: 400 });
 
     const body = await req.json();
@@ -63,7 +62,7 @@ export async function POST(req: Request) {
 
 export async function DELETE() {
   try {
-    const orgId = getOrgId();
+    const orgId = (await resolveOrgId());
     if (!orgId) return NextResponse.json({ error: "Organization not resolved." }, { status: 400 });
     await supabaseAdmin
       .from("integration_connections")

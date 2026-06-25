@@ -1,11 +1,12 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   let { data, error } = await supabase
     .from("ronyx_trucks")
@@ -28,7 +29,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   const insertPayload = {
     organization_id: orgId,

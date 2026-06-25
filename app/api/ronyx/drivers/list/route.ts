@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ const DRIVER_SELECT = `
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   // Try org-scoped query first (requires migration 165 to have run)
   let { data, error } = await supabase

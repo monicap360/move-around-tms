@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ driver_id: 
       }
     }
 
-    const orgId = process.env.RONYX_ORG_ID ?? null;
+    const orgId = await resolveOrgId();
     let archQ = supabase.from("drivers").update({ status: newStatus }).eq("id", driverId);
     if (orgId) archQ = archQ.eq("organization_id", orgId);
     const { error } = await archQ;
@@ -75,7 +76,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ driver_id: 
   for (const field of directFields) {
     if (body[field] !== undefined) directUpdate[field] = body[field];
   }
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   if (Object.keys(directUpdate).length > 0) {
     let dirQ = supabase.from("drivers").update(directUpdate).eq("id", driverId);
     if (orgId) dirQ = dirQ.eq("organization_id", orgId);

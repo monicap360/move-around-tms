@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { normalizeRMIS, deriveCCBTasks } from "@/lib/integrations/normalize";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
 
 async function getRMISCredentials(orgId: string) {
   const { data } = await supabaseAdmin
@@ -21,7 +20,7 @@ async function getRMISCredentials(orgId: string) {
 // Body: { mc_number?, dot_number?, owner_operator_id?, owner_operator_name? }
 export async function POST(req: Request) {
   try {
-    const orgId = getOrgId();
+    const orgId = (await resolveOrgId());
     if (!orgId) return NextResponse.json({ error: "Organization not resolved." }, { status: 400 });
 
     const body = await req.json();

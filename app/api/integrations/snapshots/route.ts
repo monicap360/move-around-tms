@@ -1,13 +1,13 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
-const getOrgId = () => process.env.RONYX_ORG_ID ?? null;
 
 // GET /api/integrations/snapshots?oo_id=&mc_number=&limit=
 export async function GET(req: Request) {
   try {
-    const orgId = getOrgId();
+    const orgId = (await resolveOrgId());
     const { searchParams } = new URL(req.url);
     const ooId     = searchParams.get("oo_id");
     const mcNumber = searchParams.get("mc_number");

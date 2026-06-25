@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { randomBytes } from "crypto";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = supabaseAdmin;
     const body: RonyxPayload = await req.json();
-    const orgId = process.env.RONYX_ORG_ID ?? null;
+    const orgId = await resolveOrgId();
 
     const { missing_fields, exception_flags } = validateRonyx(body);
     const loadsNum = body.loads ? parseInt(String(body.loads)) || null : null;

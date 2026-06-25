@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId    = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const now      = new Date();
 
   // 1. Read the org record

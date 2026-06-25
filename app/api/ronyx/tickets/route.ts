@@ -6,6 +6,7 @@ import {
   calculateWaitingMinutes,
 } from "@/lib/ronyx/phase1/ticketGenerator";
 import { logValidations, validateTicket } from "@/lib/ronyx/aiValidationEngine";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status") || "";
   const from = searchParams.get("from");
   const to = searchParams.get("to");
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   const buildQuery = (withOrgFilter: boolean) => {
     let q = supabase
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
       ? Number(body.waiting_minutes)
       : calculateWaitingMinutes(body.load_time, body.dump_time);
 
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   // Core payload — columns that exist in all migration versions (003 + 069 baseline)
   const corePayload = {

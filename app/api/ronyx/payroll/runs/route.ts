@@ -1,11 +1,12 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const { data, error } = await supabase
     .from("ronyx_payroll_runs")
     .select("*")
@@ -19,7 +20,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const body = await req.json();
   const { period_start, period_end, items } = body || {};
 

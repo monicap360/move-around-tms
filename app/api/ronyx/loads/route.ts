@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ const DEFAULT_LOADS = [
 
 export async function GET(request: Request) {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const driverName = searchParams.get("driver_name");
@@ -86,7 +87,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const route =
     payload?.route ||
     (payload?.pickup_location && payload?.delivery_location
@@ -115,7 +116,7 @@ export async function PUT(request: Request) {
   }
 
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const now = new Date().toISOString();
   const resolvedUpdates = { ...updates };
 

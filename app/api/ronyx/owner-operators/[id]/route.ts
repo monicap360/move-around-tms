@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const sb = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   let delQ = sb.from("ronyx_owner_operators").delete().eq("id", params.id);
   if (orgId) delQ = delQ.eq("organization_id", orgId);
   const { error } = await delQ;

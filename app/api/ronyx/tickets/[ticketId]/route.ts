@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ function deriveProofStatus(ticket: any) {
 export async function GET(_request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
   const params = await props.params;
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   let getQ = supabase.from("aggregate_tickets").select("*").eq("id", params.ticketId);
   if (orgId) getQ = getQ.eq("organization_id", orgId);
@@ -61,7 +62,7 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ ticke
   const params = await props.params;
   try {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const body = await request.json().catch(() => ({}));
 
   const updates = {
@@ -149,7 +150,7 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ ticke
 export async function DELETE(request: NextRequest, props: { params: Promise<{ ticketId: string }> }) {
   const params = await props.params;
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const body = await request.json().catch(() => ({}));
   const deletedBy = (body.deleted_by as string) || "dispatcher";
   const reason = (body.reason as string) || null;

@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ const REQUIRED_COMPANIES = [
 
 export async function GET() {
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const { data, error } = await supabase
     .from("ronyx_customers")
     .select("*")
@@ -74,7 +75,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const payload = await request.json();
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
 
   const { data, error } = await supabase
     .from("ronyx_customers")
@@ -95,7 +96,7 @@ export async function PUT(request: Request) {
   }
 
   const supabase = supabaseAdmin;
-  const orgId = process.env.RONYX_ORG_ID ?? null;
+  const orgId = await resolveOrgId();
   const { data, error } = await supabase
     .from("ronyx_customers")
     .update(payload)
