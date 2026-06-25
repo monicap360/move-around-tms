@@ -36,6 +36,28 @@ function stamp(): string {
   return Date.now().toString();
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// CANONICAL tenant-scoped path builders — orgId is REQUIRED.
+// First segment MUST be the org UUID so the storage RLS policy
+// (us.organization_id::text = foldername[1]) isolates each tenant. Resolve orgId
+// per-request (lib/auth/resolveOrgId) and pass it explicitly — never an env org.
+// ════════════════════════════════════════════════════════════════════════════
+export function tenantPath(orgId: string, module: string, entityId: string, filename: string): string {
+  if (!orgId) throw new Error("[storage-paths] tenantPath requires an explicit orgId");
+  return `${orgId}/${module}/${entityId}/${stamp()}_${safeName(filename)}`;
+}
+
+/** Dated bucket for when the entity id isn't known yet (e.g. pre-OCR upload). */
+export function tenantDatedPath(orgId: string, module: string, filename: string, label?: string): string {
+  if (!orgId) throw new Error("[storage-paths] tenantDatedPath requires an explicit orgId");
+  const today = new Date().toISOString().split("T")[0];
+  const seg = label ? `${today}_${label}` : today;
+  return `${orgId}/${module}/${seg}/${stamp()}_${safeName(filename)}`;
+}
+
+// @deprecated LEGACY single-tenant builders below bake in env RONYX_ORG_ID.
+// Migrate callers to tenantPath()/tenantDatedPath(orgId, ...) then remove.
+
 // ── Module path builders ──────────────────────────────────────────────────
 
 /** Ticket scan images / PDFs — organizations/{org}/fastscan/{ticketId}/{file} */
