@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +13,10 @@ const ALLOWED_TABLES: Record<string, { orgColumn: string; conflictOn?: string[] 
   aggregate_tickets:     { orgColumn: "organization_id" },
 };
 
-const ORG_FILTER = process.env.RONYX_ORG_ID
-  ? `id.eq.${process.env.RONYX_ORG_ID},organization_code.eq.RONYX`
-  : `organization_code.eq.RONYX`;
-
-async function resolveOrgId(supabase: typeof supabaseAdmin) {
-  const { data } = await supabase
-    .from("organizations")
-    .select("id")
-    .or(ORG_FILTER)
-    .limit(1)
-    .single();
-  return data?.id as string | null;
-}
 
 export async function POST(request: NextRequest) {
   const supabase = supabaseAdmin;
-  const orgId = await resolveOrgId(supabase);
+  const orgId = await resolveOrgId();
   if (!orgId) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
   let body: { phase?: string; table?: string; rows?: Record<string, string>[] };
