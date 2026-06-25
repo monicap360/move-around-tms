@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
-// ── Org resolution ─────────────────────────────────────────────────────────
-// Returns the explicit RONYX_ORG_ID env var when set.
-// Falls back to null (no filter) so the GET query returns all OOs.
-// This is safe: the Ronyx namespace is single-tenant and supabaseAdmin
-// (service role) bypasses RLS. Migrations 165/200 can leave the
-// organizations table with a synthetic ID that doesn't match OO rows —
-// doing no filter is safer than filtering to the wrong ID.
-
-function resolveOrgId(): string | null {
-  return process.env.RONYX_ORG_ID ?? null;
-}
+// Tenant isolation here is enforced ONLY at cutover (RONYX_AUTH_REQUIRED=true).
+// In demo/single-tenant mode the list stays unfiltered so Ronyx's current OO
+// console is unaffected (its rows may not be org-stamped consistently). Before
+// flipping the flag, verify ronyx_owner_operators rows carry each tenant's
+// organization_id, or the org filter will hide them.
+const AUTH_REQUIRED = process.env.RONYX_AUTH_REQUIRED === "true";
 
 // ── Known owner operator companies — seeded on first load ──────────────────
 
@@ -137,20 +133,17 @@ async function buildResponse(oos: any[]) {
 /* ── GET /api/ronyx/owner-operators ──────────────────────────────────────── */
 export async function GET() {
   try {
-    // Resolve org — returns env var or null (no filter)
-    const orgId = resolveOrgId();
-    if (!orgId) {
-      console.error("[OO] Could not resolve org ID — RONYX_ORG_ID env:", process.env.RONYX_ORG_ID);
-      // Fall through without org filter rather than blocking
-    }
+    const orgId = await resolveOrgId();
+    // Multi-tenant: no resolved org → no data (never fall through to all tenants).
+    if (AUTH_REQUIRED && !orgId) return buildResponse([]);
 
-    // Service-role client bypasses RLS — return all OOs (single-tenant).
-    // Org filter is intentionally skipped: an org ID mismatch between Render
-    // env and DB rows silently returns zero results and hides Sylvia's data.
-    const { data: oos, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("ronyx_owner_operators")
       .select("*")
       .order("company_name", { ascending: true });
+    // Org-scope the list only at cutover; demo stays unfiltered (see note above).
+    if (AUTH_REQUIRED && orgId) query = query.eq("organization_id", orgId);
+    const { data: oos, error } = await query;
 
     if (error) {
       console.error("[OO] DB error loading owner operators:", error.message, error.code);
@@ -159,8 +152,9 @@ export async function GET() {
 
     const existing = oos || [];
 
-    // Seed any missing required OO companies
-    if (orgId) {
+    // Seed Ronyx's required OO companies — demo/single-tenant only, so we never
+    // cross-seed Ronyx's companies into another tenant's org at cutover.
+    if (orgId && !AUTH_REQUIRED) {
       const missing: Record<string, unknown>[] = [];
       const updates: { id: string; patch: Record<string, string> }[] = [];
 
@@ -209,7 +203,7 @@ export async function GET() {
 /* ── POST /api/ronyx/owner-operators — create new OO company ─────────────── */
 export async function POST(req: Request) {
   try {
-    const orgId = resolveOrgId();
+    const orgId = await resolveOrgId();
     const body  = await req.json();
 
     const { data, error } = await supabaseAdmin
