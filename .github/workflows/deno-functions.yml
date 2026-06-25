@@ -1,0 +1,46 @@
+name: Deno Functions Typecheck
+
+# The active Supabase Edge Functions live in supabase/functions/ (the Supabase CLI
+# deploys from here, NOT app/supabase/functions which is a dead mirror). They are
+# Deno, so the Node tsconfig excludes them — meaning they had ZERO type-checking.
+# This job restores it with `deno check`. REPORT-ONLY to start; once the count is
+# clean, drop `continue-on-error` to make it a blocking gate.
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["supabase/functions/**"]
+  pull_request:
+    branches: ["main"]
+    paths: ["supabase/functions/**"]
+
+concurrency:
+  group: deno-functions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deno-check:
+    name: deno check (report-only)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions
+        continue-on-error: true
+        run: |
+          echo "::group::deno check supabase/functions"
+          shopt -s globstar nullglob
+          files=(supabase/functions/**/*.ts)
+          echo "checking ${#files[@]} file(s)"
+          # Per-file so one function's missing import map doesn't abort the rest.
+          rc=0
+          for f in "${files[@]}"; do
+            deno check "$f" || rc=1
+          done
+          echo "::endgroup::"
+          echo "deno check exit signal: $rc (report-only)"

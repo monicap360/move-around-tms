@@ -7,7 +7,24 @@ const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-export async function getRecruiterProfile(recruiterId: string) {
+export type RecruiterProfile = {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  companyName: string | null;
+  email: string | null;
+  phone: string | null;
+  bio: string | null;
+};
+
+export type RecruiterJobPosting = {
+  id: string;
+  title: string;
+  location: string | null;
+  description: string | null;
+};
+
+export async function getRecruiterProfile(recruiterId: string): Promise<RecruiterProfile | null> {
   const { data, error } = await supabase
     .from("recruiters")
     .select("id, name, avatarUrl, companyName, email, phone, bio")
@@ -17,7 +34,7 @@ export async function getRecruiterProfile(recruiterId: string) {
   return data;
 }
 
-export async function getActiveJobPostings(recruiterId: string) {
+export async function getActiveJobPostings(recruiterId: string): Promise<RecruiterJobPosting[]> {
   const { data, error } = await supabase
     .from("jobs")
     .select("id, title, location, description")
