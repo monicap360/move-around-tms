@@ -40,6 +40,16 @@ Run in the Supabase SQL editor.
 - [ ] **Webhook tenant resolution:** a test RMIS/SaferWatch payload with a known
   carrier `mc_number`/`dot_number` resolves to the correct org (carrier → OO → org);
   an unknown carrier returns 422 (no default org).
+- [ ] **🔴 DB-layer client exposure is ZERO (hard gate).** App-layer isolation
+  (resolveOrgId) does NOT cover direct PostgREST/GraphQL access by the `anon`/
+  `authenticated` roles — and the `anon` key is public. Once the flag flips, real
+  user JWTs can query tables directly, so any tenant table reachable by client
+  roles with a permissive (`USING true`) or missing org predicate = cross-tenant
+  leak that bypasses the entire migration. Apply **migration 225** and confirm the
+  targeted query returns **no** tenant table (`has_org_col = true`) with an
+  `anon`/`authenticated` `USING true` policy. Also: `is_super_admin` not anon-
+  executable; `driver-documents`/`oo-logos` buckets private; Supabase GraphQL
+  closed to client roles (unless a feature needs it).
 - [ ] **CI guard is green** and (ideally) flipped to fail-fast (`REPORT_ONLY=false`
   in `scripts/ci-multitenant-guard.sh`).
 
