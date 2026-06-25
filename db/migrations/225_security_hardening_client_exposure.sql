@@ -61,23 +61,32 @@ end $$;
 --     using (organization_id = current_user_org());
 
 -- ── 3. GraphQL exposure to client roles (advisors 0026/0027) ─────────────────
--- The app uses PostgREST + service-role, not Supabase GraphQL. Closing the
--- GraphQL endpoint for client roles removes the whole pg_graphql discovery
--- surface at once, without touching PostgREST or public pages.
--- VERIFY: no client feature calls the Supabase GraphQL endpoint before applying.
+-- NOTE: the pg_graphql grants come from DEFAULT PRIVILEGES owned by supabase_admin,
+-- so revoking them usually fails with 42501 / gets reintroduced. That's OK —
+-- GraphQL queries STILL respect RLS, so the REAL protection is section 2 (no
+-- permissive USING true policies). This revoke is best-effort defense-in-depth,
+-- wrapped so a permission error can't abort the migration. To fully disable
+-- GraphQL, use the Supabase dashboard/support (disable pg_graphql) — not a migration.
 do $$ begin
-  if exists (select 1 from information_schema.schemata where schema_name='graphql_public') then
+  begin
     revoke execute on all functions in schema graphql_public from anon, authenticated;
-  end if;
+  exception when others then
+    raise notice '225: GraphQL revoke skipped (%) — RLS in section 2 is the real guard', sqlerrm;
+  end;
 end $$;
 
--- ── 4. Public storage buckets with listable objects (advisor 0025) ───────────
--- driver-documents holds PII; oo-logos leaks org-prefixed paths. Make private;
--- the app already serves these via signed URLs / service-role.
--- VERIFY: any <img src> pointing directly at a public bucket URL must switch to a
--- signed URL after this (logos especially).
+-- ── 4. Public storage buckets (advisor 0025) — per code audit ────────────────
+--   driver-documents = PII (CDLs, medical cards). The doc record stores the object
+--     PATH (not a public URL), so reads go via signed/service-role -> safe to make
+--     private. FLIP THIS ONE.
+--   oo-logos = served via getPublicUrl() in app/api/ronyx/owner-operators/[id]/logo
+--     -> KEEP PUBLIC (flipping 404s the logos; switch that route to createSignedUrl
+--     first if you want it private). Low sensitivity (company branding).
+--   avatars = rendered on PUBLIC driver-resume / recruiter-profile pages ->
+--     KEEP PUBLIC (flipping breaks those pages). Low sensitivity.
+-- VERIFY: no <img> points at a public driver-documents URL before applying.
 update storage.buckets set public = false
-where id in ('driver-documents','oo-logos');
+where id = 'driver-documents';
 
 -- ── Ledger ───────────────────────────────────────────────────────────────────
 insert into public.schema_migrations (version, name)
