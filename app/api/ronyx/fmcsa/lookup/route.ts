@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       found:        result.found,
       result_snapshot: carrier ?? null,
       looked_up_at: new Date().toISOString(),
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
 
     // ── If OO matched and carrier found, update OO's fmcsa_verified_at ─────
     if (oo_id && result.found) {
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         fmcsa_operating_status: result.operating_status ?? null,
         fmcsa_safety_rating:    result.safety_rating    ?? null,
         fmcsa_legal_name:       result.legal_name       ?? null,
-      }).eq("id", oo_id).then(() => {}).catch(() => {});
+      }).eq("id", oo_id).then(() => {}, () => {});
     }
 
     return NextResponse.json(result);

@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(buffer as any);
 
     const sheets = workbook.worksheets.map((s) => s.name);
     const ws = workbook.worksheets[0];
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     let maxCols = 0;
 
     ws.eachRow({ includeEmpty: false }, (row) => {
-      const vals = row.values as ExcelJS.CellValue[];
+      const vals = row.values as any[];
       const cells: CellValue[] = [];
       for (let i = 1; i < vals.length; i++) {
         cells.push(formatCell(vals[i]));

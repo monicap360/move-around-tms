@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       performed_by: changed_by,
       details:     { enabled, key_length: api_key.trim().length },
       created_at:  new Date().toISOString(),
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
 
     return NextResponse.json({ ok: true, enabled });
   } catch (err: any) {

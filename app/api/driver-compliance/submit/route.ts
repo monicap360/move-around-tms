@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       if (cdl_back_url)  docInserts.push({ driver_profile_id: matchedId, document_type: "CDL Back",  file_url: cdl_back_url,  expiry_date: cdl_expiration || null, uploaded_by: "driver_self_service" });
       if (medical_card_url) docInserts.push({ driver_profile_id: matchedId, document_type: "Medical Card", file_url: medical_card_url, expiry_date: medical_card_expiration || null, uploaded_by: "driver_self_service" });
       if (docInserts.length > 0) {
-        await supabaseAdmin.from("driver_documents").insert(docInserts).then(() => {}).catch(() => {});
+        await supabaseAdmin.from("driver_documents").insert(docInserts).then(() => {}, () => {});
       }
     }
 

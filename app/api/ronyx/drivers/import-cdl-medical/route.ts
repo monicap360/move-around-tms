@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  await workbook.xlsx.load(buffer as any);
   const ws = workbook.worksheets[0];
   const rows: unknown[][] = [];
   ws?.eachRow({ includeEmpty: true }, (row) => {
