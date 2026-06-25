@@ -2,8 +2,12 @@ const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
-  outputFileTracingRoot: path.join(__dirname),
+  // NOTE: `output: "standalone"` was REMOVED. Its file-tracer runs after compile
+  // and scans the whole project tree — the prime suspect for the silent post-
+  // compile build failure on Render (exit 1 right after "Skipping validation of
+  // types", no error, while passing locally). The app starts with `next start`
+  // (render.yaml startCommand: npm run start), which does NOT need standalone
+  // output, and nothing references .next/standalone — so this is runtime-safe.
 
   // Serialize static generation into one process for reliable memory use.
   // On the Pro plan (4 GB) with NODE_OPTIONS=--max-old-space-size=3072 the build
