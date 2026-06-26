@@ -1397,9 +1397,9 @@ export default function OwnerOperatorsPage() {
             {selected.contact_name && (
               <div style={{ color: "#94a3b8", fontSize: "0.82rem", marginBottom: 3 }}>Contact: <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{selected.contact_name}</span></div>
             )}
-            <div style={{ color: "#475569", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <div style={{ color: "#cbd5e1", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               {selected.start_date ? (
-                <span>Since <strong style={{ color: "#94a3b8" }}>{new Date(selected.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</strong></span>
+                <span>Since <strong style={{ color: "#f1f5f9" }}>{new Date(selected.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</strong></span>
               ) : (
                 <span style={{ color: "#ef4444" }}>⚠ Start date not set</span>
               )}
@@ -1412,7 +1412,7 @@ export default function OwnerOperatorsPage() {
                   const v = e.target.value.trim();
                   if (v !== (selected.start_date || "")) { updateSelected({ ...selected, start_date: v || undefined }); flash("Start date saved."); }
                 }}
-                style={{ border: "none", borderBottom: "1px dashed #334155", background: "transparent", color: "#475569", fontSize: "0.68rem", outline: "none", cursor: "pointer", padding: "1px 2px", width: 110 }}
+                style={{ border: "none", borderBottom: "1px dashed #64748b", background: "transparent", color: "#cbd5e1", fontSize: "0.72rem", outline: "none", cursor: "pointer", padding: "1px 2px", width: 110 }}
               />
             </div>
           </div>
@@ -1441,7 +1441,7 @@ export default function OwnerOperatorsPage() {
             const val = selected[field]?.trim();
             return (
               <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4, paddingRight: 16, marginRight: 16, borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                <span style={{ color:"#475569", fontSize:"0.7rem", fontWeight:700, textTransform:"uppercase" }}>{labels[field]}</span>
+                <span style={{ color:"#cbd5e1", fontSize:"0.74rem", fontWeight:800, textTransform:"uppercase" }}>{labels[field]}</span>
                 <input
                   key={selected.id+field}
                   defaultValue={val||""}
@@ -2594,9 +2594,9 @@ export default function OwnerOperatorsPage() {
                     {available && (
                       <button
                         onClick={() => setMaintenanceModal({ truckId: t.id, truckNumber: t.truck_number })}
-                        style={{ marginTop:10, width:"100%", background:"#fff1f2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"6px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}
+                        style={{ marginTop:10, width:"100%", background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa", borderRadius:8, padding:"6px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}
                       >
-                        Mark Out of Service
+                        🔧 Send to Maintenance
                       </button>
                     )}
                     {!available && (
