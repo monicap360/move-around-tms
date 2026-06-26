@@ -883,18 +883,11 @@ export default function OwnerOperatorsPage() {
       originalUploadId = upData.upload_id || null;
     } catch { /* storage not configured — still record the doc name */ }
 
-    // 2. Prompt for dates on insurance/contract types
-    const needsExpiry = [
-      "Insurance Certificate","Insurance Certificate (COI)",
-      "Auto Liability Insurance","General Liability Insurance",
-      "Cargo Insurance","Workers Comp Insurance","Contract",
-    ].includes(docType);
-    const issuedOnInput = docType === "Contract"
-      ? prompt("Contract start / effective date (YYYY-MM-DD):", "") || undefined
-      : undefined;
-    const expiresInput = needsExpiry
-      ? prompt(`${docType} expiration date (YYYY-MM-DD):`, "") || undefined
-      : undefined;
+    // 2. Dates (expiry / contract start) are set AFTER upload via the date pickers
+    // in the Documents tab. Browser prompt() is NOT supported in this environment —
+    // it was throwing here and silently breaking every document upload.
+    const issuedOnInput: string | undefined = undefined;
+    const expiresInput: string | undefined = undefined;
 
     // 3. Record in DB with file URL
     await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, {
