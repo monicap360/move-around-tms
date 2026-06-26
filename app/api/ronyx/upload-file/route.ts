@@ -40,7 +40,7 @@ async function ensureBucket(bucket: string): Promise<boolean> {
     if (!error) return true;
 
     const { error: createErr } = await supabaseAdmin.storage.createBucket(bucket, {
-      public: true,
+      public: false, // PRIVATE — documents are sensitive; opened only via short-lived signed URLs (view-doc)
       fileSizeLimit: 52428800, // 50MB
     });
     return !createErr;
@@ -91,10 +91,12 @@ export async function POST(req: Request) {
       storageOk   = true;
       usedBucket  = candidateBucket;
       storagePath = candidatePath;
-      if (candidateBucket !== TMS_BUCKET) {
-        const { data } = supabaseAdmin.storage.from(candidateBucket).getPublicUrl(candidatePath);
-        publicUrl = data?.publicUrl || null;
-      }
+      // Always capture the storage URL (bucket + path) — even for the PRIVATE
+      // tms-documents bucket. This URL won't open directly, but /api/ronyx/view-doc
+      // converts it to a short-lived signed URL on demand. Without this the doc
+      // record got file_url=null and every doc showed "file not stored".
+      const { data } = supabaseAdmin.storage.from(candidateBucket).getPublicUrl(candidatePath);
+      publicUrl = data?.publicUrl || null;
     }
   }
 
