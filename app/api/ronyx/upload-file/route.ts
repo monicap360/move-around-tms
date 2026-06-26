@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { TMS_BUCKET, tenantDatedPath } from "@/lib/storage-paths";
 import { resolveOrgId } from "@/lib/auth/resolveOrgId";
-import { extractDocRouting } from "@/lib/doc-ai-extract";
+import { extractDocRouting, type DocRouting } from "@/lib/doc-ai-extract";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +136,7 @@ export async function POST(req: Request) {
 
   // ── Auto-route the file to the right place: an Owner-Operator COMPANY (contract /
   // insurance / W-9) OR a DRIVER (CDL / medical / MVR) — matched by name in the filename.
-  let routedToOO: { oo_id: string; company_name: string; doc_type: string; driver?: string } | null = null;
+  let routedToOO: { oo_id: string; company_name: string; doc_type: string; driver?: string; created?: boolean; filled?: string[] } | null = null;
   if (storageOk && publicUrl) {
     try {
       const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -177,6 +177,24 @@ export async function POST(req: Request) {
         routedToOO = { oo_id, company_name, doc_type, driver };
       };
 
+      // Read the document once (cached) for content-based routing + data capture.
+      let _aiCache: DocRouting | null | undefined;
+      const getAI = async () => {
+        if (_aiCache === undefined) _aiCache = await extractDocRouting(Buffer.from(arrayBuffer), contentType);
+        return _aiCache;
+      };
+      // Fill ONLY empty columns on an OO from AI-extracted data — never overwrite existing values.
+      const backfillOO = async (oo_id: string, ai: DocRouting | null): Promise<string[]> => {
+        if (!ai) return [];
+        const cols = ["mc_number", "dot_number", "ein", "business_address", "contact_name", "contact_phone", "contact_email"] as const;
+        const { data: cur } = await supabaseAdmin.from("ronyx_owner_operators").select(cols.join(",")).eq("id", oo_id).single();
+        if (!cur) return [];
+        const patch: Record<string, unknown> = {}; const filled: string[] = [];
+        for (const c of cols) { const v = (ai as Record<string, unknown>)[c]; if (v && !(cur as Record<string, unknown>)[c]) { patch[c] = v; filled.push(c); } }
+        if (filled.length) await supabaseAdmin.from("ronyx_owner_operators").update(patch).eq("id", oo_id);
+        return filled;
+      };
+
       const docTypeFromText = (t0: string) => {
         const t = t0.toLowerCase();
         return /w-?9|tax|ein/.test(t)              ? "W-9 / Tax Form" :
@@ -197,9 +215,12 @@ export async function POST(req: Request) {
         await attach(driverHit.oo_id, oo?.company_name || "", driverDocType(driverHit.name, l), driverHit.name);
       } else if (bestOO && ["compliance", "contracts"].includes(fileModule)) {
         await attach(bestOO.id, bestOO.company_name, fileModule === "contracts" ? "Contract" : docTypeFromText(l));
+        // Read the doc and backfill any company details that are still blank.
+        const filled = await backfillOO(bestOO.id, await getAI());
+        if (routedToOO && filled.length) (routedToOO as any).filled = filled;
       } else {
         // 3) Filename didn't match — READ THE DOCUMENT with AI (Claude vision) and route by its CONTENT.
-        const ai = await extractDocRouting(Buffer.from(arrayBuffer), contentType);
+        const ai = await getAI();
         if (ai) {
           // (a) driver match by AI-extracted driver name
           if (ai.driver_name && ooIds.length) {
@@ -211,7 +232,7 @@ export async function POST(req: Request) {
               await attach(hit.oo_id, oo?.company_name || "", driverDocType(hit.name, ai.doc_type || ""), hit.name);
             }
           }
-          // (b) company match by AI-extracted company name (bidirectional contains)
+          // (b) company match OR auto-create by AI-extracted company name
           if (!routedToOO && ai.company_name) {
             const aiCo = norm(ai.company_name);
             const strip = (s: string) => s.replace(/\b(llc|inc|trucking|transport|transportation|logistics|company|co|services|corp|group)\b/g, "").replace(/\s+/g, " ").trim();
@@ -222,9 +243,29 @@ export async function POST(req: Request) {
               if (co && (aiCo.includes(co) || co.includes(aiCo))) { if (!match || co.length > norm(match.company_name).length) match = oo; }
               else if (aiCore.length > 3 && strip(co).length > 3 && (aiCore.includes(strip(co)) || strip(co).includes(aiCore)) && !match) match = oo;
             }
+            const dt = ai.doc_type && ai.doc_type !== "Other" ? ai.doc_type : docTypeFromText(file.name);
             if (match) {
-              const dt = ai.doc_type && ai.doc_type !== "Other" ? ai.doc_type : docTypeFromText(file.name);
               await attach(match.id, match.company_name, dt);
+              const filled = await backfillOO(match.id, ai);
+              if (routedToOO && filled.length) (routedToOO as any).filled = filled;
+            } else {
+              // No existing company found (and no fuzzy duplicate) — AUTO-CREATE it from the doc.
+              const { data: created } = await supabaseAdmin.from("ronyx_owner_operators").insert({
+                organization_id:  orgId,
+                company_name:     ai.company_name,
+                status:           "active",
+                mc_number:        ai.mc_number || null,
+                dot_number:       ai.dot_number || null,
+                ein:              ai.ein || null,
+                business_address: ai.business_address || null,
+                contact_name:     ai.contact_name || null,
+                contact_phone:    ai.contact_phone || null,
+                contact_email:    ai.contact_email || null,
+              }).select("id, company_name").single();
+              if (created) {
+                await attach(created.id, created.company_name, dt);
+                if (routedToOO) (routedToOO as any).created = true;
+              }
             }
           }
         }
