@@ -79,7 +79,7 @@ function LandingPageContent() {
       heroTitle: "Dispatch Smarter. Scan Faster. Protect Payroll. Catch Billing Errors.",
       heroSub: "MoveAround TMS helps dump truck and construction fleet offices dispatch smarter, scan tickets faster, protect payroll, and catch billing errors before money is lost.",
       heroBody1:
-        "Built for dispatch, Fast Scan™ ticket OCR, payout reconciliation, RMIS compliance, payroll holds, billing review, and staff-guided operations.",
+        "Built for dispatch, Fast Scan™ ticket OCR, payout reconciliation, carrier clearance, payroll holds, billing review, and staff-guided operations.",
       heroBody2:
         "Instead of making staff search through spreadsheets, tickets, dispatch boards, and payroll reports — MoveAround turns exceptions into guided work queues.",
       heroBody3:
@@ -6260,11 +6260,11 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, marginTop: 48 }}>
             {[
               { icon: "fa-bolt", badge: "Fast Scan™", title: "Ticket OCR & Payout Import", desc: "Scan tickets, invoices, and payout sheets into usable operational data. Match scanned proof to dispatch records automatically.", color: "#F7931E" },
-              { icon: "fa-shield-alt", badge: "Dispatch Guard™", title: "Daily Dispatch Import", desc: "Import daily dispatch schedules, track RMIS notes, identify driver/truck readiness issues, and catch compliance blockers before dispatch.", color: "#00b4ff" },
+              { icon: "fa-shield-alt", badge: "Dispatch Guard™", title: "Daily Dispatch Import", desc: "Import daily dispatch schedules, track compliance notes, identify driver/truck readiness issues, and catch compliance blockers before dispatch.", color: "#00b4ff" },
               { icon: "fa-lock", badge: "Payroll Guard™", title: "Proof-Before-Pay Controls", desc: "Stop payroll from being released when ticket proof is missing. Flag duplicates, rate mismatches, and deductions before settlement.", color: "#00ff9d" },
               { icon: "fa-search-dollar", badge: "Revenue Guard™", title: "Find Unbilled Work", desc: "Find worked loads that have not been billed. Detect invoice mismatches and catch missing customer rates before money is lost.", color: "#ffd700" },
               { icon: "fa-file-invoice-dollar", badge: "Billing Guard™", title: "Invoice Verification", desc: "Verify ticket totals, invoice lines, customer rates, pit invoices, and material types before billing is sent to the customer.", color: "#a855f7" },
-              { icon: "fa-id-card", badge: "Compliance Guard™", title: "Driver & Fleet Compliance", desc: "Track CDL, medical card, MVR, drug tests, inspections, and insurance. Block dispatch when documents are expired or missing.", color: "#f43f5e" },
+              { icon: "fa-id-card", badge: "Carrier Clearance Bureau™ (CCB)", title: "Carrier, Driver, Truck & Insurance Clearance", desc: "Full carrier, driver, truck, document, insurance, and COI clearance checked before dispatch — CDL, medical card, MVR, drug tests, inspections, registration, authority, and customer-specific requirements. CCB Shield blocks dispatch when anything is expired or missing; CCB Radar flags risks early.", color: "#f43f5e" },
               { icon: "fa-tasks", badge: "Staff Work Queue", title: "Daily Office Priority List", desc: "Show office staff exactly what to fix, approve, hold, or escalate. Missing proof queue, payroll hold queue, compliance queue.", color: "#38bdf8" },
               { icon: "fa-database", badge: "Backup Center", title: "Original Upload Preservation", desc: "Every original uploaded sheet, schedule, ticket, or invoice is preserved as read-only evidence. Download originals anytime.", color: "#4ade80" },
             ].map((f) => (
@@ -6341,7 +6341,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               <div style={{ marginBottom: 16, fontWeight: 800, color: "#00b4ff", fontSize: "0.85rem", letterSpacing: "0.1em" }}>DISPATCH GUARD™ — COMPLIANCE ALERTS</div>
               {[
                 { driver: "J. Williams", issue: "Medical card expires in 3 days", severity: "CRITICAL", color: "#ff2800" },
-                { driver: "R. Thompson", issue: "Missing back-of-DL — See RMIS Notes!!", severity: "HIGH", color: "#ff6b6b" },
+                { driver: "R. Thompson", issue: "Missing back-of-DL — See Compliance Notes!!", severity: "HIGH", color: "#ff6b6b" },
                 { driver: "A. Davis", issue: "Inspection follow-up pending", severity: "WARNING", color: "#ffd700" },
                 { driver: "K. Alston", issue: "CDL renewal due in 14 days", severity: "LOW", color: "#00b4ff" },
                 { driver: "M. Chen", issue: "All documents current", severity: "CLEAR", color: "#00ff9d" },
@@ -6364,7 +6364,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 Dispatch Guard helps staff import daily dispatch schedules, check driver and truck readiness, identify compliance problems, and connect dispatch activity to ticket proof and payroll.
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 24 }}>
-                {["Daily dispatch schedule import","Driver, truck, vendor matching","RMIS note tracking","Compliance issue alerts","Expected ticket count by job","Dispatch-to-Fast Scan matching","Dispatch-to-payroll validation","Dispatch block recommendations"].map((b) => (
+                {["Daily dispatch schedule import","Driver, truck, vendor matching","Compliance note tracking","Compliance issue alerts","Expected ticket count by job","Dispatch-to-Fast Scan matching","Dispatch-to-payroll validation","Dispatch block recommendations"].map((b) => (
                   <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(0,180,255,0.06)", borderRadius: 10, border: "1px solid rgba(0,180,255,0.2)" }}>
                     <i className="fas fa-check" style={{ color: "#00b4ff", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
                     <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{b}</span>
@@ -6527,7 +6527,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 ["Payout reconciliation","Manual spreadsheet","Automated Payout Reconcile"],
                 ["Payroll proof checks","Manual","Payroll Guard™"],
                 ["Billing error detection","Manual","Revenue Guard™"],
-                ["RMIS compliance notes","Spreadsheet-based","Dispatch Guard™"],
+                ["Carrier clearance notes","Spreadsheet-based","Carrier Clearance Bureau™"],
                 ["Staff guidance","Limited","Work Queue + Next Best Action"],
                 ["Original upload preservation","Not always clear","Backup Center"],
                 ["Owner operator management","Basic","OO Command Center"],
