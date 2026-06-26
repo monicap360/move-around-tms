@@ -1055,6 +1055,8 @@ export default function OwnerOperatorsPage() {
         {/* KPI Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10, marginBottom: 20 }}>
           <KPI label="OO Companies"       value={companies.length} />
+          <KPI label="Drivers"            value={companies.reduce((s,c)=>s+c.drivers.length,0)} color="#0891b2" bg="#f0f9ff" />
+          <KPI label="Drivers Need Docs"  value={companies.reduce((s,c)=>s+c.drivers.filter(d=>!d.cdl_expiration||!d.med_card_expiration).length,0)} color={companies.reduce((s,c)=>s+c.drivers.filter(d=>!d.cdl_expiration||!d.med_card_expiration).length,0)>0?"#d97706":"#15803d"} bg="#fff7ed" />
           <KPI label="Dispatch Eligible"  value={`${eligibleCount}/${companies.length}`}  color={eligibleCount<companies.length?"#dc2626":"#15803d"} bg={eligibleCount<companies.length?"#fff1f2":"#f0fdf4"} />
           <KPI label="Settlement Ready"   value={`$${totalSettlementReady.toLocaleString()}`} color="#1e40af" bg="#eff6ff" />
           <KPI label="Revenue MTD"        value={`$${totalRevenueMTD.toLocaleString()}`}      color="#15803d" bg="#f0fdf4" />

@@ -124,6 +124,7 @@ export default function BulkImportPage() {
   const [loading,  setLoading]  = useState(false);
   const [toast,    setToast]    = useState("");
   const [result,   setResult]   = useState<{ inserted: number; updated: number; skipped: number; errors: string[] } | null>(null);
+  const [dedupe,   setDedupe]   = useState(true);
   const [saveFile, setSaveFile] = useState<File | null>(null);
   const [backupOpt, setBackupOpt] = useState(true);
 
@@ -188,9 +189,24 @@ export default function BulkImportPage() {
     }).filter(r => r.company_name);
   }
 
+  // Collapse duplicate companies (sheets often have one row per driver/truck),
+  // merging fields so the kept record is the most complete (first non-empty wins).
+  function dedupeRows(raw: Record<string, string>[]): Record<string, string>[] {
+    const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const byName = new Map<string, Record<string, string>>();
+    for (const r of raw) {
+      const key = norm(r.company_name);
+      const existing = byName.get(key);
+      if (!existing) byName.set(key, { ...r });
+      else for (const [k, v] of Object.entries(r)) { if (v && !existing[k]) existing[k] = v; }
+    }
+    return Array.from(byName.values());
+  }
+
   async function handleSave() {
     setLoading(true);
-    const mapped = buildMapped();
+    const raw = buildMapped();
+    const mapped = dedupe ? dedupeRows(raw) : raw;
     if (!mapped.length) { flash("No rows with Company Name found. Check your column mapping."); setLoading(false); return; }
 
     const fd = new FormData();
@@ -210,9 +226,11 @@ export default function BulkImportPage() {
     setLoading(false);
   }
 
-  const mapped     = step >= 3 ? buildMapped() : [];
-  const validCount = mapped.length;
-  const skipCount  = rows.length - validCount;
+  const mappedRaw   = step >= 3 ? buildMapped() : [];
+  const mapped      = dedupe ? dedupeRows(mappedRaw) : mappedRaw;
+  const validCount  = mapped.length;
+  const mergedCount = mappedRaw.length - mapped.length;
+  const skipCount   = rows.length - mappedRaw.length;
 
   return (
     <div style={{ maxWidth: 900 }}>
@@ -349,10 +367,15 @@ export default function BulkImportPage() {
             <p style={{ margin: "0 0 4px", fontSize: "0.85rem", color: "#64748b" }}>
               Review the data before importing. Only rows with a Company Name will be imported.
             </p>
-            <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-              <span style={{ background: "#f0fdf4", color: "#15803d", padding: "4px 12px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700 }}>✓ {validCount} rows ready</span>
-              {skipCount > 0 && <span style={{ background: "#fff7ed", color: "#ea580c", padding: "4px 12px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700 }}>⚠ {skipCount} rows skipped (no company name)</span>}
+            <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ background: "#f0fdf4", color: "#15803d", padding: "4px 12px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700 }}>✓ {validCount} {dedupe ? "unique companies" : "rows"} ready</span>
+              {dedupe && mergedCount > 0 && <span style={{ background: "#eff6ff", color: "#1d4ed8", padding: "4px 12px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700 }}>🔄 {mergedCount} duplicate row{mergedCount > 1 ? "s" : ""} merged</span>}
+              {skipCount > 0 && <span style={{ background: "#fff7ed", color: "#ea580c", padding: "4px 12px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700 }}>⚠ {skipCount} skipped (no company name)</span>}
             </div>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", fontSize: "0.82rem", color: "#0f172a", fontWeight: 600 }}>
+              <input type="checkbox" checked={dedupe} onChange={e => setDedupe(e.target.checked)} style={{ width: 16, height: 16, cursor: "pointer" }} />
+              Remove duplicate companies (merge repeated rows into one complete record)
+            </label>
 
             <div style={{ maxHeight: 380, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 10, marginBottom: 20 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
