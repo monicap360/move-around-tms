@@ -9,13 +9,13 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const nextBin = path.resolve("node_modules", "next", "dist", "bin", "next");
-// PROVEN value: next.config notes the build fits at 3072 with ~1GB headroom on a
-// ~4GB box. Render's default heap (~2GB) was too LOW (d889a1c OOM'd); 4096/6144
-// were too HIGH for the build container (9512d64 SIGKILL'd — RSS exceeded the box,
-// leaving no room for non-heap/OS). 3072 is the sweet spot; webpackMemoryOptimizations
-// lowers the peak so it fits with margin. If it STILL SIGKILLs at 3072, the build
-// machine is genuinely too small -> raise the Render Build Pipeline tier.
-const heapCap = "--max-old-space-size=3072";
+// Render build pipeline here is the "performance" tier = 64GB RAM build machine.
+// The build's page-data/static-gen phase needs ~3.5GB of V8 heap. A 3072 cap was
+// THROTTLING V8 below that need -> "JavaScript heap out of memory" -> exit status 1
+// (NOT a signal), which the wrapper below misread as "a code error". The build
+// actually compiles + generates all pages cleanly (verified locally at 4096).
+// On a 64GB box there is no container-OOM risk, so cap generously above the need.
+const heapCap = "--max-old-space-size=6144";
 // Preserve any externally-set NODE_OPTIONS; the last --max-old-space-size wins.
 const NODE_OPTIONS = [process.env.NODE_OPTIONS, heapCap].filter(Boolean).join(" ");
 
