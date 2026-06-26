@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 const IMPORT_TYPES = [
   { value: "auto",           label: "🔍 Auto Detect"           },
@@ -28,6 +28,16 @@ const QUICK_CHIPS = [
 
 type Stage = "select" | "review" | "uploading" | "done" | "error";
 
+// Live processing steps shown while a file is being analyzed, so the user can see
+// what's happening and that it's routing to the right place.
+const PROC_STEPS = [
+  { icon: "📄", label: "Reading file" },
+  { icon: "🔍", label: "Detecting data type" },
+  { icon: "🧩", label: "Mapping columns to the system" },
+  { icon: "✅", label: "Checking data quality" },
+  { icon: "📍", label: "Routing to the right place" },
+];
+
 export default function IntelImportCenter({
   open,
   onClose,
@@ -44,6 +54,17 @@ export default function IntelImportCenter({
   const [stage, setStage]             = useState<Stage>("select");
   const [uploadResult, setResult]     = useState<any>(null);
   const [errorMsg, setError]          = useState("");
+  const [procStep, setProcStep]       = useState(0);
+
+  // Advance the visible processing steps while the file is uploading/analyzing.
+  useEffect(() => {
+    if (stage !== "uploading") return;
+    setProcStep(0);
+    const id = setInterval(() => {
+      setProcStep(s => (s < PROC_STEPS.length - 1 ? s + 1 : s));
+    }, 850);
+    return () => clearInterval(id);
+  }, [stage]);
 
   function toggleChip(c: string) {
     setChips(prev => {
@@ -315,13 +336,27 @@ export default function IntelImportCenter({
 
           {/* ── STAGE: UPLOADING ── */}
           {stage === "uploading" && (
-            <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <div style={{ fontSize: "2.5rem", marginBottom: 14 }}>⏳</div>
-              <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "1rem", marginBottom: 8 }}>
-                Importing…
+            <div style={{ padding: "30px 8px" }}>
+              <div style={{ textAlign: "center", marginBottom: 22 }}>
+                <div style={{ fontSize: "2.2rem", marginBottom: 8 }}>⏳</div>
+                <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "1rem" }}>Processing your file…</div>
+                <div style={{ color: "#64748b", fontSize: "0.8rem", marginTop: 4 }}>
+                  {file?.name} → <strong>{IMPORT_TYPES.find(t => t.value === importType)?.label.replace(/^[^\s]+ /, "") ?? importType}</strong>
+                </div>
               </div>
-              <div style={{ color: "#64748b", fontSize: "0.83rem" }}>
-                Uploading and analyzing your file. This may take a few seconds.
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360, margin: "0 auto" }}>
+                {PROC_STEPS.map((s, i) => {
+                  const isDone = i < procStep;
+                  const isActive = i === procStep;
+                  return (
+                    <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 9, background: isActive ? "#eff6ff" : isDone ? "#f0fdf4" : "#f8fafc", border: `1px solid ${isActive ? "#bfdbfe" : isDone ? "#bbf7d0" : "#e2e8f0"}`, transition: "all 0.2s" }}>
+                      <span style={{ fontSize: "1rem", width: 22, textAlign: "center" }}>{isDone ? "✓" : isActive ? "⏳" : s.icon}</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: isDone || isActive ? 700 : 500, color: isDone ? "#15803d" : isActive ? "#1e40af" : "#94a3b8" }}>{s.label}</span>
+                      {isActive && <span style={{ marginLeft: "auto", fontSize: "0.66rem", color: "#1e40af", fontWeight: 700 }}>working…</span>}
+                      {isDone && <span style={{ marginLeft: "auto", fontSize: "0.66rem", color: "#15803d", fontWeight: 700 }}>done</span>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
