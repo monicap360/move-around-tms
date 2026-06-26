@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useModuleAccess } from "@/app/hooks/useModuleAccess";
 import ModuleUpgradeCard from "@/app/components/ronyx/ModuleUpgradeCard";
+import PdfSplitModal, { pdfPageCount } from "@/app/components/ronyx/PdfSplitModal";
 
 // ─── Proof-to-pay scan types only ─────────────────────────────────────────────
 
@@ -133,6 +134,8 @@ export default function FastScanPage() {
   const [uploading,       setUploading]       = useState(false);
   const [ocrRunning,      setOcrRunning]      = useState(false);
   const [uploadResult,    setUploadResult]    = useState<UploadResult | null>(null);
+  const [pdfSplit,        setPdfSplit]        = useState<File | null>(null); // multi-page PDF awaiting split
+  const [splitQueue,      setSplitQueue]      = useState<File[]>([]);        // remaining split pages to scan
   const [uploadError,     setUploadError]     = useState("");
   const [dragOver,        setDragOver]        = useState(false);
   const [editedFields,    setEditedFields]    = useState<Partial<ExtractedFields>>({});
@@ -373,6 +376,17 @@ export default function FastScanPage() {
   function resetUpload() {
     setUploadResult(null); setRoutingChoice(null);
     setRoutingDone(false); setEditedFields({}); setNoteText("");
+    // If this upload came from a split PDF, auto-load the next page to scan.
+    if (splitQueue.length) {
+      setUploadFile(splitQueue[0]);
+      setSplitQueue(q => q.slice(1));
+    }
+  }
+
+  // Intercept file selection: a multi-page PDF opens the split-into-tickets modal.
+  async function pickFile(f: File) {
+    if (f.type === "application/pdf" && (await pdfPageCount(f)) > 1) setPdfSplit(f);
+    else setUploadFile(f);
   }
 
   if (moduleLoading) return null;
@@ -585,11 +599,11 @@ export default function FastScanPage() {
                 <div
                   onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
-                  onDrop={e => { e.preventDefault(); setDragOver(false); const f2 = e.dataTransfer.files[0]; if (f2) setUploadFile(f2); }}
+                  onDrop={e => { e.preventDefault(); setDragOver(false); const f2 = e.dataTransfer.files[0]; if (f2) pickFile(f2); }}
                   onClick={() => fileInputRef.current?.click()}
                   style={{ border: `2px dashed ${dragOver ? "#1e40af" : uploadFile ? "#16a34a" : "#cbd5e1"}`, borderRadius: 10, background: dragOver ? "#eff6ff" : uploadFile ? "#f0fdf4" : "#f8fafc", padding: "18px 14px", textAlign: "center", cursor: "pointer", transition: "all 150ms", marginBottom: 12 }}>
                   <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff,.bmp" style={{ display: "none" }}
-                    onChange={e => { const f2 = e.target.files?.[0]; if (f2) setUploadFile(f2); }} />
+                    onChange={e => { const f2 = e.target.files?.[0]; if (f2) pickFile(f2); }} />
                   {uploadFile ? (
                     <div>
                       <div style={{ fontSize: "1.3rem", marginBottom: 3 }}>✅</div>
@@ -619,6 +633,28 @@ export default function FastScanPage() {
                 </div>
 
                 {uploadError && <div style={{ marginBottom: 10, padding: "7px 11px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#dc2626", fontSize: "0.75rem" }}>{uploadError}</div>}
+
+                {splitQueue.length > 0 && (
+                  <div style={{ marginBottom: 10, padding: "7px 11px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, color: "#1e40af", fontSize: "0.74rem", fontWeight: 600 }}>
+                    📑 {splitQueue.length} more page{splitQueue.length > 1 ? "s" : ""} from your PDF queued — scan this one, then &ldquo;Scan Another&rdquo; loads the next.
+                  </div>
+                )}
+
+                {pdfSplit && (
+                  <PdfSplitModal
+                    file={pdfSplit}
+                    docOptions={[{ value: "Ticket", label: "Ticket" }]}
+                    defaultType="Ticket"
+                    title="Split into Tickets"
+                    onCancel={() => setPdfSplit(null)}
+                    onComplete={(pieces) => {
+                      const files = pieces.map(p => p.file);
+                      setUploadFile(files[0] || null);
+                      setSplitQueue(files.slice(1));
+                      setPdfSplit(null);
+                    }}
+                  />
+                )}
 
                 <button onClick={handleFileUpload} disabled={uploading || ocrRunning || !uploadFile}
                   style={{ width: "100%", padding: "9px 0", background: uploadFile ? "#1e40af" : "#94a3b8", color: "#fff", border: "none", borderRadius: 9, fontWeight: 800, fontSize: "0.82rem", cursor: uploadFile ? "pointer" : "not-allowed", opacity: (uploading || ocrRunning) ? 0.75 : 1 }}>

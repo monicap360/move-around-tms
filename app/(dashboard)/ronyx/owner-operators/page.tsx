@@ -5,6 +5,20 @@ import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
 import { useModuleAccess } from "@/app/hooks/useModuleAccess";
 import ModuleUpgradeCard from "@/app/components/ronyx/ModuleUpgradeCard";
 import IntelVerifyPanel from "@/app/components/ronyx/IntelVerifyPanel";
+import PdfSplitModal, { pdfPageCount, type DocOption } from "@/app/components/ronyx/PdfSplitModal";
+
+// Document types a split PDF page can be assigned to (owner-operator docs).
+const OO_DOC_OPTIONS: DocOption[] = [
+  { value: "Auto Liability Insurance",    label: "Auto Liability" },
+  { value: "General Liability Insurance", label: "General Liability" },
+  { value: "Cargo Insurance",             label: "Cargo Insurance" },
+  { value: "Insurance Certificate (COI)", label: "COI" },
+  { value: "Contract",                    label: "Contract" },
+  { value: "W-9 / Tax Form",              label: "W-9" },
+  { value: "Voided Check",                label: "Voided Check" },
+  { value: "MC Authority Letter",         label: "MC Auth Letter" },
+  { value: "Vehicle Inspection",          label: "Inspection" },
+];
 
 /* ─── Types ─────────────────────────────────────────── */
 type OODriver = {
@@ -539,6 +553,8 @@ export default function OwnerOperatorsPage() {
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [moveModal, setMoveModal] = useState<{ ooId: string; ooName: string; targetId: string } | null>(null);
+  const [editProfile, setEditProfile] = useState<{ company_name: string; contact_name: string; contact_phone: string; contact_email: string; business_address: string; mc_number: string; dot_number: string; ein: string; start_date: string; active: boolean } | null>(null);
+  const [pdfSplit, setPdfSplit] = useState<{ mode: "doc" | "card"; file: File; defaultType: string; ooId?: string; ooName?: string; moduleName?: string } | null>(null);
   const [reassignModal, setReassignModal] = useState<{ driverId: string; driverName: string; targetId: string } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
   const [verifyDrawerOO, setVerifyDrawerOO] = useState<{ id: string; name: string } | null>(null);
@@ -967,6 +983,23 @@ export default function OwnerOperatorsPage() {
     } catch { flash(`Upload failed for ${docType} — check storage config.`); }
   }
 
+  // If a multi-page PDF is uploaded, offer to split it into separate documents
+  // and file each to the right slot; otherwise upload as-is.
+  async function smartDocUpload(docType: string, file: File) {
+    if (file.type === "application/pdf" && (await pdfPageCount(file)) > 1) {
+      setPdfSplit({ mode: "doc", file, defaultType: docType });
+    } else {
+      await handleDocUpload(docType, file);
+    }
+  }
+  async function smartCardUpload(ooId: string, ooName: string, docType: string, moduleName: string, file: File) {
+    if (file.type === "application/pdf" && (await pdfPageCount(file)) > 1) {
+      setPdfSplit({ mode: "card", file, defaultType: docType, ooId, ooName, moduleName });
+    } else {
+      await cardUpload(ooId, ooName, docType, moduleName, file);
+    }
+  }
+
   // Open a document — fetches a short-lived signed URL, then shows the in-app viewer.
   async function openDoc(fileUrl: string, print = false, filename?: string, ooId?: string, docType?: string) {
     try {
@@ -1249,6 +1282,23 @@ export default function OwnerOperatorsPage() {
             const insDoc      = oo.documents.find(d => ["Insurance Certificate","Auto Liability Insurance","General Liability Insurance","Insurance Certificate (COI)","Cargo Insurance"].includes(d.type));
             const insExpDays  = insDoc?.expires_on ? daysUntil(insDoc.expires_on) : null;
 
+            // At-a-glance compliance summary for the collapsed header (mirrors the detail card).
+            const REQ_DOCS = [
+              { type: "Auto Liability Insurance",    alt: ["Auto Liability","Automobile Liability Insurance"] },
+              { type: "General Liability Insurance", alt: ["General Liability","GL Insurance"] },
+              { type: "Cargo Insurance",             alt: ["Cargo","Cargo Ins"] },
+              { type: "Contract",                    alt: ["Subhauler Agreement","Carrier Agreement","Service Contract"] },
+              { type: "W-9 / Tax Form",              alt: ["W-9","W9","Tax Form"] },
+            ];
+            const docStat = REQ_DOCS.reduce((acc, d) => {
+              const f = oo.documents.find(x => x.type === d.type || d.alt.includes(x.type));
+              const days = f?.expires_on ? daysUntil(f.expires_on) : null;
+              if (!f) acc.missing++;
+              else { acc.onFile++; if (days !== null && days <= 30) acc.expiring++; }
+              return acc;
+            }, { onFile: 0, missing: 0, expiring: 0 });
+            const docPill: React.CSSProperties = { padding: "3px 8px", borderRadius: 12, fontSize: "0.68rem", fontWeight: 800 };
+
             const cardBg    = eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
             const stripBorder = eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
             const expanded = expandedOOs.has(oo.id);
@@ -1266,6 +1316,9 @@ export default function OwnerOperatorsPage() {
                         {eligible ? "🟢 Dispatch Eligible" : "🔴 Dispatch Blocked"}
                       </span>
                       {holdJobs > 0 && <span style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 8px", borderRadius: 12, fontSize: "0.7rem", fontWeight: 700 }}>{holdJobs} settlement hold{holdJobs>1?"s":""}</span>}
+                      <span style={{ ...docPill, background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }} title="Required documents on file">📄 {docStat.onFile}/{REQ_DOCS.length}</span>
+                      {docStat.missing > 0 && <span style={{ ...docPill, background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" }} title="Required documents missing">{docStat.missing} missing</span>}
+                      {docStat.expiring > 0 && <span style={{ ...docPill, background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }} title="Documents expiring within 30 days">{docStat.expiring} expiring</span>}
                     </div>
                     {expanded && (
                       <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px 22px", maxWidth: 820 }}>
@@ -1298,6 +1351,17 @@ export default function OwnerOperatorsPage() {
                       <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Performance</div>
                       <ScoreBadge score={perf} />
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openOO(oo);
+                        setOoEditModal({ id: oo.id, form: { company_name: oo.company_name, contact_name: oo.contact_name, contact_phone: oo.contact_phone, contact_email: oo.contact_email, business_address: oo.business_address, mc_number: oo.mc_number, dot_number: oo.dot_number, ein: oo.ein, website: oo.website || "", notes: oo.notes || "", insurance_agent_name: oo.insurance_agent_name || "", insurance_agent_phone: oo.insurance_agent_phone || "", insurance_agent_email: oo.insurance_agent_email || "" }, saving: false });
+                      }}
+                      title="Edit company profile"
+                      style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af", padding: "4px 12px", borderRadius: 8, fontSize: "0.74rem", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      ✏ Edit
+                    </button>
                     <span style={{ fontSize: "1.05rem", color: "#64748b", marginLeft: 2 }}>{expanded ? "▲" : "▼"}</span>
                   </div>
                 </div>
@@ -1352,7 +1416,7 @@ export default function OwnerOperatorsPage() {
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
                           e.stopPropagation();
                           const f = e.target.files?.[0];
-                          if (f) await cardUpload(oo.id, oo.company_name, docType, "compliance", f);
+                          if (f) await smartCardUpload(oo.id, oo.company_name, docType, "compliance", f);
                           e.target.value = "";
                         }} />
                       </label>
@@ -1379,7 +1443,7 @@ export default function OwnerOperatorsPage() {
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
                           e.stopPropagation();
                           const f = e.target.files?.[0];
-                          if (f) await cardUpload(oo.id, oo.company_name, docType, module, f);
+                          if (f) await smartCardUpload(oo.id, oo.company_name, docType, module, f);
                           e.target.value = "";
                         }} />
                       </label>
@@ -1398,17 +1462,6 @@ export default function OwnerOperatorsPage() {
                       style={{ background: "#faf5ff", border: "1px solid #ddd6fe", color: "#7c3aed", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
                     >
                       🔍 Verify Doc
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openOO(oo);
-                        setOoEditModal({ id: oo.id, form: { company_name: oo.company_name, contact_name: oo.contact_name, contact_phone: oo.contact_phone, contact_email: oo.contact_email, business_address: oo.business_address, mc_number: oo.mc_number, dot_number: oo.dot_number, ein: oo.ein, website: oo.website || "", notes: oo.notes || "", insurance_agent_name: oo.insurance_agent_name || "", insurance_agent_phone: oo.insurance_agent_phone || "", insurance_agent_email: oo.insurance_agent_email || "" }, saving: false });
-                      }}
-                      title="Edit profile"
-                      style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
-                    >
-                      ✏ Edit
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteOO(oo); }}
@@ -1521,9 +1574,26 @@ export default function OwnerOperatorsPage() {
                 <span style={{ padding: "3px 10px", borderRadius: 999, background: "rgba(239,68,68,0.18)", color: "#fca5a5", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.04em" }}>NOT ACTIVE</span>
               )}
               <button
+                onClick={() => setEditProfile({
+                  company_name:     selected.company_name || "",
+                  contact_name:     selected.contact_name || "",
+                  contact_phone:    selected.contact_phone || "",
+                  contact_email:    selected.contact_email || "",
+                  business_address: selected.business_address || "",
+                  mc_number:        selected.mc_number || "",
+                  dot_number:       selected.dot_number || "",
+                  ein:              selected.ein || "",
+                  start_date:       selected.start_date || "",
+                  active:           ooIsActive(selected),
+                })}
+                title="Edit this owner-operator's profile"
+                style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                ✏ Edit Profile
+              </button>
+              <button
                 onClick={() => setOOActive(selected, !ooIsActive(selected))}
                 title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
-                style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 {ooIsActive(selected) ? "● Mark Not Active" : "○ Reactivate"}
               </button>
               <button
@@ -1665,77 +1735,114 @@ export default function OwnerOperatorsPage() {
         <KPI label="Trucks"           value={selected.trucks.length}  color="#0891b2" bg="#f0f9ff" />
       </div>
 
-      {/* Quick Upload Actions */}
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 16px", marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: "0.65rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 4 }}>Quick Upload</span>
-        {[
-          { label: "🛡️ Auto Liability",    type: "Auto Liability Insurance",    altTypes: ["Auto Liability","Automobile Liability Insurance"],         hasExpiry: true  },
-          { label: "🛡️ General Liability",  type: "General Liability Insurance", altTypes: ["General Liability","GL Insurance"],                        hasExpiry: true  },
-          { label: "📦 Cargo Insurance",    type: "Cargo Insurance",             altTypes: ["Cargo","Cargo Ins"],                                       hasExpiry: true  },
-          { label: "📄 COI",               type: "Insurance Certificate (COI)", altTypes: ["Insurance Certificate","COI","Certificate of Insurance"],   hasExpiry: true  },
-          { label: "📝 Contract",          type: "Contract",                    altTypes: ["Subhauler Agreement","Carrier Agreement","Service Contract"],hasExpiry: true  },
-          { label: "🧾 W-9",               type: "W-9 / Tax Form",              altTypes: ["W-9","W9","Tax Form"],                                     hasExpiry: false },
-          { label: "💳 Voided Check",      type: "Voided Check",                altTypes: ["Voided check","Void Check","Bank Void Check","Direct Deposit"],hasExpiry: false },
-          { label: "🏛️ MC Auth Letter",     type: "MC Authority Letter",         altTypes: ["MC Auth Letter","MC Letter","Authority Letter"],            hasExpiry: false },
-        ].map(({ label, type, altTypes }) => {
-          const onFile = selected.documents.find(d => d.type === type || (altTypes || []).includes(d.type));
-          return (
-            <div key={type} style={{ display: "inline-flex", alignItems: "center", gap: 0, borderRadius: 8, border: `1px solid ${onFile ? "#86efac" : "#e2e8f0"}`, background: onFile ? "#f0fdf4" : "#f8fafc", overflow: "hidden" }}>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", fontSize: "0.75rem", fontWeight: 700, color: onFile ? "#15803d" : "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
-                {onFile ? "✓ " : ""}{label}
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={e => {
-                  const f = e.target.files?.[0];
-                  if (f) handleDocUpload(type, f);
-                  e.target.value = "";
-                }} />
-              </label>
-              {onFile && (<>
-                <button
-                  onClick={() => onFile.file_url ? openDoc(onFile.file_url, false, onFile.file_name) : flash("No file stored — click the document name to re-upload.")}
-                  title={onFile.file_url ? "View document" : "No file stored — click to re-upload"}
-                  style={{ padding: "5px 7px", background: onFile.file_url ? "#dbeafe" : "#f1f5f9", color: onFile.file_url ? "#1e40af" : "#94a3b8", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #e2e8f0", cursor: "pointer" }}>
-                  👁
-                </button>
-                <button
-                  title={onFile.file_url ? "Email document" : "No file stored"}
-                  disabled={!onFile.file_url}
-                  onClick={() => onFile.file_url && setDocEmailModal({
-                    docType:  type,
-                    fileUrl:  onFile.file_url,
-                    fileName: onFile.file_name || `${type}.pdf`,
-                    to:       selected.contact_email || "",
-                    subject:  `${type} — ${selected.company_name}`,
-                    message:  `Please find the attached ${type} for ${selected.company_name}.\n\nIf you have any questions, contact us at dispatch@ronyxlogistics.com.\n\n— Ronyx Logistics / MoveAround TMS`,
-                    sending:  false,
-                  })}
-                  style={{ padding: "5px 7px", background: onFile.file_url ? "#fef3c7" : "#f1f5f9", color: onFile.file_url ? "#92400e" : "#94a3b8", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #e2e8f0", cursor: onFile.file_url ? "pointer" : "default" }}>
-                  ✉
-                </button>
-                <button
-                  title={onFile.file_url ? "Print document" : "No file stored"}
-                  disabled={!onFile.file_url}
-                  onClick={() => onFile.file_url && openDoc(onFile.file_url, true, onFile.file_name)}
-                  style={{ padding: "5px 7px", background: onFile.file_url ? "#f0fdf4" : "#f1f5f9", color: onFile.file_url ? "#15803d" : "#94a3b8", fontSize: "0.7rem", fontWeight: 700, border: "none", borderLeft: "1px solid #e2e8f0", cursor: onFile.file_url ? "pointer" : "default" }}>
-                  🖨
-                </button>
-              </>)}
-            </div>
-          );
-        })}
-        <button onClick={() => setActiveTab("documents")} style={{ ...ghostBtn, fontSize: "0.72rem", marginLeft: "auto" }}>All Documents →</button>
-      </div>
+      {/* ── Documents & Compliance (unified) ── */}
+      {(() => {
+        const miniStat: React.CSSProperties = { fontSize: "0.66rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999 };
+        const docIconBtn: React.CSSProperties = { padding: "5px 7px", background: "#f1f5f9", color: "#475569", fontSize: "0.72rem", fontWeight: 700, border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer", lineHeight: 1 };
 
-      {/* Action Required panel */}
-      {actions.length > 0 && (
-        <div style={{ background: "#fff1f2", border: "1px solid #fda4af", borderRadius: 12, padding: "12px 18px", marginBottom: 14 }}>
-          <div style={{ fontWeight: 800, color: "#dc2626", marginBottom: 8, fontSize: "0.82rem" }}>⚠ ACTION REQUIRED ({actions.length})</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {actions.map((a, i) => (
-              <span key={i} style={{ background: "#fff", border: "1px solid #fda4af", borderRadius: 8, padding: "5px 12px", fontSize: "0.75rem", fontWeight: 600, color: "#dc2626" }}>{a}</span>
-            ))}
+        const DOCS = [
+          { icon: "🛡️", short: "Auto Liability",    type: "Auto Liability Insurance",    alt: ["Auto Liability","Automobile Liability Insurance"],          required: true  },
+          { icon: "🛡️", short: "General Liability", type: "General Liability Insurance", alt: ["General Liability","GL Insurance"],                          required: true  },
+          { icon: "📦", short: "Cargo Insurance",   type: "Cargo Insurance",             alt: ["Cargo","Cargo Ins"],                                        required: true  },
+          { icon: "📄", short: "COI",               type: "Insurance Certificate (COI)", alt: ["Insurance Certificate","COI","Certificate of Insurance"],    required: false },
+          { icon: "📝", short: "Contract",          type: "Contract",                    alt: ["Subhauler Agreement","Carrier Agreement","Service Contract"], required: true  },
+          { icon: "🧾", short: "W-9",               type: "W-9 / Tax Form",              alt: ["W-9","W9","Tax Form"],                                      required: true  },
+          { icon: "💳", short: "Voided Check",      type: "Voided Check",                alt: ["Voided check","Void Check","Bank Void Check","Direct Deposit"], required: false },
+          { icon: "🏛️", short: "MC Auth Letter",    type: "MC Authority Letter",         alt: ["MC Auth Letter","MC Letter","Authority Letter"],             required: false },
+        ];
+
+        const enriched = DOCS.map(d => {
+          const onFile = selected.documents.find(x => x.type === d.type || d.alt.includes(x.type));
+          const days = onFile?.expires_on ? daysUntil(onFile.expires_on) : null;
+          const state: "missing" | "expired" | "expiring" | "ok" =
+            !onFile ? "missing" : (days !== null && days < 0) ? "expired" : (days !== null && days <= 30) ? "expiring" : "ok";
+          return { ...d, onFile, days, state };
+        });
+        const onFileCount  = enriched.filter(e => e.onFile).length;
+        const missingCount = enriched.filter(e => e.state === "missing").length;
+        const attnCount    = enriched.filter(e => e.state === "expired" || e.state === "expiring").length;
+
+        // Non-document follow-ups only — document uploads/expiries are already shown in the grid,
+        // so we strip them here to avoid the old duplicate "Action Required" box.
+        const otherActions = actions.filter(a => !/^upload /i.test(a) && !/^insurance expires/i.test(a));
+
+        const pillOf = (e: typeof enriched[number]) =>
+          e.state === "missing"  ? { txt: "Missing",          bg: "#fef2f2", bd: "#fecaca", fg: "#b91c1c" } :
+          e.state === "expired"  ? { txt: "Expired",          bg: "#fef2f2", bd: "#fecaca", fg: "#b91c1c" } :
+          e.state === "expiring" ? { txt: `${e.days}d left`,  bg: "#fffbeb", bd: "#fde68a", fg: "#b45309" } :
+                                   { txt: "On file",          bg: "#f0fdf4", bd: "#bbf7d0", fg: "#15803d" };
+
+        return (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "14px 16px", marginBottom: 14 }}>
+            {/* header + at-a-glance counts */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "#0f172a" }}>📋 Documents &amp; Compliance</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ ...miniStat, background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }}>{onFileCount} on file</span>
+                {missingCount > 0 && <span style={{ ...miniStat, background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" }}>{missingCount} missing</span>}
+                {attnCount > 0 && <span style={{ ...miniStat, background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }}>{attnCount} expiring</span>}
+              </div>
+              <button onClick={() => setActiveTab("documents")} style={{ ...ghostBtn, fontSize: "0.72rem", marginLeft: "auto" }}>All Documents →</button>
+            </div>
+
+            {/* per-document status tiles */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))", gap: 10 }}>
+              {enriched.map(e => {
+                const p = pillOf(e);
+                const f = e.onFile;
+                return (
+                  <div key={e.type} style={{ border: `1px solid ${e.state === "ok" ? "#e2e8f0" : p.bd}`, background: e.state === "ok" ? "#fff" : p.bg, borderRadius: 10, padding: "10px 11px", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6 }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e293b", lineHeight: 1.2 }}>
+                        {e.icon} {e.short}{e.required && !f && <span style={{ color: "#dc2626" }}> *</span>}
+                      </span>
+                      <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: p.bg, color: p.fg, border: `1px solid ${p.bd}`, whiteSpace: "nowrap" }}>{p.txt}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <label style={{ flex: f ? "0 0 auto" : "1 1 auto", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, color: "#fff", background: f ? "#64748b" : "#1e40af", borderRadius: 7, cursor: "pointer" }}>
+                        {f ? "Replace" : "Upload"}
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={ev => {
+                          const file = ev.target.files?.[0];
+                          if (file) smartDocUpload(e.type, file);
+                          ev.target.value = "";
+                        }} />
+                      </label>
+                      {f && (<>
+                        <button title={f.file_url ? "View document" : "No file stored — Replace to upload"}
+                          onClick={() => f.file_url ? openDoc(f.file_url, false, f.file_name) : flash("No file stored — use Replace to upload.")}
+                          style={docIconBtn}>👁</button>
+                        <button title={f.file_url ? "Email document" : "No file stored"} disabled={!f.file_url}
+                          onClick={() => f.file_url && setDocEmailModal({
+                            docType: e.type, fileUrl: f.file_url, fileName: f.file_name || `${e.type}.pdf`,
+                            to: selected.contact_email || "", subject: `${e.type} — ${selected.company_name}`,
+                            message: `Please find the attached ${e.type} for ${selected.company_name}.\n\nIf you have any questions, contact us at dispatch@ronyxlogistics.com.\n\n— Ronyx Logistics / MoveAround TMS`,
+                            sending: false,
+                          })}
+                          style={{ ...docIconBtn, opacity: f.file_url ? 1 : 0.4, cursor: f.file_url ? "pointer" : "default" }}>✉</button>
+                        <button title={f.file_url ? "Print document" : "No file stored"} disabled={!f.file_url}
+                          onClick={() => f.file_url && openDoc(f.file_url, true, f.file_name)}
+                          style={{ ...docIconBtn, opacity: f.file_url ? 1 : 0.4, cursor: f.file_url ? "pointer" : "default" }}>🖨</button>
+                      </>)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* non-document follow-ups (Add MC/DOT number, driver/settlement items) */}
+            {otherActions.length > 0 && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed #e2e8f0" }}>
+                <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#b45309", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Also needs attention</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {otherActions.map((a, i) => (
+                    <span key={i} style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "4px 11px", fontSize: "0.74rem", fontWeight: 600, color: "#92400e" }}>{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 2, borderBottom: "2px solid #e2e8f0", marginBottom: 20, overflowX: "auto" }}>
@@ -4312,6 +4419,94 @@ export default function OwnerOperatorsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Edit Profile modal ── */}
+      {editProfile && selected && (() => {
+        const lbl: React.CSSProperties = { fontSize: "0.68rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 4 };
+        const set = (patch: Partial<NonNullable<typeof editProfile>>) => setEditProfile(p => p && ({ ...p, ...patch }));
+        const save = async () => {
+          if (!selected || !editProfile) return;
+          if (!editProfile.company_name.trim()) { flash("Company name is required."); return; }
+          const merged: OOCompany = {
+            ...selected,
+            company_name:     editProfile.company_name.trim(),
+            contact_name:     editProfile.contact_name.trim(),
+            contact_phone:    editProfile.contact_phone.trim(),
+            contact_email:    editProfile.contact_email.trim(),
+            business_address: editProfile.business_address.trim(),
+            mc_number:        editProfile.mc_number.trim() || "",
+            dot_number:       editProfile.dot_number.trim() || "",
+            ein:              editProfile.ein.trim() || "",
+            start_date:       editProfile.start_date || undefined,
+            status:           editProfile.active ? "active" : "inactive",
+          };
+          updateLocalState(merged);
+          const res = await apiPut(`/api/ronyx/owner-operators/${selected.id}`, {
+            company_name: merged.company_name, contact_name: merged.contact_name ?? null,
+            contact_phone: merged.contact_phone ?? null, contact_email: merged.contact_email ?? null,
+            business_address: merged.business_address ?? null, mc_number: merged.mc_number,
+            dot_number: merged.dot_number, ein: merged.ein, start_date: merged.start_date ?? null,
+            status: merged.status,
+          });
+          if (res?.error) { flash(`Save error: ${res.error}`); return; }
+          flash("Profile saved.");
+          setEditProfile(null);
+          loadCompanies();
+        };
+        return (
+          <div onClick={() => setEditProfile(null)} style={{ position: "fixed", inset: 0, zIndex: 9300, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "22px 26px", width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ fontWeight: 900, fontSize: "1.05rem", color: "#0f172a" }}>✏ Edit Profile</div>
+                <button onClick={() => setEditProfile(null)} style={{ background: "none", border: "none", fontSize: "1.4rem", color: "#94a3b8", cursor: "pointer", lineHeight: 1 }}>×</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 14px" }}>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={lbl}>Company Name *</label>
+                  <input value={editProfile.company_name} onChange={e => set({ company_name: e.target.value })} style={inp} />
+                </div>
+                <div><label style={lbl}>Contact Name</label><input value={editProfile.contact_name} onChange={e => set({ contact_name: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>Phone</label><input value={editProfile.contact_phone} onChange={e => set({ contact_phone: e.target.value })} style={inp} /></div>
+                <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Email</label><input value={editProfile.contact_email} onChange={e => set({ contact_email: e.target.value })} style={inp} /></div>
+                <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Address</label><input value={editProfile.business_address} onChange={e => set({ business_address: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>MC #</label><input value={editProfile.mc_number} onChange={e => set({ mc_number: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>DOT #</label><input value={editProfile.dot_number} onChange={e => set({ dot_number: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>EIN</label><input value={editProfile.ein} onChange={e => set({ ein: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>Start Date</label><input type="date" value={editProfile.start_date} onChange={e => set({ start_date: e.target.value })} style={inp} /></div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={lbl}>Status</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => set({ active: true })} style={{ flex: 1, padding: "8px 0", borderRadius: 8, fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", border: `1px solid ${editProfile.active ? "#86efac" : "#e2e8f0"}`, background: editProfile.active ? "#f0fdf4" : "#fff", color: editProfile.active ? "#15803d" : "#64748b" }}>● Active</button>
+                    <button onClick={() => set({ active: false })} style={{ flex: 1, padding: "8px 0", borderRadius: 8, fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", border: `1px solid ${!editProfile.active ? "#fca5a5" : "#e2e8f0"}`, background: !editProfile.active ? "#fef2f2" : "#fff", color: !editProfile.active ? "#dc2626" : "#64748b" }}>○ Not Active</button>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button onClick={save} style={{ flex: 1, padding: "10px 0", borderRadius: 9, border: "none", background: "#1e40af", color: "#fff", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>Save Profile</button>
+                <button onClick={() => setEditProfile(null)} style={{ padding: "10px 18px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Split & Assign multi-page PDF ── */}
+      {pdfSplit && (
+        <PdfSplitModal
+          file={pdfSplit.file}
+          docOptions={OO_DOC_OPTIONS}
+          defaultType={pdfSplit.defaultType}
+          title="Split & Assign Documents"
+          onCancel={() => setPdfSplit(null)}
+          onComplete={async (pieces) => {
+            for (const p of pieces) {
+              if (pdfSplit.mode === "doc") await handleDocUpload(p.type, p.file);
+              else await cardUpload(pdfSplit.ooId!, pdfSplit.ooName!, p.type, pdfSplit.moduleName || "compliance", p.file);
+            }
+            setPdfSplit(null);
+          }}
+        />
       )}
 
       {/* ── Move to Drivers modal (company picker) ── */}

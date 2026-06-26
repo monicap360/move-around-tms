@@ -29,6 +29,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "Operations",
     items: [
+      { label: "Rory — Operations Manager", href: "/ronyx/operations-manager", icon: "🧭", color: "#4f46e5" },
       { label: "Dispatch",         href: "/ronyx/dispatch/board",          icon: "📋", color: "#2563eb", children: [
         { label: "Dispatch Board",        href: "/ronyx/dispatch/board",           icon: "📋" },
         { label: "Daily Import",          href: "/ronyx/dispatch/daily-import",    icon: "📥" },
@@ -65,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Maintenance",           href: "/ronyx/maintenance",              icon: "🔩" },
         { label: "Breakdowns / OOS",      href: "/ronyx/maintenance/breakdowns",   icon: "🚨" },
         { label: "Availability",          href: "/ronyx/maintenance/availability", icon: "✅" },
+        { label: "Inspections",           href: "/ronyx/inspections",              icon: "📋" },
       ]},
       { label: "Projects / Jobs",   href: "/ronyx/loads",                  icon: "📁", color: "#0d9488" },
     ],
