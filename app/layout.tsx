@@ -11,6 +11,14 @@ import { defaultBranding } from "../branding.config";
 import { getBrandingConfig } from "../lib/branding";
 import { headers } from "next/headers";
 
+// Force the entire app to render dynamically (on-demand), never statically at build.
+// This app is 100% data-driven and the build does branding/Supabase fetches in this
+// layout + many pages. Render's build sandbox can't complete those build-time fetches
+// (they hang -> silent build failure), while every other environment can. Rendering
+// on-demand removes all build-time fetching, so the build no longer depends on the
+// build environment's network. (Verified: same code builds fine on GitHub CI.)
+export const dynamic = "force-dynamic";
+
 // Server component to fetch branding config by domain
 export default async function RootLayout(props: { children: ReactNode }) {
   let branding = defaultBranding;
