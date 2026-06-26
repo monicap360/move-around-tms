@@ -402,6 +402,16 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         .tms-main { flex: 1; display: flex; flex-direction: column; background: #f1f5f9; min-width: 0; }
         .tms-topbar { height: 52px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 20; gap: 16px; }
         .tms-topbar-left { display: flex; align-items: center; gap: 12px; }
+        /* Today's priorities — live chips in the top bar (from daily-command) */
+        .tms-topbar-center { display: flex; align-items: center; gap: 7px; overflow-x: auto; flex: 1; justify-content: center; scrollbar-width: none; }
+        .tms-topbar-center::-webkit-scrollbar { display: none; }
+        .tms-tb-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 0.74rem; font-weight: 700; text-decoration: none; white-space: nowrap; border: 1px solid; transition: transform 0.12s, box-shadow 0.12s; }
+        .tms-tb-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tms-tb-chip .n { background: rgba(0,0,0,0.10); border-radius: 10px; padding: 0 6px; font-size: 0.7rem; font-weight: 800; }
+        .tms-tb-chip.ok { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+        .tms-tb-chip.warn { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+        .tms-tb-chip.danger { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        @media (max-width: 820px) { .tms-topbar-center { display: none; } }
         .tms-menu-btn { display: none; background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 1rem; color: #475569; }
         .tms-topbar-right { display: flex; align-items: center; gap: 8px; }
         .tms-icon-btn { position: relative; background: #f1f5f9; border: none; border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 1rem; color: #475569; }
@@ -670,8 +680,34 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         <header className="tms-topbar">
           <div className="tms-topbar-left">
             <button className="tms-menu-btn" onClick={() => setMobileOpen(p => !p)} aria-label="Toggle menu">☰</button>
-            <span style={{ fontSize: "0.82rem", color: "#94a3b8" }}>{now}</span>
+            <span style={{ fontSize: "0.82rem", color: "#94a3b8", whiteSpace: "nowrap" }}>{now}</span>
           </div>
+
+          {/* Today's priorities — live chips (only what needs attention) */}
+          {daily && (
+            <div className="tms-topbar-center">
+              {(() => {
+                const p = daily.pulse;
+                const chips = [
+                  p.dispatchBlocks       ? { n: p.dispatchBlocks,       label: "Dispatch",    icon: "🚛", href: "/ronyx/dispatch/dispatch-guard",   cls: "danger" } : null,
+                  p.missingTickets       ? { n: p.missingTickets,       label: "Missing",     icon: "⚠",  href: "/ronyx/tickets?tab=needs_review",  cls: "danger" } : null,
+                  p.payrollHolds         ? { n: p.payrollHolds,         label: "Payroll",     icon: "💵", href: "/ronyx/payroll?filter=holds",      cls: "danger" } : null,
+                  p.trucksDown           ? { n: p.trucksDown,           label: "Trucks Down", icon: "🔧", href: "/ronyx/maintenance/breakdowns",    cls: "danger" } : null,
+                  p.ticketsNeedingReview ? { n: p.ticketsNeedingReview, label: "Review",      icon: "🎫", href: "/ronyx/tickets?tab=needs_review",  cls: "warn" } : null,
+                  p.expiringDocs         ? { n: p.expiringDocs,         label: "Expiring",    icon: "📄", href: "/ronyx/owner-operators/coi-matrix", cls: "warn" } : null,
+                ].filter(Boolean) as { n: number; label: string; icon: string; href: string; cls: string }[];
+                if (chips.length === 0) {
+                  return <Link href="/ronyx/dispatch/board" className="tms-tb-chip ok"><span>✓</span> All clear today{p.activeLoads ? <> · {p.activeLoads} active</> : null}</Link>;
+                }
+                return chips.map((c, i) => (
+                  <Link key={i} href={c.href} className={`tms-tb-chip ${c.cls}`} title={`${c.n} ${c.label} — click to open`}>
+                    <span>{c.icon}</span> {c.label} <span className="n">{c.n}</span>
+                  </Link>
+                ));
+              })()}
+            </div>
+          )}
+
           <div className="tms-topbar-right">
             <button className="tms-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search (⌘K)">🔍</button>
             <button className="tms-icon-btn" aria-label="Notifications">🔔<span className="tms-notif-badge" /></button>
