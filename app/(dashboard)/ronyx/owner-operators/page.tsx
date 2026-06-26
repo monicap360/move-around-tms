@@ -1163,13 +1163,23 @@ export default function OwnerOperatorsPage() {
                       {holdJobs > 0 && <span style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 8px", borderRadius: 12, fontSize: "0.7rem", fontWeight: 700 }}>{holdJobs} settlement hold{holdJobs>1?"s":""}</span>}
                     </div>
                     {expanded && (
-                      <div onClick={e => e.stopPropagation()} style={{ fontSize: "0.8rem", color: "#475569", marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 20px", maxWidth: 640 }}>
-                        <span>📍 {oo.business_address || "—"}</span>
-                        <span>👤 {oo.contact_name || "—"}</span>
-                        <span>📞 {oo.contact_phone || "—"}</span>
-                        <span>✉ {oo.contact_email || "—"}</span>
-                        <span><strong style={{ color:"#64748b" }}>MC</strong> {oo.mc_number || "—"}</span>
-                        <span><strong style={{ color:"#64748b" }}>DOT</strong> {oo.dot_number || "—"}{oo.ein ? `  ·  EIN ${oo.ein}` : ""}</span>
+                      <div onClick={e => e.stopPropagation()} style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px 22px", maxWidth: 820 }}>
+                        {([
+                          ["Address",  oo.business_address, "📍"],
+                          ["Contact",  oo.contact_name,     "👤"],
+                          ["Phone",    oo.contact_phone,    "📞"],
+                          ["Email",    oo.contact_email,    "✉"],
+                          ["MC #",     oo.mc_number,        ""],
+                          ["DOT #",    oo.dot_number,       ""],
+                          ["EIN",      oo.ein,              ""],
+                        ] as [string, string | undefined, string][]).map(([label, value, icon]) => (
+                          <div key={label}>
+                            <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+                            <div style={{ fontSize: "0.84rem", fontWeight: 600, color: value ? "#0f172a" : "#cbd5e1", wordBreak: "break-word", marginTop: 1 }}>
+                              {value ? `${icon ? icon + " " : ""}${value}` : "—"}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                     {!eligible && <div style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: 3 }}>{blocks.join(" · ")}</div>}
@@ -1225,8 +1235,11 @@ export default function OwnerOperatorsPage() {
                     const doc = oo.documents.find(d => d.type === docType);
                     const expDays = doc?.expires_on ? daysUntil(doc.expires_on) : null;
                     return doc ? (
-                      <span key={key} style={{ background: expBg(expDays), color: expColor(expDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700 }}>
-                        🛡️ {short}: {expLabel(expDays, doc.expires_on)}
+                      <span key={key}
+                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name) : flash(`No file stored for ${short} — upload it from the Documents tab to view.`); }}
+                        title={doc.file_url ? `Click to view ${short}` : "No file stored — upload from Documents tab"}
+                        style={{ background: expBg(expDays), color: expColor(expDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        🛡️ {short}: {expLabel(expDays, doc.expires_on)} {doc.file_url ? "👁" : ""}
                       </span>
                     ) : (
                       <label key={key} onClick={e => e.stopPropagation()} style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", border: "1px solid #fca5a5" }}>
