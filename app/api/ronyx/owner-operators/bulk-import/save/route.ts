@@ -32,11 +32,14 @@ export async function POST(req: NextRequest) {
     backupUrl = urlData?.publicUrl ?? null;
   }
 
-  // Fetch existing company names for dedup
-  const { data: existing } = await sb.from("ronyx_owner_operators").select("company_name");
-  const existingNames = new Set((existing || []).map((r: any) => r.company_name?.toLowerCase().trim()));
+  // Fetch existing carriers (with fields) for dedup + backfill
+  const { data: existing } = await sb.from("ronyx_owner_operators")
+    .select("id,company_name,contact_name,contact_phone,contact_email,business_address,ein,dot_number,mc_number,insurance_agent_name,insurance_agent_email,insurance_agent_phone,notes");
+  const existingMap = new Map<string, any>((existing || []).map((r: any) => [r.company_name?.toLowerCase().trim(), r]));
+  const BACKFILL = ["contact_name","contact_phone","contact_email","business_address","ein","dot_number","mc_number","insurance_agent_name","insurance_agent_email","insurance_agent_phone","notes"];
 
   let inserted = 0;
+  let updated  = 0;
   let skipped  = 0;
   const errors: string[] = [];
 
@@ -44,7 +47,17 @@ export async function POST(req: NextRequest) {
     const companyName = (row.company_name || "").trim();
     if (!companyName) { skipped++; continue; }
 
-    if (existingNames.has(companyName.toLowerCase())) { skipped++; continue; }
+    const existingCo = existingMap.get(companyName.toLowerCase());
+    if (existingCo) {
+      // Already in the system — backfill any BLANK fields from this row (never overwrite).
+      if (existingCo.id) {
+        const patch: Record<string, unknown> = {};
+        for (const k of BACKFILL) { if (row[k] && String(row[k]).trim() && !existingCo[k]) patch[k] = String(row[k]).trim(); }
+        if (Object.keys(patch).length) { await sb.from("ronyx_owner_operators").update(patch).eq("id", existingCo.id); updated++; }
+        else skipped++;
+      } else { skipped++; }
+      continue;
+    }
 
     const { error } = await sb.from("ronyx_owner_operators").insert({
       company_name:          companyName,
@@ -66,9 +79,9 @@ export async function POST(req: NextRequest) {
       errors.push(`${companyName}: ${error.message}`);
     } else {
       inserted++;
-      existingNames.add(companyName.toLowerCase());
+      existingMap.set(companyName.toLowerCase(), { id: null });
     }
   }
 
-  return NextResponse.json({ inserted, skipped, errors, backup_url: backupUrl });
+  return NextResponse.json({ inserted, updated, skipped, errors, backup_url: backupUrl });
 }

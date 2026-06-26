@@ -123,7 +123,7 @@ export default function BulkImportPage() {
   const [pasteVal, setPasteVal] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [toast,    setToast]    = useState("");
-  const [result,   setResult]   = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null);
+  const [result,   setResult]   = useState<{ inserted: number; updated: number; skipped: number; errors: string[] } | null>(null);
   const [saveFile, setSaveFile] = useState<File | null>(null);
   const [backupOpt, setBackupOpt] = useState(true);
 
@@ -202,7 +202,7 @@ export default function BulkImportPage() {
     const data = await res.json();
 
     if (res.ok) {
-      setResult({ inserted: data.inserted ?? 0, skipped: data.skipped ?? 0, errors: data.errors ?? [] });
+      setResult({ inserted: data.inserted ?? 0, updated: data.updated ?? 0, skipped: data.skipped ?? 0, errors: data.errors ?? [] });
       setStep(4);
     } else {
       flash("Save error: " + (data.error || "Unknown error"));
@@ -398,6 +398,10 @@ export default function BulkImportPage() {
               <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 12, padding: "14px 24px", textAlign: "center" }}>
                 <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#15803d" }}>{result.inserted}</div>
                 <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#15803d", textTransform: "uppercase" }}>Imported</div>
+              </div>
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: "14px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#1d4ed8" }}>{result.updated}</div>
+                <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase" }}>Filled In</div>
               </div>
               <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 12, padding: "14px 24px", textAlign: "center" }}>
                 <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#ea580c" }}>{result.skipped}</div>

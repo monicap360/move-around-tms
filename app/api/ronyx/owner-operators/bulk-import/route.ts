@@ -61,15 +61,35 @@ export async function POST(req: Request) {
     let created = false;
     if (existing) {
       ooId = existing.id;
+      // Backfill any BLANK fields on the existing carrier from this row (never overwrite).
+      const { data: cur } = await sb.from("ronyx_owner_operators")
+        .select("mc_number,dot_number,ein,business_address,contact_name,contact_phone,contact_email,insurance_agent_name,insurance_agent_email,insurance_agent_phone,notes")
+        .eq("id", existing.id).single();
+      if (cur) {
+        const patch: Record<string, unknown> = {};
+        for (const k of ["mc_number","dot_number","ein","business_address","contact_name","contact_phone","contact_email","insurance_agent_name","insurance_agent_email","insurance_agent_phone","notes"]) {
+          if (co[k] && !(cur as Record<string, unknown>)[k]) patch[k] = String(co[k]).trim();
+        }
+        if (Object.keys(patch).length) await sb.from("ronyx_owner_operators").update(patch).eq("id", existing.id);
+      }
     } else {
       const { data: newOO, error: createErr } = await sb
         .from("ronyx_owner_operators")
         .insert({
-          organization_id: orgId,
-          company_name: co.company_name.trim(),
-          mc_number:    co.mc_number    || null,
-          dot_number:   co.dot_number   || null,
-          status:       "active",
+          organization_id:       orgId,
+          company_name:          co.company_name.trim(),
+          mc_number:             co.mc_number    || null,
+          dot_number:            co.dot_number   || null,
+          ein:                   co.ein          || null,
+          business_address:      co.business_address || null,
+          contact_name:          co.contact_name || null,
+          contact_phone:         co.contact_phone || null,
+          contact_email:         co.contact_email || null,
+          insurance_agent_name:  co.insurance_agent_name  || null,
+          insurance_agent_email: co.insurance_agent_email || null,
+          insurance_agent_phone: co.insurance_agent_phone || null,
+          notes:                 co.notes        || null,
+          status:                (co.status && /inactive|disabled|^no$/i.test(String(co.status).trim())) ? "inactive" : "active",
         })
         .select("id")
         .single();
