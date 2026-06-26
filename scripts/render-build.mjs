@@ -6,11 +6,21 @@
 //     block. Render's build-log API drops/samples lines, so a plain stream can hide
 //     the real error (it did — builds exited 1 right after compile with no visible
 //     reason). Reprinting the tail guarantees the actual error reaches the log.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import os from "node:os";
 
 console.log(`[render-build] container: ${(os.totalmem() / 1e9).toFixed(1)}GB RAM, ${os.cpus().length} CPUs, node ${process.version}, platform ${process.platform}`);
+
+// Pre-check: does the native `sharp` binary load on THIS platform? A silent build
+// crash (worker dies with no JS error) is classically a sharp glibc/musl segfault.
+const sc = spawnSync(process.execPath, ["-e", "require('sharp');process.stdout.write('ok')"], { encoding: "utf8" });
+const sharpStatus = sc.signal
+  ? `CRASH signal=${sc.signal}`
+  : sc.status !== 0
+    ? `FAIL status=${sc.status} :: ${(sc.stderr || "").replace(/\s+/g, " ").slice(0, 300)}`
+    : "ok";
+console.log(`[render-build] sharp load check: ${sharpStatus}`);
 
 const nextBin = path.resolve("node_modules", "next", "dist", "bin", "next");
 const heapCap = "--max-old-space-size=6144";

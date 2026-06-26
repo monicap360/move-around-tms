@@ -25,6 +25,14 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Disable Next's built-in image optimizer so the native `sharp` binary is never
+  // loaded during the build. On Render's Linux the sharp variant can mismatch
+  // (glibc vs musl) and segfault the build worker silently — the suspected cause
+  // of the post-compile exit 1. Images are served as-is (no server-side resize).
+  images: {
+    unoptimized: true,
+  },
+
   serverExternalPackages: [
     "exceljs",
     "archiver",
