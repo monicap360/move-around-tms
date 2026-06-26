@@ -942,6 +942,17 @@ export default function OwnerOperatorsPage() {
     }
   }
 
+  // Open a doc in a NEW TAB (used from the list cards, where the in-app docViewer
+  // modal isn't mounted). Opens the tab synchronously on the click so it isn't
+  // popup-blocked, then redirects it to the signed URL once we have it.
+  function openDocNewTab(fileUrl: string) {
+    const w = window.open("", "_blank");
+    fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`)
+      .then(r => r.json())
+      .then(data => { if (w) w.location.href = data.signed_url || fileUrl; })
+      .catch(() => { if (w) w.location.href = fileUrl; });
+  }
+
   // ── List-level aggregates ──────────────────────────
   const totalRevenueMTD     = companies.reduce((s,c) => s + ooRevenueMTD(c), 0);
   const totalMarginMTD      = companies.reduce((s,c) => s + ooMarginMTD(c), 0);
@@ -1256,7 +1267,7 @@ export default function OwnerOperatorsPage() {
                     const expDays = doc?.expires_on ? daysUntil(doc.expires_on) : null;
                     return doc ? (
                       <span key={key}
-                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name) : flash(`No file stored for ${short} — upload it from the Documents tab to view.`); }}
+                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDocNewTab(doc.file_url) : flash(`No file stored for ${short} — upload it from the Documents tab to view.`); }}
                         title={doc.file_url ? `Click to view ${short}` : "No file stored — upload from Documents tab"}
                         style={{ background: expBg(expDays), color: expColor(expDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
                         🛡️ {short}: {expLabel(expDays, doc.expires_on)} {doc.file_url ? "👁" : ""}
@@ -1283,7 +1294,7 @@ export default function OwnerOperatorsPage() {
                     const doc = oo.documents.find(d => d.type === docType);
                     return doc ? (
                       <span key={key}
-                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name) : flash(`No file stored for ${short} — upload from the Documents tab to view.`); }}
+                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDocNewTab(doc.file_url) : flash(`No file stored for ${short} — upload from the Documents tab to view.`); }}
                         title={doc.file_url ? `Click to view ${short}` : "No file stored"}
                         style={{ background: "#eff6ff", color: "#1e40af", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid #bfdbfe" }}>
                         📄 {short} {doc.file_url ? "👁" : ""}
