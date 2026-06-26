@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/render-build.mjs",
-    "build:raw": "next build --webpack",
+    "build": "next build",
+    "build:webpack": "next build --webpack",
+    "build:diag": "node scripts/render-build.mjs",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",

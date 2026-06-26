@@ -28,7 +28,9 @@ const NODE_OPTIONS = [process.env.NODE_OPTIONS, heapCap, "--trace-uncaught", "--
 
 console.log(`[render-build] next build with NODE_OPTIONS="${NODE_OPTIONS}" on ${process.version}`);
 
-const child = spawn(process.execPath, [nextBin, "build", "--webpack"], {
+// Use Next 16's default Turbopack build (NOT --webpack). The webpack build crashes
+// silently on Render Linux during page-data collection; Turbopack is a different engine.
+const child = spawn(process.execPath, [nextBin, "build"], {
   env: { ...process.env, NODE_OPTIONS },
 });
 
