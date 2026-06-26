@@ -128,8 +128,10 @@ function analyzeRow(row: RawRow): AnalyzedRow {
   const issues: string[] = [];
   let readiness: AnalyzedRow["readiness"] = "ready";
 
-  if (!driver) { issues.push("Missing driver"); readiness = "critical"; }
-  if (!truck)  { issues.push("Missing truck number"); readiness = "critical"; }
+  // Missing driver/truck is an ASSIGNMENT gap, not a compliance block — jobs are often
+  // imported before drivers/trucks are assigned. Import them flagged for assignment.
+  if (!driver) { issues.push("Missing driver — assign after import"); if (readiness === "ready") readiness = "needs_review"; }
+  if (!truck)  { issues.push("Missing truck number — assign after import"); if (readiness === "ready") readiness = "needs_review"; }
   if (!customer) { issues.push("Missing customer"); if (readiness === "ready") readiness = "needs_review"; }
   if (rmis_class.severity === "critical") { issues.push(`Compliance Dispatch Block`); readiness = "critical"; }
   else if (rmis_class.severity === "warning") { issues.push(`Compliance: ${rmis_raw}`); if (readiness === "ready") readiness = "needs_review"; }
@@ -377,7 +379,9 @@ export default function DailyImportPage() {
     if (!analysis) return;
     if (mode === "staff_only") { flash("Needs Review rows sent to staff task queue."); return; }
     setImporting(mode);
-    const rows = mode === "ready" ? analysis.ready.map(r=>r.raw) : analysis.rows.map(r=>r.raw);
+    // "ready" imports everything that is NOT a hard compliance block (ready + needs-review);
+    // rows missing only a driver/truck come in flagged for assignment. "all" includes blocks too.
+    const rows = mode === "ready" ? [...analysis.ready, ...analysis.review].map(r=>r.raw) : analysis.rows.map(r=>r.raw);
     try {
       const res = await fetch("/api/ronyx/dispatch-import", { method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ rows, file_name:filename, schedule_date:analysis.date_range.split(" – ")[0]||new Date().toISOString().slice(0,10), import_name:`Dispatch ${analysis.date_range}`, create_tasks:createTasks }) });
@@ -465,7 +469,7 @@ export default function DailyImportPage() {
                 : readiness?.status === "Blocked"
                 ? `Resolve ${analysis.stats.rmis_critical} dispatch block${analysis.stats.rmis_critical>1?"s":""} before importing.`
                 : (analysis.stats.missing_driver + analysis.stats.missing_truck) > 0
-                ? `${analysis.stats.missing_driver + analysis.stats.missing_truck} rows missing driver or truck. Import ${analysis.ready.length} ready rows only.`
+                ? `${analysis.stats.missing_driver + analysis.stats.missing_truck} rows missing driver or truck — they import flagged for assignment. Ready to import ${analysis.ready.length + analysis.review.length} rows.`
                 : readiness?.status === "Import with Warnings"
                 ? `${analysis.review.length} rows need review. Safe to import ${analysis.ready.length} ready rows now.`
                 : `${analysis.rows.length} rows analyzed — all clear. Safe to import.`}
@@ -626,10 +630,10 @@ export default function DailyImportPage() {
             : readiness.status==="Needs Review Before Import" ? "This file needs review before importing. Several rows have missing data or compliance blocks."
             : "This file has critical dispatch blocks. Resolve blocked rows before importing.";
           const recommended = analysis.critical.length > 0
-            ? `Import ${analysis.ready.length} ready rows only. Send ${analysis.critical.length} blocked row${analysis.critical.length>1?"s":""} to staff review.`
+            ? `Import ${analysis.ready.length + analysis.review.length} rows now (missing driver/truck come in flagged for assignment). ${analysis.critical.length} compliance-blocked row${analysis.critical.length>1?"s":""} held back for review.`
             : analysis.review.length > 0
-            ? `Import ${analysis.ready.length} ready rows. Review ${analysis.review.length} row${analysis.review.length>1?"s":""} with warnings before releasing to dispatch.`
-            : `Import all ${analysis.rows.length} rows — no critical issues detected.`;
+            ? `Import all ${analysis.ready.length + analysis.review.length} rows — those missing a driver or truck come in flagged for assignment.`
+            : `Import all ${analysis.rows.length} rows — no issues detected.`;
           return (
             <div style={{ ...card, background:"linear-gradient(135deg,#0f172a 0%,#1e293b 100%)", border:"none" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
@@ -987,12 +991,12 @@ export default function DailyImportPage() {
         <div id="s12-actions" style={{ ...card, border:"2px solid #0f172a" }}>
           <SectionHead n={12} label="Import Actions" />
           <div style={{ background:"#f0fdf4", borderRadius:8, padding:"12px 16px", marginBottom:16, fontSize:12, color:"#166534", fontWeight:600 }}>
-            💡 Recommended: <strong>Import Ready Rows Only.</strong> Send missing driver/truck/company rows to staff review before releasing to dispatch.
+            💡 Recommended: <strong>Import all rows except compliance blocks.</strong> Rows missing a driver or truck import flagged for assignment — only CCB/compliance dispatch-blocks are held back.
           </div>
           <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:14 }}>
-            <button onClick={()=>runImport("ready")} disabled={!!importing||analysis.ready.length===0}
-              style={{ padding:"13px 24px", borderRadius:10, border:"none", background:"#16a34a", color:"#fff", fontWeight:900, fontSize:14, cursor:analysis.ready.length===0?"not-allowed":"pointer", opacity:analysis.ready.length===0?0.5:1, whiteSpace:"nowrap" }}>
-              {importing==="ready" ? "Importing…" : `✅ Import ${analysis.ready.length} Ready Rows Only`}
+            <button onClick={()=>runImport("ready")} disabled={!!importing||(analysis.ready.length + analysis.review.length)===0}
+              style={{ padding:"13px 24px", borderRadius:10, border:"none", background:"#16a34a", color:"#fff", fontWeight:900, fontSize:14, cursor:(analysis.ready.length + analysis.review.length)===0?"not-allowed":"pointer", opacity:(analysis.ready.length + analysis.review.length)===0?0.5:1, whiteSpace:"nowrap" }}>
+              {importing==="ready" ? "Importing…" : `✅ Import ${analysis.ready.length + analysis.review.length} Rows${analysis.critical.length>0?` (holds ${analysis.critical.length} blocked)`:""}`}
             </button>
             <button onClick={()=>runImport("all")} disabled={!!importing}
               style={{ padding:"13px 20px", borderRadius:10, border:"2px solid #0f172a", background:"#fff", color:"#0f172a", fontWeight:800, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" }}>
