@@ -11,6 +11,9 @@ const ALLOWED_TABLES: Record<string, { orgColumn: string; conflictOn?: string[] 
   ronyx_trucks:          { orgColumn: "organization_id" },
   ronyx_owner_operators: { orgColumn: "organization_id" },
   aggregate_tickets:     { orgColumn: "organization_id" },
+  projects:              { orgColumn: "organization_id" },
+  materials:             { orgColumn: "organization_id" },
+  vendor_locations:      { orgColumn: "organization_id" },
 };
 
 
