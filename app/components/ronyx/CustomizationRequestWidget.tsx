@@ -121,7 +121,7 @@ export default function CustomizationRequestWidget() {
       <style>{`
         .crw-fab {
           position: fixed;
-          bottom: 84px;
+          top: 16px;
           right: 20px;
           z-index: 9998;
           display: flex;
@@ -140,7 +140,7 @@ export default function CustomizationRequestWidget() {
           white-space: nowrap;
         }
         @media (max-width: 900px) {
-          .crw-fab { bottom: 128px; right: 16px; }
+          .crw-fab { top: 12px; right: 16px; }
         }
       `}</style>
 
