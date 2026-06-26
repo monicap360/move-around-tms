@@ -496,6 +496,9 @@ function VirtualDispatcher({ date, defaultTab = "actions", onAssignJob, onViewJo
   const [loading, setLoading] = useState(true);
   const [open,    setOpen]    = useState(true);
   const [tab,     setTab]     = useState<"actions" | "recs" | "eod" | "owner">(defaultTab);
+  // Header buttons (⚡ Smart Assign / End of Day Review / Owner View) change defaultTab —
+  // re-sync the panel's active tab and expand it so those buttons actually switch the view.
+  useEffect(() => { setTab(defaultTab); setOpen(true); }, [defaultTab]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
