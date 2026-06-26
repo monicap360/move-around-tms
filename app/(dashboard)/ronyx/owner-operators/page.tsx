@@ -535,7 +535,7 @@ export default function OwnerOperatorsPage() {
   const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs" | "coi">("overview");
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
-  const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string } | null>(null);
+  const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string; ooId?: string; docType?: string } | null>(null);
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
@@ -925,8 +925,8 @@ export default function OwnerOperatorsPage() {
     } catch { flash(`Upload failed for ${docType} — check storage config.`); }
   }
 
-  // Open a document — fetches a short-lived signed URL, then shows in-app viewer
-  async function openDoc(fileUrl: string, print = false, filename?: string) {
+  // Open a document — fetches a short-lived signed URL, then shows the in-app viewer.
+  async function openDoc(fileUrl: string, print = false, filename?: string, ooId?: string, docType?: string) {
     try {
       const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
       const data = await res.json();
@@ -935,23 +935,52 @@ export default function OwnerOperatorsPage() {
         const w = window.open(url);
         if (w) { w.onload = () => w.print(); }
       } else {
-        setDocViewer({ url, filename });
+        setDocViewer({ url, filename, ooId, docType });
       }
     } catch {
-      setDocViewer({ url: fileUrl, filename });
+      setDocViewer({ url: fileUrl, filename, ooId, docType });
     }
   }
 
-  // Open a doc in a NEW TAB (used from the list cards, where the in-app docViewer
-  // modal isn't mounted). Opens the tab synchronously on the click so it isn't
-  // popup-blocked, then redirects it to the signed URL once we have it.
-  function openDocNewTab(fileUrl: string) {
-    flash("🔒 Opening securely from your Backup Vault…");
-    const w = window.open("", "_blank");
-    fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`)
-      .then(r => r.json())
-      .then(data => { if (w) w.location.href = data.signed_url || fileUrl; })
-      .catch(() => { if (w) w.location.href = fileUrl; });
+  // Delete the document currently open in the viewer (Delete vs Keep).
+  async function deleteViewedDoc() {
+    if (!docViewer?.ooId || !docViewer?.docType) { setDocViewer(null); return; }
+    const ooId = docViewer.ooId, docType = docViewer.docType, name = docViewer.filename || docType;
+    setDocViewer(null);
+    try {
+      await fetch(`/api/ronyx/owner-operators/${ooId}/documents`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc_type: docType }) });
+      flash(`🗑 Deleted "${name}".`);
+      loadCompanies();
+    } catch { flash("Delete failed — please try again."); }
+  }
+
+  // In-app document viewer (PDF/image) with Delete / Keep — rendered in BOTH list and detail views.
+  function renderDocViewer() {
+    if (!docViewer) return null;
+    const isPdf   = /\.pdf(\?|$)/i.test(docViewer.url) || docViewer.url.includes("application%2Fpdf") || docViewer.url.includes("content-type=application");
+    const isImage = !isPdf && /\.(jpe?g|png|webp|heic|gif|bmp|tiff?)(\?|$)/i.test(docViewer.url);
+    const canDelete = !!(docViewer.ooId && docViewer.docType);
+    return (
+      <div onClick={() => setDocViewer(null)} style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+        <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:14, width:"100%", maxWidth:960, height:"90vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 24px 80px rgba(0,0,0,0.4)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 18px", borderBottom:"1px solid #e2e8f0", flexShrink:0, background:"#f8fafc", flexWrap:"wrap" }}>
+            <span style={{ fontSize:"1.1rem" }}>{isPdf ? "📄" : isImage ? "🖼️" : "📁"}</span>
+            <span style={{ flex:1, minWidth:120, fontWeight:700, fontSize:"0.85rem", color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{docViewer.filename || "Document"}</span>
+            <span title="Encrypted private storage — opened via a short-lived secure link" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", background:"#ecfdf5", color:"#047857", borderRadius:20, fontWeight:700, fontSize:"0.68rem", border:"1px solid #a7f3d0", flexShrink:0 }}>🔒 Securely stored</span>
+            <a href={docViewer.url} download target="_blank" rel="noreferrer" style={{ padding:"6px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", textDecoration:"none", border:"1px solid #e2e8f0" }}>⬇ Download</a>
+            {canDelete && <button onClick={deleteViewedDoc} style={{ padding:"6px 12px", background:"#fef2f2", color:"#dc2626", borderRadius:7, fontWeight:700, fontSize:"0.72rem", border:"1px solid #fecaca", cursor:"pointer" }}>🗑 Delete</button>}
+            <button onClick={() => setDocViewer(null)} style={{ padding:"6px 16px", background:"#16a34a", color:"#fff", borderRadius:7, fontWeight:800, fontSize:"0.72rem", border:"none", cursor:"pointer" }}>✓ Keep</button>
+          </div>
+          <div style={{ flex:1, overflow:"auto", background:"#475569", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {isImage ? (
+              <img src={docViewer.url} alt={docViewer.filename || "document"} style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", borderRadius:4 }} />
+            ) : (
+              <iframe src={docViewer.url} title={docViewer.filename || "document"} style={{ width:"100%", height:"100%", border:"none" }} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // ── List-level aggregates ──────────────────────────
@@ -1268,7 +1297,7 @@ export default function OwnerOperatorsPage() {
                     const expDays = doc?.expires_on ? daysUntil(doc.expires_on) : null;
                     return doc ? (
                       <span key={key}
-                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDocNewTab(doc.file_url) : flash(`No file stored for ${short} — upload it from the Documents tab to view.`); }}
+                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name, oo.id, doc.type) : flash(`No file stored for ${short} — upload it from the Documents tab to view.`); }}
                         title={doc.file_url ? `Click to view ${short}` : "No file stored — upload from Documents tab"}
                         style={{ background: expBg(expDays), color: expColor(expDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
                         🛡️ {short}: {expLabel(expDays, doc.expires_on)} {doc.file_url ? "👁" : ""}
@@ -1295,7 +1324,7 @@ export default function OwnerOperatorsPage() {
                     const doc = oo.documents.find(d => d.type === docType);
                     return doc ? (
                       <span key={key}
-                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDocNewTab(doc.file_url) : flash(`No file stored for ${short} — upload from the Documents tab to view.`); }}
+                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name, oo.id, doc.type) : flash(`No file stored for ${short} — upload from the Documents tab to view.`); }}
                         title={doc.file_url ? `Click to view ${short}` : "No file stored"}
                         style={{ background: "#eff6ff", color: "#1e40af", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid #bfdbfe" }}>
                         📄 {short} {doc.file_url ? "👁" : ""}
@@ -1370,6 +1399,7 @@ export default function OwnerOperatorsPage() {
             </div>
           )}
         </div>
+        {renderDocViewer()}
       </div>
     );
   }
@@ -4231,54 +4261,7 @@ export default function OwnerOperatorsPage() {
       )}
 
       {/* ── In-app document viewer ── */}
-      {docViewer && (() => {
-        const isPdf = /\.pdf(\?|$)/i.test(docViewer.url) || docViewer.url.includes("application%2Fpdf") || docViewer.url.includes("content-type=application");
-        const isImage = !isPdf && /\.(jpe?g|png|webp|heic|gif|bmp|tiff?)(\?|$)/i.test(docViewer.url);
-        return (
-          <div
-            onClick={() => setDocViewer(null)}
-            style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{ background:"#fff", borderRadius:14, width:"100%", maxWidth:960, height:"90vh", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 24px 80px rgba(0,0,0,0.4)" }}>
-              {/* Title bar */}
-              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 18px", borderBottom:"1px solid #e2e8f0", flexShrink:0, background:"#f8fafc" }}>
-                <span style={{ fontSize:"1.1rem" }}>{isPdf ? "📄" : isImage ? "🖼️" : "📁"}</span>
-                <span style={{ flex:1, fontWeight:700, fontSize:"0.85rem", color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {docViewer.filename || "Document"}
-                </span>
-                <span title="Encrypted private storage — only authorized staff can open this via a short-lived secure link" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", background:"#ecfdf5", color:"#047857", borderRadius:20, fontWeight:700, fontSize:"0.68rem", border:"1px solid #a7f3d0", flexShrink:0 }}>
-                  🔒 Securely stored in Backup Vault
-                </span>
-                <a href={docViewer.url} download target="_blank" rel="noreferrer"
-                  style={{ padding:"5px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", textDecoration:"none", border:"1px solid #e2e8f0" }}>
-                  ⬇ Download
-                </a>
-                <button onClick={() => { const w = window.open(docViewer.url); if (w && isPdf) { w.onload = () => w.print(); } }}
-                  style={{ padding:"5px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", border:"1px solid #e2e8f0", cursor:"pointer" }}>
-                  🖨 Print
-                </button>
-                <button onClick={() => setDocViewer(null)}
-                  style={{ padding:"5px 12px", background:"#fff1f2", color:"#dc2626", borderRadius:7, fontWeight:700, fontSize:"0.72rem", border:"1px solid #fecaca", cursor:"pointer" }}>
-                  ✕ Close
-                </button>
-              </div>
-              {/* Content */}
-              <div style={{ flex:1, overflow:"auto", background:"#475569", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                {isImage ? (
-                  <img src={docViewer.url} alt={docViewer.filename || "document"} style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", borderRadius:4 }} />
-                ) : (
-                  <iframe
-                    src={docViewer.url}
-                    title={docViewer.filename || "document"}
-                    style={{ width:"100%", height:"100%", border:"none" }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {renderDocViewer()}
 
       {/* ── Intel Verify drawer ── */}
       {verifyDrawerOO && (
