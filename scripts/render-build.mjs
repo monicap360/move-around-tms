@@ -30,12 +30,26 @@ const tee = (chunk) => {
 child.stdout.on("data", tee);
 child.stderr.on("data", tee);
 
-child.on("close", (code, signal) => {
+// Render's build-log API samples/drops lines, which hid the real failure. Ship the
+// captured output straight to Supabase (build_debug_log) so it can be read back in full.
+async function ship(status) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) { console.error("[render-build] (no supabase env — cannot ship log)"); return; }
+  try {
+    const r = await fetch(`${url}/rest/v1/build_debug_log`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ status, commit: process.env.RENDER_GIT_COMMIT || null, content: buf.slice(-300).join("\n") }),
+    });
+    console.error(`[render-build] shipped build log to db (status ${r.status})`);
+  } catch (e) { console.error("[render-build] ship failed:", e.message); }
+}
+
+child.on("close", async (code, signal) => {
   if (signal) {
-    console.error(
-      `\n[render-build] ❌ next build was KILLED by signal ${signal} — container OOM. ` +
-        `Raise the build machine memory.`,
-    );
+    console.error(`\n[render-build] ❌ next build was KILLED by signal ${signal} — container OOM.`);
+    await ship(`signal:${signal}`);
     process.exit(1);
   }
   if (code !== 0) {
@@ -44,8 +58,10 @@ child.on("close", (code, signal) => {
     console.error("[render-build] ===================================================");
     console.error(buf.slice(-80).join("\n"));
     console.error(`[render-build] ❌ next build exited with status ${code}.`);
+    await ship(`exit:${code}`);
     process.exit(code);
   }
   console.log("[render-build] ✓ next build succeeded.");
+  await ship("success");
   process.exit(0);
 });
