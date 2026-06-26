@@ -14,7 +14,7 @@ console.log(`[render-build] container: ${(os.totalmem() / 1e9).toFixed(1)}GB RAM
 
 const nextBin = path.resolve("node_modules", "next", "dist", "bin", "next");
 const heapCap = "--max-old-space-size=6144";
-const NODE_OPTIONS = [process.env.NODE_OPTIONS, heapCap].filter(Boolean).join(" ");
+const NODE_OPTIONS = [process.env.NODE_OPTIONS, heapCap, "--trace-uncaught", "--trace-warnings"].filter(Boolean).join(" ");
 
 console.log(`[render-build] next build with NODE_OPTIONS="${NODE_OPTIONS}" on ${process.version}`);
 

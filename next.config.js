@@ -14,10 +14,10 @@ const nextConfig = {
   // fits with ~1 GB headroom (build floor verified ~1.5-3 GB). If page count /
   // deps grow and the build OOMs, bump the plan and the cap together.
   experimental: {
-    workerThreads: false,
-    cpus: 1,
-    // Lower peak webpack memory during the build (helps the Render build container
-    // avoid OOM-kill during "Collecting page data" on this large route set).
+    // Build box is verified 133GB RAM / 32 CPUs — the old cpus:1 / workerThreads:false
+    // serialization was tuned for a wrong "4GB Pro plan" assumption and is the prime
+    // suspect for the single-worker silent crash on Linux during page-data collection.
+    // Removed; keep only the webpack memory optimization.
     webpackMemoryOptimizations: true,
   },
 
