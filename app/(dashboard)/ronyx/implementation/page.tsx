@@ -548,6 +548,15 @@ export default function CustomerLaunchCenterPage() {
     const pct   = IMPORT_PHASES.length > 0 ? Math.round(done/IMPORT_PHASES.length*100) : 0;
     return (
       <div>
+        {/* Bulk carrier import — load all owner-operators from one spreadsheet */}
+        <a href="/ronyx/owner-operators/bulk-import" style={{ display:"flex", alignItems:"center", gap:16, textDecoration:"none", background:"linear-gradient(135deg,rgba(59,130,246,0.14),rgba(6,182,212,0.08))", border:"1px solid rgba(59,130,246,0.32)", borderRadius:14, padding:"18px 22px", marginBottom:22 }}>
+          <span style={{ fontSize:30 }}>📥</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:800, fontSize:15, color:"#fff" }}>Bulk Carrier Import — load all your owner-operators at once</div>
+            <div style={{ fontSize:12.5, color:MUTE, marginTop:3, lineHeight:1.5 }}>Upload your existing carrier spreadsheet (Excel or CSV, any layout). It auto-detects columns — company, MC, DOT, EIN, address, contact, phone, email — and imports 600+ carriers in one shot. Re-upload anytime to fill in blanks.</div>
+          </div>
+          <span style={{ background:BLUE, color:"#fff", padding:"10px 18px", borderRadius:9, fontSize:13, fontWeight:800, whiteSpace:"nowrap" as const, flexShrink:0 }}>Open Bulk Import →</span>
+        </a>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <div style={{ fontSize:13, color:MUTE }}><span style={{ color:GRN, fontWeight:700 }}>{done} of {IMPORT_PHASES.length}</span> import phases complete</div>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
