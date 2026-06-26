@@ -90,12 +90,11 @@ export async function POST(request: NextRequest) {
     const { data: doc, error: insertErr } = await sb
       .from(TABLE)
       .insert({
-        driver_id:  driverId,
-        doc_type:   docType,
-        file_url:   fileUrl,
-        status:     "uploaded",
-        expires_on: expiresOn || null,
-      })
+        driver_id:     driverId,
+        document_type: docType,        // real column is document_type (was doc_type)
+        file_url:      fileUrl,
+        expires_on:    expiresOn || null,
+      })                               // removed status: no such column on driver_documents
       .select("*")
       .single();
 
