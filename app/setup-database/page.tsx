@@ -18,6 +18,8 @@ import {
   Upload,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default function SetupDatabasePage() {
   const [results, setResults] = useState<string[]>([]);
   const [working, setWorking] = useState(false);

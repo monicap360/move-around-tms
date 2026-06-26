@@ -3,6 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect, use } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default function TruckBrandingPage(props) {
   const params = use(props.params);
   const [driver, setDriver] = useState(null);

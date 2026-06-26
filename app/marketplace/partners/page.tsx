@@ -10,6 +10,8 @@ const ContractModal = dynamic(() => import("../../contracts/ContractModal"), {
   ssr: false,
 });
 
+export const dynamic = "force-dynamic";
+
 export default function MarketplacePartners() {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);

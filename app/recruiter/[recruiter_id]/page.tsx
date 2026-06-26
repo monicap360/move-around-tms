@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 export default async function RecruiterProfile(props) {
   const params = await props.params;
   const supabase = createClient(

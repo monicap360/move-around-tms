@@ -7,6 +7,8 @@ import { getComplianceRules } from "@/lib/complianceRules";
 
 const supabase = createClient();
 
+export const dynamic = "force-dynamic";
+
 export default function MarketplacePost() {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");

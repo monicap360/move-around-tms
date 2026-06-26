@@ -3,6 +3,8 @@
 import { useState, use } from "react";
 import { motion } from "framer-motion";
 
+export const dynamic = "force-dynamic";
+
 export default function FastScanPage(props) {
   const params = use(props.params);
   const [code, setCode] = useState("");

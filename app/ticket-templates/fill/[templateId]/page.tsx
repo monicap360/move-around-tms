@@ -54,6 +54,8 @@ interface FormData {
   [fieldName: string]: string | number;
 }
 
+export const dynamic = "force-dynamic";
+
 export default function TicketFormFillPage(
   props: {
     params: Promise<{ templateId?: string }>;

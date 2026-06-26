@@ -2,6 +2,8 @@
 "use client";
 import { useState, use } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default function FastScanTicketPage(props) {
   const params = use(props.params);
   const { organization_code } = params;

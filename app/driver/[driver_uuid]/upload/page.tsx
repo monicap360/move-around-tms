@@ -4,6 +4,8 @@
 import { useState, use } from "react";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 export default function DriverUploadPage(props) {
   const params = use(props.params);
   const supabase = createClient(

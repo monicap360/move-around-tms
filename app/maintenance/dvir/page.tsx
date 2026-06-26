@@ -48,6 +48,8 @@ const inspectionItems = [
   ],
 ];
 
+export const dynamic = "force-dynamic";
+
 export default function DVIRForm() {
   const [form, setForm] = useState({
     company: "",

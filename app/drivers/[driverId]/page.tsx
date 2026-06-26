@@ -6,6 +6,8 @@ import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import ComplianceTab from "@/components/compliance/ComplianceTab";
 
+export const dynamic = "force-dynamic";
+
 export default function DriverProfilePage(props: { params: Promise<{ driverId: string }> }) {
   const params = use(props.params);
   const [profile, setProfile] = useState<any>({});

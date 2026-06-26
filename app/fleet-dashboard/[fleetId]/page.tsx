@@ -12,6 +12,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
+export const dynamic = "force-dynamic";
+
 export default function FleetManagerDashboard(
   props: {
     params: Promise<{ fleetId: string }>;

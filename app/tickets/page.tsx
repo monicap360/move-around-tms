@@ -11,6 +11,8 @@ const GPSCapture = dynamic(() => import('../../components/tickets/GPSCapture'), 
 import { sendTicketEmail } from '../../components/tickets/EmailNotification';
 import { generateInvoiceForTicket } from '../../components/tickets/AutoInvoice';
 
+export const dynamic = "force-dynamic";
+
 export default function TicketsPage() {
   const inputStyle = {
     border: '1px solid #cbd5e1',

@@ -10,6 +10,8 @@ import { getComplianceRules } from "@/lib/complianceRules";
 
 const supabase = createClient();
 
+export const dynamic = "force-dynamic";
+
 export default function MarketplaceBrowse() {
   const [role, setRole] = useState("broker");
   const [loads, setLoads] = useState([]);

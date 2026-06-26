@@ -2,6 +2,8 @@
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function RecruiterProfile(props) {
   const params = await props.params;
   const supabase = createClient(

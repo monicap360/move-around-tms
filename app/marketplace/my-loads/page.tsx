@@ -11,6 +11,8 @@ const ContractModal = dynamic(() => import('../../contracts/ContractModal'), { s
 // Simulate user context (replace with real auth/user context in production)
 const mockUser = { id: 'demo-user-uuid', role: 'shipper' };
 
+export const dynamic = "force-dynamic";
+
 export default function MarketplaceMyLoads() {
   const [myLoads, setMyLoads] = useState([]);
   const [loading, setLoading] = useState(true);

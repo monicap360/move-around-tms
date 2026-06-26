@@ -6,6 +6,8 @@ import DriverCard from "../../components/recruiter/DriverCard";
 import RankBadge from "../../components/recruiter/RankBadge";
 import EndorsementBadge from "../../components/recruiter/EndorsementBadge";
 
+export const dynamic = "force-dynamic";
+
 export default function DriverMarketplace() {
   const [drivers, setDrivers] = useState([]);
   const [search, setSearch] = useState("");

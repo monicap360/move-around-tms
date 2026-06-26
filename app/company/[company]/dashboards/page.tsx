@@ -14,6 +14,8 @@ async function fetchDashboardMetrics(): Promise<DashboardOverviewMetrics | null>
   return res.json();
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const metrics = await fetchDashboardMetrics();
 

@@ -18,6 +18,8 @@ import DVIRAnalytics from "./DVIRAnalytics";
 import PredictiveAnalytics from "./PredictiveAnalytics";
 import DVIRAlerts from "./DVIRAlerts";
 
+export const dynamic = "force-dynamic";
+
 export default function DVIRDashboard() {
   const [dvirs, setDvirs] = useState([]);
   // Optionally get user info for audit log (stub, replace with real auth if available)

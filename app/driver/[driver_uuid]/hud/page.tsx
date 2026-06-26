@@ -15,6 +15,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+export const dynamic = "force-dynamic";
+
 export default function DriverHUD(props) {
   const params = use(props.params);
   const [layout, setLayout] = useState([]);
