@@ -1038,6 +1038,7 @@ export default function OwnerOperatorsPage() {
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 8 }}>
+            <a href="/ronyx/documents" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📄 Documents</a>
             <a href="/ronyx/owner-operators/needs-reupload" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", color: "#92400e", borderColor: "#fde68a", background: "#fffbeb" }}>⚠ Needs Re-Upload</a>
             <a href="/ronyx/owner-operators/import" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📋 Bulk Import</a>
             <button onClick={() => setShowAddCompany(s=>!s)} style={primaryBtn}>+ Add Owner Operator</button>
@@ -1265,7 +1266,7 @@ export default function OwnerOperatorsPage() {
                   )}
                   <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setVerifyDrawerOO({ id: oo.id, name: oo.company_name }); }}
+                      onClick={(e) => { e.stopPropagation(); openOO(oo); setVerifyDrawerOO({ id: oo.id, name: oo.company_name }); }}
                       title="Open Intel Verify to verify a document for this owner operator"
                       style={{ background: "#faf5ff", border: "1px solid #ddd6fe", color: "#7c3aed", padding: "3px 10px", borderRadius: 8, fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
                     >
@@ -1274,6 +1275,7 @@ export default function OwnerOperatorsPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        openOO(oo);
                         setOoEditModal({ id: oo.id, form: { company_name: oo.company_name, contact_name: oo.contact_name, contact_phone: oo.contact_phone, contact_email: oo.contact_email, business_address: oo.business_address, mc_number: oo.mc_number, dot_number: oo.dot_number, ein: oo.ein, website: oo.website || "", notes: oo.notes || "", insurance_agent_name: oo.insurance_agent_name || "", insurance_agent_phone: oo.insurance_agent_phone || "", insurance_agent_email: oo.insurance_agent_email || "" }, saving: false });
                       }}
                       title="Edit profile"
