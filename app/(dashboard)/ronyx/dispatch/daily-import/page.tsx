@@ -8,7 +8,7 @@ import Link from "next/link";
 type RawRow = Record<string, string>;
 
 type RMISClass = {
-  classification: "Clear" | "Needs Document Upload" | "Needs Staff Review" | "Dispatch Block" | "RMIS Follow-Up" | "Unknown Note";
+  classification: "Clear" | "Needs Document Upload" | "Needs Staff Review" | "Dispatch Block" | "CCB Follow-Up" | "Unknown Note";
   severity:  "clear" | "low" | "warning" | "critical";
   meaning:   string;
   action:    string | null;
@@ -72,26 +72,26 @@ type ImportBatch = {
 
 function classifyRMIS(note: string): RMISClass {
   const n = (note ?? "").toLowerCase().trim();
-  if (!n || n === "standard") return { classification: "Clear", severity: "clear", meaning: "Standard RMIS note — no compliance action needed.", action: null, task: null };
+  if (!n || n === "standard") return { classification: "Clear", severity: "clear", meaning: "Standard compliance note — no action needed.", action: null, task: null };
   if (/have\s+dl[\s,&]+medical[\s&,]+(and\s+)?inspection/i.test(n))
-    return { classification: "Clear", severity: "low", meaning: "Driver has DL, Medical Card, and Inspection confirmed on RMIS.", action: "Verify inspection date is current.", task: null };
+    return { classification: "Clear", severity: "low", meaning: "Driver has DL, Medical Card, and Inspection confirmed on the carrier record.", action: "Verify inspection date is current.", task: null };
   if (/have\s+dl[\s,&]+medical/i.test(n))
     return { classification: "Clear", severity: "low", meaning: "DL and Medical Card confirmed — Inspection status unknown.", action: "Request DOT inspection document.", task: "Driver Coordinator: Request inspection document" };
   if (/request\s+(for\s+)?dl/i.test(n))
     return { classification: "Needs Document Upload", severity: "warning", meaning: "Driver's License was requested but not yet received.", action: "Follow up with driver for DL copy.", task: "Driver Coordinator: Request DL copy from driver" };
   if (/missing\s+medical/i.test(n))
-    return { classification: "Dispatch Block", severity: "critical", meaning: "Medical Certificate is missing from RMIS — driver cannot be dispatched.", action: "Block dispatch until Medical Card is uploaded.", task: "Compliance Admin: Upload Medical Certificate — DISPATCH BLOCKED" };
+    return { classification: "Dispatch Block", severity: "critical", meaning: "Medical Certificate is missing from the compliance record — driver cannot be dispatched.", action: "Block dispatch until Medical Card is uploaded.", task: "Compliance Admin: Upload Medical Certificate — DISPATCH BLOCKED" };
   if (/missing\s+back\s+of\s+dl/i.test(n))
-    return { classification: "Needs Document Upload", severity: "warning", meaning: "Back of driver's license not on RMIS file.", action: "Request back of DL from driver.", task: "Driver Coordinator: Request back of DL" };
+    return { classification: "Needs Document Upload", severity: "warning", meaning: "Back of driver's license not on file.", action: "Request back of DL from driver.", task: "Driver Coordinator: Request back of DL" };
   if (/uncertified/i.test(n))
-    return { classification: "Dispatch Block", severity: "critical", meaning: "Driver is uncertified on RMIS — cannot dispatch until resolved.", action: "Block dispatch until RMIS certification is resolved.", task: "Compliance Admin: Resolve RMIS uncertified status — DISPATCH BLOCKED" };
+    return { classification: "Dispatch Block", severity: "critical", meaning: "Driver is uncertified on the carrier record — cannot dispatch until resolved.", action: "Block dispatch until the clearance review is resolved.", task: "Compliance Admin: Resolve uncertified status — DISPATCH BLOCKED" };
   if (/email\s*(and|&|\+)\s*call/i.test(n))
-    return { classification: "RMIS Follow-Up", severity: "warning", meaning: "RMIS requires email and phone follow-up for documents.", action: "Email and call driver or company for missing documents.", task: "Compliance Admin: Email & call for documents" };
+    return { classification: "CCB Follow-Up", severity: "warning", meaning: "Compliance requires email and phone follow-up for documents.", action: "Email and call driver or company for missing documents.", task: "Compliance Admin: Email & call for documents" };
   if (/email\s+for\s+docs/i.test(n))
-    return { classification: "RMIS Follow-Up", severity: "warning", meaning: "RMIS requires email follow-up for missing documents.", action: "Email driver or company for missing documents.", task: "Compliance Admin: Email for documents" };
+    return { classification: "CCB Follow-Up", severity: "warning", meaning: "Compliance requires email follow-up for missing documents.", action: "Email driver or company for missing documents.", task: "Compliance Admin: Email for documents" };
   if (/missing/i.test(n))
-    return { classification: "Needs Document Upload", severity: "warning", meaning: `RMIS notes a missing document: "${note}"`, action: "Review missing document and request from driver.", task: "Driver Coordinator: Review and request missing document" };
-  return { classification: "Unknown Note", severity: "warning", meaning: `Unrecognized RMIS note: "${note}"`, action: "Manually review this note with Compliance Admin.", task: "Compliance Admin: Manual review of RMIS note" };
+    return { classification: "Needs Document Upload", severity: "warning", meaning: `Compliance notes a missing document: "${note}"`, action: "Review missing document and request from driver.", task: "Driver Coordinator: Review and request missing document" };
+  return { classification: "Unknown Note", severity: "warning", meaning: `Unrecognized compliance note: "${note}"`, action: "Manually review this note with Compliance Admin.", task: "Compliance Admin: Manual review of compliance note" };
 }
 
 // ─── CSV Parser ───────────────────────────────────────────────────────────────
@@ -131,8 +131,8 @@ function analyzeRow(row: RawRow): AnalyzedRow {
   if (!driver) { issues.push("Missing driver"); readiness = "critical"; }
   if (!truck)  { issues.push("Missing truck number"); readiness = "critical"; }
   if (!customer) { issues.push("Missing customer"); if (readiness === "ready") readiness = "needs_review"; }
-  if (rmis_class.severity === "critical") { issues.push(`RMIS Dispatch Block`); readiness = "critical"; }
-  else if (rmis_class.severity === "warning") { issues.push(`RMIS: ${rmis_raw}`); if (readiness === "ready") readiness = "needs_review"; }
+  if (rmis_class.severity === "critical") { issues.push(`Compliance Dispatch Block`); readiness = "critical"; }
+  else if (rmis_class.severity === "warning") { issues.push(`Compliance: ${rmis_raw}`); if (readiness === "ready") readiness = "needs_review"; }
   if (!row["Equipment License Number"]?.trim()) { issues.push("No equipment license"); if (readiness === "ready") readiness = "needs_review"; }
   if (!row["Material"]?.trim()) { issues.push("No material"); if (readiness === "ready") readiness = "needs_review"; }
 
@@ -233,8 +233,8 @@ function buildTasks(a: FileAnalysis, matches: MatchEntry[] | null): StaffTask[] 
   const out: StaffTask[] = [];
 
   const compliance: StaffTask["tasks"] = [];
-  if (a.stats.rmis_critical > 0)  compliance.push({ label:`Resolve ${a.stats.rmis_critical} RMIS dispatch block${a.stats.rmis_critical>1?"s":""}`, count:a.stats.rmis_critical, sev:"critical" });
-  if (a.stats.rmis_warning > 0)   compliance.push({ label:`Follow up on ${a.stats.rmis_warning} RMIS note${a.stats.rmis_warning>1?"s":""}`, count:a.stats.rmis_warning, sev:"warning" });
+  if (a.stats.rmis_critical > 0)  compliance.push({ label:`Resolve ${a.stats.rmis_critical} dispatch block${a.stats.rmis_critical>1?"s":""}`, count:a.stats.rmis_critical, sev:"critical" });
+  if (a.stats.rmis_warning > 0)   compliance.push({ label:`Follow up on ${a.stats.rmis_warning} compliance note${a.stats.rmis_warning>1?"s":""}`, count:a.stats.rmis_warning, sev:"warning" });
   const missingMedical = a.rows.filter(r=>/missing\s+medical/i.test(r.rmis_note)).length;
   if (missingMedical > 0) compliance.push({ label:`Upload ${missingMedical} Medical Certificate${missingMedical>1?"s":""}`, count:missingMedical, sev:"critical" });
   if (compliance.length) out.push({ role:"Compliance Admin", tasks:compliance });
@@ -271,11 +271,11 @@ const SCORE_BG    = (s: number) => s >= 90 ? "#f0fdf4" : s >= 70 ? "#fef9c3" : s
 
 const RMIS_CLS_COLOR: Record<string, string> = {
   "Clear":"#16a34a","Needs Document Upload":"#ca8a04","Needs Staff Review":"#ea580c",
-  "Dispatch Block":"#dc2626","RMIS Follow-Up":"#7c3aed","Unknown Note":"#475569",
+  "Dispatch Block":"#dc2626","CCB Follow-Up":"#7c3aed","Unknown Note":"#475569",
 };
 const RMIS_CLS_BG: Record<string, string> = {
   "Clear":"#f0fdf4","Needs Document Upload":"#fefce8","Needs Staff Review":"#ffedd5",
-  "Dispatch Block":"#fee2e2","RMIS Follow-Up":"#f5f3ff","Unknown Note":"#f8fafc",
+  "Dispatch Block":"#fee2e2","CCB Follow-Up":"#f5f3ff","Unknown Note":"#f8fafc",
 };
 
 const MATCH_STYLE: Record<string, { color:string; bg:string; label:string }> = {
@@ -438,7 +438,7 @@ export default function DailyImportPage() {
           RONYX DAILY DISPATCH IMPORT CENTER
         </h1>
         <p style={{ margin:"5px 0 0", fontSize:12, color:"#64748b", lineHeight:1.5 }}>
-          Upload, review, match, validate, and release daily RMIS dispatch schedules into Dispatch Guard, Fast Scan, Staff Tasks, Payroll, and Billing.
+          Upload, review, match, validate, and release daily dispatch schedules into Dispatch Guard, Fast Scan, Staff Tasks, Payroll, and Billing.
         </p>
       </div>
 
@@ -451,7 +451,7 @@ export default function DailyImportPage() {
           <div style={{ flex:1, minWidth:240 }}>
             <div style={{ fontSize:11, color:"#94a3b8", fontWeight:600, marginBottom:4 }}>Today's Focus</div>
             <div style={{ fontSize:14, color:"#f1f5f9", fontWeight:600, lineHeight:1.5 }}>
-              Review the daily RMIS schedule before releasing jobs into dispatch, Fast Scan, payroll, and billing.
+              Review the daily dispatch schedule before releasing jobs into dispatch, Fast Scan, payroll, and billing.
             </div>
           </div>
           <div style={{ flex:1, minWidth:240, borderLeft:"1px solid #334155", paddingLeft:20 }}>
@@ -461,7 +461,7 @@ export default function DailyImportPage() {
             <div style={{ fontSize:13, color:"#f1f5f9", fontWeight:600, lineHeight:1.5 }}>
               {parsing ? "Reading file and analyzing rows…"
                 : matching ? "Matching drivers and trucks against fleet database…"
-                : !analysis ? "Upload the RMIS export to begin pre-dispatch intelligence review."
+                : !analysis ? "Upload the dispatch export to begin pre-dispatch intelligence review."
                 : readiness?.status === "Blocked"
                 ? `Resolve ${analysis.stats.rmis_critical} dispatch block${analysis.stats.rmis_critical>1?"s":""} before importing.`
                 : (analysis.stats.missing_driver + analysis.stats.missing_truck) > 0
@@ -515,9 +515,9 @@ export default function DailyImportPage() {
             <div style={{ fontWeight:800, fontSize:"1rem", color:"#0f172a", marginBottom:6 }}>
               {parsing ? "Reading file…"
                 : analysis ? `${filename} — ${analysis.rows.length} rows loaded`
-                : "Drop RMIS Daily Dispatch CSV here or click to browse"}
+                : "Drop Daily Dispatch CSV here or click to browse"}
             </div>
-            <div style={{ fontSize:12, color:"#64748b" }}>Source: Tabitha / RMIS Daily Schedule Export · Formats: CSV, XLSX</div>
+            <div style={{ fontSize:12, color:"#64748b" }}>Source: Tabitha / Daily Schedule Export · Formats: CSV, XLSX</div>
             {matching && <div style={{ fontSize:12, color:"#2563eb", fontWeight:700, marginTop:8 }}>🔍 Matching drivers & trucks against fleet database…</div>}
             {analysis && !matching && (
               <div style={{ fontSize:12, color:"#16a34a", fontWeight:700, marginTop:8 }}>
@@ -557,8 +557,8 @@ export default function DailyImportPage() {
               { label:"Missing Driver",  v:analysis.stats.missing_driver,                                     color:analysis.stats.missing_driver>0?"#dc2626":"#16a34a" },
               { label:"Missing Truck",   v:analysis.stats.missing_truck,                                      color:analysis.stats.missing_truck>0?"#dc2626":"#16a34a" },
               { label:"Missing Both",    v:analysis.stats.missing_both,                                       color:analysis.stats.missing_both>0?"#dc2626":"#16a34a" },
-              { label:"RMIS Notes",      v:rmisMap.size,                                                       color:rmisMap.size>0?"#ca8a04":"#16a34a" },
-              { label:"RMIS Blocks",     v:analysis.stats.rmis_critical,                                      color:analysis.stats.rmis_critical>0?"#dc2626":"#16a34a" },
+              { label:"Compliance Notes", v:rmisMap.size,                                                      color:rmisMap.size>0?"#ca8a04":"#16a34a" },
+              { label:"CCB Blocks",      v:analysis.stats.rmis_critical,                                      color:analysis.stats.rmis_critical>0?"#dc2626":"#16a34a" },
               { label:"Duplicate Jobs",  v:analysis.stats.duplicate_jobs,                                     color:analysis.stats.duplicate_jobs>0?"#ea580c":"#16a34a" },
               { label:"Expected Tickets",v:Math.round(analysis.exp_tickets).toLocaleString(),                 color:"#2563eb" },
               { label:"Uploaded",        v:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),sm:true },
@@ -596,7 +596,7 @@ export default function DailyImportPage() {
                   { label:"Driver Match",       pct:readiness.driver_match,  val:`${readiness.driver_match}%` },
                   { label:"Truck Match",        pct:readiness.truck_match,   val:`${readiness.truck_match}%` },
                   { label:"Company Match",      pct:readiness.company_match<0?50:readiness.company_match, val:readiness.company_match<0?"Matching…":`${readiness.company_match}%` },
-                  { label:"RMIS Notes",         pct:readiness.rmis_status==="Clear"?100:readiness.rmis_status.includes("Block")?10:50, val:readiness.rmis_status },
+                  { label:"Compliance Notes",   pct:readiness.rmis_status==="Clear"?100:readiness.rmis_status.includes("Block")?10:50, val:readiness.rmis_status },
                   { label:"Ticket Expectations",pct:100, val:readiness.ticket_status },
                   { label:"Duplicate Check",    pct:readiness.dup_status==="Clear"?100:40, val:readiness.dup_status },
                 ] as const).map(b => (
@@ -618,8 +618,8 @@ export default function DailyImportPage() {
           const concerns: string[] = [];
           if (analysis.stats.missing_driver > 0) concerns.push(`${analysis.stats.missing_driver} row${analysis.stats.missing_driver>1?"s":""} have no driver assigned`);
           if (analysis.stats.missing_truck  > 0) concerns.push(`${analysis.stats.missing_truck} row${analysis.stats.missing_truck>1?"s":""} have no truck number`);
-          if (analysis.stats.rmis_critical  > 0) concerns.push(`${analysis.stats.rmis_critical} RMIS note${analysis.stats.rmis_critical>1?"s":""} create dispatch blocks`);
-          if (analysis.stats.rmis_warning   > 0) concerns.push(`${analysis.stats.rmis_warning} RMIS note${analysis.stats.rmis_warning>1?"s":""} need staff follow-up`);
+          if (analysis.stats.rmis_critical  > 0) concerns.push(`${analysis.stats.rmis_critical} compliance note${analysis.stats.rmis_critical>1?"s":""} create dispatch blocks`);
+          if (analysis.stats.rmis_warning   > 0) concerns.push(`${analysis.stats.rmis_warning} compliance note${analysis.stats.rmis_warning>1?"s":""} need staff follow-up`);
           if (analysis.stats.duplicate_jobs > 0) concerns.push(`${analysis.stats.duplicate_jobs} duplicate job ID${analysis.stats.duplicate_jobs>1?"s":""} found`);
           const intro = readiness.status==="Ready to Import" ? "This file is ready to import with no critical issues detected."
             : readiness.status==="Import with Warnings" ? "This file can be imported with warnings. Review issues before releasing jobs to dispatch."
@@ -649,7 +649,7 @@ export default function DailyImportPage() {
               </div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 <button onClick={()=>document.getElementById("s6-match")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"6px 14px", borderRadius:7, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>Review Driver Matches</button>
-                <button onClick={()=>document.getElementById("s7-rmis")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"6px 14px", borderRadius:7, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>Review RMIS Notes</button>
+                <button onClick={()=>document.getElementById("s7-rmis")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"6px 14px", borderRadius:7, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>Review Compliance Notes</button>
                 <button onClick={()=>document.getElementById("s12-actions")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"6px 14px", borderRadius:7, background:"#16a34a", border:"none", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>Go to Import Actions ↓</button>
               </div>
             </div>
@@ -724,10 +724,10 @@ export default function DailyImportPage() {
 
         {/* ─── 7. RMIS COMPLIANCE NOTES CLASSIFIER ─────────────── */}
         <div id="s7-rmis" style={card}>
-          <SectionHead n={7} label="RMIS Compliance Notes Classifier" />
+          <SectionHead n={7} label="Compliance Notes Classifier" />
           {rmisMap.size === 0 ? (
             <div style={{ padding:"14px 16px", background:"#f0fdf4", borderRadius:8, color:"#16a34a", fontWeight:700, fontSize:13 }}>
-              ✅ No RMIS compliance notes in this file. All rows show "standard."
+              ✅ No compliance notes in this file. All rows show "standard."
             </div>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -820,7 +820,7 @@ export default function DailyImportPage() {
                             </div>
                           ))}
                           {col.warn && <div style={{ color:"#dc2626", fontWeight:700, marginTop:4 }}>⚠ {col.warn}</div>}
-                          {hasBlock && col.h==="Driver Requirements" && <div style={{ color:"#dc2626", fontWeight:700, marginTop:2 }}>🚫 RMIS block detected</div>}
+                          {hasBlock && col.h==="Driver Requirements" && <div style={{ color:"#dc2626", fontWeight:700, marginTop:2 }}>🚫 Dispatch block detected</div>}
                         </div>
                       ))}
                     </div>
@@ -844,7 +844,7 @@ export default function DailyImportPage() {
               { label:"Ready to Dispatch",   v:analysis.ready.length,                                             color:"#16a34a", bg:"#f0fdf4" },
               { label:"Needs Review",         v:analysis.review.length,                                           color:"#ca8a04", bg:"#fef9c3" },
               { label:"Dispatch Blocked",     v:analysis.critical.length,                                         color:"#dc2626", bg:"#fee2e2" },
-              { label:"RMIS Block Notes",     v:analysis.stats.rmis_critical,                                     color:"#7c3aed", bg:"#f5f3ff" },
+              { label:"CCB Block Notes",      v:analysis.stats.rmis_critical,                                     color:"#7c3aed", bg:"#f5f3ff" },
               { label:"Missing Driver/Truck", v:analysis.stats.missing_driver+analysis.stats.missing_truck,       color:"#ea580c", bg:"#ffedd5" },
               { label:"Staff Tasks to Create",v:totalStaffTasks,                                                   color:"#0891b2", bg:"#e0f2fe" },
             ].map(s=>(
@@ -879,7 +879,7 @@ export default function DailyImportPage() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
                 <thead>
                   <tr style={{ background:"#f8fafc", borderBottom:"2px solid #e2e8f0" }}>
-                    {["Status","Start Time","Truck","Driver","Customer","Route","Qty","RMIS"].map(h=>(
+                    {["Status","Start Time","Truck","Driver","Customer","Route","Qty","Compliance"].map(h=>(
                       <th key={h} style={{ padding:"7px 10px", color:"#64748b", fontWeight:700, fontSize:10, textTransform:"uppercase", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -1099,7 +1099,7 @@ export default function DailyImportPage() {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
                   <tr style={{ background:"#f8fafc", borderBottom:"2px solid #e2e8f0" }}>
-                    {["Compliance","Truck","Driver","Job ID","Route","Qty","RMIS Note"].map(h=>(
+                    {["Compliance","Truck","Driver","Job ID","Route","Qty","Clearance Note"].map(h=>(
                       <th key={h} style={{ padding:"9px 12px", color:"#64748b", fontWeight:700, fontSize:11, textTransform:"uppercase", textAlign:"left", whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>

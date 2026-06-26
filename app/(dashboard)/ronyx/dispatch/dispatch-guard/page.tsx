@@ -81,7 +81,7 @@ export default function DispatchGuardPage() {
               </h1>
             </div>
             <p style={{ margin: 0, color: "rgba(255,255,255,0.75)", fontSize: "0.9rem" }}>
-              RMIS compliance monitor · Dispatch-to-ticket match · Payroll validation
+              CCB Sentinel monitoring · Dispatch-to-ticket match · Payroll validation
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -153,7 +153,7 @@ export default function DispatchGuardPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
                 <thead>
                   <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                    {["Driver","Truck","Job / Customer","Date","RMIS Status","Match","Payroll"].map(h => (
+                    {["Driver","Truck","Job / Customer","Date","Clearance Status","Match","Payroll"].map(h => (
                       <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                     ))}
                   </tr>
@@ -217,7 +217,7 @@ export default function DispatchGuardPage() {
             { label: "View Dispatch Board",     href: "/ronyx/dispatch/board",           icon: "📋" },
             { label: "Ticket Reconciliation",   href: "/ronyx/tickets?tab=reconciliation", icon: "🔍" },
             { label: "Payroll Review",          href: "/ronyx/payroll",                  icon: "💵" },
-            { label: "RMIS Monitor",            href: "/ronyx/compliance/rmis-monitor",  icon: "📡" },
+            { label: "CCB Sentinel",            href: "/ronyx/compliance/rmis-monitor",  icon: "📡" },
             { label: "Compliance Center",       href: "/ronyx/compliance",               icon: "🛡️" },
           ].map(l => (
             <Link key={l.href} href={l.href}

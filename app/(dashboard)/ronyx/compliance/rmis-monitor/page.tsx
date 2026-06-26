@@ -59,10 +59,10 @@ export default function RmisMonitorPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: "1.4rem" }}>📡</span>
-              <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 900, color: "#fff" }}>RMIS Monitor</h1>
+              <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 900, color: "#fff" }}>CCB Sentinel</h1>
             </div>
             <p style={{ margin: 0, color: "rgba(255,255,255,0.75)", fontSize: "0.9rem" }}>
-              Real-time RMIS compliance notes · Classification · Dispatch hold detection
+              Compliance note classification · Clearance status · Dispatch hold detection
             </p>
           </div>
           <Link href="/ronyx/dispatch/daily-import"
@@ -109,14 +109,14 @@ export default function RmisMonitorPage() {
           <span style={{ marginLeft: "auto", fontSize: "0.78rem", color: "#94a3b8" }}>{filtered.length} of {rows.length} records</span>
         </div>
 
-        {loading && <div style={{ textAlign: "center", padding: 48, color: "#94a3b8" }}>Loading RMIS data...</div>}
+        {loading && <div style={{ textAlign: "center", padding: 48, color: "#94a3b8" }}>Loading CCB data...</div>}
 
         {!loading && rows.length === 0 && (
           <div style={{ background: "#fff", border: "2px dashed #cbd5e1", borderRadius: 12, padding: "48px 32px", textAlign: "center" }}>
             <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>📡</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>No RMIS data yet</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>No CCB data yet</div>
             <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: 20 }}>
-              Import a dispatch CSV with RMIS compliance notes to see classifications here.
+              Import a dispatch CSV with compliance notes to see clearance status here.
             </div>
             <Link href="/ronyx/dispatch/daily-import"
               style={{ background: "#7c3aed", color: "#fff", padding: "12px 28px", borderRadius: 8, fontWeight: 700, textDecoration: "none" }}>
@@ -130,7 +130,7 @@ export default function RmisMonitorPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
               <thead>
                 <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                  {["Carrier / Driver","Truck","RMIS Note","Severity","Action Required","Date"].map(h => (
+                  {["Carrier / Driver","Truck","Clearance Note","Severity","Action Required","Date"].map(h => (
                     <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: "#475569", fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
                   ))}
                 </tr>

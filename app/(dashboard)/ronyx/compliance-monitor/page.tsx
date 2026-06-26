@@ -146,7 +146,7 @@ type RmisImport = {
   certifications_cancelled: string;
   reason: string; source: string; forwarded_by: string;
 };
-const EMPTY_RMIS: RmisImport = { carrier_name:"", mc_number:"", dot_number:"", old_status:"Certified", new_status:"Non-Certified", status_change_date:"", certifications_cancelled:"", reason:"", source:"RMIS Status Change History", forwarded_by:"" };
+const EMPTY_RMIS: RmisImport = { carrier_name:"", mc_number:"", dot_number:"", old_status:"Certified", new_status:"Non-Certified", status_change_date:"", certifications_cancelled:"", reason:"", source:"Compliance Status Change History", forwarded_by:"" };
 
 /* ─── Main ───────────────────────────────────────── */
 export default function ComplianceMonitorPage() {
@@ -182,7 +182,7 @@ export default function ComplianceMonitorPage() {
     const newStatus: CarrierStatus = rmisForm.new_status.includes("Non") ? "Non-Certified" : rmisForm.new_status.includes("Warn") || rmisForm.new_status.includes("Warning") ? "Warning" : "Certified";
     if (existing) {
       const updated = { ...existing, status: newStatus, status_changed_date: rmisForm.status_change_date, status_reason: rmisForm.reason || rmisForm.certifications_cancelled, last_rmis_check: rmisForm.status_change_date, dispatch_eligible: newStatus === "Certified", settlement_eligible: newStatus === "Certified", rmis_status: rmisForm.new_status, audit_trail: [entry, ...(existing.audit_trail || [])] };
-      const alert: Alert = { id: uid(), severity: newStatus === "Non-Certified" ? "Critical" : "Warning", title: `Carrier ${newStatus}`, detail: `${rmisForm.carrier_name} — ${rmisForm.reason || rmisForm.certifications_cancelled || "Status changed from RMIS report."}`, carrier_id: existing.id, carrier_name: rmisForm.carrier_name, ts: new Date().toISOString(), resolved: false };
+      const alert: Alert = { id: uid(), severity: newStatus === "Non-Certified" ? "Critical" : "Warning", title: `Carrier ${newStatus}`, detail: `${rmisForm.carrier_name} — ${rmisForm.reason || rmisForm.certifications_cancelled || "Status changed from compliance report."}`, carrier_id: existing.id, carrier_name: rmisForm.carrier_name, ts: new Date().toISOString(), resolved: false };
       persistAlerts([alert, ...alerts]);
       persist(carriers.map(c => c.id === existing.id ? updated : c));
       if (selected?.id === existing.id) setSelected(updated);
@@ -247,7 +247,7 @@ export default function ComplianceMonitorPage() {
               <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Real-time carrier compliance — who can work, who is blocked, and what changed.</p>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => setShowRmis(s=>!s)} style={{ ...primaryBtn, background: "#7c3aed" }}>⬆ Import RMIS Report</button>
+              <button onClick={() => setShowRmis(s=>!s)} style={{ ...primaryBtn, background: "#7c3aed" }}>⬆ Import Compliance Report</button>
               <button onClick={() => setShowAddCarrier(s=>!s)} style={primaryBtn}>+ Add Carrier</button>
             </div>
           </div>
@@ -296,8 +296,8 @@ export default function ComplianceMonitorPage() {
         {/* RMIS Import Form */}
         {showRmis && (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "20px 24px", marginBottom: 16 }}>
-            <h3 style={{ margin: "0 0 6px", fontWeight: 800 }}>Import RMIS / Status Change Report</h3>
-            <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "0.82rem" }}>Enter details from a RMIS email, PDF, or status change notification to update carrier compliance instantly.</p>
+            <h3 style={{ margin: "0 0 6px", fontWeight: 800 }}>Import Compliance / Status Change Report</h3>
+            <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "0.82rem" }}>Enter details from a compliance email, PDF, or status change notification to update carrier compliance instantly.</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px 16px" }}>
               <div style={{ gridColumn: "1/-1" }}>
                 <label style={lbl}>Carrier / Company Name *</label>
@@ -317,7 +317,7 @@ export default function ComplianceMonitorPage() {
                 </select>
               </div>
               <div style={{ gridColumn: "1/-1" }}><label style={lbl}>Certifications Cancelled / Changed</label><input value={rmisForm.certifications_cancelled} onChange={e=>setRmisForm(f=>({...f,certifications_cancelled:e.target.value}))} style={inp} placeholder="Auto, General Liability, Cargo" /></div>
-              <div style={{ gridColumn: "1/-1" }}><label style={lbl}>Reason / Notes</label><input value={rmisForm.reason} onChange={e=>setRmisForm(f=>({...f,reason:e.target.value}))} style={inp} placeholder="Insurance policy cancelled per RMIS notification" /></div>
+              <div style={{ gridColumn: "1/-1" }}><label style={lbl}>Reason / Notes</label><input value={rmisForm.reason} onChange={e=>setRmisForm(f=>({...f,reason:e.target.value}))} style={inp} placeholder="Insurance policy cancelled per compliance notification" /></div>
               <div><label style={lbl}>Source</label><input value={rmisForm.source} onChange={e=>setRmisForm(f=>({...f,source:e.target.value}))} style={inp} /></div>
               <div><label style={lbl}>Forwarded By</label><input value={rmisForm.forwarded_by} onChange={e=>setRmisForm(f=>({...f,forwarded_by:e.target.value}))} style={inp} placeholder="Sylvia" /></div>
             </div>
@@ -325,7 +325,7 @@ export default function ComplianceMonitorPage() {
               <strong>System will automatically:</strong> Update carrier compliance status · Block/unblock dispatch · Apply settlement hold · Create compliance alert · Add audit trail entry
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button onClick={applyRmisImport} style={{ ...primaryBtn, background: "#7c3aed" }}>Apply RMIS Update</button>
+              <button onClick={applyRmisImport} style={{ ...primaryBtn, background: "#7c3aed" }}>Apply Compliance Update</button>
               <button onClick={() => setShowRmis(false)} style={ghostBtn}>Cancel</button>
             </div>
           </div>
@@ -471,7 +471,7 @@ export default function ComplianceMonitorPage() {
               <span>MC: {selected.mc_number||"—"}</span>
               <span>DOT: {selected.dot_number||"—"}</span>
               {selected.status_changed_date && <span>Status changed: {fmtDate(selected.status_changed_date)}</span>}
-              {selected.last_rmis_check && <span>Last RMIS check: {fmtDate(selected.last_rmis_check)}</span>}
+              {selected.last_rmis_check && <span>Last compliance check: {fmtDate(selected.last_rmis_check)}</span>}
             </div>
             {selected.status_reason && <div style={{ marginTop: 8, color: "#fca5a5", fontSize: "0.82rem", fontWeight: 600 }}>Reason: {selected.status_reason}</div>}
           </div>
@@ -584,7 +584,7 @@ export default function ComplianceMonitorPage() {
                 <div style={{ color: "#86efac", fontWeight: 700, textAlign: "center", padding: "20px 0" }}>✓ Carrier is Certified — all clear.</div>
               )}
               <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-                <button onClick={() => { setView("dashboard"); setShowRmis(true); }} style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>Upload RMIS Update</button>
+                <button onClick={() => { setView("dashboard"); setShowRmis(true); }} style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>Upload Compliance Update</button>
                 {!selected.dispatch_eligible && !selected.manager_override && <button onClick={() => { const note = prompt("Manager name and override reason:"); if (note) managerOverride(selected.id, note); }} style={{ background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>Manager Override</button>}
                 <button onClick={() => setActiveTab("audit")} style={{ ...ghostBtn, background: "transparent", color: "#cbd5e1", border: "1px solid #334155", fontSize: "0.75rem" }}>View Audit Trail</button>
               </div>
