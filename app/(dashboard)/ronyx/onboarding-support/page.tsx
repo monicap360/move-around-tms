@@ -16,7 +16,7 @@ export default function RonyxOnboardingSupportPage() {
       const data = await res.json();
       setTasks(data.tasks || []);
     } catch (err) {
-      console.error("Failed to load Larry tasks", err);
+      console.error("Failed to load Onyx tasks", err);
       setTasks([]);
     }
   }
@@ -109,9 +109,9 @@ export default function RonyxOnboardingSupportPage() {
         <section className="larry-panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div>
-              <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Larry — Onboarding Partner</h2>
+              <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>✨ Onyx — AI Onboarding Partner</h2>
               <p style={{ color: "rgba(15,23,42,0.7)" }}>
-                Larry keeps your setup optimized 24/7 with guided tasks and progress tracking.
+                Onyx is an AI assistant that keeps your setup optimized 24/7 with guided tasks and progress tracking.
               </p>
             </div>
             <button className="ronyx-action">Optimize Setup</button>

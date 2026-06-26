@@ -129,7 +129,7 @@ const AUDIT_LOG = [
   { ts:"Jun 15 · 10:20", user:"Monica P.", action:"Imported Customers batch",             module:"Customers",  result:"8 records"             },
   { ts:"Jun 14 · 16:45", user:"System",    action:"Dispatch Guard™ automated run",        module:"Dispatch",   result:"3 compliance alerts"   },
   { ts:"Jun 14 · 08:00", user:"Monica P.", action:"Opened Support Request SR-002",        module:"Payroll",    result:"Awaiting response"     },
-  { ts:"Jun 13 · 15:30", user:"System",    action:"Sage AI readiness scan completed",     module:"All",        result:"Readiness: 68%"        },
+  { ts:"Jun 13 · 15:30", user:"System",    action:"Onyx AI readiness scan completed",     module:"All",        result:"Readiness: 68%"        },
   { ts:"Jun 10 · 09:00", user:"Monica P.", action:"Imported Owner Operators batch",       module:"Owner Ops",  result:"16 companies"          },
 ];
 
@@ -357,16 +357,16 @@ export default function CustomerLaunchCenterPage() {
           </div>
         </div>
 
-        {/* Sage — AI Launch Guide */}
+        {/* Onyx — AI Launch Guide */}
         <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.22)", borderRadius:16, padding:24, marginBottom:24 }}>
           <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
             <div style={{ width:52, height:52, borderRadius:15, background:"linear-gradient(135deg,#8b5cf6,#06b6d4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0, boxShadow:"0 0 22px rgba(139,92,246,0.45)" }}>✨</div>
             <div style={{ flex:1 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3, flexWrap:"wrap" as const }}>
-                <span style={{ fontWeight:800, fontSize:16, color:PURP }}>Sage — Your Launch Guide™</span>
+                <span style={{ fontWeight:800, fontSize:16, color:PURP }}>Onyx — Your Launch Guide™</span>
                 <span style={{ fontSize:10, fontWeight:800, color:"#a78bfa", background:"rgba(139,92,246,0.18)", border:"1px solid rgba(139,92,246,0.35)", padding:"2px 8px", borderRadius:20, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>✨ AI Assistant</span>
               </div>
-              <div style={{ fontSize:12, color:MUTE, marginBottom:12 }}>Sage is an <b>AI assistant</b> that watches your setup progress, finds missing information, and recommends the next best action. For anything it can't handle, message a real person below.</div>
+              <div style={{ fontSize:12, color:MUTE, marginBottom:12 }}>Onyx is an <b>AI assistant</b> that watches your setup progress, finds missing information, and recommends the next best action. For anything it can't handle, message a real person below.</div>
               <div style={{ background:"rgba(139,92,246,0.09)", border:"1px solid rgba(139,92,246,0.18)", borderRadius:10, padding:"14px 16px", marginBottom:12 }}>
                 <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:PURP, marginBottom:6 }}>✨ AI Recommendation</div>
                 <div style={{ fontSize:14, color:TXT, lineHeight:1.65 }}>
@@ -378,7 +378,7 @@ export default function CustomerLaunchCenterPage() {
               </div>
               <div style={{ display:"flex", gap:10, flexWrap:"wrap" as const }}>
                 <button style={{ background:PURP, color:"#fff", padding:"9px 18px", borderRadius:8, fontSize:13, fontWeight:700, border:"none", cursor:"pointer" }}>Start Recommended Task</button>
-                <button style={{ background:"rgba(139,92,246,0.14)", color:PURP, border:"1px solid rgba(139,92,246,0.28)", padding:"9px 18px", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>✨ Ask Sage (AI)</button>
+                <button style={{ background:"rgba(139,92,246,0.14)", color:PURP, border:"1px solid rgba(139,92,246,0.28)", padding:"9px 18px", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>✨ Ask Onyx (AI)</button>
                 <button onClick={() => { setSupportType("Talk to Account Manager"); setTab("support"); setSupportForm(true); }} style={{ background:"rgba(6,182,212,0.14)", color:"#0891b2", border:"1px solid rgba(6,182,212,0.32)", padding:"9px 18px", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>💬 Message Your Account Manager</button>
                 <button onClick={() => setTab("launch-plan")} style={{ background:"transparent", color:MUTE, border:`1px solid ${BORD}`, padding:"9px 18px", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer" }}>View Launch Checklist</button>
               </div>
