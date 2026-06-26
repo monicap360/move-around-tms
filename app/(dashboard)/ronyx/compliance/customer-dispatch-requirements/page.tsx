@@ -246,7 +246,12 @@ export default function CustomerDispatchRequirementsPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
             <div style={{ minWidth: 280 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                <span style={{ width: 40, height: 40, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#06b6d4,#3b82f6)", boxShadow: "0 0 22px rgba(34,211,238,0.55)", fontSize: 19 }}>🛡️</span>
+                <span style={{ width: 44, height: 44, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#0891b2,#2563eb)", boxShadow: "0 6px 18px rgba(37,99,235,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2.2l7 2.6v5.9c0 4.7-3 8-7 10-4-2-7-5.3-7-10V4.8l7-2.6z" fill="#ffffff" fillOpacity="0.16" stroke="#ffffff" strokeWidth="1.4" strokeLinejoin="round" />
+                    <path d="M8.4 12.3l2.5 2.5 4.7-5.1" stroke="#ffffff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
                 <div>
                   <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px", textShadow: "0 0 22px rgba(56,189,248,0.35)" }}>Clearance Check™</div>
                   <div style={{ fontSize: 10.5, fontWeight: 800, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.16em" }}>CCB Shield · Pre-Dispatch Gate</div>
