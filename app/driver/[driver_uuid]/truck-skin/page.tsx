@@ -13,8 +13,6 @@ const SKINS = [
   { name: "Pearl White", value: "pearl-white", color: "#f8fafc" },
 ];
 
-export const dynamic = "force-dynamic";
-
 export default function TruckSkinSelector(props) {
   const params = use(props.params);
   const [selected, setSelected] = useState("");

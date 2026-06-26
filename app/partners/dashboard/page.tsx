@@ -147,8 +147,6 @@ interface DashboardStats {
   pendingApprovals: number;
 }
 
-export const dynamic = "force-dynamic";
-
 export default function PartnerDashboard() {
   const { user, profile, partnerInfo, loading } = useRoleBasedAuth();
   const [theme, setTheme] = useState<PartnerTheme | null>(null);

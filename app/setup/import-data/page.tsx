@@ -175,8 +175,6 @@ const IMPORT_TYPES: {
   },
 ];
 
-export const dynamic = "force-dynamic";
-
 export default function DataImportWizard() {
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const [step, setStep] = useState<"select" | "upload" | "map" | "preview" | "import" | "complete">("select");

@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const steps = ["weight", "photo", "ticket", "plant", "material", "review"];
 
-export const dynamic = "force-dynamic";
-
 export default function FastTicketPage(props) {
   const params = use(props.params);
   const [step, setStep] = useState(0);

@@ -34,8 +34,6 @@ interface UserProfile {
   email?: string;
 }
 
-export const dynamic = "force-dynamic";
-
 export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);

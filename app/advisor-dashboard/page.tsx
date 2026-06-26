@@ -43,8 +43,6 @@ function getStatusColor(status: string) {
 // ----------------------
 // MAIN COMPONENT
 // ----------------------
-export const dynamic = "force-dynamic";
-
 export default function AdvisorDashboard() {
   const [agentLeads, setAgentLeads] = useState<any[]>([]);
   const [publicLeads, setPublicLeads] = useState<any[]>([]);

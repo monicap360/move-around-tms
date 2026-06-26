@@ -10,8 +10,6 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 
-export const dynamic = "force-dynamic";
-
 interface PerformanceResult {
   test: string;
   duration: number;

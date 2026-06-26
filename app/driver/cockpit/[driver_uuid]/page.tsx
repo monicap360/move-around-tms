@@ -16,8 +16,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export const dynamic = "force-dynamic";
-
 export default function DriverCockpit(props) {
   const params = use(props.params);
   const [driver, setDriver] = useState(null);

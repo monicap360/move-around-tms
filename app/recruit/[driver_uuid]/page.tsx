@@ -8,8 +8,6 @@ import EndorsementBadge from "../../components/recruiter/EndorsementBadge";
 import RecruiterActionBar from "../../components/recruiter/RecruiterActionBar";
 import TruckPreview from "../../components/recruiter/TruckPreview";
 
-export const dynamic = "force-dynamic";
-
 export default function RecruiterDriverView(props) {
   const params = use(props.params);
   const [driver, setDriver] = useState(null);

@@ -34,8 +34,6 @@ function getStatusColor(status: string) {
   }
 }
 
-export const dynamic = "force-dynamic";
-
 export default function SalesDashboard() {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

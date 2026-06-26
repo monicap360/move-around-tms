@@ -14,8 +14,6 @@ import MaintenanceAlerts from "./components/MaintenanceAlerts";
 import DriverAI from "./components/DriverAI";
 import { supabase } from "../../lib/supabaseClient";
 
-export const dynamic = "force-dynamic";
-
 export default function DriverHUD() {
   const [driver, setDriver] = useState<any>(null);
   const [loading, setLoading] = useState(true);

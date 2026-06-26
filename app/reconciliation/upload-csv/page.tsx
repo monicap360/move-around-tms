@@ -4,8 +4,6 @@
 import { useState, useRef } from "react";
 import { analyzePitCsvHeaders } from "@/lib/csv/headerAnalyzer";
 
-export const dynamic = "force-dynamic";
-
 export default function UploadCsvPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [pitName, setPitName] = useState("");

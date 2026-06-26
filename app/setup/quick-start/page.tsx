@@ -55,8 +55,6 @@ interface FleetData {
   driver_count: number;
 }
 
-export const dynamic = "force-dynamic";
-
 export default function QuickStartWizard() {
   const router = useRouter();
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
