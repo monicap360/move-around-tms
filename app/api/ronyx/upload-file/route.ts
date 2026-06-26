@@ -135,8 +135,72 @@ export async function POST(req: Request) {
     // Table doesn't exist yet — storage still worked, just no DB tracking
   }
 
+  // ── Auto-route the file to the right place: an Owner-Operator COMPANY (contract /
+  // insurance / W-9) OR a DRIVER (CDL / medical / MVR) — matched by name in the filename.
+  let routedToOO: { oo_id: string; company_name: string; doc_type: string; driver?: string } | null = null;
+  if (storageOk && publicUrl) {
+    try {
+      const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      const fileNorm = norm(file.name);
+      const l = file.name.toLowerCase();
+      const isDriverDoc = fileModule === "drivers" || /\b(cdl|dl|licen|medical|med.?card|mvr|psp)\b/.test(l);
+
+      const { data: oos } = await supabaseAdmin
+        .from("ronyx_owner_operators").select("id, company_name").eq("organization_id", orgId);
+      const ooIds = (oos || []).map((o: any) => o.id);
+
+      // every name token (>2 chars) must appear in the filename
+      const nameInFile = (nm: string) => {
+        const toks = norm(nm).split(" ").filter((t) => t.length > 2);
+        return toks.length > 0 && toks.every((t) => fileNorm.includes(t));
+      };
+
+      // 1) DRIVER docs → match an OO driver by name, attach to that OO with a driver-tagged type
+      let driverHit: { name: string; oo_id: string } | null = null;
+      if (isDriverDoc && ooIds.length) {
+        const { data: ooDrivers } = await supabaseAdmin
+          .from("ronyx_oo_drivers").select("name, oo_id").in("oo_id", ooIds);
+        for (const d of ooDrivers || []) { if (d.name && nameInFile(d.name)) { driverHit = { name: d.name, oo_id: d.oo_id }; break; } }
+      }
+
+      // 2) COMPANY docs → match an OO by company name in the filename (longest match wins)
+      let bestOO: any = null;
+      for (const oo of oos || []) {
+        const co = norm(oo.company_name);
+        const core = co.replace(/\b(llc|inc|trucking|transport|transportation|logistics|company|co|services|corp|group)\b/g, "").replace(/\s+/g, " ").trim();
+        if (co && fileNorm.includes(co)) { if (!bestOO || co.length > norm(bestOO.company_name).length) bestOO = oo; }
+        else if (core.length > 3 && fileNorm.includes(core) && !bestOO) bestOO = oo;
+      }
+
+      const attach = async (oo_id: string, company_name: string, doc_type: string, driver?: string) => {
+        await supabaseAdmin.from("ronyx_oo_documents").delete().eq("oo_id", oo_id).eq("doc_type", doc_type);
+        await supabaseAdmin.from("ronyx_oo_documents").insert({ oo_id, doc_type, file_name: file.name, file_url: publicUrl });
+        routedToOO = { oo_id, company_name, doc_type, driver };
+      };
+
+      if (driverHit) {
+        const dt = /medical|med.?card/.test(l) ? `[${driverHit.name}] Medical Card`
+                 : /mvr/.test(l)               ? `[${driverHit.name}] MVR`
+                 :                                `[${driverHit.name}] CDL License`;
+        const oo = (oos || []).find((o: any) => o.id === driverHit!.oo_id);
+        await attach(driverHit.oo_id, oo?.company_name || "", dt, driverHit.name);
+      } else if (bestOO && ["compliance", "contracts"].includes(fileModule)) {
+        const dt =
+          /w-?9|tax|ein/.test(l)              ? "W-9 / Tax Form" :
+          /auto.?liab/.test(l)                ? "Auto Liability Insurance" :
+          /general.?liab/.test(l)             ? "General Liability Insurance" :
+          /cargo/.test(l)                     ? "Cargo Insurance" :
+          /coi|certificate/.test(l)           ? "Insurance Certificate (COI)" :
+          (/contract|agreement|subhauler/.test(l) || fileModule === "contracts") ? "Contract" :
+          "Compliance Document";
+        await attach(bestOO.id, bestOO.company_name, dt);
+      }
+    } catch { /* best-effort routing — file is still stored regardless */ }
+  }
+
   return NextResponse.json({
     ok:           storageOk,
+    routed_to_oo: routedToOO,
     upload_id:    uploadId,
     path:         storagePath,
     bucket:       storageOk ? usedBucket : null,
