@@ -73,6 +73,12 @@ const nextConfig = {
         destination: "https://ronyx.movearoundtms.app/:path*",
         permanent: true,
       },
+      // CCB rebrand: old RMIS Monitor route → CCB Sentinel (keep old links/bookmarks working)
+      {
+        source: "/ronyx/compliance/rmis-monitor",
+        destination: "/ronyx/compliance/ccb-sentinel",
+        permanent: false,
+      },
     ];
   },
 

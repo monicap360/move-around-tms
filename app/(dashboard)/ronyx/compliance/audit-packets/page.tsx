@@ -102,7 +102,7 @@ export default function AuditPacketsPage() {
               { label: "Compliance Center",    href: "/ronyx/compliance",                icon: "🛡️" },
               { label: "Driver Docs",          href: "/ronyx/compliance/driver-docs",     icon: "📄" },
               { label: "Expiring Docs",        href: "/ronyx/compliance/expiring",        icon: "⏰" },
-              { label: "RMIS Monitor",         href: "/ronyx/compliance/rmis-monitor",    icon: "📡" },
+              { label: "CCB Sentinel",         href: "/ronyx/compliance/ccb-sentinel",    icon: "📡" },
               { label: "Owner Operator COIs",  href: "/ronyx/owner-operators/coi-matrix", icon: "📋" },
               { label: "Tickets",              href: "/ronyx/tickets",                    icon: "🎫" },
             ].map(l => (

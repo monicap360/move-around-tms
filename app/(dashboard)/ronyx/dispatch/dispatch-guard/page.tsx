@@ -217,7 +217,7 @@ export default function DispatchGuardPage() {
             { label: "View Dispatch Board",     href: "/ronyx/dispatch/board",           icon: "📋" },
             { label: "Ticket Reconciliation",   href: "/ronyx/tickets?tab=reconciliation", icon: "🔍" },
             { label: "Payroll Review",          href: "/ronyx/payroll",                  icon: "💵" },
-            { label: "CCB Sentinel",            href: "/ronyx/compliance/rmis-monitor",  icon: "📡" },
+            { label: "CCB Sentinel",            href: "/ronyx/compliance/ccb-sentinel",  icon: "📡" },
             { label: "Compliance Center",       href: "/ronyx/compliance",               icon: "🛡️" },
           ].map(l => (
             <Link key={l.href} href={l.href}
