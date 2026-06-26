@@ -1376,11 +1376,18 @@ export default function OwnerOperatorsPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 5 }}>
               <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{selected.company_name}</h1>
-              <button
-                onClick={() => setOoEditModal({ id: selected.id, form: { company_name: selected.company_name, contact_name: selected.contact_name, contact_phone: selected.contact_phone, contact_email: selected.contact_email, business_address: selected.business_address, mc_number: selected.mc_number, dot_number: selected.dot_number, ein: selected.ein, website: selected.website || "", notes: selected.notes || "", insurance_agent_name: selected.insurance_agent_name || "", insurance_agent_phone: selected.insurance_agent_phone || "", insurance_agent_email: selected.insurance_agent_email || "" }, saving: false })}
-                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", backdropFilter: "blur(4px)" }}>
-                ✏ Edit Profile
-              </button>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flex: 1, minWidth: 220 }}>
+                <span style={{ fontSize: "0.9rem" }}>📍</span>
+                <input
+                  key={selected.id + "addr"}
+                  defaultValue={selected.business_address || ""}
+                  placeholder="Add company address…"
+                  title="Click to edit address — saves automatically"
+                  onBlur={e => { const v = e.target.value.trim(); if (v !== (selected.business_address || "")) { updateSelected({ ...selected, business_address: v }); flash("Address saved."); } }}
+                  onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  style={{ flex: 1, minWidth: 180, border: "none", borderBottom: "1px dashed rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.06)", color: "#e2e8f0", fontSize: "0.8rem", fontWeight: 600, outline: "none", padding: "4px 10px", borderRadius: 6 }}
+                />
+              </span>
               <button
                 onClick={() => setOOActive(selected, !ooIsActive(selected))}
                 title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
@@ -1456,8 +1463,8 @@ export default function OwnerOperatorsPage() {
               </span>
             );
           })}
-          {selected.contact_phone && <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16 }}>📞 <span style={{ color:"#cbd5e1" }}>{selected.contact_phone}</span></span>}
-          {selected.contact_email && <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16 }}>✉ <span style={{ color:"#cbd5e1" }}>{selected.contact_email}</span></span>}
+          <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16, display:"inline-flex", alignItems:"center", gap:4 }}>📞 <input key={selected.id+"ph"} defaultValue={selected.contact_phone||""} placeholder="add phone" title="Click to edit — saves automatically" onBlur={e=>{const v=e.target.value.trim(); if(v!==(selected.contact_phone||"")){updateSelected({...selected,contact_phone:v}); flash("Phone saved.");}}} onKeyDown={e=>{if(e.key==="Enter")(e.target as HTMLInputElement).blur();}} style={{ border:"none", borderBottom:"1px dashed #64748b", background:"transparent", color:"#cbd5e1", fontSize:"0.82rem", outline:"none", padding:"1px 2px", width:130 }} /></span>
+          <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16, display:"inline-flex", alignItems:"center", gap:4 }}>✉ <input key={selected.id+"em"} defaultValue={selected.contact_email||""} placeholder="add email" title="Click to edit — saves automatically" onBlur={e=>{const v=e.target.value.trim(); if(v!==(selected.contact_email||"")){updateSelected({...selected,contact_email:v}); flash("Email saved.");}}} onKeyDown={e=>{if(e.key==="Enter")(e.target as HTMLInputElement).blur();}} style={{ border:"none", borderBottom:"1px dashed #64748b", background:"transparent", color:"#cbd5e1", fontSize:"0.82rem", outline:"none", padding:"1px 2px", width:180 }} /></span>
           {(() => {
             const addr = [selected.company_address_line1, [selected.company_city, selected.company_state].filter(Boolean).join(", "), selected.company_zip].filter(Boolean).join(" · ") || selected.business_address;
             if (!addr) return null;
