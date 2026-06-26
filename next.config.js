@@ -88,17 +88,15 @@ const nextConfig = {
     const carriers = ["ronyx", "solis", "garcia", "ymr", "leah", "jjalvarado"];
 
     const rules = carriers.flatMap((slug) => [
-      // Bare "/" on subdomain → /slug
+      // Bare "/" on subdomain → /slug (the portal). Sub-paths already include the
+      // /slug prefix in the app's own links, so they resolve directly. Do NOT rewrite
+      // "/:path*" here — on the production host it double-prefixes (/ronyx/x ->
+      // /ronyx/ronyx/x) and 404s every dynamic detail page. The bare "/" is also
+      // handled by middleware.ts; this rule is a harmless backstop.
       {
         source: "/",
         has: [{ type: "host", value: `${slug}.movearoundtms.app` }],
         destination: `/${slug}`,
-      },
-      // Any other path on subdomain → /slug/:path*
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: `${slug}.movearoundtms.app` }],
-        destination: `/${slug}/:path*`,
       },
     ]);
 
