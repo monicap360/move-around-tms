@@ -8,6 +8,9 @@
 //     reason). Reprinting the tail guarantees the actual error reaches the log.
 import { spawn } from "node:child_process";
 import path from "node:path";
+import os from "node:os";
+
+console.log(`[render-build] container: ${(os.totalmem() / 1e9).toFixed(1)}GB RAM, ${os.cpus().length} CPUs, node ${process.version}, platform ${process.platform}`);
 
 const nextBin = path.resolve("node_modules", "next", "dist", "bin", "next");
 const heapCap = "--max-old-space-size=6144";
