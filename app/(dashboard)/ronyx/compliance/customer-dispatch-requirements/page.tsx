@@ -71,10 +71,9 @@ function CustomerCard({ customer, reqs, overrides }: { customer: string; reqs: R
               ⚠ {expiring.length} override{expiring.length > 1 ? "s" : ""} expiring
             </span>
           )}
-          <Link href={`/ronyx/compliance/customer-dispatch-requirements/${encodeURIComponent(customer)}`}>
-            <button style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1d4ed8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-              Configure →
-            </button>
+          <Link href={`/ronyx/compliance/customer-dispatch-requirements/${encodeURIComponent(customer)}`}
+            style={{ display: "inline-block", padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1d4ed8", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "none" }}>
+            Configure →
           </Link>
         </div>
       </div>
@@ -137,10 +136,9 @@ function MissingQueue({ reqs }: { reqs: Req[] }) {
                 <td style={{ padding: "7px 10px", color: "#0f172a" }}>{r.requirement_label}</td>
                 <td style={{ padding: "7px 10px", color: "#64748b" }}>{r.assigned_role ?? "—"}</td>
                 <td style={{ padding: "7px 10px" }}>
-                  <Link href={`/ronyx/compliance/customer-dispatch-requirements/${encodeURIComponent(r.customer_name)}`}>
-                    <button style={{ padding: "3px 10px", borderRadius: 5, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                      Review
-                    </button>
+                  <Link href={`/ronyx/compliance/customer-dispatch-requirements/${encodeURIComponent(r.customer_name)}`}
+                    style={{ display: "inline-block", padding: "3px 10px", borderRadius: 5, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "none" }}>
+                    Review
                   </Link>
                 </td>
               </tr>
@@ -274,10 +272,9 @@ export default function CustomerDispatchRequirementsPage() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-          <Link href="/ronyx/compliance/overrides">
-            <button style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: "#1d4ed8", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-              Active Overrides
-            </button>
+          <Link href="/ronyx/compliance/overrides"
+            style={{ display: "inline-block", padding: "6px 14px", borderRadius: 7, border: "none", background: "#1d4ed8", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "none" }}>
+            Active Overrides
           </Link>
           <button
             onClick={() => setShowBuilder(true)}
