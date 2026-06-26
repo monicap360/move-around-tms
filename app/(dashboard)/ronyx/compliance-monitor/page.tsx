@@ -113,9 +113,20 @@ function statusColor(s: CertStatus | CarrierStatus | string): [string, string] {
   return ["#f1f5f9","#475569"];
 }
 
+// Display-only relabel (internal status VALUES are unchanged — logic untouched).
+// Avoids the word "Certified" per CCB copy rules.
+const STATUS_LABEL: Record<string, string> = {
+  "Certified": "Clear",
+  "Non-Certified": "Blocked",
+  "Warning": "Needs Review",
+  "Valid": "Clear",
+  "Pending Review": "Pending Verification",
+};
+const statusLabel = (s: string) => STATUS_LABEL[s] || s;
+
 function StatusBadge({ status, size = "sm" }: { status: string; size?: "sm" | "lg" }) {
   const [bg, text] = statusColor(status);
-  return <span style={{ background: bg, color: text, padding: size==="lg"?"8px 18px":"3px 10px", borderRadius: 20, fontWeight: 800, fontSize: size==="lg"?"0.9rem":"0.72rem", display: "inline-block" }}>{status}</span>;
+  return <span style={{ background: bg, color: text, padding: size==="lg"?"8px 18px":"3px 10px", borderRadius: 20, fontWeight: 800, fontSize: size==="lg"?"0.9rem":"0.72rem", display: "inline-block" }}>{statusLabel(status)}</span>;
 }
 
 function certPriority(s: CertStatus): number {
@@ -182,7 +193,7 @@ export default function ComplianceMonitorPage() {
     const newStatus: CarrierStatus = rmisForm.new_status.includes("Non") ? "Non-Certified" : rmisForm.new_status.includes("Warn") || rmisForm.new_status.includes("Warning") ? "Warning" : "Certified";
     if (existing) {
       const updated = { ...existing, status: newStatus, status_changed_date: rmisForm.status_change_date, status_reason: rmisForm.reason || rmisForm.certifications_cancelled, last_rmis_check: rmisForm.status_change_date, dispatch_eligible: newStatus === "Certified", settlement_eligible: newStatus === "Certified", rmis_status: rmisForm.new_status, audit_trail: [entry, ...(existing.audit_trail || [])] };
-      const alert: Alert = { id: uid(), severity: newStatus === "Non-Certified" ? "Critical" : "Warning", title: `Carrier ${newStatus}`, detail: `${rmisForm.carrier_name} — ${rmisForm.reason || rmisForm.certifications_cancelled || "Status changed from compliance report."}`, carrier_id: existing.id, carrier_name: rmisForm.carrier_name, ts: new Date().toISOString(), resolved: false };
+      const alert: Alert = { id: uid(), severity: newStatus === "Non-Certified" ? "Critical" : "Warning", title: `Carrier ${statusLabel(newStatus)}`, detail: `${rmisForm.carrier_name} — ${rmisForm.reason || rmisForm.certifications_cancelled || "Status changed from compliance report."}`, carrier_id: existing.id, carrier_name: rmisForm.carrier_name, ts: new Date().toISOString(), resolved: false };
       persistAlerts([alert, ...alerts]);
       persist(carriers.map(c => c.id === existing.id ? updated : c));
       if (selected?.id === existing.id) setSelected(updated);
@@ -308,12 +319,12 @@ export default function ComplianceMonitorPage() {
               <div><label style={lbl}>Status Change Date *</label><input type="date" value={rmisForm.status_change_date} onChange={e=>setRmisForm(f=>({...f,status_change_date:e.target.value}))} style={inp} /></div>
               <div><label style={lbl}>Old Status</label>
                 <select value={rmisForm.old_status} onChange={e=>setRmisForm(f=>({...f,old_status:e.target.value}))} style={inp}>
-                  {["Certified","Warning","Non-Certified"].map(s=><option key={s}>{s}</option>)}
+                  {["Certified","Warning","Non-Certified"].map(s=><option key={s} value={s}>{statusLabel(s)}</option>)}
                 </select>
               </div>
               <div><label style={lbl}>New Status *</label>
                 <select value={rmisForm.new_status} onChange={e=>setRmisForm(f=>({...f,new_status:e.target.value}))} style={inp}>
-                  {["Certified","Warning","Non-Certified"].map(s=><option key={s}>{s}</option>)}
+                  {["Certified","Warning","Non-Certified"].map(s=><option key={s} value={s}>{statusLabel(s)}</option>)}
                 </select>
               </div>
               <div style={{ gridColumn: "1/-1" }}><label style={lbl}>Certifications Cancelled / Changed</label><input value={rmisForm.certifications_cancelled} onChange={e=>setRmisForm(f=>({...f,certifications_cancelled:e.target.value}))} style={inp} placeholder="Auto, General Liability, Cargo" /></div>
@@ -744,7 +755,7 @@ export default function ComplianceMonitorPage() {
             { title: "Place Settlements on Hold", desc: "Mark all unsettled loads for this carrier as On Hold pending compliance.", action: () => { flash("Settlement hold applied — open the Settlement Center to manage individual loads."); }, color: "#dc2626" },
             { title: "Block Dispatch", desc: "Manually block this carrier from new load assignments.", action: () => { updateSelected({ ...selected, dispatch_eligible: false, manager_override: false }); flash(`${selected.company_name} dispatch blocked.`); }, color: "#dc2626" },
             { title: "Manager Override — Allow Dispatch", desc: "Allow dispatch with manager approval. A note is required and logged to audit trail.", action: () => { const note = prompt("Manager name and reason for override:"); if (note) managerOverride(selected.id, note); }, color: "#7c3aed" },
-            { title: "Mark Certified", desc: "Manually mark carrier as Certified after receiving and verifying updated documents.", action: () => { const log: AuditEntry = { id: uid(), ts: new Date().toISOString(), carrier_name: selected.company_name, old_status: selected.status, new_status: "Certified", source: "Manual Update", changed_by: "Office", notes: "Carrier manually marked Certified after document verification." }; updateSelected({ ...selected, status: "Certified", dispatch_eligible: true, settlement_eligible: true, manager_override: false, last_rmis_check: new Date().toISOString().slice(0,10), audit_trail: [log, ...selected.audit_trail] }); flash(`${selected.company_name} marked Certified.`); }, color: "#15803d" },
+            { title: "Mark Cleared", desc: "Manually mark carrier as Clear after receiving and verifying updated documents.", action: () => { const log: AuditEntry = { id: uid(), ts: new Date().toISOString(), carrier_name: selected.company_name, old_status: selected.status, new_status: "Certified", source: "Manual Update", changed_by: "Office", notes: "Carrier manually marked Clear after document verification." }; updateSelected({ ...selected, status: "Certified", dispatch_eligible: true, settlement_eligible: true, manager_override: false, last_rmis_check: new Date().toISOString().slice(0,10), audit_trail: [log, ...selected.audit_trail] }); flash(`${selected.company_name} marked Clear.`); }, color: "#15803d" },
           ].map(({ title, desc, action, color }) => (
             <div key={title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <div>
