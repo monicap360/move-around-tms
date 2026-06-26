@@ -1099,7 +1099,7 @@ export default function OwnerOperatorsPage() {
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 8 }}>
-            <a href="/ronyx/documents" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📄 Documents</a>
+            <a href="/ronyx/documents/vault" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📁 Document Vault</a>
             <a href="/ronyx/owner-operators/needs-reupload" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", color: "#92400e", borderColor: "#fde68a", background: "#fffbeb" }}>⚠ Needs Re-Upload</a>
             <a href="/ronyx/owner-operators/import" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📋 Bulk Import</a>
             <button onClick={() => setShowAddCompany(s=>!s)} style={primaryBtn}>+ Add Owner Operator</button>
