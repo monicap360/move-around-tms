@@ -1157,6 +1157,15 @@ export default function OwnerOperatorsPage() {
                       </span>
                       {holdJobs > 0 && <span style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 8px", borderRadius: 12, fontSize: "0.7rem", fontWeight: 700 }}>{holdJobs} settlement hold{holdJobs>1?"s":""}</span>}
                     </div>
+                    {(oo.business_address || oo.contact_name || oo.contact_phone || oo.contact_email) && (
+                      <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 5, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+                        {oo.business_address && <span>📍 {oo.business_address}</span>}
+                        {oo.contact_name && <span>👤 {oo.contact_name}</span>}
+                        {oo.contact_phone && <span>📞 {oo.contact_phone}</span>}
+                        {oo.contact_email && <span>✉ {oo.contact_email}</span>}
+                        {(oo.mc_number || oo.dot_number) && <span style={{ color:"#94a3b8" }}>{[oo.mc_number && `MC ${oo.mc_number}`, oo.dot_number && `DOT ${oo.dot_number}`].filter(Boolean).join(" · ")}</span>}
+                      </div>
+                    )}
                     {!eligible && <div style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: 3 }}>{blocks.join(" · ")}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0, flexWrap: "wrap" }}>
