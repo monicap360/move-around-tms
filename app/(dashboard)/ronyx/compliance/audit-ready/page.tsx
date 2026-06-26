@@ -10,6 +10,7 @@ type AuditIssue = {
   severity: "critical" | "warning" | "low";
   title: string;
   entity_name?: string;
+  entity_detail?: string;
   entity_type?: string;
   entity_id?: string;
   assigned_role?: string;
@@ -274,7 +275,7 @@ export default function BeAuditReadyPage() {
         };
         const issues = Object.values(checks).filter(v => ["Missing","Expired","Out of Service"].includes(v)).length;
         const overall = issues === 0 ? "ready" : issues <= 2 ? "warning" : issues <= 4 ? "at_risk" : "blocked";
-        return { id: t.id, truck_number: t.truck_number || t.id.slice(0, 8), ...checks, overall } as unknown as FleetAudit;
+        return { id: t.id, truck_number: t.truck_number || t.id.slice(0, 8), company_name: t.company_name || t.owner_operator_name || t.carrier_name || "", make: [t.year, t.make, t.model].filter(Boolean).join(" "), vin: t.vin || "", plate: t.plate || "", ...checks, overall } as unknown as FleetAudit;
       });
 
       const parsedOOs: OOAudit[] = rawOOs.map(o => {
@@ -322,7 +323,9 @@ export default function BeAuditReadyPage() {
           urgentIssues.push({
             id: `t-${t.id}`, severity: t.overall === "blocked" ? "critical" : "warning",
             title: `Truck ${FLEET_LABELS[missingField] || missingField} ${(t[missingField as keyof FleetAudit] as string || "").toLowerCase()}`,
-            entity_name: t.truck_number, entity_type: "truck", entity_id: t.id,
+            entity_name: `Truck #${t.truck_number}`,
+            entity_detail: [(t as any).company_name, (t as any).make, (t as any).vin ? `VIN ${(t as any).vin}` : (t as any).plate ? `Plate ${(t as any).plate}` : ""].filter(Boolean).join("  ·  "),
+            entity_type: "truck", entity_id: t.id,
             assigned_role: "Fleet Admin", action_label: "Review Truck",
             action_href: `/ronyx/fleet`,
           });
@@ -562,6 +565,9 @@ export default function BeAuditReadyPage() {
                       <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
                         {issue.entity_name} &nbsp;·&nbsp; Role: {issue.assigned_role}
                       </div>
+                      {issue.entity_detail && (
+                        <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: 1 }}>{issue.entity_detail}</div>
+                      )}
                     </div>
                     {issue.action_href && (
                       <Link href={issue.action_href}
