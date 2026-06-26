@@ -538,6 +538,7 @@ export default function OwnerOperatorsPage() {
   const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string; ooId?: string; docType?: string } | null>(null);
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
+  const [moveModal, setMoveModal] = useState<{ ooId: string; ooName: string; targetId: string } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
   const [verifyDrawerOO, setVerifyDrawerOO] = useState<{ id: string; name: string } | null>(null);
 
@@ -707,6 +708,32 @@ export default function OwnerOperatorsPage() {
     if (!res.ok) { flash("Delete failed."); return; }
     persist(companies.filter((c) => c.id !== oo.id));
     flash(`${oo.company_name} deleted.`);
+  }
+
+  // Reclassify (status changes): move a mis-filed OO to Drivers, or promote a driver to OO.
+  async function confirmMoveToDriver() {
+    if (!moveModal?.targetId) { flash("Pick a company to move the driver under."); return; }
+    const res = await fetch(`/api/ronyx/owner-operators/${moveModal.ooId}/move-to-driver`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_oo_id: moveModal.targetId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { flash(data.error || "Move failed."); return; }
+    flash(`✅ "${moveModal.ooName}" moved to Drivers.`);
+    setMoveModal(null);
+    setView("list");
+    loadCompanies();
+  }
+
+  async function promoteDriverToOO(driverId: string, driverName: string) {
+    const res = await fetch(`/api/ronyx/owner-operators/from-driver`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driver_id: driverId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { flash(data.error || "Promote failed."); return; }
+    flash(`✅ ${driverName} promoted to its own Owner-Operator company.`);
+    loadCompanies();
   }
 
   // Driver CRUD
@@ -1483,6 +1510,12 @@ export default function OwnerOperatorsPage() {
                 title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
                 style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 {ooIsActive(selected) ? "● Mark Not Active" : "○ Reactivate"}
+              </button>
+              <button
+                onClick={() => setMoveModal({ ooId: selected.id, ooName: selected.company_name, targetId: "" })}
+                title="This record is actually a driver — move it into Drivers under a company"
+                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(8,145,178,0.45)", background: "rgba(8,145,178,0.12)", color: "#67e8f9", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                → Move to Drivers
               </button>
               {selected.logo_url && (
                 <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
@@ -2515,7 +2548,10 @@ export default function OwnerOperatorsPage() {
                             {myAssignments.length} truck{myAssignments.length !== 1?"s":""}
                           </span>
                         </div>
-                        <span style={{ color:"#94a3b8", fontSize:"0.8rem" }}>{expanded?"▲":"▼"}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <button onClick={(e) => { e.stopPropagation(); promoteDriverToOO(d.id, d.name); }} title="This driver got their own authority — promote them to their own Owner-Operator company" style={{ background:"#ecfeff", color:"#0891b2", border:"1px solid #a5f3fc", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>↑ Make OO</button>
+                          <span style={{ color:"#94a3b8", fontSize:"0.8rem" }}>{expanded?"▲":"▼"}</span>
+                        </div>
                       </div>
 
                       {expanded && (
@@ -4257,6 +4293,25 @@ export default function OwnerOperatorsPage() {
               <button onClick={() => setDocEmailModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Move to Drivers modal (company picker) ── */}
+      {moveModal && (
+        <div onClick={() => setMoveModal(null)} style={{ position:"fixed", inset:0, zIndex:9300, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:"24px 28px", width:"100%", maxWidth:460 }}>
+            <div style={{ fontWeight:900, fontSize:"1rem", color:"#0f172a", marginBottom:6 }}>→ Move &ldquo;{moveModal.ooName}&rdquo; to Drivers</div>
+            <div style={{ fontSize:"0.82rem", color:"#64748b", marginBottom:18, lineHeight:1.5 }}>This record is actually a driver. Pick the company they drive for — we&rsquo;ll add them as a driver there and remove this company record.</div>
+            <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:6 }}>Move under company *</label>
+            <select value={moveModal.targetId} onChange={e => setMoveModal(m => m && ({ ...m, targetId: e.target.value }))} style={{ width:"100%", padding:"9px 11px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.85rem", marginBottom:20, background:"#fff" }}>
+              <option value="">— Select a company —</option>
+              {companies.filter(c => c.id !== moveModal.ooId).map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={confirmMoveToDriver} disabled={!moveModal.targetId} style={{ flex:1, padding:"10px 0", borderRadius:9, border:"none", background: moveModal.targetId ? "#0891b2" : "#94a3b8", color:"#fff", fontWeight:800, fontSize:"0.85rem", cursor: moveModal.targetId ? "pointer" : "default" }}>Move to Drivers</button>
+              <button onClick={() => setMoveModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
