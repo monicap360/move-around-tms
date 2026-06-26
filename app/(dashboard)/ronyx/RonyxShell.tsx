@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import PageProtection from "@/app/components/security/PageProtection";
-import CustomizationRequestWidget from "@/app/components/ronyx/CustomizationRequestWidget";
 import IntelImportCenter from "@/app/components/ronyx/IntelImportCenter";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -137,6 +136,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
 
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [importOpen,   setImportOpen]   = useState(false);
+  const [fabHidden,    setFabHidden]    = useState(false);
   const [now,          setNow]          = useState("");
   const [expanded,     setExpanded]     = useState<Set<string>>(new Set());
   const [searchOpen,   setSearchOpen]   = useState(false);
@@ -438,12 +438,11 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
 
         /* Smart Import FAB */
         .tms-smart-import-fab {
-          position: fixed; bottom: 28px; right: 28px; z-index: 100;
-          display: flex; align-items: center; gap: 8px;
+          display: flex; align-items: center; gap: 6px;
           background: linear-gradient(135deg, #1e40af 0%, #4f46e5 100%);
-          color: #fff; border: none; border-radius: 50px; padding: 13px 20px;
-          font-size: 0.85rem; font-weight: 800; cursor: pointer;
-          box-shadow: 0 8px 25px rgba(79,70,229,0.45); white-space: nowrap;
+          color: #fff; border: none; border-radius: 50px; padding: 8px 14px;
+          font-size: 0.74rem; font-weight: 700; cursor: pointer;
+          box-shadow: 0 5px 16px rgba(79,70,229,0.4); white-space: nowrap;
           transition: transform 140ms ease, box-shadow 140ms ease;
         }
         .tms-smart-import-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(79,70,229,0.55); }
@@ -739,13 +738,18 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       </div>
 
       {/* Intel Import Center™ FAB */}
-      <button className="tms-smart-import-fab" onClick={() => { setMobileOpen(false); setImportOpen(true); }}>
-        <span style={{ fontSize: "1.1rem" }}>📥</span>
-        Intel Import Center™
-      </button>
+      {!fabHidden && (
+        <div style={{ position: "fixed", bottom: 22, right: 22, zIndex: 100 }}>
+          <button className="tms-smart-import-fab" onClick={() => { setMobileOpen(false); setImportOpen(true); }}>
+            <span style={{ fontSize: "0.95rem" }}>📥</span>
+            Intel Import
+          </button>
+          <button onClick={() => setFabHidden(true)} title="Hide this button" aria-label="Hide Intel Import button"
+            style={{ position: "absolute", top: -7, right: -7, width: 20, height: 20, borderRadius: "50%", background: "#fff", color: "#475569", border: "1px solid #cbd5e1", fontSize: "0.72rem", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+      )}
 
       <IntelImportCenter open={importOpen} onClose={() => setImportOpen(false)} />
-      <CustomizationRequestWidget />
     </div>
   );
 }
