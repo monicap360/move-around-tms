@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
 import { TMS_BUCKET, tenantDatedPath } from "@/lib/storage-paths";
 import { resolveOrgId } from "@/lib/auth/resolveOrgId";
+import { extractDocRouting } from "@/lib/doc-ai-extract";
 
 export const dynamic = "force-dynamic";
 
@@ -178,22 +179,57 @@ export async function POST(req: Request) {
         routedToOO = { oo_id, company_name, doc_type, driver };
       };
 
+      const docTypeFromText = (t0: string) => {
+        const t = t0.toLowerCase();
+        return /w-?9|tax|ein/.test(t)              ? "W-9 / Tax Form" :
+               /auto.?liab/.test(t)                ? "Auto Liability Insurance" :
+               /general.?liab/.test(t)             ? "General Liability Insurance" :
+               /cargo/.test(t)                     ? "Cargo Insurance" :
+               /coi|certificate/.test(t)           ? "Insurance Certificate (COI)" :
+               (/contract|agreement|subhauler/.test(t)) ? "Contract" :
+               "Compliance Document";
+      };
+      const driverDocType = (nm: string, hint: string) =>
+        /medical|med.?card/.test(hint.toLowerCase()) ? `[${nm}] Medical Card`
+        : /mvr/.test(hint.toLowerCase())             ? `[${nm}] MVR`
+        :                                              `[${nm}] CDL License`;
+
       if (driverHit) {
-        const dt = /medical|med.?card/.test(l) ? `[${driverHit.name}] Medical Card`
-                 : /mvr/.test(l)               ? `[${driverHit.name}] MVR`
-                 :                                `[${driverHit.name}] CDL License`;
         const oo = (oos || []).find((o: any) => o.id === driverHit!.oo_id);
-        await attach(driverHit.oo_id, oo?.company_name || "", dt, driverHit.name);
+        await attach(driverHit.oo_id, oo?.company_name || "", driverDocType(driverHit.name, l), driverHit.name);
       } else if (bestOO && ["compliance", "contracts"].includes(fileModule)) {
-        const dt =
-          /w-?9|tax|ein/.test(l)              ? "W-9 / Tax Form" :
-          /auto.?liab/.test(l)                ? "Auto Liability Insurance" :
-          /general.?liab/.test(l)             ? "General Liability Insurance" :
-          /cargo/.test(l)                     ? "Cargo Insurance" :
-          /coi|certificate/.test(l)           ? "Insurance Certificate (COI)" :
-          (/contract|agreement|subhauler/.test(l) || fileModule === "contracts") ? "Contract" :
-          "Compliance Document";
-        await attach(bestOO.id, bestOO.company_name, dt);
+        await attach(bestOO.id, bestOO.company_name, fileModule === "contracts" ? "Contract" : docTypeFromText(l));
+      } else {
+        // 3) Filename didn't match — READ THE DOCUMENT with AI (Claude vision) and route by its CONTENT.
+        const ai = await extractDocRouting(Buffer.from(arrayBuffer), contentType);
+        if (ai) {
+          // (a) driver match by AI-extracted driver name
+          if (ai.driver_name && ooIds.length) {
+            const aiToks = norm(ai.driver_name).split(" ").filter((t) => t.length > 2);
+            const { data: ooDrivers } = await supabaseAdmin.from("ronyx_oo_drivers").select("name, oo_id").in("oo_id", ooIds);
+            const hit = (ooDrivers || []).find((d: any) => { const dn = norm(d.name); return aiToks.length > 0 && aiToks.every((t) => dn.includes(t)); });
+            if (hit) {
+              const oo = (oos || []).find((o: any) => o.id === hit.oo_id);
+              await attach(hit.oo_id, oo?.company_name || "", driverDocType(hit.name, ai.doc_type || ""), hit.name);
+            }
+          }
+          // (b) company match by AI-extracted company name (bidirectional contains)
+          if (!routedToOO && ai.company_name) {
+            const aiCo = norm(ai.company_name);
+            const strip = (s: string) => s.replace(/\b(llc|inc|trucking|transport|transportation|logistics|company|co|services|corp|group)\b/g, "").replace(/\s+/g, " ").trim();
+            const aiCore = strip(aiCo);
+            let match: any = null;
+            for (const oo of oos || []) {
+              const co = norm(oo.company_name);
+              if (co && (aiCo.includes(co) || co.includes(aiCo))) { if (!match || co.length > norm(match.company_name).length) match = oo; }
+              else if (aiCore.length > 3 && strip(co).length > 3 && (aiCore.includes(strip(co)) || strip(co).includes(aiCore)) && !match) match = oo;
+            }
+            if (match) {
+              const dt = ai.doc_type && ai.doc_type !== "Other" ? ai.doc_type : docTypeFromText(file.name);
+              await attach(match.id, match.company_name, dt);
+            }
+          }
+        }
       }
     } catch { /* best-effort routing — file is still stored regardless */ }
   }
