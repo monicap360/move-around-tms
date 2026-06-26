@@ -1,41 +1,51 @@
 #!/usr/bin/env node
-// Cross-platform build wrapper for `next build`. Two jobs:
+// Cross-platform build wrapper for `next build`. Jobs:
 //  1. Cap the V8 heap high enough that page-data collection on this 200+ route app
-//     doesn't OOM (Render runs a plain `npm run build` with no NODE_OPTIONS).
-//  2. Report HOW the build ended — exit code vs killed-by-signal — so we can tell
-//     a code error (status 1, prints its own error) apart from a container OOM-kill
-//     (SIGKILL, silent). The earlier silent "Build failed" gave us neither.
-import { spawnSync } from "node:child_process";
+//     doesn't OOM. Build box here is the 64GB "performance" pipeline, so cap high.
+//  2. CAPTURE next's output and, on failure, re-print the tail as one contiguous
+//     block. Render's build-log API drops/samples lines, so a plain stream can hide
+//     the real error (it did — builds exited 1 right after compile with no visible
+//     reason). Reprinting the tail guarantees the actual error reaches the log.
+import { spawn } from "node:child_process";
 import path from "node:path";
 
 const nextBin = path.resolve("node_modules", "next", "dist", "bin", "next");
-// Render build pipeline here is the "performance" tier = 64GB RAM build machine.
-// The build's page-data/static-gen phase needs ~3.5GB of V8 heap. A 3072 cap was
-// THROTTLING V8 below that need -> "JavaScript heap out of memory" -> exit status 1
-// (NOT a signal), which the wrapper below misread as "a code error". The build
-// actually compiles + generates all pages cleanly (verified locally at 4096).
-// On a 64GB box there is no container-OOM risk, so cap generously above the need.
 const heapCap = "--max-old-space-size=6144";
-// Preserve any externally-set NODE_OPTIONS; the last --max-old-space-size wins.
 const NODE_OPTIONS = [process.env.NODE_OPTIONS, heapCap].filter(Boolean).join(" ");
 
-console.log(`[render-build] next build with NODE_OPTIONS="${NODE_OPTIONS}"`);
+console.log(`[render-build] next build with NODE_OPTIONS="${NODE_OPTIONS}" on ${process.version}`);
 
-const res = spawnSync(process.execPath, [nextBin, "build", "--webpack"], {
-  stdio: "inherit",
+const child = spawn(process.execPath, [nextBin, "build", "--webpack"], {
   env: { ...process.env, NODE_OPTIONS },
 });
 
-if (res.signal) {
-  console.error(
-    `[render-build] ❌ next build was KILLED by signal ${res.signal} — ` +
-      `this is a container OOM-kill (build machine ran out of RAM). ` +
-      `Raise the Render Build Pipeline tier / build machine memory.`,
-  );
-} else if (res.status !== 0) {
-  console.error(`[render-build] ❌ next build exited with status ${res.status} (a code/build error — see output above).`);
-} else {
-  console.log("[render-build] ✓ next build succeeded.");
-}
+// Stream live AND keep a rolling buffer of the last ~500 lines.
+let buf = [];
+const tee = (chunk) => {
+  const s = chunk.toString();
+  process.stdout.write(s);
+  for (const line of s.split("\n")) buf.push(line);
+  if (buf.length > 500) buf = buf.slice(-500);
+};
+child.stdout.on("data", tee);
+child.stderr.on("data", tee);
 
-process.exit(res.status ?? 1);
+child.on("close", (code, signal) => {
+  if (signal) {
+    console.error(
+      `\n[render-build] ❌ next build was KILLED by signal ${signal} — container OOM. ` +
+        `Raise the build machine memory.`,
+    );
+    process.exit(1);
+  }
+  if (code !== 0) {
+    console.error("\n[render-build] ===================================================");
+    console.error("[render-build] next build FAILED — last 80 lines of its output:");
+    console.error("[render-build] ===================================================");
+    console.error(buf.slice(-80).join("\n"));
+    console.error(`[render-build] ❌ next build exited with status ${code}.`);
+    process.exit(code);
+  }
+  console.log("[render-build] ✓ next build succeeded.");
+  process.exit(0);
+});
