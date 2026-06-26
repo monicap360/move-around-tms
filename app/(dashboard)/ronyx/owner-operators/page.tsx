@@ -1302,7 +1302,7 @@ export default function OwnerOperatorsPage() {
                         onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name, oo.id, doc.type) : flash(`No file stored for ${short} — upload it from the Documents tab to view.`); }}
                         title={doc.file_url ? `Click to view ${short}` : "No file stored — upload from Documents tab"}
                         style={{ background: expBg(expDays), color: expColor(expDays), padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        🛡️ {short}: {expLabel(expDays, doc.expires_on)} {doc.file_url ? "👁" : ""}
+                        <svg width="12" height="13" viewBox="0 0 24 24" fill={expColor(expDays)} style={{ flexShrink: 0 }}><path d="M12 2l8 3v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5l8-3z" /></svg> {short}: {expLabel(expDays, doc.expires_on)} {doc.file_url ? "👁" : ""}
                       </span>
                     ) : (
                       <label key={key} onClick={e => e.stopPropagation()} style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", border: "1px solid #fca5a5" }}>
