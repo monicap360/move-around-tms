@@ -549,9 +549,9 @@ export default function HRCompliancePage() {
                   <p>All drivers are compliant — no exceptions found.</p>
                 </div>
               ) : (
-                auditAlerts.map((alert) => (
+                auditAlerts.map((alert, i) => (
                   <div
-                    key={`${alert.title}-${alert.driver}`}
+                    key={`${alert.title}-${alert.driver}-${i}`}
                     className={alert.level === "critical" ? "hr-alert critical" : alert.level === "danger" ? "hr-alert danger" : "hr-alert warning"}
                   >
                     <div>
