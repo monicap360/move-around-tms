@@ -526,6 +526,8 @@ function ticketStatusColors(s?: string): [string, string] {
 export default function OwnerOperatorsPage() {
   const { blocked: moduleBlocked, loading: moduleLoading } = useModuleAccess("owner_operator_hub");
   const [companies, setCompanies]   = useState<OOCompany[]>([]);
+  const [expandedOOs, setExpandedOOs] = useState<Set<string>>(new Set());
+  const toggleOO = (id: string) => setExpandedOOs(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const [ooLoading, setOoLoading]   = useState(true);
   const [ooError, setOoError]       = useState<string | null>(null);
   const [view, setView]             = useState<"list" | "detail">("list");
@@ -1143,10 +1145,11 @@ export default function OwnerOperatorsPage() {
 
             const cardBg    = eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
             const stripBorder = eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
+            const expanded = expandedOOs.has(oo.id);
             return (
-              <div key={oo.id} style={{ background: "#fff", border: `1px solid ${stripBorder}`, borderRadius: 16, overflow: "hidden", cursor: "pointer" }} onClick={() => openOO(oo)}>
-                {/* Header strip — green=eligible, yellow=needs attention, red=blocked */}
-                <div style={{ background: cardBg, padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: `1px solid ${stripBorder}` }}>
+              <div key={oo.id} style={{ background: "#fff", border: `1px solid ${stripBorder}`, borderRadius: 16, overflow: "hidden" }}>
+                {/* Header row — click anywhere to expand/collapse */}
+                <div onClick={() => toggleOO(oo.id)} style={{ background: cardBg, padding: "12px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: expanded ? `1px solid ${stripBorder}` : "none", cursor: "pointer" }}>
                   <div style={{ width: 46, height: 46, borderRadius: "50%", background: oo.logo_url ? "#fff" : "#1e40af", border: oo.logo_url ? "1px solid #e2e8f0" : "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.1rem", flexShrink: 0, overflow: "hidden" }}>
                     {oo.logo_url ? <img src={oo.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : oo.company_name.charAt(0)}
                   </div>
@@ -1158,13 +1161,14 @@ export default function OwnerOperatorsPage() {
                       </span>
                       {holdJobs > 0 && <span style={{ background: "#fff1f2", color: "#dc2626", padding: "3px 8px", borderRadius: 12, fontSize: "0.7rem", fontWeight: 700 }}>{holdJobs} settlement hold{holdJobs>1?"s":""}</span>}
                     </div>
-                    {(oo.business_address || oo.contact_name || oo.contact_phone || oo.contact_email) && (
-                      <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 5, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-                        {oo.business_address && <span>📍 {oo.business_address}</span>}
-                        {oo.contact_name && <span>👤 {oo.contact_name}</span>}
-                        {oo.contact_phone && <span>📞 {oo.contact_phone}</span>}
-                        {oo.contact_email && <span>✉ {oo.contact_email}</span>}
-                        {(oo.mc_number || oo.dot_number) && <span style={{ color:"#94a3b8" }}>{[oo.mc_number && `MC ${oo.mc_number}`, oo.dot_number && `DOT ${oo.dot_number}`].filter(Boolean).join(" · ")}</span>}
+                    {expanded && (
+                      <div onClick={e => e.stopPropagation()} style={{ fontSize: "0.8rem", color: "#475569", marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 20px", maxWidth: 640 }}>
+                        <span>📍 {oo.business_address || "—"}</span>
+                        <span>👤 {oo.contact_name || "—"}</span>
+                        <span>📞 {oo.contact_phone || "—"}</span>
+                        <span>✉ {oo.contact_email || "—"}</span>
+                        <span><strong style={{ color:"#64748b" }}>MC</strong> {oo.mc_number || "—"}</span>
+                        <span><strong style={{ color:"#64748b" }}>DOT</strong> {oo.dot_number || "—"}{oo.ein ? `  ·  EIN ${oo.ein}` : ""}</span>
                       </div>
                     )}
                     {!eligible && <div style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: 3 }}>{blocks.join(" · ")}</div>}
@@ -1178,9 +1182,11 @@ export default function OwnerOperatorsPage() {
                       <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Performance</div>
                       <ScoreBadge score={perf} />
                     </div>
+                    <span style={{ fontSize: "1.05rem", color: "#64748b", marginLeft: 2 }}>{expanded ? "▲" : "▼"}</span>
                   </div>
                 </div>
 
+                {expanded && (<>
                 {/* Stats grid */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 0, padding: "12px 20px", borderBottom: "1px solid #f1f5f9" }}>
                   {[
@@ -1284,6 +1290,7 @@ export default function OwnerOperatorsPage() {
                     </button>
                   </div>
                 </div>
+                </>)}
               </div>
             );
           })}
