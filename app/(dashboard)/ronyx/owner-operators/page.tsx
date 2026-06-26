@@ -905,6 +905,26 @@ export default function OwnerOperatorsPage() {
     flash(`${docType} uploaded${fileUrl ? " & stored in Backup Center" : ""}.`);
   }
 
+  // Quick-upload a doc straight from a list card (no prompt — expiry is set later
+  // in the Documents tab). Stores the file, attaches it to the OO, and reloads.
+  async function cardUpload(ooId: string, ooName: string, docType: string, moduleName: string, file: File) {
+    flash(`Uploading ${docType} for ${ooName}…`);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("module", moduleName);
+      fd.append("oo_id", ooId);
+      const upRes  = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+      const upData = await upRes.json();
+      await apiPost(`/api/ronyx/owner-operators/${ooId}/documents`, {
+        doc_type: docType, file_name: file.name,
+        file_url: upData.url || null, original_upload_id: upData.upload_id || null,
+      });
+      loadCompanies();
+      flash(`✅ ${docType} uploaded for ${ooName}.`);
+    } catch { flash(`Upload failed for ${docType} — check storage config.`); }
+  }
+
   // Open a document — fetches a short-lived signed URL, then shows in-app viewer
   async function openDoc(fileUrl: string, print = false, filename?: string) {
     try {
@@ -1247,25 +1267,34 @@ export default function OwnerOperatorsPage() {
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
                           e.stopPropagation();
                           const f = e.target.files?.[0];
-                          if (!f) return;
-                          flash(`Uploading ${short} for ${oo.company_name}…`);
-                          try {
-                            const fd = new FormData();
-                            fd.append("file", f);
-                            fd.append("module", "compliance");
-                            fd.append("oo_id", oo.id);
-                            const upRes = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
-                            const upData = await upRes.json();
-                            const fileUrl = upData.url || null;
-                            const originalUploadId = upData.upload_id || null;
-                            const exp = prompt(`${docType} expiration date (YYYY-MM-DD):`) || undefined;
-                            await apiPost(`/api/ronyx/owner-operators/${oo.id}/documents`, {
-                              doc_type: docType, file_name: f.name, expires_on: exp || null,
-                              file_url: fileUrl, original_upload_id: originalUploadId,
-                            });
-                            loadCompanies();
-                            flash(`✅ ${short} uploaded for ${oo.company_name}.`);
-                          } catch { flash(`Upload failed — check storage config`); }
+                          if (f) await cardUpload(oo.id, oo.company_name, docType, "compliance", f);
+                          e.target.value = "";
+                        }} />
+                      </label>
+                    );
+                  })}
+
+                  {/* Contract / Inspection / W-9 quick-upload */}
+                  {[
+                    { key: "contract",   docType: "Contract",           short: "Contract",   module: "contracts"  },
+                    { key: "inspection", docType: "Vehicle Inspection", short: "Inspection", module: "compliance" },
+                    { key: "w9",         docType: "W-9 / Tax Form",      short: "W-9",        module: "compliance" },
+                  ].map(({ key, docType, short, module }) => {
+                    const doc = oo.documents.find(d => d.type === docType);
+                    return doc ? (
+                      <span key={key}
+                        onClick={(e) => { e.stopPropagation(); doc.file_url ? openDoc(doc.file_url, false, doc.file_name) : flash(`No file stored for ${short} — upload from the Documents tab to view.`); }}
+                        title={doc.file_url ? `Click to view ${short}` : "No file stored"}
+                        style={{ background: "#eff6ff", color: "#1e40af", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid #bfdbfe" }}>
+                        📄 {short} {doc.file_url ? "👁" : ""}
+                      </span>
+                    ) : (
+                      <label key={key} onClick={e => e.stopPropagation()} style={{ background: "#f8fafc", color: "#475569", padding: "3px 10px", borderRadius: 8, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", border: "1px solid #cbd5e1" }}>
+                        + Upload {short}
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={async e => {
+                          e.stopPropagation();
+                          const f = e.target.files?.[0];
+                          if (f) await cardUpload(oo.id, oo.company_name, docType, module, f);
                           e.target.value = "";
                         }} />
                       </label>
