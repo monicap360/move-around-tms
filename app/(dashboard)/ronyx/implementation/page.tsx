@@ -219,16 +219,36 @@ export default function CustomerLaunchCenterPage() {
     URL.revokeObjectURL(url);
   }
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Read a CSV or Excel file into CSV text. Excel (.xlsx/.xls) is converted
+  // server-side via /api/ronyx/excel-parse so the same import pipeline is used.
+  async function fileToCsvText(file: File): Promise<string> {
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+      const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/ronyx/excel-parse", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not read this Excel file");
+      return data.csv || "";
+    }
+    return await file.text();
+  }
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => { setPreview(parseCsv(ev.target?.result as string).slice(0, 5)); setImportResult(null); };
-    reader.readAsText(file);
+    setImportResult(null);
+    try {
+      const text = await fileToCsvText(file);
+      setPreview(parseCsv(text).slice(0, 5));
+    } catch (err) {
+      setImportResult({ inserted: 0, errors: [(err as Error).message] });
+    }
   }, []);
 
   async function runImport(phase: ImportPhase) {
     const file = fileRef.current?.files?.[0]; if (!file) return;
-    const text = await file.text();
+    let text: string;
+    try { text = await fileToCsvText(file); }
+    catch (err) { setImportResult({ inserted: 0, errors: [(err as Error).message] }); return; }
     const rows = parseCsv(text); if (!rows.length) return;
     setImporting(true); setImportResult(null); setDispatchImportId(null);
     try {
@@ -557,7 +577,8 @@ export default function CustomerLaunchCenterPage() {
                       {phase.csvHeaders.map(h => <span key={h} style={{ background:"rgba(255,255,255,0.05)", color:"#94a3b8", padding:"3px 8px", borderRadius:5, fontSize:11, fontFamily:"monospace" }}>{h}</span>)}
                     </div>
                   </div>
-                  <input ref={fileRef} type="file" accept=".csv" onChange={handleFileChange} style={{ display:"block", marginBottom:10, fontSize:13, color:MUTE }} />
+                  <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} style={{ display:"block", marginBottom:10, fontSize:13, color:MUTE }} />
+                  <div style={{ fontSize:11, color:MUTE, marginBottom:10 }}>Accepts <strong>.csv</strong> or <strong>Excel (.xlsx / .xls)</strong> — your spreadsheet's first sheet is read automatically.</div>
                   {preview.length > 0 && (
                     <div style={{ overflowX:"auto", marginBottom:14 }}>
                       <div style={{ fontSize:12, color:BLUE, fontWeight:600, marginBottom:6 }}>Preview — first 5 rows</div>
