@@ -194,6 +194,18 @@ export default function CustomerLaunchCenterPage() {
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
   const [supportForm, setSupportForm]       = useState(false);
   const [supportType, setSupportType]       = useState("How-To Question");
+  // ── Launch Center header-action modals ──
+  const [readinessModal, setReadinessModal] = useState(false);
+  const [inviteModal, setInviteModal]       = useState(false);
+  const [inviteForm, setInviteForm]         = useState({ name: "", email: "", role: "Dispatcher" });
+  const [inviteSent, setInviteSent]         = useState(false);
+  const [scheduleModal, setScheduleModal]   = useState(false);
+  type TrainSession = { id: string; topic: string; assignee: string; date: string; time: string };
+  const [trainings, setTrainings]           = useState<TrainSession[]>([]);
+  const [trainForm, setTrainForm]           = useState({ topic: "Dispatch Board", assignee: "Dispatcher", date: "", time: "09:00" });
+  const [calRef, setCalRef]                 = useState<{ y: number; m: number }>(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+  useEffect(() => { try { setTrainings(JSON.parse(localStorage.getItem("ccb_trainings") || "[]")); } catch {} }, []);
+  function saveTrainings(next: TrainSession[]) { setTrainings(next); try { localStorage.setItem("ccb_trainings", JSON.stringify(next)); } catch {} }
   const [supportTitle, setSupportTitle]     = useState("");
   const [supportSubmitted, setSupportSubmitted] = useState(false);
   const [feedbackText, setFeedbackText]     = useState("");
@@ -510,7 +522,7 @@ export default function CustomerLaunchCenterPage() {
                 </div>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <span style={{ fontSize:12, color:MUTE }}>{t.done} of {t.total} lessons complete</span>
-                  <button style={{ background:`${t.color}20`, color:t.color, border:"none", padding:"6px 12px", borderRadius:7, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                  <button onClick={() => { setTrainForm(f => ({ ...f, assignee: t.role })); setScheduleModal(true); }} style={{ background:`${t.color}20`, color:t.color, border:"none", padding:"6px 12px", borderRadius:7, fontSize:12, fontWeight:700, cursor:"pointer" }}>
                     {done ? "View Certificate" : t.done > 0 ? "Continue Training" : "Start Training"}
                   </button>
                 </div>
@@ -824,10 +836,10 @@ export default function CustomerLaunchCenterPage() {
             </div>
             <div style={{ display:"flex", gap:8, flexShrink:0, flexWrap:"wrap" as const }}>
               {([
-                { label:"Run Readiness Check", primary:true,  onClick:undefined                                                          },
+                { label:"Run Readiness Check", primary:true,  onClick:() => setReadinessModal(true)                                       },
                 { label:"Open Support Request", primary:false, onClick:() => { setTab("support"); setSupportForm(true); }                },
-                { label:"Schedule Training",    primary:false, onClick:() => setTab("training")                                          },
-                { label:"Invite Staff",         primary:false, onClick:undefined                                                          },
+                { label:"Schedule Training",    primary:false, onClick:() => setScheduleModal(true)                                      },
+                { label:"Invite Staff",         primary:false, onClick:() => { setInviteSent(false); setInviteModal(true); }             },
                 { label:"View Launch Plan",     primary:false, onClick:() => setTab("launch-plan")                                       },
               ] as { label:string; primary:boolean; onClick:undefined|(()=>void) }[]).map(btn => (
                 <button key={btn.label} onClick={btn.onClick} style={{ padding:"8px 14px", borderRadius:8, fontSize:12, fontWeight:700, border:btn.primary?"none":`1px solid ${BORD}`, background:btn.primary?BLUE:"rgba(255,255,255,0.05)", color:btn.primary?"#fff":"#94a3b8", cursor:"pointer" }}>
@@ -870,6 +882,161 @@ export default function CustomerLaunchCenterPage() {
       <div style={{ maxWidth:1300, margin:"0 auto", padding:"28px 32px" }}>
         {RENDER[tab]()}
       </div>
+
+      {/* ── Run Readiness Check modal ── */}
+      {readinessModal && (
+        <div onClick={() => setReadinessModal(false)} style={{ position:"fixed", inset:0, background:"rgba(2,6,23,0.72)", zIndex:9300, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:CARD, border:`1px solid ${BORD}`, borderRadius:18, padding:30, maxWidth:560, width:"92%", maxHeight:"86vh", overflowY:"auto" as const }}>
+            {(() => {
+              const glDone = glChecks.filter(c => c.done).length;
+              const score = GO_LIVE_CHECKS.length ? Math.round((glDone / GO_LIVE_CHECKS.length) * 100) : 0;
+              const barColor = score>=90?GRN:score>=60?AMB:"#f87171";
+              return (
+                <>
+                  <div style={{ fontSize:11, fontWeight:800, color:CYAN, textTransform:"uppercase" as const, letterSpacing:"0.12em", marginBottom:8 }}>CCB Readiness Check</div>
+                  <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:14 }}>
+                    <span style={{ fontSize:42, fontWeight:900, color:barColor, lineHeight:1 }}>{score}%</span>
+                    <span style={{ fontSize:13, color:MUTE }}>go-live readiness</span>
+                  </div>
+                  <div style={{ height:8, background:"rgba(255,255,255,0.06)", borderRadius:999, overflow:"hidden", marginBottom:22 }}>
+                    <div style={{ height:"100%", width:`${score}%`, background:barColor, borderRadius:999 }} />
+                  </div>
+                  <div style={{ fontSize:13, fontWeight:800, color:"#f87171", marginBottom:10 }}>🚨 {BLOCKERS.length} Critical Blockers</div>
+                  {BLOCKERS.map(b => (
+                    <div key={b.id} style={{ display:"flex", justifyContent:"space-between", gap:12, padding:"10px 12px", background:"rgba(248,113,113,0.06)", border:"1px solid rgba(248,113,113,0.2)", borderRadius:10, marginBottom:8 }}>
+                      <div><div style={{ fontSize:13, fontWeight:700, color:TXT }}>{b.title}</div><div style={{ fontSize:11, color:MUTE, marginTop:2 }}>{b.owner} · Due {b.due}</div></div>
+                      <a href={b.href} style={{ color:CYAN, fontSize:11, fontWeight:700, textDecoration:"none", alignSelf:"center", whiteSpace:"nowrap" as const }}>{b.action} →</a>
+                    </div>
+                  ))}
+                  <div style={{ fontSize:13, fontWeight:800, color:TXT, margin:"18px 0 10px" }}>Go-Live Checklist · {glDone}/{GO_LIVE_CHECKS.length}</div>
+                  {glChecks.map((c, i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", fontSize:13 }}>
+                      <span>{c.done ? "✅" : "⬜"}</span><span style={{ color:c.done ? TXT : MUTE }}>{c.label}</span>
+                    </div>
+                  ))}
+                  <button onClick={() => setReadinessModal(false)} style={{ width:"100%", marginTop:20, background:BLUE, color:"#fff", padding:"11px 0", borderRadius:8, fontSize:14, fontWeight:700, border:"none", cursor:"pointer" }}>Done</button>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Invite Staff modal ── */}
+      {inviteModal && (
+        <div onClick={() => setInviteModal(false)} style={{ position:"fixed", inset:0, background:"rgba(2,6,23,0.72)", zIndex:9300, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:CARD, border:`1px solid ${BORD}`, borderRadius:18, padding:30, maxWidth:460, width:"92%" }}>
+            {inviteSent ? (
+              <div style={{ textAlign:"center" as const, padding:"16px 0" }}>
+                <div style={{ fontSize:46, marginBottom:14 }}>📨</div>
+                <div style={{ fontSize:19, fontWeight:800, color:GRN, marginBottom:8 }}>Invite Sent</div>
+                <div style={{ fontSize:14, color:MUTE, marginBottom:22 }}>{inviteForm.name || "Your teammate"} will receive an email to join as {inviteForm.role}.</div>
+                <button onClick={() => { setInviteModal(false); setInviteForm({ name:"", email:"", role:"Dispatcher" }); }} style={{ background:BLUE, color:"#fff", padding:"10px 24px", borderRadius:8, fontSize:14, fontWeight:700, border:"none", cursor:"pointer" }}>Done</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontWeight:800, fontSize:18, color:TXT, marginBottom:18 }}>Invite Staff Member</div>
+                <label style={{ fontSize:12, color:MUTE, display:"block", marginBottom:6, fontWeight:600 }}>FULL NAME</label>
+                <input value={inviteForm.name} onChange={e => setInviteForm(f => ({ ...f, name:e.target.value }))} placeholder="Jane Smith" style={{ width:"100%", boxSizing:"border-box" as const, background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"10px 12px", borderRadius:8, fontSize:14, marginBottom:14 }} />
+                <label style={{ fontSize:12, color:MUTE, display:"block", marginBottom:6, fontWeight:600 }}>EMAIL</label>
+                <input value={inviteForm.email} onChange={e => setInviteForm(f => ({ ...f, email:e.target.value }))} placeholder="jane@company.com" style={{ width:"100%", boxSizing:"border-box" as const, background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"10px 12px", borderRadius:8, fontSize:14, marginBottom:14 }} />
+                <label style={{ fontSize:12, color:MUTE, display:"block", marginBottom:6, fontWeight:600 }}>ROLE</label>
+                <select value={inviteForm.role} onChange={e => setInviteForm(f => ({ ...f, role:e.target.value }))} style={{ width:"100%", background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"10px 12px", borderRadius:8, fontSize:14, marginBottom:20 }}>
+                  {["Dispatcher","Payroll Staff","Compliance Staff","Billing Admin","Fleet Manager","Driver (Mobile)"].map(r => <option key={r}>{r}</option>)}
+                </select>
+                <div style={{ display:"flex", gap:10 }}>
+                  <button onClick={() => { if (inviteForm.email.trim()) setInviteSent(true); }} style={{ flex:1, background:BLUE, color:"#fff", padding:"11px 0", borderRadius:8, fontSize:14, fontWeight:700, border:"none", cursor:"pointer" }}>Send Invite</button>
+                  <button onClick={() => setInviteModal(false)} style={{ background:"transparent", border:`1px solid ${BORD}`, color:MUTE, padding:"11px 18px", borderRadius:8, fontSize:14, cursor:"pointer" }}>Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Schedule Training modal (calendar) ── */}
+      {scheduleModal && (
+        <div onClick={() => setScheduleModal(false)} style={{ position:"fixed", inset:0, background:"rgba(2,6,23,0.72)", zIndex:9300, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:CARD, border:`1px solid ${BORD}`, borderRadius:18, padding:28, maxWidth:680, width:"94%", maxHeight:"88vh", overflowY:"auto" as const }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+              <div style={{ fontWeight:800, fontSize:18, color:TXT }}>🎓 Schedule Training</div>
+              <button onClick={() => setScheduleModal(false)} style={{ background:"none", border:"none", color:MUTE, fontSize:20, cursor:"pointer" }}>×</button>
+            </div>
+            {(() => {
+              const { y, m } = calRef;
+              const first = new Date(y, m, 1).getDay();
+              const dim = new Date(y, m + 1, 0).getDate();
+              const monthName = new Date(y, m, 1).toLocaleString("en-US", { month:"long", year:"numeric" });
+              const pad = (n: number) => String(n).padStart(2, "0");
+              const ds = (d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
+              const cells: (number | null)[] = [];
+              for (let i = 0; i < first; i++) cells.push(null);
+              for (let d = 1; d <= dim; d++) cells.push(d);
+              const goPrev = () => setCalRef(m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 });
+              const goNext = () => setCalRef(m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 });
+              return (
+                <>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:18 }}>
+                    <div style={{ gridColumn:"1/-1" }}>
+                      <label style={{ fontSize:11, color:MUTE, display:"block", marginBottom:5, fontWeight:600 }}>TOPIC</label>
+                      <select value={trainForm.topic} onChange={e => setTrainForm(f => ({ ...f, topic:e.target.value }))} style={{ width:"100%", background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"9px 11px", borderRadius:8, fontSize:13 }}>
+                        {["Dispatch Board","Driver Profiles","Fleet & Maintenance","Fast Scan Ticket Upload","Payroll Review","Billing Ready Queue","Compliance Center","Driver Mobile Ticket Upload"].map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize:11, color:MUTE, display:"block", marginBottom:5, fontWeight:600 }}>ASSIGN TO</label>
+                      <select value={trainForm.assignee} onChange={e => setTrainForm(f => ({ ...f, assignee:e.target.value }))} style={{ width:"100%", background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"9px 11px", borderRadius:8, fontSize:13 }}>
+                        {["Dispatcher","Payroll Staff","Compliance Staff","Billing Admin","Fleet Manager","Drivers (Mobile)","All Staff"].map(r => <option key={r}>{r}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize:11, color:MUTE, display:"block", marginBottom:5, fontWeight:600 }}>DATE</label>
+                      <input type="date" value={trainForm.date} onChange={e => setTrainForm(f => ({ ...f, date:e.target.value }))} style={{ width:"100%", boxSizing:"border-box" as const, background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"9px 11px", borderRadius:8, fontSize:13 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize:11, color:MUTE, display:"block", marginBottom:5, fontWeight:600 }}>TIME</label>
+                      <input type="time" value={trainForm.time} onChange={e => setTrainForm(f => ({ ...f, time:e.target.value }))} style={{ width:"100%", boxSizing:"border-box" as const, background:"#070b14", border:`1px solid ${BORD}`, color:TXT, padding:"9px 11px", borderRadius:8, fontSize:13 }} />
+                    </div>
+                    <div style={{ gridColumn:"1/-1" }}>
+                      <button onClick={() => { if (trainForm.date) { saveTrainings([...trainings, { id:String(Date.now()), ...trainForm }]); setCalRef({ y:Number(trainForm.date.slice(0,4)), m:Number(trainForm.date.slice(5,7)) - 1 }); } }} style={{ width:"100%", background:BLUE, color:"#fff", padding:"10px 0", borderRadius:8, fontSize:13, fontWeight:700, border:"none", cursor:trainForm.date?"pointer":"not-allowed", opacity:trainForm.date?1:0.5 }}>+ Schedule Session</button>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                    <button onClick={goPrev} style={{ background:"rgba(255,255,255,0.05)", border:`1px solid ${BORD}`, color:TXT, width:30, height:30, borderRadius:8, cursor:"pointer" }}>‹</button>
+                    <div style={{ fontWeight:800, color:TXT, fontSize:14 }}>{monthName}</div>
+                    <button onClick={goNext} style={{ background:"rgba(255,255,255,0.05)", border:`1px solid ${BORD}`, color:TXT, width:30, height:30, borderRadius:8, cursor:"pointer" }}>›</button>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+                    {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} style={{ textAlign:"center" as const, fontSize:10, color:MUTE, fontWeight:700, padding:"2px 0" }}>{d}</div>)}
+                    {cells.map((d, i) => {
+                      const todays = d ? trainings.filter(t => t.date === ds(d)) : [];
+                      return (
+                        <div key={i} style={{ minHeight:54, borderRadius:8, border:`1px solid ${d?BORD:"transparent"}`, background:d?"rgba(255,255,255,0.02)":"transparent", padding:"4px 5px" }}>
+                          {d && <div style={{ fontSize:11, color:MUTE, fontWeight:600 }}>{d}</div>}
+                          {todays.map(t => (
+                            <div key={t.id} title={`${t.topic} · ${t.assignee} · ${t.time}`} style={{ marginTop:2, fontSize:8.5, fontWeight:700, color:"#fff", background:"linear-gradient(135deg,#06b6d4,#3b82f6)", borderRadius:4, padding:"1px 3px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>{t.time} {t.topic}</div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {trainings.length > 0 && (
+                    <div style={{ marginTop:18 }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:TXT, marginBottom:8 }}>Scheduled Sessions</div>
+                      {trainings.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map(t => (
+                        <div key={t.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, padding:"8px 10px", background:"rgba(255,255,255,0.02)", border:`1px solid ${BORD}`, borderRadius:8, marginBottom:6 }}>
+                          <div style={{ fontSize:12, color:TXT }}><strong>{t.topic}</strong> · {t.assignee}<div style={{ fontSize:11, color:MUTE, marginTop:1 }}>{t.date} at {t.time}</div></div>
+                          <button onClick={() => saveTrainings(trainings.filter(x => x.id !== t.id))} style={{ background:"none", border:"none", color:"#f87171", fontSize:16, cursor:"pointer" }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
