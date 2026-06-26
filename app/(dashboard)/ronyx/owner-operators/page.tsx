@@ -539,6 +539,7 @@ export default function OwnerOperatorsPage() {
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [moveModal, setMoveModal] = useState<{ ooId: string; ooName: string; targetId: string } | null>(null);
+  const [reassignModal, setReassignModal] = useState<{ driverId: string; driverName: string; targetId: string } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
   const [verifyDrawerOO, setVerifyDrawerOO] = useState<{ id: string; name: string } | null>(null);
 
@@ -722,6 +723,20 @@ export default function OwnerOperatorsPage() {
     flash(`✅ "${moveModal.ooName}" moved to Drivers.`);
     setMoveModal(null);
     setView("list");
+    loadCompanies();
+  }
+
+  async function confirmReassignDriver() {
+    if (!reassignModal?.targetId) { flash("Pick a company."); return; }
+    const res = await fetch(`/api/ronyx/owner-operators/reassign-driver`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driver_id: reassignModal.driverId, target_oo_id: reassignModal.targetId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { flash(data.error || "Reassign failed."); return; }
+    const target = companies.find(c => c.id === reassignModal.targetId)?.company_name || "the company";
+    flash(`✅ ${reassignModal.driverName} reassigned to ${target}.`);
+    setReassignModal(null);
     loadCompanies();
   }
 
@@ -2549,6 +2564,7 @@ export default function OwnerOperatorsPage() {
                           </span>
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <button onClick={(e) => { e.stopPropagation(); setReassignModal({ driverId: d.id, driverName: d.name, targetId: "" }); }} title="Move this driver to a different carrier company" style={{ background:"#eff6ff", color:"#1d4ed8", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>⇄ Reassign</button>
                           <button onClick={(e) => { e.stopPropagation(); promoteDriverToOO(d.id, d.name); }} title="This driver got their own authority — promote them to their own Owner-Operator company" style={{ background:"#ecfeff", color:"#0891b2", border:"1px solid #a5f3fc", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>↑ Make OO</button>
                           <span style={{ color:"#94a3b8", fontSize:"0.8rem" }}>{expanded?"▲":"▼"}</span>
                         </div>
@@ -4312,6 +4328,25 @@ export default function OwnerOperatorsPage() {
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={confirmMoveToDriver} disabled={!moveModal.targetId} style={{ flex:1, padding:"10px 0", borderRadius:9, border:"none", background: moveModal.targetId ? "#0891b2" : "#94a3b8", color:"#fff", fontWeight:800, fontSize:"0.85rem", cursor: moveModal.targetId ? "pointer" : "default" }}>Move to Drivers</button>
               <button onClick={() => setMoveModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reassign driver modal (company picker) ── */}
+      {reassignModal && (
+        <div onClick={() => setReassignModal(null)} style={{ position:"fixed", inset:0, zIndex:9300, background:"rgba(0,0,0,0.65)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:"24px 28px", width:"100%", maxWidth:460 }}>
+            <div style={{ fontWeight:900, fontSize:"1rem", color:"#0f172a", marginBottom:6 }}>⇄ Reassign {reassignModal.driverName}</div>
+            <div style={{ fontSize:"0.82rem", color:"#64748b", marginBottom:18, lineHeight:1.5 }}>Move this driver to the carrier company they actually drive for.</div>
+            <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:6 }}>Driver belongs to *</label>
+            <select value={reassignModal.targetId} onChange={e => setReassignModal(m => m && ({ ...m, targetId: e.target.value }))} style={{ width:"100%", padding:"9px 11px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.85rem", marginBottom:20, background:"#fff" }}>
+              <option value="">— Select a company —</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={confirmReassignDriver} disabled={!reassignModal.targetId} style={{ flex:1, padding:"10px 0", borderRadius:9, border:"none", background: reassignModal.targetId ? "#1d4ed8" : "#94a3b8", color:"#fff", fontWeight:800, fontSize:"0.85rem", cursor: reassignModal.targetId ? "pointer" : "default" }}>Reassign Driver</button>
+              <button onClick={() => setReassignModal(null)} style={{ padding:"10px 18px", borderRadius:9, border:"1px solid #e2e8f0", background:"#f8fafc", color:"#475569", fontWeight:700, fontSize:"0.85rem", cursor:"pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
