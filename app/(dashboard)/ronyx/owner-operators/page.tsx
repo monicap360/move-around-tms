@@ -1346,7 +1346,7 @@ export default function OwnerOperatorsPage() {
       <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(pendingDocRef.current, f); e.target.value = ""; }} />
 
       {/* Breadcrumb */}
-      <button onClick={() => setView("list")} style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", fontSize:"0.83rem", padding:0, marginBottom:14 }}>← Owner Operators</button>
+      <button onClick={() => setView("list")} style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#fff", border:"1px solid #cbd5e1", cursor:"pointer", color:"#1e40af", fontSize:"0.9rem", fontWeight:700, padding:"9px 18px", borderRadius:10, marginBottom:16, boxShadow:"0 1px 3px rgba(0,0,0,0.08)" }}>← Back to All Owner Operators</button>
 
       {/* Company header — redesigned */}
       <div style={{ borderRadius: 14, marginBottom: 12, overflow: "hidden", border: "1px solid #1e293b" }}>
@@ -1377,36 +1377,55 @@ export default function OwnerOperatorsPage() {
 
           {/* Name + meta */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 5 }}>
+            {/* Row 1 — name + status (Mark Not Active pushed to the right) */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
               <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{selected.company_name}</h1>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flex: 1, minWidth: 220 }}>
-                <span style={{ fontSize: "0.9rem" }}>📍</span>
-                <input
-                  key={selected.id + "addr"}
-                  defaultValue={selected.business_address || ""}
-                  placeholder="Add company address…"
-                  title="Click to edit address — saves automatically"
-                  onBlur={e => { const v = e.target.value.trim(); if (v !== (selected.business_address || "")) { updateSelected({ ...selected, business_address: v }); flash("Address saved."); } }}
-                  onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                  style={{ flex: 1, minWidth: 180, border: "none", borderBottom: "1px dashed rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.06)", color: "#e2e8f0", fontSize: "0.8rem", fontWeight: 600, outline: "none", padding: "4px 10px", borderRadius: 6 }}
-                />
-              </span>
-              <button
-                onClick={() => setOOActive(selected, !ooIsActive(selected))}
-                title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
-                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                {ooIsActive(selected) ? "● Mark Not Active" : "○ Reactivate"}
-              </button>
               {!ooIsActive(selected) && (
                 <span style={{ padding: "3px 10px", borderRadius: 999, background: "rgba(239,68,68,0.18)", color: "#fca5a5", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.04em" }}>NOT ACTIVE</span>
               )}
+              <button
+                onClick={() => setOOActive(selected, !ooIsActive(selected))}
+                title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
+                style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {ooIsActive(selected) ? "● Mark Not Active" : "○ Reactivate"}
+              </button>
               {selected.logo_url && (
-                <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ background: "none", border: "none", color: "#475569", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
+                <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
               )}
             </div>
-            {selected.contact_name && (
-              <div style={{ color: "#94a3b8", fontSize: "0.82rem", marginBottom: 3 }}>Contact: <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{selected.contact_name}</span></div>
-            )}
+
+            {/* Row 2 — contact info (address full-width, then phone + email; all auto-save) */}
+            {(() => {
+              const fieldStyle: React.CSSProperties = { flex: 1, minWidth: 0, border: "none", borderBottom: "1px dashed rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.05)", color: "#e2e8f0", fontSize: "0.8rem", fontWeight: 500, outline: "none", padding: "4px 9px", borderRadius: 5 };
+              const wrap: React.CSSProperties = { display: "flex", alignItems: "center", gap: 7 };
+              return (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", maxWidth: 660, marginBottom: 8 }}>
+                  <label style={{ ...wrap, gridColumn: "1 / -1" }}>
+                    <span style={{ fontSize: "0.9rem", opacity: 0.85 }}>📍</span>
+                    <input key={selected.id + "addr"} defaultValue={selected.business_address || ""} placeholder="Add company address…" title="Click to edit — saves automatically"
+                      onBlur={e => { const v = e.target.value.trim(); if (v !== (selected.business_address || "")) { updateSelected({ ...selected, business_address: v }); flash("Address saved."); } }}
+                      onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={fieldStyle} />
+                  </label>
+                  <label style={wrap}>
+                    <span style={{ fontSize: "0.9rem", opacity: 0.85 }}>📞</span>
+                    <input key={selected.id + "ph"} defaultValue={selected.contact_phone || ""} placeholder="Add phone…" title="Click to edit — saves automatically"
+                      onBlur={e => { const v = e.target.value.trim(); if (v !== (selected.contact_phone || "")) { updateSelected({ ...selected, contact_phone: v }); flash("Phone saved."); } }}
+                      onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={fieldStyle} />
+                  </label>
+                  <label style={wrap}>
+                    <span style={{ fontSize: "0.9rem", opacity: 0.85 }}>✉</span>
+                    <input key={selected.id + "em"} defaultValue={selected.contact_email || ""} placeholder="Add email…" title="Click to edit — saves automatically"
+                      onBlur={e => { const v = e.target.value.trim(); if (v !== (selected.contact_email || "")) { updateSelected({ ...selected, contact_email: v }); flash("Email saved."); } }}
+                      onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={fieldStyle} />
+                  </label>
+                  {selected.contact_name && (
+                    <div style={{ ...wrap, gridColumn: "1 / -1", color: "#94a3b8", fontSize: "0.8rem" }}>
+                      <span style={{ fontSize: "0.9rem", opacity: 0.85 }}>👤</span> Contact: <span style={{ color: "#cbd5e1", fontWeight: 600 }}>{selected.contact_name}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div style={{ color: "#cbd5e1", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               {selected.start_date ? (
                 <span>Since <strong style={{ color: "#f1f5f9" }}>{new Date(selected.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</strong></span>
@@ -1466,8 +1485,7 @@ export default function OwnerOperatorsPage() {
               </span>
             );
           })}
-          <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16, display:"inline-flex", alignItems:"center", gap:4 }}>📞 <input key={selected.id+"ph"} defaultValue={selected.contact_phone||""} placeholder="add phone" title="Click to edit — saves automatically" onBlur={e=>{const v=e.target.value.trim(); if(v!==(selected.contact_phone||"")){updateSelected({...selected,contact_phone:v}); flash("Phone saved.");}}} onKeyDown={e=>{if(e.key==="Enter")(e.target as HTMLInputElement).blur();}} style={{ border:"none", borderBottom:"1px dashed #64748b", background:"transparent", color:"#cbd5e1", fontSize:"0.82rem", outline:"none", padding:"1px 2px", width:130 }} /></span>
-          <span style={{ color:"#94a3b8", fontSize:"0.82rem", marginRight:16, display:"inline-flex", alignItems:"center", gap:4 }}>✉ <input key={selected.id+"em"} defaultValue={selected.contact_email||""} placeholder="add email" title="Click to edit — saves automatically" onBlur={e=>{const v=e.target.value.trim(); if(v!==(selected.contact_email||"")){updateSelected({...selected,contact_email:v}); flash("Email saved.");}}} onKeyDown={e=>{if(e.key==="Enter")(e.target as HTMLInputElement).blur();}} style={{ border:"none", borderBottom:"1px dashed #64748b", background:"transparent", color:"#cbd5e1", fontSize:"0.82rem", outline:"none", padding:"1px 2px", width:180 }} /></span>
+          {/* phone + email moved to the contact grid in the header above */}
           {(() => {
             const addr = [selected.company_address_line1, [selected.company_city, selected.company_state].filter(Boolean).join(", "), selected.company_zip].filter(Boolean).join(" · ") || selected.business_address;
             if (!addr) return null;
