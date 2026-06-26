@@ -111,33 +111,35 @@ function MissingQueue({ reqs }: { reqs: Req[] }) {
   if (issues.length === 0) return null;
 
   return (
-    <div style={{ border: "1px solid #fca5a5", borderRadius: 12, background: "#fff", overflow: "hidden", marginBottom: 24 }}>
-      <div style={{ padding: "12px 18px", background: "#fef2f2", borderBottom: "1px solid #fca5a5", display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 14 }}>⚠️</span>
+    <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 26,
+      background: "radial-gradient(900px 300px at 90% -40%, rgba(248,113,113,0.14), transparent), linear-gradient(135deg,#0b1120 0%,#131a2e 100%)",
+      border: "1px solid rgba(248,113,113,0.3)", boxShadow: "0 18px 50px rgba(2,6,23,0.45)" }}>
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(248,113,113,0.18)", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ width: 30, height: 30, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.35)", fontSize: 15 }}>⚠️</span>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 13, color: "#991b1b" }}>Missing Requirements Work Queue</div>
-          <div style={{ fontSize: 11, color: "#dc2626" }}>{issues.length} requirement{issues.length > 1 ? "s" : ""} that block dispatch if missing</div>
+          <div style={{ fontWeight: 800, fontSize: 13, color: "#fecaca", letterSpacing: "0.02em" }}>Missing Requirements Work Queue</div>
+          <div style={{ fontSize: 11, color: "#f87171" }}>{issues.length} requirement{issues.length > 1 ? "s" : ""} that block dispatch if missing</div>
         </div>
       </div>
-      <div style={{ padding: "12px 18px" }}>
+      <div style={{ padding: "8px 12px 14px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+            <tr style={{ borderBottom: "1px solid rgba(148,163,184,0.15)" }}>
               {["Customer","Applies To","Requirement","Assigned Role","Action"].map((h) => (
-                <th key={h} style={{ padding: "6px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: 9.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {issues.map((r) => (
-              <tr key={r.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                <td style={{ padding: "7px 10px", fontWeight: 600, color: "#0f172a" }}>{r.customer_name}</td>
-                <td style={{ padding: "7px 10px", color: "#475569" }}>{APPLIES_ICONS[r.applies_to]} {r.applies_to.replace("_"," ")}</td>
-                <td style={{ padding: "7px 10px", color: "#0f172a" }}>{r.requirement_label}</td>
-                <td style={{ padding: "7px 10px", color: "#64748b" }}>{r.assigned_role ?? "—"}</td>
-                <td style={{ padding: "7px 10px" }}>
+              <tr key={r.id} style={{ borderBottom: "1px solid rgba(148,163,184,0.08)" }}>
+                <td style={{ padding: "9px 10px", fontWeight: 700, color: "#e2e8f0" }}>{r.customer_name}</td>
+                <td style={{ padding: "9px 10px", color: "#94a3b8" }}>{APPLIES_ICONS[r.applies_to]} {r.applies_to.replace("_"," ")}</td>
+                <td style={{ padding: "9px 10px", color: "#cbd5e1" }}>{r.requirement_label}</td>
+                <td style={{ padding: "9px 10px", color: "#94a3b8" }}>{r.assigned_role ?? "—"}</td>
+                <td style={{ padding: "9px 10px" }}>
                   <Link href={`/ronyx/compliance/customer-dispatch-requirements/${encodeURIComponent(r.customer_name)}`}
-                    style={{ display: "inline-block", padding: "3px 10px", borderRadius: 5, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "none" }}>
+                    style={{ display: "inline-block", padding: "4px 12px", borderRadius: 7, background: "linear-gradient(135deg,#06b6d4,#3b82f6)", color: "#fff", fontSize: 10, fontWeight: 800, cursor: "pointer", textDecoration: "none", boxShadow: "0 0 14px rgba(34,211,238,0.35)" }}>
                     Review
                   </Link>
                 </td>
@@ -232,61 +234,52 @@ export default function CustomerDispatchRequirementsPage() {
   return (
     <div style={{ padding: "28px 32px", fontFamily: "'Inter','Segoe UI',sans-serif", maxWidth: 1300, margin: "0 auto" }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: "1.45rem", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.5px" }}>
-          Clearance Check™
-        </div>
-        <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-          Customer, driver, truck, owner operator, COI, insurance, and document requirements checked before dispatch.
-        </div>
-      </div>
-
-      {/* AI Requirement Guard */}
-      <div style={{ border: "1px solid #bfdbfe", borderRadius: 14, background: "linear-gradient(135deg,#eff6ff 0%,#f0f9ff 100%)", padding: "18px 22px", marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>AI Clearance Check</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#1e3a8a", marginBottom: 6 }}>Today's Focus</div>
-            <div style={{ fontSize: 13, color: "#1e40af" }}>
-              Checks customer-specific requirements before release so no driver, truck, or owner operator is dispatched with missing documents.
+      {/* ── Futuristic CCB Shield command hero ── */}
+      <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", marginBottom: 26,
+        background: "radial-gradient(1200px 420px at 8% -30%, rgba(34,211,238,0.20), transparent), linear-gradient(135deg,#0b1120 0%,#0f172a 55%,#111827 100%)",
+        border: "1px solid rgba(56,189,248,0.28)", boxShadow: "0 24px 70px rgba(2,6,23,0.55)" }}>
+        {/* glow grid */}
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.55,
+          backgroundImage: "linear-gradient(rgba(56,189,248,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.06) 1px,transparent 1px)",
+          backgroundSize: "34px 34px" }} />
+        <div style={{ position: "relative", padding: "26px 28px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ minWidth: 280 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <span style={{ width: 40, height: 40, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#06b6d4,#3b82f6)", boxShadow: "0 0 22px rgba(34,211,238,0.55)", fontSize: 19 }}>🛡️</span>
+                <div>
+                  <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px", textShadow: "0 0 22px rgba(56,189,248,0.35)" }}>Clearance Check™</div>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.16em" }}>CCB Shield · Pre-Dispatch Gate</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: "#94a3b8", maxWidth: 560, lineHeight: 1.55 }}>
+                Customer, driver, truck, owner-operator, COI, insurance, and document requirements verified before any load is released to dispatch.
+              </div>
+              {expiringOverrides > 0 && (
+                <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#fbbf24", fontWeight: 700, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.32)", padding: "5px 12px", borderRadius: 20 }}>
+                  ⚠ {expiringOverrides} override{expiringOverrides > 1 ? "s" : ""} expiring within 7 days
+                </div>
+              )}
             </div>
-            {expiringOverrides > 0 && (
-              <div style={{ marginTop: 10, fontSize: 12, color: "#92400e", fontWeight: 600 }}>
-                ⚠ {expiringOverrides} override{expiringOverrides > 1 ? "s" : ""} expiring within 7 days — review before dispatch.
-              </div>
-            )}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {[
+                { label: "Customers",         value: customers.length,     color: "#38bdf8" },
+                { label: "Dispatch Blockers",  value: totalBlockers,        color: "#f87171" },
+                { label: "Override-Allowed",   value: totalOverrideAllowed, color: "#fbbf24" },
+                { label: "Active Overrides",   value: activeOverrides,      color: "#34d399" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ minWidth: 98, textAlign: "center", padding: "13px 15px", borderRadius: 13, background: "rgba(255,255,255,0.03)", border: `1px solid ${color}33`, boxShadow: `inset 0 0 22px ${color}12` }}>
+                  <div style={{ fontSize: 27, fontWeight: 900, color, textShadow: `0 0 16px ${color}66`, lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 6 }}>{label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 24, flexShrink: 0 }}>
-            {[
-              { label: "Customers",         value: customers.length,    color: "#1d4ed8" },
-              { label: "Dispatch Blockers",  value: totalBlockers,       color: "#dc2626" },
-              { label: "Override-Allowed",   value: totalOverrideAllowed, color: "#d97706" },
-              { label: "Active Overrides",   value: activeOverrides,     color: "#16a34a" },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
-                <div style={{ fontSize: 10, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
-              </div>
-            ))}
+          <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+            <Link href="/ronyx/compliance/overrides" style={{ display: "inline-block", padding: "8px 16px", borderRadius: 9, background: "linear-gradient(135deg,#06b6d4,#3b82f6)", color: "#fff", fontSize: 12, fontWeight: 800, textDecoration: "none", boxShadow: "0 0 18px rgba(34,211,238,0.4)" }}>Active Overrides</Link>
+            <button onClick={() => setShowBuilder(true)} style={{ padding: "8px 16px", borderRadius: 9, border: "1px solid rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.08)", color: "#7dd3fc", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>+ Add Requirement</button>
+            <Link href="/ronyx/compliance" style={{ display: "inline-block", padding: "8px 16px", borderRadius: 9, border: "1px solid rgba(148,163,184,0.3)", background: "rgba(255,255,255,0.02)", color: "#cbd5e1", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>Compliance Center</Link>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-          <Link href="/ronyx/compliance/overrides"
-            style={{ display: "inline-block", padding: "6px 14px", borderRadius: 7, border: "none", background: "#1d4ed8", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "none" }}>
-            Active Overrides
-          </Link>
-          <button
-            onClick={() => setShowBuilder(true)}
-            style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #bfdbfe", background: "#fff", color: "#1d4ed8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-          >
-            + Add Requirement
-          </button>
-          <Link href="/ronyx/compliance">
-            <button style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-              Compliance Center
-            </button>
-          </Link>
         </div>
       </div>
 
