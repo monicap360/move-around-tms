@@ -33,6 +33,12 @@ const nextConfig = {
     unoptimized: true,
   },
 
+  // Next 16 builds with Turbopack by default. We keep the `webpack` config below for
+  // the `build:webpack` fallback, but Turbopack needs its own config block (even empty)
+  // or it errors out. The `@/` alias resolves from tsconfig paths, so no extra config
+  // is needed here. Node built-ins in client bundles are handled by Turbopack natively.
+  turbopack: {},
+
   serverExternalPackages: [
     "exceljs",
     "archiver",
