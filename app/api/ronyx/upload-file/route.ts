@@ -115,25 +115,23 @@ export async function POST(req: Request) {
   try {
     const row: Record<string, unknown> = {
       organization_id:   orgId,
-      module:            fileModule,
-      source_file_name:  file.name,
-      storage_bucket:    storageOk ? usedBucket : "pending",
+      upload_type:       fileModule,
+      file_name:         file.name,
+      bucket_name:       storageOk ? usedBucket : "pending",
       storage_path:      storagePath,
-      file_type:         fileType,
-      file_size_bytes:   file.size,
       mime_type:         file.type || null,
-      is_original:       true,
-      is_deleted:        false,
+      file_size_bytes:   file.size,
+      metadata:          { file_type: fileType, module: fileModule, oo_id: ooId || null, is_original: true },
     };
-    if (ooId) row.notes = `oo_id:${ooId}`;
-    const { data } = await supabaseAdmin
+    const { data, error: insErr } = await supabaseAdmin
       .from("original_uploads")
       .insert(row)
       .select("id")
       .single();
+    if (insErr) console.error("[upload-file] original_uploads insert failed:", insErr.message);
     uploadId = data?.id || null;
-  } catch {
-    // Table doesn't exist yet — storage still worked, just no DB tracking
+  } catch (e) {
+    console.error("[upload-file] original_uploads tracking error:", e);
   }
 
   // ── Auto-route the file to the right place: an Owner-Operator COMPANY (contract /

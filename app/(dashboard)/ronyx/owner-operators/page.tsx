@@ -946,6 +946,7 @@ export default function OwnerOperatorsPage() {
   // modal isn't mounted). Opens the tab synchronously on the click so it isn't
   // popup-blocked, then redirects it to the signed URL once we have it.
   function openDocNewTab(fileUrl: string) {
+    flash("🔒 Opening securely from your Backup Vault…");
     const w = window.open("", "_blank");
     fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`)
       .then(r => r.json())
@@ -2844,9 +2845,7 @@ export default function OwnerOperatorsPage() {
           <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.88rem", marginBottom:10 }}>📄 Certificates of Insurance (COI)</div>
           <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
             {[
-              { type:"COI — Ronyx Logistics",  label:"Ronyx",           fullLabel:"Ronyx Logistics",  icon:"🚚", color:"#15803d", bg:"#f0fdf4", border:"#86efac" },
-              { type:"COI — M.A. Mortenson",   label:"M.A. Mortenson", fullLabel:"M.A. Mortenson",   icon:"🏗️", color:"#1e40af", bg:"#eff6ff", border:"#93c5fd" },
-              { type:"COI — BAS Equipment",    label:"BAS Equipment",  fullLabel:"BAS Equipment",    icon:"🚜", color:"#0891b2", bg:"#f0f9ff", border:"#7dd3fc" },
+              { type:"Insurance Certificate (COI)", label:"COI", fullLabel:"Certificate of Insurance", icon:"📄", color:"#15803d", bg:"#f0fdf4", border:"#86efac" },
             ].map(({ type: docType, label, fullLabel, icon, color, bg, border }) => {
               const existing = selected.documents.find(d => d.type === docType);
               const expDays  = existing?.expires_on ? daysUntil(existing.expires_on) : null;
@@ -4247,6 +4246,9 @@ export default function OwnerOperatorsPage() {
                 <span style={{ fontSize:"1.1rem" }}>{isPdf ? "📄" : isImage ? "🖼️" : "📁"}</span>
                 <span style={{ flex:1, fontWeight:700, fontSize:"0.85rem", color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {docViewer.filename || "Document"}
+                </span>
+                <span title="Encrypted private storage — only authorized staff can open this via a short-lived secure link" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", background:"#ecfdf5", color:"#047857", borderRadius:20, fontWeight:700, fontSize:"0.68rem", border:"1px solid #a7f3d0", flexShrink:0 }}>
+                  🔒 Securely stored in Backup Vault
                 </span>
                 <a href={docViewer.url} download target="_blank" rel="noreferrer"
                   style={{ padding:"5px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", textDecoration:"none", border:"1px solid #e2e8f0" }}>
