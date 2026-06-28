@@ -18,6 +18,7 @@
 
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { FEDERAL_TRUCKING, lookupStateRule, ALL_STATE_NAMES, DISCLAIMER, TRUCKING_REQUIREMENTS } from "./stateTruckingRules";
 
 export type RoryToolStatus = "ok" | "no_data_source" | "tool_error";
 
@@ -677,6 +678,62 @@ export const RORY_TOOLS: RoryTool[] = [
     },
   },
 ];
+
+// ── reference tools (built-in trucking knowledge — NOT org data, NOT legal advice) ──
+RORY_TOOLS.push(
+  {
+    name: "get_state_trucking_rules",
+    description:
+      "Call this for a STATE's operational trucking rules: max gross/axle weight, width, height, trailer length, seasonal chain laws, idling limits, and the oversize/overweight permit office. Use for 'what's the weight limit in Texas?', 'does Colorado have a chain law?', 'max height in California?', 'who issues oversize permits in Ohio?'. Built-in reference data (every state + DC), not the org's records.",
+    maxResults: 1,
+    input: z.object({
+      state: z.string().optional(),
+      topic: z.enum(["weight", "dimensions", "axles", "chains", "idling", "permits", "all"]).optional(),
+    }),
+    jsonSchema: {
+      type: "object", additionalProperties: false,
+      properties: {
+        state: { type: "string", description: "State name or 2-letter abbreviation (e.g. 'Texas' or 'TX'). Omit to get the federal baseline." },
+        topic: { type: "string", enum: ["weight", "dimensions", "axles", "chains", "idling", "permits", "all"], description: "Optional focus area." },
+      },
+    },
+    async execute(input) {
+      const i = input as { state?: string };
+      if (!i.state) {
+        return { ok: true, status: "ok", count: 0, capped: false, rows: [], summary: { federal: FEDERAL_TRUCKING, available_states: ALL_STATE_NAMES, disclaimer: DISCLAIMER, note: "Specify a state for state-specific limits." } };
+      }
+      const rule = lookupStateRule(i.state);
+      if (!rule) return { ok: true, status: "ok", count: 0, capped: false, rows: [], note: `No reference found for "${i.state}".`, summary: { available_states: ALL_STATE_NAMES, disclaimer: DISCLAIMER } };
+      return { ok: true, status: "ok", count: 1, capped: false, rows: [rule], summary: { federal: FEDERAL_TRUCKING, disclaimer: DISCLAIMER } };
+    },
+  },
+  {
+    name: "get_trucking_requirements",
+    description:
+      "Call this for FEDERAL trucking compliance requirements — what it takes to operate legally: operating authority (USDOT/MC, UCR, BOC-3), driver qualification (CDL classes & endorsements, DOT medical card, drug & alcohol testing + FMCSA Clearinghouse, ELDT), hours of service & ELD, vehicle inspection (annual DOT, DVIR), insurance minimums, taxes/registration (IRP, IFTA, UCR, Form 2290/HVUT), hazmat, and FOREIGN DRIVER LICENSING (Mexico & Venezuela drivers driving in Texas/US). Use for 'what insurance do I need?', 'CDL endorsements?', 'can a Mexican/Venezuelan driver drive in Texas?', 'what's required to run interstate?'. Built-in reference, not legal advice.",
+    maxResults: 12,
+    input: z.object({
+      topic: z.enum(["operating_authority", "driver_qualification", "cdl", "medical_card", "drug_alcohol", "hours_of_service", "eld", "vehicle_inspection", "insurance", "taxes_registration", "hazmat", "foreign_driver_licensing", "all"]).optional(),
+    }),
+    jsonSchema: {
+      type: "object", additionalProperties: false,
+      properties: {
+        topic: { type: "string", enum: ["operating_authority", "driver_qualification", "cdl", "medical_card", "drug_alcohol", "hours_of_service", "eld", "vehicle_inspection", "insurance", "taxes_registration", "hazmat", "foreign_driver_licensing", "all"], description: "Optional area to focus on (e.g. foreign_driver_licensing for Mexico/Venezuela drivers). Omit for an overview of all categories." },
+      },
+    },
+    async execute(input) {
+      const i = input as { topic?: string };
+      const all = TRUCKING_REQUIREMENTS;
+      if (!i.topic || i.topic === "all") {
+        const rows = Object.entries(all).map(([key, v]) => ({ topic: key, title: v.title, items: v.items }));
+        return { ok: true, status: "ok", count: rows.length, capped: false, rows, summary: { disclaimer: DISCLAIMER } };
+      }
+      const block = (all as Record<string, { title: string; items: string[] }>)[i.topic];
+      if (!block) return { ok: true, status: "ok", count: 0, capped: false, rows: [], note: `No reference for "${i.topic}".`, summary: { topics: Object.keys(all), disclaimer: DISCLAIMER } };
+      return { ok: true, status: "ok", count: 1, capped: false, rows: [{ topic: i.topic, title: block.title, items: block.items }], summary: { disclaimer: DISCLAIMER } };
+    },
+  },
+);
 
 export const RORY_TOOLS_BY_NAME: Record<string, RoryTool> = Object.fromEntries(RORY_TOOLS.map((t) => [t.name, t]));
 

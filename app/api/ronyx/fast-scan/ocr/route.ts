@@ -80,61 +80,56 @@ export async function POST(req: NextRequest) {
     const qrUrl   = `${appUrl}/ronyx/scan?t=${qrToken}`;
 
     // ── Map to existing aggregate_tickets columns only ──────────────────────
-    // Ronyx-specific fields that don't have a column yet go into ocr_json (migration 089).
+    // NOTE: This live aggregate_tickets table does NOT have columns for
+    // shift / pickup_location / load_type / signature_name / payment_status /
+    // ocr_json / original_upload_id (schema drift vs the repo migrations).
+    // We only insert columns that exist, and preserve the extra OCR detail
+    // inside validation_errors (an existing jsonb column) so nothing is lost.
+    // The scan↔ticket link is also recorded in fast_scan_audit_events.
     const row: Record<string, unknown> = {
       organization_id:  orgId,
-      // Core fields (migration 003, 069)
       ticket_number:    body.ticket_number?.trim()       || null,
       ticket_date:      body.ticket_date                  || new Date().toISOString().slice(0, 10),
       driver_name:      body.driver_printed_name?.trim()  || null,
       truck_number:     body.truck_number?.trim()         || null,
-      load_type:        body.truck_type                   || null,   // mapped: truck_type → load_type
-      shift:            body.shift_type                   || null,
       material:         body.material?.trim()             || null,
       quantity:         loadsNum,
       company_name:     body.company_name_of_truck?.trim() || null,  // mapped: company_name_of_truck → company_name
       customer_name:    body.customer?.trim()             || null,
-      pickup_location:  body.location?.trim()             || null,
-      signature_name:   body.authorized_person?.trim()    || null,   // mapped: authorized_person → signature_name
       has_signature:    body.signature_present            ?? false,
       source:           body.scan_source                  || "fast_scan_ocr",
       status:           "pending",
-      payment_status:   "unpaid",
       has_photo:        true,
       payroll_hold:     true,
       billing_hold:     true,
       payroll_matched:  false,
       billing_matched:  false,
-      // QR (migration 110)
       qr_token:         qrToken,
       qr_url:           qrUrl,
       qr_created_at:    new Date().toISOString(),
-      // Validation (migration 103)
       validation_status: exception_flags.length > 0 ? "error" : missing_fields.length > 0 ? "warning" : "passed",
       validation_errors: {
         errors:      exception_flags,
         warnings:    missing_fields.map(f => `Missing: ${f}`),
         corrections: [],
-      },
-      // All Ronyx-specific OCR data stored in ocr_json (migration 089 col)
-      ocr_json: {
-        start_time:           body.start_time           || null,
-        end_time:             body.end_time             || null,
-        total_hours:          hoursNum,
-        copy_color:           body.copy_color           || null,
-        ocr_raw_text:         body.raw_ocr_text         || null,
-        ocr_confidence:       body.ocr_confidence       ?? null,
-        extraction_confidence: body.extraction_confidence ?? null,
-        document_type:        "ronyx_field_ticket",
-        scan_batch_id:        body.scan_batch_id        || null,
-        scan_quality_flags:   body.scan_quality_flags   || [],
-        missing_fields,
-        exception_flags,
+        // Extra OCR detail with no dedicated column on this table (full raw data is on the fast_scan_documents record):
+        ocr: {
+          start_time:            body.start_time            || null,
+          end_time:              body.end_time              || null,
+          total_hours:           hoursNum,
+          copy_color:            body.copy_color            || null,
+          ocr_confidence:        body.ocr_confidence        ?? null,
+          extraction_confidence: body.extraction_confidence ?? null,
+          scan_batch_id:         body.scan_batch_id         || null,
+          location:              body.location?.trim()      || null,
+          shift:                 body.shift_type            || null,
+          load_type:             body.truck_type            || null,
+          signed_by:             body.authorized_person?.trim() || null,
+          original_upload_id:    body.original_upload_id    || null,
+          document_type:         "ronyx_field_ticket",
+        },
       },
     };
-
-    // Link to original upload if provided (migration 154 adds this column)
-    if (body.original_upload_id) row.original_upload_id = body.original_upload_id;
 
     const { data: ticket, error } = await supabase
       .from("aggregate_tickets")
@@ -145,13 +140,13 @@ export async function POST(req: NextRequest) {
     if (error) {
       // Retry with progressively more minimal inserts to handle unmigrated tables
       const baseRow = {
+        organization_id: row.organization_id,
         ticket_number:   row.ticket_number,
         ticket_date:     row.ticket_date,
         driver_name:     row.driver_name,
         truck_number:    row.truck_number,
         material:        row.material,
         customer_name:   row.customer_name,
-        pickup_location: row.pickup_location,
         status:          row.status,
         source:          row.source,
       };
@@ -159,7 +154,7 @@ export async function POST(req: NextRequest) {
       // Try with mid-level columns first
       const { data: t2, error: e2 } = await supabase
         .from("aggregate_tickets")
-        .insert({ ...baseRow, quantity: row.quantity, payment_status: row.payment_status })
+        .insert({ ...baseRow, quantity: row.quantity })
         .select("id, ticket_number")
         .single();
 

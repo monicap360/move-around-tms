@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -60,9 +61,29 @@ function mapJobStatus(raw: string) {
   return "unknown";
 }
 
+// Robustly parse a "Start Time" cell. Handles normal date strings AND Excel serial
+// numbers (e.g. "46135.25") that spreadsheets export. Returns null (never throws)
+// for unparseable values — a bad time must not crash the whole import.
+function parseStartTime(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  const s = String(v).trim();
+  // Excel serial date (days since 1899-12-30): a bare 4–6 digit number, optional fraction
+  if (/^\d{4,6}(\.\d+)?$/.test(s)) {
+    const serial = parseFloat(s);
+    const d = new Date(Math.round((serial - 25569) * 86400000)); // 25569 = Excel→Unix epoch offset
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 // ─── POST /api/ronyx/dispatch-import ──────────────────────
 export async function POST(req: Request) {
   const sb = supabaseAdmin;
+  // Tenant scoping — without this, imported rows get organization_id=null and the
+  // org-scoped Dispatch board / Command Center / Smart Assign never show them.
+  const orgId = await resolveOrgId();
+  if (!orgId) return NextResponse.json({ error: "Could not resolve your organization." }, { status: 400 });
   const body = await req.json();
   const { rows, file_name, schedule_date, import_name, original_upload_id } = body as {
     rows:                 Record<string, string>[];
@@ -78,6 +99,7 @@ export async function POST(req: Request) {
   const { data: importBatch, error: importErr } = await sb
     .from("dispatch_imports")
     .insert({
+      organization_id:    orgId,
       import_name:        import_name || file_name,
       source_file_name:   file_name,
       schedule_date,
@@ -118,8 +140,10 @@ export async function POST(req: Request) {
     });
 
     return {
+      organization_id:          orgId,
       dispatch_import_id:       importBatch.id,
-      start_time:               row["Start Time"] ? new Date(row["Start Time"]).toISOString() : null,
+      start_time:               parseStartTime(row["Start Time"]),
+      pickup_time:              parseStartTime(row["Start Time"]), // so the org-scoped Dispatcher/Smart Assign (which filters on pickup_time) sees imported jobs
       truck_number:             row["Truck Number"]?.trim() || null,
       vendor_name:              row["Vendor"]?.trim() || row["Carrier"]?.trim() || null,
       driver_name:              row["Driver"]?.trim() || null,

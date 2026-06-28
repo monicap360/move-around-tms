@@ -26,6 +26,9 @@ const SUGGESTED = [
   "What payroll items need review?",
   "Which owner operators have compliance issues?",
   "What customer clearance issues need attention?",
+  "What's the weight limit in Texas?",
+  "Does Colorado have a chain law?",
+  "What insurance minimums do I need to run interstate?",
 ];
 
 const TOOL_LABELS: Record<string, string> = {
@@ -38,6 +41,8 @@ const TOOL_LABELS: Record<string, string> = {
   get_payroll_review_summary: "Payroll review",
   get_customer_clearance_status: "Customer clearance",
   get_operations_priority_summary: "Operations priority summary",
+  get_state_trucking_rules: "State trucking rules",
+  get_trucking_requirements: "Federal trucking requirements",
 };
 
 type BriefItem = { issue: string; count: number; severity: string; explanation: string; module?: string };

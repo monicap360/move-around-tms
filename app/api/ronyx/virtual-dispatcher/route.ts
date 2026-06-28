@@ -52,9 +52,15 @@ type OwnerSummary = {
 
 // ─── Driver scoring ───────────────────────────────────────────────────────────
 
+// A driver counts as available for assignment unless explicitly off/inactive.
+// Real driver rows use status "active" (not "available"), and a null status is
+// treated as active — so Smart Assign considers them instead of recommending no one.
+const UNAVAILABLE_STATUSES = ["off_duty", "unavailable", "inactive", "deleted", "on_leave", "terminated", "suspended", "on_trip", "busy"];
+const isAvailable = (s?: string | null) => !UNAVAILABLE_STATUSES.includes((s || "active").toLowerCase());
+
 function scoreDriver(driver: any, job: any): number {
   let score = 0;
-  if (driver.status === "available")         score += 40;
+  if (isAvailable(driver.status))            score += 40;
   else if (driver.status === "off_duty")     score += 5;
   else                                        score -= 20;
   if (driver.compliance === "valid")         score += 25;
@@ -68,7 +74,7 @@ function scoreDriver(driver: any, job: any): number {
 
 function driverReasons(driver: any): string[] {
   const r: string[] = [];
-  if (driver.status === "available")         r.push("Available now");
+  if (isAvailable(driver.status))            r.push("Available now");
   if (driver.compliance === "valid")         r.push("Full compliance");
   if (!driver.active_job)                    r.push("No active trip");
   if (driver.vehicle)                        r.push(`Vehicle Unit ${driver.vehicle}`);
@@ -194,7 +200,7 @@ export async function GET(req: Request) {
   // 2. Unassigned trips with pickup < 30 min
   for (const j of jobs) {
     if (!j.assigned_driver_id && j.minsUntil != null && j.minsUntil > 0 && j.minsUntil <= 30 && !["completed","billing_review","cancelled"].includes(j.job_status)) {
-      const available = drivers.filter(d => d.eligible && d.compliance !== "expired" && d.status === "available");
+      const available = drivers.filter(d => d.eligible && d.compliance !== "expired" && isAvailable(d.status));
       const scored = available.map(d => ({ ...d, score: scoreDriver(d, j) })).sort((a, b) => b.score - a.score);
       const top = scored[0] || null;
       actions.push({
@@ -236,7 +242,7 @@ export async function GET(req: Request) {
   // 4. Unassigned trips with pickup 30–60 min
   for (const j of jobs) {
     if (!j.assigned_driver_id && j.minsUntil != null && j.minsUntil > 30 && j.minsUntil <= 60 && !["completed","billing_review","cancelled"].includes(j.job_status)) {
-      const available = drivers.filter(d => d.eligible && d.compliance !== "expired" && d.status === "available");
+      const available = drivers.filter(d => d.eligible && d.compliance !== "expired" && isAvailable(d.status));
       const scored = available.map(d => ({ ...d, score: scoreDriver(d, j) })).sort((a, b) => b.score - a.score);
       const top = scored[0] || null;
       actions.push({
@@ -367,7 +373,7 @@ export async function GET(req: Request) {
     !["completed","billing_review","cancelled"].includes(j.job_status)
   );
 
-  const availableDrivers = drivers.filter(d => d.eligible && d.compliance !== "expired" && ["available"].includes(d.status));
+  const availableDrivers = drivers.filter(d => d.eligible && d.compliance !== "expired" && isAvailable(d.status));
 
   const driverRecs: DriverRec[] = unassignedJobs.slice(0, 8).map(j => {
     const scored = availableDrivers

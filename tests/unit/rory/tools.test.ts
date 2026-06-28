@@ -63,7 +63,7 @@ const ORG_B = "org-bbbb";
 const tool = (name: string) => RORY_TOOLS_BY_NAME[name];
 
 describe("Rory registry", () => {
-  it("declares exactly the 9 approved tools and nothing else is callable", () => {
+  it("declares exactly the approved tools and nothing else is callable", () => {
     const names = RORY_TOOLS.map((t) => t.name).sort();
     expect(names).toEqual([
       "find_dispatch_eligible_drivers",
@@ -74,7 +74,9 @@ describe("Rory registry", () => {
       "get_fleet_readiness",
       "get_operations_priority_summary",
       "get_payroll_review_summary",
+      "get_state_trucking_rules",
       "get_ticket_exceptions",
+      "get_trucking_requirements",
     ]);
     // Undeclared tools are not resolvable (route returns is_error for these).
     expect(RORY_TOOLS_BY_NAME["delete_everything"]).toBeUndefined();
@@ -83,7 +85,7 @@ describe("Rory registry", () => {
 
   it("exposes Anthropic tool defs with locked-down JSON schemas", () => {
     const defs = anthropicToolDefs();
-    expect(defs).toHaveLength(9);
+    expect(defs).toHaveLength(11);
     for (const d of defs) {
       expect(d.input_schema).toMatchObject({ type: "object", additionalProperties: false });
     }

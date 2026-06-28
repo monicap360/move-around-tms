@@ -1809,7 +1809,7 @@ export default function OwnerOperatorsPage() {
                       </label>
                       {f && (<>
                         <button title={f.file_url ? "View document" : "No file stored — Replace to upload"}
-                          onClick={() => f.file_url ? openDoc(f.file_url, false, f.file_name) : flash("No file stored — use Replace to upload.")}
+                          onClick={() => f.file_url ? openDoc(f.file_url, false, f.file_name, selected.id, e.type) : flash("No file stored — use Replace to upload.")}
                           style={docIconBtn}>👁</button>
                         <button title={f.file_url ? "Email document" : "No file stored"} disabled={!f.file_url}
                           onClick={() => f.file_url && setDocEmailModal({
@@ -2942,7 +2942,7 @@ export default function OwnerOperatorsPage() {
           <div style={{ background:"#fff7ed", border:"1px solid #fdba74", borderRadius:12, padding:"12px 18px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
             <div>
               <div style={{ fontWeight:800, color:"#c2410c", fontSize:"0.82rem", marginBottom:2 }}>🔍 Verify Insurance (COI Check)</div>
-              <div style={{ fontSize:"0.75rem", color:"#92400e" }}>Confirm the carrier's policy is active and not fraudulent via FMCSA or ACORD database.</div>
+              <div style={{ fontSize:"0.75rem", color:"#92400e" }}>Confirm the carrier's policy is active and valid via FMCSA or ACORD database.</div>
             </div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {/* CCB™ FMCSA Live Verify — uses API key stored in integrations table */}
@@ -3012,7 +3012,7 @@ export default function OwnerOperatorsPage() {
                       )}
                       {existing.file_url ? (
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType,selected.id,docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
                           <button onClick={()=>openDoc(existing.file_url!,true,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
                           <a href={`mailto:?subject=${encodeURIComponent(docType+" — "+selected.company_name)}&body=${encodeURIComponent("Document: "+existing.file_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
                         </div>
@@ -3058,7 +3058,7 @@ export default function OwnerOperatorsPage() {
                   {/* Single action area */}
                   <div style={{ display:"flex", gap:6, flexShrink:0, alignItems:"center" }}>
                     {existing?.file_url && (
-                      <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)}
+                      <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType,selected.id,docType)}
                         style={{ fontSize:"0.72rem", fontWeight:700, color:color, background:bg, padding:"5px 12px", borderRadius:7, border:`1px solid ${border}`, cursor:"pointer" }}>
                         👁 View / Print
                       </button>
@@ -3138,7 +3138,7 @@ export default function OwnerOperatorsPage() {
                       ) : null}
                       {existing.file_url ? (
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
+                          <button onClick={()=>openDoc(existing.file_url!,false,existing.file_name||docType,selected.id,docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#1e40af", background:"#dbeafe", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>👁 View</button>
                           <button onClick={()=>openDoc(existing.file_url!,true,existing.file_name||docType)} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#374151", background:"#f3f4f6", padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer" }}>🖨️ Print</button>
                           <a href={`mailto:?subject=${encodeURIComponent(docType+" — "+selected.company_name)}&body=${encodeURIComponent("Document: "+existing.file_name+"\n\nView / download:\n"+existing.file_url)}`} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:"0.7rem", fontWeight:700, color:"#065f46", background:"#d1fae5", padding:"4px 9px", borderRadius:6, textDecoration:"none" }}>📧 Email</a>
                         </div>
@@ -3297,7 +3297,7 @@ export default function OwnerOperatorsPage() {
                               {/* View button — opens file in new tab */}
                               {doc.file_url ? (
                                 <button
-                                  onClick={()=>openDoc(doc.file_url!)}
+                                  onClick={()=>openDoc(doc.file_url!, false, doc.file_name, selected.id, doc.type)}
                                   style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}
                                 >
                                   👁 View
@@ -4038,14 +4038,14 @@ export default function OwnerOperatorsPage() {
                           <button onClick={() => updateCOIStatus(doc.id, { review_status:"approved", reviewed_by:"Staff", status:"complete" })} style={{ background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>✓ Approve</button>
                         )}
                         {doc.review_status === "flagged_fraudulent" ? (
-                          <span style={{ background:"#450a0a", color:"#f87171", border:"1px solid #7f1d1d", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:800 }}>🚨 FLAGGED FRAUDULENT</span>
+                          <span style={{ background:"#450a0a", color:"#f87171", border:"1px solid #7f1d1d", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:800 }}>🚨 FLAGGED — NEEDS VERIFICATION</span>
                         ) : (
                           <button onClick={() => {
-                            if (window.confirm(`Flag this COI as potentially fraudulent?\n\nThis will:\n• Set status to "Flagged – Fraudulent"\n• Block dispatch for ${selected.company_name}\n• Log the action for audit\n\nSyvia: verify directly with the insurance carrier before flagging.`)) {
+                            if (window.confirm(`Flag this COI for verification?\n\nThis will:\n• Set status to "Flagged – Needs Verification"\n• Block dispatch for ${selected.company_name}\n• Log the action for audit\n\nSyvia: verify directly with the insurance carrier before flagging.`)) {
                               updateCOIStatus(doc.id, { review_status:"flagged_fraudulent", status:"rejected", dispatch_blocked:true });
-                              flash("COI flagged as fraudulent. Dispatch blocked.");
+                              flash("COI flagged for verification. Dispatch blocked.");
                             }
-                          }} style={{ background:"#fff1f2", color:"#dc2626", border:"1px solid #fca5a5", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>🚨 Flag Fraudulent</button>
+                          }} style={{ background:"#fff1f2", color:"#dc2626", border:"1px solid #fca5a5", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>🚨 Flag for Review</button>
                         )}
                         <button onClick={() => { pendingCoiTypeRef.current = slot.key; setShowCoiUpload(slot.key); setCoiUploadForm(f => ({ ...f, document_type:slot.key, coi_group:"ronyx_ma_mortenson" })); }}
                           style={{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", borderRadius:8, padding:"7px 14px", fontSize:"0.75rem", fontWeight:700, cursor:"pointer" }}>Replace</button>
