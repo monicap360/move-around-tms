@@ -190,6 +190,7 @@ export default function CustomerLaunchCenterPage() {
   const [importResult, setImportResult] = useState<{ inserted: number; errors: string[] } | null>(null);
   const [preview, setPreview]           = useState<ParsedRow[]>([]);
   const [dispatchImportId, setDispatchImportId] = useState<string | null>(null);
+  const [fileCount, setFileCount]       = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [myRole, setMyRole] = useState("compliance");
@@ -249,10 +250,12 @@ export default function CustomerLaunchCenterPage() {
   }
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const files = Array.from(e.target.files || []); if (!files.length) return;
     setImportResult(null);
+    setFileCount(files.length);
     try {
-      const text = await fileToCsvText(file);
+      // Preview shows the first file; all selected files are combined at import time.
+      const text = await fileToCsvText(files[0]);
       setPreview(parseCsv(text).slice(0, 5));
     } catch (err) {
       setImportResult({ inserted: 0, errors: [(err as Error).message] });
@@ -260,18 +263,25 @@ export default function CustomerLaunchCenterPage() {
   }, []);
 
   async function runImport(phase: ImportPhase) {
-    const file = fileRef.current?.files?.[0]; if (!file) return;
-    let text: string;
-    try { text = await fileToCsvText(file); }
-    catch (err) { setImportResult({ inserted: 0, errors: [(err as Error).message] }); return; }
-    const rows = parseCsv(text); if (!rows.length) return;
+    const files = Array.from(fileRef.current?.files || []); if (!files.length) return;
     setImporting(true); setImportResult(null); setDispatchImportId(null);
     try {
+      // Convert every selected file to rows and combine them into one import.
+      let rows: ParsedRow[] = [];
+      let rawRows: ParsedRow[] = [];
+      for (const file of files) {
+        const text = await fileToCsvText(file);
+        rows = rows.concat(parseCsv(text));
+        if (phase.dispatchMode) rawRows = rawRows.concat(parseCsvRaw(text));
+      }
+      if (!rows.length) { setImportResult({ inserted: 0, errors: ["No rows found in the selected file(s)."] }); setImporting(false); return; }
+      const fileLabel = files.length === 1 ? files[0].name : `${files.length} files`;
+
       if (phase.dispatchMode) {
         const today = new Date().toISOString().slice(0, 10);
         const res = await fetch("/api/ronyx/dispatch-import", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rows: parseCsvRaw(text), file_name: file.name, schedule_date: today, import_name: `Dispatch ${today}`, create_tasks: true }),
+          body: JSON.stringify({ rows: rawRows, file_name: fileLabel, schedule_date: today, import_name: `Dispatch ${today}`, create_tasks: true }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Dispatch import failed");
@@ -605,7 +615,8 @@ export default function CustomerLaunchCenterPage() {
                       {phase.csvHeaders.map(h => <span key={h} style={{ background:"rgba(255,255,255,0.05)", color:"#94a3b8", padding:"3px 8px", borderRadius:5, fontSize:11, fontFamily:"monospace" }}>{h}</span>)}
                     </div>
                   </div>
-                  <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} style={{ display:"block", marginBottom:10, fontSize:13, color:MUTE }} />
+                  <input ref={fileRef} type="file" multiple accept=".csv,.xlsx,.xls" onChange={handleFileChange} style={{ display:"block", marginBottom:10, fontSize:13, color:MUTE }} />
+                  {fileCount > 1 && <div style={{ fontSize:12, color:BLUE, fontWeight:600, marginBottom:8 }}>📑 {fileCount} files selected — they&rsquo;ll be combined and imported together (preview shows the first file).</div>}
                   <div style={{ fontSize:11, color:MUTE, marginBottom:10 }}>Accepts <strong>.csv</strong> or <strong>Excel (.xlsx / .xls)</strong> — your spreadsheet's first sheet is read automatically.</div>
                   {preview.length > 0 && (
                     <div style={{ overflowX:"auto", marginBottom:14 }}>
@@ -618,7 +629,7 @@ export default function CustomerLaunchCenterPage() {
                   )}
                   {preview.length > 0 && (
                     <button onClick={() => runImport(phase)} disabled={importing} style={{ background:importing ? MUTE : BLUE, color:"#fff", border:"none", borderRadius:8, padding:"10px 20px", fontSize:14, fontWeight:700, cursor:importing ? "not-allowed" : "pointer" }}>
-                      {importing ? "Importing…" : `Import ${phase.label}`}
+                      {importing ? "Importing…" : `Import ${phase.label}${fileCount > 1 ? ` (${fileCount} files)` : ""}`}
                     </button>
                   )}
                   {importResult && (
