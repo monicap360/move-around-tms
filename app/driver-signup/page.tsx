@@ -17,11 +17,17 @@ export default function DriverSignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+  const [carriers, setCarriers] = useState<string[]>([]);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   function checkPin() {
     if (pin.trim().length < 4) { setPinErr("Enter the access PIN."); return; }
     setUnlocked(true); setPinErr("");
+    // Load existing carriers for the dropdown (validated against the same PIN).
+    fetch(`/api/driver-signup/carriers?pin=${encodeURIComponent(pin.trim())}`)
+      .then(r => r.json())
+      .then(d => setCarriers(Array.isArray(d.carriers) ? d.carriers : []))
+      .catch(() => {});
   }
 
   async function submit() {
@@ -67,7 +73,12 @@ export default function DriverSignupPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {err && <div style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 13px", fontSize: "0.85rem", fontWeight: 700 }}>⚠ {err}</div>}
               <div><label style={lbl}>Your Name *</label><input value={form.name} onChange={e => set("name", e.target.value)} style={inp} placeholder="First and last name" autoFocus /></div>
-              <div><label style={lbl}>Trucking Company / Carrier you drive for *</label><input value={form.company_name} onChange={e => set("company_name", e.target.value)} style={inp} placeholder="e.g. Smith Trucking LLC" /></div>
+              <div>
+                <label style={lbl}>Trucking Company / Carrier you drive for *</label>
+                <input list="ronyx-carriers" value={form.company_name} onChange={e => set("company_name", e.target.value)} style={inp} placeholder="Start typing to find your company…" autoComplete="off" />
+                <datalist id="ronyx-carriers">{carriers.map(c => <option key={c} value={c} />)}</datalist>
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 4 }}>Pick your company from the list. If it isn&apos;t there yet, just type it in.</div>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div><label style={lbl}>Phone</label><input value={form.phone} onChange={e => set("phone", e.target.value)} style={inp} type="tel" /></div>
                 <div><label style={lbl}>CDL #</label><input value={form.cdl_number} onChange={e => set("cdl_number", e.target.value)} style={inp} /></div>
