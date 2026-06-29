@@ -965,6 +965,63 @@ export default function OwnerOperatorsPage() {
     flash(`${docType} uploaded${fileUrl ? " & stored in Backup Center" : ""}.`);
   }
 
+  // ── Document Inbox: upload many pages → thumbnails → assign each to a slot or delete ──
+  const INBOX_PREFIX = "📥 Inbox — ";
+  const ASSIGNABLE_DOC_TYPES = [
+    "Auto Liability Insurance", "General Liability Insurance", "Cargo Insurance", "Workers Comp Insurance",
+    "Insurance Certificate (COI)", "W-9", "Subhauler Agreement", "Operating Authority (MC)",
+    "Voided Check / Banking", "Notice of Assignment", "Drug & Alcohol Policy", "Other",
+  ];
+  const isImageFile = (name?: string) => !!name && /\.(png|jpe?g|webp|gif|bmp|heic)$/i.test(name);
+
+  // Upload one or many pages at once; each lands in the inbox as an unassigned doc
+  // (unique doc_type so they don't overwrite each other).
+  async function handleMultiDocUpload(files: FileList | File[]) {
+    if (!selected) return;
+    const arr = Array.from(files);
+    if (!arr.length) return;
+    const sel = selected;
+    flash(`Uploading ${arr.length} page${arr.length > 1 ? "s" : ""}…`);
+    const newDocs: OODoc[] = [];
+    for (const file of arr) {
+      let fileUrl: string | null = null;
+      try {
+        const fd = new FormData(); fd.append("file", file); fd.append("module", "compliance");
+        const upData = await (await fetch("/api/ronyx/upload-file", { method: "POST", body: fd })).json();
+        fileUrl = upData.url || null;
+      } catch { /* storage hiccup — still record the page so it isn't lost */ }
+      const type = `${INBOX_PREFIX}${file.name}`;
+      await apiPost(`/api/ronyx/owner-operators/${sel.id}/documents`, { doc_type: type, file_name: file.name, file_url: fileUrl });
+      newDocs.push({ type, uploaded_at: new Date().toISOString(), file_name: file.name, file_url: fileUrl || undefined });
+    }
+    updateLocalState({ ...sel, documents: [...newDocs, ...sel.documents] });
+    flash(`${arr.length} page${arr.length > 1 ? "s" : ""} in the inbox — assign each to a slot or delete it.`);
+  }
+
+  // Delete a document by its type (used by the inbox and by each doc slot's 🗑 button).
+  async function removeDocByType(docType: string) {
+    if (!selected) return;
+    await fetch(`/api/ronyx/owner-operators/${selected.id}/documents`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc_type: docType }) });
+    updateLocalState({ ...selected, documents: selected.documents.filter(d => d.type !== docType) });
+    flash("Document deleted.");
+  }
+
+  // Assign an inbox page to a real slot: link the already-stored file under the chosen
+  // doc type (replacing any existing of that type), then drop the inbox copy.
+  async function assignInboxDoc(inboxType: string, targetType: string) {
+    if (!selected || !targetType) return;
+    const sel = selected;
+    const doc = sel.documents.find(d => d.type === inboxType);
+    if (!doc) return;
+    await apiPost(`/api/ronyx/owner-operators/${sel.id}/documents`, { doc_type: targetType, file_name: doc.file_name, file_url: doc.file_url || null });
+    await fetch(`/api/ronyx/owner-operators/${sel.id}/documents`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc_type: inboxType }) });
+    updateLocalState({ ...sel, documents: [
+      { type: targetType, uploaded_at: new Date().toISOString(), file_name: doc.file_name, file_url: doc.file_url },
+      ...sel.documents.filter(d => d.type !== inboxType && d.type !== targetType),
+    ] });
+    flash(`Assigned to "${targetType}".`);
+  }
+
   // Quick-upload a doc straight from a list card (no prompt — expiry is set later
   // in the Documents tab). Stores the file, attaches it to the OO, and reloads.
   async function cardUpload(ooId: string, ooName: string, docType: string, moduleName: string, file: File) {
@@ -2942,6 +2999,55 @@ export default function OwnerOperatorsPage() {
             </div>
           </div>
 
+          {/* ── Document Inbox: upload many pages → thumbnails → assign or delete ── */}
+          {(() => {
+            const inbox = selected.documents.filter(d => d.type.startsWith(INBOX_PREFIX));
+            return (
+              <div style={{ background:"#fffbeb", border:"2px dashed #fcd34d", borderRadius:14, padding:"16px 20px", marginBottom:16 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", marginBottom: inbox.length ? 12 : 0 }}>
+                  <div>
+                    <div style={{ fontWeight:800, color:"#92400e", fontSize:"0.9rem" }}>📥 Document Inbox</div>
+                    <div style={{ fontSize:"0.72rem", color:"#b45309", marginTop:2 }}>Upload pages here, then assign each one to a slot or delete it.</div>
+                  </div>
+                  <label style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#b45309", color:"#fff", padding:"8px 16px", borderRadius:9, fontSize:"0.8rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    📤 Upload Pages
+                    <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ if(e.target.files?.length) handleMultiDocUpload(e.target.files); e.target.value=""; }} />
+                  </label>
+                </div>
+                {inbox.length > 0 && (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:12 }}>
+                    {inbox.map(doc => {
+                      const fname = doc.file_name || doc.type.replace(INBOX_PREFIX, "");
+                      return (
+                        <div key={doc.type} style={{ background:"#fff", border:"1px solid #fde68a", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                          <button
+                            onClick={()=> doc.file_url && openDoc(doc.file_url, false, fname, selected.id, doc.type)}
+                            title="Click to view full page"
+                            style={{ border:"none", padding:0, cursor: doc.file_url ? "pointer" : "default", background:"#f8fafc", height:96, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                            {isImageFile(fname) && doc.file_url
+                              ? <img src={doc.file_url} alt={fname} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                              : <div style={{ textAlign:"center", color:"#64748b" }}><div style={{ fontSize:30 }}>📄</div><div style={{ fontSize:"0.6rem", fontWeight:700 }}>{fname.split(".").pop()?.toUpperCase()}</div></div>}
+                          </button>
+                          <div style={{ padding:"8px 9px", display:"flex", flexDirection:"column", gap:6 }}>
+                            <div title={fname} style={{ fontSize:"0.68rem", color:"#0f172a", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{fname}</div>
+                            <select defaultValue="" onChange={e=>{ if(e.target.value) assignInboxDoc(doc.type, e.target.value); }}
+                              style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 6px", fontSize:"0.68rem", fontWeight:700, color:"#1e40af", cursor:"pointer", background:"#eff6ff" }}>
+                              <option value="">Assign to… ▾</option>
+                              {ASSIGNABLE_DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                              {selected.drivers.map(dr => <option key={dr.id+"cdl"} value={`[${dr.name}] CDL`}>{`${dr.name} — CDL`}</option>)}
+                              {selected.drivers.map(dr => <option key={dr.id+"med"} value={`[${dr.name}] Medical Card`}>{`${dr.name} — Medical Card`}</option>)}
+                            </select>
+                            <button onClick={()=>removeDocByType(doc.type)} style={{ width:"100%", background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:6, padding:"4px 0", fontSize:"0.68rem", fontWeight:800, cursor:"pointer" }}>🗑 Delete</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Insurance Agent edit */}
           <div style={{ background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:14, padding:"16px 20px", marginBottom:16 }}>
             <div style={{ fontWeight:800, color:"#1e40af", marginBottom:12, fontSize:"0.88rem" }}>🛡️ Insurance Agent Contact</div>
@@ -3242,7 +3348,7 @@ export default function OwnerOperatorsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {selected.documents.map((doc, i) => {
+                    {selected.documents.filter(d => !d.type.startsWith(INBOX_PREFIX)).map((doc, i) => {
                       const expD = doc.expires_on ? daysUntil(doc.expires_on) : null;
                       return (
                         <tr key={i} style={{ borderBottom:"1px solid #f1f5f9", background: i%2===0?"#fff":"#fafafa" }}>
