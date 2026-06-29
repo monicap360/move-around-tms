@@ -1345,7 +1345,7 @@ const L = {
     readyNow: "Ready Now",                  missingMVR: "Missing MVR",
     missingCDL: "Missing CDL",             missingMed: "Missing Medical Card",
     expiredMed: "Expired Medical Card",     noCompanyFilter: "No Company Assigned",
-    noTruckFilter: "No Truck Assigned",
+    noTruckFilter: "No Truck Assigned",      needsOOFilter: "Needs Owner-Op",
     colDriver: "Driver",                    colCompany: "Company / Carrier",
     colType: "Type",                        colTruck: "Truck",
     colEligible: "Dispatch Eligible",       colCCB: "CCB",
@@ -1373,7 +1373,7 @@ const L = {
     readyNow: "Listo Ahora",               missingMVR: "Sin MVR",
     missingCDL: "Sin CDL",                missingMed: "Sin Tarjeta Médica",
     expiredMed: "Tarjeta Médica Vencida",   noCompanyFilter: "Sin Empresa Asignada",
-    noTruckFilter: "Sin Camión Asignado",
+    noTruckFilter: "Sin Camión Asignado",    needsOOFilter: "Necesita Owner-Op",
     colDriver: "Conductor",                 colCompany: "Empresa / Transportista",
     colType: "Tipo",                        colTruck: "Camión",
     colEligible: "Elegible Despacho",       colCCB: "CCB",
@@ -1552,6 +1552,7 @@ export default function DriversPage() {
     const noCompany = d.companyName === "—" && d.carrierName === "—" && d.ownerOperatorName === "—";
     const matchNeeds = needsFilter === "All" ||
       (needsFilter === "No Company Assigned" && noCompany) ||
+      (needsFilter === "Needs Owner-Op"      && d.driverType === "Owner Operator" && !d.owner_operator_company) ||
       (needsFilter === "Missing CDL"         && d.cdlExp === "—") ||
       (needsFilter === "Missing MVR"         && d.mvrExp === "—") ||
       (needsFilter === "Missing Medical Card"&& d.medicalExp === "—") ||
@@ -2087,6 +2088,7 @@ export default function DriversPage() {
               { label: t("missingDocs"),      filter: "Missing Docs",        count: allDrivers.filter(d => d.docs === "Missing").length,               active: needsFilter === "Missing Docs" },
               { label: t("expiringSoon"),     filter: "Expiring Soon",       count: allDrivers.filter(d => d.docs === "Expiring").length,              active: needsFilter === "Expiring Soon" },
               { label: t("noCompanyFilter"),  filter: "No Company Assigned", count: noCompanyCount,                                                    active: needsFilter === "No Company Assigned" },
+              { label: t("needsOOFilter"),    filter: "Needs Owner-Op",      count: allDrivers.filter(d => d.driverType === "Owner Operator" && !d.owner_operator_company).length, active: needsFilter === "Needs Owner-Op" },
               { label: t("noTruckFilter"),    filter: "No Truck Assigned",   count: allDrivers.filter(d => d.truck === "—").length,                   active: needsFilter === "No Truck Assigned" },
               { label: t("payrollHold"),      filter: "Payroll Hold",        count: allDrivers.filter(d => d.docs === "Expired" || d.docs === "Missing").length, active: needsFilter === "Payroll Hold" },
               { label: t("missingCDL"),       filter: "Missing CDL",         count: missingCDLCount,                                                   active: needsFilter === "Missing CDL" },
