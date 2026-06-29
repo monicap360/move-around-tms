@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 
 type MaintEvent = {
   id: string;
@@ -99,7 +100,7 @@ export default function BreakdownsPage() {
 
   async function resolveEvent(id: string) {
     const ev = events.find(e => e.id === id);
-    const by = prompt("Resolved by (staff name):", "") || "Staff";
+    const by = safePrompt("Resolved by (staff name):", "") || "Staff";
     const r = await fetch(`/api/ronyx/maintenance-events/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

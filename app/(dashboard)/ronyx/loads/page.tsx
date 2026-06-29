@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import GridLayout, { WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -223,7 +224,7 @@ export default function RonyxLoadsPage() {
   }, [hudMessage]);
 
   const handleBroadcast = useCallback(() => {
-    const message = window.prompt("Enter broadcast message:");
+    const message = safePrompt("Enter broadcast message:");
     if (!message) return;
     setHudMessage(`BROADCAST: ${message}`);
   }, []);

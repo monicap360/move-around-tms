@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 
 /* ─── Types ─────────────────────────────────────── */
 type CertStatus = "Valid" | "Expiring Soon" | "Expired" | "Cancelled" | "Missing" | "Pending Review" | "Rejected" | "Non-Certified";
@@ -405,7 +406,7 @@ export default function ComplianceMonitorPage() {
                         <div style={{ display: "flex", gap: 4 }}>
                           <button onClick={() => openCarrier(c)} style={{ ...primaryBtn, fontSize: "0.68rem", padding: "4px 8px" }}>View</button>
                           {!c.dispatch_eligible && !c.manager_override && (
-                            <button onClick={() => { const note = prompt("Override reason (manager name / reason):"); if (note) managerOverride(c.id, note); }} style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: "0.68rem", fontWeight: 700, cursor: "pointer" }}>Override</button>
+                            <button onClick={() => { const note = safePrompt("Override reason (manager name / reason):", "Manager override"); if (note) managerOverride(c.id, note); }} style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: "0.68rem", fontWeight: 700, cursor: "pointer" }}>Override</button>
                           )}
                         </div>
                       </td>
@@ -596,7 +597,7 @@ export default function ComplianceMonitorPage() {
               )}
               <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
                 <button onClick={() => { setView("dashboard"); setShowRmis(true); }} style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>Upload Compliance Update</button>
-                {!selected.dispatch_eligible && !selected.manager_override && <button onClick={() => { const note = prompt("Manager name and override reason:"); if (note) managerOverride(selected.id, note); }} style={{ background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>Manager Override</button>}
+                {!selected.dispatch_eligible && !selected.manager_override && <button onClick={() => { const note = safePrompt("Manager name and override reason:", "Manager override"); if (note) managerOverride(selected.id, note); }} style={{ background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>Manager Override</button>}
                 <button onClick={() => setActiveTab("audit")} style={{ ...ghostBtn, background: "transparent", color: "#cbd5e1", border: "1px solid #334155", fontSize: "0.75rem" }}>View Audit Trail</button>
               </div>
             </div>
@@ -754,7 +755,7 @@ export default function ComplianceMonitorPage() {
             { title: "Verify via FMCSA SAFER", desc: "Open FMCSA SAFER database to verify carrier registration and insurance.", action: () => { window.open(`https://safer.fmcsa.dot.gov/query.asp?query_param=USDOT&query_string=${selected.dot_number?.replace(/[^0-9]/g,"")||""}`, "_blank"); flash("FMCSA SAFER opened."); }, color: "#0369a1" },
             { title: "Place Settlements on Hold", desc: "Mark all unsettled loads for this carrier as On Hold pending compliance.", action: () => { flash("Settlement hold applied — open the Settlement Center to manage individual loads."); }, color: "#dc2626" },
             { title: "Block Dispatch", desc: "Manually block this carrier from new load assignments.", action: () => { updateSelected({ ...selected, dispatch_eligible: false, manager_override: false }); flash(`${selected.company_name} dispatch blocked.`); }, color: "#dc2626" },
-            { title: "Manager Override — Allow Dispatch", desc: "Allow dispatch with manager approval. A note is required and logged to audit trail.", action: () => { const note = prompt("Manager name and reason for override:"); if (note) managerOverride(selected.id, note); }, color: "#7c3aed" },
+            { title: "Manager Override — Allow Dispatch", desc: "Allow dispatch with manager approval. A note is required and logged to audit trail.", action: () => { const note = safePrompt("Manager name and reason for override:", "Manager override"); if (note) managerOverride(selected.id, note); }, color: "#7c3aed" },
             { title: "Mark Cleared", desc: "Manually mark carrier as Clear after receiving and verifying updated documents.", action: () => { const log: AuditEntry = { id: uid(), ts: new Date().toISOString(), carrier_name: selected.company_name, old_status: selected.status, new_status: "Certified", source: "Manual Update", changed_by: "Office", notes: "Carrier manually marked Clear after document verification." }; updateSelected({ ...selected, status: "Certified", dispatch_eligible: true, settlement_eligible: true, manager_override: false, last_rmis_check: new Date().toISOString().slice(0,10), audit_trail: [log, ...selected.audit_trail] }); flash(`${selected.company_name} marked Clear.`); }, color: "#15803d" },
           ].map(({ title, desc, action, color }) => (
             <div key={title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>

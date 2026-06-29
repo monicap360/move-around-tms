@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 
 type Override = {
   id: string;
@@ -105,7 +106,7 @@ export default function ComplianceOverridesPage() {
   }
 
   async function revoke(id: string) {
-    const reason = prompt("Reason for revoking this override?");
+    const reason = safePrompt("Reason for revoking this override?", "Override revoked by manager");
     if (!reason) return;
     await fetch("/api/ronyx/compliance/overrides", {
       method: "PATCH",

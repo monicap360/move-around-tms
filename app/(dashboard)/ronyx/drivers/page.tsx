@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { safePrompt } from "@/lib/safePrompt";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -2329,7 +2330,7 @@ export default function DriversPage() {
                                         <button
                                           style={{ ...menuItemS, color: "#dc2626" }}
                                           onClick={() => {
-                                            const reason = prompt(`Reason for blocking ${driver.name} from dispatch:`);
+                                            const reason = safePrompt(`Reason for blocking ${driver.name} from dispatch:`);
                                             if (reason === null) return;
                                             setMoreMenuId(null);
                                             fetch(`/api/ronyx/drivers/${driver.id}`, {

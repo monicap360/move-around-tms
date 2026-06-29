@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import { useRealtimeSync, useLiveBadgeProps } from "../hooks/useRealtimeSync";
 import { useModuleAccess } from "@/app/hooks/useModuleAccess";
 import ModuleUpgradeCard from "@/app/components/ronyx/ModuleUpgradeCard";
@@ -944,7 +945,7 @@ export default function OwnerOperatorsPage() {
     } catch { /* storage not configured — still record the doc name */ }
 
     // 2. Dates (expiry / contract start) are set AFTER upload via the date pickers
-    // in the Documents tab. Browser prompt() is NOT supported in this environment —
+    // in the Documents tab. Browser safePrompt() is NOT supported in this environment —
     // it was throwing here and silently breaking every document upload.
     const issuedOnInput: string | undefined = undefined;
     const expiresInput: string | undefined = undefined;
@@ -2398,7 +2399,7 @@ export default function OwnerOperatorsPage() {
                     {selected.contact_email && <a href={`mailto:${selected.contact_email}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Emailed carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>✉ Email</a>}
                     {selected.contact_phone && <a href={`sms:${selected.contact_phone}`} onClick={()=>{ const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Contacted",detail:"Texted carrier"}; updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]}); }} style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.75rem" }}>💬 Text</a>}
                     <button onClick={()=>{
-                      const note=prompt("Log call notes (optional):")||"Called carrier";
+                      const note=safePrompt("Log call notes (optional):")||"Called carrier";
                       const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:"Call Logged",detail:note};
                       updateSelected({...selected,last_contact_date:new Date().toISOString().slice(0,10),changes_log:[change,...(selected.changes_log||[])]});
                       flash("Call logged.");
@@ -2417,7 +2418,7 @@ export default function OwnerOperatorsPage() {
                     )}
                     <button onClick={()=>{
                       const isBlocked = selected.dispatch_blocked_override;
-                      const note = isBlocked ? "Dispatch block removed" : (prompt("Reason for blocking dispatch:")||"Blocked by office");
+                      const note = isBlocked ? "Dispatch block removed" : (safePrompt("Reason for blocking dispatch:")||"Blocked by office");
                       if (!isBlocked && !note) return;
                       const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:isBlocked?"Dispatch Unblocked":"Dispatch Blocked",detail:note};
                       updateSelected({...selected,dispatch_blocked_override:!isBlocked,changes_log:[change,...(selected.changes_log||[])]});
@@ -2427,7 +2428,7 @@ export default function OwnerOperatorsPage() {
                     </button>
                     <button onClick={()=>{
                       const isHeld = selected.settlement_hold_override;
-                      const note = isHeld ? "Settlement hold released" : (prompt("Reason for hold:")||"Hold placed by office");
+                      const note = isHeld ? "Settlement hold released" : (safePrompt("Reason for hold:")||"Hold placed by office");
                       if (!isHeld && !note) return;
                       const change:ChangeEntry={date:new Date().toISOString().slice(0,10),type:isHeld?"Settlement Released":"Settlement Hold",detail:note};
                       updateSelected({...selected,settlement_hold_override:!isHeld,changes_log:[change,...(selected.changes_log||[])]});
@@ -3182,7 +3183,7 @@ export default function OwnerOperatorsPage() {
                 async function driverDocUpload(docLabel: string, f: File, _hasExp: boolean) {
                   if (!selected) return;
                   // handleDocUpload stores the actual file in Supabase Storage first, then
-                  // records it — no prompt() (which throws in production and lost the file).
+                  // records it — no safePrompt() (which throws in production and lost the file).
                   await handleDocUpload(`[${d.name}] ${docLabel}`, f);
                 }
                 return (
