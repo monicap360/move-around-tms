@@ -4,7 +4,7 @@
    Seeded dump-truck demo data; wires to customer_invoices + invoice_payments +
    collection_notes + customer_credit_profiles as they fill. */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Dispute = "—" | "Open" | "Resolved";
@@ -27,7 +27,7 @@ const RAW: Invoice[] = [
 
 const balance = (i: Invoice) => i.original - i.paid;
 const bucket = (d: number) => d <= 0 ? "Current" : d <= 30 ? "1–30" : d <= 60 ? "31–60" : d <= 90 ? "61–90" : "90+";
-const open = RAW.filter(i => balance(i) > 0.01);
+const DEMO = RAW;
 
 const ACTIONS = ["Send Invoice", "Send Statement", "Send Reminder", "Record Payment", "Add Collection Note", "Set Promise to Pay", "Place on Credit Hold", "Release Credit Hold", "Start Dispute", "Create Credit Memo", "Escalate to Manager"];
 
@@ -35,7 +35,19 @@ export default function Receivables() {
   const [filter, setFilter] = useState<string>("All");
   const [drawer, setDrawer] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [allInv, setAllInv] = useState<Invoice[]>(DEMO);
+  const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
+
+  // Pull real invoices; fall back to demo when there are none.
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/invoices")
+      .then(r => r.json())
+      .then(d => { if (d.live && Array.isArray(d.invoices) && d.invoices.length) { setAllInv(d.invoices); setLive(true); } })
+      .catch(() => {});
+  }, []);
+
+  const open = allInv.filter(i => balance(i) > 0.01);
 
   const kpis = useMemo(() => {
     const b = (name: string) => open.filter(i => bucket(i.daysOut) === name).reduce((s, i) => s + balance(i), 0);
@@ -49,7 +61,7 @@ export default function Receivables() {
       { key: "Hold",    label: "On Credit Hold", v: open.filter(i => i.hold).reduce((s, i) => s + balance(i), 0), tone: "#0e7490" },
       { key: "Promise", label: "Promise to Pay (wk)", v: open.filter(i => i.promise).reduce((s, i) => s + balance(i), 0), tone: "#1d4ed8" },
     ];
-  }, []);
+  }, [allInv]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = open.filter(i => {
     if (filter === "All") return true;
@@ -59,12 +71,12 @@ export default function Receivables() {
     return bucket(i.daysOut) === filter;
   });
 
-  const drawerCust = drawer ? RAW.filter(i => i.customer === drawer) : [];
+  const drawerCust = drawer ? allInv.filter(i => i.customer === drawer) : [];
   const custOpen = drawerCust.filter(i => balance(i) > 0);
 
   return (
     <AcctShell active="ar" title="Accounts Receivable & Collections" subtitle="Know exactly who owes what, how old it is, and what to do next."
-      controls={<><button style={ctrlBtn}>This Period ▾</button><button style={ctrlBtn}>⬇ Export Aging</button><button style={primaryBtn}>+ Send Statements</button></>}>
+      controls={<><span style={{ ...chip, background: live ? "#dcfce7" : "#fef9c3", color: live ? "#15803d" : "#b45309", padding: "7px 11px" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>This Period ▾</button><button style={ctrlBtn}>⬇ Export Aging</button><button style={primaryBtn}>+ Send Statements</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 

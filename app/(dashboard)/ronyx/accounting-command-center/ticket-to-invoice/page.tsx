@@ -197,7 +197,19 @@ export default function TicketToInvoice() {
                 <button onClick={() => setBatch(false)} style={ctrlBtn}>Cancel</button>
                 {blocked
                   ? <button onClick={() => { flash("Manager override required — logged to audit (demo)."); }} style={{ ...primaryBtn, background: "#b45309" }}>Request Manager Override</button>
-                  : <button onClick={() => { setBatch(false); setSel(new Set()); flash(`Invoice batch created for ${items.length} tickets — ${fmtc(gross)} (demo).`); }} style={{ ...primaryBtn, background: "#16a34a" }}>Generate {items.length} → Invoice</button>}
+                  : <button onClick={async () => {
+                      // Group selected tickets by customer → one invoice each.
+                      const byCust: Record<string, any> = {};
+                      for (const t of items) { const g = byCust[t.customer] || (byCust[t.customer] = { customer_name: t.customer, job: t.job, original_amount: 0, ticket_numbers: [] as string[], ticket_count: 0 }); g.original_amount += t.revenue; g.ticket_numbers.push(t.id); g.ticket_count++; }
+                      let createdBy = "office"; try { const s = JSON.parse(localStorage.getItem("ronyx_active_staff") || "{}"); createdBy = s.name || s.full_name || "office"; } catch {}
+                      try {
+                        const res = await fetch("/api/ronyx/accounting/invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ invoices: Object.values(byCust), created_by: createdBy }) });
+                        const d = await res.json();
+                        if (!res.ok) { flash(d.error?.includes("customer_invoices") ? "Invoice table not set up yet — run the SQL, then retry." : (d.error || "Couldn't create invoices.")); return; }
+                        setBatch(false); setSel(new Set());
+                        flash(`✅ Created ${d.created} invoice${d.created !== 1 ? "s" : ""} — ${fmtc(d.total)}. They're now in Accounts Receivable.`);
+                      } catch { flash("Network error creating invoices."); }
+                    }} style={{ ...primaryBtn, background: "#16a34a" }}>Generate {items.length} → Invoice</button>}
               </div>
             </div>
           </div>
