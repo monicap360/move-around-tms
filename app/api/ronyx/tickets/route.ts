@@ -68,6 +68,9 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const orgId = await resolveOrgId();
+  // Reconciliation matches an uploaded vendor invoice against tickets — it needs the full
+  // set, not the 200-row board default, or tickets beyond 200 falsely flag as "missing".
+  const limit = searchParams.get("all") === "1" ? 10000 : Math.min(Number(searchParams.get("limit")) || 200, 10000);
 
   const buildQuery = (withOrgFilter: boolean) => {
     let q = supabase
@@ -78,7 +81,7 @@ export async function GET(request: NextRequest) {
     if (status) q = q.eq("status", status);
     if (from)   q = q.gte("ticket_date", from);
     if (to)     q = q.lte("ticket_date", to);
-    return q.limit(200);
+    return q.limit(limit);
   };
 
   let { data, error } = await buildQuery(true);

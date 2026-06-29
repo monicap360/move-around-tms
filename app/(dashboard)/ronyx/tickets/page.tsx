@@ -1078,7 +1078,7 @@ export default function TicketsPage() {
     return lower.replace(/[^a-z0-9]/g, "_");
   }, []);
 
-  const processExcelFile = useCallback(async (file: File) => {
+  const processExcelFile = useCallback(async (file: File, sourceLabel = "Ronyx Excel") => {
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -1091,6 +1091,17 @@ export default function TicketsPage() {
         // Map header row
         const headerRow = (raw[0] as any[]).map((h: any) => normalizeHeader(String(h)));
         const col = (name: string) => headerRow.indexOf(name);
+
+        // Match against ALL tickets (not just the 200 loaded on the board) so a real
+        // vendor invoice doesn't falsely flag tickets beyond the board limit as missing.
+        let matchSet = tickets.filter(t => !t.voided);
+        try {
+          const allRes = await fetch("/api/ronyx/tickets?all=1");
+          const allData = await allRes.json();
+          if (Array.isArray(allData.tickets) && allData.tickets.length > matchSet.length) {
+            matchSet = allData.tickets.map((t: any, _: number, arr: any[]) => mapApiTicket(t, arr)).filter((t: any) => !t.voided);
+          }
+        } catch { /* fall back to the loaded set */ }
 
         const rows: ReconcileRow[] = [];
 
@@ -1107,9 +1118,8 @@ export default function TicketsPage() {
           const excelMaterial = String(row[col("material")] ?? "").trim();
           const excelDate     = String(row[col("date")]     ?? "").trim();
 
-          // Try to match against a scanned ticket
-          const liveTickets = tickets.filter(t => !t.voided);
-          const matched = liveTickets.find(t =>
+          // Try to match against a scanned ticket (against the full set fetched above)
+          const matched = matchSet.find(t =>
             (excelTicketNo && t.ticketNo === excelTicketNo) ||
             (excelDriver && excelTruck && t.driver.toLowerCase().includes(excelDriver.toLowerCase()) && t.truck === excelTruck)
           );
@@ -1212,10 +1222,10 @@ export default function TicketsPage() {
           }
         }
 
-        setExcelFileName(file.name);
+        setExcelFileName(`${sourceLabel} — ${file.name}`);
         setReconRows(rows.length > 0 ? rows : []);
         setReconProcessed(true);
-        showToast(`${file.name} parsed — ${raw.length - 1} rows, ${rows.length} mismatches found`);
+        showToast(`${sourceLabel}: ${file.name} reconciled — ${raw.length - 1} rows, ${rows.length} mismatch(es) found`);
       } catch (err: any) {
         showToast(`Failed to parse file: ${err?.message || "check format"}`);
       }
@@ -2692,7 +2702,7 @@ export default function TicketsPage() {
                       { label: "Upload Payroll Sheet",  sub: "Driver pay records" },
                       { label: "Upload Dispatch Sheet", sub: "Match dispatch to tickets" },
                     ].map(b => (
-                      <button key={b.label} onClick={() => { const inp = excelFileRef.current; if (inp) { inp.onchange = () => { const f = inp.files?.[0]; if (f) processExcelFile(f); }; inp.click(); } }}
+                      <button key={b.label} onClick={() => { const inp = excelFileRef.current; if (inp) { inp.onchange = () => { const f = inp.files?.[0]; if (f) processExcelFile(f, b.label.replace(/^Upload\s+/, "")); }; inp.click(); } }}
                         style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#1e40af", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>
                         {b.label}<div style={{ fontSize: "0.65rem", color: "#94a3b8", fontWeight: 400, marginTop: 2 }}>{b.sub}</div>
                       </button>
