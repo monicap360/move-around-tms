@@ -12,7 +12,7 @@ export async function PUT(
   const sb = supabaseAdmin;
   const body = await req.json();
 
-  const fields = ["name","phone","cdl_number","cdl_state","cdl_expiration","med_card_expiration","med_card_number","truck_number","job_assignment","notes","status"];
+  const fields = ["name","phone","cdl_number","cdl_state","cdl_class","cdl_expiration","med_card_expiration","med_card_number","truck_number","job_assignment","notes","status"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const f of fields) {
     if (f in body) update[f] = body[f] ?? null;

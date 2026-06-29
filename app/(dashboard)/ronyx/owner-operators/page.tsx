@@ -679,6 +679,7 @@ export default function OwnerOperatorsPage() {
       insurance_agent_name: oo.insurance_agent_name, insurance_agent_email: oo.insurance_agent_email, insurance_agent_phone: oo.insurance_agent_phone,
       reminder_log: oo.reminder_log, compliance_history: oo.compliance_history, changes_log: oo.changes_log,
       start_date: oo.start_date || null, website: oo.website || null,
+      dispatch_blocked_override: oo.dispatch_blocked_override ?? false, settlement_hold_override: oo.settlement_hold_override ?? false,
     });
     if (res?.error) flash(`Save error: ${res.error}`);
   }
