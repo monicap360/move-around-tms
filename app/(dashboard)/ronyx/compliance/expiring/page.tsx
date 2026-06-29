@@ -85,7 +85,6 @@ export default function ExpiringDocsPage() {
         const expiryFields: Array<[string, string]> = [
           [o.auto_liability_expiration, "Auto Liability COI"],
           [o.general_liability_expiration, "General Liability COI"],
-          [o.cargo_expiration,          "Cargo COI"],
           [o.workers_comp_expiration,   "Workers Comp"],
         ];
         expiryFields.forEach(([exp, label]) => {

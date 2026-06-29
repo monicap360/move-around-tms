@@ -6,13 +6,10 @@ import { useCallback, useEffect, useState } from "react";
 const COI_TYPES = [
   { value:"auto_liability_coi",                     label:"Auto Liability COI",                     shortLabel:"Auto Liab",   group:"standard",    blocks:"general_dispatch" },
   { value:"general_liability_coi",                  label:"General Liability COI",                  shortLabel:"Gen Liab",    group:"standard",    blocks:"general_dispatch" },
-  { value:"cargo_coi",                              label:"Cargo / Motor Truck Cargo COI",           shortLabel:"Cargo",       group:"standard",    blocks:"general_dispatch" },
   { value:"ronyx_contractor_auto_liability_coi",    label:"Ronyx Contractor Auto Liability COI",    shortLabel:"Ronyx Auto",  group:"ronyx",       blocks:"ronyx_jobs" },
   { value:"ronyx_contractor_general_liability_coi", label:"Ronyx Contractor General Liability COI", shortLabel:"Ronyx Gen",   group:"ronyx",       blocks:"ronyx_jobs" },
-  { value:"ronyx_contractor_cargo_coi",             label:"Ronyx Contractor Cargo COI",             shortLabel:"Ronyx Cargo", group:"ronyx",       blocks:"ronyx_jobs" },
   { value:"ma_morrison_auto_liability_coi",         label:"MA Morrison Auto Liability COI",         shortLabel:"MA Auto",     group:"ma_morrison", blocks:"ma_morrison_jobs" },
   { value:"ma_morrison_general_liability_coi",      label:"MA Morrison General Liability COI",      shortLabel:"MA Gen",      group:"ma_morrison", blocks:"ma_morrison_jobs" },
-  { value:"ma_morrison_cargo_coi",                  label:"MA Morrison Cargo COI",                  shortLabel:"MA Cargo",    group:"ma_morrison", blocks:"ma_morrison_jobs" },
 ] as const;
 
 const COI_GROUPS = {

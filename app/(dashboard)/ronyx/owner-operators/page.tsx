@@ -200,16 +200,12 @@ async function apiDelete(path: string) {
 const COI_TYPES_CONST = [
   { value:"auto_liability_coi",                       label:"Auto Liability COI",                   group:"ronyx_ma_mortenson", shortLabel:"Auto Liab"   },
   { value:"general_liability_coi",                    label:"General Liability COI",                group:"ronyx_ma_mortenson", shortLabel:"Gen Liab"    },
-  { value:"cargo_coi",                                label:"Cargo / Motor Truck Cargo COI",        group:"ronyx_ma_mortenson", shortLabel:"Cargo"       },
   { value:"ronyx_contractor_auto_liability_coi",      label:"Ronyx Auto Liability COI",             group:"ronyx_ma_mortenson", shortLabel:"Ronyx Auto"  },
   { value:"ronyx_contractor_general_liability_coi",   label:"Ronyx General Liability COI",          group:"ronyx_ma_mortenson", shortLabel:"Ronyx Gen"   },
-  { value:"ronyx_contractor_cargo_coi",               label:"Ronyx Cargo COI",                      group:"ronyx_ma_mortenson", shortLabel:"Ronyx Cargo" },
   { value:"ma_morrison_auto_liability_coi",           label:"MA Morrison Auto Liability COI",       group:"ronyx_ma_mortenson", shortLabel:"MAM Auto"    },
   { value:"ma_morrison_general_liability_coi",        label:"MA Morrison General Liability COI",    group:"ronyx_ma_mortenson", shortLabel:"MAM Gen"     },
-  { value:"ma_morrison_cargo_coi",                    label:"MA Morrison Cargo COI",                group:"ronyx_ma_mortenson", shortLabel:"MAM Cargo"   },
   { value:"bass_equipment_auto_liability_coi",        label:"Bass Equipment Auto Liability COI",    group:"bass_equipment",     shortLabel:"Bass Auto"   },
   { value:"bass_equipment_general_liability_coi",     label:"Bass Equipment General Liability COI", group:"bass_equipment",     shortLabel:"Bass Gen"    },
-  { value:"bass_equipment_cargo_coi",                 label:"Bass Equipment Cargo / Motor Truck COI", group:"bass_equipment",   shortLabel:"Bass Cargo"  },
 ] as const;
 
 /* ─── Customer COI company packages ─────────────────── */

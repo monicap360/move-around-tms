@@ -21,7 +21,6 @@ type Override = {
 };
 
 const DOC_TYPES = [
-  { value: "cargo_coi",         label: "Cargo COI" },
   { value: "workers_comp",      label: "Workers Comp" },
   { value: "auto_liability",    label: "Auto Liability COI" },
   { value: "general_liability", label: "General Liability COI" },

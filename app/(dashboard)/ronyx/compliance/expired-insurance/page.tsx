@@ -31,7 +31,6 @@ type AuditEntry = { id: string; ts: string; action: string; note: string; row_id
 const POLICY_TYPES = [
   "Auto Liability",
   "General Liability",
-  "Cargo",
   "Physical Damage",
   "Trailer Interchange",
   "Workers Comp",

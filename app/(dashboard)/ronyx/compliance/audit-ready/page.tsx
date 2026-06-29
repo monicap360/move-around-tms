@@ -172,7 +172,7 @@ const FLEET_LABELS: Record<string, string> = {
   oos_status: "OOS Status", ifta_decal: "IFTA Decal", plate: "Plate Number", vin: "VIN",
 };
 
-const OO_CHECKS = ["contract","w9","auto_liability","general_liability","cargo","workers_comp","truck_list","driver_list","settlement_setup","customer_approval"];
+const OO_CHECKS = ["contract","w9","auto_liability","general_liability","workers_comp","truck_list","driver_list","settlement_setup","customer_approval"];
 const OO_LABELS: Record<string, string> = {
   contract: "Contract", w9: "W-9", auto_liability: "Auto Liability COI", general_liability: "General Liability COI",
   cargo: "Cargo COI", workers_comp: "Workers Comp", truck_list: "Truck List",

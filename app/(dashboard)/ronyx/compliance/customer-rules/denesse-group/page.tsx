@@ -28,7 +28,6 @@ const TOGGLES: Toggle[] = [
   // COI
   { key: "auto_liability_required",    label: "Auto Liability COI",    section: "COI Requirements" },
   { key: "general_liability_required", label: "General Liability COI", section: "COI Requirements" },
-  { key: "cargo_required",             label: "Cargo COI",             overrideKey: "cargo_override_allowed",        overrideLabel: "Allow override", section: "COI Requirements" },
   { key: "workers_comp_required",      label: "Workers Comp",          overrideKey: "workers_comp_override_allowed", overrideLabel: "Allow override", section: "COI Requirements" },
   // Driver docs
   { key: "driver_cdl_required",             label: "CDL / Driver License", section: "Driver Documents" },

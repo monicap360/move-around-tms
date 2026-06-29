@@ -544,7 +544,6 @@ export default function ComplianceMonitorPage() {
               {[
                 { label: "Auto Liability",    cert: auto },
                 { label: "General Liability", cert: gl },
-                { label: "Cargo",             cert: cargo },
                 { label: "Workers Comp",      cert: wc },
               ].map(({ label, cert }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>

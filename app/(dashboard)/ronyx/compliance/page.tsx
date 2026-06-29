@@ -159,7 +159,7 @@ type TabKey = typeof TABS[number]["key"];
 
 const DOC_TYPES = [
   "CDL / License", "Medical Certificate", "MVR",
-  "Auto Insurance", "General Liability", "Cargo Insurance", "W9", "Contract",
+  "Auto Insurance", "General Liability", "W9", "Contract",
   "Cab Card", "Vehicle Registration", "Vehicle Insurance", "Inspection Report",
   "IFTA Decal", "Other",
 ];

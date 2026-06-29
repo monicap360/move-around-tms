@@ -132,7 +132,6 @@ export default function CustomerRulesPage() {
                     {[
                       ["Auto Liability",   r.auto_liability_required,    false],
                       ["General Liability",r.general_liability_required,  false],
-                      ["Cargo COI",        r.cargo_required,              r.cargo_override_allowed],
                       ["Workers Comp",     r.workers_comp_required,       r.workers_comp_override_allowed],
                       ["CDL",              r.driver_cdl_required,         false],
                       ["Medical Card",     r.driver_medical_card_required,false],
