@@ -175,7 +175,12 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
     setPinReady(true);
   }, []);
   function unlockStaff(s: ActiveStaff) { setActiveStaff(s); setPinSkipped(false); try { localStorage.setItem("ronyx_active_staff", JSON.stringify(s)); localStorage.removeItem("ronyx_pin_skipped"); } catch {} }
-  function lockStaff() { setActiveStaff(null); setPinSkipped(false); try { localStorage.removeItem("ronyx_active_staff"); localStorage.removeItem("ronyx_pin_skipped"); } catch {} }
+  function lockStaff() {
+    setActiveStaff(null); setPinSkipped(false);
+    try { localStorage.removeItem("ronyx_active_staff"); localStorage.removeItem("ronyx_pin_skipped"); } catch {}
+    // Clear the server session cookie, then go to the lock screen.
+    fetch("/api/ronyx/staff-pins/logout", { method: "POST" }).finally(() => { window.location.href = "/ronyx-lock"; });
+  }
   function skipPin() { setPinSkipped(true); try { localStorage.setItem("ronyx_pin_skipped", "1"); } catch {} }
 
   // Auto-start the guided tour once for new users (desktop only — needs the sidebar).

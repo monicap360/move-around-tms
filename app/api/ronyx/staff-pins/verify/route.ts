@@ -10,6 +10,17 @@ export const dynamic = "force-dynamic";
 
 const hashPin = (pin: string, salt: string) => crypto.createHash("sha256").update(`${salt}:${pin}`).digest("hex");
 
+// Signed, stateless session token (HMAC-SHA256). The middleware verifies the same
+// signature with Web Crypto, so the secret + base64url encoding must match exactly.
+const SESSION_SECRET = () => process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "ronyx-dev-secret";
+const b64url = (buf: Buffer | string) => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+function signSession(payload: Record<string, unknown>): string {
+  const p = b64url(JSON.stringify(payload));
+  const sig = crypto.createHmac("sha256", SESSION_SECRET()).update(p).digest();
+  return `${p}.${b64url(sig)}`;
+}
+const SESSION_HOURS = 12;
+
 // In-memory throttle (per server instance): 8 attempts / 5 min per org+staff.
 const attempts = new Map<string, number[]>();
 function tooMany(key: string): boolean {
@@ -43,7 +54,12 @@ export async function POST(req: Request) {
   const s = roster.find(x => x.id === id && x.active !== false);
 
   if (s && s.pin_hash && crypto.timingSafeEqual(Buffer.from(s.pin_hash), Buffer.from(hashPin(pin, s.salt)))) {
-    return NextResponse.json({ ok: true, staff: { id: s.id, name: s.name, role: s.role } });
+    const token = signSession({ sid: s.id, name: s.name, role: s.role, org: orgId, exp: Date.now() + SESSION_HOURS * 3600_000 });
+    const res = NextResponse.json({ ok: true, staff: { id: s.id, name: s.name, role: s.role } });
+    res.cookies.set("ronyx_session", token, {
+      httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: SESSION_HOURS * 3600,
+    });
+    return res;
   }
   return NextResponse.json({ ok: false, error: "Incorrect PIN." }, { status: 401 });
 }
