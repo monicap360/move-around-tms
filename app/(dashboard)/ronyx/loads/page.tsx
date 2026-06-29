@@ -2,6 +2,22 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import GridLayout, { WidthProvider } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+
+// Draggable/resizable dashboard grid (12 cols). Default layout mirrors the original
+// 3-rail arrangement (left 3 / center 6 / right 3) so the locked view looks the same.
+const DashGrid = WidthProvider(GridLayout);
+const DEFAULT_LOADS_LAYOUT = [
+  { i: "fleetStatus",   x: 0, y: 0,  w: 3, h: 8 },
+  { i: "pitControl",    x: 0, y: 8,  w: 3, h: 7 },
+  { i: "performance",   x: 0, y: 15, w: 3, h: 6 },
+  { i: "loadBoard",     x: 3, y: 0,  w: 6, h: 21 },
+  { i: "trafficIntel",  x: 9, y: 0,  w: 3, h: 7 },
+  { i: "weatherAlerts", x: 9, y: 7,  w: 3, h: 7 },
+  { i: "hosMonitor",    x: 9, y: 14, w: 3, h: 7 },
+];
 
 type LoadRow = {
   id: string;
@@ -94,6 +110,13 @@ export default function RonyxLoadsPage() {
       return next;
     });
   }
+
+  const [editLayout, setEditLayout] = useState(false);
+  const [dashLayout, setDashLayout] = useState<any[]>(() => {
+    try { const s = typeof window !== "undefined" ? localStorage.getItem("ronyx_loads_layout") : null; return s ? JSON.parse(s) : DEFAULT_LOADS_LAYOUT; } catch { return DEFAULT_LOADS_LAYOUT; }
+  });
+  function onDashLayoutChange(l: any[]) { setDashLayout(l); try { localStorage.setItem("ronyx_loads_layout", JSON.stringify(l)); } catch {} }
+  function resetDashLayout() { setDashLayout(DEFAULT_LOADS_LAYOUT); try { localStorage.removeItem("ronyx_loads_layout"); } catch {} }
 
   function panelSizeStyle(id: PanelId): React.CSSProperties {
     const s = panels[id].size;
@@ -936,8 +959,14 @@ export default function RonyxLoadsPage() {
           </div>
         </div>
 
-        <div className="operations-rail">
-          <div className="fleet-status">
+        <div style={{ gridColumn: "1 / -1" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            {editLayout && <span style={{ marginRight: "auto", fontSize: 11, color: "var(--text-tertiary)" }}>Drag a panel to move it • drag its bottom-right corner to resize</span>}
+            <button onClick={() => setEditLayout(e => !e)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--dispatch-border)", background: editLayout ? "var(--accent,#1e90ff)" : "rgba(255,255,255,0.07)", color: editLayout ? "#fff" : "var(--text-secondary)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{editLayout ? "✓ Done" : "🔧 Edit Layout"}</button>
+            {editLayout && <button onClick={resetDashLayout} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--dispatch-border)", background: "rgba(255,255,255,0.07)", color: "var(--text-secondary)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Reset Layout</button>}
+          </div>
+          <DashGrid className="dash-rgl" layout={dashLayout} cols={12} rowHeight={28} margin={[12, 12]} isDraggable={editLayout} isResizable={editLayout} onLayoutChange={onDashLayoutChange} compactType="vertical" draggableCancel="button,input,select,a,textarea,.action-btn">
+          <div key="fleetStatus" className="fleet-status">
             <PanelCtrlBar id="fleetStatus" icon="fa-truck" label="FLEET STATUS" />
             {!panels.fleetStatus.collapsed && (
               <div style={panelSizeStyle("fleetStatus")}>
@@ -971,7 +1000,7 @@ export default function RonyxLoadsPage() {
             )}
           </div>
 
-          <div className="pit-control">
+          <div key="pitControl" className="pit-control">
             <PanelCtrlBar id="pitControl" icon="fa-mountain" label="PIT CONTROL" />
             {!panels.pitControl.collapsed && (
               <div style={panelSizeStyle("pitControl")}>
@@ -1002,6 +1031,7 @@ export default function RonyxLoadsPage() {
           </div>
 
           <div
+            key="performance"
             style={{
               background: "var(--dispatch-surface)",
               borderRadius: "var(--radius-lg)",
@@ -1029,9 +1059,8 @@ export default function RonyxLoadsPage() {
               </div>
             )}
           </div>
-        </div>
 
-        <div className="load-board">
+          <div key="loadBoard" className="load-board">
           <div className="board-header">
             <div>
               <h2 style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1141,8 +1170,7 @@ export default function RonyxLoadsPage() {
           )}
         </div>
 
-        <div className="intelligence-rail">
-          <div className="traffic-intel">
+          <div key="trafficIntel" className="traffic-intel">
             <PanelCtrlBar id="trafficIntel" icon="fa-traffic-light" label="TRAFFIC INTELLIGENCE" />
             {!panels.trafficIntel.collapsed && (
               <div style={panelSizeStyle("trafficIntel")}>
@@ -1168,7 +1196,7 @@ export default function RonyxLoadsPage() {
             )}
           </div>
 
-          <div className="weather-alerts">
+          <div key="weatherAlerts" className="weather-alerts">
             <PanelCtrlBar id="weatherAlerts" icon="fa-cloud-sun" label="WEATHER ALERTS" />
             {!panels.weatherAlerts.collapsed && (
               <div style={panelSizeStyle("weatherAlerts")}>
@@ -1198,7 +1226,7 @@ export default function RonyxLoadsPage() {
             )}
           </div>
 
-          <div className="hos-monitor">
+          <div key="hosMonitor" className="hos-monitor">
             <PanelCtrlBar id="hosMonitor" icon="fa-hourglass-half" label="HOS MONITOR" />
             {!panels.hosMonitor.collapsed && (
               <div style={panelSizeStyle("hosMonitor")}>
@@ -1218,6 +1246,7 @@ export default function RonyxLoadsPage() {
               </div>
             )}
           </div>
+          </DashGrid>
         </div>
 
         <div className="command-bar">
