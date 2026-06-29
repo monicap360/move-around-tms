@@ -311,7 +311,19 @@ export async function POST(req: Request) {
     });
 
     // ── Insert rows (batch, idempotent: delete-then-insert on re-parse) ──────
-    // Delete existing rows for this import so re-parses are clean
+    // GUARD: if any prior rows were already promoted to jobs (i.e. corrected/committed),
+    // a delete-then-insert would silently wipe that work. Block the re-parse instead.
+    const { count: promotedCount } = await sb
+      .from("dispatch_import_rows")
+      .select("id", { count: "exact", head: true })
+      .eq("dispatch_import_id", dispatch_import_id)
+      .not("promoted_to_job_id", "is", null);
+    if (promotedCount && promotedCount > 0) {
+      return NextResponse.json({
+        error: `This import already has ${promotedCount} promoted/corrected row(s). Re-parsing is blocked so corrections aren't lost — start a new import instead.`,
+      }, { status: 409 });
+    }
+    // Delete existing (un-promoted) rows for this import so re-parses are clean
     await sb.from("dispatch_import_rows").delete().eq("dispatch_import_id", dispatch_import_id);
 
     const { error: insertError } = await sb

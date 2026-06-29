@@ -106,6 +106,8 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     "special_instructions_ack","missing_bol","proof_of_delivery_url",
     "customer_phone","customer_name","pickup_address","dropoff_address",
     "pickup_time","dropoff_time",
+    // Free-text values imported from the dispatch CSV — staff fix these inline.
+    "driver_name","truck_number",
   ];
   for (const key of allowed) {
     if (body[key] !== undefined) update[key] = body[key];

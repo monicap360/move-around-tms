@@ -475,6 +475,19 @@ export default function DailyImportPage() {
     });
   }, [extractable, ooOptions]);
 
+  // Inline-fix a value on an already-imported job (driver/truck/customer) without re-uploading.
+  async function patchBatchJob(jobId: string, field: string, value: string) {
+    setBatchJobs(prev => prev.map(j => j.id === jobId ? { ...j, [field]: value } : j));
+    try {
+      const res = await fetch(`/api/ronyx/dispatch/jobs/${jobId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); flash(d.error ? `Couldn't save: ${d.error}` : "Edit didn't save — try again.", false); }
+    } catch { flash("Network error — edit not saved.", false); }
+  }
+  const editCellStyle: React.CSSProperties = { width: "100%", border: "1px solid transparent", borderRadius: 5, padding: "3px 6px", fontSize: 13, background: "transparent", fontWeight: 600, color: "#0f172a", outline: "none", boxSizing: "border-box" };
+
   async function loadBatch(id: string) {
     const res = await fetch(`/api/ronyx/dispatch-import/${id}`);
     const d   = await res.json();
@@ -1045,10 +1058,12 @@ export default function DailyImportPage() {
             <SectionHead n={11} label="Staff Tasks Preview" />
             <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, fontWeight:700, color:"#0f172a", cursor:"pointer" }}>
               <input type="checkbox" checked={createTasks} onChange={e=>setCreateTasks(e.target.checked)} style={{ width:14, height:14 }} />
-              Create Staff Tasks on Import
+              Show task checklist
             </label>
           </div>
-          {!staffTasks || staffTasks.length === 0 ? (
+          {!createTasks ? (
+            <div style={{ padding:"14px", background:"#f8fafc", borderRadius:8, color:"#64748b", fontWeight:600, fontSize:13 }}>Task checklist hidden. Tick &quot;Show task checklist&quot; to see what each role needs to handle from this import.</div>
+          ) : !staffTasks || staffTasks.length === 0 ? (
             <div style={{ padding:"14px", background:"#f0fdf4", borderRadius:8, color:"#16a34a", fontWeight:700, fontSize:13 }}>✅ No staff tasks needed — file is clean.</div>
           ) : (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:10 }}>
@@ -1246,10 +1261,20 @@ export default function DailyImportPage() {
                         </span>
                         {j.compliance_issue&&<div style={{ fontSize:10, color:"#64748b", marginTop:2 }}>{j.compliance_issue}</div>}
                       </td>
-                      <td style={{ padding:"9px 12px", fontWeight:800, color:"#0f172a" }}>{j.truck_number||"—"}</td>
-                      <td style={{ padding:"9px 12px" }}>
-                        <div style={{ fontWeight:600, color:"#0f172a" }}>{j.driver_name||"—"}</div>
-                        {j.vendor_name&&<div style={{ fontSize:10, color:"#94a3b8" }}>{j.vendor_name}</div>}
+                      <td style={{ padding:"6px 8px" }}>
+                        <input key={j.id+"truck"} defaultValue={j.truck_number||""} placeholder="—" title="Click to edit truck #"
+                          onBlur={e=>{ e.target.style.border="1px solid transparent"; e.target.style.background="transparent"; const v=e.target.value.trim(); if(v!==(j.truck_number||"")) patchBatchJob(j.id,"truck_number",v); }}
+                          onKeyDown={e=>{ if(e.key==="Enter")(e.target as HTMLInputElement).blur(); }}
+                          onFocus={e=>{ e.target.style.border="1px solid #93c5fd"; e.target.style.background="#fff"; }}
+                          style={{ ...editCellStyle, fontWeight:800 }} />
+                      </td>
+                      <td style={{ padding:"6px 8px" }}>
+                        <input key={j.id+"driver"} defaultValue={j.driver_name||""} placeholder="—" title="Click to edit driver name"
+                          onBlur={e=>{ e.target.style.border="1px solid transparent"; e.target.style.background="transparent"; const v=e.target.value.trim(); if(v!==(j.driver_name||"")) patchBatchJob(j.id,"driver_name",v); }}
+                          onKeyDown={e=>{ if(e.key==="Enter")(e.target as HTMLInputElement).blur(); }}
+                          onFocus={e=>{ e.target.style.border="1px solid #93c5fd"; e.target.style.background="#fff"; }}
+                          style={editCellStyle} />
+                        {j.vendor_name&&<div style={{ fontSize:10, color:"#94a3b8", paddingLeft:6 }}>{j.vendor_name}</div>}
                       </td>
                       <td style={{ padding:"9px 12px", color:"#6366f1", fontWeight:700 }}>{j.friendly_job_id||"—"}</td>
                       <td style={{ padding:"9px 12px", color:"#475569", maxWidth:220 }}>
