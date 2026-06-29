@@ -5,6 +5,21 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import PageProtection from "@/app/components/security/PageProtection";
 import IntelImportCenter from "@/app/components/ronyx/IntelImportCenter";
+import GuidedTour, { tourDone, type TourStep } from "@/app/components/ronyx/GuidedTour";
+
+// ── Guided tour steps (highlights the main modules in the sidebar) ──────────────
+const RONYX_TOUR: TourStep[] = [
+  { title: "Welcome to MoveAround TMS 👋", body: "Here's a quick 60-second tour of the main tools. You can replay it anytime from the ? button in the top bar." },
+  { selector: '.tms-sidebar a[href="/ronyx/operations-manager"]', title: "🧭 Rory — Operations Manager", body: "Your AI ops manager. Ask plain questions about dispatch, drivers, compliance, fleet, tickets, payroll, and billing — answers come from your live data." },
+  { selector: '.tms-sidebar a[href="/ronyx/dispatch/board"]', title: "📋 Dispatch", body: "Your dispatch board and Command Center. Import a daily dispatch, assign drivers to trips, and use Smart Assign to get driver recommendations." },
+  { selector: '.tms-sidebar a[href="/ronyx/fast-scan"]', title: "⚡ Fast Scan", body: "Snap or upload a load ticket — Claude reads it automatically (Fast Scan OCR) and routes it to payroll and billing." },
+  { selector: '.tms-sidebar a[href="/ronyx/compliance"]', title: "🛡️ CCB Compliance", body: "Keep carriers and drivers cleared to dispatch — expiring documents, clearance checks, and audit-ready records." },
+  { selector: '.tms-sidebar a[href="/ronyx/drivers"]', title: "👤 Drivers", body: "Your driver roster with CDL and medical-card compliance, documents, and import tools." },
+  { selector: '.tms-sidebar a[href="/ronyx/owner-operators"]', title: "🚛 Owner Operators", body: "Your sub-haulers and OO companies — documents, COI compliance, settlements, and bulk import." },
+  { selector: '.tms-sidebar a[href="/ronyx/fleet"]', title: "🔧 Fleet & Maintenance", body: "Truck readiness, maintenance, inspections, and availability — the Fleet Readiness Command Center." },
+  { selector: '.tms-sidebar a[href="/ronyx/implementation"]', title: "🚀 Setup & Import", body: "Load your data in phases — customers, drivers, trucks, owner-operators, and your daily dispatch. You can drop several files at once." },
+  { title: "You're all set! 🎉", body: "That's the quick tour. Click the ? in the top bar to replay it, or ask Rory if you get stuck." },
+];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -142,6 +157,16 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
   const [now,          setNow]          = useState("");
   const [expanded,     setExpanded]     = useState<Set<string>>(new Set());
   const [searchOpen,   setSearchOpen]   = useState(false);
+  const [tourOpen,     setTourOpen]     = useState(false);
+
+  // Auto-start the guided tour once for new users (desktop only — needs the sidebar).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth < 821) return;
+    if (tourDone("ronyx_v1")) return;
+    const t = setTimeout(() => setTourOpen(true), 900); // let the sidebar render first
+    return () => clearTimeout(t);
+  }, []);
   const [searchQuery,  setSearchQuery]  = useState("");
   const [searchResults, setSearchResults] = useState<{ label: string; href: string; type: string }[]>([]);
   const [cmdLoading,   setCmdLoading]   = useState(false);
@@ -712,7 +737,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
           <div className="tms-topbar-right">
             <button className="tms-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search (⌘K)">🔍</button>
             <button className="tms-icon-btn" aria-label="Notifications">🔔<span className="tms-notif-badge" /></button>
-            <button className="tms-icon-btn" aria-label="Help">?</button>
+            <button className="tms-icon-btn" aria-label="Take a guided tour" title="Take a guided tour" onClick={() => setTourOpen(true)}>?</button>
             <button className="tms-user-chip">
               <div className="tms-user-avatar">{displayName.charAt(0).toUpperCase()}</div>
               {displayName}
@@ -738,6 +763,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
 
         <main className="tms-content">{children}</main>
       </div>
+
+      <GuidedTour steps={RONYX_TOUR} open={tourOpen} onClose={() => setTourOpen(false)} tourId="ronyx_v1" />
 
       {/* Intel Import Center™ FAB */}
       {!fabHidden && (
