@@ -56,6 +56,11 @@ jobs:
         continue-on-error: true
         run: bash scripts/ci-multitenant-guard.sh || true
 
+      # Required: raw prompt() throws in the production webview and silently breaks
+      # uploads + actions. All input must go through safePrompt(). Blocks the merge.
+      - name: No raw prompt() guard (required)
+        run: node scripts/ban-prompt.mjs
+
       # THE GATE. Same NODE_OPTIONS heap as Render so CI reproduces prod build
       # memory. A failure here blocks the merge.
       - name: Build (required gate)

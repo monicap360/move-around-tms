@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, CardHeader, CardContent, CardTitle } from "../../components/ui/card";
 import { CheckCircle, AlertTriangle, XCircle, PenLine, Download, BarChart2, Bell, Search, FileText, FileSpreadsheet, StickyNote } from "lucide-react";
@@ -209,7 +210,7 @@ export default function ComplianceTab({ driverId, role }: { driverId: string, ro
   // Simulate digital signature (for demo: prompt for name)
   async function handleSign(form: string) {
     setSigning(true);
-    const name = window.prompt(`Type your name to sign the ${form}`);
+    const name = safePrompt(`Type your name to sign the ${form}`);
     if (name) {
       setSignature(`${form} signed by ${name} on ${new Date().toLocaleDateString()}`);
       // TODO: Persist signature to Supabase if needed

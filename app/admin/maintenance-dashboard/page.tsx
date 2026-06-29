@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import { supabase } from "../../lib/supabaseClient";
 import {
   Card,
@@ -383,7 +384,7 @@ export default function MaintenanceDashboard() {
 
                       <Button
                         onClick={() => {
-                          const date = prompt(
+                          const date = safePrompt(
                             "Enter scheduled date (YYYY-MM-DD):",
                           );
                           if (date) updateStatus(req.id, "Scheduled", date);

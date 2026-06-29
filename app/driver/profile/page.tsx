@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useState } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import { supabase } from "../../lib/supabaseClient";
 import {
   Card,
@@ -463,7 +464,7 @@ export default function DriverProfilePage() {
 
   async function requestSwap(shiftId: string) {
     if (!driver) return;
-    const message = prompt(
+    const message = safePrompt(
       "Optional message to manager about this swap request:",
     );
     try {

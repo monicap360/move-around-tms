@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import {
   Card,
   CardHeader,
@@ -63,7 +64,7 @@ export default function AddUserPage() {
 
     try {
       if (!adminToken) {
-        const token = prompt("Enter admin token to proceed:");
+        const token = safePrompt("Enter admin token to proceed:");
         if (!token) {
           setError("Admin token required");
           setLoading(false);
@@ -76,7 +77,7 @@ export default function AddUserPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken || prompt("Enter admin token:")}`,
+          Authorization: `Bearer ${adminToken || safePrompt("Enter admin token:")}`,
         },
         body: JSON.stringify({ email, password, role, company }),
       });

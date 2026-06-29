@@ -5,6 +5,7 @@
 // built-in "Manage staff" panel to add people and set PINs — no separate page.
 
 import { useCallback, useEffect, useState } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 
 export type ActiveStaff = { id: string; name: string; role: string };
 type StaffLite = { id: string; name: string; role: string; has_pin: boolean };
@@ -149,7 +150,7 @@ function ManagePanel({ staff, reload, onDone }: { staff: StaffLite[]; reload: ()
             <span style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{s.name}</span>
             <span style={{ fontSize: 11, color: "#94a3b8" }}>{s.role}</span>
             <span style={{ marginLeft: "auto", fontSize: 11, color: s.has_pin ? "#16a34a" : "#dc2626" }}>{s.has_pin ? "PIN set" : "no PIN"}</span>
-            <button onClick={async () => { const p = prompt(`New 4–6 digit PIN for ${s.name}:`); if (p) await call({ action: "set_pin", id: s.id, pin: p }); }} style={miniBtn}>Set PIN</button>
+            <button onClick={async () => { const p = safePrompt(`New 4–6 digit PIN for ${s.name}:`); if (p) await call({ action: "set_pin", id: s.id, pin: p }); }} style={miniBtn}>Set PIN</button>
             <button onClick={async () => { if (confirm(`Remove ${s.name}?`)) await call({ action: "remove", id: s.id }); }} style={{ ...miniBtn, color: "#dc2626", borderColor: "#fecaca" }}>Remove</button>
           </div>
         ))}

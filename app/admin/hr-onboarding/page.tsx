@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import { supabase } from "../../lib/supabaseClient";
 import {
   Card,
@@ -170,7 +171,7 @@ export default function HROnboardingDashboard() {
   };
 
   const rejectDocument = async (docId: string) => {
-    const reason = prompt("Reason for rejection:");
+    const reason = safePrompt("Reason for rejection:");
     if (!reason) return;
 
     try {

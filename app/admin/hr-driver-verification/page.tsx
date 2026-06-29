@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { safePrompt } from "@/lib/safePrompt";
 import {
   Card,
   CardHeader,
@@ -37,7 +38,7 @@ export default function HRDriverVerificationPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const token = prompt("Enter admin token:");
+    const token = safePrompt("Enter admin token:");
     if (token) {
       setAdminToken(token);
       loadProfiles(token);
