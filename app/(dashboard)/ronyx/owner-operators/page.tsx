@@ -1399,8 +1399,8 @@ export default function OwnerOperatorsPage() {
             const expanded = expandedOOs.has(oo.id);
             return (
               <div key={oo.id} style={{ background: "#fff", border: `1px solid ${stripBorder}`, borderRadius: 16, overflow: "hidden" }}>
-                {/* Header row — click anywhere to expand/collapse */}
-                <div onClick={() => toggleOO(oo.id)} style={{ background: cardBg, padding: "12px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: expanded ? `1px solid ${stripBorder}` : "none", cursor: "pointer" }}>
+                {/* Header row — click opens THIS company's isolated profile view */}
+                <div onClick={() => openOO(oo)} style={{ background: cardBg, padding: "12px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: expanded ? `1px solid ${stripBorder}` : "none", cursor: "pointer" }}>
                   <div style={{ width: 46, height: 46, borderRadius: "50%", background: oo.logo_url ? "#fff" : "#1e40af", border: oo.logo_url ? "1px solid #e2e8f0" : "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.1rem", flexShrink: 0, overflow: "hidden" }}>
                     {oo.logo_url ? <img src={oo.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : oo.company_name.charAt(0)}
                   </div>
