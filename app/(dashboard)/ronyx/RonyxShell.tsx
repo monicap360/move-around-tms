@@ -51,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Daily Import",          href: "/ronyx/dispatch/daily-import",    icon: "📥" },
         { label: "Dispatch Guard™",       href: "/ronyx/dispatch/dispatch-guard",  icon: "🛡️" },
         { label: "Load Tracker",          href: "/ronyx/dispatch/loads",           icon: "📍" },
+        { label: "Driver Hours (HOS)",    href: "/ronyx/dispatch/driver-hours",    icon: "⏱️" },
       ]},
       { label: "Fast Scan™",       href: "/ronyx/fast-scan",               icon: "⚡", color: "#16a34a" },
       { label: "All Tickets",      href: "/ronyx/tickets",                 icon: "🎫", color: "#d97706", children: [
