@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { runOcr } from "@/lib/fast-scan-ocr";
 import { TMS_BUCKET } from "@/lib/storage-paths";
+import { syncScanToAgg, stripAndRetry } from "@/lib/fast-scan/syncToAgg";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // OCR can take up to 60s
@@ -53,22 +54,30 @@ export async function POST(req: NextRequest) {
     // Run Claude vision OCR
     const { fields } = await runOcr(bucket, doc.object_path, document_id);
 
-    // Submit to the ticket-creation OCR endpoint
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const ocrRes = await fetch(`${baseUrl}/api/ronyx/fast-scan/ocr`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...fields,
-        scan_source:         "fast_scan_upload",
-        original_upload_id:  document_id,
-      }),
-    });
+    // Persist the extracted fields back onto the scan doc and mark it completed
+    // (previously the OCR results were returned but never saved).
+    const docUpdate: Record<string, any> = {
+      ocr_status:    "completed",
+      scan_status:   "needs_review",
+      ticket_number: fields.ticket_number || doc.ticket_number || null,
+      truck_number:  fields.truck_number || null,
+      driver_name:   fields.driver_printed_name || null,
+      ticket_date:   fields.ticket_date || null,
+      customer_name: (fields as any).customer || null,
+      material:      fields.material || null,
+      quantity:      (fields as any).loads ?? null,
+      has_driver_signature: !!fields.signature_present,
+      raw_ocr_text:  (fields as any).raw_ocr_text || null,
+      confidence_score: fields.extraction_confidence ?? fields.ocr_confidence ?? null,
+    };
+    const { data: updatedDoc } = await stripAndRetry(
+      (p) => sb.from("fast_scan_documents").update(p).eq("id", document_id).select("*").single(),
+      docUpdate,
+    );
+    const scan = updatedDoc || { ...doc, ...docUpdate };
 
-    let ticket: { ticket_id?: string; ticket_number?: string; missing_fields?: string[]; qr_url?: string } | null = null;
-    if (ocrRes.ok || ocrRes.status === 201) {
-      ticket = await ocrRes.json();
-    }
+    // Mirror into aggregate_tickets (the agg portion payroll reads) — payroll-ready.
+    const agg = await syncScanToAgg(sb, scan);
 
     // Audit event
     await sb.from("fast_scan_audit_events").insert({
@@ -79,8 +88,7 @@ export async function POST(req: NextRequest) {
       event_payload:         {
         ocr_confidence:        fields.ocr_confidence,
         extraction_confidence: fields.extraction_confidence,
-        ticket_id:             ticket?.ticket_id || null,
-        missing_fields:        ticket?.missing_fields || [],
+        agg_synced:            agg.synced,
       },
     }).maybeSingle();
 
@@ -94,17 +102,16 @@ export async function POST(req: NextRequest) {
         truck_number:  fields.truck_number,
         driver_name:   fields.driver_printed_name,
         ticket_date:   fields.ticket_date,
-        customer:      fields.customer,
-        location:      fields.location,
-        loads:         fields.loads,
+        customer:      (fields as any).customer,
+        location:      (fields as any).location,
+        loads:         (fields as any).loads,
         material:      fields.material,
-        total_hours:   fields.total_hours,
+        total_hours:   (fields as any).total_hours,
         signature:     fields.signature_present,
       },
-      ticket_id:     ticket?.ticket_id     || null,
-      ticket_number: ticket?.ticket_number || fields.ticket_number || null,
-      missing_fields: ticket?.missing_fields || [],
-      qr_url:        ticket?.qr_url        || null,
+      ticket_number:  docUpdate.ticket_number,
+      payroll_ready:  agg.synced,
+      payroll_note:   agg.reason || null,
     }, { status: 201 });
 
   } catch (err: unknown) {
