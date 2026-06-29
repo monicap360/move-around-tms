@@ -6,7 +6,7 @@
    customer_invoices, ronyx_oo_settlements, driver_pay_runs, fuel_transactions,
    financial_exceptions) as they fill. Build order phases 2–8 follow. */
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 // ─── Left navigation ──────────────────────────────────────────────────────────
 const NAV = [
@@ -70,7 +70,13 @@ export default function AccountingCommandCenter() {
   const [priFilter, setPriFilter] = useState<"All" | Priority | "Assigned to Me" | "Unassigned" | "Resolved">("All");
   const [kpiFilter, setKpiFilter] = useState<string | null>(null);
   const [openRow, setOpenRow]     = useState<string | null>(null);
+  const [ov, setOv]               = useState<any>(null);
   const ME = "Sylvia P";
+
+  // Live KPI values from invoices + tickets; null keeps the seeded demo values.
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/overview").then(r => r.json()).then(d => { if (d.live) setOv(d); }).catch(() => {});
+  }, []);
 
   const visible = useMemo(() => {
     return EXCEPTIONS.filter(e => {
@@ -85,15 +91,16 @@ export default function AccountingCommandCenter() {
 
   // KPI values (seeded; each card filters the queue)
   const openExc = EXCEPTIONS.filter(e => e.status !== "Resolved");
+  const L = ov && ov.live;
   const kpis = [
-    { key: "revenue",  label: "Revenue This Period",      value: fmt(248300), sub: "+12.4% vs prior period",          tone: "#16a34a" },
-    { key: "unbilled", label: "Unbilled Load Value",      value: fmt(38940),  sub: "27 approved loads not invoiced",   tone: "#b45309", filter: "Completed load is not invoiced" },
-    { key: "ar",       label: "A/R Outstanding",          value: fmt(96120),  sub: `${fmt(15890)} overdue`,            tone: "#dc2626", filter: "Invoice is overdue" },
+    { key: "revenue",  label: "Revenue This Period",      value: L ? fmt(ov.revenue)  : fmt(248300), sub: L ? `${ov.invoiceCount} invoices` : "+12.4% vs prior period",          tone: "#16a34a" },
+    { key: "unbilled", label: "Unbilled Load Value",      value: L ? fmt(ov.unbilled) : fmt(38940),  sub: L ? `${ov.unbilledCount} approved loads not invoiced` : "27 approved loads not invoiced",   tone: "#b45309", filter: "Completed load is not invoiced" },
+    { key: "ar",       label: "A/R Outstanding",          value: L ? fmt(ov.arOpen)   : fmt(96120),  sub: L ? `${fmt(ov.overdue)} overdue` : `${fmt(15890)} overdue`,            tone: "#dc2626", filter: "Invoice is overdue" },
     { key: "payable",  label: "Driver / OO Payable",      value: fmt(41730),  sub: "Approved, awaiting payment",        tone: "#1d4ed8", filter: "Settlement is ready but not approved" },
-    { key: "margin",   label: "Gross Margin",             value: fmt(71240),  sub: "28.7% this period",                tone: "#15803d" },
+    { key: "margin",   label: "Gross Margin",             value: L ? fmt(ov.grossMargin) : fmt(71240),  sub: L ? `${ov.grossMarginPct.toFixed(0)}% this period` : "28.7% this period",                tone: "#15803d" },
     { key: "atrisk",   label: "Margin at Risk",           value: fmt(8460),   sub: "Missing cost / disputed rate",      tone: "#ea580c", filter: "Margin cannot be calculated" },
     { key: "exc",      label: "Financial Exceptions",     value: String(openExc.length), sub: "Need staff action",      tone: "#7c3aed", filter: "__all" },
-    { key: "cash",     label: "Cash Collected",           value: fmt(132540), sub: "Payments received this period",     tone: "#0e7490" },
+    { key: "cash",     label: "Cash Collected",           value: L ? fmt(ov.cash) : fmt(132540), sub: "Payments received this period",     tone: "#0e7490" },
   ];
 
   function onKpi(k: any) {
@@ -143,6 +150,7 @@ export default function AccountingCommandCenter() {
             <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Live financial control across tickets, invoicing, settlements, receivables, and job margin.</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ ...chip, background: L ? "#dcfce7" : "#fef9c3", color: L ? "#15803d" : "#b45309", padding: "7px 11px" }}>{L ? "● Live data" : "Demo data"}</span>
             {["This Period ▾", "All Companies ▾", "All Customers ▾", "All Jobs ▾"].map(c => (
               <button key={c} style={ctrlBtn}>{c}</button>
             ))}
