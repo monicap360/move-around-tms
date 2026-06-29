@@ -319,8 +319,8 @@ function runGuardChecks(job: DispatchJob): GuardJobResult {
   });
 
   const fails = checks.filter(c => c.status === "fail").length;
-  const warns = checks.filter(c => c.status === "warn").length;
-  const status: GuardStatus = fails > 0 ? "BLOCKED" : warns > 0 ? "WARNING" : "CLEAR";
+  // Soft amber warnings (expiring-soon) no longer flag a job — only hard fails block.
+  const status: GuardStatus = fails > 0 ? "BLOCKED" : "CLEAR";
   return { job, status, checks };
 }
 
@@ -361,10 +361,9 @@ function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: (
           <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Pre-dispatch protection that checks every job before it goes out.</p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 16 }}>
           {[
             { label: "CLEAR",    count: summary.clear,    bg: "#f0fdf4", text: "#15803d" },
-            { label: "WARNING",  count: summary.warning,  bg: "#fef3c7", text: "#92400e" },
             { label: "BLOCKED",  count: summary.blocked,  bg: "#fee2e2", text: "#dc2626" },
             { label: "OVERRIDE", count: summary.override, bg: "#eff6ff", text: "#1d4ed8" },
           ].map(s => (
@@ -382,7 +381,6 @@ function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: (
         {results.map(r => {
           const gc    = GUARD_CFG[r.status];
           const fails = r.checks.filter(c => c.status === "fail");
-          const warns = r.checks.filter(c => c.status === "warn");
           return (
             <div key={r.job.id} style={{ border: `1.5px solid ${gc.border}`, borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
               <div style={{ background: gc.bg, padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -415,12 +413,12 @@ function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: (
                 </div>
               </div>
 
-              {(fails.length > 0 || warns.length > 0) && (
+              {fails.length > 0 && (
                 <div style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 4 }}>
-                  {[...fails, ...warns].map((c, i) => (
+                  {fails.map((c, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11 }}>
-                      <span style={{ color: c.status === "fail" ? "#dc2626" : "#d97706", fontWeight: 800, flexShrink: 0, minWidth: 70 }}>
-                        {c.status === "fail" ? "✕ BLOCKED" : "⚠ WARN"}
+                      <span style={{ color: "#dc2626", fontWeight: 800, flexShrink: 0, minWidth: 70 }}>
+                        ✕ BLOCKED
                       </span>
                       <span style={{ fontWeight: 600, color: "#0f172a" }}>{c.name}</span>
                       {c.detail && <span style={{ color: "#64748b" }}>— {c.detail}</span>}
@@ -824,7 +822,9 @@ function DoThisFirst({ jobs, drivers, alerts }: { jobs: DispatchJob[]; drivers: 
     items.push({ badge: "critical", title: a.message, role: "Dispatcher", actionLabel: "Review" });
   }
 
-  const sorted = items.sort((a, b) => {
+  // Soft amber "warning" items (OCR-review nudge, missing-rate) are intentionally
+  // dropped — the board shows only blockers and time-critical/high items.
+  const sorted = items.filter(it => it.badge !== "warning").sort((a, b) => {
     const o: Record<string, number> = { critical: 3, high: 2, warning: 1 };
     return (o[b.badge] ?? 0) - (o[a.badge] ?? 0);
   }).slice(0, 8);
@@ -878,8 +878,11 @@ function DoThisFirst({ jobs, drivers, alerts }: { jobs: DispatchJob[]; drivers: 
 
 // ─── Alert Strip ──────────────────────────────────────────────────────────────
 
-function AlertStrip({ alerts }: { alerts: DispatchAlert[] }) {
+function AlertStrip({ alerts: allAlerts }: { alerts: DispatchAlert[] }) {
   const [collapsed, setCollapsed] = useState(false);
+  // Soft amber "warning"-severity alerts are filtered out — only blocked/critical/high
+  // (the ones that actually stop or threaten a dispatch) reach the board.
+  const alerts = allAlerts.filter(a => a.severity !== "warning");
   if (alerts.length === 0) return null;
   const counts = {
     blocked:  alerts.filter(a => a.severity === "blocked").length,
