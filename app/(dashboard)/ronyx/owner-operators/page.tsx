@@ -3151,6 +3151,7 @@ export default function OwnerOperatorsPage() {
                     {existing ? "🔄 Replace" : "📤 Upload"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
                   </label>
+                  {existing && <button onClick={()=>removeDocByType(docType)} title="Delete this document" style={{ marginLeft:6, marginTop:4, background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"6px 12px", fontSize:"0.74rem", fontWeight:700, cursor:"pointer" }}>🗑</button>}
                 </div>
               );
             })}
@@ -3197,6 +3198,7 @@ export default function OwnerOperatorsPage() {
                       {existing ? "🔄 Replace" : "📤 Upload"}
                       <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
                     </label>
+                    {existing && <button onClick={()=>removeDocByType(docType)} title="Delete this document" style={{ marginLeft:6, background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"5px 11px", fontSize:"0.74rem", fontWeight:700, cursor:"pointer" }}>🗑</button>}
                   </div>
                 </div>
               );
@@ -3277,6 +3279,7 @@ export default function OwnerOperatorsPage() {
                     {existing ? "🔄 Replace" : "📤 Upload"}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f) handleDocUpload(docType,f); e.target.value=""; }} />
                   </label>
+                  {existing && <button onClick={()=>removeDocByType(docType)} title="Delete this document" style={{ marginLeft:6, marginTop:4, background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"6px 12px", fontSize:"0.74rem", fontWeight:700, cursor:"pointer" }}>🗑</button>}
                 </div>
               );
             })}
