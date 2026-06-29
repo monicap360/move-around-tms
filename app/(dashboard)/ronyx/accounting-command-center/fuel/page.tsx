@@ -3,12 +3,12 @@
 /* Accounting Command Center — Phase 6: Fuel & Cost Allocation.
    Seeded demo data; wires to fuel_transactions + cost_allocations. */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Cost = { id: string; date: string; vendor: string; type: string; amount: number; truck: string | null; party: string | null; job: string | null; method: string | null; tab: string };
 
-const RAW: Cost[] = [
+const DEMO: Cost[] = [
   { id: "FUEL-7781", date: "06-27", vendor: "Pilot #482",   type: "Fuel",        amount: 412, truck: "T-220", party: "Pineda Commodity", job: null,            method: null,            tab: "unmatched" },
   { id: "FUEL-7783", date: "06-27", vendor: "Loves #311",   type: "Fuel",        amount: 388, truck: "T-118", party: null,               job: null,            method: null,            tab: "unmatched" },
   { id: "FUEL-7790", date: "06-28", vendor: "Pilot #482",   type: "Fuel",        amount: 64,  truck: "T-104", party: "Double F",         job: "SH-249 Reload", method: "Per Load",      tab: "assigned" },
@@ -38,23 +38,31 @@ export default function Fuel() {
   const [tab, setTab] = useState("unmatched");
   const [assign, setAssign] = useState<Cost | null>(null);
   const [toast, setToast] = useState("");
+  const [data, setData] = useState(DEMO);
+  const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
   const active = TABS.find(t => t.key === tab)!;
-  const rows = RAW.filter(active.match);
+  const rows = data.filter(active.match);
 
-  const unmatchedTotal = useMemo(() => RAW.filter(c => !c.method).reduce((s, c) => s + c.amount, 0), []);
-  const unmatchedCount = RAW.filter(c => !c.method).length;
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/fuel").then(r => r.json()).then(d => {
+      if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
+    }).catch(() => {});
+  }, []);
+
+  const unmatchedTotal = useMemo(() => data.filter(c => !c.method).reduce((s, c) => s + c.amount, 0), [data]);
+  const unmatchedCount = data.filter(c => !c.method).length;
 
   return (
     <AcctShell active="fuel" title="Fuel & Cost Allocation" subtitle="Assign every cost to a truck or job — so margin is real, not a guess."
-      controls={<><button style={ctrlBtn}>Import Fuel Card ▾</button><button style={primaryBtn}>+ Add Cost</button></>}>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>Import Fuel Card ▾</button><button style={primaryBtn}>+ Add Cost</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
       {unmatchedCount > 0 && <div style={{ background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: "0.82rem", fontWeight: 700 }}>⚠ {fmtc(unmatchedTotal)} across {unmatchedCount} unassigned cost{unmatchedCount > 1 ? "s" : ""} — job margins stay estimated until these are allocated.</div>}
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-        {TABS.map(t => { const n = RAW.filter(t.match).length; const on = tab === t.key; return <button key={t.key} onClick={() => setTab(t.key)} style={{ ...chip, cursor: "pointer", padding: "7px 12px", background: on ? "#0f172a" : "#fff", color: on ? "#fff" : "#475569", border: "1px solid " + (on ? "#0f172a" : "#e2e8f0"), fontWeight: 800 }}>{t.label}{t.key !== "rules" && <span style={{ opacity: 0.7 }}> · {n}</span>}</button>; })}
+        {TABS.map(t => { const n = data.filter(t.match).length; const on = tab === t.key; return <button key={t.key} onClick={() => setTab(t.key)} style={{ ...chip, cursor: "pointer", padding: "7px 12px", background: on ? "#0f172a" : "#fff", color: on ? "#fff" : "#475569", border: "1px solid " + (on ? "#0f172a" : "#e2e8f0"), fontWeight: 800 }}>{t.label}{t.key !== "rules" && <span style={{ opacity: 0.7 }}> · {n}</span>}</button>; })}
       </div>
 
       {tab === "rules" ? (

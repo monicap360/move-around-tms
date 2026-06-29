@@ -3,7 +3,7 @@
 /* Accounting Command Center — Phase 4b: Owner-Operator Settlement Center (contractors).
    Seeded demo data; wires to owner_operator_settlements + owner_operator_settlement_lines. */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Appr = "Draft" | "Awaiting Approval" | "Approved" | "Paid";
@@ -13,7 +13,7 @@ type Settle = {
   appr: Appr; paid: boolean; blocks: string[]; settleHold?: boolean;
 };
 
-const RAW: Settle[] = [
+const DEMO: Settle[] = [
   { id: "STL-0613", oo: "Indy Dump LLC.",          company: "Indy Dump LLC.",          period: "Wk 26", loads: 58, gross: 12400, agreed: 9920, fuel: 1180, ins: 240, trailer: 150, advance: 0,   other: 0,  reimb: 0,  appr: "Awaiting Approval", paid: false, blocks: [] },
   { id: "STL-0614", oo: "Double F Transport",      company: "Double F Transport",      period: "Wk 26", loads: 71, gross: 15630, agreed: 12504,fuel: 1420, ins: 0,   trailer: 0,   advance: 500, other: 0,  reimb: 60, appr: "Draft",             paid: false, blocks: [] },
   { id: "STL-0611", oo: "Pineda Commodity",        company: "Pineda Commodity",        period: "Wk 26", loads: 22, gross: 4180,  agreed: 3344, fuel: 412,  ins: 0,   trailer: 0,   advance: 0,   other: 350,reimb: 0,  appr: "Draft",             paid: false, blocks: ["Owner-op deduction over limit"], settleHold: true },
@@ -31,10 +31,19 @@ const ACTIONS = ["Generate Settlement", "Review Tickets", "Add Deduction", "Add 
 export default function Settlements() {
   const [drawer, setDrawer] = useState<Settle | null>(null);
   const [toast, setToast] = useState("");
+  const [data, setData] = useState(DEMO);
+  const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/settlements").then(r => r.json()).then(d => {
+      if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
+    }).catch(() => {});
+  }, []);
+
   const cards = useMemo(() => {
-    const cur = RAW.filter(s => s.period === "Wk 26");
+    const curPeriod = data[0]?.period;
+    const cur = data.filter(s => s.period === curPeriod);
     return [
       { label: "Gross Payable",     v: fmt(cur.reduce((s, x) => s + x.agreed, 0)), tone: "#0f172a" },
       { label: "Fuel Deductions",   v: fmt(cur.reduce((s, x) => s + x.fuel, 0)), tone: "#b45309" },
@@ -45,11 +54,11 @@ export default function Settlements() {
       { label: "Net Settlements",   v: fmt(cur.reduce((s, x) => s + net(x), 0)), tone: "#15803d" },
       { label: "Awaiting Approval", v: String(cur.filter(s => s.appr === "Awaiting Approval").length), tone: "#1d4ed8" },
     ];
-  }, []);
+  }, [data]);
 
   return (
     <AcctShell active="settlements" title="Owner Operator Settlement Center" subtitle="Settle contractors off their tickets, with deductions and compliance enforced."
-      controls={<><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export Payment File</button><button style={primaryBtn}>+ Generate Settlements</button></>}>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export Payment File</button><button style={primaryBtn}>+ Generate Settlements</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
@@ -62,7 +71,7 @@ export default function Settlements() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem", minWidth: 1250 }}>
             <thead><tr>{["Owner Operator", "Period", "Loads", "Gross Rev", "Agreed Pay", "Fuel", "Insurance", "Trailer", "Advances", "Other", "Net", "Compliance", "Approval", ""].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
-              {RAW.map(s => {
+              {data.map(s => {
                 const ap = APPR_STYLE[s.appr]; const blocked = s.blocks.length > 0;
                 return (
                   <tr key={s.id} style={{ borderBottom: "1px solid #f1f5f9", background: blocked ? "#fffafa" : "transparent" }}>

@@ -4,7 +4,7 @@
    separate from owner-operator settlements). Seeded demo data; wires to driver_pay_runs +
    driver_pay_lines. */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Appr = "Draft" | "Approved" | "On Hold" | "Paid";
@@ -14,7 +14,7 @@ type Driver = {
   exceptions: string[]; appr: Appr; exported: boolean; missingRate?: boolean;
 };
 
-const RAW: Driver[] = [
+const DEMO: Driver[] = [
   { id: "D1", name: "M. Chen",   period: "Wk 26", loads: 42, tons: 0,   hours: 0,  base: 1680, ot: 120, bonus: 50,  reimb: 40, deduct: 60,  tickets: 42, exceptions: [],                         appr: "Draft",    exported: false },
   { id: "D2", name: "J. Lane",   period: "Wk 26", loads: 0,  tons: 0,   hours: 38, base: 1330, ot: 0,   bonus: 0,   reimb: 0,  deduct: 0,   tickets: 19, exceptions: [],                         appr: "Approved", exported: false },
   { id: "D3", name: "S. Grant",  period: "Wk 26", loads: 31, tons: 0,   hours: 0,  base: 1240, ot: 0,   bonus: 0,   reimb: 25, deduct: 0,   tickets: 31, exceptions: ["Missing pay rate"],        appr: "Draft",    exported: false, missingRate: true },
@@ -34,10 +34,19 @@ export default function Payroll() {
   const [drawer, setDrawer] = useState<Driver | null>(null);
   const [locked, setLocked] = useState(false);
   const [toast, setToast] = useState("");
+  const [data, setData] = useState(DEMO);
+  const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/payroll").then(r => r.json()).then(d => {
+      if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
+    }).catch(() => {});
+  }, []);
+
   const cards = useMemo(() => {
-    const cur = RAW.filter(d => d.period === "Wk 26");
+    const curPeriod = data[0]?.period;
+    const cur = data.filter(d => d.period === curPeriod);
     return [
       { label: "Gross Payroll",   v: fmt(cur.reduce((s, d) => s + gross(d), 0)), tone: "#0f172a" },
       { label: "Approved Payroll",v: fmt(cur.filter(d => d.appr === "Approved").reduce((s, d) => s + net(d), 0)), tone: "#15803d" },
@@ -48,11 +57,11 @@ export default function Payroll() {
       { label: "Ready to Export", v: String(cur.filter(d => d.appr === "Approved" && !d.exported).length), tone: "#0e7490" },
       { label: "Exceptions",      v: String(cur.filter(d => d.exceptions.length).length), tone: "#ea580c" },
     ];
-  }, []);
+  }, [data]);
 
   return (
     <AcctShell active="payroll" title="Driver Payroll Control" subtitle="Pay employee drivers off validated tickets — once, and on time."
-      controls={<><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export</button>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export</button>
         <button onClick={() => { setLocked(l => !l); flash(locked ? "Pay period unlocked." : "Pay period LOCKED — dispatchers can no longer change it."); }} style={{ ...primaryBtn, background: locked ? "#16a34a" : "#1e293b" }}>{locked ? "🔓 Unlock Period" : "🔒 Lock Pay Period"}</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
@@ -67,7 +76,7 @@ export default function Payroll() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.79rem", minWidth: 1150 }}>
             <thead><tr>{["Driver", "Period", "Loads/Hrs", "Base", "OT", "Bonus", "Reimb", "Deduct", "Gross", "Net Est.", "Tickets", "Exceptions", "Approval", "Export", ""].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
-              {RAW.map(d => {
+              {data.map(d => {
                 const ap = APPR_STYLE[d.appr];
                 return (
                   <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
