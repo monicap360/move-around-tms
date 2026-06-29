@@ -1700,7 +1700,7 @@ export default function OwnerOperatorsPage() {
                 onClick={() => setOOActive(selected, !ooIsActive(selected))}
                 title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
                 style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                {ooIsActive(selected) ? "● Mark Not Active" : "○ Reactivate"}
+                {ooIsActive(selected) ? "Inactive" : "Active"}
               </button>
               <button
                 onClick={() => setMoveModal({ ooId: selected.id, ooName: selected.company_name, targetId: "" })}
