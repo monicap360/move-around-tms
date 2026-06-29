@@ -1038,9 +1038,9 @@ export default function OwnerOperatorsPage() {
   // can cut a page (W-9, COI, etc.) out and file it to the right slot. Fetches the stored
   // file back into a File and hands it to PdfSplitModal (thumbnails + assign per page).
   async function openSplitForDoc(doc: OODoc) {
-    if (!doc.file_url) { flash("This document has no stored file to split.", false); return; }
+    if (!doc.file_url) { flash("This document has no stored file to split."); return; }
     const isPdf = /\.pdf(\?|$)/i.test(doc.file_url) || /\.pdf$/i.test(doc.file_name || "");
-    if (!isPdf) { flash("Page-splitting works on PDFs. This file isn't a PDF.", false); return; }
+    if (!isPdf) { flash("Page-splitting works on PDFs. This file isn't a PDF."); return; }
     flash("Opening page splitter…");
     try {
       const res = await fetch(doc.file_url);
@@ -1049,7 +1049,7 @@ export default function OwnerOperatorsPage() {
       const fname = /\.pdf$/i.test(base) ? base : `${base}.pdf`;
       const file = new File([blob], fname, { type: "application/pdf" });
       setPdfSplit({ mode: "doc", file, defaultType: "W-9 / Tax Form" });
-    } catch { flash("Couldn't load that document for splitting.", false); }
+    } catch { flash("Couldn't load that document for splitting."); }
   }
 
   // Delete a document by its type (used by the inbox and by each doc slot's 🗑 button).
