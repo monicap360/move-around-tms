@@ -2597,7 +2597,7 @@ export default function OwnerOperatorsPage() {
                           ) : (
                             <label style={{ background:"#1e40af", color:"#fff", padding:"4px 10px", borderRadius:6, fontSize:"0.72rem", fontWeight:700, cursor:"pointer", display:"inline-block" }}>
                               🪪 Upload CDL
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`CDL expiration date (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:cdlKey,file_name:f.name,expires_on:exp||null}); await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{cdl_state:state.toUpperCase()||d.cdl_state,cdl_expiration:exp||d.cdl_expiration}); const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL uploaded for ${d.name}.`); } e.target.value=""; }} />
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ await handleDocUpload(cdlKey, f); } e.target.value=""; }} />
                             </label>
                           )}
                         </td>
@@ -2609,7 +2609,7 @@ export default function OwnerOperatorsPage() {
                             ) : (
                               <label style={{ background:"#0891b2", color:"#fff", padding:"3px 9px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", display:"inline-block" }}>
                                 📋 Upload Medical
-                                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const exp=prompt(`Medical card expiration (YYYY-MM-DD) — leave blank if not applicable:`,d.med_card_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:medKey,file_name:f.name,expires_on:exp||null}); if(exp) await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{med_card_expiration:exp}); const doc:OODoc={type:medKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,med_card_expiration:exp||dr.med_card_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==medKey)],drivers:updatedDrivers}); flash(`Medical card uploaded for ${d.name}.`); } e.target.value=""; }} />
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ await handleDocUpload(medKey, f); } e.target.value=""; }} />
                               </label>
                             )}
                           </div>
