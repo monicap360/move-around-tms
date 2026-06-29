@@ -60,10 +60,13 @@ export async function POST(request: NextRequest) {
   catch { return NextResponse.json({ error: "Invalid form data" }, { status: 400 }); }
 
   const file         = form.get("file")          as File   | null;
+  const backFile     = form.get("back_file")     as File   | null;
   const scanType     = (form.get("scan_type")    as string) || "ticket";
   const ticketNumber = form.get("ticket_number") as string | null;
   const truckNumber  = form.get("truck_number")  as string | null;
   const driverName   = form.get("driver_name")   as string | null;
+  const jobNumber    = form.get("job_number")    as string | null;
+  const notes        = form.get("notes")         as string | null;
 
   if (!file)                return NextResponse.json({ error: "No file provided" }, { status: 400 });
   if (file.size > MAX_SIZE) return NextResponse.json({ error: "File too large (max 25 MB)" }, { status: 400 });
@@ -94,6 +97,15 @@ export async function POST(request: NextRequest) {
 
   if (uploadErr) {
     return NextResponse.json({ error: `Storage upload failed: ${uploadErr.message}` }, { status: 500 });
+  }
+
+  // Store the BACK-of-ticket image too (signature/weight is often on the back) so it's
+  // never lost — the driver portal sends it as back_file.
+  let backObjectPath: string | null = null;
+  if (backFile && backFile.size > 0 && ALLOWED_MIME[backFile.type]) {
+    backObjectPath = `${orgId ?? "unassigned"}/fastscan/raw/${Date.now()}_back_${backFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    try { await sb.storage.from(TMS_BUCKET).upload(backObjectPath, await backFile.arrayBuffer(), { contentType: backFile.type, upsert: false }); }
+    catch { /* keep going — front + metadata still saved */ }
   }
 
   // Short-lived signed URL for preview
@@ -142,7 +154,7 @@ export async function POST(request: NextRequest) {
     fast_scan_document_id:  doc.id,
     event_type:             "uploaded",
     event_note:             `Ticket scan uploaded — ${documentKind}`,
-    event_payload:          { filename: file.name, size: file.size, scan_type: scanType, storage_path: objectPath },
+    event_payload:          { filename: file.name, size: file.size, scan_type: scanType, storage_path: objectPath, back_object_path: backObjectPath, job_number: jobNumber, notes },
   }).maybeSingle();
 
   const hasApiKey = !!(process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY.startsWith("sk-ant-REPLACE"));
