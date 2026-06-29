@@ -114,6 +114,26 @@ export default function BackupPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [snapshots, setSnapshots] = useState<{ name: string; sizeKB: number; created_at?: string; url: string | null }[]>([]);
+  const [backingUp, setBackingUp] = useState(false);
+  const [snapMsg,   setSnapMsg]   = useState("");
+
+  function loadSnapshots() {
+    fetch("/api/ronyx/backup/snapshot").then((r) => r.json()).then((d) => setSnapshots(d.backups || [])).catch(() => {});
+  }
+  useEffect(() => { loadSnapshots(); }, []);
+
+  async function runBackup() {
+    setBackingUp(true); setSnapMsg("");
+    const r = await fetch("/api/ronyx/backup/snapshot", { method: "POST" }).then((x) => x.json()).catch(() => null);
+    if (r?.ok) {
+      const total = Object.values(r.counts || {}).reduce((a: any, b: any) => (a as number) + (b as number), 0);
+      setSnapMsg(`✓ Backup saved to Supabase — ${total} records (${r.sizeKB}KB)`);
+      loadSnapshots();
+    } else setSnapMsg(`Backup failed: ${r?.error || "unknown"}`);
+    setBackingUp(false);
+  }
+
   const modules     = [...new Set(uploads.map((u) => u.module))].sort();
   const filtered    = modFilter === "all" ? uploads : uploads.filter((u) => u.module === modFilter);
   const totalSize   = uploads.reduce((s, u) => s + (u.file_size_bytes || 0), 0);
@@ -134,8 +154,35 @@ export default function BackupPage() {
           <button onClick={() => exportJSON(uploads, "original_uploads_export")} style={{ padding:"9px 18px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", color:"#0f172a", fontWeight:700, fontSize:13, cursor:"pointer" }}>
             Export Upload Log JSON
           </button>
+          <button onClick={runBackup} disabled={backingUp} style={{ padding:"9px 18px", borderRadius:8, border:"none", background: backingUp ? "#93c5fd" : "#1d4ed8", color:"#fff", fontWeight:800, fontSize:13, cursor: backingUp ? "default" : "pointer" }}>
+            {backingUp ? "Backing up…" : "💾 Backup to Supabase"}
+          </button>
         </div>
       </header>
+
+      {/* Database snapshots → Supabase Storage */}
+      <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:18, marginBottom:24 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
+          <div>
+            <div style={{ fontWeight:800, color:"#0f172a", fontSize:"0.95rem" }}>💾 Database Snapshots (Supabase Storage)</div>
+            <div style={{ color:"#64748b", fontSize:12, marginTop:2 }}>Point-in-time Excel of drivers, owner-operators &amp; carriers — stored in the private <code>ronyx-backups</code> bucket, downloadable below.</div>
+          </div>
+          {snapMsg && <div style={{ fontSize:12, fontWeight:700, color: snapMsg.startsWith("✓") ? "#15803d" : "#b91c1c" }}>{snapMsg}</div>}
+        </div>
+        {snapshots.length === 0 ? (
+          <div style={{ color:"#94a3b8", fontSize:13, marginTop:12 }}>No snapshots yet — click <strong>Backup to Supabase</strong> above to create one.</div>
+        ) : (
+          <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:4 }}>
+            {snapshots.slice(0, 10).map((s) => (
+              <div key={s.name} style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 0", borderTop:"1px solid #f1f5f9", fontSize:13 }}>
+                <span style={{ flex:1, color:"#334155", fontWeight:600 }}>{s.name}</span>
+                <span style={{ color:"#94a3b8" }}>{s.sizeKB}KB</span>
+                {s.url && <a href={s.url} style={{ padding:"4px 12px", borderRadius:6, background:"#1d4ed8", color:"#fff", fontWeight:700, fontSize:11, textDecoration:"none" }}>Download</a>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Summary cards */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:12, marginBottom:24 }}>
