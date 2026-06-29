@@ -37,8 +37,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const sb = supabaseAdmin;
-  const body = await req.json();
+  const body = await req.json().catch(() => ({}));
   const { job_id, ...rest } = body;
+  if (!job_id) return NextResponse.json({ error: "job_id is required" }, { status: 400 });
 
   const { data, error } = await sb
     .from("ronyx_oo_jobs")
