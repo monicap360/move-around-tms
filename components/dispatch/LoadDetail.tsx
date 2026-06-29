@@ -105,18 +105,19 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
     (async () => {
       setLoading(true); setError(null);
       try {
-        const res = await fetch(`/api/dispatch/load-detail?load_id=${loadId}`);
+        const res = await fetch(`/api/ronyx/loads?id=${loadId}`);
         const data = await res.json();
         if (!alive) return;
-        if (data?.error) { setError(data.error.message || "Error loading load"); }
+        const ld = data?.load;
+        if (data?.error || !ld) { setError(typeof data?.error === "string" ? data.error : "Load not found"); }
         else {
-          setLoad(data);
-          setPhase(normalizePhase(data.status));
-          if (data.driver_id) setDriverId(String(data.driver_id));
-          if (data.truck_id) setTruckId(String(data.truck_id));
+          setLoad(ld);
+          setPhase(normalizePhase(ld.status));
+          if (ld.driver_id) setDriverId(String(ld.driver_id));
+          if (ld.truck_id) setTruckId(String(ld.truck_id));
           setActivity([
-            { when: data.created_at ? new Date(data.created_at).toLocaleString() : "—", text: `Load created${data.created_by ? ` by ${data.created_by}` : ""}` },
-            { when: "", text: data.driver_id ? "Driver assigned" : "Awaiting driver assignment" },
+            { when: ld.created_at ? new Date(ld.created_at).toLocaleString() : "—", text: "Load created" },
+            { when: "", text: ld.driver_id ? "Driver assigned" : "Awaiting driver assignment" },
           ]);
         }
       } catch { if (alive) setError("Failed to fetch load"); }
@@ -167,29 +168,47 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
     log(`Logged HOS for ${driver.name}`);
   }
 
-  async function persist(fields: Record<string, any>) {
+  // Writes go to the same table the board reads (ronyx_loads) via its PUT, which
+  // also handles action:start / action:complete (+ auto-creates a ticket on complete).
+  // Resilient: if a column/FK is rejected, retry with a smaller payload so the status
+  // always advances rather than silently failing.
+  async function put(body: Record<string, any>, fallbacks: Record<string, any>[] = []): Promise<boolean> {
     setSaving(true);
     try {
-      await fetch("/api/loads/update", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: loadId, ...fields }),
-      }).catch(() => {});
+      for (const attempt of [body, ...fallbacks]) {
+        const res = await fetch("/api/ronyx/loads", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: loadId, ...attempt }),
+        }).then(r => r.json()).catch(() => ({ error: "network" }));
+        if (!res?.error) return true;
+      }
+      return false;
     } finally { setSaving(false); }
   }
 
   async function assign() {
     if (!clearedToDispatch) return;
-    await persist({ status: "assigned", driver_id: driver.id, truck_id: truck.id ?? truck.unit_number });
+    const ok = await put(
+      { status: "assigned", driver_id: driver.id, truck_id: truck.id ?? truck.unit_number },
+      [{ status: "assigned", driver_id: driver.id }, { status: "assigned" }], // shed truck_id then driver_id if rejected
+    );
+    if (!ok) { log("Could not save assignment — check connection"); return; }
     setPhase("assigned");
     log(`Assigned ${driver.name} + ${truck.unit_number || "truck"} — CCB cleared`);
   }
   async function start() {
-    await persist({ status: "in_progress" });
+    if (!(await put({ action: "start" }, [{ status: "active" }]))) return;
     setPhase("in_progress");
     log("Load started — in progress");
   }
   async function completeLoad(payload: Record<string, any>) {
-    await persist({ status: "completed", notes: JSON.stringify({ completion: payload }) });
+    // action:complete sets status + auto-creates a ticket (Fast Scan / billing handoff).
+    // Fall back to a plain status update if ticket creation is rejected, so completion never blocks.
+    const ok = await put(
+      { action: "complete", create_ticket: true, actual_tons: payload.actualTons, status_notes: payload.exception },
+      [{ action: "complete", create_ticket: false }, { status: "completed" }],
+    );
+    if (!ok) { log("Could not complete — check connection"); return; }
     setPhase("completed");
     setShowComplete(false);
     log(`Completed${payload.actualTons ? ` — ${payload.actualTons} tons` : ""}${payload.toPayroll ? " → Payroll" : ""}${payload.toBilling ? " → Billing" : ""}`);
@@ -202,8 +221,8 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
   const pm = PHASE_META[phase];
   const loadNo = load.load_number || load.load_id || loadId;
   const pickup = load.pickup_location || load.origin || "Not set";
-  const dropoff = load.dropoff_location || load.destination || "Not assigned";
-  const loadDate = load.load_date || load.pickup_date || "Today";
+  const dropoff = load.delivery_location || load.dropoff_location || load.destination || "Not assigned";
+  const loadDate = load.load_date || load.pickup_date || load.pickup_time || "Today";
 
   const TABS = [
     ["overview", "Overview"], ["assignment", "Assignment & Route"], ["tickets", "Tickets"],
@@ -334,7 +353,7 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
               phase={phase} saving={saving} canAssign={clearedToDispatch}
               onAssign={assign} onStart={start} onComplete={() => setShowComplete(true)}
             />
-            <button style={ghostBtn} onClick={() => persist({})}>Save Draft</button>
+            <button style={ghostBtn} onClick={() => { put({}); log("Draft saved"); }}>Save Draft</button>
             {phase === "pending" && !bothChosen && <span style={{ fontSize: 12, color: "#94a3b8" }}>Select a driver and truck to run final clearance.</span>}
             {blocked && <span style={{ fontSize: 12, color: "#b91c1c", fontWeight: 600 }}>Assignment blocked — resolve the hold or pick another.</span>}
           </div>
