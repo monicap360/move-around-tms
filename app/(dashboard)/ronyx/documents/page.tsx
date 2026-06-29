@@ -408,15 +408,13 @@ export default function SmartDocsHubPage() {
 
   async function handleUpload(driverId: string, docType: string, file: File) {
     setUploading(driverId);
-    const expiresOn = docType === "Medical Card" || docType === "CDL Front" || docType === "CDL Back"
-      ? prompt(`${docType} expiration date (YYYY-MM-DD):`, "") || undefined
-      : undefined;
-
+    // NO prompt() — it throws in the production webview and aborted the upload before the
+    // file was ever sent (Medical/CDL files were silently lost). Expiration is set via the
+    // date field on the driver, not at upload time.
     const fd = new FormData();
     fd.append("file", file);
     fd.append("driver_id", driverId);
     fd.append("doc_type", docType);
-    if (expiresOn) fd.append("expires_on", expiresOn);
 
     const res  = await fetch("/api/ronyx/drivers/documents", { method: "POST", body: fd });
     const data = await res.json();
