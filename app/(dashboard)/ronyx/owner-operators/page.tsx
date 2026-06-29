@@ -4553,6 +4553,25 @@ export default function OwnerOperatorsPage() {
               <input value={driverEditModal.form.address || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, address: e.target.value } }))} placeholder="Street, City, State ZIP" style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
             </div>
 
+            {/* Document uploads — available right here so staff can attach CDL + Medical Card while editing a driver */}
+            <div style={{ marginTop:14 }}>
+              <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:6 }}>Driver Documents</label>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {[
+                  { label:"🪪 CDL License",  type:`[${driverEditModal.driver.name}] CDL License`,  bg:"#1e40af" },
+                  { label:"📋 Medical Card", type:`[${driverEditModal.driver.name}] Medical Card`, bg:"#0891b2" },
+                ].map(doc => {
+                  const onFile = selected.documents.some(x => x.type === doc.type && (x.file_url || x.file_name));
+                  return (
+                    <label key={doc.type} style={{ background: onFile ? "#f0fdf4" : doc.bg, color: onFile ? "#15803d" : "#fff", border: onFile ? "1px solid #86efac" : "none", padding:"8px 14px", borderRadius:8, fontSize:"0.78rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}>
+                      {onFile ? `✓ ${doc.label.replace(/^.. /,"")} on file — Replace` : doc.label}
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e => { const f = e.target.files?.[0]; if (f) await handleDocUpload(doc.type, f); e.target.value = ""; }} />
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
             <div style={{ display:"flex", gap:10, marginTop:20 }}>
               <button
                 disabled={driverEditModal.saving || !driverEditModal.form.name?.trim()}
