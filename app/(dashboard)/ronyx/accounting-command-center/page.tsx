@@ -11,10 +11,9 @@ import { Fragment, useMemo, useState } from "react";
 // ─── Left navigation ──────────────────────────────────────────────────────────
 const NAV = [
   { key: "overview",    label: "Overview",                 icon: "📊", href: "/ronyx/accounting-command-center" },
-  { key: "exceptions",  label: "Financial Exceptions",     icon: "🚨", href: "/ronyx/accounting-command-center#exceptions" },
   { key: "tti",         label: "Ticket-to-Invoice",        icon: "🎫", href: "/ronyx/accounting-command-center/ticket-to-invoice" },
   { key: "ar",          label: "Accounts Receivable",      icon: "💵", href: "/ronyx/accounting-command-center/receivables" },
-  { key: "payroll",     label: "Driver Payroll",           icon: "👷", href: "/ronyx/payroll" },
+  { key: "payroll",     label: "Driver Payroll",           icon: "👷", href: "/ronyx/accounting-command-center/payroll" },
   { key: "settlements", label: "Owner Operator Settlements",icon: "🤝", href: "/ronyx/accounting-command-center/settlements" },
   { key: "margin",      label: "Job Costing & Margin",     icon: "📈", href: "/ronyx/accounting-command-center/margin" },
   { key: "fuel",        label: "Fuel & Cost Allocation",   icon: "⛽", href: "/ronyx/accounting-command-center/fuel" },
