@@ -47,3 +47,5 @@ tsc-ticket-backend-check.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+_backups/
+_import/

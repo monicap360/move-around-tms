@@ -147,6 +147,7 @@ export async function POST(req: NextRequest) {
   }).length;
   const missing = rows.filter((r) => !r.cdl_number || !r.medical_card_number).length;
 
+  try {
   const transport = nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
 
   await transport.sendMail({
@@ -195,4 +196,18 @@ export async function POST(req: NextRequest) {
   }).maybeSingle();
 
   return NextResponse.json({ ok: true, sentTo: toEmail, driverCount: rows.length });
+  } catch (err: any) {
+    // Most common cause: invalid/expired Gmail App Password (SMTP 535 BadCredentials).
+    const msg = String(err?.message || err || "unknown");
+    await supabase.from("ticket_audit_log").insert({
+      action:      "driver_backup_email_failed",
+      description: `Driver backup email FAILED to ${toEmail}: ${msg.slice(0, 160)}`,
+      metadata:    { to: toEmail, driver_count: rows.length, error: msg.slice(0, 200) },
+    }).maybeSingle();
+    return NextResponse.json({
+      ok: false,
+      error: `Backup email failed to send. ${/535|BadCredentials|Invalid login/i.test(msg) ? "The Gmail App Password is invalid — generate a 16-character App Password (Google account → Security → App passwords) and set GMAIL_APP_PASSWORD." : msg}`,
+      driverCount: rows.length,
+    }, { status: 200 });
+  }
 }
