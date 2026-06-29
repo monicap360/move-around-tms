@@ -88,7 +88,17 @@ export async function POST(req: NextRequest) {
       attachments: attachment ? [attachment] : [],
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    // Most common cause: invalid/expired Gmail App Password (SMTP 535 BadCredentials).
+    const msg = String(e?.message || e || "unknown");
+    await sb.from("ticket_audit_log").insert({
+      action: "fast_scan_email_failed",
+      description: `Fast Scan email FAILED to ${to} — doc ${document_id}: ${msg.slice(0, 160)}`,
+      metadata: { to, document_id, error: msg.slice(0, 200) },
+    }).maybeSingle();
+    return NextResponse.json({
+      ok: false,
+      error: `Email failed to send. ${/535|BadCredentials|Invalid login/i.test(msg) ? "The Gmail App Password is invalid — generate a 16-character App Password (Google account → Security → App passwords) and set GMAIL_APP_PASSWORD." : msg}`,
+    }, { status: 200 });
   }
 
   await sb.from("ticket_audit_log").insert({

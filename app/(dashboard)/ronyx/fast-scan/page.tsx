@@ -294,7 +294,7 @@ export default function FastScanPage() {
     try {
       const res  = await fetch("/api/ronyx/fast-scan/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ document_id: scanEmailModal.scan.id, to: scanEmailModal.to, subject: scanEmailModal.subject, message: scanEmailModal.message, filename: scanEmailModal.scan.original_filename }) });
       const data = await res.json();
-      if (!res.ok && !data.queued) throw new Error(data.error || "Email failed");
+      if ((!res.ok || data.ok === false) && !data.queued) throw new Error(data.error || "Email failed");
       setScanEmailModal(null);
       alert(data.queued ? "SMTP not configured — email queued." : `Email sent to ${scanEmailModal.to}`);
     } catch (e: any) { setScanEmailModal(m => m && { ...m, sending: false }); alert(e.message); }
