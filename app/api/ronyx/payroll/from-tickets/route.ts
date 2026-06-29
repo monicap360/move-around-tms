@@ -82,6 +82,8 @@ export async function GET(req: Request) {
   const drivers = Object.values(groups).map((g: any) => ({
     ...g,
     trucks: [...g.trucks],
+    truck_number: [...g.trucks].join(", ") || "—", // for direct mapping into payroll items
+    gross_pay: Math.round(g.total_pay * 100) / 100, // alias the page's mapper expects
     total_pay: Math.round(g.total_pay * 100) / 100,
     total_bill: Math.round(g.total_bill * 100) / 100,
   })).sort((a: any, b: any) => b.total_pay - a.total_pay);

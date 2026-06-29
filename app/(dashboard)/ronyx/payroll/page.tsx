@@ -282,14 +282,12 @@ export default function PayrollCommandCenter() {
     if (!start || !end) return;
     setLoading(true);
     try {
-      const r = await fetch(`/api/ronyx/payroll/engine?period_start=${start}&period_end=${end}`);
-      const data = await r.json();
-      if (data.items && data.items.length > 0) {
-        setItems(data.items.map(mapEngineItem));
-        if (data.period) {
-          setPeriod(data.period);
-          setPeriodStatus(data.period.status || "open");
-        }
+      // Primary source: aggregate_tickets ("the agg portion") grouped by driver —
+      // includes truck and per-load amounts. (The legacy engine reads a missing table.)
+      const rT = await fetch(`/api/ronyx/payroll/from-tickets?period_start=${start}&period_end=${end}`);
+      const dataT = await rT.json().catch(() => ({}));
+      if (Array.isArray(dataT.drivers) && dataT.drivers.length > 0) {
+        setItems(dataT.drivers.map((d: any) => mapCalcFallback(d, start, end)));
         return;
       }
       // Fallback to legacy calc endpoint
