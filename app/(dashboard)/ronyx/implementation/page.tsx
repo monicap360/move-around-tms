@@ -294,7 +294,7 @@ export default function CustomerLaunchCenterPage() {
           body: JSON.stringify({ phase: phase.key, table: phase.table, rows }),
         });
         const data = await res.json();
-        setImportResult({ inserted: data.inserted ?? 0, errors: data.errors ?? [] });
+        setImportResult({ inserted: data.inserted ?? 0, errors: [...(data.errors ?? []), ...(data.warnings ?? [])] });
         await loadSessions();
       }
     } catch (err) { setImportResult({ inserted: 0, errors: [(err as Error).message] }); }

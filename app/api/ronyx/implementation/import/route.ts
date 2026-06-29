@@ -49,20 +49,33 @@ export async function POST(request: NextRequest) {
   }));
 
   const errors: string[] = [];
+  const warnings: string[] = [];
+  const droppedCols = new Set<string>();
   let inserted = 0;
 
-  // Insert in batches of 100
+  // Insert in batches of 100. If a spreadsheet header doesn't match a real column,
+  // drop that column and retry — so one unrecognized header doesn't crash the whole
+  // import (the same schema-drift resilience used elsewhere). Dropped columns are
+  // reported back as a warning so the user can rename and re-import.
   for (let i = 0; i < stamped.length; i += 100) {
-    const batch = stamped.slice(i, i + 100);
-    const { error, count } = await supabase
-      .from(table)
-      .insert(batch, { count: "exact" });
-
-    if (error) {
+    let batch = stamped.slice(i, i + 100);
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const { error, count } = await supabase.from(table).insert(batch, { count: "exact" });
+      if (!error) { inserted += count ?? batch.length; break; }
+      // Pull an unknown-column name out of the PostgREST error and drop it.
+      const m = error.message.match(/'([^']+)' column|column "([^"]+)"|Could not find the '([^']+)'/);
+      const col = m && (m[1] || m[2] || m[3]);
+      if (col && batch.length && Object.prototype.hasOwnProperty.call(batch[0], col)) {
+        droppedCols.add(col);
+        batch = batch.map((r) => { const c = { ...r }; delete (c as Record<string, unknown>)[col]; return c; });
+        continue; // retry without the offending column
+      }
       errors.push(`Batch ${Math.floor(i / 100) + 1}: ${error.message}`);
-    } else {
-      inserted += count ?? batch.length;
+      break;
     }
+  }
+  if (droppedCols.size) {
+    warnings.push(`Skipped ${droppedCols.size} unrecognized column(s): ${[...droppedCols].join(", ")}. Rename them to match the template and re-import to capture that data.`);
   }
 
   // Update implementation session
@@ -85,6 +98,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     inserted,
     errors,
+    warnings,
     total: rows.length,
     success: errors.length === 0,
   });
