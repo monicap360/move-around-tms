@@ -53,6 +53,7 @@ export default function OwnerOperatorSignupPage() {
               <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: 8, lineHeight: 1.5 }}>
                 Thanks, <strong>{form.company_name}</strong>. The Ronyx office has your info and will reach out to finish onboarding (insurance, contract, W-9, and driver setup).
               </div>
+              <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, background: "#1d4ed8", color: "#fff", padding: "11px 20px", borderRadius: 10, fontWeight: 800, fontSize: "0.9rem", textDecoration: "none" }}>📄 Review &amp; print the Subhauler Agreement</a>
             </div>
           ) : !unlocked ? (
             <div>
