@@ -23,7 +23,7 @@ type AnalyzedRow = {
   qty: number; qty_unit: string;
   job_id: string; status: string;
   start_time: string; pickup: string; dropoff: string;
-  license: string; vendor: string; material: string;
+  license: string; vendor: string; company: string; material: string;
   rmis_note: string; rmis_class: RMISClass;
   exp_tickets: number; exp_time_proof: boolean;
 };
@@ -151,6 +151,9 @@ function analyzeRow(row: RawRow): AnalyzedRow {
     dropoff:  row["Dropoff Site Name"]?.trim() || "",
     license:  row["Equipment License Number"]?.trim() || "",
     vendor:   row["Vendor"]?.trim() || "",
+    // The dispatch sheet's "Company" column is the owner-operator (or the driver if they
+    // run under their own name). Other common headers fall back here too.
+    company:  row["Company"]?.trim() || row["Owner Operator"]?.trim() || row["Carrier"]?.trim() || "",
     material: row["Material"]?.trim() || "",
     rmis_note: rmis_raw, rmis_class,
     exp_tickets, exp_time_proof,
@@ -322,6 +325,9 @@ export default function DailyImportPage() {
   const [toast,       setToast]       = useState<{msg:string;ok:boolean}|null>(null);
   const [extractInstruction, setExtractInstruction] = useState("");
   const [addingToSystem,     setAddingToSystem]     = useState(false);
+  // Existing owner-operators (for the "assign to an OO" dropdown) + per-carrier mapping.
+  const [ooOptions, setOoOptions] = useState<{ id: string; company_name: string }[]>([]);
+  const [carrierMap, setCarrierMap] = useState<Record<string, string>>({});
 
   const readiness  = useMemo(() => analysis ? calcScore(analysis, matches) : null, [analysis, matches]);
   const staffTasks = useMemo(() => analysis ? buildTasks(analysis, matches) : null, [analysis, matches]);
@@ -331,6 +337,14 @@ export default function DailyImportPage() {
   useEffect(() => {
     fetch("/api/ronyx/dispatch-import").then(r=>r.json()).then(d=>setPastImports(d.imports||[])).catch(()=>{});
   }, [batch]);
+
+  // Load existing owner-operators so each detected carrier can be assigned to one.
+  useEffect(() => {
+    fetch("/api/ronyx/owner-operators")
+      .then(r => r.json())
+      .then(d => setOoOptions((d.companies || []).map((c: any) => ({ id: c.id, company_name: c.company_name })).sort((a: any, b: any) => a.company_name.localeCompare(b.company_name))))
+      .catch(() => {});
+  }, []);
 
   const runMatch = useCallback(async (fa: FileAnalysis) => {
     const drivers = [...new Set(fa.rows.map(r=>r.driver).filter(Boolean))];
@@ -409,7 +423,9 @@ export default function DailyImportPage() {
       if (!driver) continue;
       const m = mByDriver[driver];
       if (m?.driver_found) continue; // already in system
-      const carrier = ((row.vendor || m?.company || "").trim()) || "Unassigned Carrier";
+      // "Company" column = the owner-operator (or the driver's own name); fall back to
+      // Vendor, then the matched company.
+      const carrier = ((row.company || row.vendor || m?.company || "").trim()) || "Unassigned Carrier";
       const key = carrier.toLowerCase() + "|" + driver.toLowerCase();
       if (seen.has(key)) continue; seen.add(key);
       (byCarrier[carrier] = byCarrier[carrier] || []).push({ name: driver, truck_number: row.truck || "" });
@@ -423,8 +439,10 @@ export default function DailyImportPage() {
     if (!analysis || !extractable || extractable.driverCount === 0) { flash("Nothing new to add — everyone is already in the system.", false); return; }
     const instr = extractInstruction.toLowerCase();
     const oosOnly = /(only|just)\s+(the\s+)?(oo|owner|carrier|compan)/.test(instr) || /no\s+driver|without\s+driver/.test(instr);
+    // If a carrier was assigned to an existing OO, route its drivers under that OO's exact
+    // name (bulk-import matches by name); otherwise use the carrier name as a new OO.
     const companies = extractable.carriers.map(c => ({
-      company_name: c,
+      company_name: carrierMap[c] || c,
       drivers: oosOnly ? [] : extractable.byCarrier[c],
     }));
     setAddingToSystem(true);
@@ -439,6 +457,23 @@ export default function DailyImportPage() {
     } catch (err: any) { flash(err.message || "Add to system failed", false); }
     finally { setAddingToSystem(false); }
   }
+
+  // Pre-fill each carrier's "assign to OO" with an existing match (by normalized name),
+  // so near-duplicates auto-route to the real OO instead of making a new one. "" = create new.
+  useEffect(() => {
+    if (!extractable) return;
+    const norm = (s: string) => s.toLowerCase().replace(/[.,]/g, "").replace(/\b(llc|inc|ltd|co|corp|company)\b/g, "").replace(/\s+/g, " ").trim();
+    setCarrierMap(prev => {
+      const next = { ...prev };
+      for (const c of extractable.carriers) {
+        if (next[c] === undefined) {
+          const sug = ooOptions.find(o => norm(o.company_name) === norm(c));
+          next[c] = sug ? sug.company_name : "";
+        }
+      }
+      return next;
+    });
+  }, [extractable, ooOptions]);
 
   async function loadBatch(id: string) {
     const res = await fetch(`/api/ronyx/dispatch-import/${id}`);
@@ -1046,13 +1081,27 @@ export default function DailyImportPage() {
                 <div style={{ fontSize:13, color:"#92400e", fontWeight:700, marginBottom:10 }}>
                   Found <strong>{extractable.driverCount}</strong> driver{extractable.driverCount !== 1 ? "s" : ""} across <strong>{extractable.carriers.length}</strong> carrier{extractable.carriers.length !== 1 ? "s" : ""} not yet in the system:
                 </div>
-                <div style={{ maxHeight:170, overflowY:"auto", background:"#fff", border:"1px solid #fde68a", borderRadius:8, padding:"8px 12px", marginBottom:12 }}>
-                  {extractable.carriers.map(c => (
-                    <div key={c} style={{ marginBottom:6, fontSize:12, lineHeight:1.5 }}>
-                      <span style={{ fontWeight:800, color:"#0f172a" }}>🚛 {c}</span>
-                      <span style={{ color:"#64748b" }}> — {extractable.byCarrier[c].map(d => d.name).join(", ")}</span>
-                    </div>
-                  ))}
+                <div style={{ maxHeight:260, overflowY:"auto", background:"#fff", border:"1px solid #fde68a", borderRadius:8, padding:"8px 12px", marginBottom:12 }}>
+                  {extractable.carriers.map(c => {
+                    const target = carrierMap[c] ?? "";
+                    return (
+                      <div key={c} style={{ marginBottom:10, paddingBottom:8, borderBottom:"1px solid #fef3c7" }}>
+                        <div style={{ fontSize:12, lineHeight:1.5, marginBottom:5 }}>
+                          <span style={{ fontWeight:800, color:"#0f172a" }}>🚛 {c}</span>
+                          <span style={{ color:"#64748b" }}> — {extractable.byCarrier[c].map(d => d.name).join(", ")}</span>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, flexWrap:"wrap" }}>
+                          <span style={{ color:"#92400e", fontWeight:700 }}>Assign to OO:</span>
+                          <select value={target} onChange={e => setCarrierMap(m => ({ ...m, [c]: e.target.value }))}
+                            style={{ flex:1, minWidth:240, maxWidth:380, border:"1px solid #fcd34d", borderRadius:6, padding:"5px 8px", fontSize:12, background:"#fff", fontWeight:600 }}>
+                            <option value="">➕ Create new OO — &quot;{c}&quot;</option>
+                            {ooOptions.map(o => <option key={o.id} value={o.company_name}>{o.company_name}</option>)}
+                          </select>
+                          {target && <span style={{ color:"#15803d", fontWeight:700, fontSize:11 }}>→ existing</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <label style={{ fontSize:12, fontWeight:700, color:"#92400e", display:"block", marginBottom:4 }}>Instructions (optional)</label>
                 <input value={extractInstruction} onChange={e => setExtractInstruction(e.target.value)} placeholder={'e.g. "add all owner-operators and their drivers" — or "owner-operators only"'}
