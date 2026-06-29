@@ -2778,7 +2778,7 @@ export default function OwnerOperatorsPage() {
                     <div key={d.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, marginBottom:8, overflow:"hidden" }}>
                       <div
                         onClick={() => setExpandedDriverPool(prev => { const n=new Set(prev); expanded?n.delete(d.id):n.add(d.id); return n; })}
-                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 16px", cursor:"pointer", background:"#f8fafc" }}
+                        style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", padding:"10px 16px", cursor:"pointer", background:"#f8fafc" }}
                       >
                         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                           <span style={{ fontWeight:700, color:"#0f172a", fontSize:"0.85rem" }}>{d.name}</span>
@@ -2786,7 +2786,7 @@ export default function OwnerOperatorsPage() {
                             {myAssignments.length} truck{myAssignments.length !== 1?"s":""}
                           </span>
                         </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", justifyContent:"flex-end" }}>
                           <button onClick={(e) => { e.stopPropagation(); setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration, address: d.address || "" }, saving: false }); }} title="Edit this driver's profile (name, phone, CDL, medical card)" style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>✏ Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); setReassignModal({ driverId: d.id, driverName: d.name, targetId: "" }); }} title="Move this driver to a different carrier company" style={{ background:"#eff6ff", color:"#1d4ed8", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>⇄ Reassign</button>
                           <button onClick={(e) => { e.stopPropagation(); promoteDriverToOO(d.id, d.name); }} title="This driver got their own authority — promote them to their own Owner-Operator company" style={{ background:"#ecfeff", color:"#0891b2", border:"1px solid #a5f3fc", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>↑ Make OO</button>
