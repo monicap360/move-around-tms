@@ -98,6 +98,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Unpaid Tickets",        href: "/ronyx/billing?tab=unpaid",           icon: "⚠️" },
       ]},
       { label: "Payroll",          href: "/ronyx/payroll",                 icon: "💵", color: "#15803d" },
+      { label: "Driver Pay",       href: "/ronyx/payroll/driver-pay",      icon: "💵", color: "#15803d" },
       { label: "Settlements",      href: "/ronyx/owner-operators/settlements", icon: "🤝", color: "#059669" },
       { label: "Accounting Hub",   href: "/ronyx/accounting",              icon: "📒", color: "#7c3aed" },
     ],

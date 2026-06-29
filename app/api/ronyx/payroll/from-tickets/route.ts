@@ -65,6 +65,7 @@ export async function GET(req: Request) {
       rate: num(t.pay_rate || t.rate),
       amount: ticketAmount(t),
       bill: ticketBill(t),
+      signature: !!(t.signature_present || t.has_signature || t.has_driver_signature),
     };
     if (!key) { unassigned.push(slim); continue; }
     const g = groups[key] || (groups[key] = {
