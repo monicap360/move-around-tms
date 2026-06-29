@@ -12,7 +12,6 @@ import PdfSplitModal, { pdfPageCount, type DocOption } from "@/app/components/ro
 const OO_DOC_OPTIONS: DocOption[] = [
   { value: "Auto Liability Insurance",    label: "Auto Liability" },
   { value: "General Liability Insurance", label: "General Liability" },
-  { value: "Cargo Insurance",             label: "Cargo Insurance" },
   { value: "Insurance Certificate (COI)", label: "COI" },
   { value: "Contract",                    label: "Contract" },
   { value: "W-9 / Tax Form",              label: "W-9" },
@@ -1004,7 +1003,7 @@ export default function OwnerOperatorsPage() {
   // ── Document Inbox: upload many pages → thumbnails → assign each to a slot or delete ──
   const INBOX_PREFIX = "📥 Inbox — ";
   const ASSIGNABLE_DOC_TYPES = [
-    "Auto Liability Insurance", "General Liability Insurance", "Cargo Insurance", "Workers Comp Insurance",
+    "Auto Liability Insurance", "General Liability Insurance", "Workers Comp Insurance",
     "Insurance Certificate (COI)", "W-9", "Subhauler Agreement", "Operating Authority (MC)",
     "Voided Check / Banking", "Notice of Assignment", "Drug & Alcohol Policy", "Other",
   ];
@@ -1399,7 +1398,6 @@ export default function OwnerOperatorsPage() {
             const REQ_DOCS = [
               { type: "Auto Liability Insurance",    alt: ["Auto Liability","Automobile Liability Insurance"] },
               { type: "General Liability Insurance", alt: ["General Liability","GL Insurance"] },
-              { type: "Cargo Insurance",             alt: ["Cargo","Cargo Ins"] },
               { type: "Contract",                    alt: ["Subhauler Agreement","Carrier Agreement","Service Contract"] },
               { type: "W-9 / Tax Form",              alt: ["W-9","W9","Tax Form"] },
             ];
@@ -1511,7 +1509,6 @@ export default function OwnerOperatorsPage() {
                   {[
                     { key: "auto",    docType: "Auto Liability Insurance",    short: "Auto Liability" },
                     { key: "general", docType: "General Liability Insurance", short: "General Liability" },
-                    { key: "cargo",   docType: "Cargo Insurance",             short: "Cargo" },
                     { key: "coi",     docType: "Insurance Certificate (COI)", short: "COI" },
                   ].map(({ key, docType, short }) => {
                     const doc = oo.documents.find(d => d.type === docType);
@@ -1857,7 +1854,6 @@ export default function OwnerOperatorsPage() {
         const DOCS = [
           { icon: "🛡️", short: "Auto Liability",    type: "Auto Liability Insurance",    alt: ["Auto Liability","Automobile Liability Insurance"],          required: true  },
           { icon: "🛡️", short: "General Liability", type: "General Liability Insurance", alt: ["General Liability","GL Insurance"],                          required: true  },
-          { icon: "📦", short: "Cargo Insurance",   type: "Cargo Insurance",             alt: ["Cargo","Cargo Ins"],                                        required: true  },
           { icon: "📄", short: "COI",               type: "Insurance Certificate (COI)", alt: ["Insurance Certificate","COI","Certificate of Insurance"],    required: false },
           { icon: "📝", short: "Contract",          type: "Contract",                    alt: ["Subhauler Agreement","Carrier Agreement","Service Contract"], required: true  },
           { icon: "🧾", short: "W-9",               type: "W-9 / Tax Form",              alt: ["W-9","W9","Tax Form"],                                      required: true  },
@@ -2003,7 +1999,6 @@ export default function OwnerOperatorsPage() {
         const missingItems: Array<{label: string; docType?: string; hasExpiry?: boolean}> = [];
         if (!autoIns)  missingItems.push({ label:"Auto Liability Insurance", docType:"Auto Liability Insurance", hasExpiry:true });
         if (!glIns)    missingItems.push({ label:"General Liability Insurance", docType:"General Liability Insurance", hasExpiry:true });
-        if (!cargoIns) missingItems.push({ label:"Cargo Insurance", docType:"Cargo Insurance", hasExpiry:true });
         if (!contract) missingItems.push({ label:"Contract", docType:"Contract", hasExpiry:true });
         if (!w9)       missingItems.push({ label:"W-9 / Tax Form", docType:"W-9 / Tax Form", hasExpiry:false });
         selected.drivers.forEach(d => {
@@ -2019,7 +2014,6 @@ export default function OwnerOperatorsPage() {
         [
           { label:"Auto Liability Insurance", doc: autoIns },
           { label:"General Liability Insurance", doc: glIns },
-          { label:"Cargo Insurance", doc: cargoIns },
           { label:"Contract", doc: contract },
         ].forEach(({ label, doc }) => {
           const d = doc?.expires_on ? daysUntil(doc.expires_on) : null;
@@ -3236,7 +3230,6 @@ export default function OwnerOperatorsPage() {
             {[
               { type:"Auto Liability Insurance",    icon:"🚗" },
               { type:"General Liability Insurance", icon:"🏢" },
-              { type:"Cargo Insurance",             icon:"📦" },
               { type:"Workers Comp Insurance",      icon:"🩺" },
             ].map(({ type: docType, icon }) => {
               const existing = selected.documents.find(d => d.type === docType);
@@ -3866,7 +3859,6 @@ export default function OwnerOperatorsPage() {
                 {[
                   { label:"Auto Liability",    doc: autoIns || insDoc },
                   { label:"General Liability", doc: glIns },
-                  { label:"Cargo Insurance",   doc: cargoIns },
                 ].map(({ label, doc }) => {
                   const days = doc?.expires_on ? daysUntil(doc.expires_on) : null;
                   const st   = complianceStatus(doc);
