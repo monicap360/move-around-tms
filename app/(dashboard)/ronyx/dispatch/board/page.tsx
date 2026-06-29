@@ -349,7 +349,7 @@ function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: (
 
   // Persist the approval (audit trail) attributed to the signed-in staff, then mark approved.
   async function approveOverride(r: GuardJobResult) {
-    const fails = r.checks.filter(c => c.status === "fail").map(c => c.label).join("; ") || "Compliance block";
+    const fails = r.checks.filter(c => c.status === "fail").map(c => c.name).join("; ") || "Compliance block";
     let manager = "Manager";
     try { const s = JSON.parse(localStorage.getItem("ronyx_active_staff") || "{}"); manager = s.name || s.full_name || "Manager"; } catch {}
     setOverrides(p => ({ ...p, [r.job.id]: "approved" }));
