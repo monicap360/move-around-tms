@@ -4,7 +4,7 @@
    Completed work → cash. Seeded dump-truck demo data; wires to aggregate_tickets +
    customer_invoices as the pipeline fills. */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Conf = "Verified" | "High Confidence" | "Needs Review" | "Low Confidence" | "Missing Field";
@@ -30,7 +30,7 @@ const seed: Omit<Ticket, "revenue" | "cost">[] & any = [
   { id: "TKT-88255", date: "06-19", customer: "Lone Star Ready Mix",job: "Plant 3",       material: "Sand",       origin: "Pit 9",  dest: "Plant 3",    truck: "T-150", party: "Coyans Trucking",   qty: 7.0,  unit: "hrs",  rate: 95,   fuel: 44, pit: 0,   other: 0,  conf: "Verified",       inv: "paid",         pay: "Paid" },
   { id: "TKT-88258", date: "06-29", customer: "Bayou Aggregates",   job: "Levee Haul",    material: "Rock",       origin: "Pit 1",  dest: "Levee N",    truck: "T-220", party: "Pineda Commodity",  qty: 15.5, unit: "tons", rate: 8.0,  fuel: 57, pit: 188, other: 0,  conf: "Low Confidence", inv: "needs_review", pay: "—" },
 ];
-const TICKETS: Ticket[] = seed.map((t: any) => {
+const DEMO_TICKETS: Ticket[] = seed.map((t: any) => {
   const revenue = t.rate * t.qty;
   const cost = Math.round(revenue * 0.62); // driver/OO pay portion (demo)
   return { ...t, revenue, cost };
@@ -64,15 +64,25 @@ export default function TicketToInvoice() {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [batch, setBatch] = useState(false);
   const [toast, setToast] = useState("");
+  const [data, setData] = useState<Ticket[]>(DEMO_TICKETS);
+  const [live, setLive] = useState(false);
+
+  // Pull real tickets from aggregate_tickets; fall back to the seeded demo when empty.
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/tickets")
+      .then(r => r.json())
+      .then(d => { if (d.live && Array.isArray(d.tickets) && d.tickets.length) { setData(d.tickets); setLive(true); } })
+      .catch(() => {});
+  }, []);
 
   const active = TABS.find(t => t.key === tab)!;
-  const rows = useMemo(() => TICKETS.filter(active.match), [tab]);
+  const rows = useMemo(() => data.filter(active.match), [tab, data]);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 4000); };
 
   function toggle(id: string) { setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
   function toggleAll() { setSel(s => s.size === rows.length ? new Set() : new Set(rows.map(r => r.id))); }
 
-  const selected = TICKETS.filter(t => sel.has(t.id));
+  const selected = data.filter(t => sel.has(t.id));
   const onHold = selected.some(t => t.creditHold);
 
   function bulk(action: string) {
@@ -86,6 +96,7 @@ export default function TicketToInvoice() {
   return (
     <AcctShell active="tti" title="Ticket-to-Invoice Control" subtitle="Turn completed, validated work into cash — one ticket at a time, billed once."
       controls={<>
+        <span style={{ ...chip, background: live ? "#dcfce7" : "#fef9c3", color: live ? "#15803d" : "#b45309", padding: "7px 11px" }} title={live ? "Showing real tickets from aggregate_tickets" : "No real tickets yet — showing demo data"}>{live ? "● Live data" : "Demo data"}</span>
         <button style={ctrlBtn}>Group: Customer ▾</button>
         <button style={ctrlBtn}>⬇ Export</button>
         <button style={primaryBtn} onClick={() => bulk("Create Invoice Batch")}>+ Create Invoice Batch</button>
@@ -96,7 +107,7 @@ export default function TicketToInvoice() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
         {TABS.map(t => {
-          const n = TICKETS.filter(t.match).length;
+          const n = data.filter(t.match).length;
           const on = tab === t.key;
           return <button key={t.key} onClick={() => { setTab(t.key); setSel(new Set()); }} style={{ ...chip, cursor: "pointer", padding: "7px 12px", background: on ? "#0f172a" : "#fff", color: on ? "#fff" : "#475569", border: "1px solid " + (on ? "#0f172a" : "#e2e8f0"), fontWeight: 800 }}>{t.label}{t.key !== "adjust" && <span style={{ opacity: 0.7 }}> · {n}</span>}</button>;
         })}
