@@ -36,6 +36,32 @@ function toDateOrNull(val: string): string | null {
   return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
+// Find an existing (non-deleted) driver to update, so re-uploading a roster is
+// idempotent. License number is the reliable unique key; fall back to exact name.
+async function findExistingDriver(
+  supabase: any, orgId: string | null, license: string | null, name: string | null,
+): Promise<string | null> {
+  const lic = (license || "").trim();
+  if (lic) {
+    let q = supabase.from("drivers").select("id").eq("license_number", lic).neq("status", "deleted").limit(1);
+    if (orgId) q = q.eq("organization_id", orgId);
+    const { data } = await q.maybeSingle();
+    if (data?.id) return data.id;
+  }
+  const nm = (name || "").trim();
+  if (nm) {
+    let q = supabase.from("drivers").select("id").ilike("full_name", nm).neq("status", "deleted").limit(1);
+    if (orgId) q = q.eq("organization_id", orgId);
+    const { data } = await q.maybeSingle();
+    if (data?.id) return data.id;
+  }
+  return null;
+}
+
+// Fields the import must NEVER overwrite on an existing driver — these are decisions
+// made in-app (clearance/eligibility), not roster data.
+const PRESERVE_ON_UPDATE = new Set(["dispatch_eligible", "payroll_eligible"]);
+
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin;
   const body = await req.json().catch(() => ({}));
@@ -136,50 +162,40 @@ export async function POST(req: NextRequest) {
         updated_by:              userEmail || null,
       };
 
-      if (isDup && dupAction === "update") {
-        const nameClean = row.driver_name.trim().toLowerCase();
-        const { data: existing } = await supabase
-          .from("drivers")
-          .select("id")
-          .ilike("full_name", nameClean)
-          .limit(1)
-          .maybeSingle();
+      // Idempotent upsert: match an existing driver by license number (preferred) or
+      // name. Re-uploading a roster updates the existing row instead of duplicating it.
+      const existingId = await findExistingDriver(
+        supabase, orgId, driverPayload.license_number, driverPayload.full_name,
+      );
 
-        if (existing?.id) {
-          // Two-tier update: try full payload, fall back to core fields only
-          const { error: upErr1 } = await supabase
-            .from("drivers")
-            .update(driverPayload)
-            .eq("id", existing.id);
+      if (existingId) {
+        if (dupAction === "skip") { skipped++; continue; }
 
-          if (upErr1) {
-            const coreUpdate = {
-              full_name: driverPayload.full_name,
-              name:      driverPayload.full_name,
-              phone:     driverPayload.phone,
-              email:     driverPayload.email,
-              driver_type:             driverPayload.driver_type,
-              assigned_truck_number:   driverPayload.assigned_truck_number,
-              license_number:          driverPayload.license_number,
-              license_state:           driverPayload.license_state,
-              license_expiration_date: driverPayload.license_expiration_date,
-              medical_card_expiration: driverPayload.medical_card_expiration,
-              mvr_expiration:          driverPayload.mvr_expiration,
-              status:                  driverPayload.status,
-            };
-            const { error: upErr2 } = await supabase
-              .from("drivers")
-              .update(coreUpdate)
-              .eq("id", existing.id);
-            if (upErr2) { errors.push(`Update failed for ${row.driver_name}: ${upErr2.message}`); failed++; }
-            else { updated++; }
-          } else {
-            updated++;
-          }
-          continue; // ALWAYS continue — never insert a second copy of an existing driver
+        // Merge: only write fields the import actually provides (don't wipe existing
+        // data with blanks) and never touch dispatch/payroll eligibility.
+        const mergePayload: Record<string, any> = {};
+        for (const [k, v] of Object.entries(driverPayload)) {
+          if (PRESERVE_ON_UPDATE.has(k)) continue;
+          if (v === null || v === undefined) continue;
+          mergePayload[k] = v;
         }
-        // No existing match found by name — fall through to insert as new
+
+        const { error: upErr1 } = await supabase.from("drivers").update(mergePayload).eq("id", existingId);
+        if (upErr1) {
+          // Fall back to the core fields that exist on any drivers table.
+          const coreUpdate: Record<string, any> = {};
+          for (const k of ["full_name", "name", "phone", "email", "driver_type", "assigned_truck_number",
+            "license_number", "license_state", "license_expiration_date", "medical_card_expiration",
+            "mvr_expiration", "status"]) {
+            if (mergePayload[k] !== undefined) coreUpdate[k] = mergePayload[k];
+          }
+          const { error: upErr2 } = await supabase.from("drivers").update(coreUpdate).eq("id", existingId);
+          if (upErr2) { errors.push(`Update failed for ${row.driver_name}: ${upErr2.message}`); failed++; continue; }
+        }
+        updated++;
+        continue; // never insert a second copy of an existing driver
       }
+      // No existing match — fall through to insert as a new driver.
 
       // Insert new driver — try full payload first, fall back to core fields only
       let newDriver: { id: string } | null = null;
