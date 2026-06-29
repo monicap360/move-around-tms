@@ -19,7 +19,10 @@ function signSession(payload: Record<string, unknown>): string {
   const sig = crypto.createHmac("sha256", SESSION_SECRET()).update(p).digest();
   return `${p}.${b64url(sig)}`;
 }
-const SESSION_HOURS = 12;
+// 7-day session so staff aren't bounced to the lock screen mid-shift (was 12h, which
+// expired during long days). The secret/signature is unchanged — safe, no forced re-login
+// beyond the one already in flight.
+const SESSION_HOURS = 24 * 7;
 
 // In-memory throttle (per server instance): 8 attempts / 5 min per org+staff.
 const attempts = new Map<string, number[]>();
