@@ -156,7 +156,7 @@ export default function FastScanPage() {
   const [loadingScans,       setLoadingScans]        = useState(true);
   const [scanPreviewModal,   setScanPreviewModal]    = useState<{ url: string; filename: string; rotation: number } | null>(null);
   const [scanEmailModal,     setScanEmailModal]      = useState<{ scan: any; to: string; subject: string; message: string; sending: boolean } | null>(null);
-  const [scanEditModal,      setScanEditModal]       = useState<{ scan: any; form: { ticket_number: string; truck_number: string; driver_name: string; amount: string }; saving: boolean } | null>(null);
+  const [scanEditModal,      setScanEditModal]       = useState<{ scan: any; form: { ticket_number: string; truck_number: string; driver_name: string; amount: string; quantity: string; rate: string; has_driver_signature: boolean }; saving: boolean } | null>(null);
   const [scanVoidConfirm,    setScanVoidConfirm]     = useState<{ id: string; filename: string } | null>(null);
   const [scanDeleteConfirm,  setScanDeleteConfirm]   = useState<{ id: string; filename: string } | null>(null);
   const [expandedScan,       setExpandedScan]        = useState<string | null>(null);
@@ -265,6 +265,7 @@ export default function FastScanPage() {
       if (!res.ok) throw new Error(data.error || "Save failed");
       setRecentScans(prev => prev.map(s => s.id === scanEditModal.scan.id ? { ...s, ...scanEditModal.form } : s));
       setScanEditModal(null);
+      alert(data.agg_synced ? "Saved — ticket is payroll-ready ✓" : `Saved. ${data.agg_reason || "Add a ticket # to make it payroll-ready."}`);
     } catch (e: any) { setScanEditModal(m => m && { ...m, saving: false }); alert(e.message); }
   }
 
@@ -955,7 +956,7 @@ export default function FastScanPage() {
                               style={{ padding: "3px 8px", background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>🖨 Print</button>
                           </>)}
                           {!isVoided && (<>
-                            <button onClick={() => setScanEditModal({ scan: s, form: { ticket_number: s.ticket_number || "", truck_number: s.truck_number || "", driver_name: s.driver_name || "", amount: s.amount?.toString() || "" }, saving: false })}
+                            <button onClick={() => setScanEditModal({ scan: s, form: { ticket_number: s.ticket_number || "", truck_number: s.truck_number || "", driver_name: s.driver_name || "", amount: s.amount?.toString() || "", quantity: s.quantity?.toString() || "", rate: s.rate?.toString() || "", has_driver_signature: !!s.has_driver_signature }, saving: false })}
                               style={{ padding: "3px 8px", background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>✏ Edit</button>
                             <button onClick={() => setScanVoidConfirm({ id: s.id, filename: s.original_filename || "this scan" })}
                               style={{ padding: "3px 8px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>🚫 Void</button>
@@ -1047,14 +1048,20 @@ export default function FastScanPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 440, padding: 28, boxShadow: "0 16px 48px rgba(0,0,0,0.25)" }}>
             <div style={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", marginBottom: 18 }}>✏ Edit Scan Record</div>
-            {(["ticket_number","truck_number","driver_name","amount"] as const).map(k => (
+            {(["ticket_number","truck_number","driver_name","amount","quantity","rate"] as const).map(k => (
               <div key={k} style={{ marginBottom: 12 }}>
-                <label style={{ ...S.label }}>{{ ticket_number: "Ticket #", truck_number: "Truck #", driver_name: "Driver", amount: "Amount ($)" }[k]}</label>
+                <label style={{ ...S.label }}>{{ ticket_number: "Ticket #", truck_number: "Truck #", driver_name: "Driver", amount: "Amount ($)", quantity: "Loads / Qty", rate: "Rate ($ per load)" }[k]}</label>
                 <input value={(scanEditModal.form as any)[k] || ""}
                   onChange={e => setScanEditModal(m => m && ({ ...m, form: { ...m.form, [k]: e.target.value } }))}
                   style={S.input} />
               </div>
             ))}
+            <label style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 16, cursor: "pointer", fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>
+              <input type="checkbox" checked={!!(scanEditModal.form as any).has_driver_signature}
+                onChange={e => setScanEditModal(m => m && ({ ...m, form: { ...m.form, has_driver_signature: e.target.checked } }))}
+                style={{ width: 17, height: 17 }} />
+              ✍ Driver signature present
+            </label>
             <div style={{ display: "flex", gap: 10 }}>
               <button disabled={scanEditModal.saving} onClick={saveScanEdit}
                 style={{ flex: 1, padding: "10px 0", background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", opacity: scanEditModal.saving ? 0.6 : 1 }}>
