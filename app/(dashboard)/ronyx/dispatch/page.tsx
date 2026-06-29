@@ -1,7 +1,8 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import DispatchPage from "@/app/dispatch/DispatchView";
-
+// /ronyx/dispatch is not a work surface — the Dispatch Board is. Send anyone who
+// lands here (old links, typed URL) straight to the board so there's one clear home
+// for dispatch instead of a stale landing page.
 export default function RonyxDispatchPage() {
-  return <DispatchPage />;
+  redirect("/ronyx/dispatch/board");
 }

@@ -86,7 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Availability",          href: "/ronyx/maintenance/availability", icon: "✅" },
         { label: "Inspections",           href: "/ronyx/inspections",              icon: "📋" },
       ]},
-      { label: "Projects / Jobs",   href: "/ronyx/loads",                  icon: "📁", color: "#0d9488" },
+      { label: "Live Ops Board",    href: "/ronyx/loads",                  icon: "🖥️", color: "#0d9488" },
     ],
   },
   {
