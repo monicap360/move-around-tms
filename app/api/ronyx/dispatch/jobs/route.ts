@@ -85,27 +85,43 @@ export async function POST(req: Request) {
   const orgId = await resolveOrgId();
   const body = await req.json().catch(() => ({}));
 
-  const { data, error } = await supabase
-    .from("dispatch_jobs")
-    .insert({
-      organization_id:      orgId,
-      customer_name:        body.customer_name,
-      customer_phone:       body.customer_phone       || null,
-      customer_email:       body.customer_email       || null,
-      pickup_address:       body.pickup_address       || null,
-      pickup_time:          body.pickup_time          || null,
-      dropoff_address:      body.dropoff_address      || null,
-      dropoff_time:         body.dropoff_time         || null,
-      passenger_count:      body.passenger_count      ?? 1,
-      luggage_count:        body.luggage_count        ?? 0,
-      special_instructions: body.special_instructions || null,
-      payment_status:       body.payment_status       || "unpaid",
-      job_status:           body.job_status           || "needs_review",
-      risk_level:           body.risk_level           || "low",
-      created_by:           body.created_by           || "dispatch",
-    })
-    .select()
-    .single();
+  const insertRow: Record<string, unknown> = {
+    organization_id:      orgId,
+    customer_name:        body.customer_name,
+    customer_phone:       body.customer_phone       || null,
+    customer_email:       body.customer_email       || null,
+    // Dump-truck dispatch fields
+    driver_name:          body.driver_name          || null,
+    truck_number:         body.truck_number         || null,
+    vendor_name:          body.vendor_name          || null,
+    material:             body.material             || null,
+    job_quantity:         body.job_quantity         ?? null,
+    pickup_site_name:     body.pickup_site_name     || null,
+    dropoff_site_name:    body.dropoff_site_name    || null,
+    friendly_job_id:      body.friendly_job_id      || null,
+    start_time:           body.start_time           || body.pickup_time || null,
+    pickup_address:       body.pickup_address       || null,
+    pickup_time:          body.pickup_time          || null,
+    dropoff_address:      body.dropoff_address      || null,
+    dropoff_time:         body.dropoff_time         || null,
+    special_instructions: body.special_instructions || null,
+    payment_status:       body.payment_status       || "unpaid",
+    job_status:           body.job_status           || "needs_review",
+    risk_level:           body.risk_level           || "low",
+    created_by:           body.created_by           || "dispatch",
+  };
+
+  // Strip-and-retry: dispatch_jobs columns vary across deployments — drop any column the
+  // table doesn't have rather than 500 the whole create.
+  async function tryInsert(row: Record<string, unknown>): Promise<{ data: any; error: any }> {
+    const res = await supabase.from("dispatch_jobs").insert(row).select().single();
+    if (res.error) {
+      const m = res.error.message?.match(/Could not find the '(.+?)' column/) || res.error.message?.match(/column "(.+?)" of relation/);
+      if (m && m[1] in row && m[1] !== "customer_name") { const r = { ...row }; delete r[m[1]]; return tryInsert(r); }
+    }
+    return res;
+  }
+  const { data, error } = await tryInsert(insertRow);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ job: data }, { status: 201 });

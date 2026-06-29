@@ -1480,6 +1480,53 @@ function NoteModal({ job, onClose, onSaved }: { job: DispatchJob; onClose: () =>
   );
 }
 
+// ─── New Job Modal ─────────────────────────────────────────────────────────────
+
+function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [f, setF] = useState({ customer_name: "", driver_name: "", truck_number: "", material: "", job_quantity: "", pickup_site_name: "", dropoff_site_name: "", start_time: "" });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+  async function submit() {
+    if (!f.customer_name.trim()) { setErr("Customer / project is required."); return; }
+    setSaving(true); setErr("");
+    let createdBy = "dispatch";
+    try { const s = JSON.parse(localStorage.getItem("ronyx_active_staff") || "{}"); createdBy = s.name || s.full_name || "dispatch"; } catch {}
+    try {
+      const res = await fetch("/api/ronyx/dispatch/jobs", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, job_quantity: f.job_quantity ? Number(f.job_quantity) : null, created_by: createdBy }),
+      });
+      setSaving(false);
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || "Couldn't create the job."); return; }
+      onCreated(); onClose();
+    } catch { setSaving(false); setErr("Network error — job not created."); }
+  }
+  return (
+    <div className="db-modal-backdrop" onClick={onClose}>
+      <div className="db-modal" onClick={e => e.stopPropagation()}>
+        <p className="db-modal-sub">New Job</p>
+        <h2>Create a dispatch job</h2>
+        {err && <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>⚠ {err}</div>}
+        <div className="db-form-group"><label className="db-form-label">Customer / Project *</label><input className="db-form-input" value={f.customer_name} onChange={e => set("customer_name", e.target.value)} autoFocus placeholder="Who / what is this job for" /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="db-form-group"><label className="db-form-label">Driver</label><input className="db-form-input" value={f.driver_name} onChange={e => set("driver_name", e.target.value)} placeholder="Driver name" /></div>
+          <div className="db-form-group"><label className="db-form-label">Truck #</label><input className="db-form-input" value={f.truck_number} onChange={e => set("truck_number", e.target.value)} /></div>
+          <div className="db-form-group"><label className="db-form-label">Material</label><input className="db-form-input" value={f.material} onChange={e => set("material", e.target.value)} placeholder="e.g. Gravel" /></div>
+          <div className="db-form-group"><label className="db-form-label">Quantity (loads)</label><input className="db-form-input" type="number" min="0" value={f.job_quantity} onChange={e => set("job_quantity", e.target.value)} /></div>
+          <div className="db-form-group"><label className="db-form-label">Pickup Site</label><input className="db-form-input" value={f.pickup_site_name} onChange={e => set("pickup_site_name", e.target.value)} /></div>
+          <div className="db-form-group"><label className="db-form-label">Dropoff Site</label><input className="db-form-input" value={f.dropoff_site_name} onChange={e => set("dropoff_site_name", e.target.value)} /></div>
+        </div>
+        <div className="db-form-group"><label className="db-form-label">Start Time</label><input className="db-form-input" type="datetime-local" value={f.start_time} onChange={e => set("start_time", e.target.value)} /></div>
+        <div className="db-modal-footer">
+          <button type="button" onClick={onClose} className="db-btn-ghost">Cancel</button>
+          <button type="button" onClick={submit} disabled={!f.customer_name.trim() || saving} className="db-btn-primary">{saving ? "Creating…" : "Create Job"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Report Issue Modal ───────────────────────────────────────────────────────
 
 function ReportIssueModal({ job, onClose, onSaved }: { job: DispatchJob; onClose: () => void; onSaved: () => void }) {
@@ -1661,6 +1708,7 @@ export default function RonyxDispatchCommandCenter() {
   const [detailTarget, setDetailTarget] = useState<DispatchJob | null>(null);
   const [noteTarget,   setNoteTarget]   = useState<DispatchJob | null>(null);
   const [issueTarget,  setIssueTarget]  = useState<DispatchJob | null>(null);
+  const [showNewJob,   setShowNewJob]   = useState(false);
   const [blockDriver,  setBlockDriver]  = useState<DispatchDriver | null>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
@@ -1807,7 +1855,7 @@ export default function RonyxDispatchCommandCenter() {
           <button type="button" onClick={() => { setVdTab("recs"); }} className="db-btn-ghost db-btn-sm" style={{ color: "#4ade80", borderColor: "#4ade80" }}>⚡ Smart Assign</button>
           <button type="button" onClick={() => { setVdTab("eod"); }} className="db-btn-ghost db-btn-sm">End of Day Review</button>
           <button type="button" onClick={() => { setVdTab("owner"); }} className="db-btn-ghost db-btn-sm">Owner View</button>
-          <button type="button" className="db-btn-primary db-btn-sm">+ New Job</button>
+          <button type="button" onClick={() => setShowNewJob(true)} className="db-btn-primary db-btn-sm">+ New Job</button>
         </div>
       </div>
 
@@ -1919,6 +1967,7 @@ export default function RonyxDispatchCommandCenter() {
       {assignTarget && <AssignModal job={assignTarget} drivers={drivers} onAssign={assignDriver} onClose={() => setAssignTarget(null)} />}
       {detailTarget && <JobDetailModal job={detailTarget} onClose={() => setDetailTarget(null)} onStatusChange={async (id, s) => { await moveJob(id, s); showToast(`Status → ${s.replace(/_/g," ")}`); }} />}
       {noteTarget   && <NoteModal job={noteTarget} onClose={() => setNoteTarget(null)} onSaved={() => showToast("Note saved")} />}
+      {showNewJob   && <NewJobModal onClose={() => setShowNewJob(false)} onCreated={() => { loadAll(); showToast("Job created"); }} />}
       {issueTarget  && <ReportIssueModal job={issueTarget} onClose={() => setIssueTarget(null)} onSaved={() => { showToast("Issue reported"); loadAll(); }} />}
       {blockDriver  && <DriverBlockModal driver={blockDriver} onClose={() => setBlockDriver(null)} />}
     </div>
