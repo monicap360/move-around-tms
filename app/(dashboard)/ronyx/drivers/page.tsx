@@ -2317,7 +2317,7 @@ export default function DriversPage() {
                                       <button style={menuItemS} onClick={() => { showToast(`CCB review queued for ${driver.name}`); setMoreMenuId(null); }}>🔍 CCB Review</button>
                                       <hr style={{ border: "none", borderTop: "1px solid #f1f5f9", margin: "4px 0" }} />
                                       <button style={menuItemS} onClick={() => { setAssignTarget({ driver }); setMoreMenuId(null); }}>Assign Truck</button>
-                                      <button style={menuItemS} onClick={() => { setAssignOOTarget(driver); setOOSearch(""); setMoreMenuId(null); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}>Assign Company</button>
+                                      <button style={menuItemS} onClick={() => { setAssignOOTarget(driver); setOOSearch(driver.carrierName && driver.carrierName !== "—" ? driver.carrierName : ""); setMoreMenuId(null); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}>Assign Company</button>
                                       <Link href={`/ronyx/drivers/${driver.id}?tab=oo`} style={{ textDecoration: "none" }}>
                                         <button style={menuItemS} onClick={() => setMoreMenuId(null)}>Open Owner Operator</button>
                                       </Link>
@@ -2417,7 +2417,7 @@ export default function DriversPage() {
                       <Link href={`/ronyx/drivers/${driver.id}?tab=documents`}><button>Documents</button></Link>
                       <button onClick={() => setAssignTarget({ driver })}>Assign Truck</button>
                       <button
-                        onClick={() => { setAssignOOTarget(driver); setOOSearch(""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
+                        onClick={() => { setAssignOOTarget(driver); setOOSearch(driver.carrierName && driver.carrierName !== "—" ? driver.carrierName : ""); if (ooList.length === 0) { fetch("/api/ronyx/owner-operators").then(r => r.json()).then(d => setOOList((d.companies || []).map((o: any) => ({ id: o.id, company_name: o.company_name })))); } }}
                         style={{ color: "#1d4ed8", borderColor: "#bfdbfe", background: "#eff6ff" }}
                       >Assign to OO</button>
                       <button onClick={() => setConfirmAction({ type: "archive", driver })} style={{ color: "#d97706", borderColor: "#fed7aa", background: "#fff7ed" }}>Archive</button>
