@@ -1034,6 +1034,24 @@ export default function OwnerOperatorsPage() {
     flash(`${arr.length} page${arr.length > 1 ? "s" : ""} in the inbox — assign each to a slot or delete it.`);
   }
 
+  // Open the page-splitter on an ALREADY-uploaded PDF (e.g. a Sub-Hauler packet) so staff
+  // can cut a page (W-9, COI, etc.) out and file it to the right slot. Fetches the stored
+  // file back into a File and hands it to PdfSplitModal (thumbnails + assign per page).
+  async function openSplitForDoc(doc: OODoc) {
+    if (!doc.file_url) { flash("This document has no stored file to split.", false); return; }
+    const isPdf = /\.pdf(\?|$)/i.test(doc.file_url) || /\.pdf$/i.test(doc.file_name || "");
+    if (!isPdf) { flash("Page-splitting works on PDFs. This file isn't a PDF.", false); return; }
+    flash("Opening page splitter…");
+    try {
+      const res = await fetch(doc.file_url);
+      const blob = await res.blob();
+      const base = doc.file_name || `${doc.type}.pdf`;
+      const fname = /\.pdf$/i.test(base) ? base : `${base}.pdf`;
+      const file = new File([blob], fname, { type: "application/pdf" });
+      setPdfSplit({ mode: "doc", file, defaultType: "W-9 / Tax Form" });
+    } catch { flash("Couldn't load that document for splitting.", false); }
+  }
+
   // Delete a document by its type (used by the inbox and by each doc slot's 🗑 button).
   async function removeDocByType(docType: string) {
     if (!selected) return;
@@ -3533,6 +3551,13 @@ export default function OwnerOperatorsPage() {
                                 <span style={{ background:"#f1f5f9", color:"#94a3b8", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:600, whiteSpace:"nowrap" }} title="No file URL — re-upload to store file">
                                   No file
                                 </span>
+                              )}
+                              {/* Split / extract pages (multi-page PDFs like a Sub-Hauler packet) */}
+                              {doc.file_url && (/\.pdf(\?|$)/i.test(doc.file_url) || /\.pdf$/i.test(doc.file_name || "")) && (
+                                <button onClick={()=>openSplitForDoc(doc)} title="Cut a page (W-9, COI, etc.) out of this PDF and file it where it goes"
+                                  style={{ background:"#f5f3ff", color:"#6d28d9", border:"1px solid #ddd6fe", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                                  ✂ Split / Extract
+                                </button>
                               )}
                               {/* Replace / re-upload */}
                               <label style={{ background:"#f8fafc", color:"#475569", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
