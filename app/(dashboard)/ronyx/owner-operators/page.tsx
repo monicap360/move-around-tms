@@ -31,7 +31,21 @@ type OODriver = {
   cdl_expiration: string;
   med_card_expiration: string;
   phone: string;
+  address?: string;
   truck_number?: string;
+};
+type TruckInspection = {
+  id: string;
+  truck_id?: string;
+  truck_number?: string;
+  inspection_type?: string;
+  inspection_date?: string;
+  expires_on?: string;
+  result?: string;
+  inspector?: string;
+  notes?: string;
+  file_name?: string;
+  file_url?: string;
 };
 type TruckStatus = "active" | "assigned" | "in_use" | "out_of_service" | "in_maintenance" | "inspection_due" | "insurance_expired" | "registration_expired" | "needs_review";
 type OOTruck = {
@@ -164,6 +178,8 @@ type OOCompany = {
   website?: string;
   dispatch_blocked_override?: boolean;
   settlement_hold_override?: boolean;
+  in_house_account_number?: string;
+  truck_inspections?: TruckInspection[];
   status?: string; // 'active' | 'inactive' | 'suspended' — set 'inactive' when an OO quits Ronyx
 };
 
@@ -2705,7 +2721,7 @@ export default function OwnerOperatorsPage() {
                               <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ await handleDocUpload(cdlKey, f); } e.target.value=""; }} />
                             </label>}
                             <button
-                              onClick={() => setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration }, saving: false })}
+                              onClick={() => setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration, address: d.address || "" }, saving: false })}
                               style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>✏ Edit</button>
                             <button onClick={() => removeDriver(d.id)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", borderRadius:6, padding:"3px 10px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Remove</button>
                           </div>
@@ -2744,7 +2760,7 @@ export default function OwnerOperatorsPage() {
                           </span>
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <button onClick={(e) => { e.stopPropagation(); setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration }, saving: false }); }} title="Edit this driver's profile (name, phone, CDL, medical card)" style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>✏ Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration, address: d.address || "" }, saving: false }); }} title="Edit this driver's profile (name, phone, CDL, medical card)" style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>✏ Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); setReassignModal({ driverId: d.id, driverName: d.name, targetId: "" }); }} title="Move this driver to a different carrier company" style={{ background:"#eff6ff", color:"#1d4ed8", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>⇄ Reassign</button>
                           <button onClick={(e) => { e.stopPropagation(); promoteDriverToOO(d.id, d.name); }} title="This driver got their own authority — promote them to their own Owner-Operator company" style={{ background:"#ecfeff", color:"#0891b2", border:"1px solid #a5f3fc", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>↑ Make OO</button>
                           <button onClick={(e) => { e.stopPropagation(); removeDriver(d.id); }} title="Remove this driver (use for duplicates)" style={{ background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>🗑 Remove</button>
@@ -4442,6 +4458,11 @@ export default function OwnerOperatorsPage() {
                 <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Med Card Expiration</label>
                 <input type="date" value={driverEditModal.form.med_card_expiration || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, med_card_expiration: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
               </div>
+            </div>
+
+            <div style={{ marginTop:12 }}>
+              <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:3 }}>Home Address <span style={{ color:"#94a3b8", fontWeight:500 }}>(drivers can move — update here anytime)</span></label>
+              <input value={driverEditModal.form.address || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, address: e.target.value } }))} placeholder="Street, City, State ZIP" style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", boxSizing:"border-box" as const }} />
             </div>
 
             <div style={{ display:"flex", gap:10, marginTop:20 }}>

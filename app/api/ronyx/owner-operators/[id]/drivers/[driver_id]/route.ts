@@ -12,19 +12,23 @@ export async function PUT(
   const sb = supabaseAdmin;
   const body = await req.json();
 
-  const fields = ["name","phone","cdl_number","cdl_state","cdl_class","cdl_expiration","med_card_expiration","med_card_number","truck_number","job_assignment","notes","status"];
+  const fields = ["name","phone","cdl_number","cdl_state","cdl_class","cdl_expiration","med_card_expiration","med_card_number","truck_number","job_assignment","notes","status","address"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const f of fields) {
     if (f in body) update[f] = body[f] ?? null;
   }
 
-  const { data, error } = await sb
-    .from("ronyx_oo_drivers")
-    .update(update)
-    .eq("id", params.driver_id)
-    .eq("oo_id", params.id)
-    .select("*")
-    .single();
+  // Strip-and-retry: if a column doesn't exist yet (e.g. address before its migration
+  // lands), drop just that field and save the rest — never 500 the whole save.
+  async function trySave(payload: Record<string, unknown>): Promise<{ data: any; error: any }> {
+    const res = await sb.from("ronyx_oo_drivers").update(payload).eq("id", params.driver_id).eq("oo_id", params.id).select("*").single();
+    if (res.error) {
+      const m = res.error.message?.match(/Could not find the '(.+?)' column/) || res.error.message?.match(/column "(.+?)" of relation/);
+      if (m && m[1] in payload && m[1] !== "name") { const p = { ...payload }; delete p[m[1]]; return trySave(p); }
+    }
+    return res;
+  }
+  const { data, error } = await trySave(update);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ driver: data });

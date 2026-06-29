@@ -37,14 +37,29 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
   return NextResponse.json({ company: data });
 }
 
-/* ── DELETE /api/ronyx/owner-operators/[id] ── delete OO company */
-export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+/* ── DELETE /api/ronyx/owner-operators/[id] ── SOFT-delete OO company ──────────
+   Hard DELETE used to cascade and permanently destroy every driver/truck/document
+   attached to the company — staff lost real data this way. We now mark the company
+   status="deleted" (hidden from the list) so nothing is ever truly gone and it can
+   be restored. Pass ?hard=true only for a deliberate, irreversible purge.            */
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const sb = supabaseAdmin;
   const orgId = await resolveOrgId();
-  let delQ = sb.from("ronyx_owner_operators").delete().eq("id", params.id);
-  if (orgId) delQ = delQ.eq("organization_id", orgId);
-  const { error } = await delQ;
+  const hard = new URL(req.url).searchParams.get("hard") === "true";
+
+  if (hard) {
+    let delQ = sb.from("ronyx_owner_operators").delete().eq("id", params.id);
+    if (orgId) delQ = delQ.eq("organization_id", orgId);
+    const { error } = await delQ;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, purged: true });
+  }
+
+  // Soft delete — keep the row + all attached drivers/docs, just hide it.
+  let q = sb.from("ronyx_owner_operators").update({ status: "deleted", updated_at: new Date().toISOString() }).eq("id", params.id);
+  if (orgId) q = q.eq("organization_id", orgId);
+  const { error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, soft: true });
 }

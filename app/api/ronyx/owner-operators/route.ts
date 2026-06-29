@@ -76,7 +76,7 @@ async function buildResponse(oos: any[]) {
     try { const r = await q; return r.data || []; } catch { return []; }
   };
 
-  const [drivers, trucks, docs, jobs, subs, dta, cois] = await Promise.all([
+  const [drivers, trucks, docs, jobs, subs, dta, cois, inspections] = await Promise.all([
     safe(supabaseAdmin.from("ronyx_oo_drivers").select("*").in("oo_id", ids).order("name") as any),
     safe(supabaseAdmin.from("ronyx_oo_trucks").select("*").in("oo_id", ids).order("truck_number") as any),
     safe(supabaseAdmin.from("ronyx_oo_documents").select("*").in("oo_id", ids).order("uploaded_at", { ascending: false }) as any),
@@ -88,6 +88,8 @@ async function buildResponse(oos: any[]) {
       .eq("is_active", true)
       .order("priority") as any),
     safe(supabaseAdmin.from("ronyx_oo_coi_documents").select("*").in("oo_id", ids).order("coi_group") as any),
+    // Inspections table may not exist yet (migration pending) — safe() returns [] if so.
+    safe(supabaseAdmin.from("ronyx_oo_truck_inspections").select("*").in("oo_id", ids).order("inspection_date", { ascending: false }) as any),
   ]);
 
   const companies = oos.map((oo) => ({
@@ -101,6 +103,7 @@ async function buildResponse(oos: any[]) {
       approved_driver_ids: dta.filter((a: any) => a.truck_id === t.id).map((a: any) => a.driver_id),
     })),
     driver_truck_assignments: dta.filter((a: any) => a.oo_id === oo.id),
+    truck_inspections: inspections.filter((x: any) => x.oo_id === oo.id),
     coi_documents: cois.filter((c: any) => c.oo_id === oo.id),
     documents: docs.filter((d: any) => d.oo_id === oo.id).map((d: any) => ({
       type:        d.doc_type,
@@ -143,6 +146,7 @@ export async function GET() {
     let query = supabaseAdmin
       .from("ronyx_owner_operators")
       .select("*")
+      .neq("status", "deleted") // hide soft-deleted companies (recoverable, not purged)
       .order("company_name", { ascending: true });
     // Org-scope the list only at cutover; demo stays unfiltered (see note above).
     if (AUTH_REQUIRED && orgId) query = query.eq("organization_id", orgId);
@@ -191,6 +195,7 @@ export async function GET() {
         const { data: refreshed } = await supabaseAdmin
           .from("ronyx_owner_operators")
           .select("*")
+          .neq("status", "deleted")
           .order("company_name", { ascending: true });
         return buildResponse(refreshed || []);
       }
