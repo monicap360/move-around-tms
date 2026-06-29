@@ -70,8 +70,9 @@ export async function GET(req: Request) {
     if (!key) { unassigned.push(slim); continue; }
     const g = groups[key] || (groups[key] = {
       driver_id: t.driver_id || null, driver_name: driver || "Unknown",
-      trucks: new Set<string>(), ticket_count: 0, total_loads: 0, total_pay: 0, total_bill: 0, tickets: [] as any[],
+      trucks: new Set<string>(), ticket_count: 0, total_loads: 0, total_pay: 0, total_bill: 0, tickets: [] as any[], paid: true,
     });
+    if (t.payroll_status !== "paid") g.paid = false; // driver's week is "paid" only if every ticket is
     if (slim.truck_number) g.trucks.add(String(slim.truck_number));
     g.ticket_count += 1;
     g.total_loads += slim.quantity;

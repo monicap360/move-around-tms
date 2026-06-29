@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Ticket = { ticket_number: string | null; ticket_date: string | null; truck_number: string | null; material: string | null; quantity: number; rate: number; amount: number; bill: number };
-type Driver = { driver_id: string | null; driver_name: string; trucks: string[]; ticket_count: number; total_loads: number; total_pay: number; tickets: Ticket[] };
+type Driver = { driver_id: string | null; driver_name: string; trucks: string[]; ticket_count: number; total_loads: number; total_pay: number; tickets: Ticket[]; paid?: boolean };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -32,14 +32,23 @@ export default function DriverPayPage() {
   const periodStart = toISO(start);
   const periodEnd = toISO(friday);
 
-  useEffect(() => {
+  function load() {
     setLoading(true);
     fetch(`/api/ronyx/payroll/from-tickets?period_start=${periodStart}&period_end=${periodEnd}`)
       .then(r => r.json())
       .then(d => { setDrivers(d.drivers || []); setUnassigned((d.unassigned || []).length); })
       .catch(() => setDrivers([]))
       .finally(() => setLoading(false));
-  }, [periodStart, periodEnd]);
+  }
+  useEffect(() => { load(); }, [periodStart, periodEnd]);
+
+  async function markPaid(d: Driver, paid: boolean) {
+    await fetch("/api/ronyx/payroll/mark-paid", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driver_id: d.driver_id, driver_name: d.driver_name, period_start: periodStart, period_end: periodEnd, paid }),
+    }).catch(() => {});
+    load();
+  }
 
   const totalPay = drivers.reduce((s, d) => s + d.total_pay, 0);
   const shiftWeek = (n: number) => { const x = new Date(friday); x.setDate(x.getDate() + n * 7); setFriday(x); };
@@ -91,6 +100,9 @@ export default function DriverPayPage() {
                 <div style={{ fontSize: 22, fontWeight: 900, color: "#16a34a" }}>{fmtMoney(d.total_pay)}</div>
                 <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>{isOpen ? "▲ hide tickets" : "▼ show tickets"}</div>
               </div>
+              {d.paid
+                ? <button onClick={(e) => { e.stopPropagation(); if (confirm(`Un-pay ${d.driver_name} for this week?`)) markPaid(d, false); }} title="Paid — click to reverse" style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #86efac", background: "#dcfce7", color: "#15803d", fontWeight: 800, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>✓ PAID</button>
+                : <button onClick={(e) => { e.stopPropagation(); if (confirm(`Mark ${d.driver_name} PAID for ${fmtMoney(d.total_pay)} (week ending Fri ${periodEnd})? This locks the week.`)) markPaid(d, true); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#15803d", color: "#fff", fontWeight: 800, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>Mark Paid</button>}
             </div>
 
             {/* Ticket detail */}
