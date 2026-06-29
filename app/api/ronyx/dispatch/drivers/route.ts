@@ -16,6 +16,7 @@ export async function GET() {
       .select("id, name, status, assigned_truck_number, driver_profiles(full_name, phone, email, medical_card_expiration, license_expiration_date, mvr_expiration, dispatch_eligible, payroll_eligible)")
       .neq("status", "inactive")
       .neq("status", "terminated")
+      .neq("status", "deleted")
       .order("name"),
     supabase
       .from("dispatch_jobs")
