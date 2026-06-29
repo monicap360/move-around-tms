@@ -320,6 +320,8 @@ export default function DailyImportPage() {
   const [previewFilter, setPreviewFilter] = useState<"all"|"ready"|"needs_review"|"critical">("all");
   const [pastImports, setPastImports] = useState<ImportBatch[]>([]);
   const [toast,       setToast]       = useState<{msg:string;ok:boolean}|null>(null);
+  const [extractInstruction, setExtractInstruction] = useState("");
+  const [addingToSystem,     setAddingToSystem]     = useState(false);
 
   const readiness  = useMemo(() => analysis ? calcScore(analysis, matches) : null, [analysis, matches]);
   const staffTasks = useMemo(() => analysis ? buildTasks(analysis, matches) : null, [analysis, matches]);
@@ -391,6 +393,51 @@ export default function DailyImportPage() {
       loadBatch(d.import_id);
     } catch(err:any) { flash(err.message||"Import failed",false); }
     finally { setImporting(null); }
+  }
+
+  // Drivers in this dispatch not yet in the system, grouped by their carrier (Vendor
+  // column, falling back to the matched company). bulk-import dedups OOs AND drivers by
+  // name, so this is safe to run repeatedly without creating duplicates.
+  const extractable = useMemo(() => {
+    if (!analysis) return null;
+    const mByDriver: Record<string, MatchEntry> = {};
+    (matches || []).forEach(e => { if (e.driver) mByDriver[e.driver] = e; });
+    const byCarrier: Record<string, { name: string; truck_number: string }[]> = {};
+    const seen = new Set<string>();
+    for (const row of analysis.rows) {
+      const driver = (row.driver || "").trim();
+      if (!driver) continue;
+      const m = mByDriver[driver];
+      if (m?.driver_found) continue; // already in system
+      const carrier = ((row.vendor || m?.company || "").trim()) || "Unassigned Carrier";
+      const key = carrier.toLowerCase() + "|" + driver.toLowerCase();
+      if (seen.has(key)) continue; seen.add(key);
+      (byCarrier[carrier] = byCarrier[carrier] || []).push({ name: driver, truck_number: row.truck || "" });
+    }
+    const carriers = Object.keys(byCarrier).sort();
+    const driverCount = carriers.reduce((s, c) => s + byCarrier[c].length, 0);
+    return { byCarrier, carriers, driverCount };
+  }, [analysis, matches]);
+
+  async function addToSystem() {
+    if (!analysis || !extractable || extractable.driverCount === 0) { flash("Nothing new to add — everyone is already in the system.", false); return; }
+    const instr = extractInstruction.toLowerCase();
+    const oosOnly = /(only|just)\s+(the\s+)?(oo|owner|carrier|compan)/.test(instr) || /no\s+driver|without\s+driver/.test(instr);
+    const companies = extractable.carriers.map(c => ({
+      company_name: c,
+      drivers: oosOnly ? [] : extractable.byCarrier[c],
+    }));
+    setAddingToSystem(true);
+    try {
+      const res = await fetch("/api/ronyx/owner-operators/bulk-import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companies }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Add failed");
+      const oosCreated = (d.results || []).filter((r: any) => r.created).length;
+      const driversAdded = d.total_drivers_imported || 0;
+      flash(`✅ Added: ${oosCreated} new owner-operator${oosCreated !== 1 ? "s" : ""}, ${driversAdded} new driver${driversAdded !== 1 ? "s" : ""}. Existing ones were reused, not duplicated.`);
+      runMatch(analysis); // re-match so newly-added people now show as "in system"
+    } catch (err: any) { flash(err.message || "Add to system failed", false); }
+    finally { setAddingToSystem(false); }
   }
 
   async function loadBatch(id: string) {
@@ -986,6 +1033,39 @@ export default function DailyImportPage() {
             </div>
           )}
         </div>
+
+        {/* ─── 11.5 ADD OWNER-OPERATORS & DRIVERS TO SYSTEM ─────── */}
+        {extractable && (
+          <div id="s11b-extract" style={{ ...card, border:"2px solid #b45309", background:"#fffbeb" }}>
+            <div style={{ fontWeight:900, fontSize:15, color:"#92400e", marginBottom:4 }}>➕ Add Owner-Operators &amp; Drivers to System</div>
+            <div style={{ fontSize:12, color:"#b45309", marginBottom:12 }}>Pull every carrier &amp; driver from this dispatch that isn&apos;t on file yet, and create them in the Owner-Operators module — deduped, never duplicated.</div>
+            {extractable.driverCount === 0 ? (
+              <div style={{ fontSize:13, color:"#15803d", fontWeight:700, background:"#f0fdf4", borderRadius:8, padding:"12px 16px" }}>✓ Everyone in this dispatch is already in the system.</div>
+            ) : (
+              <>
+                <div style={{ fontSize:13, color:"#92400e", fontWeight:700, marginBottom:10 }}>
+                  Found <strong>{extractable.driverCount}</strong> driver{extractable.driverCount !== 1 ? "s" : ""} across <strong>{extractable.carriers.length}</strong> carrier{extractable.carriers.length !== 1 ? "s" : ""} not yet in the system:
+                </div>
+                <div style={{ maxHeight:170, overflowY:"auto", background:"#fff", border:"1px solid #fde68a", borderRadius:8, padding:"8px 12px", marginBottom:12 }}>
+                  {extractable.carriers.map(c => (
+                    <div key={c} style={{ marginBottom:6, fontSize:12, lineHeight:1.5 }}>
+                      <span style={{ fontWeight:800, color:"#0f172a" }}>🚛 {c}</span>
+                      <span style={{ color:"#64748b" }}> — {extractable.byCarrier[c].map(d => d.name).join(", ")}</span>
+                    </div>
+                  ))}
+                </div>
+                <label style={{ fontSize:12, fontWeight:700, color:"#92400e", display:"block", marginBottom:4 }}>Instructions (optional)</label>
+                <input value={extractInstruction} onChange={e => setExtractInstruction(e.target.value)} placeholder={'e.g. "add all owner-operators and their drivers" — or "owner-operators only"'}
+                  style={{ width:"100%", border:"1px solid #fcd34d", borderRadius:8, padding:"9px 12px", fontSize:13, marginBottom:12, boxSizing:"border-box" }} />
+                <button onClick={addToSystem} disabled={addingToSystem}
+                  style={{ padding:"13px 24px", borderRadius:10, border:"none", background:"#b45309", color:"#fff", fontWeight:900, fontSize:14, cursor:addingToSystem ? "default" : "pointer", opacity:addingToSystem ? 0.6 : 1 }}>
+                  {addingToSystem ? "Adding…" : `➕ Add ${extractable.carriers.length} Carrier${extractable.carriers.length !== 1 ? "s" : ""} & ${extractable.driverCount} Driver${extractable.driverCount !== 1 ? "s" : ""} to System`}
+                </button>
+                <div style={{ fontSize:11, color:"#92400e", marginTop:8 }}>Existing owner-operators &amp; drivers are matched by name and reused — this never creates duplicates.</div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* ─── 12. IMPORT ACTIONS ──────────────────────────────── */}
         <div id="s12-actions" style={{ ...card, border:"2px solid #0f172a" }}>

@@ -102,11 +102,15 @@ export async function POST(req: Request) {
       created = true;
     }
 
-    // Insert drivers
+    // Insert drivers — but never duplicate one already on this OO (case-insensitive
+    // name match). This keeps repeat imports / "add from dispatch" idempotent and was
+    // the source of duplicate drivers before.
     let driversAdded = 0;
+    const existingDrv = await sb.from("ronyx_oo_drivers").select("name").eq("oo_id", ooId);
+    const haveNames = new Set((existingDrv.data || []).map((d: any) => (d.name || "").toLowerCase().trim()));
     if (Array.isArray(co.drivers) && co.drivers.length > 0) {
       const rows = co.drivers
-        .filter((d: Record<string, string>) => d.name && d.name.trim())
+        .filter((d: Record<string, string>) => d.name && d.name.trim() && !haveNames.has(d.name.toLowerCase().trim()))
         .map((d: Record<string, string>) => ({
           oo_id:               ooId,
           name:                d.name.trim(),
