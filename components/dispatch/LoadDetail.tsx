@@ -65,6 +65,20 @@ function clearTruck(t?: Truck): ClearanceItem {
   if (expiresToday(t.registration_expires)) return { ok: false, label: "Truck Clearance", detail: `${num} — registration expires today`, blocking: true };
   return { ok: true, label: "Truck Clearance", detail: `${num} — Clear`, blocking: true };
 }
+// HOS clearance — real FMCSA remaining clocks from logged hours (no ELD yet).
+type HosLimits = { drive: number; duty: number; cycle: number };
+function clearHos(d: Driver | undefined, hosMap: Record<string, any>, limits: HosLimits): ClearanceItem {
+  if (!d) return { ok: false, label: "HOS", detail: "Will check when driver is selected", blocking: false };
+  const e = hosMap[String(d.id)];
+  if (!e) return { ok: false, label: "HOS", detail: `${d.name || "Driver"} — no hours logged`, blocking: true };
+  const f = (n: number) => n.toFixed(1);
+  const driveLeft = Math.max(0, limits.drive - (e.driveUsed || 0));
+  const dutyLeft = Math.max(0, limits.duty - (e.dutyUsed || 0));
+  const cycleLeft = Math.max(0, limits.cycle - (e.cycleUsed || 0));
+  if (driveLeft <= 0) return { ok: false, label: "HOS", detail: "0.0h drive left — needs 10h reset", blocking: true };
+  if (cycleLeft <= 0) return { ok: false, label: "HOS", detail: "cycle exhausted — needs 34h restart", blocking: true };
+  return { ok: true, label: "HOS", detail: `${f(driveLeft)}h drive / ${f(dutyLeft)}h shift / ${f(cycleLeft)}h cycle left`, blocking: true };
+}
 
 export default function LoadDetail({ loadId }: { loadId: string }) {
   const [load, setLoad] = useState<Load>(null);
@@ -77,6 +91,10 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [driverId, setDriverId] = useState<string>("");
   const [truckId, setTruckId] = useState<string>("");
+
+  const [hosMap, setHosMap] = useState<Record<string, any>>({});
+  const [hosLimits, setHosLimits] = useState<HosLimits>({ drive: 11, duty: 14, cycle: 70 });
+  const [hosForm, setHosForm] = useState<{ open: boolean; drive: string; duty: string; cycle: string }>({ open: false, drive: "", duty: "", cycle: "" });
 
   const [tab, setTab] = useState("overview");
   const [showComplete, setShowComplete] = useState(false);
@@ -107,6 +125,7 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
     // recommendations — degrade gracefully if empty
     fetch("/api/ronyx/dispatch/drivers").then(r => r.json()).then(d => { if (alive) setDrivers(d.drivers || d || []); }).catch(() => {});
     fetch("/api/ronyx/maintenance/units").then(r => r.json()).then(d => { if (alive) setTrucks(d.units || []); }).catch(() => {});
+    fetch("/api/ronyx/dispatch/hos").then(r => r.json()).then(d => { if (alive) { setHosMap(d.hos || {}); if (d.limits) setHosLimits(d.limits); } }).catch(() => {});
     return () => { alive = false; };
   }, [loadId]);
 
@@ -116,10 +135,11 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
 
   const dc = clearDriver(driver);
   const tc = clearTruck(truck);
+  const hc = clearHos(driver, hosMap, hosLimits);
   // Load-level requirements (independent of who is assigned)
   const loadReady = !!(load && (load.pickup_location || load.origin));
-  const blocked = bothChosen && (!dc.ok || !tc.ok);
-  const clearedToDispatch = bothChosen && dc.ok && tc.ok;
+  const blocked = bothChosen && (!dc.ok || !tc.ok || !hc.ok);
+  const clearedToDispatch = bothChosen && dc.ok && tc.ok && hc.ok;
 
   const recDrivers = useMemo(
     () => drivers.filter(d => clearDriver(d).ok).slice(0, 4),
@@ -131,6 +151,21 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
   );
 
   function log(text: string) { setActivity(a => [{ when: new Date().toLocaleTimeString(), text }, ...a]); }
+
+  function openHosForm() {
+    const e = driver ? hosMap[String(driver.id)] : null;
+    setHosForm({ open: true, drive: e?.driveUsed != null ? String(e.driveUsed) : "", duty: e?.dutyUsed != null ? String(e.dutyUsed) : "", cycle: e?.cycleUsed != null ? String(e.cycleUsed) : "" });
+  }
+  async function saveHos() {
+    if (!driver) return;
+    const res = await fetch("/api/ronyx/dispatch/hos", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driverId: driver.id, driveUsed: hosForm.drive || 0, dutyUsed: hosForm.duty || 0, cycleUsed: hosForm.cycle || 0 }),
+    }).then(r => r.json()).catch(() => null);
+    if (res?.hos) { setHosMap(res.hos); if (res.limits) setHosLimits(res.limits); }
+    setHosForm(f => ({ ...f, open: false }));
+    log(`Logged HOS for ${driver.name}`);
+  }
 
   async function persist(fields: Record<string, any>) {
     setSaving(true);
@@ -193,7 +228,7 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
       <DispatchGuard
         phase={phase} loadReady={loadReady} bothChosen={bothChosen}
         blocked={blocked} cleared={clearedToDispatch}
-        reasons={[dc, tc].filter(i => i.blocking && !i.ok).map(i => i.detail)}
+        reasons={[dc, tc, hc].filter(i => i.blocking && !i.ok).map(i => i.detail)}
       />
 
       {/* Tabs */}
@@ -246,6 +281,30 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
             </div>
           )}
 
+          {/* HOS log — real remaining clocks for the chosen driver */}
+          {driver && (
+            <div style={{ marginTop: 14, padding: 14, background: hc.ok ? "#f0fdf4" : "#fffbeb", border: "1px solid #e2e8f0", borderRadius: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
+                  HOS — {driver.name}{" "}
+                  {hosMap[String(driver.id)]?.updatedAt
+                    ? <span style={{ fontWeight: 500, color: "#94a3b8", fontSize: 11 }}>logged {new Date(hosMap[String(driver.id)].updatedAt).toLocaleString()}</span>
+                    : <span style={{ color: "#b45309", fontSize: 11, fontWeight: 600 }}>not logged yet</span>}
+                </div>
+                <button onClick={openHosForm} style={chip}>Log hours</button>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: hc.ok ? "#16a34a" : "#b45309", marginTop: 6 }}>{hc.detail}</div>
+              {hosForm.open && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr) auto", gap: 8, marginTop: 12, alignItems: "end" }}>
+                  <HoursField label={`Drive used (of ${hosLimits.drive})`} v={hosForm.drive} set={x => setHosForm(f => ({ ...f, drive: x }))} max={hosLimits.drive} />
+                  <HoursField label={`On-duty used (of ${hosLimits.duty})`} v={hosForm.duty} set={x => setHosForm(f => ({ ...f, duty: x }))} max={hosLimits.duty} />
+                  <HoursField label={`Cycle used (of ${hosLimits.cycle})`} v={hosForm.cycle} set={x => setHosForm(f => ({ ...f, cycle: x }))} max={hosLimits.cycle} />
+                  <button onClick={saveHos} style={primaryBtn}>Save</button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Two columns: Load Details | Compliance & HOS */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 22 }}>
             <div>
@@ -262,8 +321,8 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
               <SectionTitle>Compliance &amp; HOS</SectionTitle>
               <ClearRow item={dc} />
               <ClearRow item={tc} />
+              <ClearRow item={hc} />
               <Row k="Load Requirements" v={loadReady ? "Ready" : "Missing pickup info"} ok={loadReady} />
-              <Row k="HOS" v={bothChosen ? "Confirm hours via ELD" : "Will check when driver is selected"} muted={!bothChosen} />
               <Row k="Customer Rules" v="Clear" ok />
               <Row k="Documents" v="Clear" ok />
             </div>
@@ -296,8 +355,9 @@ export default function LoadDetail({ loadId }: { loadId: string }) {
           <p style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>CCB / Dispatch Guard runs the final clearance the moment a driver and truck are selected.</p>
           <ClearRow item={dc} />
           <ClearRow item={tc} />
+          <ClearRow item={hc} />
           <Row k="Load Requirements" v={loadReady ? "Ready" : "Missing pickup info"} ok={loadReady} />
-          <Row k="HOS" v={bothChosen ? "Confirm hours via ELD (not tracked in system)" : "Pending driver selection"} muted={!bothChosen} />
+          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>HOS clocks are the FMCSA property-carrying limits (11h drive / 14h shift / 70h cycle) computed from logged hours. Connect a Samsara/Motive ELD later to pull these live.</div>
         </div>
       )}
 
@@ -447,8 +507,16 @@ function Row({ k, v, ok, muted }: { k: string; v: React.ReactNode; ok?: boolean;
   );
 }
 function ClearRow({ item }: { item: ClearanceItem }) {
-  const awaiting = item.detail === "Awaiting Assignment";
-  return <Row k={item.label} v={item.detail} ok={awaiting ? undefined : item.ok} muted={awaiting} />;
+  const neutral = !item.blocking; // not-yet-applicable checks (awaiting selection) read gray, not red
+  return <Row k={item.label} v={item.detail} ok={neutral ? undefined : item.ok} muted={neutral} />;
+}
+function HoursField({ label, v, set, max }: { label: string; v: string; set: (x: string) => void; max: number }) {
+  return (
+    <div>
+      <label style={{ ...lbl, display: "block", fontSize: 11, marginBottom: 3 }}>{label}</label>
+      <input type="number" min={0} max={max} step={0.5} value={v} onChange={e => set(e.target.value)} placeholder="0" style={{ ...input, width: "100%" }} />
+    </div>
+  );
 }
 function Check({ label, v, set }: { label: string; v: boolean; set: (b: boolean) => void }) {
   return (
