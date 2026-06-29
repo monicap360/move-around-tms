@@ -2071,7 +2071,7 @@ export default function OwnerOperatorsPage() {
                           ) : (
                             <label style={{ background:"#dc2626", color:"#fff", padding:"3px 10px", borderRadius:8, fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>
                               Upload
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={e=>{ const f=e.target.files?.[0]; if(f){ const insLabel=label+" Insurance"; const exp=prompt(`${insLabel} expiration (YYYY-MM-DD):`)||undefined; const doc2:OODoc={type:insLabel,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; updateSelected({...selected,documents:[doc2,...selected.documents.filter(x=>x.type!==insLabel)]}); flash(`${insLabel} uploaded.`); } e.target.value=""; }} />
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ await handleDocUpload(label+" Insurance", f); } e.target.value=""; }} />
                             </label>
                           )}
                         </div>
@@ -2643,7 +2643,7 @@ export default function OwnerOperatorsPage() {
                           <div style={{ display:"flex", gap:6 }}>
                             {cdlDoc && <label style={{ background:"#f1f5f9", color:"#475569", padding:"3px 8px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", border:"1px solid #e2e8f0" }}>
                               Replace CDL
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const state=prompt(`CDL State for ${d.name} (e.g. TX):`,d.cdl_state||"TX")||""; const exp=prompt(`New CDL expiration (YYYY-MM-DD):`,d.cdl_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:cdlKey,file_name:f.name,expires_on:exp||null}); await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{cdl_state:state.toUpperCase()||d.cdl_state,cdl_expiration:exp||d.cdl_expiration}); const doc:OODoc={type:cdlKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,cdl_state:state.toUpperCase()||dr.cdl_state,cdl_expiration:exp||dr.cdl_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==cdlKey)],drivers:updatedDrivers}); flash(`CDL replaced for ${d.name}.`); } e.target.value=""; }} />
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ await handleDocUpload(cdlKey, f); } e.target.value=""; }} />
                             </label>}
                             <button
                               onClick={() => setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration }, saving: false })}
@@ -3179,15 +3179,11 @@ export default function OwnerOperatorsPage() {
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
               {selected.drivers.map(d => {
-                async function driverDocUpload(docLabel: string, f: File, hasExp: boolean) {
+                async function driverDocUpload(docLabel: string, f: File, _hasExp: boolean) {
                   if (!selected) return;
-                  const sel = selected;
-                  const key = `[${d.name}] ${docLabel}`;
-                  const exp = hasExp ? (prompt(`${docLabel} expiration date for ${d.name} (YYYY-MM-DD):`) || undefined) : undefined;
-                  await apiPost(`/api/ronyx/owner-operators/${sel.id}/documents`,{doc_type:key,file_name:f.name,expires_on:exp||null});
-                  const doc: OODoc = { type:key, uploaded_at:new Date().toISOString(), file_name:f.name, expires_on:exp };
-                  updateLocalState({...sel, documents:[doc,...sel.documents.filter(x=>x.type!==key)]});
-                  flash(`${docLabel} uploaded for ${d.name}.`);
+                  // handleDocUpload stores the actual file in Supabase Storage first, then
+                  // records it — no prompt() (which throws in production and lost the file).
+                  await handleDocUpload(`[${d.name}] ${docLabel}`, f);
                 }
                 return (
                   <div key={d.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"14px 18px" }}>
