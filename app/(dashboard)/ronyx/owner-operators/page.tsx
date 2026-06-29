@@ -3972,6 +3972,10 @@ export default function OwnerOperatorsPage() {
               legacyTypes:["ronyx_contractor_auto_liability_coi","ronyx_contractor_general_liability_coi","ronyx_contractor_cargo_coi","auto_liability_coi"] },
             { key:"named_coi_bas_equipment",  label:"BAS Equipment",    icon:"🚜", color:"#0891b2", bg:"#f0f9ff",
               legacyTypes:["bass_equipment_auto_liability_coi","bass_equipment_general_liability_coi","bass_equipment_cargo_coi"] },
+            { key:"named_coi_tc_redwine",     label:"TC Redwine",       icon:"🛠️", color:"#7c3aed", bg:"#f5f3ff",
+              legacyTypes:["tc_redwine_auto_liability_coi","tc_redwine_general_liability_coi","tc_redwine_cargo_coi"] },
+            { key:"named_coi_pineda_commodity", label:"Pineda Commodity", icon:"🌾", color:"#b45309", bg:"#fffbeb",
+              legacyTypes:["pineda_commodity_auto_liability_coi","pineda_commodity_general_liability_coi","pineda_commodity_cargo_coi"] },
           ] as const).map(slot => {
             const doc = coiDocs.find(d => d.document_type === slot.key)
               || coiDocs.find(d => (slot.legacyTypes as readonly string[]).includes(d.document_type));
