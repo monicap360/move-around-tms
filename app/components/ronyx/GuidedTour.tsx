@@ -51,6 +51,7 @@ export default function GuidedTour({
   const last = idx === steps.length - 1;
 
   const finish = () => { try { localStorage.setItem(`tour_done_${tourId}`, "1"); } catch { /* ignore */ } setIdx(0); onClose(); };
+  const close = () => { setIdx(0); onClose(); }; // dismiss without marking done — stays available, reopen from the ? button
   const next = () => (last ? finish() : setIdx((i) => i + 1));
   const back = () => setIdx((i) => Math.max(0, i - 1));
 
@@ -87,7 +88,9 @@ export default function GuidedTour({
 
       {/* tooltip */}
       <div style={tt}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: "#4f46e5", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+        <button onClick={close} aria-label="Close tour" title="Close — reopen anytime from the ? button in the top bar"
+          style={{ position: "absolute", top: 8, right: 10, width: 26, height: 26, borderRadius: 7, background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#64748b", fontSize: 16, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "#4f46e5", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6, paddingRight: 26 }}>
           Step {idx + 1} of {steps.length}
         </div>
         <div style={{ fontWeight: 800, fontSize: "1.02rem", color: "#0f172a", marginBottom: 6 }}>{step.title}</div>
