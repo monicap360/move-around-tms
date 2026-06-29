@@ -24,6 +24,23 @@ export async function pdfPageCount(file: File): Promise<number> {
   }
 }
 
+// Load pdf.js from a CDN at runtime so it stays OUT of the build graph. The npm
+// package pulls an optional native "canvas" dependency that can break `next build`;
+// the webpack/turbopack ignore comments keep both bundlers from touching this import.
+let pdfjsPromise: Promise<any> | null = null;
+function loadPdfjs(): Promise<any> {
+  if (!pdfjsPromise) {
+    // @ts-ignore — runtime CDN ESM import, intentionally external (not resolved/bundled)
+    pdfjsPromise = import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "https://unpkg.com/pdfjs-dist@4.7.76/build/pdf.min.mjs")
+      .then((mod: any) => {
+        const pdfjs = mod.default ?? mod;
+        pdfjs.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
+        return pdfjs;
+      });
+  }
+  return pdfjsPromise;
+}
+
 const COLORS = ["#4f46e5", "#0891b2", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0d9488", "#db2777", "#2563eb", "#65a30d"];
 
 type Piece = { id: string; type: string; pages: number[] };
@@ -68,8 +85,7 @@ export default function PdfSplitModal({
 
       // thumbnails
       try {
-        const pdfjs: any = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+        const pdfjs: any = await loadPdfjs();
         const pdf = await pdfjs.getDocument({ data: buf.slice(0) }).promise;
         if (cancelled) return;
         if (!count) setNumPages(pdf.numPages);
