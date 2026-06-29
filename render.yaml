@@ -34,7 +34,7 @@ services:
   - type: cron
     name: ronyx-daily-backup
     runtime: node
-    schedule: "0 8 * * *"   # 08:00 UTC daily (~3 AM ET / 2 AM CT)
+    schedule: "0 23 * * *"  # 23:00 UTC daily = end of business day (~6 PM CT / 7 PM ET)
     buildCommand: "echo 'no build needed — cron only calls the app endpoint'"
     startCommand: >-
       node -e "fetch(process.env.BACKUP_ENDPOINT,{method:'POST',headers:{authorization:'Bearer '+process.env.CRON_SECRET}}).then(async r=>{const t=await r.text();console.log('backup',r.status,t);if(!r.ok)process.exit(1)}).catch(e=>{console.error(e);process.exit(1)})"

@@ -20,6 +20,9 @@ const TABLES: { sheet: string; table: string }[] = [
   { sheet: "Uploaded Files", table: "original_uploads" },
   { sheet: "Import Batches", table: "driver_import_batches" },
   { sheet: "Dispatch Imports", table: "dispatch_imports" },
+  { sheet: "Customer Requirements", table: "customer_dispatch_requirements" },
+  { sheet: "Scale Tickets", table: "scale_tickets" },
+  { sheet: "Settings", table: "ronyx_admin_settings" },
 ];
 
 async function ensureBucket(sb: any) {
