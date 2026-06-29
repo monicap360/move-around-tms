@@ -10,7 +10,7 @@ import { safePrompt } from "@/lib/safePrompt";
 export type ActiveStaff = { id: string; name: string; role: string };
 type StaffLite = { id: string; name: string; role: string; has_pin: boolean };
 
-export default function PinGate({ onUnlock, onSkip }: { onUnlock: (s: ActiveStaff) => void; onSkip: () => void }) {
+export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: { onUnlock: (s: ActiveStaff) => void; onSkip: () => void; showSignupLinks?: boolean }) {
   const [staff, setStaff] = useState<StaffLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"pick" | "pin" | "manage">("pick");
@@ -89,6 +89,15 @@ export default function PinGate({ onUnlock, onSkip }: { onUnlock: (s: ActiveStaf
                 </div>
                 <div style={{ textAlign: "center" }}><button onClick={() => setView("manage")} style={btnGhost}>⚙ Manage staff</button></div>
               </>
+            )}
+            {showSignupLinks && (
+              <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #e2e8f0", textAlign: "center" }}>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 9, fontWeight: 800 }}>New to Ronyx? Sign up here</div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                  <a href="/owner-operator-signup" style={signupBtn("#1d4ed8")}>🚛 Owner-Operator Sign-Up</a>
+                  <a href="/driver-signup" style={signupBtn("#0e7490")}>🧑‍✈️ Driver Sign-Up</a>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -175,5 +184,6 @@ function ManagePanel({ staff, reload, onDone }: { staff: StaffLite[]; reload: ()
 const btnPrimary: React.CSSProperties = { padding: "11px 18px", background: "#4f46e5", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 14, cursor: "pointer" };
 const btnGhost: React.CSSProperties = { padding: "9px 14px", background: "none", color: "#4f46e5", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" };
 const keyBtn: React.CSSProperties = { padding: "16px 0", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 12, fontWeight: 800, fontSize: 20, color: "#0f172a", cursor: "pointer" };
+const signupBtn = (bg: string): React.CSSProperties => ({ display: "inline-block", padding: "9px 13px", background: bg, color: "#fff", borderRadius: 9, fontWeight: 800, fontSize: 12.5, textDecoration: "none", whiteSpace: "nowrap" });
 const miniBtn: React.CSSProperties = { padding: "4px 9px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#475569", cursor: "pointer" };
 const inp: React.CSSProperties = { padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13, boxSizing: "border-box", width: "100%" };

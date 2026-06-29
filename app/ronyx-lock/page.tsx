@@ -24,5 +24,5 @@ export default function RonyxLockPage() {
   }
 
   // On a locked (gated) site there is no "skip" — staff must enter a PIN.
-  return <PinGate onUnlock={onUnlock} onSkip={() => { /* no bypass when the site is locked */ }} />;
+  return <PinGate onUnlock={onUnlock} onSkip={() => { /* no bypass when the site is locked */ }} showSignupLinks />;
 }
