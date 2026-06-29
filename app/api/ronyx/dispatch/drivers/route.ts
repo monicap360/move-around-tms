@@ -11,7 +11,9 @@ export async function GET() {
   const [{ data: driverRows }, { data: activeJobs }] = await Promise.all([
     supabase
       .from("drivers")
-      .select("id, name, status, driver_profiles(full_name, phone, email, medical_card_expiration, license_expiration_date, mvr_expiration, dispatch_eligible, assigned_truck_number, payroll_eligible)")
+      // assigned_truck_number lives on `drivers`, NOT driver_profiles — selecting it
+      // inside the embed made the whole query fail (→ 0 drivers). Pull it from the row.
+      .select("id, name, status, assigned_truck_number, driver_profiles(full_name, phone, email, medical_card_expiration, license_expiration_date, mvr_expiration, dispatch_eligible, payroll_eligible)")
       .neq("status", "inactive")
       .neq("status", "terminated")
       .order("name"),
@@ -70,7 +72,7 @@ export async function GET() {
       compliance,
       dispatch_eligible: p?.dispatch_eligible ?? true,
       block_reasons:   blockReasons,
-      vehicle:         p?.assigned_truck_number || null,
+      vehicle:         d.assigned_truck_number || null,
       payroll_eligible: p?.payroll_eligible ?? true,
       medical_card_expiration: p?.medical_card_expiration || null,
       license_expiration_date: p?.license_expiration_date || null,
