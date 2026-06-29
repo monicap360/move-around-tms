@@ -2578,6 +2578,8 @@ export default function OwnerOperatorsPage() {
                     const medD   = daysUntil(d.med_card_expiration);
                     const cdlKey = `[${d.name}] CDL License`;
                     const cdlDoc = selected.documents.find(doc => doc.type === cdlKey);
+                    const medKey = `[${d.name}] Medical Card`;
+                    const medDoc = selected.documents.find(doc => doc.type === medKey);
                     return (
                       <tr key={d.id} style={{ borderBottom:"1px solid #f1f5f9" }}>
                         <td style={{ padding:"10px 14px", fontWeight:700, color:"#0f172a" }}>{d.name}</td>
@@ -2599,7 +2601,19 @@ export default function OwnerOperatorsPage() {
                             </label>
                           )}
                         </td>
-                        <td style={{ padding:"10px 14px" }}><span style={{ background:expBg(medD), color:expColor(medD), padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{expLabel(medD,d.med_card_expiration)}</span></td>
+                        <td style={{ padding:"10px 14px" }}>
+                          <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"flex-start" }}>
+                            <span style={{ background:expBg(medD), color:expColor(medD), padding:"3px 8px", borderRadius:6, fontWeight:700, fontSize:"0.75rem" }}>{expLabel(medD,d.med_card_expiration)}</span>
+                            {medDoc ? (
+                              <span style={{ color:"#15803d", fontSize:"0.68rem", fontWeight:700 }}>✓ Card on file</span>
+                            ) : (
+                              <label style={{ background:"#0891b2", color:"#fff", padding:"3px 9px", borderRadius:6, fontSize:"0.68rem", fontWeight:700, cursor:"pointer", display:"inline-block" }}>
+                                📋 Upload Medical
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display:"none" }} onChange={async e=>{ const f=e.target.files?.[0]; if(f){ const exp=prompt(`Medical card expiration (YYYY-MM-DD) — leave blank if not applicable:`,d.med_card_expiration||"")||undefined; await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`,{doc_type:medKey,file_name:f.name,expires_on:exp||null}); if(exp) await apiPut(`/api/ronyx/owner-operators/${selected.id}/drivers/${d.id}`,{med_card_expiration:exp}); const doc:OODoc={type:medKey,uploaded_at:new Date().toISOString(),file_name:f.name,expires_on:exp}; const updatedDrivers=selected.drivers.map(dr=>dr.id===d.id?{...dr,med_card_expiration:exp||dr.med_card_expiration}:dr); updateLocalState({...selected,documents:[doc,...selected.documents.filter(x=>x.type!==medKey)],drivers:updatedDrivers}); flash(`Medical card uploaded for ${d.name}.`); } e.target.value=""; }} />
+                              </label>
+                            )}
+                          </div>
+                        </td>
                         <td style={{ padding:"10px 14px", color:"#475569" }}>{d.phone||"—"}</td>
                         <td style={{ padding:"10px 14px" }}>
                           {selected.trucks.length === 0 ? (
