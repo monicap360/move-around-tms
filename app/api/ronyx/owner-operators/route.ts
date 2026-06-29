@@ -92,6 +92,9 @@ async function buildResponse(oos: any[]) {
 
   const companies = oos.map((oo) => ({
     ...oo,
+    // The profile reads `start_date`, but the real column is `date_of_hire` — map it
+    // back so the saved start date actually displays (for every OO, not just some).
+    start_date: (oo as any).date_of_hire || (oo as any).start_date || null,
     drivers:   drivers.filter((d: any) => d.oo_id === oo.id),
     trucks:    trucks.filter((t: any) => t.oo_id === oo.id).map((t: any) => ({
       ...t,
