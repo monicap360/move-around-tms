@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import PageProtection from "@/app/components/security/PageProtection";
 import IntelImportCenter from "@/app/components/ronyx/IntelImportCenter";
 import GuidedTour, { tourDone, type TourStep } from "@/app/components/ronyx/GuidedTour";
+import PinGate, { type ActiveStaff } from "@/app/components/ronyx/PinGate";
 
 // ── Guided tour steps (highlights the main modules in the sidebar) ──────────────
 const RONYX_TOUR: TourStep[] = [
@@ -160,6 +161,22 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
   const [expanded,     setExpanded]     = useState<Set<string>>(new Set());
   const [searchOpen,   setSearchOpen]   = useState(false);
   const [tourOpen,     setTourOpen]     = useState(false);
+
+  // ── Per-staff PIN switcher (org runs on a trusted device; staff identify with a PIN) ──
+  const [activeStaff, setActiveStaff] = useState<ActiveStaff | null>(null);
+  const [pinReady,    setPinReady]    = useState(false);
+  const [pinSkipped,  setPinSkipped]  = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ronyx_active_staff");
+      if (raw) setActiveStaff(JSON.parse(raw));
+      if (localStorage.getItem("ronyx_pin_skipped") === "1") setPinSkipped(true);
+    } catch { /* ignore */ }
+    setPinReady(true);
+  }, []);
+  function unlockStaff(s: ActiveStaff) { setActiveStaff(s); setPinSkipped(false); try { localStorage.setItem("ronyx_active_staff", JSON.stringify(s)); localStorage.removeItem("ronyx_pin_skipped"); } catch {} }
+  function lockStaff() { setActiveStaff(null); setPinSkipped(false); try { localStorage.removeItem("ronyx_active_staff"); localStorage.removeItem("ronyx_pin_skipped"); } catch {} }
+  function skipPin() { setPinSkipped(true); try { localStorage.setItem("ronyx_pin_skipped", "1"); } catch {} }
 
   // Auto-start the guided tour once for new users (desktop only — needs the sidebar).
   useEffect(() => {
@@ -740,10 +757,20 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
             <button className="tms-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search (⌘K)">🔍</button>
             <button className="tms-icon-btn" aria-label="Notifications">🔔<span className="tms-notif-badge" /></button>
             <button className="tms-icon-btn" aria-label="Take a guided tour" title="Take a guided tour" onClick={() => setTourOpen(true)}>?</button>
-            <button className="tms-user-chip">
-              <div className="tms-user-avatar">{displayName.charAt(0).toUpperCase()}</div>
-              {displayName}
-            </button>
+            {activeStaff ? (
+              <>
+                <button className="tms-user-chip" title={activeStaff.role}>
+                  <div className="tms-user-avatar">{activeStaff.name.charAt(0).toUpperCase()}</div>
+                  {activeStaff.name}
+                </button>
+                <button className="tms-icon-btn" aria-label="Lock / switch staff" title="Lock / switch staff" onClick={lockStaff}>🔒</button>
+              </>
+            ) : (
+              <button className="tms-user-chip">
+                <div className="tms-user-avatar">{displayName.charAt(0).toUpperCase()}</div>
+                {displayName}
+              </button>
+            )}
           </div>
         </header>
 
@@ -767,6 +794,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       </div>
 
       <GuidedTour steps={RONYX_TOUR} open={tourOpen} onClose={() => setTourOpen(false)} tourId="ronyx_v1" />
+
+      {pinReady && !activeStaff && !pinSkipped && <PinGate onUnlock={unlockStaff} onSkip={skipPin} />}
 
       {/* Intel Import Center™ FAB */}
       {!fabHidden && (
