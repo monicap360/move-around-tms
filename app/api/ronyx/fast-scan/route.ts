@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 
 export const dynamic = "force-dynamic";
 
@@ -97,14 +98,18 @@ const SCAN_RULES: Record<string, ScanRule> = {
   },
 };
 
-// ── GET: list fast scan uploads ────────────────────────────────────────────────
+// ── GET: list scanned ticket documents ─────────────────────────────────────────
+// Reads fast_scan_documents — the table the upload/process/[id] routes actually write.
+// (The page expects this shape: original_filename, scan_status, driver_name, etc.)
 export async function GET(req: Request) {
   const supabase = supabaseAdmin;
+  const orgId = await resolveOrgId();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
 
-  let query = supabase.from("fast_scan_uploads").select("*").order("created_at", { ascending: false }).limit(100);
-  if (status) query = query.eq("upload_status", status);
+  let query = supabase.from("fast_scan_documents").select("*").order("created_at", { ascending: false }).limit(200);
+  if (orgId) query = query.or(`organization_id.eq.${orgId},organization_id.is.null`);
+  if (status) query = query.eq("scan_status", status);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
