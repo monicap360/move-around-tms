@@ -35,14 +35,33 @@ const SEVERITY_STYLE: Record<string, { color: string; bg: string; label: string 
 export default function DispatchGuardPage() {
   const [rows, setRows]       = useState<DispatchRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState("");
   const [filter, setFilter]   = useState("all");
   const [search, setSearch]   = useState("");
 
   useEffect(() => {
-    fetch("/api/ronyx/dispatch-import/match")
+    // Source the live dispatched jobs (this page previously GET'd a POST-only endpoint and
+    // always showed nothing). Map dispatch_jobs fields onto the row shape this page renders.
+    fetch("/api/ronyx/dispatch/jobs")
       .then(r => r.json())
-      .then(d => { setRows(d.rows ?? d.matches ?? d.data ?? []); })
-      .catch(() => {})
+      .then(d => {
+        if (d.error) { setLoadErr(d.error); setRows([]); return; }
+        const mapped: DispatchRow[] = (d.jobs || []).map((j: any) => ({
+          id:                  j.id,
+          driver_name:         j.driver_name || j.assigned_driver_name || "",
+          truck_number:        j.truck_number || "",
+          job_name:            j.friendly_job_id || "",
+          customer_name:       j.customer_name || "",
+          dispatch_date:       j.pickup_time || j.start_time || j.created_at || "",
+          rmis_classification: j.compliance_status || j.rmis_status || "",
+          rmis_severity:       j.compliance_severity || "clear",
+          match_status:        (j.assigned_driver_id || j.matched_driver_id) ? "matched" : "unmatched",
+          payroll_status:      j.payroll_status === "hold" ? "held" : (j.payroll_status || ""),
+          notes:               j.rmis_note || j.compliance_issue || "",
+        }));
+        setRows(mapped);
+      })
+      .catch(() => setLoadErr("Couldn't load dispatch jobs — check your connection and retry."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -98,6 +117,12 @@ export default function DispatchGuardPage() {
       </div>
 
       <div style={{ padding: "24px 32px" }}>
+
+        {loadErr && (
+          <div style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontWeight: 700, fontSize: 13 }}>
+            ⚠ {loadErr}
+          </div>
+        )}
 
         {/* KPI Strip */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 24 }}>
