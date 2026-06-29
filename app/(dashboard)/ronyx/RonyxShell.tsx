@@ -123,6 +123,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Audit Log",             href: "/ronyx/settings/audit-log",      icon: "📜" },
       ]},
       { label: "Implementation",   href: "/ronyx/implementation",          icon: "🚀", color: "#1d4ed8" },
+      { label: "Data Health",      href: "/ronyx/data-health",             icon: "🩺", color: "#0891b2" },
       { label: "Training Center",  href: "/ronyx/training",                icon: "🎓", color: "#4f46e5" },
       { label: "Command Briefing", href: "/ronyx/admin/command-briefing",  icon: "☀️", color: "#dc2626" },
     ],
