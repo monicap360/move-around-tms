@@ -943,7 +943,7 @@ function AlertStrip({ alerts: allAlerts }: { alerts: DispatchAlert[] }) {
 
 // ─── Job Card ─────────────────────────────────────────────────────────────────
 
-function JobCard({ job, onAdvance, onAssign, onNote, onViewDetails, onIssue, onScanTicket }: {
+function JobCard({ job, onAdvance, onAssign, onNote, onViewDetails, onIssue, onScanTicket, onCancel }: {
   job:           DispatchJob;
   onAdvance:     (job: DispatchJob) => void;
   onAssign:      (job: DispatchJob) => void;
@@ -951,6 +951,7 @@ function JobCard({ job, onAdvance, onAssign, onNote, onViewDetails, onIssue, onS
   onViewDetails: (job: DispatchJob) => void;
   onIssue:       (job: DispatchJob) => void;
   onScanTicket:  (job: DispatchJob) => void;
+  onCancel:      (job: DispatchJob) => void;
 }) {
   const readiness = computeReadiness(job);
   const rc        = READINESS_CFG[readiness.status];
@@ -1090,6 +1091,9 @@ function JobCard({ job, onAdvance, onAssign, onNote, onViewDetails, onIssue, onS
         <button type="button" onClick={() => onNote(job)} className="db-card-btn2">Note</button>
         <button type="button" onClick={() => onScanTicket(job)} className="db-card-btn2">Scan Ticket</button>
         <button type="button" onClick={() => onIssue(job)} className="db-card-btn2 db-btn2-issue">Issue</button>
+        {!["completed","billing_review","cancelled"].includes(job.job_status) && (
+          <button type="button" onClick={() => onCancel(job)} className="db-card-btn2" style={{ color:"#dc2626" }}>Cancel Job</button>
+        )}
       </div>
     </div>
   );
@@ -1670,6 +1674,25 @@ export default function RonyxDispatchCommandCenter() {
     }
   }
 
+  // Soft-cancel a job (server sets job_status='cancelled' — recoverable, not deleted).
+  async function cancelJob(job: DispatchJob) {
+    const prevJobs = jobs;
+    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, job_status: "cancelled" } : j));
+    try {
+      const res = await fetch(`/api/ronyx/dispatch/jobs/${job.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setJobs(prevJobs);
+        showToast(d.error ? `Couldn't cancel: ${d.error}` : "Cancel failed — reverted.");
+        return;
+      }
+      showToast(`Job #${job.job_number} cancelled — restore anytime by changing its status.`);
+    } catch {
+      setJobs(prevJobs);
+      showToast("Network error — cancel reverted.");
+    }
+  }
+
   async function advanceJob(job: DispatchJob) {
     const next = NEXT_STATUS[job.job_status];
     if (!next) return;
@@ -1844,6 +1867,7 @@ export default function RonyxDispatchCommandCenter() {
                             onViewDetails={setDetailTarget}
                             onIssue={setIssueTarget}
                             onScanTicket={() => window.location.href = "/ronyx/tickets?tab=fastscan"}
+                            onCancel={cancelJob}
                           />
                         </div>
                       ))}
