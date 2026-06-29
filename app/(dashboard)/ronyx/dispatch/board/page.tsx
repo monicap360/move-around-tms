@@ -335,6 +335,33 @@ const GUARD_CFG: Record<GuardStatus, { bg: string; text: string; border: string;
 function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: () => void }) {
   const [overrides, setOverrides] = useState<Record<string, "requested" | "approved">>({});
 
+  // Restore previously-approved overrides so an approval survives refresh (was local-only).
+  useEffect(() => {
+    fetch("/api/ronyx/dispatch/overrides")
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, "approved"> = {};
+        for (const o of (d.overrides || [])) if (o.approved && o.job_id) map[o.job_id] = "approved";
+        setOverrides(prev => ({ ...map, ...prev }));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Persist the approval (audit trail) attributed to the signed-in staff, then mark approved.
+  async function approveOverride(r: GuardJobResult) {
+    const fails = r.checks.filter(c => c.status === "fail").map(c => c.label).join("; ") || "Compliance block";
+    let manager = "Manager";
+    try { const s = JSON.parse(localStorage.getItem("ronyx_active_staff") || "{}"); manager = s.name || s.full_name || "Manager"; } catch {}
+    setOverrides(p => ({ ...p, [r.job.id]: "approved" }));
+    try {
+      const res = await fetch("/api/ronyx/dispatch/overrides", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_id: r.job.id, rule_overridden: fails, reason: "Approved on dispatch board", manager_name: manager, approved: true }),
+      });
+      if (!res.ok) setOverrides(p => { const n = { ...p }; delete n[r.job.id]; return n; }); // revert if it didn't save
+    } catch { setOverrides(p => { const n = { ...p }; delete n[r.job.id]; return n; }); }
+  }
+
   const activeJobs = jobs.filter(j => !["completed","ready_for_billing"].includes(j.job_status));
   const results: GuardJobResult[] = activeJobs.map(j => {
     const r = runGuardChecks(j);
@@ -406,7 +433,7 @@ function DispatchGuardPanel({ jobs, onClose }: { jobs: DispatchJob[]; onClose: (
                   )}
                   {r.status === "OVERRIDE_REQUESTED" && (
                     <button type="button"
-                      onClick={() => setOverrides(p => ({ ...p, [r.job.id]: "approved" }))}
+                      onClick={() => approveOverride(r)}
                       style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, background: "#16a34a", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}
                     >Approve Override</button>
                   )}
