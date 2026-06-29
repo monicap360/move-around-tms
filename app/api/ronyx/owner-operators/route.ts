@@ -226,6 +226,7 @@ export async function POST(req: Request) {
         mc_number:             body.mc_number             || null,
         dot_number:            body.dot_number            || null,
         ein:                   body.ein                   || null,
+        date_of_hire:          body.start_date            || null, // form's "start date" → real column
         insurance_agent_name:  body.insurance_agent_name  || null,
         insurance_agent_email: body.insurance_agent_email || null,
         insurance_agent_phone: body.insurance_agent_phone || null,
