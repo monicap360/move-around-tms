@@ -1645,18 +1645,29 @@ export default function RonyxDispatchCommandCenter() {
       setJobs(jd.jobs || []);
       setDrivers(dd.drivers || []);
       setAlerts(ad.alerts || []);
-    } catch { /* keep stale */ }
+    } catch { showToast("Couldn't load the board — check your connection, then retry."); }
     finally { setLoading(false); }
   }, [dateFilter]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
   async function moveJob(jobId: string, newStatus: string) {
+    const prevJobs = jobs; // snapshot so we can revert if the save fails
     setJobs(prev => prev.map(j => j.id === jobId ? { ...j, job_status: newStatus } : j));
-    await fetch(`/api/ronyx/dispatch/jobs/${jobId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job_status: newStatus }),
-    });
+    try {
+      const res = await fetch(`/api/ronyx/dispatch/jobs/${jobId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_status: newStatus }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setJobs(prevJobs); // revert — the on-screen move did NOT save
+        showToast(d.error ? `Couldn't move job: ${d.error}` : "Couldn't save that move — reverted.");
+      }
+    } catch {
+      setJobs(prevJobs);
+      showToast("Network error — move reverted. Try again.");
+    }
   }
 
   async function advanceJob(job: DispatchJob) {

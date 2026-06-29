@@ -489,36 +489,39 @@ function TicketDetailDrawer({ ticket, onClose, onStatusChange }: {
   const prs = PAYROLL_STATUS_STYLE[ticket.payroll_status];
   const [newNote, setNewNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [payErr, setPayErr] = useState("");
 
   async function addNote() {
     if (!newNote.trim()) return;
     setSavingNote(true);
-    await fetch(`/api/ronyx/ops-tickets/${ticket.id}/comments`, {
+    const res = await fetch(`/api/ronyx/ops-tickets/${ticket.id}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: newNote, author: "dispatcher" }),
     });
     setSavingNote(false);
+    if (!res.ok) { setPayErr("Note didn't save — try again."); return; }
     setNewNote("");
   }
 
-  async function approvePayroll() {
-    await fetch(`/api/ronyx/ops-tickets/${ticket.id}`, {
+  // Only flip the UI to the new payroll state if the save actually succeeded — otherwise
+  // staff would believe payroll was approved/released when it wasn't.
+  async function setPayrollStatus(status: string) {
+    setPayErr("");
+    const res = await fetch(`/api/ronyx/ops-tickets/${ticket.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ payroll_status: "approved" }),
+      body: JSON.stringify({ payroll_status: status }),
     });
-    onStatusChange({ ...ticket, payroll_status: "approved" }, ticket.status);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPayErr(d.error ? `Didn't save: ${d.error}` : "Payroll change didn't save — try again.");
+      return;
+    }
+    onStatusChange({ ...ticket, payroll_status: status as Ticket["payroll_status"] }, ticket.status);
   }
-
-  async function releasePayrollHold() {
-    await fetch(`/api/ronyx/ops-tickets/${ticket.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ payroll_status: "ready" }),
-    });
-    onStatusChange({ ...ticket, payroll_status: "ready" }, ticket.status);
-  }
+  const approvePayroll     = () => setPayrollStatus("approved");
+  const releasePayrollHold = () => setPayrollStatus("ready");
 
   const next = NEXT_STATUS[ticket.status];
 
@@ -563,6 +566,7 @@ function TicketDetailDrawer({ ticket, onClose, onStatusChange }: {
                 🔒 <strong>Hold Reason:</strong> {ticket.payroll_hold_reason}
               </div>
             )}
+            {payErr && <div style={{ background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"7px 11px", fontSize:12, fontWeight:700, marginBottom:8 }}>⚠ {payErr}</div>}
             <div className="tkt-drawer-payroll-actions">
               {ticket.payroll_status === "hold" && (
                 <button type="button" onClick={releasePayrollHold} className="mnt-btn-ghost mnt-btn-sm">Release Hold</button>
@@ -809,14 +813,16 @@ export default function DispatchTicketsPage() {
                       <button type="button" onClick={() => setViewing(t)} className="mnt-table-btn">Review</button>
                       {t.payroll_status === "hold" && (
                         <button type="button" onClick={async () => {
-                          await fetch(`/api/ronyx/ops-tickets/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payroll_status: "ready" }) });
+                          const res = await fetch(`/api/ronyx/ops-tickets/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payroll_status: "ready" }) });
+                          if (!res.ok) { const d = await res.json().catch(() => ({})); showToast(d.error ? `Couldn't release: ${d.error}` : "Release failed — not saved."); return; }
                           setTickets(prev => prev.map(x => x.id === t.id ? { ...x, payroll_status: "ready" } : x));
                           showToast("Payroll hold released");
                         }} className="mnt-table-btn primary">Release Hold</button>
                       )}
                       {["pending_review","ready"].includes(t.payroll_status) && (
                         <button type="button" onClick={async () => {
-                          await fetch(`/api/ronyx/ops-tickets/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payroll_status: "approved" }) });
+                          const res = await fetch(`/api/ronyx/ops-tickets/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payroll_status: "approved" }) });
+                          if (!res.ok) { const d = await res.json().catch(() => ({})); showToast(d.error ? `Couldn't approve: ${d.error}` : "Approve failed — not saved."); return; }
                           setTickets(prev => prev.map(x => x.id === t.id ? { ...x, payroll_status: "approved" } : x));
                           showToast("Payroll approved");
                         }} className="mnt-table-btn primary">Approve Pay</button>
