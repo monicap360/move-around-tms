@@ -18,7 +18,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     "mc_number","dot_number","ein","insurance_agent_name","insurance_agent_email",
     "insurance_agent_phone","notes","last_contact_date","status","website",
     "reminder_log","compliance_history","changes_log",
-    "dispatch_blocked_override","settlement_hold_override",
+    "dispatch_blocked_override","settlement_hold_override","in_house_account_number",
   ];
   for (const f of fields) {
     if (f in body) updatePayload[f] = body[f] ?? null;

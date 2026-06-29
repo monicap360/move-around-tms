@@ -570,7 +570,7 @@ export default function OwnerOperatorsPage() {
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [moveModal, setMoveModal] = useState<{ ooId: string; ooName: string; targetId: string } | null>(null);
-  const [editProfile, setEditProfile] = useState<{ company_name: string; contact_name: string; contact_phone: string; contact_email: string; business_address: string; mc_number: string; dot_number: string; ein: string; start_date: string; active: boolean } | null>(null);
+  const [editProfile, setEditProfile] = useState<{ company_name: string; contact_name: string; contact_phone: string; contact_email: string; business_address: string; mc_number: string; dot_number: string; ein: string; start_date: string; in_house_account_number: string; active: boolean } | null>(null);
   const [pdfSplit, setPdfSplit] = useState<{ mode: "doc" | "card"; file: File; defaultType: string; ooId?: string; ooName?: string; moduleName?: string } | null>(null);
   const [reassignModal, setReassignModal] = useState<{ driverId: string; driverName: string; targetId: string } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
@@ -696,6 +696,7 @@ export default function OwnerOperatorsPage() {
       reminder_log: oo.reminder_log, compliance_history: oo.compliance_history, changes_log: oo.changes_log,
       start_date: oo.start_date || null, website: oo.website || null,
       dispatch_blocked_override: oo.dispatch_blocked_override ?? false, settlement_hold_override: oo.settlement_hold_override ?? false,
+      in_house_account_number: oo.in_house_account_number ?? null,
     });
     if (res?.error) flash(`Save error: ${res.error}`);
   }
@@ -1678,6 +1679,7 @@ export default function OwnerOperatorsPage() {
                   dot_number:       selected.dot_number || "",
                   ein:              selected.ein || "",
                   start_date:       selected.start_date || "",
+                  in_house_account_number: selected.in_house_account_number || "",
                   active:           ooIsActive(selected),
                 })}
                 title="Edit this owner-operator's profile"
@@ -1772,11 +1774,11 @@ export default function OwnerOperatorsPage() {
 
         {/* Info strip */}
         <div style={{ background: "#1e293b", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 24px", display: "flex", gap: 0, flexWrap: "wrap", alignItems: "center" }}>
-          {(["mc_number","dot_number","ein"] as const).map((field, i) => {
-            const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN" };
+          {(["mc_number","dot_number","ein","in_house_account_number"] as const).map((field, i) => {
+            const labels: Record<string,string> = { mc_number:"MC#", dot_number:"DOT#", ein:"EIN", in_house_account_number:"ACCT#" };
             const val = selected[field]?.trim();
             return (
-              <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4, paddingRight: 16, marginRight: 16, borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+              <span key={field} style={{ display:"inline-flex", alignItems:"center", gap:4, paddingRight: 16, marginRight: 16, borderRight: i < 3 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
                 <span style={{ color:"#cbd5e1", fontSize:"0.74rem", fontWeight:800, textTransform:"uppercase" }}>{labels[field]}</span>
                 <input
                   key={selected.id+field}
@@ -1787,7 +1789,7 @@ export default function OwnerOperatorsPage() {
                     if (v !== (selected[field]||"")) { updateSelected({ ...selected, [field]: v || "" }); flash(`${labels[field]} saved.`); }
                   }}
                   onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                  style={{ border:"none", borderBottom:`1px dashed ${val?"#334155":"#7f1d1d"}`, background:"transparent", fontSize:"0.82rem", color:val?"#e2e8f0":"#ef4444", fontWeight:600, width:field==="ein"?95:80, outline:"none", padding:"1px 2px" }}
+                  style={{ border:"none", borderBottom:`1px dashed ${val?"#334155":"#7f1d1d"}`, background:"transparent", fontSize:"0.82rem", color:val?"#e2e8f0":"#ef4444", fontWeight:600, width:field==="ein"||field==="in_house_account_number"?95:80, outline:"none", padding:"1px 2px" }}
                 />
               </span>
             );
@@ -4673,6 +4675,7 @@ export default function OwnerOperatorsPage() {
             dot_number:       editProfile.dot_number.trim() || "",
             ein:              editProfile.ein.trim() || "",
             start_date:       editProfile.start_date || undefined,
+            in_house_account_number: editProfile.in_house_account_number.trim() || undefined,
             status:           editProfile.active ? "active" : "inactive",
           };
           updateLocalState(merged);
@@ -4707,6 +4710,7 @@ export default function OwnerOperatorsPage() {
                 <div><label style={lbl}>MC #</label><input value={editProfile.mc_number} onChange={e => set({ mc_number: e.target.value })} style={inp} /></div>
                 <div><label style={lbl}>DOT #</label><input value={editProfile.dot_number} onChange={e => set({ dot_number: e.target.value })} style={inp} /></div>
                 <div><label style={lbl}>EIN</label><input value={editProfile.ein} onChange={e => set({ ein: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>In-House Account #</label><input value={editProfile.in_house_account_number} onChange={e => set({ in_house_account_number: e.target.value })} style={inp} placeholder="Ronyx internal #" /></div>
                 <div><label style={lbl}>Start Date</label><input type="date" value={editProfile.start_date} onChange={e => set({ start_date: e.target.value })} style={inp} /></div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={lbl}>Status</label>
