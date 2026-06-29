@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { resolveOrgId } from "@/lib/auth/resolveOrgId";
 import ExcelJS from "exceljs";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,8 @@ function findCol(headers: string[], aliases: string[]): number {
 
 export async function POST(req: NextRequest) {
   const sb = supabaseAdmin;
+  const orgId = await resolveOrgId();
+  if (!orgId) return NextResponse.json({ error: "Could not resolve your organization." }, { status: 400 });
 
   const form = await req.formData();
   const file = form.get("file") as File | null;
@@ -88,74 +91,86 @@ export async function POST(req: NextRequest) {
     }, { status: 400 });
   }
 
-  // Load all driver profiles for fuzzy matching
-  const { data: allDrivers } = await sb
-    .from("driver_profiles")
-    .select("id, full_name, license_expiration_date, medical_card_expiration")
-    .limit(2000);
+  const todayIso = new Date().toISOString();
 
-  // @ts-ignore
+  // Load every place a driver's dates can live, scoped to this org, so the dates
+  // land wherever the driver actually exists (compliance views read from all of
+  // these). OO drivers are scoped through their parent owner-operator company.
+  const { data: ooCos } = await sb.from("ronyx_owner_operators").select("id").eq("organization_id", orgId).limit(5000);
+  const ooIds = (ooCos || []).map((c: { id: string }) => c.id);
+
+  const [{ data: profiles }, { data: w2 }, ood] = await Promise.all([
+    sb.from("driver_profiles").select("id, full_name, license_expiration_date, medical_card_expiration").eq("organization_id", orgId).limit(5000),
+    sb.from("drivers").select("id, full_name, license_expiration_date, medical_card_expiration").eq("organization_id", orgId).limit(5000),
+    ooIds.length
+      ? sb.from("ronyx_oo_drivers").select("id, name, cdl_expiration, med_card_expiration").in("oo_id", ooIds).limit(5000)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+  ]);
+  const ooRows = (ood as { data: Record<string, unknown>[] | null }).data || [];
+
+  function bestMatch(list: Record<string, unknown>[] | null, nameField: string, raw: string): Record<string, unknown> | null {
+    if (!list?.length) return null;
+    const scored = list.map((d) => ({ d, score: scoreName(String(d[nameField] || ""), raw) })).sort((a, b) => b.score - a.score);
+    return scored[0] && scored[0].score >= 0.4 ? scored[0].d : null;
+  }
+
   const dataRows = rows.slice(1) as unknown[][];
-  const results: { name: string; matched?: string; cdl_date?: string | null; med_date?: string | null; status: string }[] = [];
-  let updated = 0;
-  let skipped = 0;
-  let unmatched = 0;
+  const results: { name: string; matched?: string; status: string }[] = [];
+  let updated = 0, skipped = 0, unmatched = 0;
 
   for (const row of dataRows) {
-    const arr    = row as unknown[];
+    const arr = row as unknown[];
     const rawName = String(arr[nameCol] || "").trim();
     if (!rawName) continue;
 
-    const cdlDate  = cdlCol  >= 0 ? normalizeDate(arr[cdlCol])  : null;
-    const medDate  = medCol  >= 0 ? normalizeDate(arr[medCol])  : null;
-    const cdlClass = classCol >= 0 ? String(arr[classCol] || "").trim().replace(/class\s*/i,"").toUpperCase() : null;
+    const cdlDate  = cdlCol  >= 0 ? normalizeDate(arr[cdlCol]) : null;
+    const medDate  = medCol  >= 0 ? normalizeDate(arr[medCol]) : null;
+    const cdlClass = classCol >= 0 ? String(arr[classCol] || "").trim().replace(/class\s*/i, "").toUpperCase() : null;
     const cdlNum   = cdlNumCol >= 0 ? String(arr[cdlNumCol] || "").trim() : null;
-
     if (!cdlDate && !medDate && !cdlClass && !cdlNum) { skipped++; continue; }
 
-    // Fuzzy match
-    const scored = (allDrivers || [])
-      .map(d => ({ ...d, score: scoreName(d.full_name || "", rawName) }))
-      .sort((a, b) => b.score - a.score);
-    const best = scored[0];
+    let didUpdate = false, matchedName = "";
 
-    if (!best || best.score < 0.4) {
-      results.push({ name: rawName, status: "unmatched" });
-      unmatched++;
-      continue;
+    // driver_profiles (license_expiration_date / medical_card_expiration)
+    const p = bestMatch(profiles as Record<string, unknown>[], "full_name", rawName);
+    if (p) {
+      const patch: Record<string, string> = {};
+      if (cdlDate) patch.license_expiration_date = cdlDate;
+      if (medDate) patch.medical_card_expiration = medDate;
+      if (cdlClass && ["A", "B", "C"].includes(cdlClass)) patch.license_class = cdlClass;
+      if (cdlNum) patch.license_number = cdlNum;
+      if (Object.keys(patch).length) { const { error } = await sb.from("driver_profiles").update({ ...patch, updated_at: todayIso }).eq("id", p.id as string); if (!error) { didUpdate = true; matchedName = String(p.full_name || matchedName); } }
     }
 
-    // Build update patch
-    const patch: Record<string, string | null> = {};
-    if (cdlDate  && cdlDate  !== best.license_expiration_date) patch.license_expiration_date = cdlDate;
-    if (medDate  && medDate  !== best.medical_card_expiration) patch.medical_card_expiration  = medDate;
-    if (cdlClass && ["A","B","C"].includes(cdlClass)) patch.license_class = cdlClass;
-    if (cdlNum)  patch.license_number = cdlNum;
-
-    if (Object.keys(patch).length === 0) {
-      results.push({ name: rawName, matched: best.full_name || best.id, status: "no_change" });
-      continue;
+    // drivers (W2)
+    const w = bestMatch(w2 as Record<string, unknown>[], "full_name", rawName);
+    if (w) {
+      const patch: Record<string, string> = {};
+      if (cdlDate) patch.license_expiration_date = cdlDate;
+      if (medDate) patch.medical_card_expiration = medDate;
+      if (cdlNum) patch.license_number = cdlNum;
+      if (Object.keys(patch).length) { const { error } = await sb.from("drivers").update(patch).eq("id", w.id as string); if (!error) { didUpdate = true; matchedName = String(w.full_name || matchedName); } }
     }
 
-    const { error } = await sb
-      .from("driver_profiles")
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", best.id);
-
-    if (error) {
-      results.push({ name: rawName, matched: best.full_name || best.id, status: `error: ${error.message}` });
-    } else {
-      results.push({ name: rawName, matched: best.full_name || best.id, cdl_date: cdlDate, med_date: medDate, status: "updated" });
-      updated++;
+    // owner-operator drivers (cdl_expiration / med_card_expiration)
+    const o = bestMatch(ooRows, "name", rawName);
+    if (o) {
+      const patch: Record<string, string> = {};
+      if (cdlDate) patch.cdl_expiration = cdlDate;
+      if (medDate) patch.med_card_expiration = medDate;
+      if (cdlNum) patch.cdl_number = cdlNum;
+      if (Object.keys(patch).length) { const { error } = await sb.from("ronyx_oo_drivers").update(patch).eq("id", o.id as string); if (!error) { didUpdate = true; matchedName = String(o.name || matchedName); } }
     }
+
+    if (didUpdate) { updated++; results.push({ name: rawName, matched: matchedName, status: "updated" }); }
+    else if (p || w || o) { results.push({ name: rawName, matched: matchedName, status: "no_change" }); }
+    else { unmatched++; results.push({ name: rawName, status: "unmatched" }); }
   }
 
   return NextResponse.json({
     success: true,
-    updated,
-    skipped,
-    unmatched,
+    updated, skipped, unmatched,
     total_rows: dataRows.length,
-    results: results.slice(0, 100), // first 100 for debug view
+    results: results.slice(0, 100),
   });
 }
