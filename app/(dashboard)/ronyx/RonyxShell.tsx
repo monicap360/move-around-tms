@@ -69,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Compliance",            href: "/ronyx/drivers?tab=compliance",   icon: "🛡️" },
         { label: "Import Drivers",        href: "/ronyx/drivers?tab=import",       icon: "📥" },
         { label: "Documents",             href: "/ronyx/drivers?tab=documents",    icon: "📄" },
+        { label: "Document Center · CDL/Med Import", href: "/ronyx/documents",     icon: "📊" },
       ]},
       { label: "Owner Operators",  href: "/ronyx/owner-operators",         icon: "🚛", color: "#7c3aed", children: [
         { label: "Overview",              href: "/ronyx/owner-operators",          icon: "🚛" },
