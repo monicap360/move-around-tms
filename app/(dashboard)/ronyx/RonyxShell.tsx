@@ -68,6 +68,7 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { label: "Drivers",          href: "/ronyx/drivers",                 icon: "👤", color: "#0891b2", children: [
         { label: "Driver List",           href: "/ronyx/drivers?tab=list",         icon: "👤" },
+        { label: "Find Drivers",          href: "/ronyx/driver-network",           icon: "🔍" },
         { label: "Compliance",            href: "/ronyx/drivers?tab=compliance",   icon: "🛡️" },
         { label: "Import Drivers",        href: "/ronyx/drivers?tab=import",       icon: "📥" },
         { label: "Documents",             href: "/ronyx/drivers?tab=documents",    icon: "📄" },
@@ -530,29 +531,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
           </button>
         </div>
 
-        {/* Zone 1: Daily Command — DO THIS FIRST */}
-        {(cmdLoading || (daily && daily.criticalItems.length > 0)) && (
-          <div className="tms-dtf" style={{ marginBottom: 2 }}>
-            <div className="tms-dtf-header">
-              <span className="tms-dtf-title">⚑ DO THIS FIRST</span>
-              {!cmdLoading && <span className="tms-dtf-count">{totalCritical}</span>}
-              {cmdLoading && <span style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.4)" }}>loading…</span>}
-            </div>
-            {daily?.criticalItems.map((item, i) => (
-              <Link key={i} href={item.href} className="tms-dtf-item" onClick={() => setMobileOpen(false)}>
-                <span className="tms-dtf-dot" style={{ background: CATEGORY_COLOR[item.category] ?? "#94a3b8" }} />
-                <span className="tms-dtf-text">{item.text}</span>
-              </Link>
-            ))}
-            {daily && daily.criticalItems.length > 0 && (
-              <div className="tms-dtf-open">
-                <Link href="/ronyx/tasks" className="tms-dtf-open-btn" onClick={() => setMobileOpen(false)}>
-                  Open Priority Queue →
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Zone 1: Daily Command — DO THIS FIRST — removed from the sidebar for space
+            (per request). The Priority Queue is still available at /ronyx/tasks. */}
 
         {/* Zone 1: Global Pulse */}
         {daily && (
