@@ -23,6 +23,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       med_card_number:     body.med_card_number     || null,
       truck_number:        body.truck_number        || null,
       job_assignment:      body.job_assignment      || null,
+      address:             body.address             || null,
       notes:               body.notes               || null,
       status:              body.status              || "active",
     })

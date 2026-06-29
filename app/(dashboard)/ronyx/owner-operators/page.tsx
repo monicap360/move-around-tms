@@ -817,6 +817,25 @@ export default function OwnerOperatorsPage() {
     updateLocalState({ ...selected, trucks: selected.trucks.filter(t => t.id !== truckId) });
   }
 
+  // ── Truck inspections ──────────────────────────────────────────────────────
+  const emptyInsp = { truck_number:"", inspection_type:"Annual DOT", inspection_date:"", expires_on:"", result:"Pass", inspector:"", notes:"" };
+  const [showAddInspection, setShowAddInspection] = useState(false);
+  const [inspForm, setInspForm] = useState<Record<string,string>>(emptyInsp);
+  async function addInspection() {
+    if (!selected) return;
+    if (!inspForm.truck_number.trim()) { flash("Truck # is required."); return; }
+    const { inspection, error } = await apiPost(`/api/ronyx/owner-operators/${selected.id}/truck-inspections`, inspForm);
+    if (error) { flash(`Error: ${error}`); return; }
+    updateLocalState({ ...selected, truck_inspections: [inspection, ...(selected.truck_inspections || [])] });
+    setInspForm(emptyInsp); setShowAddInspection(false); flash("Inspection logged.");
+  }
+  async function removeInspection(inspId: string) {
+    if (!selected) return;
+    await apiDelete(`/api/ronyx/owner-operators/${selected.id}/truck-inspections?inspection_id=${inspId}`);
+    updateLocalState({ ...selected, truck_inspections: (selected.truck_inspections || []).filter(x => x.id !== inspId) });
+    flash("Inspection removed.");
+  }
+
   // Truck Pool CRUD
   async function assignTruckToDriver() {
     if (!selected || !assignTruckForm.driver_id || !assignTruckForm.truck_id) {
@@ -2990,6 +3009,73 @@ export default function OwnerOperatorsPage() {
               })}
             </div>
           )}
+
+          {/* ── Truck Inspections ── */}
+          <div style={{ marginTop:24, borderTop:"1px solid #e2e8f0", paddingTop:18 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <div>
+                <div style={eyebrow}>🔍 Truck Inspections</div>
+                <div style={{ fontSize:"0.8rem", color:"#64748b", marginTop:2 }}>{(selected.truck_inspections||[]).length} on record — annual DOT, brake &amp; periodic</div>
+              </div>
+              <button onClick={()=>setShowAddInspection(s=>!s)} style={primaryBtn}>+ Add Inspection</button>
+            </div>
+            {showAddInspection && (
+              <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"16px 20px", marginBottom:14 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px 14px" }}>
+                  <div><label style={lbl}>Truck # *</label>
+                    <input list="oo-truck-list" value={inspForm.truck_number} onChange={e=>setInspForm(f=>({...f,truck_number:e.target.value}))} style={inp} placeholder="SMT-101" />
+                    <datalist id="oo-truck-list">{selected.trucks.map(t=><option key={t.id} value={t.truck_number} />)}</datalist>
+                  </div>
+                  <div><label style={lbl}>Type</label>
+                    <select value={inspForm.inspection_type} onChange={e=>setInspForm(f=>({...f,inspection_type:e.target.value}))} style={inp}>
+                      {["Annual DOT","90-Day","Brake","Periodic","Re-inspection"].map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={lbl}>Result</label>
+                    <select value={inspForm.result} onChange={e=>setInspForm(f=>({...f,result:e.target.value}))} style={inp}>
+                      {["Pass","Pass w/ Defects","Fail","Conditional"].map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={lbl}>Inspection Date</label><input type="date" value={inspForm.inspection_date} onChange={e=>setInspForm(f=>({...f,inspection_date:e.target.value}))} style={inp} /></div>
+                  <div><label style={lbl}>Expires On</label><input type="date" value={inspForm.expires_on} onChange={e=>setInspForm(f=>({...f,expires_on:e.target.value}))} style={inp} /></div>
+                  <div><label style={lbl}>Inspector / Station</label><input value={inspForm.inspector} onChange={e=>setInspForm(f=>({...f,inspector:e.target.value}))} style={inp} placeholder="Name or station" /></div>
+                </div>
+                <div style={{ marginTop:10 }}><label style={lbl}>Notes</label><input value={inspForm.notes} onChange={e=>setInspForm(f=>({...f,notes:e.target.value}))} style={inp} placeholder="Defects, follow-up, etc." /></div>
+                <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                  <button onClick={addInspection} style={primaryBtn}>Save Inspection</button>
+                  <button onClick={()=>setShowAddInspection(false)} style={ghostBtn}>Cancel</button>
+                </div>
+              </div>
+            )}
+            {(selected.truck_inspections||[]).length===0 ? (
+              <div style={{ background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:14, padding:"24px 0", textAlign:"center", color:"#94a3b8", fontSize:"0.82rem" }}>No inspections logged yet.</div>
+            ) : (
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.8rem" }}>
+                  <thead><tr style={{ textAlign:"left", color:"#64748b", borderBottom:"1px solid #e2e8f0" }}>
+                    {["Truck #","Type","Date","Expires","Result","Inspector",""].map(h=><th key={h} style={{ padding:"8px 10px", fontWeight:700 }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {(selected.truck_inspections||[]).map(insp=>{
+                      const exp = insp.expires_on ? daysUntil(insp.expires_on) : null;
+                      const pass = (insp.result||"").toLowerCase().startsWith("pass");
+                      return (
+                        <tr key={insp.id} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                          <td style={{ padding:"8px 10px", fontWeight:700, color:"#0f172a" }}>{insp.truck_number||"—"}</td>
+                          <td style={{ padding:"8px 10px" }}>{insp.inspection_type||"—"}</td>
+                          <td style={{ padding:"8px 10px" }}>{insp.inspection_date?fmtDate(insp.inspection_date):"—"}</td>
+                          <td style={{ padding:"8px 10px" }}>{insp.expires_on?<span style={{ color:expColor(exp)||"#475569", fontWeight:700 }}>{fmtDate(insp.expires_on)}</span>:"—"}</td>
+                          <td style={{ padding:"8px 10px" }}><span style={{ background:pass?"#f0fdf4":"#fef2f2", color:pass?"#15803d":"#dc2626", padding:"2px 8px", borderRadius:20, fontSize:"0.7rem", fontWeight:800 }}>{insp.result||"—"}</span></td>
+                          <td style={{ padding:"8px 10px", color:"#64748b" }}>{insp.inspector||"—"}</td>
+                          <td style={{ padding:"8px 10px" }}><button onClick={()=>removeInspection(insp.id)} style={{ background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:6, padding:"3px 9px", fontSize:"0.7rem", fontWeight:700, cursor:"pointer" }}>🗑</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
