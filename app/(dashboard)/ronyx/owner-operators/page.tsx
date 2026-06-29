@@ -2686,8 +2686,10 @@ export default function OwnerOperatorsPage() {
                           </span>
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <button onClick={(e) => { e.stopPropagation(); setDriverEditModal({ driver: d, form: { name: d.name, phone: d.phone, cdl_number: d.cdl_number, cdl_state: d.cdl_state, cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration, med_card_expiration: d.med_card_expiration }, saving: false }); }} title="Edit this driver's profile (name, phone, CDL, medical card)" style={{ background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>✏ Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); setReassignModal({ driverId: d.id, driverName: d.name, targetId: "" }); }} title="Move this driver to a different carrier company" style={{ background:"#eff6ff", color:"#1d4ed8", border:"1px solid #bfdbfe", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>⇄ Reassign</button>
                           <button onClick={(e) => { e.stopPropagation(); promoteDriverToOO(d.id, d.name); }} title="This driver got their own authority — promote them to their own Owner-Operator company" style={{ background:"#ecfeff", color:"#0891b2", border:"1px solid #a5f3fc", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>↑ Make OO</button>
+                          <button onClick={(e) => { e.stopPropagation(); removeDriver(d.id); }} title="Remove this driver (use for duplicates)" style={{ background:"#fee2e2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:6, padding:"3px 9px", fontSize:"0.66rem", fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>🗑 Remove</button>
                           <span style={{ color:"#94a3b8", fontSize:"0.8rem" }}>{expanded?"▲":"▼"}</span>
                         </div>
                       </div>
