@@ -16,7 +16,6 @@ const OO_DOC_OPTIONS: DocOption[] = [
   { value: "Contract",                    label: "Contract" },
   { value: "W-9 / Tax Form",              label: "W-9" },
   { value: "Voided Check",                label: "Voided Check" },
-  { value: "MC Authority Letter",         label: "MC Auth Letter" },
   { value: "Vehicle Inspection",          label: "Inspection" },
 ];
 
@@ -1858,7 +1857,6 @@ export default function OwnerOperatorsPage() {
           { icon: "📝", short: "Contract",          type: "Contract",                    alt: ["Subhauler Agreement","Carrier Agreement","Service Contract"], required: true  },
           { icon: "🧾", short: "W-9",               type: "W-9 / Tax Form",              alt: ["W-9","W9","Tax Form"],                                      required: true  },
           { icon: "💳", short: "Voided Check",      type: "Voided Check",                alt: ["Voided check","Void Check","Bank Void Check","Direct Deposit"], required: false },
-          { icon: "🏛️", short: "MC Auth Letter",    type: "MC Authority Letter",         alt: ["MC Auth Letter","MC Letter","Authority Letter"],             required: false },
         ];
 
         const enriched = DOCS.map(d => {
@@ -3326,7 +3324,6 @@ export default function OwnerOperatorsPage() {
             {[
               { type:"Contract",             icon:"📝" },
               { type:"W-9 / Tax Form",       icon:"🧾" },
-              { type:"MC Authority Letter",  icon:"🏛️" },
               { type:"Safety Rating Letter", icon:"⭐" },
               { type:"1099 Form",            icon:"📊" },
               { type:"Other",                icon:"📁" },
