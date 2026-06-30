@@ -1214,6 +1214,7 @@ export default function OwnerOperatorsPage() {
             </span>
           </div>
           <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Manage OO companies as businesses — fleet, compliance, settlements, and profitability in one place.</p>
+          <a href="/ronyx/drivers/cdl-medical" style={{ display:"inline-flex", alignItems:"center", gap:7, marginTop:10, background:"#0f172a", color:"#fff", textDecoration:"none", padding:"8px 14px", borderRadius:9, fontWeight:800, fontSize:"0.82rem" }}>🪪 Edit CDL &amp; Medical for all owner operators →</a>
         </div>
 
         {/* Cross-OO Action Required banner */}

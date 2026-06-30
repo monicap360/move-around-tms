@@ -70,6 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Drivers",          href: "/ronyx/drivers",                 icon: "👤", color: "#0891b2", children: [
         { label: "Driver List",           href: "/ronyx/drivers?tab=list",         icon: "👤" },
         { label: "Find Drivers",          href: "/ronyx/driver-network",           icon: "🔍" },
+        { label: "Fleet CDL & Medical",   href: "/ronyx/drivers/cdl-medical",      icon: "🪪" },
         { label: "Compliance Follow-Up",  href: "/ronyx/drivers/follow-up",         icon: "📋" },
         { label: "Merge Duplicates",      href: "/ronyx/drivers/merge",            icon: "🔗" },
         { label: "Compliance",            href: "/ronyx/drivers?tab=compliance",   icon: "🛡️" },
