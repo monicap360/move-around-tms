@@ -16,6 +16,14 @@ export async function GET() {
     const payments = payRes.error ? [] : (payRes.data || []);
     const tkRes = await supabaseAdmin.from("aggregate_tickets").select("status, gross_amount, total_amount, total_pay, bill_rate, quantity, load_count, total_hours");
     const tickets = tkRes.error ? [] : (tkRes.data || []);
+    const exRes = await supabaseAdmin.from("financial_exceptions").select("*").neq("status", "Resolved").order("created_at", { ascending: false }).limit(200);
+    const exceptions = (exRes.error ? [] : (exRes.data || [])).map((e: any) => ({
+      id: e.ref || e.id?.slice(0, 8), priority: e.priority || "Normal", type: e.exception_type || "—",
+      customer: e.customer || "—", job: e.job || "—", ref: e.ref || "—", truck: e.truck || "—",
+      party: e.party || "—", impact: Number(e.financial_impact || 0), impactLabel: e.impact_label || "",
+      ageDays: Number(e.age_days || 0), assignedTo: e.assigned_to || null,
+      action: e.recommended_action || "Review", status: e.status || "Open",
+    }));
 
     const today = Date.now();
     const revenue = invoices.reduce((s: number, i: any) => s + Number(i.original_amount || 0), 0);
@@ -41,13 +49,14 @@ export async function GET() {
 
     // Only flip to live once there are real invoices — otherwise revenue/AR/cash read $0,
     // which looks worse than the demo. Tickets alone don't make the dashboard "live".
-    const live = invoices.length > 0;
+    const live = invoices.length > 0 || tickets.length > 0 || exceptions.length > 0;
     return NextResponse.json({
       live,
       revenue, arOpen, overdue, cash,
       unbilled, unbilledCount: approved.length,
       grossMargin, grossMarginPct: ticketRev ? (grossMargin / ticketRev) * 100 : 0,
       invoiceCount: invoices.length, ticketCount: tickets.length,
+      exceptions,
     });
   } catch (e: any) {
     return NextResponse.json({ live: false, error: e?.message });

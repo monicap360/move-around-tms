@@ -64,7 +64,7 @@ export default function TicketToInvoice() {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [batch, setBatch] = useState(false);
   const [toast, setToast] = useState("");
-  const [data, setData] = useState<Ticket[]>(DEMO_TICKETS);
+  const [data, setData] = useState<typeof DEMO_TICKETS>([]);
   const [live, setLive] = useState(false);
 
   // Pull real tickets from aggregate_tickets; fall back to the seeded demo when empty.
@@ -96,7 +96,7 @@ export default function TicketToInvoice() {
   return (
     <AcctShell active="tti" title="Ticket-to-Invoice Control" subtitle="Turn completed, validated work into cash — one ticket at a time, billed once."
       controls={<>
-        <span style={{ ...chip, background: live ? "#dcfce7" : "#fef9c3", color: live ? "#15803d" : "#b45309", padding: "7px 11px" }} title={live ? "Showing real tickets from aggregate_tickets" : "No real tickets yet — showing demo data"}>{live ? "● Live data" : "Demo data"}</span>
+        <span style={{ ...chip, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", padding: "7px 11px" }} title={live ? "Showing real tickets from aggregate_tickets" : "No tickets yet"}>{live ? "● Live data" : "No data yet"}</span>
         <button style={ctrlBtn}>Group: Customer ▾</button>
         <button style={ctrlBtn}>⬇ Export</button>
         <button style={primaryBtn} onClick={() => bulk("Create Invoice Batch")}>+ Create Invoice Batch</button>

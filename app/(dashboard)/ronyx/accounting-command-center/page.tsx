@@ -34,22 +34,6 @@ type Exception = {
   ageDays: number; assignedTo: string | null; action: string; status: ExcStatus;
 };
 
-const EXCEPTIONS: Exception[] = [
-  { id: "E-1041", priority: "Critical", type: "Completed load is not invoiced",        customer: "Holt Paving",        job: "SH-249 Reload",     ref: "TKT-88231", truck: "T-104", party: "Double F Transport", impact: 4820,  impactLabel: "Billing blocked",            ageDays: 6,  assignedTo: null,         action: "Create invoice batch",        status: "Open" },
-  { id: "E-1042", priority: "Critical", type: "Invoice total differs from approved ticket total", customer: "Sterling Materials", job: "I-45 Base", ref: "INV-2204", truck: "T-118", party: "Urdaneta Trucking", impact: 1310,  impactLabel: "Customer collection risk",   ageDays: 3,  assignedTo: "Sylvia P",   action: "Open adjustment review",      status: "In Progress" },
-  { id: "E-1043", priority: "Critical", type: "Paid ticket was edited and requires adjustment review", customer: "Holt Paving", job: "SH-249 Reload", ref: "TKT-88102", truck: "T-104", party: "Gary Harris (OO)", impact: 640, impactLabel: "Potential duplicate payment", ageDays: 1, assignedTo: null, action: "Create adjustment",         status: "Open" },
-  { id: "E-1044", priority: "High",     type: "Missing customer rate",                  customer: "Bayou Aggregates",   job: "Levee Haul",        ref: "TKT-88240", truck: "T-220", party: "Pineda Commodity", impact: 0,     impactLabel: "Margin cannot be calculated", ageDays: 2,  assignedTo: null,         action: "Apply customer rate card",    status: "Open" },
-  { id: "E-1045", priority: "High",     type: "Ticket quantity does not match scale ticket", customer: "Sterling Materials", job: "I-45 Base", ref: "TKT-88238", truck: "T-118", party: "Urdaneta Trucking", impact: 285,  impactLabel: "Billing blocked",            ageDays: 2,  assignedTo: "Tabitha L",  action: "Reconcile scale ticket",      status: "In Progress" },
-  { id: "E-1046", priority: "High",     type: "Settlement is ready but not approved",    customer: "—",                  job: "Wk 26 Settlement",  ref: "STL-0613", truck: "—",     party: "Indy Dump LLC.",   impact: 7240,  impactLabel: "Payroll blocked",            ageDays: 4,  assignedTo: null,         action: "Approve settlement",          status: "Open" },
-  { id: "E-1047", priority: "High",     type: "Customer is on credit hold",             customer: "Delta Earthworks",   job: "Pad 7",             ref: "INV-2188", truck: "—",     party: "—",                impact: 9650,  impactLabel: "Customer collection risk",   ageDays: 38, assignedTo: "Sylvia P",   action: "Escalate to manager",         status: "Open" },
-  { id: "E-1048", priority: "Normal",   type: "Driver pay rate missing",                customer: "—",                  job: "Wk 26 Payroll",     ref: "PAY-3310", truck: "T-131", party: "M. Chen (driver)", impact: 0,     impactLabel: "Payroll blocked",            ageDays: 1,  assignedTo: null,         action: "Edit pay rule",               status: "Open" },
-  { id: "E-1049", priority: "Normal",   type: "Fuel transaction is unmatched",          customer: "—",                  job: "—",                 ref: "FUEL-7781",truck: "T-220", party: "Pineda Commodity", impact: 412,   impactLabel: "Margin cannot be calculated", ageDays: 5,  assignedTo: null,         action: "Allocate to truck/job",       status: "Open" },
-  { id: "E-1050", priority: "Normal",   type: "Customer rate below minimum margin",     customer: "Bayou Aggregates",   job: "Levee Haul",        ref: "TKT-88241", truck: "T-220", party: "Pineda Commodity", impact: 180,   impactLabel: "Margin cannot be calculated", ageDays: 2,  assignedTo: "Tabitha L",  action: "Review rate vs. minimum",     status: "In Progress" },
-  { id: "E-1051", priority: "Normal",   type: "Maintenance cost is not assigned to a truck", customer: "—",              job: "—",                 ref: "MNT-5102", truck: "—",     party: "—",                impact: 1240,  impactLabel: "Margin cannot be calculated", ageDays: 9,  assignedTo: null,         action: "Assign to truck",             status: "Open" },
-  { id: "E-1052", priority: "Normal",   type: "Duplicate ticket number",                customer: "Holt Paving",        job: "SH-249 Reload",     ref: "TKT-88102", truck: "T-104", party: "Gary Harris (OO)", impact: 640,   impactLabel: "Potential duplicate payment", ageDays: 1,  assignedTo: null,         action: "Merge / void duplicate",      status: "Open" },
-  { id: "E-1053", priority: "Normal",   type: "Invoice is overdue",                     customer: "Lone Star Ready Mix",job: "Plant 3",           ref: "INV-2156", truck: "—",     party: "—",                impact: 3120,  impactLabel: "Customer collection risk",   ageDays: 64, assignedTo: "Sylvia P",   action: "Send reminder / statement",   status: "Open" },
-  { id: "E-1054", priority: "Normal",   type: "Owner operator deduction exceeds approved limit", customer: "—",         job: "Wk 26 Settlement",  ref: "STL-0611", truck: "T-220", party: "Pineda Commodity", impact: 350,   impactLabel: "Payroll blocked",            ageDays: 4,  assignedTo: null,         action: "Review deduction",            status: "Resolved" },
-];
 
 const PRIORITY_STYLE: Record<Priority, { bg: string; fg: string }> = {
   Critical: { bg: "#fee2e2", fg: "#dc2626" },
@@ -73,13 +57,14 @@ export default function AccountingCommandCenter() {
   const [ov, setOv]               = useState<any>(null);
   const ME = "Sylvia P";
 
-  // Live KPI values from invoices + tickets; null keeps the seeded demo values.
+  // Live values from the accounting tables. Real data only — no demo fallback.
   useEffect(() => {
-    fetch("/api/ronyx/accounting/overview").then(r => r.json()).then(d => { if (d.live) setOv(d); }).catch(() => {});
+    fetch("/api/ronyx/accounting/overview").then(r => r.json()).then(d => setOv(d)).catch(() => {});
   }, []);
 
+  const allExc: Exception[] = ov?.exceptions || [];
   const visible = useMemo(() => {
-    return EXCEPTIONS.filter(e => {
+    return allExc.filter(e => {
       if (priFilter === "Resolved")        return e.status === "Resolved";
       if (e.status === "Resolved")         return false; // hide resolved from active views
       if (priFilter === "Assigned to Me")  return e.assignedTo === ME;
@@ -87,20 +72,22 @@ export default function AccountingCommandCenter() {
       if (priFilter === "All")             return true;
       return e.priority === priFilter;
     });
-  }, [priFilter]);
+  }, [priFilter, allExc]);
 
-  // KPI values (seeded; each card filters the queue)
-  const openExc = EXCEPTIONS.filter(e => e.status !== "Resolved");
+  // KPI values — computed from real records; show $0 until data exists.
+  const openExc = allExc.filter(e => e.status !== "Resolved");
+  const atRisk  = openExc.filter(e => /margin/i.test(e.impactLabel || "")).reduce((s, e) => s + (e.impact || 0), 0);
+  const payable = openExc.filter(e => /payroll|settlement/i.test(e.impactLabel || "")).reduce((s, e) => s + (e.impact || 0), 0);
   const L = ov && ov.live;
   const kpis = [
-    { key: "revenue",  label: "Revenue This Period",      value: L ? fmt(ov.revenue)  : fmt(248300), sub: L ? `${ov.invoiceCount} invoices` : "+12.4% vs prior period",          tone: "#16a34a" },
-    { key: "unbilled", label: "Unbilled Load Value",      value: L ? fmt(ov.unbilled) : fmt(38940),  sub: L ? `${ov.unbilledCount} approved loads not invoiced` : "27 approved loads not invoiced",   tone: "#b45309", filter: "Completed load is not invoiced" },
-    { key: "ar",       label: "A/R Outstanding",          value: L ? fmt(ov.arOpen)   : fmt(96120),  sub: L ? `${fmt(ov.overdue)} overdue` : `${fmt(15890)} overdue`,            tone: "#dc2626", filter: "Invoice is overdue" },
-    { key: "payable",  label: "Driver / OO Payable",      value: fmt(41730),  sub: "Approved, awaiting payment",        tone: "#1d4ed8", filter: "Settlement is ready but not approved" },
-    { key: "margin",   label: "Gross Margin",             value: L ? fmt(ov.grossMargin) : fmt(71240),  sub: L ? `${ov.grossMarginPct.toFixed(0)}% this period` : "28.7% this period",                tone: "#15803d" },
-    { key: "atrisk",   label: "Margin at Risk",           value: fmt(8460),   sub: "Missing cost / disputed rate",      tone: "#ea580c", filter: "Margin cannot be calculated" },
+    { key: "revenue",  label: "Revenue This Period",      value: ov ? fmt(ov.revenue)  : fmt(0), sub: ov ? `${ov.invoiceCount} invoices` : "—",          tone: "#16a34a" },
+    { key: "unbilled", label: "Unbilled Load Value",      value: ov ? fmt(ov.unbilled) : fmt(0), sub: ov ? `${ov.unbilledCount} approved loads not invoiced` : "—",   tone: "#b45309", filter: "Completed load is not invoiced" },
+    { key: "ar",       label: "A/R Outstanding",          value: ov ? fmt(ov.arOpen)   : fmt(0), sub: ov ? `${fmt(ov.overdue)} overdue` : "—",            tone: "#dc2626", filter: "Invoice is overdue" },
+    { key: "payable",  label: "Driver / OO Payable",      value: fmt(payable),  sub: "Approved, awaiting payment",        tone: "#1d4ed8", filter: "Settlement is ready but not approved" },
+    { key: "margin",   label: "Gross Margin",             value: ov ? fmt(ov.grossMargin) : fmt(0), sub: ov ? `${ov.grossMarginPct.toFixed(0)}% this period` : "—",                tone: "#15803d" },
+    { key: "atrisk",   label: "Margin at Risk",           value: fmt(atRisk),   sub: "Missing cost / disputed rate",      tone: "#ea580c", filter: "Margin cannot be calculated" },
     { key: "exc",      label: "Financial Exceptions",     value: String(openExc.length), sub: "Need staff action",      tone: "#7c3aed", filter: "__all" },
-    { key: "cash",     label: "Cash Collected",           value: L ? fmt(ov.cash) : fmt(132540), sub: "Payments received this period",     tone: "#0e7490" },
+    { key: "cash",     label: "Cash Collected",           value: ov ? fmt(ov.cash) : fmt(0), sub: "Payments received this period",     tone: "#0e7490" },
   ];
 
   function onKpi(k: any) {
@@ -150,7 +137,7 @@ export default function AccountingCommandCenter() {
             <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Live financial control across tickets, invoicing, settlements, receivables, and job margin.</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ ...chip, background: L ? "#dcfce7" : "#fef9c3", color: L ? "#15803d" : "#b45309", padding: "7px 11px" }}>{L ? "● Live data" : "Demo data"}</span>
+            <span style={{ ...chip, background: L ? "#dcfce7" : "#f1f5f9", color: L ? "#15803d" : "#94a3b8", padding: "7px 11px" }}>{L ? "● Live data" : "No data yet"}</span>
             {["This Period ▾", "All Companies ▾", "All Customers ▾", "All Jobs ▾"].map(c => (
               <button key={c} style={ctrlBtn}>{c}</button>
             ))}

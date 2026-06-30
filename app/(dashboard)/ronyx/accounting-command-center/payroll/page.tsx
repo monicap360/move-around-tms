@@ -34,7 +34,7 @@ export default function Payroll() {
   const [drawer, setDrawer] = useState<Driver | null>(null);
   const [locked, setLocked] = useState(false);
   const [toast, setToast] = useState("");
-  const [data, setData] = useState(DEMO);
+  const [data, setData] = useState<typeof DEMO>([]);
   const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
@@ -61,7 +61,7 @@ export default function Payroll() {
 
   return (
     <AcctShell active="payroll" title="Driver Payroll Control" subtitle="Pay employee drivers off validated tickets — once, and on time."
-      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export</button>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "No data yet"}</span><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export</button>
         <button onClick={() => { setLocked(l => !l); flash(locked ? "Pay period unlocked." : "Pay period LOCKED — dispatchers can no longer change it."); }} style={{ ...primaryBtn, background: locked ? "#16a34a" : "#1e293b" }}>{locked ? "🔓 Unlock Period" : "🔒 Lock Pay Period"}</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
@@ -98,6 +98,9 @@ export default function Payroll() {
                   </tr>
                 );
               })}
+              {data.length === 0 && (
+                <tr><td colSpan={15} style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>No payroll yet — pay runs build from validated driver tickets.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

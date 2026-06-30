@@ -38,7 +38,7 @@ export default function Fuel() {
   const [tab, setTab] = useState("unmatched");
   const [assign, setAssign] = useState<Cost | null>(null);
   const [toast, setToast] = useState("");
-  const [data, setData] = useState(DEMO);
+  const [data, setData] = useState<typeof DEMO>([]);
   const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
   const active = TABS.find(t => t.key === tab)!;
@@ -55,7 +55,7 @@ export default function Fuel() {
 
   return (
     <AcctShell active="fuel" title="Fuel & Cost Allocation" subtitle="Assign every cost to a truck or job — so margin is real, not a guess."
-      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>Import Fuel Card ▾</button><button style={primaryBtn}>+ Add Cost</button></>}>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "No data yet"}</span><button style={ctrlBtn}>Import Fuel Card ▾</button><button style={primaryBtn}>+ Add Cost</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 

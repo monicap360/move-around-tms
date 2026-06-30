@@ -31,7 +31,7 @@ const ACTIONS = ["Generate Settlement", "Review Tickets", "Add Deduction", "Add 
 export default function Settlements() {
   const [drawer, setDrawer] = useState<Settle | null>(null);
   const [toast, setToast] = useState("");
-  const [data, setData] = useState(DEMO);
+  const [data, setData] = useState<typeof DEMO>([]);
   const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
@@ -58,7 +58,7 @@ export default function Settlements() {
 
   return (
     <AcctShell active="settlements" title="Owner Operator Settlement Center" subtitle="Settle contractors off their tickets, with deductions and compliance enforced."
-      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export Payment File</button><button style={primaryBtn}>+ Generate Settlements</button></>}>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "No data yet"}</span><button style={ctrlBtn}>Wk 26 ▾</button><button style={ctrlBtn}>⬇ Export Payment File</button><button style={primaryBtn}>+ Generate Settlements</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
@@ -92,6 +92,9 @@ export default function Settlements() {
                   </tr>
                 );
               })}
+              {data.length === 0 && (
+                <tr><td colSpan={14} style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>No settlements yet — generate them from approved owner-operator tickets.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -35,7 +35,7 @@ export default function Receivables() {
   const [filter, setFilter] = useState<string>("All");
   const [drawer, setDrawer] = useState<string | null>(null);
   const [toast, setToast] = useState("");
-  const [allInv, setAllInv] = useState<Invoice[]>(DEMO);
+  const [allInv, setAllInv] = useState<typeof DEMO>([]);
   const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
@@ -76,7 +76,7 @@ export default function Receivables() {
 
   return (
     <AcctShell active="ar" title="Accounts Receivable & Collections" subtitle="Know exactly who owes what, how old it is, and what to do next."
-      controls={<><span style={{ ...chip, background: live ? "#dcfce7" : "#fef9c3", color: live ? "#15803d" : "#b45309", padding: "7px 11px" }}>{live ? "● Live data" : "Demo data"}</span><button style={ctrlBtn}>This Period ▾</button><button style={ctrlBtn}>⬇ Export Aging</button><button style={primaryBtn}>+ Send Statements</button></>}>
+      controls={<><span style={{ ...chip, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", padding: "7px 11px" }}>{live ? "● Live data" : "No data yet"}</span><button style={ctrlBtn}>This Period ▾</button><button style={ctrlBtn}>⬇ Export Aging</button><button style={primaryBtn}>+ Send Statements</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
