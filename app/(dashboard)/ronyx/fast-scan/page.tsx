@@ -210,6 +210,14 @@ export default function FastScanPage() {
   const kpiPayHolds    = recentScans.filter(s => s.payroll_status === "on_hold" || s.payroll_status === "hold").length;
   const kpiBillReady   = recentScans.filter(s => s.billing_status === "ready" || s.billing_status === "invoiced").length;
 
+  // ── Money + status summary for the global status bar (real, from the scan list) ──
+  const moneyNum = (v: any) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+  const fmtMoney = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
+  const billingUnlocked = recentScans.filter(s => s.billing_status === "ready" || s.billing_status === "invoiced").reduce((a, s: any) => a + moneyNum(s.amount ?? s.gross_amount ?? s.total_amount), 0);
+  const payrollCalc     = recentScans.filter(s => s.payroll_status === "ready").reduce((a, s: any) => a + moneyNum(s.amount ?? s.total_pay), 0);
+  const processingCount = recentScans.filter(s => s.ocr_status === "pending" || s.ocr_status === "processing").length + (ocrRunning ? 1 : 0);
+  const atRiskCount     = kpiNeedsReview + kpiMissing + kpiPayHolds;
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   function setField(k: keyof ExtractedFields, v: string) {
     setEditedFields(prev => ({ ...prev, [k]: v }));
@@ -441,6 +449,20 @@ export default function FastScanPage() {
 
   return (
     <div style={{ padding: 0 }}>
+      {/* ── Global status bar (Phase 1) ──────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#0b1220", color: "#e2e8f0", borderRadius: 10, padding: "8px 16px", marginBottom: 10, fontSize: "0.74rem", fontWeight: 700 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: processingCount ? "#fbbf24" : "#4ade80" }} />
+          {processingCount ? `Processing ${processingCount} document${processingCount > 1 ? "s" : ""}` : "System Active"}
+        </span>
+        <span style={{ color: "#4ade80", whiteSpace: "nowrap" }}>✅ {kpiMatched} cleared today</span>
+        <span style={{ color: "#34d399", whiteSpace: "nowrap" }}>Billing unlocked: {fmtMoney(billingUnlocked)}</span>
+        <span style={{ color: "#c084fc", whiteSpace: "nowrap" }}>Payroll: {fmtMoney(payrollCalc)}</span>
+        {atRiskCount > 0 && <span style={{ color: "#f87171", whiteSpace: "nowrap" }}>⚠ {atRiskCount} at risk</span>}
+        {batch.active && <span style={{ color: "#94a3b8", whiteSpace: "nowrap" }}>Batch: {batch.name || "active"}</span>}
+        <span style={{ marginLeft: "auto", color: "#64748b", whiteSpace: "nowrap" }}>Powered by MoveAround TMS</span>
+      </div>
+
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "24px 28px 20px", borderRadius: 14, marginBottom: 16, color: "#fff" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
