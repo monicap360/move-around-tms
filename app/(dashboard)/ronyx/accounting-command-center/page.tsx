@@ -53,6 +53,7 @@ const ROW_ACTIONS = ["View Details", "Assign", "Resolve", "Request Info", "Creat
 export default function AccountingCommandCenter() {
   const [priFilter, setPriFilter] = useState<"All" | Priority | "Assigned to Me" | "Unassigned" | "Resolved">("All");
   const [kpiFilter, setKpiFilter] = useState<string | null>(null);
+  const [role, setRole]           = useState("All");
   const [openRow, setOpenRow]     = useState<string | null>(null);
   const [ov, setOv]               = useState<any>(null);
   const ME = "Sylvia P";
@@ -104,6 +105,22 @@ export default function AccountingCommandCenter() {
     ? { healthy: true,  tone: "#15803d", bg: "#f0fdf4", bd: "#bbf7d0", msg: "Nothing is blocking billing, payroll, or margin right now." }
     : { healthy: false, tone: "#b45309", bg: "#fffbeb", bd: "#fde68a", msg: `${openExc.length} item${openExc.length > 1 ? "s" : ""} need staff action${totalImpact > 0 ? ` · ${fmt(totalImpact)} in play` : ""}.` };
 
+  // AI Office Assistant — deterministic, plain-language guidance from the real exceptions.
+  const topTeam = [...teams].filter(t => t.items.length).sort((a, b) => b.impact - a.impact)[0];
+  const assistant = openExc.length === 0
+    ? { headline: "You're all caught up. ✓", body: "Nothing is blocking billing, payroll, or margin right now. New work will appear here the moment a ticket, invoice, or settlement needs attention.", actions: [] as { text: string; href: string }[] }
+    : {
+        headline: `${openExc.length} item${openExc.length > 1 ? "s" : ""} need action today.`,
+        body: topTeam ? `Start with ${topTeam.key}${topTeam.impact > 0 ? ` — clearing its ${topTeam.items.length} item${topTeam.items.length > 1 ? "s" : ""} unlocks ${fmt(topTeam.impact)}` : ""}.` : "Work the highest-impact queue first.",
+        actions: [...openExc].sort((a, b) => (b.impact || 0) - (a.impact || 0)).slice(0, 3).map(e => ({ text: `${e.action}${e.impact > 0 ? ` (${fmt(e.impact)})` : ""}`, href: teamOf(e).href })),
+      };
+
+  // Role-based views — filter the day's work to one team's focus.
+  const ROLES = ["All", "Owner", "Billing", "Collections", "Payroll", "Dispatch"];
+  const roleTeam: Record<string, string | null> = { Billing: "Billing", Collections: "Collections", Payroll: "Payroll", Dispatch: "Dispatch / Margin", Owner: null, All: null };
+  const roleKey = roleTeam[role];
+  const visibleTeams = roleKey ? teams.filter(t => t.key === roleKey) : teams;
+
   function onKpi(k: any) {
     if (!k.filter) { setKpiFilter(null); return; }
     setKpiFilter(k.filter === "__all" ? null : k.filter);
@@ -111,7 +128,7 @@ export default function AccountingCommandCenter() {
     document.getElementById("exceptions")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const queue = kpiFilter ? visible.filter(e => e.type === kpiFilter) : visible;
+  const queue = (kpiFilter ? visible.filter(e => e.type === kpiFilter) : visible).filter(e => !roleKey || teamOf(e).key === roleKey);
 
   const FILTERS: typeof priFilter[] = ["Critical", "High", "Normal", "All", "Assigned to Me", "Unassigned", "Resolved"];
 
@@ -179,9 +196,30 @@ export default function AccountingCommandCenter() {
           <span style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>{pulse.msg}</span>
         </div>
 
+        {/* Role-based view selector */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
+          <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>View as</span>
+          {ROLES.map(r => <button key={r} onClick={() => setRole(r)} style={{ ...chip, cursor: "pointer", background: role === r ? "#0f172a" : "#fff", color: role === r ? "#fff" : "#475569", border: "1px solid " + (role === r ? "#0f172a" : "#e2e8f0"), fontWeight: 800 }}>{r}</button>)}
+        </div>
+
+        {/* AI Office Assistant — plain-language guidance */}
+        <div style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)", color: "#fff", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: "1.05rem" }}>🤖</span>
+            <span style={{ fontWeight: 900, fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#a5b4fc" }}>AI Office Assistant</span>
+          </div>
+          <div style={{ fontSize: "1.05rem", fontWeight: 900, marginBottom: 4 }}>{assistant.headline}</div>
+          <div style={{ fontSize: "0.85rem", color: "#cbd5e1", marginBottom: assistant.actions.length ? 12 : 0 }}>{assistant.body}</div>
+          {assistant.actions.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {assistant.actions.map((a, i) => <a key={i} href={a.href} style={{ background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "7px 12px", fontSize: "0.78rem", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>{a.text} →</a>)}
+            </div>
+          )}
+        </div>
+
         {/* Daily Office Action Bar — role-based work queues */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 24 }}>
-          {teams.map(t => (
+          {visibleTeams.map(t => (
             <div key={t.key} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px 8px" }}>
                 <span style={{ fontSize: "1rem" }}>{t.icon}</span>
