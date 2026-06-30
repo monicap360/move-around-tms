@@ -3,13 +3,14 @@
 /* Accounting Command Center — Phase 7: Accounting Sync & Exports (QuickBooks-first).
    Seeded demo data; wires to accounting_exports + accounting_sync_logs. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AcctShell, fmt, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Status = "ready" | "exported" | "failed";
 type Exp = { id: string; type: string; ref: string; count: number; amount: number; status: Status; extRef: string | null; date: string | null; by: string | null; error: string | null };
+type Summary = { lastSync: string | null; healthy: boolean; readyCount: number; failedCount: number; missingMappings: number; unreconciled: number };
 
-const RAW: Exp[] = [
+const DEMO: Exp[] = [
   { id: "EX-301", type: "Customer Invoices",       ref: "Batch 06-29",  count: 6,  amount: 24080, status: "ready",    extRef: null,        date: null,    by: null,        error: null },
   { id: "EX-302", type: "Customer Payments",       ref: "06-28 deposit",count: 3,  amount: 13240, status: "ready",    extRef: null,        date: null,    by: null,        error: null },
   { id: "EX-303", type: "Owner Operator Settlements",ref: "Wk 26",      count: 5,  amount: 31100, status: "ready",    extRef: null,        date: null,    by: null,        error: null },
@@ -29,18 +30,42 @@ const TABS = [
 export default function Exports() {
   const [tab, setTab] = useState("ready");
   const [toast, setToast] = useState("");
+  const [data, setData] = useState<typeof DEMO>([]);
+  const [live, setLive] = useState(false);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
   const active = TABS.find(t => t.key === tab)!;
-  const rows = RAW.filter(active.match);
+  const rows = data.filter(active.match);
+
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/exports").then(r => r.json()).then(d => {
+      if (d.summary) setSummary(d.summary);
+      if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
+    }).catch(() => {});
+  }, []);
+
+  const HEALTH = [
+    { label: "QBO Last Sync",        value: summary?.lastSync || "—",                          tone: "#0f172a" },
+    { label: "Sync Health",          value: summary ? (summary.healthy ? "Healthy" : "Issues") : "—", tone: summary && !summary.healthy ? "#dc2626" : "#15803d" },
+    { label: "Ready to Export",      value: String(summary?.readyCount ?? 0),                  tone: "#1d4ed8" },
+    { label: "Failed Sync Items",    value: String(summary?.failedCount ?? 0),                 tone: (summary?.failedCount ?? 0) > 0 ? "#dc2626" : "#15803d" },
+    { label: "Missing Mappings",     value: String(summary?.missingMappings ?? 0),             tone: (summary?.missingMappings ?? 0) > 0 ? "#b45309" : "#15803d" },
+    { label: "Unreconciled Pmts",    value: String(summary?.unreconciled ?? 0),                tone: "#7c3aed" },
+  ];
 
   return (
     <AcctShell active="exports" title="Accounting Sync & Exports" subtitle="Push invoices, payments, payroll, settlements, and costs to QuickBooks — once each, never twice."
-      controls={<><button style={ctrlBtn}>Connected: QuickBooks ✓</button><button style={primaryBtn} onClick={() => flash("Pushed ready batches to QuickBooks (demo).")}>⇪ Sync Ready</button></>}>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "No data yet"}</span><button style={ctrlBtn}>Connected: QuickBooks ✓</button><button style={primaryBtn} onClick={() => flash("Pushed ready batches to QuickBooks (demo).")}>⇪ Sync Ready</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
+      {/* QuickBooks Sync Health status panel */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 16 }}>
+        {HEALTH.map(h => <div key={h.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "11px 14px" }}><div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>{h.label}</div><div style={{ fontSize: "1.15rem", fontWeight: 900, color: h.tone, marginTop: 4 }}>{h.value}</div></div>)}
+      </div>
+
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-        {TABS.map(t => { const n = RAW.filter(t.match).length; const on = tab === t.key; return <button key={t.key} onClick={() => setTab(t.key)} style={{ ...chip, cursor: "pointer", padding: "7px 12px", background: on ? "#0f172a" : "#fff", color: on ? "#fff" : "#475569", border: "1px solid " + (on ? "#0f172a" : "#e2e8f0"), fontWeight: 800 }}>{t.label}{["recon", "map"].includes(t.key) ? "" : <span style={{ opacity: 0.7 }}> · {n}</span>}</button>; })}
+        {TABS.map(t => { const n = data.filter(t.match).length; const on = tab === t.key; return <button key={t.key} onClick={() => setTab(t.key)} style={{ ...chip, cursor: "pointer", padding: "7px 12px", background: on ? "#0f172a" : "#fff", color: on ? "#fff" : "#475569", border: "1px solid " + (on ? "#0f172a" : "#e2e8f0"), fontWeight: 800 }}>{t.label}{["recon", "map"].includes(t.key) ? "" : <span style={{ opacity: 0.7 }}> · {n}</span>}</button>; })}
       </div>
 
       {tab === "map" ? (
