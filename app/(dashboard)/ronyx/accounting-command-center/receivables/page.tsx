@@ -63,6 +63,22 @@ export default function Receivables() {
     else { const e = await res.json().catch(() => ({})); flash(`Couldn't save — ${e.error || "try again"}`); }
   }
 
+  // Communication-type actions are recorded to the log so the whole team can see them.
+  const LOGGED_ACTIONS: Record<string, string> = {
+    "Send Statement": "Statement sent to customer", "Send Reminder": "Payment reminder sent",
+    "Send Invoice": "Invoice (re)sent to customer", "Escalate to Manager": "Escalated to manager for collection",
+    "Place on Credit Hold": "Placed on credit hold", "Release Credit Hold": "Released from credit hold",
+    "Start Dispute": "Dispute opened with customer",
+  };
+  async function doAction(a: string) {
+    if (!drawer) return;
+    const logged = LOGGED_ACTIONS[a];
+    if (!logged) { flash(`${a} — ${drawer} (demo)`); return; }
+    const res = await fetch("/api/ronyx/accounting/collections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customer_name: drawer, note: logged, created_by: "Sylvia P" }) });
+    if (res.ok) { loadNotes(drawer); flash(`${a} — logged to the communication log.`); }
+    else { const e = await res.json().catch(() => ({})); flash(`Couldn't log ${a} — ${e.error || "try again"}`); }
+  }
+
   const open = allInv.filter(i => balance(i) > 0.01);
 
   const kpis = useMemo(() => {
@@ -177,7 +193,7 @@ export default function Receivables() {
             })()}
             <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", margin: "16px 0 8px" }}>Actions</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {ACTIONS.map(a => <button key={a} onClick={() => flash(`${a} — ${drawer} (demo)`)} style={{ ...chip, cursor: "pointer", padding: "7px 11px", background: a.includes("Hold") || a.includes("Dispute") || a.includes("Escalate") ? "#fef2f2" : "#f8fafc", color: a.includes("Hold") || a.includes("Dispute") || a.includes("Escalate") ? "#dc2626" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
+              {ACTIONS.map(a => <button key={a} onClick={() => doAction(a)} style={{ ...chip, cursor: "pointer", padding: "7px 11px", background: a.includes("Hold") || a.includes("Dispute") || a.includes("Escalate") ? "#fef2f2" : "#f8fafc", color: a.includes("Hold") || a.includes("Dispute") || a.includes("Escalate") ? "#dc2626" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
             </div>
 
             {/* Communication log — real, persisted to collection_notes */}
