@@ -193,7 +193,28 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
     const [r, g, b] = m.map(h => Math.max(0, Math.round(parseInt(h, 16) * (1 - f))));
     return `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
   };
-  const SB_PRESETS = ["#111a3d", "#1e293b", "#0f3d3e", "#3b0764", "#14342b", "#18181b", "#1e3a8a", "#4c0519"];
+  const lighten = (hex: string, f: number) => {
+    const m = hex.replace("#", "").match(/.{2}/g);
+    if (!m || m.length < 3) return hex;
+    const [r, g, b] = m.map(h => { const v = parseInt(h, 16); return Math.min(255, Math.round(v + (255 - v) * f)); });
+    return `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
+  };
+  // Relative luminance (0=black, 1=white) — used to flip text dark on light sidebars.
+  const lum = (hex: string) => {
+    const m = hex.replace("#", "").match(/.{2}/g);
+    if (!m || m.length < 3) return 0;
+    const [r, g, b] = m.map(h => parseInt(h, 16) / 255);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const isLightSb = lum(sbColor) > 0.6;
+  // Gradient edge: lighten light themes, darken dark ones, so the panel stays cohesive.
+  const sbEdge = isLightSb ? lighten(sbColor, 0.35) : darken(sbColor, 0.45);
+  const SB_PRESETS = [
+    // Dark (white text)
+    "#111a3d", "#1e293b", "#0f3d3e", "#3b0764", "#14342b", "#18181b", "#1e3a8a", "#4c0519",
+    // Light (auto dark text)
+    "#e2e8f0", "#dbeafe", "#cffafe", "#dcfce7", "#fce7f3", "#fef3c7", "#ede9fe", "#ffe4e6",
+  ];
 
   // ── Per-staff PIN switcher (org runs on a trusted device; staff identify with a PIN) ──
   const [activeStaff, setActiveStaff] = useState<ActiveStaff | null>(null);
@@ -370,6 +391,44 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         }
         .tms-sidebar::-webkit-scrollbar { display: none; }
 
+        /* ── Light theme (auto dark text when a light color is picked) ── */
+        .tms-sidebar[data-theme="light"] { color: #1e293b; box-shadow: inset -1px 0 0 rgba(0,0,0,0.10), 6px 0 22px rgba(2,6,23,0.18); }
+        .tms-sidebar[data-theme="light"] .tms-brand,
+        .tms-sidebar[data-theme="light"] .tms-search-row,
+        .tms-sidebar[data-theme="light"] .tms-pulse,
+        .tms-sidebar[data-theme="light"] .tms-smart,
+        .tms-sidebar[data-theme="light"] .tms-qa { border-bottom-color: rgba(0,0,0,0.10); }
+        .tms-sidebar[data-theme="light"] .tms-brand-name { background: none; -webkit-text-fill-color: #0f172a; color: #0f172a; text-shadow: none; }
+        .tms-sidebar[data-theme="light"] .tms-brand-sub,
+        .tms-sidebar[data-theme="light"] .tms-nav-section,
+        .tms-sidebar[data-theme="light"] .tms-pulse-label,
+        .tms-sidebar[data-theme="light"] .tms-pulse-key,
+        .tms-sidebar[data-theme="light"] .tms-smart-label,
+        .tms-sidebar[data-theme="light"] .tms-qa-label { color: rgba(15,23,42,0.55); }
+        .tms-sidebar[data-theme="light"] .tms-nav-link,
+        .tms-sidebar[data-theme="light"] .tms-nav-sub-row,
+        .tms-sidebar[data-theme="light"] .tms-qa-item,
+        .tms-sidebar[data-theme="light"] .tms-smart-item,
+        .tms-sidebar[data-theme="light"] .tms-dtf-text { color: #334155; }
+        .tms-sidebar[data-theme="light"] .tms-nav-link:hover,
+        .tms-sidebar[data-theme="light"] .tms-nav-sub-row:hover,
+        .tms-sidebar[data-theme="light"] .tms-qa-item:hover,
+        .tms-sidebar[data-theme="light"] .tms-smart-item:hover,
+        .tms-sidebar[data-theme="light"] .tms-search-btn:hover { color: #0f172a; }
+        .tms-sidebar[data-theme="light"] .tms-nav-link.active,
+        .tms-sidebar[data-theme="light"] .tms-nav-link.section-on,
+        .tms-sidebar[data-theme="light"] .tms-pulse-val { color: #0f172a; }
+        .tms-sidebar[data-theme="light"] .tms-nav-row:hover { background: rgba(0,0,0,0.05); box-shadow: inset 2px 0 0 rgba(15,23,42,0.45); }
+        .tms-sidebar[data-theme="light"] .tms-nav-toggle { color: rgba(15,23,42,0.4); }
+        .tms-sidebar[data-theme="light"] .tms-nav-toggle:hover { color: rgba(15,23,42,0.8); }
+        .tms-sidebar[data-theme="light"] .tms-nav-sub { border-left-color: rgba(0,0,0,0.15); }
+        .tms-sidebar[data-theme="light"] .tms-nav-sub-row:hover { background: rgba(0,0,0,0.06); }
+        .tms-sidebar[data-theme="light"] .tms-search-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.14); color: rgba(15,23,42,0.6); }
+        .tms-sidebar[data-theme="light"] .tms-search-kbd { background: rgba(0,0,0,0.08); color: rgba(15,23,42,0.5); }
+        .tms-sidebar[data-theme="light"] .tms-pulse-cell,
+        .tms-sidebar[data-theme="light"] .tms-smart-item:hover { background: rgba(0,0,0,0.05); }
+        .tms-sidebar[data-theme="light"] .tms-sidebar-footer { border-top-color: rgba(0,0,0,0.10); color: rgba(15,23,42,0.5); }
+
         /* Brand */
         .tms-brand { padding: 12px 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
         .tms-brand-name {
@@ -545,7 +604,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       `}</style>
 
       {/* ── Sidebar ─────────────────────────────────────────────────── */}
-      <aside className={`tms-sidebar${mobileOpen ? " open" : ""}`} style={{ ["--tms-sb-base" as any]: sbColor, ["--tms-sb-dark" as any]: darken(sbColor, 0.45) }}>
+      <aside className={`tms-sidebar${mobileOpen ? " open" : ""}`} data-theme={isLightSb ? "light" : "dark"} style={{ ["--tms-sb-base" as any]: sbColor, ["--tms-sb-dark" as any]: sbEdge }}>
 
         {/* Zone 1: Brand + Search */}
         <div className="tms-brand">
@@ -668,7 +727,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
                         return (
                           <Link key={child.href} href={child.href}
                             className={`tms-nav-sub-row${childOn ? " active" : ""}`}
-                            style={childOn ? { background: "rgba(255,255,255,0.13)", color: "#fff" } : {}}
+                            style={childOn ? { background: isLightSb ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.13)", color: isLightSb ? "#0f172a" : "#fff" } : {}}
                             onClick={() => setMobileOpen(false)}>
                             {child.icon && <span className="tms-sub-icon">{child.icon}</span>}
                             <span className="tms-sub-label">{child.label}</span>
@@ -684,8 +743,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         ))}
 
         {/* Sidebar color picker — staff choose the color they want */}
-        <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
-          <button onClick={() => setThemeOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 7, width: "100%", background: "transparent", border: "none", color: "rgba(255,255,255,0.7)", fontSize: "0.64rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer", padding: "2px 0" }}>
+        <div style={{ padding: "10px 12px", borderTop: `1px solid ${isLightSb ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.08)"}`, flexShrink: 0 }}>
+          <button onClick={() => setThemeOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 7, width: "100%", background: "transparent", border: "none", color: isLightSb ? "rgba(15,23,42,0.7)" : "rgba(255,255,255,0.7)", fontSize: "0.64rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer", padding: "2px 0" }}>
             🎨 Sidebar Color <span style={{ marginLeft: "auto", fontSize: "0.8rem" }}>{themeOpen ? "▾" : "▸"}</span>
           </button>
           {themeOpen && (
@@ -693,14 +752,14 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {SB_PRESETS.map(c => (
                   <button key={c} onClick={() => pickSbColor(c)} title={c} aria-label={`Set sidebar color ${c}`}
-                    style={{ width: 22, height: 22, borderRadius: 6, background: c, cursor: "pointer", border: sbColor.toLowerCase() === c.toLowerCase() ? "2px solid #67e8f9" : "1px solid rgba(255,255,255,0.25)" }} />
+                    style={{ width: 22, height: 22, borderRadius: 6, background: c, cursor: "pointer", border: sbColor.toLowerCase() === c.toLowerCase() ? "2px solid #0ea5e9" : `1px solid ${isLightSb ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.25)"}` }} />
                 ))}
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: "0.66rem", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: "0.66rem", color: isLightSb ? "rgba(15,23,42,0.6)" : "rgba(255,255,255,0.6)", cursor: "pointer" }}>
                 <input type="color" value={sbColor} onChange={e => pickSbColor(e.target.value)} style={{ width: 28, height: 22, padding: 0, border: "none", borderRadius: 5, background: "transparent", cursor: "pointer" }} />
                 Custom color
               </label>
-              <button onClick={() => pickSbColor("#111a3d")} style={{ marginTop: 9, fontSize: "0.62rem", color: "rgba(255,255,255,0.45)", background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Reset to default</button>
+              <button onClick={() => pickSbColor("#111a3d")} style={{ marginTop: 9, fontSize: "0.62rem", color: isLightSb ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.45)", background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Reset to default</button>
             </div>
           )}
         </div>
@@ -711,7 +770,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
             <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#1e40af", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.68rem", fontWeight: 700 }}>
               {displayName.charAt(0).toUpperCase()}
             </div>
-            <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
+            <span style={{ fontSize: "0.68rem", color: isLightSb ? "rgba(15,23,42,0.6)" : "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
           </div>
           MoveAround TMS · IGOTTA Technologies
         </div>

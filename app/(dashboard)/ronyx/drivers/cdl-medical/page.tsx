@@ -15,21 +15,40 @@ const expFg = (n: number | null) => n === null ? "#94a3b8" : n < 0 ? "#dc2626" :
 const lbl = (n: number | null) => n === null ? "—" : n < 0 ? "EXPIRED" : n + "d";
 const inp: React.CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 7, border: "1px solid #e2e8f0", fontSize: "0.8rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 
+const BLANK_ADD = { oo_id: "", name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_class: "", cdl_expiration: "", med_card_expiration: "", med_card_number: "" };
+
 export default function FleetCdlMedical() {
   const [rows, setRows] = useState<Driver[]>([]);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Driver>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "expired" | "expiring" | "missing">("all");
   const [toast, setToast] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({ ...BLANK_ADD });
+  const [adding, setAdding] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3200); };
 
   function load() {
     setLoading(true);
-    fetch("/api/ronyx/drivers/cdl-medical").then(r => r.json()).then(d => setRows(d.drivers || [])).catch(() => {}).finally(() => setLoading(false));
+    fetch("/api/ronyx/drivers/cdl-medical").then(r => r.json()).then(d => { setRows(d.drivers || []); setCompanies(d.companies || []); }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, []);
+
+  async function addDriver() {
+    if (!addForm.oo_id) { flash("Pick an owner operator."); return; }
+    if (!addForm.name.trim()) { flash("Enter the driver's name."); return; }
+    setAdding(true);
+    try {
+      const res = await fetch("/api/ronyx/drivers/cdl-medical", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(addForm) });
+      const j = await res.json();
+      if (res.ok && j.ok) { flash(`Added ${addForm.name} to ${j.company}.`); setShowAdd(false); setAddForm({ ...BLANK_ADD }); load(); }
+      else flash(`Couldn't add — ${j.error || "try again"}.`);
+    } catch { flash("Network error."); }
+    finally { setAdding(false); }
+  }
 
   const val = (d: Driver, f: keyof Driver) => (edits[d.id]?.[f] ?? d[f]) as string;
   const dirty = (id: string) => edits[id] && Object.keys(edits[id]).length > 0;
@@ -82,10 +101,52 @@ export default function FleetCdlMedical() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900 }}>🪪 Fleet CDL & Medical</h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Edit CDL and medical-card info for <strong>every owner-operator's drivers</strong> in one place. Changes save per row.</p>
+          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Add or edit CDL and medical-card info for <strong>every owner-operator's drivers</strong> in one place. Changes save per row.</p>
         </div>
-        <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowAdd(s => !s)} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>{showAdd ? "× Close" : "+ Add Driver"}</button>
+          <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
+        </div>
       </div>
+
+      {showAdd && (
+        <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 14, padding: "16px 18px", marginTop: 14, boxShadow: "0 4px 14px rgba(22,163,74,0.08)" }}>
+          <div style={{ fontWeight: 800, fontSize: "0.9rem", marginBottom: 12 }}>Add a driver to an owner operator</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Owner Operator *</label>
+              <select value={addForm.oo_id} onChange={e => setAddForm(f => ({ ...f, oo_id: e.target.value }))} style={{ ...inp, marginTop: 3 }}>
+                <option value="">— Select company —</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            {([["Driver Name *", "name"], ["Phone", "phone"], ["CDL #", "cdl_number"], ["CDL State", "cdl_state"], ["Med Card #", "med_card_number"]] as const).map(([label, f]) => (
+              <div key={f}>
+                <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>{label}</label>
+                <input value={(addForm as any)[f]} onChange={e => setAddForm(s => ({ ...s, [f]: f === "cdl_state" ? e.target.value.toUpperCase().slice(0, 2) : e.target.value }))} style={{ ...inp, marginTop: 3 }} />
+              </div>
+            ))}
+            <div>
+              <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>CDL Class</label>
+              <select value={addForm.cdl_class} onChange={e => setAddForm(f => ({ ...f, cdl_class: e.target.value }))} style={{ ...inp, marginTop: 3 }}>
+                <option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>CDL Expiration</label>
+              <input type="date" value={addForm.cdl_expiration} onChange={e => setAddForm(f => ({ ...f, cdl_expiration: e.target.value }))} style={{ ...inp, marginTop: 3 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Med Card Expiration</label>
+              <input type="date" value={addForm.med_card_expiration} onChange={e => setAddForm(f => ({ ...f, med_card_expiration: e.target.value }))} style={{ ...inp, marginTop: 3 }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            <button onClick={addDriver} disabled={adding} style={{ background: adding ? "#94a3b8" : "#16a34a", color: "#fff", border: "none", borderRadius: 9, padding: "9px 20px", fontWeight: 800, fontSize: "0.84rem", cursor: adding ? "default" : "pointer" }}>{adding ? "Adding…" : "Add Driver"}</button>
+            <button onClick={() => { setShowAdd(false); setAddForm({ ...BLANK_ADD }); }} style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 9, padding: "9px 18px", fontWeight: 700, fontSize: "0.84rem", cursor: "pointer" }}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", margin: "14px 0 16px" }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search driver, company, CDL #…" style={{ ...inp, width: 280, padding: "8px 12px" }} />
