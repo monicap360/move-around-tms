@@ -123,12 +123,27 @@ export async function POST(req: NextRequest) {
   const ooNameById = new Map<string, string>(); for (const o of ooList as any[]) ooNameById.set(o.id, o.company_name);
 
   const { data: drv } = ooIds.length ? await sb.from("ronyx_oo_drivers").select("id, oo_id, name, cdl_number, cdl_expiration, med_card_number, med_card_expiration, truck_number").in("oo_id", ooIds).limit(10000) : { data: [] as any[] };
-  const drvByKey = new Map<string, any>();
-  for (const d of (drv || []) as any[]) drvByKey.set(`${norm(ooNameById.get(d.oo_id) || "")}|${nameSig(d.name)}`, d);
-  // Also index by name signature alone, so a driver stored under a different/blank
-  // company still matches (prevents creating a duplicate of an existing person).
-  const drvByName = new Map<string, any>();
-  for (const d of (drv || []) as any[]) { const k = nameSig(d.name); if (k && !drvByName.has(k)) drvByName.set(k, d); }
+  // Index existing drivers by their name tokens so we can match a person even when
+  // names differ by ORDER ("Vazquez, Jorge" vs "Jorge Vazquez") or a MIDDLE NAME
+  // ("Moore, Mark" vs "Mark Anthony Moore"). We require first+last to both match
+  // (>= 2 shared tokens), preferring a match inside the same owner-operator company.
+  const toks = (s: unknown) => nameSig(s).split(" ").filter(Boolean);
+  const existingDrivers = (drv || []).map((d: any) => ({ ...d, _toks: toks(d.name), _co: norm(ooNameById.get(d.oo_id) || "") }));
+  function matchExisting(name: string, companyKey: string): any | null {
+    const t = toks(name); if (!t.length) return null;
+    const tset = new Set(t);
+    if (t.length < 2) { // single-token name — require exact token match to stay safe
+      return existingDrivers.find((d: any) => d._toks.length === 1 && d._toks[0] === t[0]) || null;
+    }
+    let best: any = null, bestShared = 0, bestSameCo = false;
+    for (const d of existingDrivers) {
+      let shared = 0; for (const x of d._toks) if (tset.has(x)) shared++;
+      if (shared < 2) continue;
+      const sameCo = d._co === companyKey;
+      if ((sameCo && !bestSameCo) || (sameCo === bestSameCo && shared > bestShared)) { best = d; bestShared = shared; bestSameCo = sameCo; }
+    }
+    return best;
+  }
 
   // Resolve each sheet company to an existing OO (or mark new)
   const matchOO = (company: string) => ooByNorm.get(norm(company)) || ooByCore.get(stripCo(norm(company))) || null;
@@ -141,10 +156,8 @@ export async function POST(req: NextRequest) {
   for (const r of parsed) {
     const existingOO = matchOO(r.company);
     const companyKey = norm(existingOO?.company_name || r.company);
-    const dKey = `${companyKey}|${nameSig(r.name)}`;
-    // Match within the company first; otherwise match the person by name anywhere
-    // (so we never duplicate someone already in the system under another company).
-    const existingDriver = drvByKey.get(dKey) || drvByName.get(nameSig(r.name));
+    // Match the person (order- and middle-name-tolerant), preferring same company.
+    const existingDriver = matchExisting(r.name, companyKey);
 
     if (!existingOO && !newCompanies.has(norm(r.company))) newCompanies.set(norm(r.company), r.company);
 

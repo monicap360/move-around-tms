@@ -522,6 +522,29 @@ export default function IntelImportCenterPage() {
 
       if (intel.module === "drivers") {
         const mapped = transformRows(intel.rows, intel.mappings);
+        const hasCompany = mapped.some((r: any) => (r.company_name || "").toString().trim());
+        if (hasCompany && uploadedFile) {
+          // Owner-operator roster (it has a Company column) → use the dedicated roster
+          // engine so Truck #, Med Card #/Exp land in ronyx_oo_drivers (Fleet CDL & Medical),
+          // deduped per person regardless of name order. The W2 drivers/import path below
+          // is only for plain driver lists with no owner-operator company.
+          setProgress(45);
+          const fd = new FormData(); fd.append("file", uploadedFile); fd.append("mode", "commit");
+          const rosterRes = await fetch("/api/ronyx/owner-operators/roster-import", { method: "POST", body: fd });
+          const rosterData = await rosterRes.json().catch(() => ({}));
+          setProgress(100);
+          importResult = {
+            ok: !!(rosterRes.ok && rosterData.ok),
+            imported: rosterData.driversCreated ?? 0,
+            updated: rosterData.enriched ?? 0,
+            skipped: rosterData.skipped ?? 0,
+            failed: 0,
+            errors: rosterData.error ? [rosterData.error] : [],
+            nextAction: (rosterRes.ok && rosterData.ok)
+              ? `Owner-operator roster imported — ${rosterData.driversCreated} new drivers, ${rosterData.companiesCreated} new companies, ${rosterData.enriched} updated (truck #, med card #, med exp filled in). Open Fleet CDL & Medical to review.`
+              : (rosterData.error ?? "Import failed."),
+          };
+        } else {
         const driverRows = mapped.map(r => ({
           driver_name:             r.driver_name ?? "",
           phone:                   r.phone ?? "",
@@ -529,9 +552,9 @@ export default function IntelImportCenterPage() {
           driver_type:             r.driver_type ?? "W2",
           truck_number:            r.truck_number ?? "",
           cdl_number:              r.cdl_number ?? "",
-          cdl_state:               "",
+          cdl_state:               r.cdl_state ?? "",
           cdl_expiration:          r.cdl_expiration ?? "",
-          medical_card_number:     "",
+          medical_card_number:     r.medical_card_number ?? "",
           medical_card_expiration: r.medical_card_expiration ?? "",
           job_assignment:          "",
           company_name:            r.company_name ?? "",
@@ -564,6 +587,7 @@ export default function IntelImportCenterPage() {
           errors:     data.errors     ?? [],
           nextAction: res.ok ? "Go to the Driver Directory to review imported drivers." : (data.error ?? "Import failed — check errors below."),
         };
+        }
       } else {
         // All other modules: upload the original file
         if (!uploadedFile) throw new Error("File not available. Please re-upload.");
