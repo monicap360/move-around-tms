@@ -47,6 +47,22 @@ export default function Receivables() {
       .catch(() => {});
   }, []);
 
+  // Collections communication log (collection_notes), loaded per open customer.
+  const [notes, setNotes] = useState<{ id: string; note: string; promise: string | null; by: string; at: string }[]>([]);
+  const [noteText, setNoteText] = useState("");
+  const [promiseDate, setPromiseDate] = useState("");
+  const loadNotes = (customer: string) => fetch(`/api/ronyx/accounting/collections?customer=${encodeURIComponent(customer)}`).then(r => r.json()).then(d => setNotes(d.notes || [])).catch(() => setNotes([]));
+  useEffect(() => { if (drawer) { loadNotes(drawer); setNoteText(""); setPromiseDate(""); } }, [drawer]);
+  async function saveNote(promiseOnly = false) {
+    if (!drawer) return;
+    const body: any = { customer_name: drawer, created_by: "Sylvia P" };
+    if (promiseOnly) { if (!promiseDate) return; body.promise_to_pay = promiseDate; }
+    else { if (!noteText.trim()) return; body.note = noteText.trim(); }
+    const res = await fetch("/api/ronyx/accounting/collections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.ok) { setNoteText(""); setPromiseDate(""); loadNotes(drawer); flash(promiseOnly ? "Promise to pay recorded." : "Collection note saved."); }
+    else { const e = await res.json().catch(() => ({})); flash(`Couldn't save — ${e.error || "try again"}`); }
+  }
+
   const open = allInv.filter(i => balance(i) > 0.01);
 
   const kpis = useMemo(() => {
@@ -163,6 +179,26 @@ export default function Receivables() {
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {ACTIONS.map(a => <button key={a} onClick={() => flash(`${a} — ${drawer} (demo)`)} style={{ ...chip, cursor: "pointer", padding: "7px 11px", background: a.includes("Hold") || a.includes("Dispute") || a.includes("Escalate") ? "#fef2f2" : "#f8fafc", color: a.includes("Hold") || a.includes("Dispute") || a.includes("Escalate") ? "#dc2626" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
             </div>
+
+            {/* Communication log — real, persisted to collection_notes */}
+            <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", margin: "18px 0 8px" }}>Communication Log</div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              <input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Log a call, email, or note…" onKeyDown={e => { if (e.key === "Enter") saveNote(false); }} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }} />
+              <button onClick={() => saveNote(false)} style={{ ...primaryBtn, padding: "8px 14px", whiteSpace: "nowrap" }}>Log</button>
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700 }}>Promise to pay:</span>
+              <input type="date" value={promiseDate} onChange={e => setPromiseDate(e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: "0.78rem" }} />
+              <button onClick={() => saveNote(true)} style={{ ...chip, cursor: "pointer", background: "#1d4ed8", color: "#fff", padding: "7px 11px", whiteSpace: "nowrap" }}>Record</button>
+            </div>
+            {notes.length === 0 ? (
+              <div style={{ fontSize: "0.78rem", color: "#94a3b8", paddingBottom: 8 }}>No contact logged yet.</div>
+            ) : notes.map(n => (
+              <div key={n.id} style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.8rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8", fontSize: "0.7rem" }}><span>{n.by}</span><span>{n.at}</span></div>
+                <div style={{ color: "#334155" }}>{n.note}{n.promise && <span style={{ ...chip, marginLeft: 6, background: "#dbeafe", color: "#1d4ed8" }}>PTP {n.promise}</span>}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
