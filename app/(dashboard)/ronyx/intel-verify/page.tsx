@@ -174,7 +174,7 @@ export default function IntelVerifyPage() {
               ← Owner Operators
             </Link>
             <Link href="/ronyx/intel-import-center" style={{ padding: "8px 16px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 9, fontWeight: 700, fontSize: 12, color: "#475569", textDecoration: "none" }}>
-              Intel Import Center™
+              Smart Import Center™
             </Link>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type Driver = {
   id: string; oo_id: string; company: string; name: string; phone: string;
-  cdl_number: string; cdl_state: string; cdl_class: string;
+  cdl_number: string; cdl_state: string; cdl_class: string; truck_number: string;
   cdl_expiration: string; med_card_expiration: string; med_card_number: string; updated_at: string;
 };
 
@@ -15,7 +15,7 @@ const expFg = (n: number | null) => n === null ? "#94a3b8" : n < 0 ? "#dc2626" :
 const lbl = (n: number | null) => n === null ? "—" : n < 0 ? "EXPIRED" : n + "d";
 const inp: React.CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 7, border: "1px solid #e2e8f0", fontSize: "0.8rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 
-const BLANK_ADD = { oo_id: "", name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_class: "", cdl_expiration: "", med_card_expiration: "", med_card_number: "" };
+const BLANK_ADD = { oo_id: "", name: "", phone: "", truck_number: "", cdl_number: "", cdl_state: "TX", cdl_class: "", cdl_expiration: "", med_card_expiration: "", med_card_number: "" };
 
 export default function FleetCdlMedical() {
   const [rows, setRows] = useState<Driver[]>([]);
@@ -128,7 +128,7 @@ export default function FleetCdlMedical() {
                 {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            {([["Driver Name *", "name"], ["Phone", "phone"], ["CDL #", "cdl_number"], ["CDL State", "cdl_state"], ["Med Card #", "med_card_number"]] as const).map(([label, f]) => (
+            {([["Driver Name *", "name"], ["Truck #", "truck_number"], ["Phone", "phone"], ["CDL #", "cdl_number"], ["CDL State", "cdl_state"], ["Med Card #", "med_card_number"]] as const).map(([label, f]) => (
               <div key={f}>
                 <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>{label}</label>
                 <input value={(addForm as any)[f]} onChange={e => setAddForm(s => ({ ...s, [f]: f === "cdl_state" ? e.target.value.toUpperCase().slice(0, 2) : e.target.value }))} style={{ ...inp, marginTop: 3 }} />
@@ -171,7 +171,7 @@ export default function FleetCdlMedical() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem", minWidth: 1180 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Company / Driver", "CDL #", "State", "Class", "CDL Expiration", "Med Card Expiration", "Med Card #", ""].map(h => (
+                  {["Company / Driver", "Truck #", "CDL #", "State", "Class", "CDL Expiration", "Med Card Expiration", "Med Card #", ""].map(h => (
                     <th key={h} style={{ padding: "9px 12px", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc" }}>{h}</th>
                   ))}
                 </tr>
@@ -188,6 +188,7 @@ export default function FleetCdlMedical() {
                           <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
                           <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                         </td>
+                        <td style={cell}>{d.truck_number ? <span style={{ background: "#f1f5f9", color: "#0f172a", padding: "2px 8px", borderRadius: 6, fontWeight: 800, fontSize: "0.74rem" }}>{d.truck_number}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
                         <td style={cell}>{d.cdl_number || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
                         <td style={cell}>{d.cdl_state ? <span style={{ background: "#eff6ff", color: "#1e40af", padding: "2px 7px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>{d.cdl_state}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
                         <td style={cell}>{d.cdl_class ? <span style={{ background: "#f0fdf4", color: "#15803d", padding: "2px 7px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>Class {d.cdl_class}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
@@ -217,6 +218,7 @@ export default function FleetCdlMedical() {
                         <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
                         <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                       </td>
+                      <td style={{ padding: "6px 10px", width: 90 }}><input value={val(d, "truck_number")} onChange={e => setField(d.id, "truck_number", e.target.value)} placeholder="Truck #" style={inp} /></td>
                       <td style={{ padding: "6px 10px", minWidth: 130 }}><input autoFocus value={val(d, "cdl_number")} onChange={e => setField(d.id, "cdl_number", e.target.value)} style={inp} /></td>
                       <td style={{ padding: "6px 10px", width: 64 }}><input value={val(d, "cdl_state")} onChange={e => setField(d.id, "cdl_state", e.target.value)} maxLength={2} placeholder="TX" style={{ ...inp, textTransform: "uppercase" }} /></td>
                       <td style={{ padding: "6px 10px", width: 86 }}>

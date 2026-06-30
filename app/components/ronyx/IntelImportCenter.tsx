@@ -162,7 +162,7 @@ export default function IntelImportCenter({
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: "1.4rem" }}>📥</span>
                 <span style={{ color: "#fff", fontWeight: 800, fontSize: "1.1rem", letterSpacing: "-0.3px" }}>
-                  Intel Import Center™
+                  Smart Import Center™
                 </span>
               </div>
               <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.75rem", marginTop: 4, marginLeft: 2 }}>

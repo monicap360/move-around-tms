@@ -14,6 +14,9 @@ export const dynamic = "force-dynamic";
 //   commit  → creates the missing companies + drivers, fills blank CDL/medical on existing
 
 const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/\s+/g, " ").replace(/[.,]+$/g, "").trim();
+// Order-insensitive name signature so "Vazquez, Jorge" matches "Jorge Vazquez".
+// Drops suffix tags like "- E3"/"Jls" and 1-char tokens, then sorts the tokens.
+const nameSig = (s: unknown) => String(s ?? "").toLowerCase().replace(/\b(jr|sr|e3|jls|iii|ii|iv)\b/g, " ").replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(t => t.length > 1).sort().join(" ").trim();
 const stripCo = (s: string) => s.replace(/\b(llc|inc|trucking|transport|transportation|logistics|company|co|services|service|corp|group|enterprises)\b/g, "").replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
 
 function normalizeDate(raw: unknown): string | null {
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
     const job = get(arr, "job_assignment");
     if (!company) company = job; // BAS / TC Red Wine direct drivers
     if (!company) continue;
-    const key = `${norm(company)}|${norm(name)}`;
+    const key = `${norm(company)}|${nameSig(name)}`;
     const next: Row = {
       name, company, job_assignment: job,
       cdl_number: get(arr, "cdl_number"), cdl_expiration: normalizeDate(get(arr, "cdl_expiration")),
@@ -119,9 +122,13 @@ export async function POST(req: NextRequest) {
   const ooIds = ooList.map((o: any) => o.id);
   const ooNameById = new Map<string, string>(); for (const o of ooList as any[]) ooNameById.set(o.id, o.company_name);
 
-  const { data: drv } = ooIds.length ? await sb.from("ronyx_oo_drivers").select("id, oo_id, name, cdl_number, cdl_expiration, med_card_number, med_card_expiration").in("oo_id", ooIds).limit(10000) : { data: [] as any[] };
+  const { data: drv } = ooIds.length ? await sb.from("ronyx_oo_drivers").select("id, oo_id, name, cdl_number, cdl_expiration, med_card_number, med_card_expiration, truck_number").in("oo_id", ooIds).limit(10000) : { data: [] as any[] };
   const drvByKey = new Map<string, any>();
-  for (const d of (drv || []) as any[]) drvByKey.set(`${norm(ooNameById.get(d.oo_id) || "")}|${norm(d.name)}`, d);
+  for (const d of (drv || []) as any[]) drvByKey.set(`${norm(ooNameById.get(d.oo_id) || "")}|${nameSig(d.name)}`, d);
+  // Also index by name signature alone, so a driver stored under a different/blank
+  // company still matches (prevents creating a duplicate of an existing person).
+  const drvByName = new Map<string, any>();
+  for (const d of (drv || []) as any[]) { const k = nameSig(d.name); if (k && !drvByName.has(k)) drvByName.set(k, d); }
 
   // Resolve each sheet company to an existing OO (or mark new)
   const matchOO = (company: string) => ooByNorm.get(norm(company)) || ooByCore.get(stripCo(norm(company))) || null;
@@ -134,8 +141,10 @@ export async function POST(req: NextRequest) {
   for (const r of parsed) {
     const existingOO = matchOO(r.company);
     const companyKey = norm(existingOO?.company_name || r.company);
-    const dKey = `${companyKey}|${norm(r.name)}`;
-    const existingDriver = drvByKey.get(dKey);
+    const dKey = `${companyKey}|${nameSig(r.name)}`;
+    // Match within the company first; otherwise match the person by name anywhere
+    // (so we never duplicate someone already in the system under another company).
+    const existingDriver = drvByKey.get(dKey) || drvByName.get(nameSig(r.name));
 
     if (!existingOO && !newCompanies.has(norm(r.company))) newCompanies.set(norm(r.company), r.company);
 
@@ -145,7 +154,8 @@ export async function POST(req: NextRequest) {
       if (!existingDriver.cdl_expiration && r.cdl_expiration) fills.push("CDL exp");
       if (!existingDriver.med_card_number && r.med_card_number) fills.push("Med card #");
       if (!existingDriver.med_card_expiration && r.med_card_expiration) fills.push("Med exp");
-      if (fills.length) enrich.push({ id: existingDriver.id, name: r.name, company: existingOO!.company_name, fills, data: r });
+      if (!existingDriver.truck_number && r.truck_number) fills.push("Truck #");
+      if (fills.length) enrich.push({ id: existingDriver.id, name: existingDriver.name, company: ooNameById.get(existingDriver.oo_id) || existingOO?.company_name || "", fills, data: r });
       else skipped++;
     } else {
       newDrivers.push({ ...r, _company: existingOO?.company_name || r.company });
@@ -202,6 +212,7 @@ export async function POST(req: NextRequest) {
     if (e.fills.includes("CDL exp")) patch.cdl_expiration = e.data.cdl_expiration;
     if (e.fills.includes("Med card #")) patch.med_card_number = e.data.med_card_number;
     if (e.fills.includes("Med exp")) patch.med_card_expiration = e.data.med_card_expiration;
+    if (e.fills.includes("Truck #")) patch.truck_number = e.data.truck_number;
     if (Object.keys(patch).length) { const { error } = await sb.from("ronyx_oo_drivers").update(patch).eq("id", e.id); if (!error) enriched++; }
   }
 

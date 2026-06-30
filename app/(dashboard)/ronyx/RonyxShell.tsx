@@ -674,7 +674,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
         <div className="tms-qa">
           <div className="tms-qa-label">Quick Tools</div>
           <button className="tms-qa-item" onClick={() => { setMobileOpen(false); setImportOpen(true); }}>
-            <span>📥</span><span>Intel Import Center™</span>
+            <span>📥</span><span>Smart Import Center™</span>
           </button>
           <Link href="/ronyx/fast-scan" className="tms-qa-item" onClick={() => setMobileOpen(false)}>
             <span>⚡</span><span>Fast Scan™</span>
@@ -908,14 +908,14 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
 
       {trainingOpen && <StaffTraining name={activeStaff?.name?.split(" ")[0] || displayName} onClose={() => setTrainingOpen(false)} />}
 
-      {/* Intel Import Center™ FAB */}
+      {/* Smart Import Center™ FAB */}
       {!fabHidden && (
         <div style={{ position: "fixed", bottom: 22, right: 22, zIndex: 100 }}>
           <button className="tms-smart-import-fab" onClick={() => { setMobileOpen(false); setImportOpen(true); }}>
             <span style={{ fontSize: "0.95rem" }}>📥</span>
-            Intel Import
+            Smart Import
           </button>
-          <button onClick={() => setFabHidden(true)} title="Hide this button" aria-label="Hide Intel Import button"
+          <button onClick={() => setFabHidden(true)} title="Hide this button" aria-label="Hide Smart Import button"
             style={{ position: "absolute", top: -7, right: -7, width: 20, height: 20, borderRadius: "50%", background: "#fff", color: "#475569", border: "1px solid #cbd5e1", fontSize: "0.72rem", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.18)", lineHeight: 1, padding: 0 }}>×</button>
         </div>
       )}

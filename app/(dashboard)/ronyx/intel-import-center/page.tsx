@@ -71,7 +71,7 @@ interface HistoryItem {
 
 const L: Record<Lang, Record<string, string>> = {
   en: {
-    title:       "Intel Import Center™",
+    title:       "Smart Import Center™",
     powered:     "Powered by MoveAround TMS",
     subtitle:    "Turn spreadsheets, ticket exports, PDFs, and operational files into verified work.",
     helper:      "Upload a file. We identify it, map the data, catch issues, and send each item where it belongs.",
@@ -622,7 +622,7 @@ export default function IntelImportCenterPage() {
             )}
             {panel === "help" && (
               <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
-                <p style={{ marginTop: 0 }}><strong>What is the Intel Import Center™?</strong><br />It reads files you upload, identifies the data type, maps columns to known fields, checks for quality issues, and routes each item to the correct module in MoveAround TMS.</p>
+                <p style={{ marginTop: 0 }}><strong>What is the Smart Import Center™?</strong><br />It reads files you upload, identifies the data type, maps columns to known fields, checks for quality issues, and routes each item to the correct module in MoveAround TMS.</p>
                 <p><strong>Supported formats</strong><br />Excel (.xlsx, .xls), CSV (.csv), PDF (text-based). Files up to 50MB.</p>
                 <p><strong>What does "recognized" mean?</strong><br />A column is recognized when its header matches a known field name. Unrecognized columns are ignored — they won't cause errors.</p>
                 <p><strong>What is a dry run?</strong><br />Dry run analyzes the file without saving any changes. Use it to verify your data looks correct before committing.</p>
