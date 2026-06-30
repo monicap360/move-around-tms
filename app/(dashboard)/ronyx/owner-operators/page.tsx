@@ -1889,7 +1889,7 @@ export default function OwnerOperatorsPage() {
             </div>
 
             {/* per-document status tiles */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
               {enriched.map(e => {
                 const p = pillOf(e);
                 const f = e.onFile;
@@ -1901,7 +1901,7 @@ export default function OwnerOperatorsPage() {
                       </span>
                       <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: p.bg, color: p.fg, border: `1px solid ${p.bd}`, whiteSpace: "nowrap" }}>{p.txt}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                       <label style={{ flex: f ? "0 0 auto" : "1 1 auto", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, color: "#fff", background: f ? "#64748b" : "#1e40af", borderRadius: 7, cursor: "pointer" }}>
                         {f ? "Replace" : "Upload"}
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={ev => {
