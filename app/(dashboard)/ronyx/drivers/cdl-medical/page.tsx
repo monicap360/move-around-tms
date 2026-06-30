@@ -24,6 +24,8 @@ export default function FleetCdlMedical() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 25;
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "expired" | "expiring" | "missing">("all");
   const [toast, setToast] = useState("");
@@ -102,8 +104,14 @@ export default function FleetCdlMedical() {
 
   const dirtyCount = Object.keys(edits).filter(id => edits[id] && Object.keys(edits[id]).length).length;
 
+  // Pagination — keep the page short. Reset to page 1 when the filter/search changes.
+  useEffect(() => { setPage(1); }, [q, filter]);
+  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const curPage = Math.min(page, pageCount);
+  const paged = shown.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
+
   return (
-    <div style={{ padding: "22px 26px 80px", maxWidth: 1500, margin: "0 auto", color: "#0f172a" }}>
+    <div style={{ padding: "22px 18px 60px", maxWidth: 1400, margin: "0 auto", color: "#0f172a" }}>
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
@@ -168,23 +176,23 @@ export default function FleetCdlMedical() {
         : shown.length === 0 ? <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 30, textAlign: "center", color: "#94a3b8" }}>No drivers in this view.</div>
         : (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem", minWidth: 1180 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem", minWidth: 940 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Company / Driver", "Truck #", "CDL #", "State", "Class", "CDL Expiration", "Med Card Expiration", "Med Card #", ""].map(h => (
-                    <th key={h} style={{ padding: "9px 12px", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc" }}>{h}</th>
+                  {["Company / Driver", "Truck #", "CDL #", "State", "Class", "CDL Expiration", "Med Card Expiration", "Med Card #", ""].map((h, i, arr) => (
+                    <th key={h || "actions"} style={{ padding: "9px 10px", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc", ...(i === arr.length - 1 ? { right: 0, zIndex: 2 } : {}) }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {shown.map(d => {
+                {paged.map(d => {
                   const c = daysUntil(val(d, "cdl_expiration")); const m = daysUntil(val(d, "med_card_expiration"));
                   const editing = editingId === d.id;
-                  const cell: React.CSSProperties = { padding: "8px 12px", color: "#334155" };
+                  const cell: React.CSSProperties = { padding: "7px 10px", color: "#334155" };
                   if (!editing) {
                     return (
                       <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ ...cell, minWidth: 200 }}>
+                        <td style={{ ...cell, minWidth: 150 }}>
                           <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
                           <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                         </td>
@@ -193,19 +201,19 @@ export default function FleetCdlMedical() {
                         <td style={cell}>{d.cdl_state ? <span style={{ background: "#eff6ff", color: "#1e40af", padding: "2px 7px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>{d.cdl_state}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
                         <td style={cell}>{d.cdl_class ? <span style={{ background: "#f0fdf4", color: "#15803d", padding: "2px 7px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>Class {d.cdl_class}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
                         <td style={cell}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                             <span>{d.cdl_expiration || <span style={{ color: "#cbd5e1" }}>—</span>}</span>
-                            {d.cdl_expiration && <span style={{ background: expBg(c), color: expFg(c), padding: "3px 7px", borderRadius: 6, fontWeight: 800, fontSize: "0.68rem", whiteSpace: "nowrap" }}>{lbl(c)}</span>}
+                            {d.cdl_expiration && <span style={{ background: expBg(c), color: expFg(c), padding: "1px 6px", borderRadius: 6, fontWeight: 800, fontSize: "0.64rem", whiteSpace: "nowrap", alignSelf: "flex-start" }}>{lbl(c)}</span>}
                           </div>
                         </td>
                         <td style={cell}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                             <span>{d.med_card_expiration || <span style={{ color: "#cbd5e1" }}>—</span>}</span>
-                            {d.med_card_expiration && <span style={{ background: expBg(m), color: expFg(m), padding: "3px 7px", borderRadius: 6, fontWeight: 800, fontSize: "0.68rem", whiteSpace: "nowrap" }}>{lbl(m)}</span>}
+                            {d.med_card_expiration && <span style={{ background: expBg(m), color: expFg(m), padding: "1px 6px", borderRadius: 6, fontWeight: 800, fontSize: "0.64rem", whiteSpace: "nowrap", alignSelf: "flex-start" }}>{lbl(m)}</span>}
                           </div>
                         </td>
                         <td style={cell}>{d.med_card_number || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
-                        <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "6px 10px", whiteSpace: "nowrap", position: "sticky", right: 0, background: "#fff" }}>
                           <button onClick={() => { setEditingId(d.id); }} disabled={!!editingId}
                             style={{ background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: editingId ? "not-allowed" : "pointer", opacity: editingId && !editing ? 0.4 : 1 }}>✏ Edit</button>
                         </td>
@@ -214,32 +222,32 @@ export default function FleetCdlMedical() {
                   }
                   return (
                     <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", background: "#fffbeb", boxShadow: "inset 3px 0 0 #f59e0b" }}>
-                      <td style={{ padding: "8px 12px", minWidth: 200 }}>
+                      <td style={{ padding: "7px 10px", minWidth: 150 }}>
                         <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
                         <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                       </td>
-                      <td style={{ padding: "6px 10px", width: 90 }}><input value={val(d, "truck_number")} onChange={e => setField(d.id, "truck_number", e.target.value)} placeholder="Truck #" style={inp} /></td>
-                      <td style={{ padding: "6px 10px", minWidth: 130 }}><input autoFocus value={val(d, "cdl_number")} onChange={e => setField(d.id, "cdl_number", e.target.value)} style={inp} /></td>
-                      <td style={{ padding: "6px 10px", width: 64 }}><input value={val(d, "cdl_state")} onChange={e => setField(d.id, "cdl_state", e.target.value)} maxLength={2} placeholder="TX" style={{ ...inp, textTransform: "uppercase" }} /></td>
-                      <td style={{ padding: "6px 10px", width: 86 }}>
+                      <td style={{ padding: "5px 8px", width: 80 }}><input value={val(d, "truck_number")} onChange={e => setField(d.id, "truck_number", e.target.value)} placeholder="Truck #" style={inp} /></td>
+                      <td style={{ padding: "5px 8px", minWidth: 120 }}><input autoFocus value={val(d, "cdl_number")} onChange={e => setField(d.id, "cdl_number", e.target.value)} style={inp} /></td>
+                      <td style={{ padding: "5px 8px", width: 56 }}><input value={val(d, "cdl_state")} onChange={e => setField(d.id, "cdl_state", e.target.value)} maxLength={2} placeholder="TX" style={{ ...inp, textTransform: "uppercase" }} /></td>
+                      <td style={{ padding: "5px 8px", width: 78 }}>
                         <select value={val(d, "cdl_class")} onChange={e => setField(d.id, "cdl_class", e.target.value)} style={inp}>
                           <option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option>
                         </select>
                       </td>
-                      <td style={{ padding: "6px 10px", minWidth: 168 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <td style={{ padding: "5px 8px", width: 140 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           <input type="date" value={val(d, "cdl_expiration")} onChange={e => setField(d.id, "cdl_expiration", e.target.value)} style={inp} />
-                          <span style={{ background: expBg(c), color: expFg(c), padding: "3px 7px", borderRadius: 6, fontWeight: 800, fontSize: "0.68rem", whiteSpace: "nowrap" }}>{lbl(c)}</span>
+                          <span style={{ background: expBg(c), color: expFg(c), padding: "1px 6px", borderRadius: 6, fontWeight: 800, fontSize: "0.64rem", whiteSpace: "nowrap", alignSelf: "flex-start" }}>{lbl(c)}</span>
                         </div>
                       </td>
-                      <td style={{ padding: "6px 10px", minWidth: 168 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <td style={{ padding: "5px 8px", width: 140 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           <input type="date" value={val(d, "med_card_expiration")} onChange={e => setField(d.id, "med_card_expiration", e.target.value)} style={inp} />
-                          <span style={{ background: expBg(m), color: expFg(m), padding: "3px 7px", borderRadius: 6, fontWeight: 800, fontSize: "0.68rem", whiteSpace: "nowrap" }}>{lbl(m)}</span>
+                          <span style={{ background: expBg(m), color: expFg(m), padding: "1px 6px", borderRadius: 6, fontWeight: 800, fontSize: "0.64rem", whiteSpace: "nowrap", alignSelf: "flex-start" }}>{lbl(m)}</span>
                         </div>
                       </td>
-                      <td style={{ padding: "6px 10px", minWidth: 120 }}><input value={val(d, "med_card_number")} onChange={e => setField(d.id, "med_card_number", e.target.value)} style={inp} /></td>
-                      <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "5px 8px", minWidth: 110 }}><input value={val(d, "med_card_number")} onChange={e => setField(d.id, "med_card_number", e.target.value)} style={inp} /></td>
+                      <td style={{ padding: "5px 10px", whiteSpace: "nowrap", position: "sticky", right: 0, background: "#fffbeb" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => save(d)} disabled={saving === d.id}
                             style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer" }}>
@@ -256,6 +264,24 @@ export default function FleetCdlMedical() {
             </table>
           </div>
         )}
+
+      {/* Pagination */}
+      {!loading && shown.length > PAGE_SIZE && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap", marginTop: 16 }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={curPage <= 1}
+            style={{ padding: "7px 13px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontWeight: 700, fontSize: "0.8rem", color: curPage <= 1 ? "#cbd5e1" : "#475569", cursor: curPage <= 1 ? "default" : "pointer" }}>← Prev</button>
+          {Array.from({ length: pageCount }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === pageCount || Math.abs(p - curPage) <= 2)
+            .reduce((acc: (number | string)[], p, idx, src) => { if (idx > 0 && p - (src[idx - 1] as number) > 1) acc.push("…"); acc.push(p); return acc; }, [])
+            .map((p, i) => p === "…"
+              ? <span key={`g${i}`} style={{ color: "#94a3b8", padding: "0 4px" }}>…</span>
+              : <button key={p} onClick={() => setPage(p as number)}
+                  style={{ minWidth: 36, padding: "7px 0", borderRadius: 8, border: "1px solid " + (p === curPage ? "#0f172a" : "#e2e8f0"), background: p === curPage ? "#0f172a" : "#fff", color: p === curPage ? "#fff" : "#475569", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer" }}>{p}</button>)}
+          <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={curPage >= pageCount}
+            style={{ padding: "7px 13px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontWeight: 700, fontSize: "0.8rem", color: curPage >= pageCount ? "#cbd5e1" : "#475569", cursor: curPage >= pageCount ? "default" : "pointer" }}>Next →</button>
+          <span style={{ marginLeft: 10, fontSize: "0.76rem", color: "#94a3b8", fontWeight: 600 }}>Page {curPage} of {pageCount} · {shown.length} drivers</span>
+        </div>
+      )}
     </div>
   );
 }
