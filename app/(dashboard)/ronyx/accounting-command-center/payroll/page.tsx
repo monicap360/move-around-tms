@@ -36,13 +36,19 @@ export default function Payroll() {
   const [toast, setToast] = useState("");
   const [data, setData] = useState<typeof DEMO>([]);
   const [live, setLive] = useState(false);
+  const [cash, setCash] = useState<number | null>(null);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
   useEffect(() => {
     fetch("/api/ronyx/accounting/payroll").then(r => r.json()).then(d => {
       if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
     }).catch(() => {});
+    fetch("/api/ronyx/accounting/overview").then(r => r.json()).then(d => { if (typeof d.cash === "number") setCash(d.cash); }).catch(() => {});
   }, []);
+
+  // Pre-funding check — can current cash cover this period's payroll?
+  const payrollDue = data.filter(d => d.appr !== "Paid").reduce((s, d) => s + net(d), 0);
+  const funding = (cash === null || payrollDue <= 0) ? null : { covered: cash >= payrollDue, diff: cash - payrollDue };
 
   const cards = useMemo(() => {
     const curPeriod = data[0]?.period;
@@ -66,6 +72,18 @@ export default function Payroll() {
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
       {locked && <div style={{ background: "#0f172a", color: "#fff", borderRadius: 10, padding: "9px 14px", marginBottom: 14, fontSize: "0.82rem", fontWeight: 700 }}>🔒 Wk 26 is locked — only Owner/Controller can unlock. Dispatchers cannot edit payroll.</div>}
+
+      {/* Pre-funding check */}
+      {funding && (
+        <div style={{ background: funding.covered ? "#f0fdf4" : "#fef2f2", border: `1px solid ${funding.covered ? "#bbf7d0" : "#fecaca"}`, borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <span style={{ fontSize: "0.72rem", fontWeight: 900, color: funding.covered ? "#15803d" : "#dc2626", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{funding.covered ? "✓ Payroll Covered" : "⚠ Payroll Funding Risk"}</span>
+          <span style={{ fontSize: "0.84rem", color: "#334155", fontWeight: 600 }}>
+            Cash on hand {fmt(cash || 0)} · payroll due {fmt(payrollDue)} ·{" "}
+            <strong style={{ color: funding.covered ? "#15803d" : "#dc2626" }}>{funding.covered ? `${fmt(funding.diff)} buffer` : `${fmt(Math.abs(funding.diff))} short`}</strong>
+          </span>
+          {!funding.covered && <a href="/ronyx/accounting-command-center/receivables" style={{ ...primaryBtn, textDecoration: "none", padding: "6px 12px", fontSize: "0.76rem" }}>Prioritize Collections →</a>}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
         {cards.map(c => <div key={c.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}><div style={{ fontSize: "0.64rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>{c.label}</div><div style={{ fontSize: "1.3rem", fontWeight: 900, color: c.tone, marginTop: 4 }}>{c.v}</div></div>)}
