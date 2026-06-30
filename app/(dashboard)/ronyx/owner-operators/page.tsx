@@ -1759,7 +1759,7 @@ export default function OwnerOperatorsPage() {
                   const v = e.target.value.trim();
                   if (v !== (selected.start_date || "")) { updateSelected({ ...selected, start_date: v || undefined }); flash("Start date saved."); }
                 }}
-                style={{ border: "none", borderBottom: "1px dashed #64748b", background: "transparent", color: "#cbd5e1", fontSize: "0.72rem", outline: "none", cursor: "pointer", padding: "1px 2px", width: 110 }}
+                style={{ border: "none", borderBottom: "1px dashed #64748b", background: "transparent", color: "#cbd5e1", fontSize: "0.78rem", outline: "none", cursor: "pointer", padding: "1px 2px", width: 158, minWidth: 158 }}
               />
             </div>
           </div>
@@ -1998,7 +1998,7 @@ export default function OwnerOperatorsPage() {
           const c = daysUntil(d.cdl_expiration); const m = daysUntil(d.med_card_expiration);
           if (c!==null && c<=0) missingItems.push({ label:`CDL Expired — ${d.name}` });
           if (m!==null && m<=0) missingItems.push({ label:`Medical Card Expired — ${d.name}` });
-          const cdlDoc = selected.documents.find(doc=>doc.type===`[${d.name}] CDL License`);
+          const cdlDoc = selected.documents.find(doc=>doc.type===`[${d.name}] CDL Front` || doc.type===`[${d.name}] CDL License`);
           if (!cdlDoc) missingItems.push({ label:`CDL Upload Missing — ${d.name}` });
         });
 
@@ -2676,8 +2676,8 @@ export default function OwnerOperatorsPage() {
                   }).map(d => {
                     const cdlD   = daysUntil(d.cdl_expiration);
                     const medD   = daysUntil(d.med_card_expiration);
-                    const cdlKey = `[${d.name}] CDL License`;
-                    const cdlDoc = selected.documents.find(doc => doc.type === cdlKey);
+                    const cdlKey = `[${d.name}] CDL Front`;
+                    const cdlDoc = selected.documents.find(doc => doc.type === cdlKey || doc.type === `[${d.name}] CDL License`);
                     const medKey = `[${d.name}] Medical Card`;
                     const medDoc = selected.documents.find(doc => doc.type === medKey);
                     return (
@@ -4209,8 +4209,6 @@ export default function OwnerOperatorsPage() {
               legacyTypes:["bass_equipment_auto_liability_coi","bass_equipment_general_liability_coi","bass_equipment_cargo_coi"] },
             { key:"named_coi_tc_redwine",     label:"TC Redwine",       icon:"🛠️", color:"#7c3aed", bg:"#f5f3ff",
               legacyTypes:["tc_redwine_auto_liability_coi","tc_redwine_general_liability_coi","tc_redwine_cargo_coi"] },
-            { key:"named_coi_pineda_commodity", label:"Pineda Commodity", icon:"🌾", color:"#b45309", bg:"#fffbeb",
-              legacyTypes:["pineda_commodity_auto_liability_coi","pineda_commodity_general_liability_coi","pineda_commodity_cargo_coi"] },
           ] as const).map(slot => {
             const doc = coiDocs.find(d => d.document_type === slot.key)
               || coiDocs.find(d => (slot.legacyTypes as readonly string[]).includes(d.document_type));
@@ -4565,7 +4563,8 @@ export default function OwnerOperatorsPage() {
               <label style={{ fontSize:"0.72rem", fontWeight:700, color:"#475569", display:"block", marginBottom:6 }}>Driver Documents</label>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {[
-                  { label:"🪪 CDL License",  type:`[${driverEditModal.driver.name}] CDL License`,  bg:"#1e40af" },
+                  { label:"🪪 CDL Front",    type:`[${driverEditModal.driver.name}] CDL Front`,    bg:"#1e40af" },
+                  { label:"🪪 CDL Back",     type:`[${driverEditModal.driver.name}] CDL Back`,     bg:"#1d4ed8" },
                   { label:"📋 Medical Card", type:`[${driverEditModal.driver.name}] Medical Card`, bg:"#0891b2" },
                 ].map(doc => {
                   const onFile = selected.documents.some(x => x.type === doc.type && (x.file_url || x.file_name));
