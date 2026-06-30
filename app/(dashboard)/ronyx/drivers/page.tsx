@@ -2153,8 +2153,11 @@ export default function DriversPage() {
           ) : viewMode === "list" ? (
             /* ── List View ── */
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }} onClick={() => setMoreMenuId(null)}>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+              <div>
+                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                  <colgroup>
+                    {["36px", "15%", "14%", "7%", "8%", "9%", "8%", "8%", "9%", "6%", "11%", "13%"].map((w, i) => <col key={i} style={{ width: w }} />)}
+                  </colgroup>
                   <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                     <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
                       {[
@@ -2265,7 +2268,7 @@ export default function DriversPage() {
                             </td>
                             {/* Actions */}
                             <td style={{ padding: "8px 6px" }} onClick={(e) => e.stopPropagation()}>
-                              <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                              <div style={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
                                 <button onClick={() => setDrawerDriver(driver)} style={{ ...btnS, background: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }}>View</button>
                                 <Link href={`/ronyx/drivers/${driver.id}`} style={{ textDecoration: "none" }}>
                                   <button style={btnS}>Profile</button>
