@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
     const { data: s, error } = await supabaseAdmin.from("owner_operator_settlements").select("*").eq("id", b.id).maybeSingle();
     if (error || !s) return NextResponse.json({ error: "Settlement not found" }, { status: 404 });
 
-    const patch: Record<string, any> = { updated_at: new Date().toISOString() };
+    const patch: Record<string, any> = {};
     if (b.action === "approve") patch.approval_status = "approved";
     else if (b.action === "hold") { patch.approval_status = "draft"; patch.payment_status = "hold"; }
     else if (b.action === "deduction") patch.other_deductions = num(s.other_deductions) + num(b.amount);
