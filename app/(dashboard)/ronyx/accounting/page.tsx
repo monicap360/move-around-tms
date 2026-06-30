@@ -221,7 +221,13 @@ export default function RonyxAccountingPage() {
               Tickets flow automatically into the billing queue once approved. Select tickets → create invoice → export to QuickBooks.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/ronyx/accounting-command-center/settlements" style={{ background: "#059669", border: "1.5px solid #059669", color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: "none" }}>
+              🤝 Owner-Op Settlements →
+            </Link>
+            <Link href="/ronyx/accounting-command-center" style={{ background: "#1e3a8a", border: "1.5px solid #1e3a8a", color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
+              🎯 Command Center →
+            </Link>
             <Link href="/ronyx/accounts-receivable" style={{ background: "#eff6ff", border: "1.5px solid #93c5fd", color: "#1d4ed8", padding: "8px 16px", borderRadius: 8, fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
               AR Tracker →
             </Link>
