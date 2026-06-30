@@ -54,6 +54,26 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
     setBusy(false);
   }
 
+  // Self-service: change your own PIN (verify current first, then set a new one).
+  async function changePin() {
+    if (!selected) return;
+    if (pin.length < 4) { setErr("Enter your current PIN first, then tap Change PIN."); return; }
+    setBusy(true); setErr("");
+    try {
+      const r = await fetch("/api/ronyx/staff-pins/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: selected.id, pin }) });
+      const d = await r.json();
+      if (!d.ok) { setErr("Current PIN is incorrect."); setPin(""); setBusy(false); return; }
+      const np = safePrompt(`New 4–6 digit PIN for ${selected.name}:`);
+      if (np === null) { setBusy(false); return; }
+      if (!/^\d{4,6}$/.test(np)) { setErr("New PIN must be 4–6 digits."); setBusy(false); return; }
+      const sr = await fetch("/api/ronyx/staff-pins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "set_pin", id: selected.id, pin: np }) });
+      const sd = await sr.json().catch(() => ({}));
+      if (sr.ok && sd.ok !== false) { setPin(""); setErr("✓ PIN changed — enter your new PIN to continue."); }
+      else setErr(sd.error || "Could not change PIN.");
+    } catch { setErr("Network error."); }
+    setBusy(false);
+  }
+
   const initials = (n: string) => n.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
@@ -109,7 +129,7 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
                 <span key={i} style={{ width: 14, height: 14, borderRadius: "50%", background: i < pin.length ? "#4f46e5" : "#e2e8f0", visibility: i < 4 || i < pin.length ? "visible" : "hidden" }} />
               ))}
             </div>
-            {err && <div style={{ textAlign: "center", color: "#dc2626", fontSize: 13, marginBottom: 10 }}>{err}</div>}
+            {err && <div style={{ textAlign: "center", color: err.startsWith("✓") ? "#15803d" : "#dc2626", fontSize: 13, marginBottom: 10, fontWeight: err.startsWith("✓") ? 700 : 400 }}>{err}</div>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 260, margin: "0 auto" }}>
               {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(n => (
                 <button key={n} onClick={() => setPin(p => (p.length < 6 ? p + n : p))} style={keyBtn}>{n}</button>
@@ -121,6 +141,9 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
               <button onClick={() => { setView("pick"); setPin(""); setErr(""); }} style={{ ...btnGhost, flex: "0 0 auto" }}>← Back</button>
               <button onClick={submitPin} disabled={pin.length < 4 || busy} style={{ ...btnPrimary, flex: 1, opacity: pin.length < 4 || busy ? 0.5 : 1 }}>{busy ? "Checking…" : "Unlock"}</button>
+            </div>
+            <div style={{ textAlign: "center", marginTop: 10 }}>
+              <button onClick={changePin} disabled={busy} style={{ ...btnGhost, fontSize: 12 }}>🔑 Change my PIN</button>
             </div>
           </div>
         )}
