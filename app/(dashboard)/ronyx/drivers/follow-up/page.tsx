@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Encouragement from "@/app/components/ronyx/Encouragement";
 
 type Row = { id: string; name: string; phone: string | null; carrier: string | null; level: "critical" | "warning"; issues: string[] };
 const chip: React.CSSProperties = { fontSize: "0.62rem", fontWeight: 800, padding: "2px 8px", borderRadius: 999, display: "inline-block" };
@@ -47,6 +48,7 @@ export default function FollowUp() {
         </div>
       </div>
       <p style={{ color: "#64748b", fontSize: "0.88rem", marginTop: 4 }}>Drivers with a missing or expired document. Call the driver, then tap <strong>Mark contacted</strong> — it logs the date + your name to their record.</p>
+      <Encouragement name={by.split(" ")[0]} />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "10px 0 16px" }}>
         {([["all", `All (${rows.length})`], ["critical", `🔴 Critical (${critical})`], ["warning", `🟡 Expiring (${rows.length - critical})`]] as const).map(([k, lbl]) => (

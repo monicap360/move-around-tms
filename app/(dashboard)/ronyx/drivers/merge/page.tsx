@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Encouragement from "@/app/components/ronyx/Encouragement";
 
 type Rec = { id: string; name: string; phone: string | null; license_number: string | null; notes: string | null; created_at: string | null; carrier_name: string | null; assigned_truck_number: string | null };
 
@@ -46,6 +47,7 @@ export default function MergeDrivers() {
         <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 14px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
       </div>
       <p style={{ color: "#64748b", fontSize: "0.88rem", marginTop: 0 }}>Same-name driver records grouped together. Pick the one to <strong>keep</strong> — the others merge into it (their phone, license, truck, and notes fill any blanks) and are archived. Nothing is permanently deleted.</p>
+      <Encouragement />
 
       {loading ? <div style={{ color: "#94a3b8", padding: 40, textAlign: "center" }}>Scanning for duplicates…</div>
         : groups.length === 0 ? <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", borderRadius: 12, padding: "20px", textAlign: "center", fontWeight: 700 }}>✓ No duplicate driver names found.</div>
