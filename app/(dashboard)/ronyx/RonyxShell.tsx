@@ -166,6 +166,19 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
   const [searchOpen,   setSearchOpen]   = useState(false);
   const [tourOpen,     setTourOpen]     = useState(false);
 
+  // ── Customizable sidebar color (per-device preference, saved in localStorage) ──
+  const [sbColor,   setSbColor]   = useState("#111a3d");
+  const [themeOpen, setThemeOpen] = useState(false);
+  useEffect(() => { try { const v = localStorage.getItem("tms_sidebar_color"); if (v) setSbColor(v); } catch {} }, []);
+  const pickSbColor = (hex: string) => { setSbColor(hex); try { localStorage.setItem("tms_sidebar_color", hex); } catch {} };
+  const darken = (hex: string, f: number) => {
+    const m = hex.replace("#", "").match(/.{2}/g);
+    if (!m || m.length < 3) return hex;
+    const [r, g, b] = m.map(h => Math.max(0, Math.round(parseInt(h, 16) * (1 - f))));
+    return `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
+  };
+  const SB_PRESETS = ["#111a3d", "#1e293b", "#0f3d3e", "#3b0764", "#14342b", "#18181b", "#1e3a8a", "#4c0519"];
+
   // ── Per-staff PIN switcher (org runs on a trusted device; staff identify with a PIN) ──
   const [activeStaff, setActiveStaff] = useState<ActiveStaff | null>(null);
   const [pinReady,    setPinReady]    = useState(false);
@@ -331,7 +344,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
           background:
             radial-gradient(120% 55% at 0% 0%, rgba(56,189,248,0.10), transparent 60%),
             radial-gradient(90% 50% at 100% 100%, rgba(139,92,246,0.14), transparent 60%),
-            linear-gradient(168deg, #0a1228 0%, #111a3d 45%, #0a0f24 100%);
+            linear-gradient(168deg, var(--tms-sb-dark, #0a1228) 0%, var(--tms-sb-base, #111a3d) 45%, var(--tms-sb-dark, #0a0f24) 100%);
           color: #e2e8f0;
           box-shadow: inset -1px 0 0 rgba(56,189,248,0.20), 6px 0 28px rgba(2,6,23,0.55);
           display: flex; flex-direction: column; flex-shrink: 0;
@@ -516,7 +529,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       `}</style>
 
       {/* ── Sidebar ─────────────────────────────────────────────────── */}
-      <aside className={`tms-sidebar${mobileOpen ? " open" : ""}`}>
+      <aside className={`tms-sidebar${mobileOpen ? " open" : ""}`} style={{ ["--tms-sb-base" as any]: sbColor, ["--tms-sb-dark" as any]: darken(sbColor, 0.45) }}>
 
         {/* Zone 1: Brand + Search */}
         <div className="tms-brand">
@@ -653,6 +666,28 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
             })}
           </div>
         ))}
+
+        {/* Sidebar color picker — staff choose the color they want */}
+        <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+          <button onClick={() => setThemeOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 7, width: "100%", background: "transparent", border: "none", color: "rgba(255,255,255,0.7)", fontSize: "0.64rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer", padding: "2px 0" }}>
+            🎨 Sidebar Color <span style={{ marginLeft: "auto", fontSize: "0.8rem" }}>{themeOpen ? "▾" : "▸"}</span>
+          </button>
+          {themeOpen && (
+            <div style={{ marginTop: 9 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {SB_PRESETS.map(c => (
+                  <button key={c} onClick={() => pickSbColor(c)} title={c} aria-label={`Set sidebar color ${c}`}
+                    style={{ width: 22, height: 22, borderRadius: 6, background: c, cursor: "pointer", border: sbColor.toLowerCase() === c.toLowerCase() ? "2px solid #67e8f9" : "1px solid rgba(255,255,255,0.25)" }} />
+                ))}
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: "0.66rem", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>
+                <input type="color" value={sbColor} onChange={e => pickSbColor(e.target.value)} style={{ width: 28, height: 22, padding: 0, border: "none", borderRadius: 5, background: "transparent", cursor: "pointer" }} />
+                Custom color
+              </label>
+              <button onClick={() => pickSbColor("#111a3d")} style={{ marginTop: 9, fontSize: "0.62rem", color: "rgba(255,255,255,0.45)", background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Reset to default</button>
+            </div>
+          )}
+        </div>
 
         {/* Zone 3: Personal / System footer */}
         <div className="tms-sidebar-footer">
