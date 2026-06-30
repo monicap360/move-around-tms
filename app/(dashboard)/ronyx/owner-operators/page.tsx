@@ -1337,7 +1337,6 @@ export default function OwnerOperatorsPage() {
                     <select value={d.cdl_class || ""} onChange={(e) => setNewOODrivers((prev) => prev.map((x, i) => i === idx ? { ...x, cdl_class: e.target.value } : x))} style={inp}>
                       <option value="">—</option>
                       <option value="A">A</option>
-                      <option value="AM1">AM1</option>
                       <option value="B">B</option>
                       <option value="C">C</option>
                     </select>
@@ -2642,7 +2641,6 @@ export default function OwnerOperatorsPage() {
                   <select value={addDriverForm.cdl_class || ""} onChange={e=>setAddDriverForm(f=>({...f,cdl_class:e.target.value}))} style={inp}>
                     <option value="">— Select —</option>
                     <option value="A">Class A</option>
-                    <option value="AM1">Class AM1</option>
                     <option value="B">Class B</option>
                     <option value="C">Class C</option>
                   </select>
@@ -4543,7 +4541,6 @@ export default function OwnerOperatorsPage() {
                 <select value={driverEditModal.form.cdl_class || ""} onChange={e => setDriverEditModal(m => m && ({ ...m, form: { ...m.form, cdl_class: e.target.value } }))} style={{ width:"100%", padding:"7px 10px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:"0.83rem", outline:"none", background:"#fff", boxSizing:"border-box" as const }}>
                   <option value="">— Select —</option>
                   <option value="A">Class A</option>
-                  <option value="AM1">Class AM1</option>
                   <option value="B">Class B</option>
                   <option value="C">Class C</option>
                 </select>
