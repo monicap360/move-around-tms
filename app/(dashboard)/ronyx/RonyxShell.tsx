@@ -788,13 +788,22 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
                   <div className="tms-user-avatar">{activeStaff.name.charAt(0).toUpperCase()}</div>
                   {activeStaff.name}
                 </button>
-                <button className="tms-icon-btn" aria-label="Lock / switch staff" title="Lock / switch staff" onClick={lockStaff}>🔒</button>
+                <button onClick={lockStaff} title="Log out / switch staff"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  ⎋ Log out
+                </button>
               </>
             ) : (
-              <button className="tms-user-chip">
-                <div className="tms-user-avatar">{displayName.charAt(0).toUpperCase()}</div>
-                {displayName}
-              </button>
+              <>
+                <button className="tms-user-chip">
+                  <div className="tms-user-avatar">{displayName.charAt(0).toUpperCase()}</div>
+                  {displayName}
+                </button>
+                <button onClick={lockStaff} title="Log out"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  ⎋ Log out
+                </button>
+              </>
             )}
           </div>
         </header>
