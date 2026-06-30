@@ -4,10 +4,25 @@
 // fills out their company info, and submits — it lands in the office OO list as "pending"
 // for staff review. No staff login required.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid #cbd5e1", fontSize: "0.95rem", boxSizing: "border-box", outline: "none" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: 5 };
+
+const OO_DOCS = ["Insurance Certificate (COI)", "W-9 / Tax Form", "Operating Authority", "Voided Check / Banking"];
+
+// Tap-to-upload tile (photo or PDF).
+function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div onClick={() => ref.current?.click()} style={{ border: `1.5px dashed ${file ? "#16a34a" : "#cbd5e1"}`, background: file ? "#f0fdf4" : "#f8fafc", borderRadius: 10, padding: "12px 8px", textAlign: "center", cursor: "pointer" }}>
+      <input ref={ref} type="file" accept="image/*,.pdf,.heic,.heif" style={{ display: "none" }} onChange={e => onPick(e.target.files?.[0] || null)} />
+      <div style={{ fontSize: "1.1rem" }}>{file ? "✅" : "📎"}</div>
+      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: file ? "#15803d" : "#475569", marginTop: 2, lineHeight: 1.2 }}>{label}</div>
+      {file && <div style={{ fontSize: "0.6rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>}
+    </div>
+  );
+}
 
 // Ronyx insurance requirements — all certificate holders must be listed as Additional Insured
 // with a Waiver of Subrogation; VIN(s) must appear on the Auto Liability certificate.
@@ -32,6 +47,8 @@ export default function OwnerOperatorSignupPage() {
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
   const [acctNum, setAcctNum] = useState("");
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [uploadingDocs, setUploadingDocs] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   function checkPin() {
@@ -47,6 +64,19 @@ export default function OwnerOperatorSignupPage() {
       const res = await fetch("/api/oo-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin }) });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Could not submit. Please try again."); setSubmitting(false); return; }
+      // Upload any attached documents to the new owner-operator record.
+      const chosen = OO_DOCS.filter(t => files[t]);
+      if (d.id && chosen.length) {
+        setUploadingDocs(true);
+        for (const t of chosen) {
+          const fd = new FormData();
+          fd.append("file", files[t]!);
+          fd.append("oo_id", d.id);
+          fd.append("doc_type", t);
+          try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+        }
+        setUploadingDocs(false);
+      }
       setAcctNum(d.in_house_account_number || "");
       setDone(true);
     } catch { setErr("Network error — please try again."); }
@@ -72,7 +102,7 @@ export default function OwnerOperatorSignupPage() {
               <div style={{ fontSize: 46 }}>✅</div>
               <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", marginTop: 8 }}>You&apos;re registered!</div>
               <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: 8, lineHeight: 1.5 }}>
-                Thanks, <strong>{form.company_name}</strong>. The Ronyx office has your info and will reach out to finish onboarding (insurance, contract, W-9, and driver setup).
+                Thanks, <strong>{form.company_name}</strong>.{OO_DOCS.some(t => files[t]) ? " Your documents were received." : ""} The Ronyx office has your info and will reach out to finish onboarding (insurance, contract, W-9, and driver setup).
               </div>
               {acctNum && (
                 <div style={{ marginTop: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", display: "inline-block" }}>
@@ -141,10 +171,19 @@ export default function OwnerOperatorSignupPage() {
                 </label>
               </div>
 
+              {/* Document uploads */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+                <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Upload your documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
+                <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 10px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {OO_DOCS.map(t => <FileSlot key={t} label={t} file={files[t]} onPick={f => setFiles(s => ({ ...s, [t]: f }))} />)}
+                </div>
+              </div>
+
               <button onClick={submit} disabled={submitting || !form.company_name.trim() || !ack} style={{ marginTop: 6, padding: "13px 0", borderRadius: 10, border: "none", background: submitting || !form.company_name.trim() || !ack ? "#94a3b8" : "#16a34a", color: "#fff", fontWeight: 800, fontSize: "0.95rem", cursor: submitting || !form.company_name.trim() || !ack ? "default" : "pointer" }}>
-                {submitting ? "Submitting…" : "Submit Registration"}
+                {uploadingDocs ? "Uploading documents…" : submitting ? "Submitting…" : "Submit Registration"}
               </button>
-              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>The office will follow up to finalize your contract, W-9, and driver setup.</div>
+              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>Documents you attach are sent straight to the Ronyx office. You can still email COIs to {COI_EMAIL}.</div>
             </div>
           )}
         </div>

@@ -86,5 +86,5 @@ export async function POST(req: Request) {
     html: `<div style="font-family:Inter,system-ui,sans-serif;color:#0f172a"><p><strong>New Driver sign-up</strong> — pending review.</p><p><strong>${name}</strong>${carrier ? ` · ${carrier}` : ""}</p><p>Phone: ${body.phone || "—"}<br/>CDL: ${body.cdl_number || "—"} (${body.cdl_state || "—"}) exp ${body.cdl_expiration || "—"}<br/>Medical card exp: ${body.med_card_expiration || "—"}</p><p>Review in <strong>Drivers</strong>.</p></div>`,
   }).then(() => {}, () => {});
 
-  return NextResponse.json({ ok: true, id: data.id, name, carrier });
+  return NextResponse.json({ ok: true, id: data.id, oo_id: ooId, name, carrier });
 }

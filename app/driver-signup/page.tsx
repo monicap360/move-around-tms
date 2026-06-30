@@ -4,10 +4,25 @@
 // info + which carrier they drive for, and submits — it lands on that carrier in the
 // office system. No staff login required.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid #cbd5e1", fontSize: "0.95rem", boxSizing: "border-box", outline: "none" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: 5 };
+
+const DRIVER_DOCS = ["CDL Front", "CDL Back", "Medical Card"];
+
+// A tap-to-upload tile used on the signup forms (photo or PDF).
+function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div onClick={() => ref.current?.click()} style={{ border: `1.5px dashed ${file ? "#16a34a" : "#cbd5e1"}`, background: file ? "#f0fdf4" : "#f8fafc", borderRadius: 10, padding: "12px 8px", textAlign: "center", cursor: "pointer" }}>
+      <input ref={ref} type="file" accept="image/*,.pdf,.heic,.heif" style={{ display: "none" }} onChange={e => onPick(e.target.files?.[0] || null)} />
+      <div style={{ fontSize: "1.1rem" }}>{file ? "✅" : "📷"}</div>
+      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: file ? "#15803d" : "#475569", marginTop: 2 }}>{label}</div>
+      {file && <div style={{ fontSize: "0.6rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>}
+    </div>
+  );
+}
 
 export default function DriverSignupPage() {
   const [pin, setPin] = useState("");
@@ -18,6 +33,8 @@ export default function DriverSignupPage() {
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
   const [carriers, setCarriers] = useState<string[]>([]);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [uploadingDocs, setUploadingDocs] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   function checkPin() {
@@ -38,6 +55,19 @@ export default function DriverSignupPage() {
       const res = await fetch("/api/driver-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin }) });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Could not submit. Please try again."); setSubmitting(false); return; }
+      // Upload any attached documents to the new driver's carrier record.
+      const chosen = DRIVER_DOCS.filter(t => files[t]);
+      if (d.oo_id && chosen.length) {
+        setUploadingDocs(true);
+        for (const t of chosen) {
+          const fd = new FormData();
+          fd.append("file", files[t]!);
+          fd.append("oo_id", d.oo_id);
+          fd.append("doc_type", `[${form.name.trim()}] ${t}`);
+          try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+        }
+        setUploadingDocs(false);
+      }
       setDone(true);
     } catch { setErr("Network error — please try again."); }
     finally { setSubmitting(false); }
@@ -62,7 +92,7 @@ export default function DriverSignupPage() {
               <div style={{ fontSize: 46 }}>✅</div>
               <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", marginTop: 8 }}>You&apos;re registered!</div>
               <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: 8, lineHeight: 1.5 }}>
-                Thanks, <strong>{form.name}</strong>. You&apos;ve been added under <strong>{form.company_name}</strong>. The Ronyx office will follow up to collect your CDL, medical card, and finish setup.
+                Thanks, <strong>{form.name}</strong>. You&apos;ve been added under <strong>{form.company_name}</strong>.{DRIVER_DOCS.some(t => files[t]) ? " Your documents were received." : ""} The Ronyx office will finish your setup{DRIVER_DOCS.some(t => files[t]) ? "" : " and follow up for your CDL and medical card"}.
               </div>
             </div>
           ) : !unlocked ? (
@@ -76,13 +106,13 @@ export default function DriverSignupPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {err && <div style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 13px", fontSize: "0.85rem", fontWeight: 700 }}>⚠ {err}</div>}
-              <div><label style={lbl}>Your Name *</label><input value={form.name} onChange={e => set("name", e.target.value)} style={inp} placeholder="First and last name" autoFocus /></div>
               <div>
-                <label style={lbl}>Trucking Company / Carrier you drive for *</label>
-                <input list="ronyx-carriers" value={form.company_name} onChange={e => set("company_name", e.target.value)} style={inp} placeholder="Start typing to find your company…" autoComplete="off" />
+                <label style={lbl}>1. Trucking Company / Carrier you drive for *</label>
+                <input list="ronyx-carriers" value={form.company_name} onChange={e => set("company_name", e.target.value)} style={inp} placeholder="Start typing to find your company…" autoComplete="off" autoFocus />
                 <datalist id="ronyx-carriers">{carriers.map(c => <option key={c} value={c} />)}</datalist>
-                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 4 }}>Pick your company from the list. If it isn&apos;t there yet, just type it in.</div>
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 4 }}>Pick your company first. If it isn&apos;t in the list yet, just type it in.</div>
               </div>
+              <div><label style={lbl}>2. Your Name *</label><input value={form.name} onChange={e => set("name", e.target.value)} style={inp} placeholder="First and last name" /></div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div><label style={lbl}>Phone</label><input value={form.phone} onChange={e => set("phone", e.target.value)} style={inp} type="tel" /></div>
                 <div><label style={lbl}>CDL #</label><input value={form.cdl_number} onChange={e => set("cdl_number", e.target.value)} style={inp} /></div>
@@ -91,10 +121,19 @@ export default function DriverSignupPage() {
                 <div><label style={lbl}>Medical Card Expiration</label><input value={form.med_card_expiration} onChange={e => set("med_card_expiration", e.target.value)} style={inp} type="date" /></div>
                 <div><label style={lbl}>Home Address</label><input value={form.address} onChange={e => set("address", e.target.value)} style={inp} /></div>
               </div>
+
+              <div>
+                <label style={lbl}>3. Upload your documents <span style={{ fontWeight: 400, color: "#94a3b8" }}>(optional — recommended)</span></label>
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginBottom: 8 }}>Snap a photo or attach a PDF so the office has them right away.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  {DRIVER_DOCS.map(t => <FileSlot key={t} label={t} file={files[t]} onPick={f => setFiles(s => ({ ...s, [t]: f }))} />)}
+                </div>
+              </div>
+
               <button onClick={submit} disabled={submitting || !form.name.trim() || !form.company_name.trim()} style={{ marginTop: 6, padding: "13px 0", borderRadius: 10, border: "none", background: submitting || !form.name.trim() || !form.company_name.trim() ? "#94a3b8" : "#16a34a", color: "#fff", fontWeight: 800, fontSize: "0.95rem", cursor: submitting ? "default" : "pointer" }}>
-                {submitting ? "Submitting…" : "Submit Registration"}
+                {uploadingDocs ? "Uploading documents…" : submitting ? "Submitting…" : "Submit Registration"}
               </button>
-              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>The office will follow up to collect your CDL and medical card.</div>
+              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>Documents you attach are sent straight to the Ronyx office.</div>
             </div>
           )}
         </div>
