@@ -11,7 +11,7 @@ export async function GET() {
     const { data, error } = await supabaseAdmin.from("owner_operator_settlements").select("*").order("created_at", { ascending: false }).limit(500);
     if (error) return NextResponse.json({ live: false, items: [] });
     const items = (data || []).map((s: any) => ({
-      id: s.id?.slice(0, 8), oo: s.company_name || "—", company: s.company_name || "—", period: s.settlement_period || "—",
+      id: s.id?.slice(0, 8), reviewId: s.id, oo: s.company_name || "—", company: s.company_name || "—", period: s.settlement_period || "—",
       loads: Number(s.loads || 0), gross: Number(s.gross_revenue || 0), agreed: Number(s.agreed_pay || 0),
       fuel: Number(s.fuel_deductions || 0), ins: Number(s.insurance_deductions || 0), trailer: Number(s.trailer_deductions || 0),
       advance: Number(s.advances || 0), other: Number(s.other_deductions || 0), reimb: Number(s.reimbursements || 0),

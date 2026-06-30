@@ -10,7 +10,7 @@ type Appr = "Draft" | "Awaiting Approval" | "Approved" | "Paid";
 type Settle = {
   id: string; oo: string; company: string; period: string; loads: number;
   gross: number; agreed: number; fuel: number; ins: number; trailer: number; advance: number; other: number; reimb: number;
-  appr: Appr; paid: boolean; blocks: string[]; settleHold?: boolean;
+  appr: Appr; paid: boolean; blocks: string[]; settleHold?: boolean; reviewId?: string;
 };
 
 const DEMO: Settle[] = [
@@ -112,7 +112,13 @@ export default function Settlements() {
               {[["Gross load revenue", fmtc(drawer.gross)], ["Agreed pay", fmtc(drawer.agreed)], ["Fuel deduction", "-" + fmtc(drawer.fuel)], ["Insurance", "-" + fmtc(drawer.ins)], ["Trailer/equipment", "-" + fmtc(drawer.trailer)], ["Advances", "-" + fmtc(drawer.advance)], ["Other/chargebacks", "-" + fmtc(drawer.other)], ["Reimbursements", "+" + fmtc(drawer.reimb)], ["Net settlement", fmtc(net(drawer))]].map(([k, v], i) => (
                 <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.85rem", fontWeight: i === 8 ? 900 : 500 }}><span style={{ color: i === 8 ? "#0f172a" : "#475569" }}>{k}</span><span style={{ color: i === 8 ? "#15803d" : "inherit" }}>{v}</span></div>
               ))}
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 16 }}>
+              {drawer.reviewId && (
+                <button onClick={() => {
+                  const link = `${window.location.origin}/settlement-review/${drawer.reviewId}`;
+                  navigator.clipboard?.writeText(link).then(() => flash("Driver review link copied — text it to the driver.")).catch(() => flash(link));
+                }} style={{ width: "100%", marginTop: 16, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.86rem", cursor: "pointer" }}>📱 Copy Driver Review Link</button>
+              )}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
                 {ACTIONS.map(a => <button key={a} disabled={blocked && a.includes("Approve")} onClick={() => flash(`${a} — ${drawer.oo} (demo)`)} style={{ ...chip, cursor: blocked && a.includes("Approve") ? "not-allowed" : "pointer", opacity: blocked && a.includes("Approve") ? 0.4 : 1, padding: "7px 11px", background: a.includes("Approve") ? "#16a34a" : a.includes("Hold") ? "#fef2f2" : "#f8fafc", color: a.includes("Approve") ? "#fff" : a.includes("Hold") ? "#dc2626" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
               </div>
             </div>
