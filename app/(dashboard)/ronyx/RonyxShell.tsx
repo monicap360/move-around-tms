@@ -105,6 +105,16 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Driver Pay",       href: "/ronyx/payroll/driver-pay",      icon: "💵", color: "#15803d" },
       { label: "Settlements",      href: "/ronyx/owner-operators/settlements", icon: "🤝", color: "#059669" },
       { label: "Accounting Hub",   href: "/ronyx/accounting",              icon: "📒", color: "#7c3aed" },
+      { label: "Accounting Command Center", href: "/ronyx/accounting-command-center", icon: "🎯", color: "#7c3aed", children: [
+        { label: "Overview",            href: "/ronyx/accounting-command-center",                 icon: "📊" },
+        { label: "Ticket-to-Invoice",   href: "/ronyx/accounting-command-center/ticket-to-invoice", icon: "🎫" },
+        { label: "Accounts Receivable", href: "/ronyx/accounting-command-center/receivables",     icon: "💵" },
+        { label: "Owner-Op Settlements",href: "/ronyx/accounting-command-center/settlements",     icon: "🤝" },
+        { label: "Driver Payroll",      href: "/ronyx/accounting-command-center/payroll",         icon: "👷" },
+        { label: "Job Costing & Margin",href: "/ronyx/accounting-command-center/margin",          icon: "📈" },
+        { label: "Fuel & Cost Alloc.",  href: "/ronyx/accounting-command-center/fuel",            icon: "⛽" },
+        { label: "Accounting Exports",  href: "/ronyx/accounting-command-center/exports",         icon: "🔄" },
+      ]},
     ],
   },
   {
