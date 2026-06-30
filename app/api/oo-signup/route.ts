@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { sendEmail } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
+
+const SIGNUP_NOTIFY = "admin@ronyxlogistics.com";
 
 // Public owner-operator self-registration. Gated by its own access PIN (default 1234,
 // overridable via OO_SIGNUP_PIN). Deliberately NOT under /api/ronyx so the staff PIN
@@ -78,6 +81,14 @@ export async function POST(req: Request) {
   }
   const { data, error } = await trySave(insert);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify the office (fire-and-forget — never blocks the signup).
+  sendEmail({
+    to: SIGNUP_NOTIFY,
+    subject: `New Owner-Operator sign-up: ${name}`,
+    text: `A new owner-operator self-registered.\n\nCompany: ${name}\nAccount #: ${inHouseAcct}\nContact: ${body.contact_name || "—"} · ${body.contact_phone || "—"} · ${body.contact_email || "—"}\nMC: ${body.mc_number || "—"} · DOT: ${body.dot_number || "—"}\nInsurance agent: ${body.insurance_agent_name || "—"} · ${body.insurance_agent_email || "—"}\n\nReview & activate in Owner Operators: /ronyx/owner-operators`,
+    html: `<div style="font-family:Inter,system-ui,sans-serif;color:#0f172a"><p><strong>New Owner-Operator sign-up</strong> — pending review.</p><p><strong>${name}</strong> · Account # <strong>${inHouseAcct}</strong></p><p>Contact: ${body.contact_name || "—"} · ${body.contact_phone || "—"} · ${body.contact_email || "—"}<br/>MC: ${body.mc_number || "—"} · DOT: ${body.dot_number || "—"}<br/>Insurance agent: ${body.insurance_agent_name || "—"} · ${body.insurance_agent_email || "—"}</p><p>Review &amp; activate in <strong>Owner Operators</strong>.</p></div>`,
+  }).then(() => {}, () => {});
 
   return NextResponse.json({ ok: true, id: data.id, company_name: name, in_house_account_number: inHouseAcct });
 }

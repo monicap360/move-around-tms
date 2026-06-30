@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { sendEmail } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
+
+const SIGNUP_NOTIFY = "admin@ronyxlogistics.com";
 
 // Public driver self-registration. Gated by its own access PIN (default 1234, overridable
 // via DRIVER_SIGNUP_PIN). NOT under /api/ronyx so the staff PIN middleware doesn't block it.
@@ -74,6 +77,14 @@ export async function POST(req: Request) {
   }
   const { data, error } = await trySave(insert);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify the office (fire-and-forget — never blocks the signup).
+  sendEmail({
+    to: SIGNUP_NOTIFY,
+    subject: `New Driver sign-up: ${name}`,
+    text: `A new driver self-registered.\n\nDriver: ${name}\nCarrier / company: ${carrier || "—"}\nPhone: ${body.phone || "—"}\nCDL: ${body.cdl_number || "—"} (${body.cdl_state || "—"}) exp ${body.cdl_expiration || "—"}\nMedical card exp: ${body.med_card_expiration || "—"}\n\nReview in Drivers: /ronyx/drivers`,
+    html: `<div style="font-family:Inter,system-ui,sans-serif;color:#0f172a"><p><strong>New Driver sign-up</strong> — pending review.</p><p><strong>${name}</strong>${carrier ? ` · ${carrier}` : ""}</p><p>Phone: ${body.phone || "—"}<br/>CDL: ${body.cdl_number || "—"} (${body.cdl_state || "—"}) exp ${body.cdl_expiration || "—"}<br/>Medical card exp: ${body.med_card_expiration || "—"}</p><p>Review in <strong>Drivers</strong>.</p></div>`,
+  }).then(() => {}, () => {});
 
   return NextResponse.json({ ok: true, id: data.id, name, carrier });
 }
