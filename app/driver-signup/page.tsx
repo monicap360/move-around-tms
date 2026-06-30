@@ -81,6 +81,9 @@ export default function DriverSignupPage() {
             <button onClick={() => { setUnlocked(false); setPin(""); setDone(false); setErr(""); }} title="Log out / start over"
               style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.18)", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: "5px 11px", fontWeight: 700, fontSize: "0.74rem", cursor: "pointer" }}>⎋ Log out</button>
           )}
+          <div style={{ display: "inline-block", background: "#fff", borderRadius: 9, padding: "6px 11px", marginBottom: 10 }}>
+            <img src="/ronyx_logo.png" alt="Ronyx Logistics" style={{ height: 36, width: "auto", display: "block" }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          </div>
           <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.85 }}>RONYX LOGISTICS</div>
           <div style={{ fontSize: "1.4rem", fontWeight: 900, marginTop: 4 }}>Driver Sign-Up</div>
           <div style={{ fontSize: "0.85rem", opacity: 0.9, marginTop: 4 }}>Register to drive with Ronyx.</div>
