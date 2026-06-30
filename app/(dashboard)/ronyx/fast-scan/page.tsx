@@ -228,7 +228,7 @@ export default function FastScanPage() {
           return fetch("/api/ronyx/fast-scan").then(r => r.json()).then(d2 => setRecentScans(d2.scans || []));
         }
       })
-      .catch(() => {})
+      .catch((e) => { console.error("Fast Scan: failed to load recent scans", e); })
       .finally(() => setLoadingScans(false));
   }
 
@@ -958,6 +958,14 @@ export default function FastScanPage() {
                               style={{ padding: "3px 8px", background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>✉ Email</button>
                             <button onClick={() => openScanPreview(s, true)}
                               style={{ padding: "3px 8px", background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>🖨 Print</button>
+                            <button onClick={async () => {
+                              try {
+                                const r = await fetch("/api/ronyx/fast-scan/process", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ document_id: s.id }) });
+                                const d = await r.json().catch(() => ({}));
+                                if (!r.ok) throw new Error(d.error || "OCR failed");
+                                loadRecentScans();
+                              } catch (e: any) { alert(`Re-run OCR failed — ${e?.message || "try again"}.`); }
+                            }} style={{ padding: "3px 8px", background: "#faf5ff", color: "#7c3aed", border: "1px solid #e9d5ff", borderRadius: 6, fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>🔁 Re-run OCR</button>
                           </>)}
                           {!isVoided && (<>
                             <button onClick={() => setScanEditModal({ scan: s, form: { ticket_number: s.ticket_number || "", truck_number: s.truck_number || "", driver_name: s.driver_name || "", amount: s.amount?.toString() || "", quantity: s.quantity?.toString() || "", rate: s.rate?.toString() || "", has_driver_signature: !!s.has_driver_signature }, saving: false })}
