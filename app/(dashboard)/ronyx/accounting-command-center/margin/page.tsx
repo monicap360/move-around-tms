@@ -3,7 +3,7 @@
 /* Accounting Command Center — Phase 5: Job Costing & Margin Control.
    Seeded demo data; wires to job_cost_snapshots + aggregate_tickets + cost_allocations. */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
 
 type Status = "Healthy" | "Below Target" | "At Risk" | "Negative" | "Incomplete Cost" | "Pending Rate";
@@ -13,7 +13,7 @@ type Job = {
   missingCost: boolean; pendingRate: boolean; contractRate: number; actualRate: number; bestTruck: string; worstRoute: string; trend: number[];
 };
 
-const RAW: Job[] = [
+const DEMO: Job[] = [
   { id: "J1", customer: "Holt Paving",         job: "SH-249 Reload", loads: 142, tons: 2610, revenue: 30015, ooCost: 18600, fuel: 2240, pit: 4100, maint: 620, other: 0,   missingCost: false, pendingRate: false, contractRate: 11.5, actualRate: 11.5, bestTruck: "T-104", worstRoute: "Pit 3→Katy", trend: [27, 28, 29, 31] },
   { id: "J2", customer: "Sterling Materials",  job: "I-45 Base",     loads: 98,  tons: 1980, revenue: 23760, ooCost: 15050, fuel: 1900, pit: 3600, maint: 0,   other: 0,   missingCost: true,  pendingRate: false, contractRate: 12.0, actualRate: 12.0, bestTruck: "T-118", worstRoute: "Pit 7→I-45",  trend: [22, 24, 23, 26] },
   { id: "J3", customer: "Bayou Aggregates",    job: "Levee Haul",    loads: 64,  tons: 1010, revenue: 8080,  ooCost: 6200,  fuel: 980,  pit: 1900, maint: 180, other: 0,   missingCost: false, pendingRate: true,  contractRate: 8.0,  actualRate: 7.6,  bestTruck: "T-220", worstRoute: "Pit 1→Levee", trend: [10, 8, 6, 2] },
@@ -41,30 +41,71 @@ export default function Margin() {
   const [drawer, setDrawer] = useState<Job | null>(null);
   const [protect, setProtect] = useState<Job | null>(null);
   const [toast, setToast] = useState("");
+  const [data, setData] = useState<typeof DEMO>([]);
+  const [live, setLive] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
-  const totals = useMemo(() => ({ rev: RAW.reduce((s, j) => s + j.revenue, 0), margin: RAW.reduce((s, j) => s + margin(j), 0), missing: RAW.filter(j => j.missingCost).reduce((s, j) => s + 1, 0) }), []);
+  useEffect(() => {
+    fetch("/api/ronyx/accounting/margin").then(r => r.json()).then(d => {
+      if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
+    }).catch(() => {});
+  }, []);
+
+  const totals = useMemo(() => ({ rev: data.reduce((s, j) => s + j.revenue, 0), margin: data.reduce((s, j) => s + margin(j), 0), missing: data.filter(j => j.missingCost).reduce((s, j) => s + 1, 0) }), [data]);
+
+  // Margin Leak Detector — surface lost money before invoices go out.
+  const leaks = useMemo(() => {
+    const out: { icon: string; type: string; desc: string; impact: number; job: Job }[] = [];
+    for (const j of data) {
+      const m = margin(j), mp = marginPct(j);
+      if (j.missingCost) out.push({ icon: "⛽", type: "Incomplete cost allocation", desc: `${j.customer} · ${j.job} — fuel/maintenance not fully allocated; margin is estimated.`, impact: 0, job: j });
+      if (m <= 0) out.push({ icon: "🔻", type: "Negative margin", desc: `${j.customer} · ${j.job} is losing money (${mp.toFixed(0)}%).`, impact: Math.abs(m), job: j });
+      else if (mp < 8) out.push({ icon: "⚠", type: "Below-target margin", desc: `${j.customer} · ${j.job} at ${mp.toFixed(0)}% — under the 8% floor.`, impact: 0, job: j });
+      if (j.contractRate && j.actualRate && j.actualRate < j.contractRate) out.push({ icon: "📉", type: "Rate below contract", desc: `${j.customer} · ${j.job} billed at ${fmtc(j.actualRate)} vs contract ${fmtc(j.contractRate)}.`, impact: (j.contractRate - j.actualRate) * (j.tons || j.loads), job: j });
+      if (j.pendingRate) out.push({ icon: "⏳", type: "Pending customer rate", desc: `${j.customer} · ${j.job} has no confirmed rate — revenue not final.`, impact: 0, job: j });
+    }
+    return out.sort((a, b) => b.impact - a.impact);
+  }, [data]);
+  const leakTotal = leaks.reduce((s, l) => s + l.impact, 0);
 
   return (
     <AcctShell active="margin" title="Job Costing & Margin Control" subtitle="See the true margin on every job — before the money leaves."
-      controls={<><button style={ctrlBtn}>All Customers ▾</button><button style={ctrlBtn}>Margin Status ▾</button><button style={primaryBtn}>⬇ Export</button></>}>
+      controls={<><span style={{ fontSize: "0.68rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", alignSelf: "center" }}>{live ? "● Live data" : "No data yet"}</span><button style={ctrlBtn}>All Customers ▾</button><button style={ctrlBtn}>Margin Status ▾</button><button style={primaryBtn}>⬇ Export</button></>}>
 
       {toast && <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200, background: "#0f172a", color: "#fff", padding: "10px 16px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700 }}>{toast}</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginBottom: 18 }}>
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}><div style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Revenue (all jobs)</div><div style={{ fontSize: "1.5rem", fontWeight: 900, marginTop: 4 }}>{fmt(totals.rev)}</div></div>
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}><div style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Gross Margin</div><div style={{ fontSize: "1.5rem", fontWeight: 900, marginTop: 4, color: "#15803d" }}>{fmt(totals.margin)} <span style={{ fontSize: "0.9rem", color: "#64748b" }}>({((totals.margin / totals.rev) * 100).toFixed(0)}%)</span></div></div>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}><div style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Gross Margin</div><div style={{ fontSize: "1.5rem", fontWeight: 900, marginTop: 4, color: "#15803d" }}>{fmt(totals.margin)} <span style={{ fontSize: "0.9rem", color: "#64748b" }}>({totals.rev ? ((totals.margin / totals.rev) * 100).toFixed(0) : "0"}%)</span></div></div>
         <div style={{ background: totals.missing ? "#fffbeb" : "#fff", border: "1px solid " + (totals.missing ? "#fde68a" : "#e2e8f0"), borderRadius: 12, padding: "14px 16px" }}><div style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Jobs w/ Incomplete Cost</div><div style={{ fontSize: "1.5rem", fontWeight: 900, marginTop: 4, color: "#b45309" }}>{totals.missing}</div></div>
       </div>
 
       {totals.missing > 0 && <div style={{ background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: "0.82rem", fontWeight: 700 }}>⚠ Some margins are estimated because fuel/maintenance costs aren&apos;t fully allocated. Finish allocation in Fuel &amp; Cost Allocation for final numbers.</div>}
+
+      {/* Margin Leak Detector */}
+      {leaks.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 14, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ padding: "12px 16px", background: "#fef2f2", borderBottom: "1px solid #fecaca", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ fontWeight: 900, color: "#b91c1c" }}>💧 Margin Leak Detector</div>
+            <div style={{ fontSize: "0.78rem", color: "#b91c1c", fontWeight: 800 }}>{leaks.length} leak{leaks.length > 1 ? "s" : ""}{leakTotal > 0 ? ` · ${fmt(leakTotal)} at risk` : ""}</div>
+          </div>
+          {leaks.slice(0, 8).map((l, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderTop: i ? "1px solid #fef2f2" : "none" }}>
+              <span style={{ fontSize: "1rem" }}>{l.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 800, fontSize: "0.82rem" }}>{l.type}</div><div style={{ fontSize: "0.76rem", color: "#64748b" }}>{l.desc}</div></div>
+              {l.impact > 0 && <span style={{ fontWeight: 900, color: "#dc2626", whiteSpace: "nowrap" }}>{fmt(l.impact)}</span>}
+              <button onClick={() => setProtect(l.job)} style={{ ...chip, cursor: "pointer", background: "#1e40af", color: "#fff", whiteSpace: "nowrap" }}>Fix ▸</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.79rem", minWidth: 1150 }}>
             <thead><tr>{["Customer", "Job", "Loads", "Tons", "Revenue", "Driver/OO", "Fuel", "Pit", "Maint", "Margin", "Margin %", "Status", "Trend", ""].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
-              {RAW.map(j => {
+              {data.map(j => {
                 const st = status(j); const ss = STATUS_STYLE[st]; const mp = marginPct(j);
                 return (
                   <tr key={j.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -85,6 +126,9 @@ export default function Margin() {
                   </tr>
                 );
               })}
+              {data.length === 0 && (
+                <tr><td colSpan={14} style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>No job costing yet — snapshots build as tickets, fuel, and settlements post to each job.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
