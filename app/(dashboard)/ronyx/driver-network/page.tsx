@@ -370,6 +370,12 @@ export default function DriverNetworkPage() {
   const assignBtn: React.CSSProperties = { border: "none", borderRadius: 8, padding: "7px 12px", fontWeight: 700, fontSize: "0.74rem", cursor: "pointer", whiteSpace: "nowrap" };
   function reloadNotes(id: string) { fetch(`/api/ronyx/network-candidates/notes?candidate_id=${id}`).then(r => r.json()).then(d => setCandNotes(d.notes || [])).catch(() => {}); }
   function logNote() { if (!panelCand || !noteText.trim()) return; patchCand({ id: panelCand.id, note: noteText.trim(), last_contacted: true }); setNoteText(""); setTimeout(() => reloadNotes(panelCand.id), 350); }
+  async function convertCand(cand: any) {
+    const res = await fetch("/api/ronyx/network-candidates/convert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cand.id, by: "Office" }) });
+    const d = await res.json();
+    if (d.ok) { showToast(`✓ ${d.already ? "Already in" : "Created in"} MoveAround as a ${d.type === "owner_operator" ? "Owner-Operator" : "Driver"} — onboarding tasks ready.`); loadCandidates(); setPanelCand((c: any) => c ? { ...c, pipeline_status: "hired", converted_link: d.link } : c); if (panelCand) reloadNotes(cand.id); }
+    else showToast(`Couldn't add to MoveAround — ${d.error || "try again"}`);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -866,8 +872,11 @@ export default function DriverNetworkPage() {
                 {["Sylvia P", "Tabitha L"].map(n => <button key={n} onClick={() => patchCand({ id: panelCand.id, assigned_to: n, note: `Assigned to ${n}` })} style={{ ...assignBtn, background: panelCand.assigned_to === n ? "#1e40af" : "#eff6ff", color: panelCand.assigned_to === n ? "#fff" : "#1d4ed8" }}>👤 {n}</button>)}
                 <button onClick={() => patchCand({ id: panelCand.id, pipeline_status: "compliance_review", note: "Started compliance review" })} style={{ ...assignBtn, background: "#fef2f2", color: "#dc2626" }}>Start Compliance</button>
                 <button onClick={() => patchCand({ id: panelCand.id, pipeline_status: "not_a_fit", note: "Marked not a fit" })} style={{ ...assignBtn, background: "#f8fafc", color: "#475569" }}>Not a fit</button>
-                <button onClick={() => { patchCand({ id: panelCand.id, pipeline_status: "hired", note: "Hired — onboarding to MoveAround" }); showToast("Marked hired. Phase 4 will create the Driver / Owner-Operator profile in MoveAround."); }} style={{ ...assignBtn, background: "#16a34a", color: "#fff" }}>✓ Hire → Add to MoveAround</button>
+                <button onClick={() => convertCand(panelCand)} style={{ ...assignBtn, background: "#16a34a", color: "#fff" }}>✓ Hire → Add to MoveAround</button>
               </div>
+              {panelCand.converted_link && (
+                <a href={panelCand.converted_link} style={{ display: "block", textAlign: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", borderRadius: 8, padding: "9px 0", fontWeight: 800, fontSize: "0.8rem", textDecoration: "none", marginBottom: 16 }}>✓ Open the new MoveAround profile →</a>
+              )}
 
               <div style={{ fontSize: "0.64rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Communication log</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
