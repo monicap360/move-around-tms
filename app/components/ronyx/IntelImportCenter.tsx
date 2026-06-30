@@ -215,7 +215,7 @@ export default function IntelImportCenter({
                   <input
                     ref={fileRef}
                     type="file"
-                    accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png,.heic,.tif,.tiff"
+                    /* Accept ANY file — photos, scans, PDFs, Word, Excel, CSV, etc. */
                     style={{ display: "none" }}
                     onChange={e => { const f = e.target.files?.[0]; if (f) pickFile(f); }}
                   />
@@ -234,7 +234,7 @@ export default function IntelImportCenter({
                         Drop file here or click to browse
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: 4 }}>
-                        CSV · Excel · PDF · JPG · PNG · HEIC · Max 25 MB
+                        Any file — photo · scan · PDF · Word · Excel · CSV · HEIC · Max 50 MB
                       </div>
                     </div>
                   )}

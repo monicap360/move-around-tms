@@ -77,7 +77,7 @@ const L: Record<Lang, Record<string, string>> = {
     helper:      "Upload a file. We identify it, map the data, catch issues, and send each item where it belongs.",
     drop:        "Drop your file here, or",
     browse:      "Browse Files",
-    supported:   "Excel, CSV, PDF · Max 50MB",
+    supported:   "Any file — Excel, CSV, PDF, photos, scans · Max 50MB",
     history:     "Import History",
     profiles:    "Saved Mapping Profiles",
     help:        "Help",
@@ -110,7 +110,7 @@ const L: Record<Lang, Record<string, string>> = {
     helper:      "Sube un archivo. Lo identificamos, mapeamos los datos, detectamos problemas y enviamos cada elemento donde corresponde.",
     drop:        "Suelta tu archivo aquí, o",
     browse:      "Buscar Archivos",
-    supported:   "Excel, CSV, PDF · Máx 50MB",
+    supported:   "Cualquier archivo — Excel, CSV, PDF, fotos, escaneos · Máx 50MB",
     history:     "Historial de Importaciones",
     profiles:    "Perfiles de Mapeo Guardados",
     help:        "Ayuda",
@@ -465,15 +465,36 @@ export default function IntelImportCenterPage() {
     setPhase("analyzing");
     setError(null);
     setProgress(0);
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    const isSheet = ["xlsx", "xls", "csv", "tsv"].includes(ext);
     try {
       await new Promise(r => setTimeout(r, 120)); // allow UI to render
       setProgress(40);
-      const intelResult = await parseFile(file);
-      setProgress(100);
-      setIntel(intelResult);
-      setPhase("review");
+      if (isSheet) {
+        const intelResult = await parseFile(file);
+        setProgress(100);
+        setIntel(intelResult);
+        setPhase("review");
+      } else {
+        // Any other document — photo, scan, PDF, Word, etc. Store it and let the
+        // backend auto-route it to the right owner-operator / driver by its contents.
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        setProgress(100);
+        const routed = data.routed_to_oo;
+        setResult({
+          ok: data.ok ?? res.ok, imported: data.ok ? 1 : 0, updated: 0, skipped: 0,
+          failed: data.ok ? 0 : 1, errors: data.ok ? [] : [data.error ?? "Upload failed"],
+          nextAction: data.ok
+            ? (routed ? `Stored and filed to ${routed.company_name}${routed.driver ? " · " + routed.driver : ""} (${routed.doc_type}).` : "Document stored and tracked. Find it under the company/driver it belongs to, or in Documents.")
+            : "Upload failed — check your connection and try again.",
+        });
+        setPhase("done");
+      }
     } catch (e) {
-      setError(`Could not read "${file.name}". Make sure it is a valid Excel or CSV file.`);
+      setError(`Could not read "${file.name}". For a spreadsheet, use Excel or CSV; any other file (photo, PDF, scan) is uploaded as a document.`);
       setPhase("idle");
     }
   }, []);
@@ -623,7 +644,7 @@ export default function IntelImportCenterPage() {
             {panel === "help" && (
               <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
                 <p style={{ marginTop: 0 }}><strong>What is the Smart Import Center™?</strong><br />It reads files you upload, identifies the data type, maps columns to known fields, checks for quality issues, and routes each item to the correct module in MoveAround TMS.</p>
-                <p><strong>Supported formats</strong><br />Excel (.xlsx, .xls), CSV (.csv), PDF (text-based). Files up to 50MB.</p>
+                <p><strong>Supported formats</strong><br />Any file up to 50MB. Spreadsheets (.xlsx, .xls, .csv) are parsed into rows you can map and import; everything else (PDF, photos, scans, Word) is stored as a document and auto-filed to the right owner-operator or driver.</p>
                 <p><strong>What does "recognized" mean?</strong><br />A column is recognized when its header matches a known field name. Unrecognized columns are ignored — they won't cause errors.</p>
                 <p><strong>What is a dry run?</strong><br />Dry run analyzes the file without saving any changes. Use it to verify your data looks correct before committing.</p>
                 <p><strong>What happens after import?</strong><br />For driver rosters, records are created or updated in the Driver Directory. For other modules, the file is stored and tracked — open the relevant module to process the rows.</p>
@@ -694,7 +715,7 @@ export default function IntelImportCenterPage() {
             {t("drop")} <span style={{ color: "#3b82f6", textDecoration: "underline" }}>{t("browse")}</span>
           </div>
           <div style={{ fontSize: 12, color: "#94a3b8" }}>{t("supported")}</div>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) void handleFile(f); }} />
+          <input ref={fileRef} type="file" /* any file — spreadsheet, photo, scan, PDF, Word… */ style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) void handleFile(f); }} />
         </div>
 
         {/* File type legend */}
