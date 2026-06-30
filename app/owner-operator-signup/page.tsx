@@ -9,11 +9,25 @@ import { useState } from "react";
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid #cbd5e1", fontSize: "0.95rem", boxSizing: "border-box", outline: "none" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: 5 };
 
+// Ronyx insurance requirements — all certificate holders must be listed as Additional Insured
+// with a Waiver of Subrogation; VIN(s) must appear on the Auto Liability certificate.
+const CERT_HOLDERS = [
+  ["Ronyx Logistics LLC", "3741 Graves Ave, Groves, TX 77619"],
+  ["Bas Equipment & Trucking LLC", "P.O. Box 36, Throckmorton, TX 76483"],
+  ["M.A. Mortenson Company", "700 Meadow Lane N, Minneapolis, MN 55422"],
+  ["Bondco LLC", "PO Box 95, West Monroe, LA 71294"],
+];
+const COI_EMAIL = "info@ronyxlogistics.llc";
+
 export default function OwnerOperatorSignupPage() {
   const [pin, setPin] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [pinErr, setPinErr] = useState("");
-  const [form, setForm] = useState({ company_name: "", contact_name: "", contact_phone: "", contact_email: "", business_address: "", mc_number: "", dot_number: "", ein: "" });
+  const [form, setForm] = useState({
+    company_name: "", contact_name: "", contact_phone: "", contact_email: "", business_address: "", mc_number: "", dot_number: "", ein: "",
+    insurance_agent_name: "", insurance_agent_phone: "", insurance_agent_email: "", gl_amount: "1,000,000", al_amount: "1,000,000", insurance_expiration: "", truck_vins: "",
+  });
+  const [ack, setAck] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
@@ -26,6 +40,7 @@ export default function OwnerOperatorSignupPage() {
 
   async function submit() {
     if (!form.company_name.trim()) { setErr("Company / owner-operator name is required."); return; }
+    if (!ack) { setErr("Please acknowledge the insurance requirements to continue."); return; }
     setSubmitting(true); setErr("");
     try {
       const res = await fetch("/api/oo-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin }) });
@@ -78,10 +93,46 @@ export default function OwnerOperatorSignupPage() {
                 <div><label style={lbl}>DOT #</label><input value={form.dot_number} onChange={e => set("dot_number", e.target.value)} style={inp} /></div>
                 <div><label style={lbl}>EIN</label><input value={form.ein} onChange={e => set("ein", e.target.value)} style={inp} /></div>
               </div>
-              <button onClick={submit} disabled={submitting || !form.company_name.trim()} style={{ marginTop: 6, padding: "13px 0", borderRadius: 10, border: "none", background: submitting || !form.company_name.trim() ? "#94a3b8" : "#16a34a", color: "#fff", fontWeight: 800, fontSize: "0.95rem", cursor: submitting || !form.company_name.trim() ? "default" : "pointer" }}>
+
+              {/* Insurance Requirements */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+                <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>🛡 Insurance Requirements</div>
+                <div style={{ fontSize: "0.82rem", color: "#475569", marginTop: 4, lineHeight: 1.5 }}>
+                  Your COIs must list <strong>General Liability $1,000,000</strong> and <strong>Auto Liability $1,000,000</strong>. Every certificate holder below must be listed as <strong>Additional Insured with a Waiver of Subrogation</strong>, and your <strong>truck VIN(s) must appear on the Auto Liability certificate</strong>.
+                </div>
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", margin: "10px 0", fontSize: "0.8rem" }}>
+                  <div style={{ fontWeight: 800, color: "#334155", marginBottom: 6 }}>Certificate Holders</div>
+                  {CERT_HOLDERS.map(([name, addr], i) => (
+                    <div key={name} style={{ padding: "4px 0", borderTop: i ? "1px solid #f1f5f9" : "none" }}>
+                      <span style={{ fontWeight: 700, color: "#0f172a" }}>{i + 1}. {name}</span>
+                      <div style={{ color: "#64748b", fontSize: "0.74rem" }}>{addr}</div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 8, color: "#475569", fontSize: "0.76rem" }}>Send your COIs to <strong>{COI_EMAIL}</strong>.</div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div><label style={lbl}>Insurance Agent / Agency</label><input value={form.insurance_agent_name} onChange={e => set("insurance_agent_name", e.target.value)} style={inp} placeholder="Agency name" /></div>
+                  <div><label style={lbl}>Agent Phone</label><input value={form.insurance_agent_phone} onChange={e => set("insurance_agent_phone", e.target.value)} style={inp} type="tel" /></div>
+                </div>
+                <div style={{ marginTop: 12 }}><label style={lbl}>Agent Email</label><input value={form.insurance_agent_email} onChange={e => set("insurance_agent_email", e.target.value)} style={inp} type="email" placeholder="So the office can request COIs directly" /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
+                  <div><label style={lbl}>GL Coverage</label><input value={form.gl_amount} onChange={e => set("gl_amount", e.target.value)} style={inp} /></div>
+                  <div><label style={lbl}>AL Coverage</label><input value={form.al_amount} onChange={e => set("al_amount", e.target.value)} style={inp} /></div>
+                  <div><label style={lbl}>Policy Expires</label><input value={form.insurance_expiration} onChange={e => set("insurance_expiration", e.target.value)} style={inp} type="date" /></div>
+                </div>
+                <div style={{ marginTop: 12 }}><label style={lbl}>Truck VIN(s) <span style={{ fontWeight: 500, color: "#94a3b8" }}>— must be on the AL certificate</span></label><textarea value={form.truck_vins} onChange={e => set("truck_vins", e.target.value)} rows={2} style={{ ...inp, resize: "vertical" }} placeholder="One VIN per line" /></div>
+
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, cursor: "pointer" }}>
+                  <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} style={{ marginTop: 3, width: 17, height: 17, flexShrink: 0 }} />
+                  <span style={{ fontSize: "0.82rem", color: "#334155", lineHeight: 1.45 }}>I agree to list all four certificate holders as <strong>Additional Insured with a Waiver of Subrogation</strong>, carry GL and AL of at least <strong>$1,000,000</strong> each, include my <strong>VIN(s) on the AL certificate</strong>, and send current COIs to {COI_EMAIL}.</span>
+                </label>
+              </div>
+
+              <button onClick={submit} disabled={submitting || !form.company_name.trim() || !ack} style={{ marginTop: 6, padding: "13px 0", borderRadius: 10, border: "none", background: submitting || !form.company_name.trim() || !ack ? "#94a3b8" : "#16a34a", color: "#fff", fontWeight: 800, fontSize: "0.95rem", cursor: submitting || !form.company_name.trim() || !ack ? "default" : "pointer" }}>
                 {submitting ? "Submitting…" : "Submit Registration"}
               </button>
-              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>The office will follow up to collect insurance, contract, W-9, and driver details.</div>
+              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>The office will follow up to finalize your contract, W-9, and driver setup.</div>
             </div>
           )}
         </div>

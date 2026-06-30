@@ -29,6 +29,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "A company with this name is already in the system. Please contact the office to update it." }, { status: 409 });
   }
 
+  // Capture the insurance section. Agent fields go to real columns; coverage/VIN/ack are folded
+  // into notes so they're preserved even if those columns don't exist.
+  const insDetails = [
+    body.gl_amount ? `GL ${body.gl_amount}` : "",
+    body.al_amount ? `AL ${body.al_amount}` : "",
+    body.insurance_expiration ? `expires ${body.insurance_expiration}` : "",
+    body.truck_vins ? `VIN(s): ${String(body.truck_vins).replace(/\s*\n\s*/g, ", ").trim()}` : "",
+  ].filter(Boolean).join(" · ");
+  const ackLine = body.ack ? " ACKNOWLEDGED insurance requirements (4 certificate holders as Additional Insured + Waiver of Subrogation; GL/AL $1M; VIN on AL cert)." : "";
+  const notes = `Self-registered via the owner-operator signup page.${ackLine}${insDetails ? " Insurance: " + insDetails + "." : ""}`;
+
   const insert: Record<string, unknown> = {
     organization_id:  RONYX_ORG_ID,
     company_name:     name,
@@ -39,8 +50,11 @@ export async function POST(req: Request) {
     mc_number:        body.mc_number?.trim()        || null,
     dot_number:       body.dot_number?.trim()       || null,
     ein:              body.ein?.trim()              || null,
+    insurance_agent_name:  body.insurance_agent_name?.trim()  || null,
+    insurance_agent_email: body.insurance_agent_email?.trim() || null,
+    insurance_agent_phone: body.insurance_agent_phone?.trim() || null,
     status:           "pending", // shows in the office list flagged for review/activation
-    notes:            "Self-registered via the owner-operator signup page.",
+    notes,
   };
 
   // strip-and-retry so a missing optional column never blocks a signup
