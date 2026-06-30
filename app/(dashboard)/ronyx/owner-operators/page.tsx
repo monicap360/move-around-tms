@@ -613,6 +613,10 @@ export default function OwnerOperatorsPage() {
   // Driver tab search (within selected OO)
   const [driverSearch, setDriverSearch] = useState("");
   const ooIsActive = (oo: OOCompany) => (oo.status ?? "active").toLowerCase() === "active";
+  // Deep link: /ronyx/owner-operators?signups=1 lands on the New Sign-Ups view.
+  React.useEffect(() => {
+    try { if (new URLSearchParams(window.location.search).get("signups") === "1") setOoStatusFilter("pending"); } catch {}
+  }, []);
   const filteredCompanies = React.useMemo(() => {
     let list = companies;
     if (ooStatusFilter === "active") list = list.filter(ooIsActive);
@@ -1308,7 +1312,7 @@ export default function OwnerOperatorsPage() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <a href="/ronyx/documents/vault" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📁 Document Vault</a>
             <a href="/ronyx/owner-operators/needs-reupload" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", color: "#92400e", borderColor: "#fde68a", background: "#fffbeb" }}>⚠ Needs Re-Upload</a>
-            <a href="/ronyx/owner-operators/import" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📋 Bulk Import</a>
+            <a href="/ronyx/onboarding" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", color: "#1e40af", borderColor: "#bfdbfe", background: "#eff6ff" }}>🚀 Onboarding</a>
             <button onClick={() => setShowAddCompany(s=>!s)} style={primaryBtn}>+ Add Owner Operator</button>
           </div>
         </div>

@@ -81,9 +81,10 @@ const NAV_GROUPS: NavGroup[] = [
       ]},
       { label: "Owner Operators",  href: "/ronyx/owner-operators",         icon: "🚛", color: "#7c3aed", children: [
         { label: "Overview",              href: "/ronyx/owner-operators",          icon: "🚛" },
+        { label: "Onboarding",            href: "/ronyx/onboarding",               icon: "🚀" },
+        { label: "New Sign-Ups",          href: "/ronyx/owner-operators?signups=1", icon: "✨" },
         { label: "Settlements",          href: "/ronyx/owner-operators/settlements", icon: "💵" },
         { label: "COI Matrix",            href: "/ronyx/owner-operators/coi-matrix", icon: "📋" },
-        { label: "Bulk Import",           href: "/ronyx/owner-operators/bulk-import", icon: "📥" },
       ]},
       { label: "Fleet & Maintenance", href: "/ronyx/fleet",               icon: "🔧", color: "#0284c7", children: [
         { label: "Fleet",                 href: "/ronyx/fleet",                    icon: "🔧" },
