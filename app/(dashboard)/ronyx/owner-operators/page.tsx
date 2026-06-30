@@ -1706,15 +1706,9 @@ export default function OwnerOperatorsPage() {
               </button>
               <button
                 onClick={() => setOOActive(selected, !ooIsActive(selected))}
-                title={ooIsActive(selected) ? "Mark this owner-operator as no longer working for Ronyx" : "Reactivate this owner-operator"}
-                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(239,68,68,0.45)" : "rgba(34,197,94,0.45)"), background: ooIsActive(selected) ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ooIsActive(selected) ? "#fca5a5" : "#86efac", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                {ooIsActive(selected) ? "Inactive" : "Active"}
-              </button>
-              <button
-                onClick={() => setMoveModal({ ooId: selected.id, ooName: selected.company_name, targetId: "" })}
-                title="This record is actually a driver — move it into Drivers under a company"
-                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(8,145,178,0.45)", background: "rgba(8,145,178,0.12)", color: "#67e8f9", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                → Move to Drivers
+                title={ooIsActive(selected) ? "Active — click to mark Inactive" : "Inactive — click to mark Active"}
+                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid " + (ooIsActive(selected) ? "rgba(34,197,94,0.45)" : "rgba(239,68,68,0.45)"), background: ooIsActive(selected) ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", color: ooIsActive(selected) ? "#86efac" : "#fca5a5", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {ooIsActive(selected) ? "● Active" : "○ Inactive"}
               </button>
               {selected.logo_url && (
                 <button onClick={async () => { await fetch(`/api/ronyx/owner-operators/${selected.id}/logo`, { method: "DELETE" }); updateLocalState({ ...selected, logo_url: undefined }); flash("Logo removed."); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}>Remove logo</button>
