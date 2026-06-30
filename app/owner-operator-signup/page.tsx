@@ -9,7 +9,7 @@ import { useRef, useState } from "react";
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid #cbd5e1", fontSize: "0.95rem", boxSizing: "border-box", outline: "none" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: 5 };
 
-const OO_DOCS = ["Insurance Certificate (COI)", "W-9 / Tax Form", "Operating Authority", "Voided Check / Banking"];
+const OO_DOCS = ["Insurance Certificate (COI)", "W-9 / Tax Form", "Operating Authority (MC)", "Voided Check / Banking"];
 
 // Tap-to-upload tile (photo or PDF).
 function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {

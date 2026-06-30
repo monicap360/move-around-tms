@@ -1376,6 +1376,20 @@ export default function OwnerOperatorsPage() {
           <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:20, padding:"3px 10px", color:"#dc2626", fontWeight:700 }}>🔴 Dispatch Blocked — missing insurance, contract, or compliance</span>
         </div>
 
+        {/* New self-signups banner */}
+        {(() => {
+          const signups = companies.filter(c => (c.status || "").toLowerCase() === "pending");
+          if (signups.length === 0) return null;
+          const withDocs = signups.filter(c => (c.documents?.length || 0) > 0).length;
+          return (
+            <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 14, padding: "13px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#854d0e" }}>✨ {signups.length} new owner-operator sign-up{signups.length>1?"s":""} awaiting review</span>
+              {withDocs > 0 && <span style={{ background: "#dcfce7", color: "#15803d", padding: "3px 10px", borderRadius: 20, fontSize: "0.74rem", fontWeight: 800, border: "1px solid #86efac" }}>📎 {withDocs} attached documents</span>}
+              <span style={{ marginLeft: "auto", fontSize: "0.78rem", color: "#854d0e", fontWeight: 600 }}>Highlighted in yellow below — open to review &amp; activate.</span>
+            </div>
+          );
+        })()}
+
         {/* Company cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {filteredCompanies.length === 0 && ooListSearch.trim() ? (
@@ -1417,8 +1431,12 @@ export default function OwnerOperatorsPage() {
             }, { onFile: 0, missing: 0, expiring: 0 });
             const docPill: React.CSSProperties = { padding: "3px 8px", borderRadius: 12, fontSize: "0.68rem", fontWeight: 800 };
 
-            const cardBg    = eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
-            const stripBorder = eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
+            // New self-signups arrive as status "pending" — highlight them so staff
+            // can review & activate. Flag those who attached documents at signup.
+            const isNewSignup = (oo.status || "").toLowerCase() === "pending";
+            const signupDocs  = oo.documents?.length || 0;
+            const cardBg    = isNewSignup ? "#fef9c3" : eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
+            const stripBorder = isNewSignup ? "#eab308" : eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
             const expanded = expandedOOs.has(oo.id);
             return (
               <div key={oo.id} style={{ background: "#fff", border: `1px solid ${stripBorder}`, borderRadius: 16, overflow: "hidden" }}>
@@ -1430,6 +1448,8 @@ export default function OwnerOperatorsPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                       <h3 style={{ margin: 0, fontWeight: 900, color: "#0f172a", fontSize: "1.05rem" }}>{oo.company_name}</h3>
+                      {isNewSignup && <span style={{ background: "#fde68a", color: "#854d0e", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #eab308" }}>✨ NEW SIGN-UP</span>}
+                      {isNewSignup && signupDocs > 0 && <span style={{ background: "#dcfce7", color: "#15803d", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #86efac" }}>📎 {signupDocs} doc{signupDocs>1?"s":""} attached</span>}
                       <span style={{ background: eligible?"#dcfce7":"#fee2e2", color: eligible?"#15803d":"#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: `1px solid ${eligible?"#86efac":"#fca5a5"}` }}>
                         {eligible ? "🟢 Dispatch Eligible" : "🔴 Dispatch Blocked"}
                       </span>
