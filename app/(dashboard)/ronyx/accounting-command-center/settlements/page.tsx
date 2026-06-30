@@ -61,7 +61,37 @@ export default function Settlements() {
       if (d) { flash(`${a}: ${fmtc(n)} — new net ${fmtc(d.net)}.`); loadSettlements(id); } else flash("Couldn't save.");
       return;
     }
-    flash(`${a} — ${drawer.oo} (coming soon)`);
+    if (a === "Generate Settlement") {
+      const d = await send({ action: "regenerate" });
+      if (d) { flash(`Settlement regenerated from tickets — net ${fmtc(d.net)}.`); loadSettlements(id); } else flash("Couldn't regenerate.");
+      return;
+    }
+    if (a === "Send Statement") {
+      flash("Sending statement…");
+      const r = await fetch("/api/ronyx/accounting/settlements/send-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settlement_id: id }) });
+      const d = await r.json().catch(() => ({}));
+      if (d.ok) flash(`✉ Statement emailed to ${d.to}.`);
+      else if (d.simulated) flash("Email isn't turned on yet — add the Proton SMTP token, then it sends.");
+      else flash(`Couldn't send — ${d.error || "no email on file"}.`);
+      return;
+    }
+    if (a === "Export Payment File") {
+      const rows = [["Account #", "Owner Operator", "Period", "Loads", "Gross", "Deductions", "Net Settlement"],
+        [(drawer as any).acct || "", drawer.oo, drawer.period, String(drawer.loads), drawer.gross.toFixed(2), (drawer.fuel + drawer.ins + drawer.trailer + drawer.advance + drawer.other).toFixed(2), net(drawer).toFixed(2)]];
+      const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      const link = document.createElement("a"); link.href = url; link.download = `settlement-${drawer.oo.replace(/\W+/g, "-")}-${drawer.period.replace(/\W+/g, "-")}.csv`; link.click();
+      flash("Payment file exported (CSV).");
+      return;
+    }
+    if (a === "Create Adjustment") {
+      const amt = safePrompt("Adjustment amount ($) — positive deducts, negative credits:"); if (amt === null) return;
+      const n = Number(String(amt).replace(/[^0-9.\-]/g, "")); if (!n) { flash("Enter a valid amount."); return; }
+      const d = await send({ action: "adjustment", amount: n });
+      if (d) { flash(`Adjustment ${fmtc(n)} applied — new net ${fmtc(d.net)}.`); loadSettlements(id); } else flash("Couldn't apply.");
+      return;
+    }
+    flash(`${a} — ${drawer.oo}`);
   }
 
   // Load the ticket line-items when a settlement drawer opens.
@@ -135,8 +165,12 @@ export default function Settlements() {
         const blocked = drawer.blocks.length > 0;
         return (
           <div onClick={() => setDrawer(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.45)", display: "flex", justifyContent: "flex-end" }}>
-            <div onClick={e => e.stopPropagation()} style={{ width: 440, maxWidth: "92vw", background: "#fff", height: "100%", overflowY: "auto", padding: "22px 24px", boxShadow: "-10px 0 40px rgba(0,0,0,0.25)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><div><div style={{ fontWeight: 900, fontSize: "1.15rem" }}>{drawer.oo}</div><div style={{ fontSize: "0.78rem", color: "#64748b" }}>{drawer.company} · {drawer.period} · {drawer.loads} loads</div></div><button onClick={() => setDrawer(null)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#94a3b8" }}>×</button></div>
+            <div onClick={e => e.stopPropagation()} style={{ width: 760, maxWidth: "96vw", background: "#fff", height: "100%", overflowY: "auto", padding: "20px 28px", boxShadow: "-10px 0 40px rgba(0,0,0,0.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <button onClick={() => setDrawer(null)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", color: "#0f172a" }}>← Back to settlements</button>
+                <button onClick={() => setDrawer(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>×</button>
+              </div>
+              <div><div style={{ fontWeight: 900, fontSize: "1.3rem" }}>{drawer.oo}</div><div style={{ fontSize: "0.82rem", color: "#64748b" }}>{drawer.company} · {drawer.period} · {drawer.loads} loads</div></div>
               {blocked && <div style={{ marginTop: 14, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 13px", fontSize: "0.82rem", fontWeight: 700 }}>🚫 Cannot approve until resolved:<ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{drawer.blocks.map(b => <li key={b}>{b}</li>)}</ul></div>}
               <div style={{ margin: "16px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Settlement breakdown</div>
               {[["Gross load revenue", fmtc(drawer.gross)], ["Agreed pay", fmtc(drawer.agreed)], ["Fuel deduction", "-" + fmtc(drawer.fuel)], ["Insurance", "-" + fmtc(drawer.ins)], ["Trailer/equipment", "-" + fmtc(drawer.trailer)], ["Advances", "-" + fmtc(drawer.advance)], ["Other/chargebacks", "-" + fmtc(drawer.other)], ["Reimbursements", "+" + fmtc(drawer.reimb)], ["Net settlement", fmtc(net(drawer))]].map(([k, v], i) => (

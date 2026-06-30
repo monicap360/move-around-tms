@@ -38,6 +38,14 @@ export async function PATCH(req: NextRequest) {
     else if (b.action === "hold") { patch.approval_status = "draft"; patch.payment_status = "hold"; }
     else if (b.action === "deduction") patch.other_deductions = num(s.other_deductions) + num(b.amount);
     else if (b.action === "reimbursement") patch.reimbursements = num(s.reimbursements) + num(b.amount);
+    else if (b.action === "adjustment") patch.other_deductions = num(s.other_deductions) + num(b.amount);
+    else if (b.action === "regenerate") {
+      // re-pull the ticket lines and recompute gross + agreed pay (80%)
+      const { data: lines } = await supabaseAdmin.from("owner_operator_settlement_lines").select("amount").eq("settlement_id", b.id);
+      const gross = (lines || []).reduce((a: number, l: any) => a + num(l.amount), 0);
+      patch.gross_revenue = gross;
+      patch.agreed_pay = +(gross * 0.8).toFixed(2);
+    }
     else return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 
     // recompute net from the merged values
