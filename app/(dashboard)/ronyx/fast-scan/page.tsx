@@ -101,6 +101,7 @@ const S = {
   label: { fontSize: "0.7rem", fontWeight: 800, color: "#64748b", marginBottom: 5, display: "block", textTransform: "uppercase" as const, letterSpacing: "0.05em" },
   input: { width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.875rem", outline: "none", background: "#f8fafc", boxSizing: "border-box" as const, fontFamily: "inherit" },
   card:  { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "16px", marginBottom: 14 },
+  pqBtn: { border: "none", borderRadius: 6, padding: "5px 10px", fontWeight: 800 as const, fontSize: "0.72rem", cursor: "pointer", whiteSpace: "nowrap" as const },
 };
 
 function FieldStatusIcon({ status }: { status: FieldStatus }) {
@@ -148,6 +149,25 @@ export default function FastScanPage() {
 
   // Command-metric card filter (Phase 2)
   const [metricFilter, setMetricFilter] = useState<null | "missing" | "received" | "cleared" | "atrisk">(null);
+
+  // Office Priority Queue (Phase 4) — exceptions from the engine
+  const [pq, setPq] = useState<any[]>([]);
+  const [pqBusy, setPqBusy] = useState(false);
+  function loadPq() { fetch("/api/ronyx/fast-scan/exceptions").then(r => r.json()).then(d => setPq(d.exceptions || [])).catch(() => {}); }
+  useEffect(() => { loadPq(); }, []);
+  async function runDetection() {
+    setPqBusy(true);
+    try { const r = await fetch("/api/ronyx/fast-scan/exceptions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "scan" }) }); const d = await r.json(); loadPq(); }
+    finally { setPqBusy(false); }
+  }
+  async function pqResolve(id: string) {
+    await fetch("/api/ronyx/fast-scan/exceptions", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, resolve: { code: "resolved", by: "Office" } }) });
+    setPq(p => p.filter(e => e.id !== id));
+  }
+  async function pqAssign(id: string, name: string) {
+    await fetch("/api/ronyx/fast-scan/exceptions", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, assign: name }) });
+    setPq(p => p.map(e => e.id === id ? { ...e, assigned_to_name: name } : e));
+  }
 
   // Batch
   const [batch,         setBatch]         = useState<BatchState>(EMPTY_BATCH);
@@ -531,6 +551,32 @@ export default function FastScanPage() {
       </div>
 
       {/* ── Body: 2-column ──────────────────────────────────────────────────── */}
+      {/* ── Office Priority Queue (Phase 4) ── */}
+      <div style={{ ...S.card, marginBottom: 16, border: pq.length ? "1px solid #fecaca" : "1px solid #e2e8f0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: pq.length ? 12 : 0 }}>
+          <div style={{ fontWeight: 900, fontSize: "0.95rem", color: "#0f172a" }}>⚑ Today&apos;s Highest-Impact Work {pq.length > 0 && <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#dc2626", background: "#fef2f2", padding: "2px 9px", borderRadius: 999, marginLeft: 6 }}>{pq.length}</span>}</div>
+          <button onClick={runDetection} disabled={pqBusy} style={{ background: pqBusy ? "#94a3b8" : "#0f172a", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: pqBusy ? "default" : "pointer" }}>{pqBusy ? "Scanning…" : "↻ Run detection scan"}</button>
+        </div>
+        {pq.length === 0 ? (
+          <div style={{ fontSize: "0.82rem", color: "#15803d", fontWeight: 700 }}>✓ All clear — no exceptions blocking billing or payroll. Run a detection scan to re-check.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {pq.slice(0, 8).map((e: any) => (
+              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", border: "1px solid #f1f5f9", borderRadius: 9, background: "#fff", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.6rem", fontWeight: 800, padding: "2px 7px", borderRadius: 4, background: e.severity === "high" ? "#fee2e2" : "#fef9c3", color: e.severity === "high" ? "#dc2626" : "#b45309", whiteSpace: "nowrap" }}>{(e.severity || "med").toUpperCase()}</span>
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a" }}>{e.exception_type}{e.ticket_number ? ` · #${e.ticket_number}` : ""}</div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{[e.customer, e.driver_name, e.truck_number].filter(Boolean).join(" · ")}{e.recommended_action ? ` — ${e.recommended_action}` : ""}</div>
+                </div>
+                {Number(e.financial_impact_total) > 0 && <span style={{ fontWeight: 900, color: "#dc2626", whiteSpace: "nowrap" }}>${Math.round(Number(e.financial_impact_total)).toLocaleString()}</span>}
+                {e.assigned_to_name ? <span style={{ fontSize: "0.68rem", color: "#1d4ed8", fontWeight: 700, whiteSpace: "nowrap" }}>👤 {e.assigned_to_name}</span> : <button onClick={() => pqAssign(e.id, "Sylvia P")} style={{ ...S.pqBtn, background: "#eff6ff", color: "#1d4ed8" }}>Assign</button>}
+                <button onClick={() => pqResolve(e.id)} style={{ ...S.pqBtn, background: "#16a34a", color: "#fff" }}>Resolve</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: 16, alignItems: "start" }}>
 
         {/* ── LEFT: upload + extraction + routing ── */}
