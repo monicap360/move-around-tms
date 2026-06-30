@@ -9,7 +9,15 @@ import { useRef, useState } from "react";
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid #cbd5e1", fontSize: "0.95rem", boxSizing: "border-box", outline: "none" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: 5 };
 
-const OO_DOCS = ["Insurance Certificate (COI)", "W-9 / Tax Form", "Operating Authority (MC)", "Voided Check / Banking"];
+// [tile label, stored doc_type]. doc_type must match the office's named slots so
+// uploads land automatically (the signed agreement files as "Contract").
+const OO_DOCS: [string, string][] = [
+  ["Insurance Certificate (COI)", "Insurance Certificate (COI)"],
+  ["W-9 / Tax Form", "W-9 / Tax Form"],
+  ["Signed Subhauler Agreement", "Contract"],
+  ["Operating Authority (MC)", "Operating Authority (MC)"],
+  ["Voided Check / Banking", "Voided Check / Banking"],
+];
 
 // Tap-to-upload tile (photo or PDF).
 function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
@@ -65,14 +73,14 @@ export default function OwnerOperatorSignupPage() {
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Could not submit. Please try again."); setSubmitting(false); return; }
       // Upload any attached documents to the new owner-operator record.
-      const chosen = OO_DOCS.filter(t => files[t]);
+      const chosen = OO_DOCS.filter(([, type]) => files[type]);
       if (d.id && chosen.length) {
         setUploadingDocs(true);
-        for (const t of chosen) {
+        for (const [, type] of chosen) {
           const fd = new FormData();
-          fd.append("file", files[t]!);
+          fd.append("file", files[type]!);
           fd.append("oo_id", d.id);
-          fd.append("doc_type", t);
+          fd.append("doc_type", type);
           try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
         }
         setUploadingDocs(false);
@@ -102,7 +110,7 @@ export default function OwnerOperatorSignupPage() {
               <div style={{ fontSize: 46 }}>✅</div>
               <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", marginTop: 8 }}>You&apos;re registered!</div>
               <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: 8, lineHeight: 1.5 }}>
-                Thanks, <strong>{form.company_name}</strong>.{OO_DOCS.some(t => files[t]) ? " Your documents were received." : ""} The Ronyx office has your info and will reach out to finish onboarding (insurance, contract, W-9, and driver setup).
+                Thanks, <strong>{form.company_name}</strong>.{OO_DOCS.some(([, type]) => files[type]) ? " Your documents were received." : ""} The Ronyx office has your info and will reach out to finish onboarding (insurance, contract, W-9, and driver setup).
               </div>
               {acctNum && (
                 <div style={{ marginTop: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", display: "inline-block" }}>
@@ -174,9 +182,10 @@ export default function OwnerOperatorSignupPage() {
               {/* Document uploads */}
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
                 <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Upload your documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
-                <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 10px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
+                <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 8px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
+                <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Open, print &amp; sign the Subhauler Agreement → then attach it below</a>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {OO_DOCS.map(t => <FileSlot key={t} label={t} file={files[t]} onPick={f => setFiles(s => ({ ...s, [t]: f }))} />)}
+                  {OO_DOCS.map(([label, type]) => <FileSlot key={type} label={label} file={files[type]} onPick={f => setFiles(s => ({ ...s, [type]: f }))} />)}
                 </div>
               </div>
 
