@@ -356,10 +356,14 @@ export default function FastScanPage() {
       const billingStatus = { both: "ready", payroll: "hold", billing: "ready", needs_review: "on_hold", duplicate: "hold", rejected: "hold" }[routingChoice];
       const scanStatus    = { both: "approved", payroll: "approved", billing: "approved", needs_review: "needs_review", duplicate: "voided", rejected: "voided" }[routingChoice];
       const f = mergedFields();
-      await fetch(`/api/ronyx/fast-scan/${uploadResult.document_id}`, {
+      const res = await fetch(`/api/ronyx/fast-scan/${uploadResult.document_id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payroll_status: payrollStatus, billing_status: billingStatus, scan_status: scanStatus, notes: noteText || undefined, ...f }),
       });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || `Save failed (${res.status})`);
+      }
       setRoutingDone(true);
       // Update batch matched/review counters
       if (batch.active) {
@@ -370,7 +374,7 @@ export default function FastScanPage() {
         }
       }
       loadRecentScans();
-    } catch { alert("Routing save failed — check your connection."); }
+    } catch (err: any) { alert(`Routing save failed — ${err?.message || "check your connection"}. Nothing was changed; please try again.`); }
     finally { setRouting(false); }
   }
 

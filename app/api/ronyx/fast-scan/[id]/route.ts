@@ -75,16 +75,30 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   return NextResponse.json({ document: data, agg_synced: agg.synced, agg_reason: agg.reason });
 }
 
-// DELETE /api/ronyx/fast-scan/[id] — permanently remove a scan record
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+// DELETE /api/ronyx/fast-scan/[id] — soft-delete by default (recoverable; keeps the stored
+// file), so a mis-click never destroys a scanned ticket. Pass ?hard=true to purge for good.
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const sb = adminClient();
+  const hard = new URL(req.url).searchParams.get("hard") === "true";
 
-  const { error } = await sb
-    .from("fast_scan_documents")
-    .delete()
-    .eq("id", params.id);
+  if (hard) {
+    const { error } = await sb.from("fast_scan_documents").delete().eq("id", params.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, hard: true });
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  // Soft-delete: mark it deleted but keep the row + file. Fall back to a hard delete only if
+  // the column doesn't exist yet, so the action never silently fails.
+  const { error } = await sb.from("fast_scan_documents")
+    .update({ scan_status: "deleted" }).eq("id", params.id);
+  if (error) {
+    if (/scan_status/.test(error.message)) {
+      const { error: delErr } = await sb.from("fast_scan_documents").delete().eq("id", params.id);
+      if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+      return NextResponse.json({ ok: true, hard: true });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, soft: true });
 }

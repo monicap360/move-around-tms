@@ -66,14 +66,18 @@ export async function POST(req: NextRequest) {
       customer_name: (fields as any).customer || null,
       material:      fields.material || null,
       quantity:      (fields as any).loads ?? null,
+      location:      (fields as any).location || null,
+      total_hours:   (fields as any).total_hours ?? null,
       has_driver_signature: !!fields.signature_present,
       raw_ocr_text:  (fields as any).raw_ocr_text || null,
       confidence_score: fields.extraction_confidence ?? fields.ocr_confidence ?? null,
     };
-    const { data: updatedDoc } = await stripAndRetry(
+    const { data: updatedDoc, error: updErr } = await stripAndRetry(
       (p) => sb.from("fast_scan_documents").update(p).eq("id", document_id).select("*").single(),
       docUpdate,
     );
+    // If the OCR fields couldn't be saved, surface it instead of showing a false "complete".
+    const dbWarning = updErr ? `OCR ran but saving the fields failed: ${updErr.message}` : null;
     const scan = updatedDoc || { ...doc, ...docUpdate };
 
     // Mirror into aggregate_tickets (the agg portion payroll reads) — payroll-ready.
@@ -112,6 +116,7 @@ export async function POST(req: NextRequest) {
       ticket_number:  docUpdate.ticket_number,
       payroll_ready:  agg.synced,
       payroll_note:   agg.reason || null,
+      db_warning:     dbWarning,
     }, { status: 201 });
 
   } catch (err: unknown) {

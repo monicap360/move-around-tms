@@ -109,7 +109,9 @@ export async function GET(req: Request) {
 
   let query = supabase.from("fast_scan_documents").select("*").order("created_at", { ascending: false }).limit(200);
   if (orgId) query = query.or(`organization_id.eq.${orgId},organization_id.is.null`);
+  // Hide soft-deleted scans unless a specific status is explicitly requested.
   if (status) query = query.eq("scan_status", status);
+  else query = query.neq("scan_status", "deleted");
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
