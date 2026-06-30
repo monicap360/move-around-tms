@@ -194,27 +194,31 @@ export async function POST(req: NextRequest) {
   }
   const resolveId = (company: string) => (matchOO(company)?.id) || createdCompanyId.get(norm(company)) || null;
 
+  // Track every driver row we create or change, so the UI can highlight exactly
+  // what this import touched.
+  const affectedIds: string[] = [];
+
   // 2) insert new drivers (strip-and-retry on unknown columns)
-  async function insertDriver(payload: Record<string, unknown>): Promise<boolean> {
-    const { error } = await sb.from("ronyx_oo_drivers").insert(payload);
+  async function insertDriver(payload: Record<string, unknown>): Promise<string | null> {
+    const { data, error } = await sb.from("ronyx_oo_drivers").insert(payload).select("id").single();
     if (error) {
       const m = error.message?.match(/Could not find the '(.+?)' column/) || error.message?.match(/column "(.+?)"/);
       if (m && m[1] in payload && m[1] !== "name" && m[1] !== "oo_id") { const p = { ...payload }; delete p[m[1]]; return insertDriver(p); }
-      return false;
+      return null;
     }
-    return true;
+    return data?.id ?? null;
   }
   let driversCreated = 0;
   for (const d of newDrivers) {
     const oo_id = resolveId(d._company); if (!oo_id) continue;
     const notes = [d.notes, d.email ? `Email: ${d.email}` : ""].filter(Boolean).join(" · ");
-    const ok = await insertDriver({
+    const id = await insertDriver({
       oo_id, name: d.name, status: "active",
       cdl_number: d.cdl_number || null, cdl_expiration: d.cdl_expiration || null,
       med_card_number: d.med_card_number || null, med_card_expiration: d.med_card_expiration || null,
       truck_number: d.truck_number || null, job_assignment: d.job_assignment || null, notes: notes || null,
     });
-    if (ok) driversCreated++;
+    if (id) { driversCreated++; affectedIds.push(id); }
   }
 
   // 3) enrich blank fields on existing drivers
@@ -226,8 +230,8 @@ export async function POST(req: NextRequest) {
     if (e.fills.includes("Med card #")) patch.med_card_number = e.data.med_card_number;
     if (e.fills.includes("Med exp")) patch.med_card_expiration = e.data.med_card_expiration;
     if (e.fills.includes("Truck #")) patch.truck_number = e.data.truck_number;
-    if (Object.keys(patch).length) { const { error } = await sb.from("ronyx_oo_drivers").update(patch).eq("id", e.id); if (!error) enriched++; }
+    if (Object.keys(patch).length) { const { error } = await sb.from("ronyx_oo_drivers").update(patch).eq("id", e.id); if (!error) { enriched++; affectedIds.push(e.id); } }
   }
 
-  return NextResponse.json({ ok: true, mode: "commit", companiesCreated: createdCompanyId.size, driversCreated, enriched, skipped });
+  return NextResponse.json({ ok: true, mode: "commit", companiesCreated: createdCompanyId.size, driversCreated, enriched, skipped, affectedIds });
 }

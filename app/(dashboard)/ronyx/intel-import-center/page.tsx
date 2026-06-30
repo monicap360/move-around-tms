@@ -533,6 +533,9 @@ export default function IntelImportCenterPage() {
           const rosterRes = await fetch("/api/ronyx/owner-operators/roster-import", { method: "POST", body: fd });
           const rosterData = await rosterRes.json().catch(() => ({}));
           setProgress(100);
+          if (rosterRes.ok && rosterData.ok) {
+            try { localStorage.setItem("fleet_recent_import", JSON.stringify({ ids: rosterData.affectedIds || [], at: Date.now() })); } catch {}
+          }
           importResult = {
             ok: !!(rosterRes.ok && rosterData.ok),
             imported: rosterData.driversCreated ?? 0,

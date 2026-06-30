@@ -85,6 +85,27 @@ export default function IntelImportCenter({
     if (!file) return;
     setStage("uploading");
     try {
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      const isSheet = ["csv", "xlsx", "xls", "tsv"].includes(ext);
+      const rosterTypes = ["auto", "drivers", "owner_ops", "drivers_trucks"];
+
+      // Spreadsheet of drivers/owner-operators → run the real roster engine so the
+      // data (truck #, CDL, med card #/exp) actually lands in Fleet CDL & Medical,
+      // deduped. If it's not a roster sheet it errors → fall through to file storage.
+      if (isSheet && rosterTypes.includes(importType)) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("mode", "commit");
+        const res = await fetch("/api/ronyx/owner-operators/roster-import", { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          // Remember exactly which driver rows were touched so Fleet CDL & Medical
+          // can highlight them in yellow.
+          try { localStorage.setItem("fleet_recent_import", JSON.stringify({ ids: data.affectedIds || [], at: Date.now() })); } catch {}
+          setResult({ kind: "roster", ...data }); setStage("done"); return;
+        }
+      }
+
       const fd = new FormData();
       fd.append("file", file);
       fd.append("import_type", importType);
@@ -94,7 +115,7 @@ export default function IntelImportCenter({
       const res = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
-      setResult(data);
+      setResult({ kind: "file", ...data });
       setStage("done");
     } catch (e: any) {
       setError(e.message || "Something went wrong.");
@@ -364,27 +385,51 @@ export default function IntelImportCenter({
           {/* ── STAGE: DONE ── */}
           {stage === "done" && (
             <div style={{ padding: "20px 0" }}>
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ textAlign: "center", marginBottom: 20 }}>
                 <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>✅</div>
                 <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "1.05rem", marginBottom: 6 }}>
-                  Import Successful
+                  {uploadResult?.kind === "roster" ? "Roster Imported" : "Upload Complete"}
                 </div>
                 <div style={{ color: "#64748b", fontSize: "0.83rem" }}>
-                  Your file has been uploaded and queued for processing.
+                  {uploadResult?.kind === "roster" ? "Here's exactly what was added or updated:" : "Your file was stored and filed automatically."}
                 </div>
               </div>
 
-              {uploadResult && (
+              {uploadResult?.kind === "roster" && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                    {[
+                      ["New drivers", uploadResult.driversCreated ?? 0, "#16a34a", "#f0fdf4"],
+                      ["Updated (truck/med filled)", uploadResult.enriched ?? 0, "#b45309", "#fffbeb"],
+                      ["New companies", uploadResult.companiesCreated ?? 0, "#1e40af", "#eff6ff"],
+                      ["Already up to date", uploadResult.skipped ?? 0, "#64748b", "#f8fafc"],
+                    ].map(([l, v, c, b]: any) => (
+                      <div key={l} style={{ background: b, border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px" }}>
+                        <div style={{ fontSize: "1.5rem", fontWeight: 900, color: c }}>{v}</div>
+                        <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 700 }}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background: "#fef9c3", border: "1px solid #fde68a", borderRadius: 10, padding: "11px 14px", marginBottom: 16, fontSize: "0.8rem", color: "#854d0e", fontWeight: 600 }}>
+                    ✨ The {(uploadResult.driversCreated ?? 0) + (uploadResult.enriched ?? 0)} added/updated drivers are <strong>highlighted in yellow</strong> on Fleet CDL &amp; Medical.
+                  </div>
+                  <a href="/ronyx/drivers/cdl-medical" style={{ display: "block", textAlign: "center", background: "#0f172a", color: "#fff", textDecoration: "none", padding: "11px 0", borderRadius: 9, fontWeight: 800, fontSize: "0.86rem", marginBottom: 8 }}>
+                    🪪 View highlighted drivers →
+                  </a>
+                </>
+              )}
+
+              {uploadResult?.kind === "file" && (
                 <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
                   {[
-                    { label: "File", value: uploadResult.original_filename || file?.name },
-                    { label: "Storage Path", value: uploadResult.storage_path },
-                    uploadResult.next_step ? { label: "Next Step", value: uploadResult.next_step } : null,
-                    uploadResult.ocr_confidence != null ? { label: "OCR Confidence", value: `${Math.round(uploadResult.ocr_confidence * 100)}%` } : null,
+                    { label: "File", value: uploadResult.file_name || file?.name },
+                    uploadResult.routed_to_oo
+                      ? { label: "Filed to", value: `${uploadResult.routed_to_oo.company_name}${uploadResult.routed_to_oo.driver ? " · " + uploadResult.routed_to_oo.driver : ""} (${uploadResult.routed_to_oo.doc_type})` }
+                      : { label: "Stored as", value: uploadResult.module || "document" },
                   ].filter(Boolean).map((row: any) => (
                     <div key={row.label} style={{ display: "flex", gap: 8, fontSize: "0.78rem", marginBottom: 4 }}>
-                      <span style={{ color: "#15803d", fontWeight: 700, width: 110, flexShrink: 0 }}>{row.label}</span>
-                      <span style={{ color: "#0f172a", wordBreak: "break-all", opacity: 0.8 }}>{row.value}</span>
+                      <span style={{ color: "#15803d", fontWeight: 700, width: 80, flexShrink: 0 }}>{row.label}</span>
+                      <span style={{ color: "#0f172a", wordBreak: "break-word", opacity: 0.85 }}>{row.value}</span>
                     </div>
                   ))}
                 </div>

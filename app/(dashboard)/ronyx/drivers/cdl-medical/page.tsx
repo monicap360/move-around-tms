@@ -40,6 +40,21 @@ export default function FleetCdlMedical() {
   }
   useEffect(() => { load(); }, []);
 
+  // Highlight the drivers that were just imported (set by Smart Import / Roster Import).
+  // Kept for 24h so they stay marked until the office dismisses them.
+  const [recentIds, setRecentIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("fleet_recent_import");
+      if (!raw) return;
+      const { ids, at } = JSON.parse(raw);
+      if (Array.isArray(ids) && at && Date.now() - at < 24 * 3600 * 1000) setRecentIds(new Set(ids));
+      else localStorage.removeItem("fleet_recent_import");
+    } catch {}
+  }, []);
+  const clearRecent = () => { setRecentIds(new Set()); setShowRecentOnly(false); try { localStorage.removeItem("fleet_recent_import"); } catch {} };
+  const [showRecentOnly, setShowRecentOnly] = useState(false);
+
   async function addDriver() {
     if (!addForm.oo_id) { flash("Pick an owner operator."); return; }
     if (!addForm.name.trim()) { flash("Enter the driver's name."); return; }
@@ -82,6 +97,7 @@ export default function FleetCdlMedical() {
   }
 
   const shown = useMemo(() => rows.filter(d => {
+    if (showRecentOnly && !recentIds.has(d.id)) return false;
     const cur = { ...d, ...edits[d.id] };
     if (filter === "expired") { const c = daysUntil(cur.cdl_expiration), m = daysUntil(cur.med_card_expiration); if (!((c !== null && c < 0) || (m !== null && m < 0))) return false; }
     if (filter === "expiring") { const c = daysUntil(cur.cdl_expiration), m = daysUntil(cur.med_card_expiration); if (!((c !== null && c >= 0 && c <= 30) || (m !== null && m >= 0 && m <= 30))) return false; }
@@ -89,7 +105,7 @@ export default function FleetCdlMedical() {
     if (!q.trim()) return true;
     const s = q.toLowerCase();
     return d.name.toLowerCase().includes(s) || d.company.toLowerCase().includes(s) || (d.cdl_number || "").toLowerCase().includes(s);
-  }), [rows, edits, q, filter]);
+  }), [rows, edits, q, filter, showRecentOnly, recentIds]);
 
   const counts = useMemo(() => {
     let expired = 0, expiring = 0, missing = 0;
@@ -164,6 +180,14 @@ export default function FleetCdlMedical() {
         </div>
       )}
 
+      {recentIds.size > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 14, background: "#fef9c3", border: "1px solid #fde68a", borderRadius: 12, padding: "11px 16px" }}>
+          <span style={{ fontSize: "0.86rem", fontWeight: 700, color: "#854d0e" }}>✨ <strong>{recentIds.size}</strong> driver{recentIds.size === 1 ? "" : "s"} just imported — highlighted in yellow below.</span>
+          <button onClick={() => setShowRecentOnly(v => !v)} style={{ marginLeft: "auto", background: showRecentOnly ? "#854d0e" : "#fff", color: showRecentOnly ? "#fff" : "#854d0e", border: "1px solid #d6a531", borderRadius: 8, padding: "6px 13px", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer" }}>{showRecentOnly ? "Show all drivers" : "Show only these"}</button>
+          <button onClick={clearRecent} style={{ background: "transparent", color: "#854d0e", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", textDecoration: "underline" }}>Dismiss</button>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", margin: "14px 0 16px" }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search driver, company, CDL #…" style={{ ...inp, width: 280, padding: "8px 12px" }} />
         {([["all", `All (${rows.length})`], ["expired", `🔴 Expired (${counts.expired})`], ["expiring", `🟡 Expiring ≤30d (${counts.expiring})`], ["missing", `⚪ Missing info (${counts.missing})`]] as const).map(([k, t]) => (
@@ -189,11 +213,12 @@ export default function FleetCdlMedical() {
                   const c = daysUntil(val(d, "cdl_expiration")); const m = daysUntil(val(d, "med_card_expiration"));
                   const editing = editingId === d.id;
                   const cell: React.CSSProperties = { padding: "7px 10px", color: "#334155" };
+                  const recent = recentIds.has(d.id);
                   if (!editing) {
                     return (
-                      <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", background: recent ? "#fef9c3" : undefined, boxShadow: recent ? "inset 3px 0 0 #eab308" : undefined }}>
                         <td style={{ ...cell, minWidth: 150 }}>
-                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
+                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}{recent && <span style={{ marginLeft: 6, fontSize: "0.6rem", fontWeight: 800, color: "#854d0e", background: "#fde68a", padding: "1px 6px", borderRadius: 999, verticalAlign: "middle" }}>✨ NEW</span>}</div>
                           <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                         </td>
                         <td style={cell}>{d.truck_number ? <span style={{ background: "#f1f5f9", color: "#0f172a", padding: "2px 8px", borderRadius: 6, fontWeight: 800, fontSize: "0.74rem" }}>{d.truck_number}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
@@ -213,7 +238,7 @@ export default function FleetCdlMedical() {
                           </div>
                         </td>
                         <td style={cell}>{d.med_card_number || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
-                        <td style={{ padding: "6px 10px", whiteSpace: "nowrap", position: "sticky", right: 0, background: "#fff" }}>
+                        <td style={{ padding: "6px 10px", whiteSpace: "nowrap", position: "sticky", right: 0, background: recent ? "#fef9c3" : "#fff" }}>
                           <button onClick={() => { setEditingId(d.id); }} disabled={!!editingId}
                             style={{ background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: editingId ? "not-allowed" : "pointer", opacity: editingId && !editing ? 0.4 : 1 }}>✏ Edit</button>
                         </td>
