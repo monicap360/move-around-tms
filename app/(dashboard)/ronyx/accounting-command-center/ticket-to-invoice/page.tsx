@@ -59,6 +59,16 @@ const INV_LABEL: Record<Inv, string> = { needs_review: "Needs Review", rate_veri
 
 const BULK = ["Verify Rates", "Approve Tickets", "Create Invoice Batch", "Assign Job", "Apply Rate Card", "Export Selected", "Flag for Review"];
 
+// Live Invoice Pipeline — Kanban columns mapped from the ticket invoice stage.
+const PIPELINE: { key: string; label: string; color: string; match: (t: Ticket) => boolean }[] = [
+  { key: "needs_review",  label: "Needs Review",  color: "#b45309", match: t => t.inv === "needs_review" },
+  { key: "rate_verified", label: "Rate Verified", color: "#1d4ed8", match: t => t.inv === "rate_verified" },
+  { key: "ready",         label: "Ready to Bill", color: "#15803d", match: t => t.inv === "ready" },
+  { key: "invoiced",      label: "Invoice Created", color: "#0e7490", match: t => t.inv === "invoiced" || t.inv === "partial" },
+  { key: "disputed",      label: "Disputed",      color: "#7c3aed", match: t => t.inv === "disputed" },
+  { key: "paid",          label: "Paid",          color: "#16a34a", match: t => t.inv === "paid" },
+];
+
 export default function TicketToInvoice() {
   const [tab, setTab] = useState("all");
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -66,6 +76,7 @@ export default function TicketToInvoice() {
   const [toast, setToast] = useState("");
   const [data, setData] = useState<typeof DEMO_TICKETS>([]);
   const [live, setLive] = useState(false);
+  const [view, setView] = useState<"table" | "board">("table");
 
   // Pull real tickets from aggregate_tickets; fall back to the seeded demo when empty.
   useEffect(() => {
@@ -97,7 +108,7 @@ export default function TicketToInvoice() {
     <AcctShell active="tti" title="Ticket-to-Invoice Control" subtitle="Turn completed, validated work into cash — one ticket at a time, billed once."
       controls={<>
         <span style={{ ...chip, background: live ? "#dcfce7" : "#f1f5f9", color: live ? "#15803d" : "#94a3b8", padding: "7px 11px" }} title={live ? "Showing real tickets from aggregate_tickets" : "No tickets yet"}>{live ? "● Live data" : "No data yet"}</span>
-        <button style={ctrlBtn}>Group: Customer ▾</button>
+        <button style={{ ...ctrlBtn, background: view === "board" ? "#0f172a" : "#fff", color: view === "board" ? "#fff" : "#475569" }} onClick={() => setView(view === "table" ? "board" : "table")}>{view === "table" ? "▦ Board view" : "▤ Table view"}</button>
         <button style={ctrlBtn}>⬇ Export</button>
         <button style={primaryBtn} onClick={() => bulk("Create Invoice Batch")}>+ Create Invoice Batch</button>
       </>}>
@@ -119,7 +130,37 @@ export default function TicketToInvoice() {
         {BULK.map(a => <button key={a} onClick={() => bulk(a)} disabled={!sel.size} style={{ ...chip, cursor: sel.size ? "pointer" : "default", padding: "6px 11px", background: "#fff", color: sel.size ? "#1e293b" : "#cbd5e1", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
       </div>
 
+      {/* Live Invoice Pipeline — Kanban board */}
+      {view === "board" && (
+        <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+          {PIPELINE.map(col => {
+            const cards = data.filter(col.match);
+            const total = cards.reduce((s, t) => s + t.revenue, 0);
+            return (
+              <div key={col.key} style={{ minWidth: 232, flex: "0 0 232px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontWeight: 900, fontSize: "0.78rem", color: col.color }}>{col.label}</span>
+                  <span style={{ ...chip, background: "#fff", color: "#475569", fontWeight: 800 }}>{cards.length}</span>
+                </div>
+                <div style={{ fontSize: "0.66rem", color: "#94a3b8", fontWeight: 700, marginBottom: 8 }}>{fmtc(total)}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  {cards.map(t => (
+                    <div key={t.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 9, padding: "8px 10px", borderLeft: `3px solid ${col.color}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}><span style={{ fontWeight: 800, fontSize: "0.74rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.customer}</span>{t.creditHold && <span style={{ ...chip, background: "#fee2e2", color: "#dc2626", fontSize: "0.55rem" }}>HOLD</span>}</div>
+                      <div style={{ fontSize: "0.66rem", color: "#94a3b8", margin: "2px 0" }}>{t.id} · {t.job}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 800, fontSize: "0.78rem" }}>{fmtc(t.revenue)}</span><span style={{ ...chip, background: CONF_STYLE[t.conf].bg, color: CONF_STYLE[t.conf].fg, fontSize: "0.58rem" }}>{t.conf}</span></div>
+                    </div>
+                  ))}
+                  {cards.length === 0 && <div style={{ fontSize: "0.7rem", color: "#cbd5e1", textAlign: "center", padding: "10px 0" }}>—</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Ticket table */}
+      {view === "table" && (
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem", minWidth: 1200 }}>
@@ -161,9 +202,10 @@ export default function TicketToInvoice() {
         </div>
         <div style={{ padding: "10px 16px", borderTop: "1px solid #f1f5f9", fontSize: "0.74rem", color: "#94a3b8", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <span>{rows.length} ticket{rows.length === 1 ? "" : "s"} · gross {fmtc(rows.reduce((s, t) => s + t.revenue, 0))} · margin {fmtc(rows.reduce((s, t) => s + margin(t), 0))}</span>
-          <span>Phase 2 of 8 · seeded demo data — wires to aggregate_tickets + customer_invoices</span>
+          <span>Phase 2 of 8 · wires to aggregate_tickets + customer_invoices</span>
         </div>
       </div>
+      )}
 
       {/* Create Invoice Batch — validation panel */}
       {batch && (() => {
