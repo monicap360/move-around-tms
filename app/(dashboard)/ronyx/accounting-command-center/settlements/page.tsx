@@ -164,68 +164,75 @@ export default function Settlements() {
       {drawer && (() => {
         const blocked = drawer.blocks.length > 0;
         return (
-          <div onClick={() => setDrawer(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.45)", display: "flex", justifyContent: "flex-end" }}>
-            <div onClick={e => e.stopPropagation()} style={{ width: 760, maxWidth: "96vw", background: "#fff", height: "100%", overflowY: "auto", padding: "20px 28px", boxShadow: "-10px 0 40px rgba(0,0,0,0.25)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <button onClick={() => setDrawer(null)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", color: "#0f172a" }}>← Back to settlements</button>
-                <button onClick={() => setDrawer(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>×</button>
+          <div onClick={() => setDrawer(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ width: "97vw", maxWidth: 1280, height: "95vh", background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 30px 80px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column" }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderBottom: "1px solid #e2e8f0", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <button onClick={() => setDrawer(null)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", color: "#0f172a" }}>← Back</button>
+                  <div><div style={{ fontWeight: 900, fontSize: "1.3rem" }}>{drawer.oo}</div><div style={{ fontSize: "0.82rem", color: "#64748b" }}>{drawer.company} · {drawer.period} · {drawer.loads} loads</div></div>
+                </div>
+                <button onClick={() => setDrawer(null)} style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>×</button>
               </div>
-              <div><div style={{ fontWeight: 900, fontSize: "1.3rem" }}>{drawer.oo}</div><div style={{ fontSize: "0.82rem", color: "#64748b" }}>{drawer.company} · {drawer.period} · {drawer.loads} loads</div></div>
-              {blocked && <div style={{ marginTop: 14, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 13px", fontSize: "0.82rem", fontWeight: 700 }}>🚫 Cannot approve until resolved:<ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{drawer.blocks.map(b => <li key={b}>{b}</li>)}</ul></div>}
-              <div style={{ margin: "16px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Settlement breakdown</div>
-              {[["Gross load revenue", fmtc(drawer.gross)], ["Agreed pay", fmtc(drawer.agreed)], ["Fuel deduction", "-" + fmtc(drawer.fuel)], ["Insurance", "-" + fmtc(drawer.ins)], ["Trailer/equipment", "-" + fmtc(drawer.trailer)], ["Advances", "-" + fmtc(drawer.advance)], ["Other/chargebacks", "-" + fmtc(drawer.other)], ["Reimbursements", "+" + fmtc(drawer.reimb)], ["Net settlement", fmtc(net(drawer))]].map(([k, v], i) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.85rem", fontWeight: i === 8 ? 900 : 500 }}><span style={{ color: i === 8 ? "#0f172a" : "#475569" }}>{k}</span><span style={{ color: i === 8 ? "#15803d" : "inherit" }}>{v}</span></div>
-              ))}
 
-              {/* Tickets that make up this settlement */}
-              <div id="settle-tickets" style={{ margin: "18px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Tickets in this settlement{lines.length > 0 ? ` (${lines.length})` : ""}</div>
-              {lines.length === 0 ? (
-                <div style={{ fontSize: "0.8rem", color: "#94a3b8", padding: "4px 0" }}>No ticket detail recorded for this settlement.</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {lines.map((l, i) => (
-                    <div key={i} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
-                        <span style={{ fontWeight: 800, color: "#4338ca", fontSize: "0.82rem" }}>🎫 {l.ticket}{l.date ? <span style={{ color: "#94a3b8", fontWeight: 600 }}> · {l.date}</span> : ""}</span>
-                        <span style={{ fontWeight: 900, color: "#15803d", fontSize: "0.9rem" }}>{fmtc(l.gross || l.amount)}</span>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", padding: "9px 12px", fontSize: "0.76rem" }}>
-                        {[
-                          ["Customer", l.customer || "—"], ["Material", l.material || "—"],
-                          ["Truck", l.truck || "—"], ["Driver", l.driver || "—"],
-                          ["Quantity", l.qty ? `${l.qty} ${l.unit}` : "—"], ["Rate", l.rate ? `${fmtc(l.rate)}/${l.unit}` : "—"],
-                        ].map(([k, v]) => (
-                          <div key={k as string} style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
-                            <span style={{ color: "#94a3b8" }}>{k}</span><span style={{ fontWeight: 700, color: "#0f172a", textAlign: "right" }}>{v}</span>
+              {/* Two columns: breakdown + actions | tickets */}
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(330px, 400px) 1fr", flex: 1, overflow: "hidden" }}>
+                {/* LEFT — breakdown + actions */}
+                <div style={{ overflowY: "auto", padding: "18px 22px", borderRight: "1px solid #e2e8f0", background: "#fafbfc" }}>
+                  {blocked && <div style={{ marginBottom: 14, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 13px", fontSize: "0.82rem", fontWeight: 700 }}>🚫 Cannot approve until resolved:<ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{drawer.blocks.map(b => <li key={b}>{b}</li>)}</ul></div>}
+                  <div style={{ margin: "0 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Settlement breakdown</div>
+                  {[["Gross load revenue", fmtc(drawer.gross)], ["Agreed pay", fmtc(drawer.agreed)], ["Fuel deduction", "-" + fmtc(drawer.fuel)], ["Insurance", "-" + fmtc(drawer.ins)], ["Trailer/equipment", "-" + fmtc(drawer.trailer)], ["Advances", "-" + fmtc(drawer.advance)], ["Other/chargebacks", "-" + fmtc(drawer.other)], ["Reimbursements", "+" + fmtc(drawer.reimb)], ["Net settlement", fmtc(net(drawer))]].map(([k, v], i) => (
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.85rem", fontWeight: i === 8 ? 900 : 500 }}><span style={{ color: i === 8 ? "#0f172a" : "#475569" }}>{k}</span><span style={{ color: i === 8 ? "#15803d" : "inherit" }}>{v}</span></div>
+                  ))}
+                  {drawer.reviewId && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                      <button onClick={() => {
+                        const link = `${window.location.origin}/settlement-review/${drawer.reviewId}`;
+                        navigator.clipboard?.writeText(link).then(() => flash("Driver review link copied — text it to the driver.")).catch(() => flash(link));
+                      }} style={{ flex: 1, padding: "11px 0", background: "#fff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📱 Copy Link</button>
+                      <button onClick={() => doAction("Send Statement")} style={{ flex: 1, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📧 Email the OO</button>
+                    </div>
+                  )}
+                  <div style={{ margin: "18px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Actions</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {ACTIONS.map(a => <button key={a} disabled={blocked && a.includes("Approve")} onClick={() => doAction(a)} style={{ ...chip, cursor: blocked && a.includes("Approve") ? "not-allowed" : "pointer", opacity: blocked && a.includes("Approve") ? 0.4 : 1, padding: "7px 11px", background: a.includes("Approve") ? "#16a34a" : a.includes("Hold") ? "#fef2f2" : a === "Review Tickets" ? "#eff6ff" : "#f8fafc", color: a.includes("Approve") ? "#fff" : a.includes("Hold") ? "#dc2626" : a === "Review Tickets" ? "#1d4ed8" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
+                  </div>
+                </div>
+
+                {/* RIGHT — tickets (the main view) */}
+                <div id="settle-tickets" style={{ overflowY: "auto", padding: "18px 24px" }}>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>🎫 Tickets in this settlement{lines.length > 0 ? ` (${lines.length})` : ""}</div>
+                  {lines.length === 0 ? (
+                    <div style={{ fontSize: "0.85rem", color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>No ticket detail recorded for this settlement.</div>
+                  ) : (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+                        {lines.map((l, i) => (
+                          <div key={i} style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px", background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
+                              <span style={{ fontWeight: 800, color: "#4338ca", fontSize: "0.9rem" }}>🎫 {l.ticket}{l.date ? <span style={{ color: "#94a3b8", fontWeight: 600 }}> · {l.date}</span> : ""}</span>
+                              <span style={{ fontWeight: 900, color: "#15803d", fontSize: "1rem" }}>{fmtc(l.gross || l.amount)}</span>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 14px", padding: "12px 14px", fontSize: "0.8rem" }}>
+                              {[
+                                ["Customer", l.customer || "—"], ["Material", l.material || "—"],
+                                ["Truck", l.truck || "—"], ["Driver", l.driver || "—"],
+                                ["Quantity", l.qty ? `${l.qty} ${l.unit}` : "—"], ["Rate", l.rate ? `${fmtc(l.rate)}/${l.unit}` : "—"],
+                              ].map(([k, v]) => (
+                                <div key={k as string} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                                  <span style={{ color: "#94a3b8", fontSize: "0.66rem", textTransform: "uppercase", fontWeight: 700 }}>{k}</span><span style={{ fontWeight: 700, color: "#0f172a" }}>{v}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ))}
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, fontSize: "0.84rem", fontWeight: 900, background: "#0f172a", color: "#fff" }}>
-                    <span>Total ticket revenue ({lines.length})</span><span>{fmtc(lines.reduce((s, l) => s + (l.gross || l.amount), 0))}</span>
-                  </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, fontSize: "0.9rem", fontWeight: 900, background: "#0f172a", color: "#fff", marginTop: 12 }}>
+                        <span>Total ticket revenue ({lines.length})</span><span>{fmtc(lines.reduce((s, l) => s + (l.gross || l.amount), 0))}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-              )}
-
-              {drawer.reviewId && (
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <button onClick={() => {
-                    const link = `${window.location.origin}/settlement-review/${drawer.reviewId}`;
-                    navigator.clipboard?.writeText(link).then(() => flash("Driver review link copied — text it to the driver.")).catch(() => flash(link));
-                  }} style={{ flex: 1, padding: "11px 0", background: "#fff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📱 Copy Link</button>
-                  <button onClick={async () => {
-                    flash("Sending settlement email…");
-                    const res = await fetch("/api/ronyx/accounting/settlements/send-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settlement_id: drawer.reviewId }) });
-                    const d = await res.json().catch(() => ({}));
-                    if (d.ok) flash(`✉ Emailed ${d.to}`);
-                    else if (d.simulated) flash("Email isn't turned on yet — add SMTP (Proton) settings.");
-                    else flash(`Couldn't email — ${d.error || "try again"}`);
-                  }} style={{ flex: 1, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📧 Email the OO</button>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-                {ACTIONS.map(a => <button key={a} disabled={blocked && a.includes("Approve")} onClick={() => doAction(a)} style={{ ...chip, cursor: blocked && a.includes("Approve") ? "not-allowed" : "pointer", opacity: blocked && a.includes("Approve") ? 0.4 : 1, padding: "7px 11px", background: a.includes("Approve") ? "#16a34a" : a.includes("Hold") ? "#fef2f2" : a === "Review Tickets" ? "#eff6ff" : "#f8fafc", color: a.includes("Approve") ? "#fff" : a.includes("Hold") ? "#dc2626" : a === "Review Tickets" ? "#1d4ed8" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
               </div>
             </div>
           </div>
