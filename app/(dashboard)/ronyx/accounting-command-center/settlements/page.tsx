@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AcctShell, fmt, fmtc, ctrlBtn, primaryBtn, th, td, chip } from "../AcctShell";
+import { safePrompt } from "@/lib/safePrompt";
 
 type Appr = "Draft" | "Awaiting Approval" | "Approved" | "Paid";
 type Settle = {
@@ -36,11 +37,32 @@ export default function Settlements() {
   const [lines, setLines] = useState<any[]>([]);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
-  useEffect(() => {
+  function loadSettlements(focusId?: string) {
     fetch("/api/ronyx/accounting/settlements").then(r => r.json()).then(d => {
-      if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
+      if (d.live && Array.isArray(d.items) && d.items.length) {
+        setData(d.items); setLive(true);
+        if (focusId) { const u = d.items.find((x: any) => x.reviewId === focusId); if (u) setDrawer(u); }
+      }
     }).catch(() => {});
-  }, []);
+  }
+  useEffect(() => { loadSettlements(); }, []);
+
+  async function doAction(a: string) {
+    if (!drawer) return;
+    const id = (drawer as any).reviewId;
+    if (a === "Review Tickets") { document.getElementById("settle-tickets")?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    const send = async (body: any) => { const r = await fetch("/api/ronyx/accounting/settlements", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...body }) }); return r.ok ? r.json() : null; };
+    if (a === "Approve Settlement") { if (drawer.blocks.length) { flash("🚫 Resolve the compliance blocks first."); return; } const d = await send({ action: "approve" }); if (d) { flash("✓ Settlement approved."); loadSettlements(id); } else flash("Couldn't approve."); return; }
+    if (a === "Place on Hold")    { const d = await send({ action: "hold" }); if (d) { flash("Settlement placed on hold."); loadSettlements(id); } return; }
+    if (a === "Add Deduction" || a === "Add Reimbursement") {
+      const amt = safePrompt(`${a} — amount ($):`); if (amt === null) return;
+      const n = Number(String(amt).replace(/[^0-9.]/g, "")); if (!n || n <= 0) { flash("Enter a valid amount."); return; }
+      const d = await send({ action: a === "Add Deduction" ? "deduction" : "reimbursement", amount: n });
+      if (d) { flash(`${a}: ${fmtc(n)} — new net ${fmtc(d.net)}.`); loadSettlements(id); } else flash("Couldn't save.");
+      return;
+    }
+    flash(`${a} — ${drawer.oo} (coming soon)`);
+  }
 
   // Load the ticket line-items when a settlement drawer opens.
   useEffect(() => {
@@ -122,7 +144,7 @@ export default function Settlements() {
               ))}
 
               {/* Tickets that make up this settlement */}
-              <div style={{ margin: "18px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Tickets in this settlement{lines.length > 0 ? ` (${lines.length})` : ""}</div>
+              <div id="settle-tickets" style={{ margin: "18px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Tickets in this settlement{lines.length > 0 ? ` (${lines.length})` : ""}</div>
               {lines.length === 0 ? (
                 <div style={{ fontSize: "0.8rem", color: "#94a3b8", padding: "4px 0" }}>No ticket detail recorded for this settlement.</div>
               ) : (
@@ -169,7 +191,7 @@ export default function Settlements() {
                 </div>
               )}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-                {ACTIONS.map(a => <button key={a} disabled={blocked && a.includes("Approve")} onClick={() => flash(`${a} — ${drawer.oo} (demo)`)} style={{ ...chip, cursor: blocked && a.includes("Approve") ? "not-allowed" : "pointer", opacity: blocked && a.includes("Approve") ? 0.4 : 1, padding: "7px 11px", background: a.includes("Approve") ? "#16a34a" : a.includes("Hold") ? "#fef2f2" : "#f8fafc", color: a.includes("Approve") ? "#fff" : a.includes("Hold") ? "#dc2626" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
+                {ACTIONS.map(a => <button key={a} disabled={blocked && a.includes("Approve")} onClick={() => doAction(a)} style={{ ...chip, cursor: blocked && a.includes("Approve") ? "not-allowed" : "pointer", opacity: blocked && a.includes("Approve") ? 0.4 : 1, padding: "7px 11px", background: a.includes("Approve") ? "#16a34a" : a.includes("Hold") ? "#fef2f2" : a === "Review Tickets" ? "#eff6ff" : "#f8fafc", color: a.includes("Approve") ? "#fff" : a.includes("Hold") ? "#dc2626" : a === "Review Tickets" ? "#1d4ed8" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
               </div>
             </div>
           </div>
