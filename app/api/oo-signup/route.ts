@@ -40,9 +40,19 @@ export async function POST(req: Request) {
   const ackLine = body.ack ? " ACKNOWLEDGED insurance requirements (4 certificate holders as Additional Insured + Waiver of Subrogation; GL/AL $1M; VIN on AL cert)." : "";
   const notes = `Self-registered via the owner-operator signup page.${ackLine}${insDetails ? " Insurance: " + insDetails + "." : ""}`;
 
+  // Assign an in-house account number (RNX-####) so every OO — including self-signups — is
+  // uniquely identifiable (e.g. to pick which record to keep if a duplicate ever appears).
+  let inHouseAcct: string;
+  {
+    const { data: top } = await supabaseAdmin.from("ronyx_owner_operators").select("in_house_account_number").like("in_house_account_number", "RNX-%").order("in_house_account_number", { ascending: false }).limit(1).maybeSingle();
+    const lastNum = top?.in_house_account_number ? parseInt(String(top.in_house_account_number).replace(/\D/g, ""), 10) : 1000;
+    inHouseAcct = `RNX-${(isNaN(lastNum) ? 1000 : lastNum) + 1}`;
+  }
+
   const insert: Record<string, unknown> = {
     organization_id:  RONYX_ORG_ID,
     company_name:     name,
+    in_house_account_number: inHouseAcct,
     contact_name:     body.contact_name?.trim()     || null,
     contact_phone:    body.contact_phone?.trim()    || null,
     contact_email:    body.contact_email?.trim()    || null,
@@ -69,5 +79,5 @@ export async function POST(req: Request) {
   const { data, error } = await trySave(insert);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true, id: data.id, company_name: name });
+  return NextResponse.json({ ok: true, id: data.id, company_name: name, in_house_account_number: inHouseAcct });
 }

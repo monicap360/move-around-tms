@@ -31,6 +31,7 @@ export default function OwnerOperatorSignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+  const [acctNum, setAcctNum] = useState("");
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   function checkPin() {
@@ -46,6 +47,7 @@ export default function OwnerOperatorSignupPage() {
       const res = await fetch("/api/oo-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin }) });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Could not submit. Please try again."); setSubmitting(false); return; }
+      setAcctNum(d.in_house_account_number || "");
       setDone(true);
     } catch { setErr("Network error — please try again."); }
     finally { setSubmitting(false); }
@@ -68,6 +70,12 @@ export default function OwnerOperatorSignupPage() {
               <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: 8, lineHeight: 1.5 }}>
                 Thanks, <strong>{form.company_name}</strong>. The Ronyx office has your info and will reach out to finish onboarding (insurance, contract, W-9, and driver setup).
               </div>
+              {acctNum && (
+                <div style={{ marginTop: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", display: "inline-block" }}>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#15803d", textTransform: "uppercase", letterSpacing: "0.05em" }}>Your account #</span>
+                  <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#15803d" }}>{acctNum}</div>
+                </div>
+              )}
               <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, background: "#1d4ed8", color: "#fff", padding: "11px 20px", borderRadius: 10, fontWeight: 800, fontSize: "0.9rem", textDecoration: "none" }}>📄 Review &amp; print the Subhauler Agreement</a>
             </div>
           ) : !unlocked ? (
