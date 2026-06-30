@@ -40,7 +40,7 @@ const CERT_HOLDERS = [
   ["M.A. Mortenson Company", "700 Meadow Lane N, Minneapolis, MN 55422"],
   ["Bondco LLC", "PO Box 95, West Monroe, LA 71294"],
 ];
-const COI_EMAIL = "info@ronyxlogistics.llc";
+const COI_EMAIL = "admin@ronyxlogistics.com";
 
 export default function OwnerOperatorSignupPage() {
   const [pin, setPin] = useState("");
