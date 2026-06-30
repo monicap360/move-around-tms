@@ -113,10 +113,20 @@ export default function Settlements() {
                 <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.85rem", fontWeight: i === 8 ? 900 : 500 }}><span style={{ color: i === 8 ? "#0f172a" : "#475569" }}>{k}</span><span style={{ color: i === 8 ? "#15803d" : "inherit" }}>{v}</span></div>
               ))}
               {drawer.reviewId && (
-                <button onClick={() => {
-                  const link = `${window.location.origin}/settlement-review/${drawer.reviewId}`;
-                  navigator.clipboard?.writeText(link).then(() => flash("Driver review link copied — text it to the driver.")).catch(() => flash(link));
-                }} style={{ width: "100%", marginTop: 16, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.86rem", cursor: "pointer" }}>📱 Copy Driver Review Link</button>
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  <button onClick={() => {
+                    const link = `${window.location.origin}/settlement-review/${drawer.reviewId}`;
+                    navigator.clipboard?.writeText(link).then(() => flash("Driver review link copied — text it to the driver.")).catch(() => flash(link));
+                  }} style={{ flex: 1, padding: "11px 0", background: "#fff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📱 Copy Link</button>
+                  <button onClick={async () => {
+                    flash("Sending settlement email…");
+                    const res = await fetch("/api/ronyx/accounting/settlements/send-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settlement_id: drawer.reviewId }) });
+                    const d = await res.json().catch(() => ({}));
+                    if (d.ok) flash(`✉ Emailed ${d.to}`);
+                    else if (d.simulated) flash("Email isn't turned on yet — add SMTP (Proton) settings.");
+                    else flash(`Couldn't email — ${d.error || "try again"}`);
+                  }} style={{ flex: 1, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📧 Email the OO</button>
+                </div>
               )}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
                 {ACTIONS.map(a => <button key={a} disabled={blocked && a.includes("Approve")} onClick={() => flash(`${a} — ${drawer.oo} (demo)`)} style={{ ...chip, cursor: blocked && a.includes("Approve") ? "not-allowed" : "pointer", opacity: blocked && a.includes("Approve") ? 0.4 : 1, padding: "7px 11px", background: a.includes("Approve") ? "#16a34a" : a.includes("Hold") ? "#fef2f2" : "#f8fafc", color: a.includes("Approve") ? "#fff" : a.includes("Hold") ? "#dc2626" : "#1e293b", border: "1px solid #e2e8f0", fontWeight: 700 }}>{a}</button>)}
