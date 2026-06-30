@@ -256,7 +256,7 @@ export default function CustomizationRequestWidget() {
                         key={p}
                         onClick={() => set("priority", p)}
                         style={{
-                          flex: 1, padding: "8px 0", borderRadius: 8, fontSize: "0.82rem",
+                          flex: 1, padding: "8px 0", borderRadius: 8, fontSize: "0.82rem", whiteSpace: "nowrap",
                           fontWeight: 700, cursor: "pointer", border: "2px solid",
                           borderColor: form.priority === p
                             ? (p === "urgent" ? "#dc2626" : p === "normal" ? "#1d4ed8" : "#16a34a")

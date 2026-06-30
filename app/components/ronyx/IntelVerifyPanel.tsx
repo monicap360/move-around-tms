@@ -411,11 +411,11 @@ export default function IntelVerifyPanel({ ooId, ooName, compact = false, onClos
               {approvedCount} approved · {rejectedCount} rejected · {fields.filter(f => f.value && !f.userApproved && !f.sensitiveApproved && !f.userRejected).length} pending
             </div>
             <button onClick={() => { setPhase("idle"); setExtraction(null); setFields([]); setError(null); }}
-              style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 9, fontWeight: 700, fontSize: 12, cursor: "pointer", color: "#475569" }}>
+              style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 9, fontWeight: 700, fontSize: 12, cursor: "pointer", color: "#475569", whiteSpace: "nowrap" }}>
               ← Upload Different File
             </button>
             <button onClick={submitApproval} disabled={approvedCount === 0}
-              style={{ padding: "8px 20px", background: approvedCount > 0 ? "#1e40af" : "#94a3b8", color: "#fff", border: "none", borderRadius: 9, fontWeight: 800, fontSize: 12, cursor: approvedCount > 0 ? "pointer" : "not-allowed" }}>
+              style={{ padding: "8px 20px", background: approvedCount > 0 ? "#1e40af" : "#94a3b8", color: "#fff", border: "none", borderRadius: 9, fontWeight: 800, fontSize: 12, cursor: approvedCount > 0 ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}>
               Approve {approvedCount} field{approvedCount !== 1 ? "s" : ""} & Save →
             </button>
           </div>

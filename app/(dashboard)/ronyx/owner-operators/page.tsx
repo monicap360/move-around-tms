@@ -378,8 +378,8 @@ function performanceScore(oo: OOCompany): number {
 
 /* ─── Style constants ────────────────────────────────── */
 const inp: React.CSSProperties = { width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.85rem", outline: "none", background: "#fff", boxSizing: "border-box" };
-const primaryBtn: React.CSSProperties = { background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" };
-const ghostBtn: React.CSSProperties  = { padding: "7px 14px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.8rem", fontWeight: 600, color: "#475569", background: "#f8fafc", cursor: "pointer" };
+const primaryBtn: React.CSSProperties = { background: "#1e40af", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem", whiteSpace: "nowrap" };
+const ghostBtn: React.CSSProperties  = { padding: "7px 14px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.8rem", fontWeight: 600, color: "#475569", background: "#f8fafc", cursor: "pointer", whiteSpace: "nowrap" };
 const eyebrow: React.CSSProperties   = { fontSize: "0.68rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em" };
 const lbl: React.CSSProperties       = { display: "block", fontSize: "0.7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 };
 
@@ -1282,7 +1282,7 @@ export default function OwnerOperatorsPage() {
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <a href="/ronyx/documents/vault" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📁 Document Vault</a>
             <a href="/ronyx/owner-operators/needs-reupload" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", color: "#92400e", borderColor: "#fde68a", background: "#fffbeb" }}>⚠ Needs Re-Upload</a>
             <a href="/ronyx/owner-operators/import" style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>📋 Bulk Import</a>

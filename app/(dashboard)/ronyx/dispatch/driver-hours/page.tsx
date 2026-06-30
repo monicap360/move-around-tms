@@ -181,5 +181,5 @@ function Num({ ph, v, set, max }: { ph: string; v: string; set: (x: string) => v
 
 const primary: React.CSSProperties = { padding: "7px 13px", borderRadius: 7, border: "none", background: "#4f46e5", color: "#fff", fontWeight: 800, fontSize: 12.5, cursor: "pointer" };
 const ghost: React.CSSProperties = { padding: "9px 15px", borderRadius: 9, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" };
-const ghostSm: React.CSSProperties = { padding: "6px 11px", borderRadius: 7, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 12.5, cursor: "pointer" };
+const ghostSm: React.CSSProperties = { padding: "6px 11px", borderRadius: 7, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" };
 const ghostSmDisabled: React.CSSProperties = { ...ghostSm, color: "#cbd5e1", borderColor: "#eef2f7", cursor: "not-allowed" };
