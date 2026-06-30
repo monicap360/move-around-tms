@@ -7,6 +7,7 @@ import PageProtection from "@/app/components/security/PageProtection";
 import IntelImportCenter from "@/app/components/ronyx/IntelImportCenter";
 import GuidedTour, { tourDone, type TourStep } from "@/app/components/ronyx/GuidedTour";
 import PinGate, { type ActiveStaff } from "@/app/components/ronyx/PinGate";
+import StaffTraining from "@/app/components/ronyx/StaffTraining";
 
 // ── Guided tour steps (highlights the main modules in the sidebar) ──────────────
 const RONYX_TOUR: TourStep[] = [
@@ -167,6 +168,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
   const [expanded,     setExpanded]     = useState<Set<string>>(new Set());
   const [searchOpen,   setSearchOpen]   = useState(false);
   const [tourOpen,     setTourOpen]     = useState(false);
+  const [trainingOpen, setTrainingOpen] = useState(false);
+  useEffect(() => { try { if (!localStorage.getItem("ronyx_training_seen")) setTrainingOpen(true); } catch {} }, []);
 
   // ── Customizable sidebar color (per-device preference, saved in localStorage) ──
   const [sbColor,   setSbColor]   = useState("#111a3d");
@@ -781,6 +784,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
           <div className="tms-topbar-right">
             <button className="tms-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search" title="Search (⌘K)">🔍</button>
             <button className="tms-icon-btn" aria-label="Notifications">🔔<span className="tms-notif-badge" /></button>
+            <button onClick={() => setTrainingOpen(true)} title="System training & guidance" style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 11px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer", whiteSpace: "nowrap" }}>📚 Training</button>
             <button className="tms-icon-btn" aria-label="Take a guided tour" title="Take a guided tour" onClick={() => setTourOpen(true)}>?</button>
             {activeStaff ? (
               <>
@@ -830,6 +834,8 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       <GuidedTour steps={RONYX_TOUR} open={tourOpen} onClose={() => setTourOpen(false)} tourId="ronyx_v1" />
 
       {pinReady && !activeStaff && !pinSkipped && <PinGate onUnlock={unlockStaff} onSkip={skipPin} showSignupLinks />}
+
+      {trainingOpen && <StaffTraining name={activeStaff?.name?.split(" ")[0] || displayName} onClose={() => setTrainingOpen(false)} />}
 
       {/* Intel Import Center™ FAB */}
       {!fabHidden && (
