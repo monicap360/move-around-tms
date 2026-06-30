@@ -23,6 +23,7 @@ export default function FleetCdlMedical() {
   const [edits, setEdits] = useState<Record<string, Partial<Driver>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "expired" | "expiring" | "missing">("all");
   const [toast, setToast] = useState("");
@@ -56,8 +57,14 @@ export default function FleetCdlMedical() {
     setEdits(e => ({ ...e, [id]: { ...e[id], [f]: f === "cdl_state" ? v.toUpperCase().slice(0, 2) : v } }));
   }
 
+  function cancelEdit(id: string) {
+    setEdits(e => { const n = { ...e }; delete n[id]; return n; });
+    setEditingId(null);
+  }
+
   async function save(d: Driver) {
-    const patch = edits[d.id]; if (!patch || !Object.keys(patch).length) return;
+    const patch = edits[d.id];
+    if (!patch || !Object.keys(patch).length) { setEditingId(null); return; }
     setSaving(d.id);
     try {
       const res = await fetch("/api/ronyx/drivers/cdl-medical", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id, ...patch }) });
@@ -65,6 +72,7 @@ export default function FleetCdlMedical() {
       if (res.ok && j.ok) {
         setRows(rs => rs.map(r => r.id === d.id ? { ...r, ...patch } : r));
         setEdits(e => { const n = { ...e }; delete n[d.id]; return n; });
+        setEditingId(null);
         flash(`Saved ${d.name}.`);
       } else flash(`Couldn't save — ${j.error || "try again"}.`);
     } catch { flash("Network error."); }
@@ -171,13 +179,45 @@ export default function FleetCdlMedical() {
               <tbody>
                 {shown.map(d => {
                   const c = daysUntil(val(d, "cdl_expiration")); const m = daysUntil(val(d, "med_card_expiration"));
+                  const editing = editingId === d.id;
+                  const cell: React.CSSProperties = { padding: "8px 12px", color: "#334155" };
+                  if (!editing) {
+                    return (
+                      <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ ...cell, minWidth: 200 }}>
+                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
+                          <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
+                        </td>
+                        <td style={cell}>{d.cdl_number || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                        <td style={cell}>{d.cdl_state ? <span style={{ background: "#eff6ff", color: "#1e40af", padding: "2px 7px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>{d.cdl_state}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                        <td style={cell}>{d.cdl_class ? <span style={{ background: "#f0fdf4", color: "#15803d", padding: "2px 7px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>Class {d.cdl_class}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                        <td style={cell}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>{d.cdl_expiration || <span style={{ color: "#cbd5e1" }}>—</span>}</span>
+                            {d.cdl_expiration && <span style={{ background: expBg(c), color: expFg(c), padding: "3px 7px", borderRadius: 6, fontWeight: 800, fontSize: "0.68rem", whiteSpace: "nowrap" }}>{lbl(c)}</span>}
+                          </div>
+                        </td>
+                        <td style={cell}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>{d.med_card_expiration || <span style={{ color: "#cbd5e1" }}>—</span>}</span>
+                            {d.med_card_expiration && <span style={{ background: expBg(m), color: expFg(m), padding: "3px 7px", borderRadius: 6, fontWeight: 800, fontSize: "0.68rem", whiteSpace: "nowrap" }}>{lbl(m)}</span>}
+                          </div>
+                        </td>
+                        <td style={cell}>{d.med_card_number || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                        <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
+                          <button onClick={() => { setEditingId(d.id); }} disabled={!!editingId}
+                            style={{ background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: editingId ? "not-allowed" : "pointer", opacity: editingId && !editing ? 0.4 : 1 }}>✏ Edit</button>
+                        </td>
+                      </tr>
+                    );
+                  }
                   return (
-                    <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", background: dirty(d.id) ? "#fffbeb" : "#fff" }}>
+                    <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", background: "#fffbeb", boxShadow: "inset 3px 0 0 #f59e0b" }}>
                       <td style={{ padding: "8px 12px", minWidth: 200 }}>
                         <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
                         <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                       </td>
-                      <td style={{ padding: "6px 10px", minWidth: 130 }}><input value={val(d, "cdl_number")} onChange={e => setField(d.id, "cdl_number", e.target.value)} style={inp} /></td>
+                      <td style={{ padding: "6px 10px", minWidth: 130 }}><input autoFocus value={val(d, "cdl_number")} onChange={e => setField(d.id, "cdl_number", e.target.value)} style={inp} /></td>
                       <td style={{ padding: "6px 10px", width: 64 }}><input value={val(d, "cdl_state")} onChange={e => setField(d.id, "cdl_state", e.target.value)} maxLength={2} placeholder="TX" style={{ ...inp, textTransform: "uppercase" }} /></td>
                       <td style={{ padding: "6px 10px", width: 86 }}>
                         <select value={val(d, "cdl_class")} onChange={e => setField(d.id, "cdl_class", e.target.value)} style={inp}>
@@ -198,10 +238,14 @@ export default function FleetCdlMedical() {
                       </td>
                       <td style={{ padding: "6px 10px", minWidth: 120 }}><input value={val(d, "med_card_number")} onChange={e => setField(d.id, "med_card_number", e.target.value)} style={inp} /></td>
                       <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
-                        <button onClick={() => save(d)} disabled={!dirty(d.id) || saving === d.id}
-                          style={{ background: dirty(d.id) ? "#16a34a" : "#f1f5f9", color: dirty(d.id) ? "#fff" : "#94a3b8", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: dirty(d.id) ? "pointer" : "default" }}>
-                          {saving === d.id ? "Saving…" : "Save"}
-                        </button>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => save(d)} disabled={saving === d.id}
+                            style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer" }}>
+                            {saving === d.id ? "Saving…" : "Save"}
+                          </button>
+                          <button onClick={() => cancelEdit(d.id)} disabled={saving === d.id}
+                            style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "7px 12px", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}>Cancel</button>
+                        </div>
                       </td>
                     </tr>
                   );
