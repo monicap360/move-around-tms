@@ -25,32 +25,33 @@ export function AcctShell({ active, title, subtitle, controls, children }: {
   active: string; title: string; subtitle: string; controls?: ReactNode; children: ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f1f5f9", color: "#0f172a" }}>
-      <aside style={{ width: 248, background: "#f1f5f9", borderRight: "1px solid #e2e8f0", color: "#334155", flexShrink: 0, padding: "18px 0", position: "sticky", top: 0, alignSelf: "flex-start", height: "100vh", overflowY: "auto" }}>
-        <div style={{ padding: "0 16px 14px", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", letterSpacing: "0.1em" }}>MOVEAROUND TMS</div>
-          <div style={{ fontWeight: 900, fontSize: "1.02rem", marginTop: 2, color: "#0f172a" }}>Accounting</div>
+    <div style={{ minHeight: "100vh", background: "#f1f5f9", color: "#0f172a" }}>
+      {/* Horizontal tab bar across the top */}
+      <div style={{ position: "sticky", top: 0, zIndex: 30, background: "#ffffff", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,0.05)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px 0" }}>
+          <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#94a3b8", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>MOVEAROUND TMS</div>
+          <div style={{ fontWeight: 900, fontSize: "0.9rem", color: "#0f172a", whiteSpace: "nowrap" }}>· Accounting</div>
         </div>
-        <nav style={{ padding: "12px 10px", display: "flex", flexDirection: "column", gap: 7 }}>
+        <nav style={{ display: "flex", gap: 6, padding: "8px 18px 10px", overflowX: "auto", whiteSpace: "nowrap" }}>
           {NAV.map(n => {
             const on = n.key === active;
             return (
               <a key={n.key} href={n.href} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", borderRadius: 10,
-                fontSize: "0.82rem", fontWeight: 800, textDecoration: "none",
+                display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 13px", borderRadius: 9,
+                fontSize: "0.8rem", fontWeight: 800, textDecoration: "none", flexShrink: 0,
                 color: on ? "#fff" : "#334155",
-                background: on ? "linear-gradient(135deg,#1d4ed8,#3b82f6)" : "#fff",
+                background: on ? "linear-gradient(135deg,#1d4ed8,#3b82f6)" : "#f8fafc",
                 border: on ? "1px solid #1d4ed8" : "1px solid #e2e8f0",
-                boxShadow: on ? "0 2px 8px rgba(29,78,216,0.28)" : "0 1px 2px rgba(15,23,42,0.05)",
+                boxShadow: on ? "0 2px 8px rgba(29,78,216,0.28)" : "none",
               }}>
-                <span style={{ fontSize: 15 }}>{n.icon}</span>{n.label}
+                <span style={{ fontSize: 14 }}>{n.icon}</span>{n.label}
               </a>
             );
           })}
         </nav>
-      </aside>
+      </div>
 
-      <main style={{ flex: 1, minWidth: 0, padding: "20px 26px 60px" }}>
+      <main style={{ minWidth: 0, padding: "20px 26px 60px", maxWidth: 1480, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 18 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900 }}>{title}</h1>

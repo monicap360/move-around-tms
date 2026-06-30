@@ -27,7 +27,7 @@ const net = (s: Settle) => s.agreed - s.fuel - s.ins - s.trailer - s.advance - s
 const APPR_STYLE: Record<Appr, { bg: string; fg: string }> = {
   Draft: { bg: "#f1f5f9", fg: "#475569" }, "Awaiting Approval": { bg: "#fef9c3", fg: "#b45309" }, Approved: { bg: "#dcfce7", fg: "#15803d" }, Paid: { bg: "#dbeafe", fg: "#1d4ed8" },
 };
-const ACTIONS = ["Generate Settlement", "Review Tickets", "Add Deduction", "Add Reimbursement", "Approve Settlement", "Send Statement", "Export Payment File", "Place on Hold", "Create Adjustment"];
+const ACTIONS = ["Generate Settlement", "Review Tickets", "Add Deduction", "Add Reimbursement", "Approve Settlement", "Print Statement", "Send Statement", "Export Payment File", "Place on Hold", "Create Adjustment"];
 
 export default function Settlements() {
   const [drawer, setDrawer] = useState<Settle | null>(null);
@@ -64,6 +64,10 @@ export default function Settlements() {
     if (a === "Generate Settlement") {
       const d = await send({ action: "regenerate" });
       if (d) { flash(`Settlement regenerated from tickets — net ${fmtc(d.net)}.`); loadSettlements(id); } else flash("Couldn't regenerate.");
+      return;
+    }
+    if (a === "Print Statement") {
+      window.open(`/ronyx/accounting-command-center/settlements/${id}/statement`, "_blank");
       return;
     }
     if (a === "Send Statement") {
@@ -190,7 +194,8 @@ export default function Settlements() {
                         const link = `${window.location.origin}/settlement-review/${drawer.reviewId}`;
                         navigator.clipboard?.writeText(link).then(() => flash("Driver review link copied — text it to the driver.")).catch(() => flash(link));
                       }} style={{ flex: 1, padding: "11px 0", background: "#fff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📱 Copy Link</button>
-                      <button onClick={() => doAction("Send Statement")} style={{ flex: 1, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📧 Email the OO</button>
+                      <button onClick={() => doAction("Print Statement")} style={{ flex: 1, padding: "11px 0", background: "#0f172a", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📄 Statement</button>
+                      <button onClick={() => doAction("Send Statement")} style={{ flex: 1, padding: "11px 0", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>📧 Email</button>
                     </div>
                   )}
                   <div style={{ margin: "18px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Actions</div>
