@@ -214,11 +214,20 @@ export async function POST(req: Request) {
     const orgId = await resolveOrgId();
     const body  = await req.json();
 
+    // Every owner-operator gets an in-house account number (RNX-####). Use the next available.
+    let inHouseAcct = body.in_house_account_number || null;
+    if (!inHouseAcct) {
+      const { data: top } = await supabaseAdmin.from("ronyx_owner_operators").select("in_house_account_number").like("in_house_account_number", "RNX-%").order("in_house_account_number", { ascending: false }).limit(1).maybeSingle();
+      const lastNum = top?.in_house_account_number ? parseInt(String(top.in_house_account_number).replace(/\D/g, ""), 10) : 1000;
+      inHouseAcct = `RNX-${(isNaN(lastNum) ? 1000 : lastNum) + 1}`;
+    }
+
     const { data, error } = await supabaseAdmin
       .from("ronyx_owner_operators")
       .insert({
         organization_id:       orgId,
         company_name:          body.company_name,
+        in_house_account_number: inHouseAcct,
         contact_name:          body.contact_name          || null,
         contact_phone:         body.contact_phone         || null,
         contact_email:         body.contact_email         || null,
