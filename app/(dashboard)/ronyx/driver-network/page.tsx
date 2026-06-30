@@ -340,7 +340,7 @@ export default function DriverNetworkPage() {
   const [unlockStates, setUnlock]     = useState<UnlockState>({});
   const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
   const [toast, setToast]             = useState("");
-  const [activeTab, setTab]           = useState<"search" | "oo" | "shortlist" | "unlocked" | "about">("search");
+  const [activeTab, setTab]           = useState<"search" | "oo" | "shortlist" | "unlocked" | "pipeline" | "about">("search");
   const [ooPartners, setOOPartners]   = useState<OOPartner[]>([]);
   const [ooLoading, setOOLoading]     = useState(false);
   const [ooLoaded, setOOLoaded]       = useState(false);
@@ -348,6 +348,28 @@ export default function DriverNetworkPage() {
   const [ooShortlisted, setOOShortlisted] = useState<Set<string>>(new Set());
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 4000); };
+
+  // ── Capacity Network pipeline (Phase 2) ──
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [panelCand, setPanelCand] = useState<any | null>(null);
+  const [pipeStage, setPipeStage] = useState<string | null>(null);
+  const [candNotes, setCandNotes] = useState<any[]>([]);
+  const [noteText, setNoteText] = useState("");
+  function loadCandidates() { fetch("/api/ronyx/network-candidates").then(r => r.json()).then(d => { setCandidates(d.candidates || []); setCounts(d.counts || {}); }).catch(() => {}); }
+  useEffect(() => { loadCandidates(); }, []);
+  useEffect(() => { if (panelCand?.id) fetch(`/api/ronyx/network-candidates/notes?candidate_id=${panelCand.id}`).then(r => r.json()).then(d => setCandNotes(d.notes || [])).catch(() => setCandNotes([])); else setCandNotes([]); }, [panelCand?.id]);
+  async function upsertCand(body: any) { await fetch("/api/ronyx/network-candidates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); loadCandidates(); }
+  async function patchCand(body: any) { await fetch("/api/ronyx/network-candidates", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); loadCandidates(); if (panelCand && body.id === panelCand.id) setPanelCand((c: any) => ({ ...c, ...body })); }
+  const PIPELINE = [
+    { key: "saved", label: "Saved", color: "#64748b" }, { key: "unlocked", label: "Unlocked", color: "#0891b2" },
+    { key: "contacted", label: "Contacted", color: "#2563eb" }, { key: "interested", label: "Interested", color: "#7c3aed" },
+    { key: "screening", label: "Screening", color: "#d97706" }, { key: "compliance_review", label: "Compliance", color: "#dc2626" },
+    { key: "offer", label: "Offer", color: "#ca8a04" }, { key: "ready_to_dispatch", label: "Ready to Dispatch", color: "#16a34a" },
+  ];
+  const assignBtn: React.CSSProperties = { border: "none", borderRadius: 8, padding: "7px 12px", fontWeight: 700, fontSize: "0.74rem", cursor: "pointer", whiteSpace: "nowrap" };
+  function reloadNotes(id: string) { fetch(`/api/ronyx/network-candidates/notes?candidate_id=${id}`).then(r => r.json()).then(d => setCandNotes(d.notes || [])).catch(() => {}); }
+  function logNote() { if (!panelCand || !noteText.trim()) return; patchCand({ id: panelCand.id, note: noteText.trim(), last_contacted: true }); setNoteText(""); setTimeout(() => reloadNotes(panelCand.id), 350); }
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -379,6 +401,7 @@ export default function DriverNetworkPage() {
     } else {
       next.add(driver.id);
       showToast(`${driver.anonymous_driver_id} added to shortlist`);
+      upsertCand({ candidate_ref: driver.anonymous_driver_id, candidate_type: "driver", display_name: driver.anonymous_driver_id, pipeline_status: "saved", service_area: driver.city_area, equipment: (driver.equipment_experience ?? [])[0] });
     }
     setShortlisted(next);
   };
@@ -388,6 +411,7 @@ export default function DriverNetworkPage() {
     await new Promise(r => setTimeout(r, 600));
     setUnlock(s => ({ ...s, [driver.id]: "requested" }));
     showToast(`🔓 Unlock requested for ${driver.anonymous_driver_id} — payment required ($99)`);
+    upsertCand({ candidate_ref: driver.anonymous_driver_id, candidate_type: "driver", display_name: driver.anonymous_driver_id, pipeline_status: "unlocked", service_area: driver.city_area });
   };
 
   const handleRequestIntro = (driver: AnonymousDriver) => {
@@ -471,7 +495,7 @@ export default function DriverNetworkPage() {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 2 }}>
-          {([["search","🔍 Browse Drivers"],["oo","🏢 Owner Operators"],["shortlist","★ Shortlist"],["unlocked","✓ Unlocked"],["about","ℹ About"]] as [typeof activeTab, string][]).map(([key, label]) => (
+          {([["search","🔍 Browse Drivers"],["oo","🏢 Owner Operators"],["shortlist","★ Shortlist"],["unlocked","✓ Unlocked"],["pipeline","🚚 Pipeline"],["about","ℹ About"]] as [typeof activeTab, string][]).map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               style={{ padding: "10px 18px", background: "transparent", border: "none", cursor: "pointer",
                 color: activeTab === key ? "#fff" : "rgba(255,255,255,0.5)",
@@ -486,6 +510,11 @@ export default function DriverNetworkPage() {
               {key === "oo" && ooShortlisted.size > 0 && (
                 <span style={{ background: "#15803d", color: "#fff", padding: "1px 7px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, marginLeft: 6 }}>
                   {ooShortlisted.size}
+                </span>
+              )}
+              {key === "pipeline" && candidates.length > 0 && (
+                <span style={{ background: "#0891b2", color: "#fff", padding: "1px 7px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, marginLeft: 6 }}>
+                  {candidates.length}
                 </span>
               )}
             </button>
@@ -707,6 +736,48 @@ export default function DriverNetworkPage() {
           </>
         )}
 
+        {/* ── PIPELINE TAB (Capacity Command Center) ───────────────── */}
+        {activeTab === "pipeline" && (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 18 }}>
+              {[
+                { l: "In Pipeline", v: candidates.length, c: "#0f172a" },
+                { l: "Unlocked", v: counts.unlocked || 0, c: "#0891b2" },
+                { l: "In Screening", v: counts.screening || 0, c: "#d97706" },
+                { l: "Compliance", v: counts.compliance_review || 0, c: "#dc2626" },
+                { l: "Ready to Dispatch", v: counts.ready_to_dispatch || 0, c: "#16a34a" },
+                { l: "Hired", v: counts.hired || 0, c: "#7c3aed" },
+              ].map(m => <div key={m.l} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}><div style={{ fontSize: "0.62rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>{m.l}</div><div style={{ fontSize: "1.5rem", fontWeight: 900, color: m.c, marginTop: 3 }}>{m.v}</div></div>)}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
+              {PIPELINE.map(st => { const n = counts[st.key] || 0; const on = pipeStage === st.key; return (
+                <button key={st.key} onClick={() => setPipeStage(on ? null : st.key)} style={{ minWidth: 118, flex: "0 0 118px", background: on ? st.color : "#fff", color: on ? "#fff" : "#475569", border: `1px solid ${on ? st.color : "#e2e8f0"}`, borderRadius: 10, padding: "10px 12px", cursor: "pointer", textAlign: "left" }}>
+                  <div style={{ fontSize: "0.62rem", fontWeight: 800, textTransform: "uppercase" }}>{st.label}</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: 900, marginTop: 2 }}>{n}</div>
+                </button>
+              ); })}
+            </div>
+
+            {candidates.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 40, color: "#94a3b8", background: "#fff", border: "1px dashed #e2e8f0", borderRadius: 14 }}>No candidates in the pipeline yet. Save or unlock drivers/owner-operators to start your hiring funnel.</div>
+            ) : (
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>
+                {candidates.filter(c => !pipeStage || c.pipeline_status === pipeStage).map(c => { const st = PIPELINE.find(s => s.key === c.pipeline_status) || { label: c.pipeline_status, color: "#64748b" }; return (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderTop: "1px solid #f1f5f9", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.6rem", fontWeight: 800, padding: "3px 9px", borderRadius: 999, background: st.color + "22", color: st.color, whiteSpace: "nowrap" }}>{st.label}</span>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                      <div style={{ fontWeight: 800, color: "#0f172a" }}>{c.display_name || c.candidate_ref}{c.candidate_type === "owner_operator" && <span style={{ fontSize: "0.66rem", color: "#7c3aed", marginLeft: 6, fontWeight: 800 }}>OO</span>}</div>
+                      <div style={{ fontSize: "0.74rem", color: "#64748b" }}>{[c.service_area, c.equipment, c.assigned_to ? "👤 " + c.assigned_to : "", c.next_task].filter(Boolean).join(" · ") || "—"}</div>
+                    </div>
+                    <button onClick={() => setPanelCand(c)} style={{ border: "none", borderRadius: 7, padding: "6px 13px", fontWeight: 800, fontSize: "0.76rem", cursor: "pointer", background: "#0f172a", color: "#fff", whiteSpace: "nowrap" }}>Open ▸</button>
+                  </div>
+                ); })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── ABOUT TAB ────────────────────────────────────────────── */}
         {activeTab === "about" && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16, maxWidth: 1100 }}>
@@ -767,6 +838,52 @@ export default function DriverNetworkPage() {
         )}
 
       </div>
+
+      {/* ── Candidate Command Panel ── */}
+      {panelCand && (
+        <div onClick={() => setPanelCand(null)} style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(15,23,42,0.55)", display: "flex", justifyContent: "flex-end" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 470, maxWidth: "95vw", height: "100%", background: "#fff", overflowY: "auto", boxShadow: "-10px 0 40px rgba(0,0,0,0.3)" }}>
+            <div style={{ background: "#0f172a", color: "#fff", padding: "18px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: "0.6rem", fontWeight: 800, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Candidate Command Panel</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 900, marginTop: 2 }}>{panelCand.display_name || panelCand.candidate_ref}</div>
+                  <div style={{ fontSize: "0.74rem", color: "#94a3b8" }}>{panelCand.candidate_type === "owner_operator" ? "Owner Operator" : "Company Driver"}{panelCand.service_area ? ` · ${panelCand.service_area}` : ""}{panelCand.match_score ? ` · Match ${panelCand.match_score}%` : ""}</div>
+                </div>
+                <button onClick={() => setPanelCand(null)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.4rem", cursor: "pointer", lineHeight: 1 }}>×</button>
+              </div>
+            </div>
+            <div style={{ padding: "16px 20px" }}>
+              <div style={{ fontSize: "0.64rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Move through pipeline</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
+                {PIPELINE.map(st => { const on = panelCand.pipeline_status === st.key; return (
+                  <button key={st.key} onClick={() => patchCand({ id: panelCand.id, pipeline_status: st.key, note: `Moved to ${st.label}` })} style={{ padding: "6px 11px", borderRadius: 999, border: `1px solid ${on ? st.color : "#e2e8f0"}`, background: on ? st.color : "#fff", color: on ? "#fff" : "#475569", fontWeight: 700, fontSize: "0.72rem", cursor: "pointer" }}>{st.label}</button>
+                ); })}
+              </div>
+
+              <div style={{ fontSize: "0.64rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Owner &amp; actions</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
+                {["Sylvia P", "Tabitha L"].map(n => <button key={n} onClick={() => patchCand({ id: panelCand.id, assigned_to: n, note: `Assigned to ${n}` })} style={{ ...assignBtn, background: panelCand.assigned_to === n ? "#1e40af" : "#eff6ff", color: panelCand.assigned_to === n ? "#fff" : "#1d4ed8" }}>👤 {n}</button>)}
+                <button onClick={() => patchCand({ id: panelCand.id, pipeline_status: "compliance_review", note: "Started compliance review" })} style={{ ...assignBtn, background: "#fef2f2", color: "#dc2626" }}>Start Compliance</button>
+                <button onClick={() => patchCand({ id: panelCand.id, pipeline_status: "not_a_fit", note: "Marked not a fit" })} style={{ ...assignBtn, background: "#f8fafc", color: "#475569" }}>Not a fit</button>
+                <button onClick={() => { patchCand({ id: panelCand.id, pipeline_status: "hired", note: "Hired — onboarding to MoveAround" }); showToast("Marked hired. Phase 4 will create the Driver / Owner-Operator profile in MoveAround."); }} style={{ ...assignBtn, background: "#16a34a", color: "#fff" }}>✓ Hire → Add to MoveAround</button>
+              </div>
+
+              <div style={{ fontSize: "0.64rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Communication log</div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                <input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Log a call, text, or note…" onKeyDown={e => { if (e.key === "Enter") logNote(); }} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }} />
+                <button onClick={logNote} style={{ ...assignBtn, background: "#0f172a", color: "#fff" }}>Log</button>
+              </div>
+              {candNotes.length === 0 ? <div style={{ fontSize: "0.78rem", color: "#94a3b8" }}>No contact logged yet.</div> : candNotes.map(n => (
+                <div key={n.id} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.8rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8", fontSize: "0.68rem" }}><span>{n.created_by}</span><span>{(n.created_at || "").slice(0, 10)}</span></div>
+                  <div style={{ color: "#334155" }}>{n.note}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
