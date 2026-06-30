@@ -146,6 +146,9 @@ export default function FastScanPage() {
   const [routing,       setRouting]       = useState(false);
   const [routingDone,   setRoutingDone]   = useState(false);
 
+  // Command-metric card filter (Phase 2)
+  const [metricFilter, setMetricFilter] = useState<null | "missing" | "received" | "cleared" | "atrisk">(null);
+
   // Batch
   const [batch,         setBatch]         = useState<BatchState>(EMPTY_BATCH);
   const [batchSetup,    setBatchSetup]    = useState(false);
@@ -217,6 +220,15 @@ export default function FastScanPage() {
   const payrollCalc     = recentScans.filter(s => s.payroll_status === "ready").reduce((a, s: any) => a + moneyNum(s.amount ?? s.total_pay), 0);
   const processingCount = recentScans.filter(s => s.ocr_status === "pending" || s.ocr_status === "processing").length + (ocrRunning ? 1 : 0);
   const atRiskCount     = kpiNeedsReview + kpiMissing + kpiPayHolds;
+  const lowConf         = recentScans.filter((s: any) => s.ocr_status === "low" || (s.confidence_score != null && Number(s.confidence_score) < 70)).length;
+  const expectedToday   = kpiScanned + kpiMissing;
+  const moneyUnlocked   = billingUnlocked + payrollCalc;
+  const billingHeld     = recentScans.filter(s => s.scan_status === "needs_review" || s.billing_status === "on_hold" || s.billing_status === "hold").reduce((a, s: any) => a + moneyNum(s.amount ?? s.gross_amount ?? s.total_amount), 0);
+  const payrollHeld     = recentScans.filter(s => s.payroll_status === "on_hold" || s.payroll_status === "hold").reduce((a, s: any) => a + moneyNum(s.amount ?? s.total_pay), 0);
+  const isCleared = (s: any) => s.scan_status === "approved" || s.payroll_status === "ready" || s.billing_status === "ready";
+  const isMissing = (s: any) => s.scan_status === "needs_review" || (s.missing_fields?.length ?? 0) > 0;
+  const isAtRisk  = (s: any) => isMissing(s) || s.payroll_status === "on_hold" || s.payroll_status === "hold";
+  const matchMetric = (s: any) => metricFilter === null ? true : metricFilter === "missing" ? isMissing(s) : metricFilter === "cleared" ? isCleared(s) : metricFilter === "atrisk" ? isAtRisk(s) : true;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function setField(k: keyof ExtractedFields, v: string) {
@@ -490,23 +502,32 @@ export default function FastScanPage() {
           </div>
         </div>
 
-        {/* ── KPI bar ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+        {/* ── Command metric cards (Phase 2) ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 8 }}>
           {[
-            { label: T.expected,     value: batch.active ? batch.expected : "—",       color: "#94a3b8" },
-            { label: T.scanned,      value: batch.active ? batch.scanned : kpiScanned,  color: "#60a5fa" },
-            { label: T.matched,      value: batch.active ? batch.matched : kpiMatched,  color: "#4ade80" },
-            { label: T.needsReview,  value: batch.active ? batch.needs_review : kpiNeedsReview, color: "#fbbf24" },
-            { label: T.missing,      value: batch.active ? batch.missing : kpiMissing,  color: "#f87171" },
-            { label: T.payrollHolds, value: kpiPayHolds,                                color: "#c084fc" },
-            { label: T.billingReady, value: kpiBillReady,                               color: "#34d399" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 9, padding: "10px 12px", textAlign: "center" }}>
-              <div style={{ fontSize: "0.58rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: "1.3rem", fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
-            </div>
-          ))}
+            { key: "received", label: "Expected Today", value: String(expectedToday), color: "#94a3b8", filter: "missing" as const,
+              subs: [`${kpiMissing} overdue / missing`] },
+            { key: "received2", label: "Received", value: String(kpiScanned), color: "#60a5fa", filter: "received" as const,
+              subs: [`${expectedToday ? Math.round((kpiScanned / expectedToday) * 100) : 0}% of expected`, `${processingCount} processing · ${lowConf} low-conf`] },
+            { key: "cleared", label: "Cleared", value: String(kpiMatched), color: "#4ade80", filter: "cleared" as const,
+              subs: [`${fmtMoney(billingUnlocked)} ready to bill`, `${fmtMoney(payrollCalc)} payroll`] },
+            { key: "atrisk", label: "At Risk", value: String(atRiskCount), color: "#f87171", filter: "atrisk" as const,
+              subs: [`${fmtMoney(billingHeld)} billing held`, `${fmtMoney(payrollHeld)} payroll held`] },
+            { key: "money", label: "Money Unlocked", value: fmtMoney(moneyUnlocked), color: "#34d399", filter: "cleared" as const,
+              subs: [`Billing ${fmtMoney(billingUnlocked)}`, `Payroll ${fmtMoney(payrollCalc)}`] },
+          ].map(c => {
+            const on = metricFilter === c.filter;
+            return (
+              <button key={c.key} onClick={() => setMetricFilter(on ? null : c.filter)}
+                style={{ textAlign: "left", background: on ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)", border: `1px solid ${on ? c.color : "transparent"}`, borderRadius: 10, padding: "11px 13px", cursor: "pointer" }}>
+                <div style={{ fontSize: "0.56rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>{c.label}</div>
+                <div style={{ fontSize: "1.5rem", fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.value}</div>
+                {c.subs.map((s, i) => <div key={i} style={{ fontSize: "0.64rem", color: "#94a3b8", marginTop: 3 }}>{s}</div>)}
+              </button>
+            );
+          })}
         </div>
+        {metricFilter && <div style={{ marginTop: 8, fontSize: "0.7rem", color: "#cbd5e1" }}>Filtered: <strong>{metricFilter}</strong> · <button onClick={() => setMetricFilter(null)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 6, padding: "2px 8px", cursor: "pointer", fontWeight: 700 }}>clear ✕</button></div>}
       </div>
 
       {/* ── Body: 2-column ──────────────────────────────────────────────────── */}
@@ -920,7 +941,7 @@ export default function FastScanPage() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {recentScans.slice(0, 30).map((s: any) => {
+                {recentScans.filter(matchMetric).slice(0, 30).map((s: any) => {
                   const isPipeline = s._source === "pipeline";
                   const isVoided   = s.scan_status === "voided";
                   const chainStep  = scanStatusToChainStep(s);
