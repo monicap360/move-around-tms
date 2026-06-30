@@ -56,7 +56,11 @@ export default function OwnerOperatorSignupPage() {
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f172a,#1e3a8a)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 560, background: "#fff", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", overflow: "hidden" }}>
-        <div style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", padding: "24px 28px", color: "#fff" }}>
+        <div style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", padding: "24px 28px", color: "#fff", position: "relative" }}>
+          {(unlocked || done) && (
+            <button onClick={() => { setUnlocked(false); setPin(""); setDone(false); setErr(""); }} title="Log out / start over"
+              style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.18)", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: "5px 11px", fontWeight: 700, fontSize: "0.74rem", cursor: "pointer" }}>⎋ Log out</button>
+          )}
           <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.8 }}>RONYX LOGISTICS</div>
           <div style={{ fontSize: "1.4rem", fontWeight: 900, marginTop: 4 }}>Owner-Operator Sign-Up</div>
           <div style={{ fontSize: "0.85rem", opacity: 0.9, marginTop: 4 }}>Register your trucking company to haul with Ronyx.</div>
