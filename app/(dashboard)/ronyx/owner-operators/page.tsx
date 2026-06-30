@@ -1902,11 +1902,13 @@ export default function OwnerOperatorsPage() {
                       <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e293b", lineHeight: 1.2 }}>
                         {e.icon} {e.short}{e.required && !f && <span style={{ color: "#dc2626" }}> *</span>}
                       </span>
-                      <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: p.bg, color: p.fg, border: `1px solid ${p.bd}`, whiteSpace: "nowrap" }}>{p.txt}</span>
+                      {f && !f.file_url
+                        ? <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", whiteSpace: "nowrap" }}>⚠ File missing</span>
+                        : <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: p.bg, color: p.fg, border: `1px solid ${p.bd}`, whiteSpace: "nowrap" }}>{p.txt}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                      <label style={{ flex: f ? "0 0 auto" : "1 1 auto", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, color: "#fff", background: f ? "#64748b" : "#1e40af", borderRadius: 7, cursor: "pointer" }}>
-                        {f ? "Replace" : "Upload"}
+                      <label style={{ flex: f && f.file_url ? "0 0 auto" : "1 1 auto", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, color: "#fff", background: f && !f.file_url ? "#d97706" : f ? "#64748b" : "#1e40af", borderRadius: 7, cursor: "pointer" }}>
+                        {f ? (f.file_url ? "Replace" : "⬆ Re-upload") : "Upload"}
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={ev => {
                           const file = ev.target.files?.[0];
                           if (file) smartDocUpload(e.type, file);
