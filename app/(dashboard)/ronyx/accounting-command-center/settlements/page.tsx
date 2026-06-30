@@ -33,6 +33,7 @@ export default function Settlements() {
   const [toast, setToast] = useState("");
   const [data, setData] = useState<typeof DEMO>([]);
   const [live, setLive] = useState(false);
+  const [lines, setLines] = useState<any[]>([]);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
 
   useEffect(() => {
@@ -40,6 +41,13 @@ export default function Settlements() {
       if (d.live && Array.isArray(d.items) && d.items.length) { setData(d.items); setLive(true); }
     }).catch(() => {});
   }, []);
+
+  // Load the ticket line-items when a settlement drawer opens.
+  useEffect(() => {
+    const id = (drawer as any)?.reviewId;
+    if (id) fetch(`/api/ronyx/accounting/settlements/lines?settlement_id=${id}`).then(r => r.json()).then(d => setLines(d.lines || [])).catch(() => setLines([]));
+    else setLines([]);
+  }, [drawer]);
 
   const cards = useMemo(() => {
     const curPeriod = data[0]?.period;
@@ -112,6 +120,38 @@ export default function Settlements() {
               {[["Gross load revenue", fmtc(drawer.gross)], ["Agreed pay", fmtc(drawer.agreed)], ["Fuel deduction", "-" + fmtc(drawer.fuel)], ["Insurance", "-" + fmtc(drawer.ins)], ["Trailer/equipment", "-" + fmtc(drawer.trailer)], ["Advances", "-" + fmtc(drawer.advance)], ["Other/chargebacks", "-" + fmtc(drawer.other)], ["Reimbursements", "+" + fmtc(drawer.reimb)], ["Net settlement", fmtc(net(drawer))]].map(([k, v], i) => (
                 <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.85rem", fontWeight: i === 8 ? 900 : 500 }}><span style={{ color: i === 8 ? "#0f172a" : "#475569" }}>{k}</span><span style={{ color: i === 8 ? "#15803d" : "inherit" }}>{v}</span></div>
               ))}
+
+              {/* Tickets that make up this settlement */}
+              <div style={{ margin: "18px 0 6px", fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Tickets in this settlement{lines.length > 0 ? ` (${lines.length})` : ""}</div>
+              {lines.length === 0 ? (
+                <div style={{ fontSize: "0.8rem", color: "#94a3b8", padding: "4px 0" }}>No ticket detail recorded for this settlement.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {lines.map((l, i) => (
+                    <div key={i} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
+                        <span style={{ fontWeight: 800, color: "#4338ca", fontSize: "0.82rem" }}>🎫 {l.ticket}{l.date ? <span style={{ color: "#94a3b8", fontWeight: 600 }}> · {l.date}</span> : ""}</span>
+                        <span style={{ fontWeight: 900, color: "#15803d", fontSize: "0.9rem" }}>{fmtc(l.gross || l.amount)}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", padding: "9px 12px", fontSize: "0.76rem" }}>
+                        {[
+                          ["Customer", l.customer || "—"], ["Material", l.material || "—"],
+                          ["Truck", l.truck || "—"], ["Driver", l.driver || "—"],
+                          ["Quantity", l.qty ? `${l.qty} ${l.unit}` : "—"], ["Rate", l.rate ? `${fmtc(l.rate)}/${l.unit}` : "—"],
+                        ].map(([k, v]) => (
+                          <div key={k as string} style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                            <span style={{ color: "#94a3b8" }}>{k}</span><span style={{ fontWeight: 700, color: "#0f172a", textAlign: "right" }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, fontSize: "0.84rem", fontWeight: 900, background: "#0f172a", color: "#fff" }}>
+                    <span>Total ticket revenue ({lines.length})</span><span>{fmtc(lines.reduce((s, l) => s + (l.gross || l.amount), 0))}</span>
+                  </div>
+                </div>
+              )}
+
               {drawer.reviewId && (
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={() => {
