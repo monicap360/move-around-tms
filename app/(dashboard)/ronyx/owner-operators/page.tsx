@@ -557,6 +557,7 @@ export default function OwnerOperatorsPage() {
   const [ooError, setOoError]       = useState<string | null>(null);
   const [view, setView]             = useState<"list" | "detail">("list");
   const [selected, setSelected]     = useState<OOCompany | null>(null);
+  const [actionsExpanded, setActionsExpanded] = useState(false);
   const [activeTab, setActiveTab]   = useState<"overview" | "drivers" | "fleet" | "documents" | "jobs" | "settlement" | "compliance" | "subs" | "coi">("overview");
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
@@ -1217,18 +1218,26 @@ export default function OwnerOperatorsPage() {
 
         {/* Cross-OO Action Required banner */}
         {(() => {
-          const allActions = companies.flatMap(c => ooActionRequired(c).map(a => ({ oo: c.company_name, action: a })));
+          const allActions = companies.flatMap(c => ooActionRequired(c).map(a => ({ oo: c.company_name, company: c, action: a })));
           if (allActions.length === 0) return null;
+          const shown = actionsExpanded ? allActions : allActions.slice(0, 8);
           return (
             <div style={{ background: "#fff1f2", border: "1px solid #fda4af", borderRadius: 14, padding: "14px 18px", marginBottom: 16 }}>
-              <div style={{ fontWeight: 800, color: "#dc2626", marginBottom: 10, fontSize: "0.85rem" }}>⚠ ACTION REQUIRED ({allActions.length})</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {allActions.slice(0,8).map((a,i) => (
-                  <span key={i} style={{ background: "#fff", border: "1px solid #fda4af", borderRadius: 8, padding: "5px 12px", fontSize: "0.75rem", fontWeight: 600, color: "#dc2626" }}>
-                    <strong>{a.oo}:</strong> {a.action}
-                  </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ fontWeight: 800, color: "#dc2626", fontSize: "0.85rem" }}>⚠ ACTION REQUIRED ({allActions.length})</div>
+                {allActions.length > 8 && (
+                  <button onClick={() => setActionsExpanded(v => !v)} style={{ background: "#fff", border: "1px solid #fda4af", borderRadius: 8, padding: "4px 12px", fontSize: "0.74rem", fontWeight: 800, color: "#dc2626", cursor: "pointer" }}>
+                    {actionsExpanded ? "Show less ▲" : `Show all ${allActions.length} ▼`}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxHeight: actionsExpanded ? 360 : "none", overflowY: actionsExpanded ? "auto" : "visible" }}>
+                {shown.map((a, i) => (
+                  <button key={i} onClick={() => openOO(a.company)} title={`Open ${a.oo}`}
+                    style={{ background: "#fff", border: "1px solid #fda4af", borderRadius: 8, padding: "5px 12px", fontSize: "0.75rem", fontWeight: 600, color: "#dc2626", cursor: "pointer", textAlign: "left" }}>
+                    <strong>{a.oo}:</strong> {a.action} <span style={{ color: "#fb7185" }}>↗</span>
+                  </button>
                 ))}
-                {allActions.length > 8 && <span style={{ fontSize: "0.75rem", color: "#94a3b8", alignSelf: "center" }}>+{allActions.length - 8} more</span>}
               </div>
             </div>
           );
