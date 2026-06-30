@@ -818,7 +818,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
 
       <GuidedTour steps={RONYX_TOUR} open={tourOpen} onClose={() => setTourOpen(false)} tourId="ronyx_v1" />
 
-      {pinReady && !activeStaff && !pinSkipped && <PinGate onUnlock={unlockStaff} onSkip={skipPin} />}
+      {pinReady && !activeStaff && !pinSkipped && <PinGate onUnlock={unlockStaff} onSkip={skipPin} showSignupLinks />}
 
       {/* Intel Import Center™ FAB */}
       {!fabHidden && (

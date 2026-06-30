@@ -90,6 +90,20 @@ export default function AccountingCommandCenter() {
     { key: "cash",     label: "Cash Collected",           value: ov ? fmt(ov.cash) : fmt(0), sub: "Payments received this period",     tone: "#0e7490" },
   ];
 
+  // Daily Office Action Bar — route every open exception to the team that owns it.
+  const TEAMS = [
+    { key: "Billing",           icon: "🧾", href: "/ronyx/accounting-command-center/ticket-to-invoice", accent: "#b45309", match: (e: Exception) => /billing|invoice|not invoiced|\brate\b|quantity/i.test(`${e.impactLabel} ${e.type}`) },
+    { key: "Collections",       icon: "💵", href: "/ronyx/accounting-command-center/receivables",       accent: "#dc2626", match: (e: Exception) => /collection|overdue|credit hold/i.test(`${e.impactLabel} ${e.type}`) },
+    { key: "Payroll",           icon: "👷", href: "/ronyx/accounting-command-center/payroll",            accent: "#1d4ed8", match: (e: Exception) => /payroll|settlement|deduction/i.test(`${e.impactLabel} ${e.type}`) },
+    { key: "Dispatch / Margin", icon: "📈", href: "/ronyx/accounting-command-center/margin",             accent: "#7c3aed", match: (e: Exception) => /margin|duplicate|unmatched|maintenance/i.test(`${e.impactLabel} ${e.type}`) },
+  ];
+  const teamOf = (e: Exception) => TEAMS.find(t => t.match(e)) || TEAMS[0];
+  const teams = TEAMS.map(t => { const items = openExc.filter(e => teamOf(e).key === t.key); return { ...t, items, impact: items.reduce((s, e) => s + (e.impact || 0), 0) }; });
+  const totalImpact = openExc.reduce((s, e) => s + (e.impact || 0), 0);
+  const pulse = openExc.length === 0
+    ? { healthy: true,  tone: "#15803d", bg: "#f0fdf4", bd: "#bbf7d0", msg: "Nothing is blocking billing, payroll, or margin right now." }
+    : { healthy: false, tone: "#b45309", bg: "#fffbeb", bd: "#fde68a", msg: `${openExc.length} item${openExc.length > 1 ? "s" : ""} need staff action${totalImpact > 0 ? ` · ${fmt(totalImpact)} in play` : ""}.` };
+
   function onKpi(k: any) {
     if (!k.filter) { setKpiFilter(null); return; }
     setKpiFilter(k.filter === "__all" ? null : k.filter);
@@ -156,6 +170,41 @@ export default function AccountingCommandCenter() {
               <div style={{ fontSize: "1.5rem", fontWeight: 900, color: k.tone, marginTop: 6, lineHeight: 1 }}>{k.value}</div>
               <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: 5 }}>{k.sub}</div>
             </button>
+          ))}
+        </div>
+
+        {/* Company Financial Pulse — plain-language status */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: pulse.bg, border: `1px solid ${pulse.bd}`, borderRadius: 12, padding: "10px 16px", marginBottom: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: "0.72rem", fontWeight: 900, color: pulse.tone, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{pulse.healthy ? "✓ Healthy" : "⚑ Action Required"}</span>
+          <span style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>{pulse.msg}</span>
+        </div>
+
+        {/* Daily Office Action Bar — role-based work queues */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 24 }}>
+          {teams.map(t => (
+            <div key={t.key} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px 8px" }}>
+                <span style={{ fontSize: "1rem" }}>{t.icon}</span>
+                <span style={{ fontWeight: 900, fontSize: "0.86rem", color: "#0f172a" }}>{t.key}</span>
+                <span style={{ ...chip, marginLeft: "auto", background: t.items.length ? "#fef2f2" : "#f0fdf4", color: t.items.length ? "#dc2626" : "#15803d", fontWeight: 800 }}>{t.items.length}</span>
+              </div>
+              <div style={{ padding: "0 14px 8px", flex: 1 }}>
+                {t.items.length === 0 ? (
+                  <div style={{ fontSize: "0.76rem", color: "#94a3b8" }}>✓ All clear</div>
+                ) : (
+                  <>
+                    {t.items.slice(0, 3).map(e => (
+                      <div key={e.id} style={{ fontSize: "0.74rem", color: "#475569", padding: "3px 0", borderTop: "1px solid #f8fafc", display: "flex", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</span>
+                        {e.impact > 0 && <span style={{ fontWeight: 800, color: t.accent, whiteSpace: "nowrap" }}>{fmt(e.impact)}</span>}
+                      </div>
+                    ))}
+                    {t.items.length > 3 && <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: 3 }}>+{t.items.length - 3} more</div>}
+                  </>
+                )}
+              </div>
+              <a href={t.href} style={{ display: "block", textAlign: "center", padding: "9px 0", background: t.items.length ? t.accent : "#f8fafc", color: t.items.length ? "#fff" : "#94a3b8", fontWeight: 800, fontSize: "0.76rem", textDecoration: "none", borderTop: "1px solid #f1f5f9" }}>{t.items.length ? "Open Queue →" : "View"}</a>
+            </div>
           ))}
         </div>
 
