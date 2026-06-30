@@ -609,7 +609,7 @@ export default function OwnerOperatorsPage() {
   // Company list search
   const [ooListSearch, setOoListSearch] = useState("");
   // Active/inactive filter — quit OOs (status='inactive') hidden by default
-  const [ooStatusFilter, setOoStatusFilter] = useState<"active" | "inactive" | "all">("active");
+  const [ooStatusFilter, setOoStatusFilter] = useState<"active" | "inactive" | "all" | "pending">("active");
   // Driver tab search (within selected OO)
   const [driverSearch, setDriverSearch] = useState("");
   const ooIsActive = (oo: OOCompany) => (oo.status ?? "active").toLowerCase() === "active";
@@ -617,6 +617,7 @@ export default function OwnerOperatorsPage() {
     let list = companies;
     if (ooStatusFilter === "active") list = list.filter(ooIsActive);
     else if (ooStatusFilter === "inactive") list = list.filter(oo => !ooIsActive(oo));
+    else if (ooStatusFilter === "pending") list = list.filter(oo => (oo.status || "").toLowerCase() === "pending");
     const q = ooListSearch.trim().toLowerCase();
     if (!q) return list;
     return list.filter(oo =>
@@ -1279,13 +1280,22 @@ export default function OwnerOperatorsPage() {
               <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "1.1rem", opacity: 0.35, pointerEvents: "none" }}>🔍</span>
             )}
           </div>
-          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
             {(["active", "inactive", "all"] as const).map(s => (
               <button key={s} onClick={() => setOoStatusFilter(s)}
                 style={{ padding: "5px 12px", borderRadius: 8, border: "1.5px solid #1e40af", background: ooStatusFilter === s ? "#1e40af" : "#fff", color: ooStatusFilter === s ? "#fff" : "#1e40af", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", textTransform: "capitalize" }}>
                 {s === "all" ? "All" : s === "inactive" ? "Not Active" : "Active"}
               </button>
             ))}
+            {(() => {
+              const pendingCount = companies.filter(c => (c.status || "").toLowerCase() === "pending").length;
+              return (
+                <button onClick={() => setOoStatusFilter("pending")}
+                  style={{ padding: "5px 12px", borderRadius: 8, border: "1.5px solid #eab308", background: ooStatusFilter === "pending" ? "#eab308" : pendingCount > 0 ? "#fef9c3" : "#fff", color: ooStatusFilter === "pending" ? "#fff" : "#854d0e", fontSize: "0.74rem", fontWeight: 800, cursor: "pointer" }}>
+                  ✨ New Sign-Ups{pendingCount > 0 ? ` (${pendingCount})` : ""}
+                </button>
+              );
+            })()}
           </div>
         </div>
         {ooListSearch.trim() && (
@@ -1392,7 +1402,13 @@ export default function OwnerOperatorsPage() {
 
         {/* Company cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {filteredCompanies.length === 0 && ooListSearch.trim() ? (
+          {filteredCompanies.length === 0 && ooStatusFilter === "pending" && !ooListSearch.trim() ? (
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 14, padding: "36px 0", textAlign: "center" }}>
+              <div style={{ fontSize: "1.8rem", marginBottom: 8 }}>✓</div>
+              <div style={{ fontWeight: 700, color: "#15803d", marginBottom: 4 }}>No new sign-ups right now</div>
+              <div style={{ fontSize: "0.82rem", color: "#64748b" }}>New owner-operator self-registrations will appear here for review.</div>
+            </div>
+          ) : filteredCompanies.length === 0 && ooListSearch.trim() ? (
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "40px 0", textAlign: "center" }}>
               <div style={{ fontSize: "1.8rem", marginBottom: 8 }}>🔍</div>
               <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>No companies found</div>
