@@ -6,7 +6,7 @@ const team = [
     name: "Monica Peña",
     title: "Founder & CEO",
     bio: "Monica spent 10 years running aggregate haul operations across South Texas before building MoveAround. She got tired of reconciling pit invoices in Excel at midnight and decided to fix it herself. She leads product vision and customer relationships.",
-    color: "#F7931E",
+    color: "#2563eb",
   },
   {
     initials: "RV",
@@ -65,11 +65,12 @@ export default function AboutPage() {
 
         {/* Hero */}
         <div style={{ marginBottom: "4rem" }}>
-          <div style={{ display: "inline-block", background: "rgba(247,147,30,0.12)", border: "1px solid rgba(247,147,30,0.4)", borderRadius: 20, padding: "0.3rem 1rem", fontSize: "0.8rem", color: "#F7931E", fontWeight: 700, letterSpacing: "0.06em", marginBottom: "1rem" }}>
+          <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 56, width: "auto", display: "block", marginBottom: "1.25rem" }} onError={(e) => { const img = e.currentTarget; if (img.getAttribute("src") === "/movearound_logo.png") { img.setAttribute("src", "/movearound_logo.svg"); return; } img.style.display = "none"; }} />
+          <div style={{ display: "inline-block", background: "rgba(37,99,235,0.12)", border: "1px solid rgba(37,99,235,0.4)", borderRadius: 20, padding: "0.3rem 1rem", fontSize: "0.8rem", color: "#2563eb", fontWeight: 700, letterSpacing: "0.06em", marginBottom: "1rem" }}>
             ABOUT MOVEAROUND TMS
           </div>
           <h1 style={{ fontSize: "2.6rem", fontWeight: 800, lineHeight: 1.2, marginBottom: "1.25rem" }}>
-            We Built This Because <span style={{ color: "#F7931E" }}>We Lived the Problem.</span>
+            We Built This Because <span style={{ color: "#2563eb" }}>We Lived the Problem.</span>
           </h1>
           <p style={{ fontSize: "1.1rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.75, maxWidth: 700, marginBottom: "1rem" }}>
             MoveAround TMS was started in Houston, Texas by people who spent years running and dispatching dump truck and aggregate haul operations. We watched good operators lose thousands of dollars a week to short loads they couldn't prove, pit invoices that didn't match, and payroll runs that took a full Friday afternoon.
@@ -81,8 +82,8 @@ export default function AboutPage() {
 
         {/* The story */}
         <div style={{ marginBottom: "4rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-          <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(247,147,30,0.2)", borderRadius: 12, padding: "2rem" }}>
-            <h2 style={{ color: "#F7931E", fontSize: "1.3rem", marginBottom: "1rem" }}>The Problem We Kept Seeing</h2>
+          <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(37,99,235,0.2)", borderRadius: 12, padding: "2rem" }}>
+            <h2 style={{ color: "#2563eb", fontSize: "1.3rem", marginBottom: "1rem" }}>The Problem We Kept Seeing</h2>
             <ul style={{ paddingLeft: 18, color: "rgba(255,255,255,0.8)", lineHeight: 1.8, fontSize: "0.95rem" }}>
               <li style={{ marginBottom: 8 }}>Dispatchers running three spreadsheets simultaneously</li>
               <li style={{ marginBottom: 8 }}>Pit invoices arriving two weeks late with no way to verify tonnage</li>
@@ -107,7 +108,7 @@ export default function AboutPage() {
 
         {/* Values */}
         <div style={{ marginBottom: "4rem" }}>
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#F7931E", marginBottom: "1.5rem" }}>How We Work</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#2563eb", marginBottom: "1.5rem" }}>How We Work</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {values.map((v) => (
               <div key={v.title} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "1.5rem" }}>
@@ -121,7 +122,7 @@ export default function AboutPage() {
 
         {/* Team */}
         <div style={{ marginBottom: "4rem" }}>
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#F7931E", marginBottom: "0.5rem" }}>The Team</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#2563eb", marginBottom: "0.5rem" }}>The Team</h2>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.95rem", marginBottom: "1.75rem" }}>
             Small on purpose. Every person on this team has spent time inside a fleet operation — not just looking at one from the outside.
           </p>
@@ -151,8 +152,8 @@ export default function AboutPage() {
         </div>
 
         {/* Where we are */}
-        <div style={{ background: "rgba(247,147,30,0.08)", border: "1px solid rgba(247,147,30,0.3)", borderRadius: 12, padding: "2rem", marginBottom: "3rem" }}>
-          <h2 style={{ color: "#F7931E", fontSize: "1.3rem", marginBottom: "0.75rem" }}>Based in Houston. Built for the Whole Country.</h2>
+        <div style={{ background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.3)", borderRadius: 12, padding: "2rem", marginBottom: "3rem" }}>
+          <h2 style={{ color: "#2563eb", fontSize: "1.3rem", marginBottom: "0.75rem" }}>Based in Houston. Built for the Whole Country.</h2>
           <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem", lineHeight: 1.7, marginBottom: "1rem" }}>
             We are headquartered in Houston, TX — the heart of the Gulf Coast aggregate and oilfield hauling market. Our customers operate across Texas, Louisiana, Oklahoma, and into Mexico. If your trucks haul dirt, sand, gravel, or rock, this system was built for you.
           </p>

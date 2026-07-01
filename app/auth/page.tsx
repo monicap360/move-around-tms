@@ -102,7 +102,9 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <img src="/movearound_logo.png" alt="MoveAround TMS" className="mx-auto mb-3" style={{ height: 56, width: "auto" }}
+            onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const h = img.parentElement?.querySelector("h1"); if (h) (h as HTMLElement).style.display = ""; }} />
+          <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ display: "none" }}>
             🚚 MoveAround TMS
           </h1>
           <p className="text-gray-600">
