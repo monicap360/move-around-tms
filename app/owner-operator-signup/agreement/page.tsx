@@ -152,19 +152,19 @@ export default function OwnerOperatorAgreement() {
           <h3>ARTICLE II: THE &ldquo;SUB-CONTRACT SUM&rdquo;</h3>
           <p>Prime Carrier agrees to pay Subhauler for the strict performance of the Sub-Work in accordance with and subject to the General Terms and Conditions set forth in Exhibit B.</p>
           <h3>ARTICLE III: TIME OF PERFORMANCE</h3>
-          <p>DATE OF COMMENCEMENT: ______ of ____________ 20____.<br />SUBSTANTIAL COMPLETION DATE: ______ of ____________ 20____.</p>
+          <p>DATE OF COMMENCEMENT: {F({ k: "comm_day", w: 55 })} of {F({ k: "comm_month", w: 130 })} 20{F({ k: "comm_year", w: 45 })}.<br />SUBSTANTIAL COMPLETION DATE: {F({ k: "compl_day", w: 55 })} of {F({ k: "compl_month", w: 130 })} 20{F({ k: "compl_year", w: 45 })}.</p>
           <h3>ARTICLE IV: THE SERVICE AGREEMENT</h3>
-          <p>Subhauler is made aware that Prime Carrier has entered into a Service Agreement with the General Contractor named below for the benefit of Owner, Ronyx Logistics, LLC, to provide transportation services for the project known as ______________________________________________.</p>
+          <p>Subhauler is made aware that Prime Carrier has entered into a Service Agreement with the General Contractor named below for the benefit of Owner, Ronyx Logistics, LLC, to provide transportation services for the project known as {F({ k: "project_name", w: 300 })}.</p>
           <table><tbody>
             <tr><th>GENERAL CONTRACTOR</th><th>OWNER</th></tr>
-            <tr><td>Name: __________________________</td><td>Name: Ronyx Logistics, LLC</td></tr>
-            <tr><td>Address: ________________________</td><td>Address: 3741 Graves Ave, Groves, Texas 77619</td></tr>
+            <tr><td>Name: {F({ k: "gc_name", w: 170 })}</td><td>Name: Ronyx Logistics, LLC</td></tr>
+            <tr><td>Address: {F({ k: "gc_addr", w: 160 })}</td><td>Address: 3741 Graves Ave, Groves, Texas 77619</td></tr>
           </tbody></table>
           <p>In consideration of the mutual covenants set forth herein, Prime Carrier and Subhauler have signed this contract, which becomes binding and effective immediately, and shall be interpreted and construed according to applicable law.</p>
-          <p>SIGNED AND EXECUTED THIS ____________, 20____ (the &ldquo;Effective Date&rdquo;).</p>
+          <p>SIGNED AND EXECUTED THIS {F({ k: "exec_day", w: 130 })}, 20{F({ k: "exec_year", w: 45 })} (the &ldquo;Effective Date&rdquo;).</p>
           <div className="sigblock">
             <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;&nbsp;______________________________ Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Manager</div>
-            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;&nbsp;______________________________ Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Title ____________</div>
+            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
           </div>
         </div>
 
@@ -175,7 +175,7 @@ export default function OwnerOperatorAgreement() {
           <p>Subhauler shall transport freight (including, but not limited to, aggregate, soil, liquid, rock, construction material, non-hazardous and hazardous waste and materials, and/or anything that can be legally transported) to and from the Project and in accordance with this Subcontract.</p>
           <p>Prime Carrier shall notify Subhauler of material to be transported and of the time and location to load, all within a reasonable time prior to the required delivery time, and thereafter Subhauler will, without delay, cause said material to be transported to the place designated by Prime Carrier or its representative.</p>
           <p>The Subhauler acknowledges that certain asphalt products are perishable and that time is of the essence in making proper and timely delivery of all materials. Subhauler shall use all reasonable diligence to deliver such materials promptly, expeditiously, and safely to the proper locations and by the proper delivery dates and times as specified by Prime Carrier. Prime Carrier shall have no responsibility to engage Subhauler at all or for any minimum number of deliveries during the Term.</p>
-          <p>BY SIGNING BELOW, PRIME CARRIER AND SUBHAULER AGREE TO THE SUBHAULER&rsquo;S SUB-WORK EXPRESSED HEREIN. SIGNED THIS ____________, 20____.</p>
+          <p>BY SIGNING BELOW, PRIME CARRIER AND SUBHAULER AGREE TO THE SUBHAULER&rsquo;S SUB-WORK EXPRESSED HEREIN. SIGNED THIS {F({ k: "exec_day", w: 130 })}, 20{F({ k: "exec_year", w: 45 })}.</p>
         </div>
 
         {/* ── Exhibit B — General Terms ── */}
@@ -216,10 +216,10 @@ export default function OwnerOperatorAgreement() {
             <p key={h} className="num"><strong>{h}.</strong> {b}</p>
           ))}
           <p style={{ marginTop: 14 }}><strong>ATTENTION: THIS DOCUMENT HAS IMPORTANT LEGAL CONSEQUENCES. CONSULTATION WITH AN ATTORNEY PRIOR TO EXECUTION IS ENCOURAGED.</strong></p>
-          <p>SIGNED AND EXECUTED THIS ____________, 20____ (the &ldquo;Effective Date&rdquo;).</p>
+          <p>SIGNED AND EXECUTED THIS {F({ k: "exec_day", w: 130 })}, 20{F({ k: "exec_year", w: 45 })} (the &ldquo;Effective Date&rdquo;).</p>
           <div className="sigblock">
             <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;______________________________ Printed Name&nbsp;&nbsp;&nbsp;Manager</div>
-            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;______________________________ Printed Name&nbsp;&nbsp;&nbsp;Title ____________</div>
+            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
           </div>
         </div>
 
@@ -237,10 +237,10 @@ export default function OwnerOperatorAgreement() {
             <li>Subhauler shall keep all haul loads free of contamination and is responsible for any load refused due to contamination.</li>
             <li>Subhauler shall use only environmentally safe release agents; the use of diesel as a release agent is strictly prohibited.</li>
           </ul>
-          <p>BY SIGNING BELOW, PRIME CARRIER AND SUBHAULER AGREE TO THE SPECIFIC WORKING CONDITIONS AND RULES. SIGNED THIS ____________.</p>
+          <p>BY SIGNING BELOW, PRIME CARRIER AND SUBHAULER AGREE TO THE SPECIFIC WORKING CONDITIONS AND RULES. SIGNED THIS {F({ k: "exec_day", w: 150 })}.</p>
           <div className="sigblock">
             <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;______________________________ Printed Name&nbsp;&nbsp;&nbsp;Manager</div>
-            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;______________________________ Printed Name&nbsp;&nbsp;&nbsp;Title ____________</div>
+            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
           </div>
         </div>
 
@@ -249,9 +249,9 @@ export default function OwnerOperatorAgreement() {
           <h2>TEXAS DWC FORM-85 — Independent Contractor Notice</h2>
           <p>Agreement between General Contractor (Ronyx Logistics, LLC) and Subcontractor to establish an independent relationship under the Texas Workers&rsquo; Compensation Act, Section 406.121. <em>Do not send this agreement to TDI-DWC.</em></p>
           <table><tbody>
-            <tr><td>Term: FROM ____________ TO ____________</td><td>Estimated employees affected: ______</td></tr>
-            <tr><td>General Contractor: Ronyx Logistics, LLC<br />Fed Tax ID: 93-3345170<br />3741 Graves, Groves, TX 77619</td><td>Subcontractor: ____________________<br />Fed Tax ID: ______________________<br />Address: __________________________</td></tr>
-            <tr><td>Job sites: ☐ Blanket agreement — covers all job sites</td><td>Signature / Date: __________________</td></tr>
+            <tr><td>Term: FROM {F({ k: "dwc_from", w: 110 })} TO {F({ k: "dwc_to", w: 110 })}</td><td>Estimated employees affected: {F({ k: "dwc_emp", w: 70 })}</td></tr>
+            <tr><td>General Contractor: Ronyx Logistics, LLC<br />Fed Tax ID: 93-3345170<br />3741 Graves, Groves, TX 77619</td><td>Subcontractor: {F({ k: "sub_name", w: 180 })}<br />Fed Tax ID: {F({ k: "w9_ein", w: 170 })}<br />Address: {F({ k: "sub_addr", w: 180 })}</td></tr>
+            <tr><td>Job sites: ☐ Blanket agreement — covers all job sites</td><td>Signature / Date: {F({ k: "dwc_sigdate", w: 160 })}</td></tr>
           </tbody></table>
 
           <h2>FORM W-9 — Request for Taxpayer Identification</h2>
@@ -268,7 +268,7 @@ export default function OwnerOperatorAgreement() {
           <h2>ACH PAYMENT AUTHORIZATION</h2>
           <p>Ronyx Logistics, LLC offers ACH payments for your convenience, making secure electronic payments directly to your bank account. A processing fee will apply to each ACH transaction. Funds will be deposited the next business day after processing.</p>
           <p><strong>I agree to the ACH processing terms, including the processing fee of $14.99 per transaction.</strong></p>
-          <p>Name: ______________________________  Signature: ______________________________  Date: ____________</p>
+          <p>Name: {F({ k: "sub_signer_name", w: 200 })}  Signature: ______________________________  Date: {F({ k: "ach_date", w: 110 })}</p>
 
           <h2 style={{ marginTop: 28 }}>DIRECT DEPOSIT AUTHORIZATION</h2>
           <p>As a payment option, Ronyx Logistics, LLC offers payees electronic payment in lieu of check. Complete this form, attach a voided check, and return by email to ronyxlogistics@gmail.com.</p>
@@ -285,7 +285,7 @@ export default function OwnerOperatorAgreement() {
           <div className="brand"><div className="name">RONYX</div><div className="sub">L O G I S T I C S&nbsp;&nbsp;L L C</div></div>
           <p style={{ textAlign: "center" }}>3741 Graves Ave, Groves, Texas 77619</p>
           <h2>TRUCK &amp; TRAILER LIST</h2>
-          <p>Subhauler Name: ______________________  Contact Person: ______________________  Phone: ______________________</p>
+          <p>Subhauler Name: {F({ k: "sub_name", w: 190 })}  Contact Person: {F({ k: "sub_attn", w: 180 })}  Phone: {F({ k: "sub_phone", w: 160 })}</p>
           <p>List all trucks and trailers that may be utilized. Attach additional pages as necessary.</p>
           <table><tbody>
             <tr><th>Truck #</th><th>Type (truck/trailer/dump/belly)</th><th>Year/Make/Model</th><th>VIN #</th><th>License Plate &amp; State</th><th>License Exp. Date</th></tr>
