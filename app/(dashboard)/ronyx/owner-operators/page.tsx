@@ -562,6 +562,7 @@ export default function OwnerOperatorsPage() {
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [toast, setToast]           = useState("");
   const [docViewer, setDocViewer]   = useState<{ url: string; filename?: string; ooId?: string; docType?: string } | null>(null);
+  const [docZoom, setDocZoom]       = useState(1); // image viewer zoom (1 = fit)
   const [docEmailModal, setDocEmailModal] = useState<{ docType: string; fileUrl: string; fileName: string; to: string; subject: string; message: string; sending: boolean } | null>(null);
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [moveModal, setMoveModal] = useState<{ ooId: string; ooName: string; targetId: string } | null>(null);
@@ -1002,37 +1003,46 @@ export default function OwnerOperatorsPage() {
     if (!selected) return;
     flash(`Uploading ${docType}…`);
 
-    // 1. Store original file (preserved forever — original_uploads)
-    let fileUrl: string | null = null;
-    let originalUploadId: string | null = null;
+    // 1. Store the original file. We know the destination OO here, so pass
+    // skip_routing=1 — that bypasses the server-side Claude-vision auto-routing
+    // (which blocked the response on big PDFs and made the file appear "not
+    // stored"). If storage fails we must NOT create a fileless "File missing"
+    // ghost record — surface the error and let the user retry.
+    const mod = /contract|agreement|subhauler/i.test(docType) ? "contracts" : "compliance";
+    let upData: any = null;
     try {
       const fd = new FormData();
       fd.append("file",   file);
-      fd.append("module", "compliance");
-      const upRes  = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
-      const upData = await upRes.json();
-      fileUrl          = upData.url       || null;
-      originalUploadId = upData.upload_id || null;
-    } catch { /* storage not configured — still record the doc name */ }
+      fd.append("module", mod);
+      fd.append("oo_id",  selected.id);
+      fd.append("skip_routing", "1");
+      const upRes = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd });
+      if (sessionExpired(upRes)) return;
+      upData = await upRes.json();
+    } catch {
+      flash(`Upload failed — couldn't reach storage. Please try again.`);
+      return;
+    }
+    if (!upData?.url) {
+      flash(`Upload failed — "${file.name}" was not stored${upData?.error ? ` (${upData.error})` : ""}. Please try again.`);
+      return;
+    }
+    const fileUrl: string = upData.url;
 
-    // 2. Dates (expiry / contract start) are set AFTER upload via the date pickers
-    // in the Documents tab. Browser safePrompt() is NOT supported in this environment —
-    // it was throwing here and silently breaking every document upload.
-    const issuedOnInput: string | undefined = undefined;
-    const expiresInput: string | undefined = undefined;
-
-    // 3. Record in DB with file URL
-    await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, {
+    // 2. Record in DB with the real file URL. (Expiry / start dates are set
+    // afterward via the date pickers in the Documents tab.)
+    const rec = await apiPost(`/api/ronyx/owner-operators/${selected.id}/documents`, {
       doc_type:   docType,
       file_name:  file.name,
       file_url:   fileUrl,
-      expires_on: expiresInput  || null,
-      issued_on:  issuedOnInput || null,
+      expires_on: null,
+      issued_on:  null,
     });
+    if (rec?.error) { flash(`File stored, but recording it failed: ${rec.error}`); return; }
 
-    const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, expires_on: expiresInput, issued_on: issuedOnInput, file_url: fileUrl || undefined };
+    const doc: OODoc = { type: docType, uploaded_at: new Date().toISOString(), file_name: file.name, file_url: fileUrl };
     updateLocalState({ ...selected, documents: [doc, ...selected.documents.filter(d => d.type !== docType)] });
-    flash(`${docType} uploaded${fileUrl ? " & stored in Backup Center" : ""}.`);
+    flash(`${docType} uploaded & stored in Backup Center.`);
   }
 
   // ── Document Inbox: upload many pages → thumbnails → assign each to a slot or delete ──
@@ -1149,6 +1159,7 @@ export default function OwnerOperatorsPage() {
 
   // Open a document — fetches a short-lived signed URL, then shows the in-app viewer.
   async function openDoc(fileUrl: string, print = false, filename?: string, ooId?: string, docType?: string) {
+    setDocZoom(1); // always open fit-to-screen
     try {
       const res  = await fetch(`/api/ronyx/view-doc?url=${encodeURIComponent(fileUrl)}`);
       const data = await res.json();
@@ -1189,13 +1200,23 @@ export default function OwnerOperatorsPage() {
             <span style={{ fontSize:"1.1rem" }}>{isPdf ? "📄" : isImage ? "🖼️" : "📁"}</span>
             <span style={{ flex:1, minWidth:120, fontWeight:700, fontSize:"0.85rem", color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{docViewer.filename || "Document"}</span>
             <span title="Encrypted private storage — opened via a short-lived secure link" style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", background:"#ecfdf5", color:"#047857", borderRadius:20, fontWeight:700, fontSize:"0.68rem", border:"1px solid #a7f3d0", flexShrink:0 }}>🔒 Securely stored</span>
+            {isImage && (
+              <div style={{ display:"inline-flex", alignItems:"center", gap:2, flexShrink:0, background:"#fff", border:"1px solid #e2e8f0", borderRadius:7, overflow:"hidden" }}>
+                <button title="Zoom out" onClick={() => setDocZoom(z => Math.max(0.25, +(z - 0.25).toFixed(2)))} style={{ padding:"6px 11px", background:"none", border:"none", fontSize:"0.95rem", fontWeight:800, color:"#475569", cursor:"pointer" }}>−</button>
+                <button title="Reset zoom" onClick={() => setDocZoom(1)} style={{ padding:"6px 6px", background:"none", border:"none", borderLeft:"1px solid #e2e8f0", borderRight:"1px solid #e2e8f0", fontSize:"0.68rem", fontWeight:800, color:"#475569", cursor:"pointer", minWidth:46 }}>{Math.round(docZoom * 100)}%</button>
+                <button title="Zoom in" onClick={() => setDocZoom(z => Math.min(5, +(z + 0.25).toFixed(2)))} style={{ padding:"6px 11px", background:"none", border:"none", fontSize:"0.95rem", fontWeight:800, color:"#475569", cursor:"pointer" }}>+</button>
+              </div>
+            )}
             <a href={docViewer.url} download target="_blank" rel="noreferrer" style={{ padding:"6px 12px", background:"#f1f5f9", color:"#475569", borderRadius:7, fontWeight:700, fontSize:"0.72rem", textDecoration:"none", border:"1px solid #e2e8f0" }}>⬇ Download</a>
             {canDelete && <button onClick={deleteViewedDoc} style={{ padding:"6px 12px", background:"#fef2f2", color:"#dc2626", borderRadius:7, fontWeight:700, fontSize:"0.72rem", border:"1px solid #fecaca", cursor:"pointer" }}>🗑 Delete</button>}
             <button onClick={() => setDocViewer(null)} style={{ padding:"6px 16px", background:"#16a34a", color:"#fff", borderRadius:7, fontWeight:800, fontSize:"0.72rem", border:"none", cursor:"pointer" }}>✓ Keep</button>
+            <button title="Close" aria-label="Close" onClick={() => setDocViewer(null)} style={{ width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", padding:0, background:"#fff", color:"#334155", borderRadius:8, fontWeight:800, fontSize:"1.1rem", lineHeight:1, border:"1px solid #e2e8f0", cursor:"pointer", flexShrink:0 }}>✕</button>
           </div>
-          <div style={{ flex:1, overflow:"auto", background:"#475569", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ flex:1, overflow:"auto", background:"#475569", display:"flex", alignItems:"center", justifyContent:"center", padding: isImage && docZoom > 1 ? 24 : 0 }}>
             {isImage ? (
-              <img src={docViewer.url} alt={docViewer.filename || "document"} style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", borderRadius:4 }} />
+              <img src={docViewer.url} alt={docViewer.filename || "document"}
+                onClick={() => setDocZoom(z => z >= 3 ? 1 : +(z + 1).toFixed(2))}
+                style={{ maxWidth: docZoom <= 1 ? "100%" : "none", maxHeight: docZoom <= 1 ? "100%" : "none", width: docZoom > 1 ? `${docZoom * 100}%` : undefined, objectFit:"contain", borderRadius:4, cursor: docZoom >= 3 ? "zoom-out" : "zoom-in", transition:"width 0.15s ease" }} />
             ) : (
               <iframe src={docViewer.url} title={docViewer.filename || "document"} style={{ width:"100%", height:"100%", border:"none" }} />
             )}
@@ -2037,9 +2058,9 @@ export default function OwnerOperatorsPage() {
       })()}
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 2, borderBottom: "2px solid #e2e8f0", marginBottom: 20, overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: 4, borderBottom: "3px solid #e2e8f0", marginBottom: 24, overflowX: "auto" }}>
         {DETAIL_TABS.map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding: "9px 16px", border: "none", background: "none", cursor: "pointer", fontSize: "0.82rem", fontWeight: activeTab===t.key?700:500, color: activeTab===t.key?"#1e40af":"#64748b", borderBottom: activeTab===t.key?"2px solid #1e40af":"2px solid transparent", marginBottom: -2, whiteSpace: "nowrap" }}>
+          <button key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding: "14px 24px", border: "none", background: "none", cursor: "pointer", fontSize: "1.02rem", fontWeight: activeTab===t.key?800:600, color: activeTab===t.key?"#1e40af":"#64748b", borderBottom: activeTab===t.key?"3px solid #1e40af":"3px solid transparent", marginBottom: -3, whiteSpace: "nowrap" }}>
             {t.label}
           </button>
         ))}

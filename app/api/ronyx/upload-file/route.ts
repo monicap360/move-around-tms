@@ -56,6 +56,12 @@ export async function POST(req: Request) {
   const file     = formData.get("file") as File | null;
   const moduleOverride = formData.get("module") as string | null;
   const ooId           = formData.get("oo_id")  as string | null;
+  // When the caller already knows the destination (e.g. an upload from an
+  // owner-operator's detail page), it records the document itself. Skip the
+  // filename/AI auto-routing entirely — it's unnecessary and, on large
+  // multi-page PDFs, the Claude-vision read blocks the response long enough
+  // that the client times out and the file appears "not stored".
+  const skipRouting    = !!formData.get("skip_routing");
 
   if (!file) {
     return NextResponse.json({ ok: false, error: "No file provided" }, { status: 400 });
@@ -137,7 +143,7 @@ export async function POST(req: Request) {
   // ── Auto-route the file to the right place: an Owner-Operator COMPANY (contract /
   // insurance / W-9) OR a DRIVER (CDL / medical / MVR) — matched by name in the filename.
   let routedToOO: { oo_id: string; company_name: string; doc_type: string; driver?: string; created?: boolean; filled?: string[] } | null = null;
-  if (storageOk && publicUrl) {
+  if (storageOk && publicUrl && !skipRouting) {
     try {
       const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
       const fileNorm = norm(file.name);
