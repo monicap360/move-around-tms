@@ -429,7 +429,7 @@ export default function PricingPage() {
             MoveAround TMS Pricing
           </h1>
           <p style={{ fontSize: "1.1rem", color: "rgba(255,255,255,0.8)" }}>
-            Built for dirt, sand, and aggregate haulers.
+            Built for dirt, sand, and aggregate haulers. Questions? Call <a href="tel:+14093645491" style={{ color: "#60a5fa", fontWeight: 700, textDecoration: "none" }}>(409) 364-5491</a>
           </p>
         </div>
 

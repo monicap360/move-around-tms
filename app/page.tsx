@@ -2536,6 +2536,9 @@ function LandingPageContent() {
             <Link href="/faq" prefetch={false} className="nav-link" onClick={() => setMenuOpen(false)}>
               FAQ
             </Link>
+            <a href="tel:+14093645491" className="nav-link" onClick={() => setMenuOpen(false)} style={{ color: "#60a5fa" }}>
+              📞 (409) 364-5491
+            </a>
             <a href="/free-trial?founding=1" className="nav-link nav-cta" onClick={() => setMenuOpen(false)}>
               Start Free Trial
             </a>

@@ -158,7 +158,10 @@ export default function AboutPage() {
             We are headquartered in Houston, TX — the heart of the Gulf Coast aggregate and oilfield hauling market. Our customers operate across Texas, Louisiana, Oklahoma, and into Mexico. If your trucks haul dirt, sand, gravel, or rock, this system was built for you.
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a href="mailto:sales@movearoundtms.com" className="btn btn-primary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>
+            <a href="tel:+14093645491" className="btn btn-primary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>
+              📞 Call (409) 364-5491
+            </a>
+            <a href="mailto:sales@movearoundtms.com" className="btn btn-secondary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>
               Talk to the Team
             </a>
             <Link href="/faq" className="btn btn-secondary" style={{ fontSize: "0.875rem", padding: "0.5rem 1.25rem" }}>

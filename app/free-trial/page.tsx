@@ -72,7 +72,8 @@ export default function FreeTrial() {
             <button onClick={submit} disabled={busy} style={{ width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 11, border: "none", background: busy ? "#64748b" : "linear-gradient(135deg,#2563eb,#1d4ed8)", color: "#ffffff", fontWeight: 900, fontSize: "1rem", cursor: busy ? "default" : "pointer", letterSpacing: "0.02em" }}>
               {busy ? "Starting your trial…" : "Start Free Trial →"}
             </button>
-            <p style={{ color: "#64748b", fontSize: "0.72rem", textAlign: "center", marginTop: 12 }}>By starting a trial you agree to be contacted about your setup. No card required.</p>
+            <p style={{ color: "#94a3b8", fontSize: "0.82rem", textAlign: "center", marginTop: 14 }}>Questions? Call <a href="tel:+14093645491" style={{ color: "#60a5fa", fontWeight: 700, textDecoration: "none" }}>(409) 364-5491</a></p>
+            <p style={{ color: "#64748b", fontSize: "0.72rem", textAlign: "center", marginTop: 6 }}>By starting a trial you agree to be contacted about your setup. No card required.</p>
           </>
         )}
       </div>
