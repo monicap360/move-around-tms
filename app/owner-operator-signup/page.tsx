@@ -237,9 +237,18 @@ export default function OwnerOperatorSignupPage() {
                       <div><label style={lbl}>CDL Expiration</label><input value={dr.cdl_expiration} onChange={e => setDriver(i, "cdl_expiration", e.target.value)} style={inp} type="date" /></div>
                       <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Medical Card Expiration</label><input value={dr.med_card_expiration} onChange={e => setDriver(i, "med_card_expiration", e.target.value)} style={inp} type="date" /></div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginTop: 10 }}>
-                      {PER_DRIVER_DOCS.map(([slot]) => <FileSlot key={slot} label={slot} file={dr.files[slot]} onPick={f => setDriverFile(i, slot, f)} />)}
-                    </div>
+                    {dr.name.trim() ? (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#475569", marginBottom: 6 }}>📎 Upload {dr.name.trim()}&apos;s documents</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
+                          {PER_DRIVER_DOCS.map(([slot]) => <FileSlot key={slot} label={slot} file={dr.files[slot]} onPick={f => setDriverFile(i, slot, f)} />)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 10, fontSize: "0.74rem", color: "#94a3b8", fontStyle: "italic", background: "#f8fafc", border: "1px dashed #e2e8f0", borderRadius: 8, padding: "8px 10px" }}>
+                        ✍️ Enter the driver&apos;s name above, then their CDL &amp; medical card upload boxes appear here.
+                      </div>
+                    )}
                   </div>
                 ))}
                 <button onClick={addDriver} style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px dashed #93c5fd", borderRadius: 10, padding: "10px 0", width: "100%", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>+ Add {drivers.length ? "another " : ""}driver</button>
