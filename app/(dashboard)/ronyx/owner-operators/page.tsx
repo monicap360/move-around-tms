@@ -1784,7 +1784,7 @@ export default function OwnerOperatorsPage() {
           </div>
 
           {/* Name + meta */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: "1 1 300px", minWidth: 280 }}>
             {/* Row 1 — name + status (Mark Not Active pushed to the right) */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
               <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em", lineHeight: 1.1 }}>{selected.company_name}</h1>
@@ -1873,7 +1873,7 @@ export default function OwnerOperatorsPage() {
           </div>
 
           {/* Score cards */}
-          <div style={{ display: "flex", gap: 10, alignItems: "stretch", flexShrink: 0, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch", flexShrink: 0, flexWrap: "wrap", marginLeft: "auto" }}>
             <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px 16px", textAlign: "center", minWidth: 80 }}>
               <div style={{ fontSize: "0.58rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>OO HEALTH</div>
               <ScoreBadge score={health} size="lg" />
