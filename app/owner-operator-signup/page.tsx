@@ -139,7 +139,9 @@ export default function OwnerOperatorSignupPage() {
             <button onClick={() => { setUnlocked(false); setPin(""); setDone(false); setErr(""); }} title="Log out / start over"
               style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.18)", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: "5px 11px", fontWeight: 700, fontSize: "0.74rem", cursor: "pointer" }}>⎋ Log out</button>
           )}
-          <img src="/ronyx_logo.svg" alt="Ronyx Logistics" style={{ height: 52, width: "auto", display: "block", marginBottom: 8 }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          <div style={{ display: "inline-block", background: "#fff", borderRadius: 12, padding: "8px 14px", marginBottom: 10 }}>
+            <img src="/ronyx_logo.png" alt="Ronyx Logistics" style={{ height: 62, width: "auto", display: "block" }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          </div>
           <div style={{ fontSize: "1.4rem", fontWeight: 900, marginTop: 2 }}>Owner-Operator Sign-Up</div>
           <div style={{ fontSize: "0.85rem", opacity: 0.9, marginTop: 4 }}>Register your trucking company to haul with Ronyx.</div>
         </div>
