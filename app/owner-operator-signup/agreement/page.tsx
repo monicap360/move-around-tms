@@ -157,7 +157,16 @@ export default function OwnerOperatorAgreement() {
   return (
     <div style={{ background: "#fff", color: "#111", minHeight: "100vh" }}>
       <style>{`
-        @media print { .no-print { display: none !important; } .doc { box-shadow:none !important; margin:0 !important; } .page { page-break-after: always; } .fillable { background: transparent !important; } }
+        @page { size: A4; margin: 14mm; }
+        @media print {
+          html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff; }
+          .no-print { display: none !important; }
+          .doc { box-shadow:none !important; margin:0 !important; padding: 0 !important; max-width: none !important; }
+          .page { page-break-after: always; }
+          .page:last-child { page-break-after: auto; }
+          .fillable { background: transparent !important; }
+          table, tr, td, th, .sigblock { page-break-inside: avoid; }
+        }
         .fillable::placeholder { color: #cbd5e1; }
         .doc { max-width: 820px; margin: 0 auto; padding: 40px 56px; line-height: 1.5; font-size: 13px; font-family: Georgia, 'Times New Roman', serif; }
         .doc h1 { font-size: 18px; text-align:center; margin: 6px 0; letter-spacing:0.04em; }
