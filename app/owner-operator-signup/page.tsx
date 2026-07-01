@@ -12,7 +12,16 @@ const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: 
 // [tile label, stored doc_type]. doc_type must match the office's named slots so
 // uploads land automatically (the signed agreement files as "Contract").
 const OO_DOCS: [string, string][] = [
-  ["Insurance Certificate (COI)", "Insurance Certificate (COI)"],
+  // Insurance certificates (COI) — 3 slots
+  ["Auto Liability (COI)", "Auto Liability Insurance"],
+  ["General Liability (COI)", "General Liability Insurance"],
+  ["Cargo / Other (COI)", "Cargo Insurance"],
+  // Driver credentials — front & back (owner-operator who drives)
+  ["CDL Front", "CDL Front"],
+  ["CDL Back", "CDL Back"],
+  ["Medical Card Front", "Medical Card"],
+  ["Medical Card Back", "Medical Card Back"],
+  // Business documents
   ["W-9 / Tax Form", "W-9 / Tax Form"],
   ["Signed Subhauler Agreement", "Contract"],
   ["Operating Authority (MC)", "Operating Authority (MC)"],
@@ -187,7 +196,7 @@ export default function OwnerOperatorSignupPage() {
                 <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Upload your documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
                 <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 8px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
                 <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Open, print &amp; sign the Subhauler Agreement → then attach it below</a>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
                   {OO_DOCS.map(([label, type]) => <FileSlot key={type} label={label} file={files[type]} onPick={f => setFiles(s => ({ ...s, [type]: f }))} />)}
                 </div>
               </div>
