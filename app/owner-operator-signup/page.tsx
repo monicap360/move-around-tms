@@ -30,8 +30,8 @@ const PER_DRIVER_DOCS: [string, string][] = [
 type DriverRow = { name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string; files: Record<string, File | null> };
 const BLANK_DRIVER: DriverRow = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_expiration: "", med_card_expiration: "", files: {} };
 
-type TruckRow = { truck_number: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string };
-const BLANK_TRUCK: TruckRow = { truck_number: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "" };
+type TruckRow = { truck_number: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string; plateFile: File | null };
+const BLANK_TRUCK: TruckRow = { truck_number: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "", plateFile: null };
 
 // Tap-to-upload tile (photo or PDF).
 function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
@@ -82,6 +82,7 @@ export default function OwnerOperatorSignupPage() {
   const addTruck = () => setTrucks(t => [...t, { ...BLANK_TRUCK }]);
   const removeTruck = (i: number) => setTrucks(t => t.filter((_, x) => x !== i));
   const setTruck = (i: number, k: keyof TruckRow, v: string) => setTrucks(t => t.map((row, x) => x === i ? { ...row, [k]: v } : row));
+  const setTruckPlate = (i: number, f: File | null) => setTrucks(t => t.map((row, x) => x === i ? { ...row, plateFile: f } : row));
 
   function checkPin() {
     if (pin.trim().length < 4) { setPinErr("Enter the access PIN."); return; }
@@ -101,7 +102,7 @@ export default function OwnerOperatorSignupPage() {
       // Upload company documents + each driver's documents to the new record.
       const chosen = OO_DOCS.filter(([, type]) => files[type]);
       const driverUploads = drivers.filter(dr => dr.name.trim()).flatMap(dr => PER_DRIVER_DOCS.filter(([slot]) => dr.files[slot]).map(([slot, type]) => ({ dr, slot, type })));
-      if (d.id && (chosen.length || driverUploads.length)) {
+      if (d.id && (chosen.length || driverUploads.length || trucks.some(t => t.plateFile))) {
         setUploadingDocs(true);
         for (const [, type] of chosen) {
           const fd = new FormData();
@@ -111,6 +112,14 @@ export default function OwnerOperatorSignupPage() {
         for (const u of driverUploads) {
           const fd = new FormData();
           fd.append("file", u.dr.files[u.slot]!); fd.append("oo_id", d.id); fd.append("doc_type", `[${u.dr.name.trim()}] ${u.type}`);
+          try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+        }
+        // License plate photos, labeled by truck.
+        for (const t of trucks) {
+          if (!t.plateFile) continue;
+          const label = t.truck_number.trim() || t.license_plate.trim() || "Truck";
+          const fd = new FormData();
+          fd.append("file", t.plateFile); fd.append("oo_id", d.id); fd.append("doc_type", `[Truck ${label}] License Plate`);
           try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
         }
         setUploadingDocs(false);
@@ -255,6 +264,9 @@ export default function OwnerOperatorSignupPage() {
                       <div><label style={lbl}>Year</label><input value={t.year} onChange={e => setTruck(i, "year", e.target.value)} style={inp} placeholder="e.g. 2022" maxLength={4} /></div>
                       <div><label style={lbl}>License Plate</label><input value={t.license_plate} onChange={e => setTruck(i, "license_plate", e.target.value)} style={inp} placeholder="Plate & state" /></div>
                       <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>VIN</label><input value={t.vin} onChange={e => setTruck(i, "vin", e.target.value)} style={inp} placeholder="17-character VIN" /></div>
+                    </div>
+                    <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
+                      <FileSlot label="License Plate photo" file={t.plateFile} onPick={f => setTruckPlate(i, f)} />
                     </div>
                   </div>
                 ))}

@@ -29,19 +29,24 @@ export async function POST(req: Request) {
   if (!signerName) return NextResponse.json({ ok: false, error: "Signer name is required." }, { status: 400 });
   if (!/^data:image\/png;base64,/.test(dataUrl)) return NextResponse.json({ ok: false, error: "A signature is required." }, { status: 400 });
 
-  // Resolve the owner-operator: by id, or by company name.
-  let oo: { id: string; company_name: string; notes: string | null } | null = null;
-  if (body.oo_id) {
-    const { data } = await supabaseAdmin.from("ronyx_owner_operators").select("id, company_name, notes").eq("id", body.oo_id).maybeSingle();
+  // Resolve the owner-operator: by id, or by company name. Only NEW self-signups
+  // (status "pending") can be e-signed via this public endpoint — once the office
+  // activates the carrier, the signed contract can only be changed internally.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let oo: { id: string; company_name: string; notes: string | null; status: string | null } | null = null;
+  if (body.oo_id && UUID_RE.test(String(body.oo_id))) {
+    const { data } = await supabaseAdmin.from("ronyx_owner_operators").select("id, company_name, notes, status").eq("id", body.oo_id).maybeSingle();
     oo = data as any;
   } else if (body.company_name) {
-    const { data } = await supabaseAdmin.from("ronyx_owner_operators").select("id, company_name, notes").ilike("company_name", String(body.company_name).trim()).neq("status", "deleted").limit(1);
+    const { data } = await supabaseAdmin.from("ronyx_owner_operators").select("id, company_name, notes, status").ilike("company_name", String(body.company_name).trim()).eq("status", "pending").limit(1);
     oo = (data && data[0]) as any;
   }
   if (!oo) return NextResponse.json({ ok: false, error: "Could not find your company record. Complete the sign-up first." }, { status: 404 });
+  if ((oo.status || "").toLowerCase() !== "pending") return NextResponse.json({ ok: false, error: "This company is already active — contact the office to update the agreement." }, { status: 403 });
 
   // Store the signature PNG.
   const buffer = Buffer.from(dataUrl.replace(/^data:image\/png;base64,/, ""), "base64");
+  if (buffer.length > 3 * 1024 * 1024) return NextResponse.json({ ok: false, error: "Signature image too large." }, { status: 400 });
   const safeName = signerName.replace(/[^a-z0-9]+/gi, "_");
   const fileName = `Subhauler_Agreement_esigned_${safeName}.png`;
   let url: string | null = null;

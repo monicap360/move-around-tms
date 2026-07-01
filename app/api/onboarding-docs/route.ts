@@ -19,17 +19,25 @@ async function ensureBucket(bucket: string): Promise<boolean> {
   } catch { return false; }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+const ALLOWED_EXT = /\.(pdf|png|jpe?g|webp|gif|bmp|tiff?|heic|heif|doc|docx|xls|xlsx|csv|txt)$/i;
+
 export async function POST(req: Request) {
   const form = await req.formData();
   const file = form.get("file") as File | null;
   const ooId = String(form.get("oo_id") || "");
   const docType = String(form.get("doc_type") || "Onboarding Document").slice(0, 120);
   if (!file) return NextResponse.json({ ok: false, error: "No file" }, { status: 400 });
-  if (!ooId) return NextResponse.json({ ok: false, error: "Missing record id" }, { status: 400 });
+  if (!UUID_RE.test(ooId)) return NextResponse.json({ ok: false, error: "Invalid record id" }, { status: 400 });
+  if (file.size > MAX_BYTES) return NextResponse.json({ ok: false, error: "File too large (max 25 MB)." }, { status: 400 });
+  if (!ALLOWED_EXT.test(file.name)) return NextResponse.json({ ok: false, error: "Unsupported file type." }, { status: 400 });
 
-  // Confirm the owner-operator exists (the signup just created it).
-  const { data: oo } = await supabaseAdmin.from("ronyx_owner_operators").select("id").eq("id", ooId).maybeSingle();
+  // Only allow attaching to a NEW self-signup (status "pending"). Once the office
+  // activates the carrier, these public endpoints can no longer touch its documents.
+  const { data: oo } = await supabaseAdmin.from("ronyx_owner_operators").select("id, status").eq("id", ooId).maybeSingle();
   if (!oo) return NextResponse.json({ ok: false, error: "Record not found" }, { status: 404 });
+  if ((oo.status || "").toLowerCase() !== "pending") return NextResponse.json({ ok: false, error: "This company is already active — contact the office to update documents." }, { status: 403 });
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const contentType = file.type || "application/octet-stream";
