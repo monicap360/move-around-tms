@@ -120,8 +120,8 @@ export default function OwnerOperatorAgreement() {
           <div className="brand"><div className="name">RONYX</div><div className="sub">L O G I S T I C S&nbsp;&nbsp;L L C</div></div>
           <p style={{ textAlign: "center", fontSize: 11 }}>Ronyx Logistics, LLC — Subhauler Agreement — EXHIBIT B</p>
           <h1>SUBHAULER AGREEMENT</h1>
-          <p style={{ textAlign: "center" }}>BETWEEN PRIME CARRIER: <strong>Ronyx Logistics, LLC</strong><br />AND SUBHAULER: <Line w={300} /></p>
-          <p>THIS SUBHAULER AGREEMENT (the &ldquo;Subcontract&rdquo;) is executed by and between Prime Carrier, <strong>Ronyx Logistics, LLC</strong> (&ldquo;Prime Carrier&rdquo;) and Subhauler, <Line w={280} /> (&ldquo;Subhauler&rdquo;) whose information is provided below:</p>
+          <p style={{ textAlign: "center" }}>BETWEEN PRIME CARRIER: <strong>Ronyx Logistics, LLC</strong><br />AND SUBHAULER: {F({ k: "sub_name", w: 300 })}</p>
+          <p>THIS SUBHAULER AGREEMENT (the &ldquo;Subcontract&rdquo;) is executed by and between Prime Carrier, <strong>Ronyx Logistics, LLC</strong> (&ldquo;Prime Carrier&rdquo;) and Subhauler, {F({ k: "sub_name", w: 260 })} (&ldquo;Subhauler&rdquo;) whose information is provided below:</p>
 
           <table>
             <tbody>
