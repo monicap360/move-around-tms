@@ -2500,8 +2500,8 @@ function LandingPageContent() {
         <div className="container navbar-container">
           <Link href="/" prefetch={false} className="logo" onClick={() => setMenuOpen(false)}>
             {/* Real logo when present; falls back to the M-icon + text if the file isn't uploaded yet. */}
-            <img src="/movearound_logo.svg" alt="MoveAround TMS" style={{ height: 44, width: "auto", display: "block" }}
-              onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const p = img.parentElement!; (p.querySelector(".logo-icon") as HTMLElement).style.display = ""; (p.querySelector(".logo-text") as HTMLElement).style.display = ""; }} />
+            <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 44, width: "auto", display: "block" }}
+              onError={(e) => { const img = e.currentTarget; if (img.getAttribute("src") === "/movearound_logo.png") { img.setAttribute("src", "/movearound_logo.svg"); return; } img.style.display = "none"; const p = img.parentElement!; (p.querySelector(".logo-icon") as HTMLElement).style.display = ""; (p.querySelector(".logo-text") as HTMLElement).style.display = ""; }} />
             <div className="logo-icon" style={{ display: "none" }}>M</div>
             <div className="logo-text" style={{ display: "none" }}>MoveAround TMS</div>
           </Link>
@@ -6894,8 +6894,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div className="footer-grid">
             <div>
               <div className="logo" style={{ marginBottom: 30 }}>
-                <img src="/movearound_logo.svg" alt="MoveAround TMS" style={{ height: 52, width: "auto", display: "block" }}
-                  onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const p = img.parentElement!; (p.querySelector(".logo-icon") as HTMLElement).style.display = ""; (p.querySelector(".logo-text") as HTMLElement).style.display = ""; }} />
+                <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 52, width: "auto", display: "block" }}
+                  onError={(e) => { const img = e.currentTarget; if (img.getAttribute("src") === "/movearound_logo.png") { img.setAttribute("src", "/movearound_logo.svg"); return; } img.style.display = "none"; const p = img.parentElement!; (p.querySelector(".logo-icon") as HTMLElement).style.display = ""; (p.querySelector(".logo-text") as HTMLElement).style.display = ""; }} />
                 <div className="logo-icon" style={{ display: "none" }}>M</div>
                 <div className="logo-text" style={{ display: "none" }}>MoveAround TMS</div>
               </div>
