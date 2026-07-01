@@ -6689,8 +6689,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 <i className="fas fa-phone" style={{ color: "#2563eb", fontSize: "1.2rem", marginTop: 2 }}></i>
                 <div>
                   <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Call Us</div>
-                  <a href="tel:+18325550192" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
-                    (832) 555-0192
+                  <a href="tel:+14093645491" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
+                    (409) 364-5491
                   </a>
                   <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", marginTop: 4 }}>Mon–Fri, 8am–6pm CT</div>
                 </div>
@@ -6981,8 +6981,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                   sales@movearoundtms.com
                 </li>
                 <li style={{ marginBottom: 15, color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
-                  <i className="fas fa-phone" style={{ color: "var(--hyper-yellow)", marginRight: 10 }}></i>
-                  (832) 555-0192
+                  <i className="fas fa-phone" style={{ color: "#60a5fa", marginRight: 10 }}></i>
+                  <a href="tel:+14093645491" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>(409) 364-5491</a>
                 </li>
                 <li style={{ marginBottom: 15, color: "rgba(255, 255, 255, 0.7)", fontSize: "0.95rem" }}>
                   <i className="fas fa-map-marker-alt" style={{ color: "var(--turbo-blue)", marginRight: 10 }}></i>
