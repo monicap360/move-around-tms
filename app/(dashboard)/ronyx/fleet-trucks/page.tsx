@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Truck = {
-  id: string; oo_id: string; company: string; truck_number: string; year: string;
+  id: string; oo_id: string; company: string; truck_number: string; truck_type: string; year: string;
   make: string; model: string; vin: string; plate: string; driver: string;
   last_inspection: string; inspection_result: string; status: string;
 };
@@ -73,7 +73,7 @@ export default function FleetTrucks() {
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem", minWidth: 900 }}>
                 <thead><tr style={{ background: "#f8fafc" }}>
-                  {["Truck #", "Year", "Make", "Model", "VIN", "Plate", "Assigned Driver", "Inspection"].map(h => (
+                  {["Truck #", "Type", "Year", "Make", "Model", "VIN", "Plate", "Assigned Driver", "Inspection"].map(h => (
                     <th key={h} style={{ padding: "8px 12px", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr></thead>
@@ -81,6 +81,7 @@ export default function FleetTrucks() {
                   {list.map(t => (
                     <tr key={t.id} style={{ borderTop: "1px solid #f1f5f9" }}>
                       <td style={{ ...cell, fontWeight: 800, color: "#0f172a" }}>{t.truck_number || "—"}</td>
+                      <td style={cell}>{t.truck_type ? <span style={{ background: "#eff6ff", color: "#1e40af", padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: "0.72rem" }}>{t.truck_type}</span> : "—"}</td>
                       <td style={cell}>{t.year || "—"}</td>
                       <td style={cell}>{t.make || "—"}</td>
                       <td style={cell}>{t.model || "—"}</td>

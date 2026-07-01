@@ -19,13 +19,13 @@ export async function GET() {
   if (!ooIds.length) return NextResponse.json({ trucks: [], companies: [] });
 
   const { data, error } = await sb.from("ronyx_oo_trucks")
-    .select("id, oo_id, truck_number, year, make, model, vin, plate, assigned_driver_name, last_inspection, inspection_result, status")
+    .select("id, oo_id, truck_number, truck_type, year, make, model, vin, plate, assigned_driver_name, last_inspection, inspection_result, status")
     .in("oo_id", ooIds).limit(10000);
   if (error) return NextResponse.json({ trucks: [], companies: [], error: error.message });
 
   const trucks = (data || []).map((t: any) => ({
     id: t.id, oo_id: t.oo_id, company: byId[t.oo_id] || "—",
-    truck_number: t.truck_number || "", year: t.year || "", make: t.make || "", model: t.model || "",
+    truck_number: t.truck_number || "", truck_type: t.truck_type || "", year: t.year || "", make: t.make || "", model: t.model || "",
     vin: t.vin || "", plate: t.plate || "", driver: t.assigned_driver_name || "",
     last_inspection: t.last_inspection || "", inspection_result: t.inspection_result || "", status: t.status || "",
   }));

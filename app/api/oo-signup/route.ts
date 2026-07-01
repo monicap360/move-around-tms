@@ -125,7 +125,8 @@ export async function POST(req: Request) {
       const vin = String(tr?.vin || "").trim();
       if (!tn && !vin) continue;
       const ok = await insertTruckRow({
-        oo_id: data.id, truck_number: tn || null, make: tr.make?.trim() || null, model: tr.model?.trim() || null,
+        oo_id: data.id, truck_number: tn || null, truck_type: tr.truck_type?.trim() || null,
+        make: tr.make?.trim() || null, model: tr.model?.trim() || null,
         year: tr.year?.trim() || null, vin: vin || null, plate: tr.license_plate?.trim() || null,
         assigned_driver_name: tr.driver_name?.trim() || null, status: "active",
       });

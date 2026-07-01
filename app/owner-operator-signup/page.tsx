@@ -28,8 +28,9 @@ const PER_DRIVER_DOCS: [string, string][] = [
 type DriverRow = { name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string; files: Record<string, File | null> };
 const BLANK_DRIVER: DriverRow = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_expiration: "", med_card_expiration: "", files: {} };
 
-type TruckRow = { truck_number: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string; plateFile: File | null; inspectionFile: File | null };
-const BLANK_TRUCK: TruckRow = { truck_number: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "", plateFile: null, inspectionFile: null };
+type TruckRow = { truck_number: string; truck_type: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string; plateFile: File | null; inspectionFile: File | null };
+const BLANK_TRUCK: TruckRow = { truck_number: "", truck_type: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "", plateFile: null, inspectionFile: null };
+const TRUCK_TYPES = ["Tri-Axle", "Quad-Axle", "Quint-Axle", "End Dump", "Belly Dump", "Side Dump", "Super Dump", "Dump Trailer", "Water Truck", "Other"];
 
 // Tap-to-upload tile (photo or PDF).
 function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
@@ -94,7 +95,7 @@ export default function OwnerOperatorSignupPage() {
     setSubmitting(true); setErr("");
     try {
       const driverPayload = drivers.filter(dr => dr.name.trim()).map(dr => ({ name: dr.name.trim(), phone: dr.phone, cdl_number: dr.cdl_number, cdl_state: dr.cdl_state, cdl_expiration: dr.cdl_expiration, med_card_expiration: dr.med_card_expiration }));
-      const truckPayload = trucks.filter(t => t.truck_number.trim() || t.vin.trim()).map(t => ({ truck_number: t.truck_number.trim(), make: t.make, model: t.model, year: t.year, vin: t.vin, license_plate: t.license_plate, driver_name: t.driver_name }));
+      const truckPayload = trucks.filter(t => t.truck_number.trim() || t.vin.trim()).map(t => ({ truck_number: t.truck_number.trim(), truck_type: t.truck_type, make: t.make, model: t.model, year: t.year, vin: t.vin, license_plate: t.license_plate, driver_name: t.driver_name }));
       const res = await fetch("/api/oo-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin, drivers: driverPayload, trucks: truckPayload }) });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Could not submit. Please try again."); setSubmitting(false); return; }
@@ -274,6 +275,13 @@ export default function OwnerOperatorSignupPage() {
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div><label style={lbl}>Truck #</label><input value={t.truck_number} onChange={e => setTruck(i, "truck_number", e.target.value)} style={inp} placeholder="e.g. 8164" /></div>
+                      <div>
+                        <label style={lbl}>Truck Type</label>
+                        <select value={t.truck_type} onChange={e => setTruck(i, "truck_type", e.target.value)} style={inp}>
+                          <option value="">Select…</option>
+                          {TRUCK_TYPES.map(tt => <option key={tt} value={tt}>{tt}</option>)}
+                        </select>
+                      </div>
                       <div><label style={lbl}>Assigned Driver</label><input list="oo-driver-names" value={t.driver_name} onChange={e => setTruck(i, "driver_name", e.target.value)} style={inp} placeholder="Driver name" /></div>
                       <div><label style={lbl}>Make</label><input value={t.make} onChange={e => setTruck(i, "make", e.target.value)} style={inp} placeholder="e.g. Peterbilt" /></div>
                       <div><label style={lbl}>Model</label><input value={t.model} onChange={e => setTruck(i, "model", e.target.value)} style={inp} placeholder="e.g. 567" /></div>
