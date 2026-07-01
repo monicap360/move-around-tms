@@ -1386,7 +1386,7 @@ export default function OwnerOperatorsPage() {
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12, fontSize: "0.72rem", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem" }}>Card color:</span>
           <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#dcfce7", border:"1px solid #86efac", borderRadius:20, padding:"3px 10px", color:"#15803d", fontWeight:700 }}>🟢 Dispatch Eligible — all compliance passed</span>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#fefce8", border:"1px solid #fde68a", borderRadius:20, padding:"3px 10px", color:"#92400e", fontWeight:700 }}>🟡 Needs Attention — docs expiring or incomplete</span>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#fff7ed", border:"1px solid #fdba74", borderRadius:20, padding:"3px 10px", color:"#9a3412", fontWeight:700 }}>🟠 Needs Attention — docs expiring or incomplete</span>
           <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:20, padding:"3px 10px", color:"#dc2626", fontWeight:700 }}>🔴 Dispatch Blocked — missing insurance, contract, or compliance</span>
         </div>
 
@@ -1457,8 +1457,8 @@ export default function OwnerOperatorsPage() {
             const signupDocs  = oo.documents?.length || 0;
             const contractDoc = oo.documents.find(d => d.type === "Contract");
             const eSigned     = !!contractDoc && /e-?signed/i.test(contractDoc.file_name || "");
-            const cardBg    = isNewSignup ? "#fef9c3" : eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
-            const stripBorder = isNewSignup ? "#eab308" : eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
+            const cardBg    = isNewSignup ? "#fef9c3" : eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fff7ed":"#fff1f2");
+            const stripBorder = isNewSignup ? "#eab308" : eligible ? "#86efac" : (health>=70?"#fdba74":"#fda4af");
             const expanded = expandedOOs.has(oo.id);
             return (
               <div key={oo.id} style={{ background: "#fff", border: `1px solid ${stripBorder}`, borderRadius: 16, overflow: "hidden" }}>
