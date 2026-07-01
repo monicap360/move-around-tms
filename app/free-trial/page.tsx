@@ -31,7 +31,7 @@ export default function FreeTrial() {
   return (
     <div style={{ minHeight: "100vh", background: "radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0b1220 55%, #070b14 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "Inter, system-ui, sans-serif" }}>
       <div style={{ width: "100%", maxWidth: 560, background: "rgba(15,23,42,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 20, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", padding: "34px 34px 30px", backdropFilter: "blur(6px)" }}>
-        <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.18em", color: "#2563eb", textTransform: "uppercase" }}>MoveAround TMS</div>
+        <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 40, width: "auto", display: "block", marginBottom: 6 }} onError={(e) => { const img = e.currentTarget; if (img.getAttribute("src") === "/movearound_logo.png") { img.setAttribute("src", "/movearound_logo.svg"); return; } img.style.display = "none"; }} />
         {done ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 46 }}>✅</div>

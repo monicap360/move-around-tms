@@ -424,6 +424,7 @@ export default function PricingPage() {
         paddingBottom: "2rem"
       }}>
         <div style={{ marginBottom: "3rem" }}>
+          <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 52, width: "auto", display: "block", marginBottom: "1rem" }} onError={(e) => { const img = e.currentTarget; if (img.getAttribute("src") === "/movearound_logo.png") { img.setAttribute("src", "/movearound_logo.svg"); return; } img.style.display = "none"; }} />
           <h1 style={{ fontSize: "2.5rem", fontWeight: 700, color: "#60a5fa", marginBottom: "0.5rem" }}>
             MoveAround TMS Pricing
           </h1>
