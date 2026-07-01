@@ -220,7 +220,7 @@ html {
 
 .btn-secondary:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(247, 147, 30, 0.4);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
 }
 
 .btn-success {

@@ -937,12 +937,13 @@ function LandingPageContent() {
           top: 0;
           left: 0;
           right: 0;
-          background: rgba(8, 8, 8, 0.98);
-          backdrop-filter: blur(20px);
+          background: linear-gradient(180deg, rgba(9,14,28,0.9) 0%, rgba(9,14,28,0.68) 100%);
+          backdrop-filter: blur(22px) saturate(140%);
+          -webkit-backdrop-filter: blur(22px) saturate(140%);
           z-index: 1000;
-          padding: 15px 0;
-          border-bottom: var(--border-bulletproof);
-          box-shadow: 0 5px 30px rgba(0, 0, 0, 0.8);
+          padding: 13px 0;
+          border-bottom: 1px solid rgba(96, 165, 250, 0.28);
+          box-shadow: 0 8px 40px rgba(2, 6, 23, 0.55), inset 0 -1px 0 rgba(96,165,250,0.12);
         }
 
         .navbar-container {
@@ -1040,22 +1041,22 @@ function LandingPageContent() {
         }
 
         .nav-cta {
-          background: #F7931E;
-          color: #000000;
-          padding: 14px 32px;
+          background: linear-gradient(135deg, #2563eb 0%, #22d3ee 100%);
+          color: #061018;
+          padding: 13px 30px;
           border-radius: var(--radius-pill);
           font-weight: 900;
           font-size: 0.9rem;
           transition: var(--speed-transition);
           text-transform: uppercase;
           letter-spacing: 1.5px;
-          border: none;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          box-shadow: 0 0 22px rgba(34, 211, 238, 0.3);
         }
 
         .nav-cta:hover {
-          background: #e8831a;
           transform: translateY(-2px);
-          box-shadow: 0 4px 14px rgba(247, 147, 30, 0.4);
+          box-shadow: 0 0 34px rgba(34, 211, 238, 0.55), 0 6px 18px rgba(37, 99, 235, 0.45);
         }
 
         .mobile-menu-btn {
@@ -1179,31 +1180,31 @@ function LandingPageContent() {
         }
 
         .btn-primary {
-          background: #F7931E;
+          background: #2563eb;
           color: #000000;
-          box-shadow: 0 2px 8px rgba(247, 147, 30, 0.35);
+          box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
         }
 
         .btn-primary:hover {
-          background: #e8831a;
+          background: #1d4ed8;
           transform: translateY(-2px);
-          box-shadow: 0 4px 14px rgba(247, 147, 30, 0.45);
+          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
         }
         .btn-primary:active {
           transform: translateY(0);
-          box-shadow: 0 2px 6px rgba(247, 147, 30, 0.3);
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
         }
 
         .btn-secondary {
-          background: rgba(247, 147, 30, 0.12);
-          color: #F7931E;
-          border: 1.5px solid #F7931E;
+          background: rgba(37, 99, 235, 0.12);
+          color: #2563eb;
+          border: 1.5px solid #2563eb;
         }
 
         .btn-secondary:hover {
-          background: rgba(247, 147, 30, 0.22);
+          background: rgba(37, 99, 235, 0.22);
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(247, 147, 30, 0.2);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
         .btn-secondary:active {
           transform: translateY(0);
@@ -5562,7 +5563,7 @@ function LandingPageContent() {
                       top: 0,
                       left: "50%",
                       transform: "translateX(-50%)",
-                      background: "#F7931E",
+                      background: "#2563eb",
                       color: "#000000",
                       padding: "8px 24px",
                       borderRadius: "0 0 8px 8px",
@@ -6230,7 +6231,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #F7931E, #ff2800)",
+                    background: "linear-gradient(135deg, #2563eb, #ff2800)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontWeight: 800, fontSize: "0.9rem", color: "#000", flexShrink: 0,
                   }}>
@@ -6262,7 +6263,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, marginTop: 48 }}>
             {[
-              { icon: "fa-bolt", badge: "Fast Scan™", title: "Ticket OCR & Payout Import", desc: "Scan tickets, invoices, and payout sheets into usable operational data. Match scanned proof to dispatch records automatically.", color: "#F7931E" },
+              { icon: "fa-bolt", badge: "Fast Scan™", title: "Ticket OCR & Payout Import", desc: "Scan tickets, invoices, and payout sheets into usable operational data. Match scanned proof to dispatch records automatically.", color: "#2563eb" },
               { icon: "fa-shield-alt", badge: "Dispatch Guard™", title: "Daily Dispatch Import", desc: "Import daily dispatch schedules, track compliance notes, identify driver/truck readiness issues, and catch compliance blockers before dispatch.", color: "#00b4ff" },
               { icon: "fa-lock", badge: "Payroll Guard™", title: "Proof-Before-Pay Controls", desc: "Stop payroll from being released when ticket proof is missing. Flag duplicates, rate mismatches, and deductions before settlement.", color: "#00ff9d" },
               { icon: "fa-search-dollar", badge: "Revenue Guard™", title: "Find Unbilled Work", desc: "Find worked loads that have not been billed. Detect invoice mismatches and catch missing customer rates before money is lost.", color: "#ffd700" },
@@ -6296,7 +6297,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
         <div className="container">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
             <div>
-              <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24, background: "rgba(247,147,30,0.12)", borderColor: "rgba(247,147,30,0.4)", color: "#F7931E" }}>
+              <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24, background: "rgba(37,99,235,0.12)", borderColor: "rgba(37,99,235,0.4)", color: "#2563eb" }}>
                 <i className="fas fa-bolt"></i> Fast Scan™
               </div>
               <h2>Turn Scanned Tickets Into <span className="speed-gradient">Payroll-Ready Data</span></h2>
@@ -6305,8 +6306,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 24 }}>
                 {["OCR ticket scanning","Ticket-to-payroll matching","Invoice reconciliation","Excel payout sheet import","Missing proof detection","Payroll hold rules","Billing-ready ticket queue","Audit trail for every correction"].map((b) => (
-                  <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(247,147,30,0.08)", borderRadius: 10, border: "1px solid rgba(247,147,30,0.2)" }}>
-                    <i className="fas fa-check" style={{ color: "#F7931E", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
+                  <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(37,99,235,0.08)", borderRadius: 10, border: "1px solid rgba(37,99,235,0.2)" }}>
+                    <i className="fas fa-check" style={{ color: "#2563eb", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
                     <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{b}</span>
                   </div>
                 ))}
@@ -6316,8 +6317,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 <a href="/ronyx/tickets?tab=fastscan" className="btn btn-secondary" style={{ fontSize: "0.875rem", padding: "12px 28px" }}>Open Fast Scan</a>
               </div>
             </div>
-            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(247,147,30,0.25)", padding: 32 }}>
-              <div style={{ marginBottom: 16, fontWeight: 800, color: "#F7931E", fontSize: "0.85rem", letterSpacing: "0.1em" }}>FAST SCAN™ — LIVE TICKET QUEUE</div>
+            <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(37,99,235,0.25)", padding: 32 }}>
+              <div style={{ marginBottom: 16, fontWeight: 800, color: "#2563eb", fontSize: "0.85rem", letterSpacing: "0.1em" }}>FAST SCAN™ — LIVE TICKET QUEUE</div>
               {[
                 { ticket: "TKT-4821", driver: "D. Perez · Truck #12", status: "Matched", statusColor: "#00ff9d", note: "Proof verified · Ready for payroll" },
                 { ticket: "TKT-4822", driver: "K. Alston · Truck #23", status: "Missing Proof", statusColor: "#ff6b6b", note: "No scale ticket found · Payroll held" },
@@ -6333,8 +6334,8 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                   <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, background: row.statusColor + "18", color: row.statusColor, border: `1px solid ${row.statusColor}45`, flexShrink: 0 }}>{row.status}</span>
                 </div>
               ))}
-              <div style={{ marginTop: 18, padding: "12px 16px", background: "rgba(247,147,30,0.1)", borderRadius: 10, border: "1px solid rgba(247,147,30,0.25)", fontSize: "0.85rem", color: "rgba(255,255,255,0.8)" }}>
-                <strong style={{ color: "#F7931E" }}>3 of 4 tickets matched.</strong> 1 payroll hold active · 1 billing review needed.
+              <div style={{ marginTop: 18, padding: "12px 16px", background: "rgba(37,99,235,0.1)", borderRadius: 10, border: "1px solid rgba(37,99,235,0.25)", fontSize: "0.85rem", color: "rgba(255,255,255,0.8)" }}>
+                <strong style={{ color: "#2563eb" }}>3 of 4 tickets matched.</strong> 1 payroll hold active · 1 billing review needed.
               </div>
             </div>
           </div>
@@ -6528,7 +6529,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 0, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,215,0,0.2)" }}>
               <div style={{ background: "rgba(30,30,30,0.9)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", letterSpacing: "0.1em", textTransform: "uppercase" }}>Feature</div>
               <div style={{ background: "rgba(30,30,30,0.9)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", borderLeft: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", textAlign: "center" }}>Standard TMS</div>
-              <div style={{ background: "rgba(247,147,30,0.12)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", borderLeft: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "#F7931E", fontSize: "0.8rem", textAlign: "center" }}>MoveAround TMS</div>
+              <div style={{ background: "rgba(37,99,235,0.12)", padding: "16px 24px", borderBottom: "1px solid rgba(255,215,0,0.15)", borderLeft: "1px solid rgba(255,215,0,0.15)", fontWeight: 800, color: "#2563eb", fontSize: "0.8rem", textAlign: "center" }}>MoveAround TMS</div>
               {[
                 ["Dispatch board","✓","Dispatch Guard™"],
                 ["Ticket scanning","Limited","Fast Scan™ OCR"],
@@ -6543,7 +6544,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 <React.Fragment key={i}>
                   <div style={{ background: i % 2 === 0 ? "rgba(20,20,20,0.8)" : "rgba(28,28,28,0.8)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)", fontSize: "0.9rem" }}>{feature}</div>
                   <div style={{ background: i % 2 === 0 ? "rgba(20,20,20,0.8)" : "rgba(28,28,28,0.8)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(255,215,0,0.1)", color: "rgba(255,255,255,0.45)", fontSize: "0.88rem", textAlign: "center" }}>{standard}</div>
-                  <div style={{ background: i % 2 === 0 ? "rgba(247,147,30,0.07)" : "rgba(247,147,30,0.04)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(255,215,0,0.15)", color: "#F7931E", fontSize: "0.88rem", fontWeight: 700, textAlign: "center" }}>{movearound}</div>
+                  <div style={{ background: i % 2 === 0 ? "rgba(37,99,235,0.07)" : "rgba(37,99,235,0.04)", padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", borderLeft: "1px solid rgba(255,215,0,0.15)", color: "#2563eb", fontSize: "0.88rem", fontWeight: 700, textAlign: "center" }}>{movearound}</div>
                 </React.Fragment>
               ))}
             </div>
@@ -6554,7 +6555,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
       {/* ===== FINAL CTA ===== */}
       <section id="request-demo" className="switch-benefits" style={{ paddingTop: 80 }}>
         <div className="container">
-          <div style={{ background: "linear-gradient(135deg, rgba(247,147,30,0.12), rgba(0,180,255,0.08))", borderRadius: 24, border: "1px solid rgba(247,147,30,0.3)", padding: "60px 48px", textAlign: "center" }}>
+          <div style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(0,180,255,0.08))", borderRadius: 24, border: "1px solid rgba(37,99,235,0.3)", padding: "60px 48px", textAlign: "center" }}>
             <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24 }}>
               <i className="fas fa-rocket"></i> GET STARTED
             </div>
@@ -6578,7 +6579,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
             <div style={{ display: "flex", gap: 32, justifyContent: "center", marginTop: 40, flexWrap: "wrap" }}>
               {[
                 { icon: "fa-check-circle", label: "No long-term contracts", color: "#00ff9d" },
-                { icon: "fa-bolt", label: "30-day implementation", color: "#F7931E" },
+                { icon: "fa-bolt", label: "30-day implementation", color: "#2563eb" },
                 { icon: "fa-chart-line", label: "214% average ROI", color: "#ffd700" },
                 { icon: "fa-lock", label: "Proof-before-pay controls", color: "#00b4ff" },
               ].map((item) => (
@@ -6600,7 +6601,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
             {[
-              { name: "Fast Scan™", desc: "Scan tickets → matched, pay-ready data.", href: "#fast-scan", cta: "See it", color: "#F7931E" },
+              { name: "Fast Scan™", desc: "Scan tickets → matched, pay-ready data.", href: "#fast-scan", cta: "See it", color: "#2563eb" },
               { name: "Dispatch Guard™", desc: "Daily dispatch import + compliance checks.", href: "#dispatch-guard", cta: "See it", color: "#00b4ff" },
               { name: "Carrier Clearance Bureau™ (CCB)", desc: "Clear carriers/drivers/trucks before dispatch.", href: "#compliance-guard", cta: "See it", color: "#f43f5e" },
               { name: "Accounting Command Center", desc: "Ticket-to-cash: invoices, A/R, settlements, payroll.", href: "mailto:sales@movearoundtms.com?subject=Accounting%20Command%20Center%20demo", cta: "Book demo", color: "#22c55e" },
@@ -6666,7 +6667,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
             className="contact-grid">
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <i className="fas fa-envelope" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <i className="fas fa-envelope" style={{ color: "#2563eb", fontSize: "1.2rem", marginTop: 2 }}></i>
                 <div>
                   <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Email Us</div>
                   <a href="mailto:sales@movearoundtms.com" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
@@ -6675,7 +6676,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 </div>
               </div>
               <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <i className="fas fa-phone" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <i className="fas fa-phone" style={{ color: "#2563eb", fontSize: "1.2rem", marginTop: 2 }}></i>
                 <div>
                   <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Call Us</div>
                   <a href="tel:+18325550192" style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
@@ -6685,7 +6686,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 </div>
               </div>
               <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <i className="fas fa-map-marker-alt" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <i className="fas fa-map-marker-alt" style={{ color: "#2563eb", fontSize: "1.2rem", marginTop: 2 }}></i>
                 <div>
                   <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Based In</div>
                   <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>Houston, TX</div>
@@ -6693,7 +6694,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 </div>
               </div>
               <div className="reporting-card" style={{ padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <i className="fas fa-calendar-check" style={{ color: "#F7931E", fontSize: "1.2rem", marginTop: 2 }}></i>
+                <i className="fas fa-calendar-check" style={{ color: "#2563eb", fontSize: "1.2rem", marginTop: 2 }}></i>
                 <div>
                   <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Book a Time</div>
                   <a href="https://calendly.com/movearoundtms/demo" target="_blank" rel="noopener noreferrer"
@@ -6993,7 +6994,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 ].map((s) => (
                   <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
                     style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.6)", fontSize: "0.9rem", transition: "all 0.2s" }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(247,147,30,0.25)"; (e.currentTarget as HTMLElement).style.color = "#F7931E"; }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.25)"; (e.currentTarget as HTMLElement).style.color = "#2563eb"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; }}>
                     <i className={`fab ${s.icon}`}></i>
                   </a>
