@@ -27,12 +27,20 @@ export default function OwnerOperatorAgreement() {
   const [signedAt, setSignedAt] = useState("");
   const [err, setErr] = useState("");
   const [ooId, setOoId] = useState("");
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const setF = (k: string, v: string) => setFields(s => ({ ...s, [k]: v }));
+  // Fillable blank — type on screen; prints with the typed value.
+  const F = ({ k, w = 180, ph }: { k: string; w?: number; ph?: string }) => (
+    <input value={fields[k] || ""} onChange={e => setF(k, e.target.value)} placeholder={ph} className="fillable"
+      style={{ border: "none", borderBottom: "1px solid #000", minWidth: w, width: w, font: "inherit", padding: "0 3px", background: "#fffde7", outline: "none" }} />
+  );
 
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search);
       setOoId(p.get("oo_id") || "");
-      if (p.get("company")) setCompany(p.get("company") || "");
+      const co = p.get("company") || "";
+      if (co) { setCompany(co); setFields(s => ({ ...s, sub_name: co, w9_business: co })); }
     } catch {}
   }, []);
 
@@ -80,7 +88,8 @@ export default function OwnerOperatorAgreement() {
   return (
     <div style={{ background: "#fff", color: "#111", minHeight: "100vh" }}>
       <style>{`
-        @media print { .no-print { display: none !important; } .doc { box-shadow:none !important; margin:0 !important; } .page { page-break-after: always; } }
+        @media print { .no-print { display: none !important; } .doc { box-shadow:none !important; margin:0 !important; } .page { page-break-after: always; } .fillable { background: transparent !important; } }
+        .fillable::placeholder { color: #cbd5e1; }
         .doc { max-width: 820px; margin: 0 auto; padding: 40px 56px; line-height: 1.5; font-size: 13px; font-family: Georgia, 'Times New Roman', serif; }
         .doc h1 { font-size: 18px; text-align:center; margin: 6px 0; letter-spacing:0.04em; }
         .doc h2 { font-size: 14px; margin: 18px 0 6px; border-bottom: 1px solid #999; padding-bottom: 3px; }
@@ -117,23 +126,23 @@ export default function OwnerOperatorAgreement() {
           <table>
             <tbody>
               <tr><th style={{ width: "50%" }}>PRIME CARRIER</th><th>SUBHAULER</th></tr>
-              <tr><td>Name: Ronyx Logistics, LLC</td><td>Name: ______________________________</td></tr>
-              <tr><td>Address: 3741 Graves Ave, Groves, Texas 77619</td><td>Address: ____________________________</td></tr>
-              <tr><td>ATTN: Veronica Y Butanda</td><td>ATTN: ______________________________</td></tr>
-              <tr><td>Telephone: 432-803-8003</td><td>Telephone: __________________________</td></tr>
-              <tr><td>Email: ronyxlogistics@gmail.com</td><td>Email: ______________________________</td></tr>
-              <tr><td></td><td>USDOT No: __________________________</td></tr>
+              <tr><td>Name: Ronyx Logistics, LLC</td><td>Name: {F({ k: "sub_name", w: 200 })}</td></tr>
+              <tr><td>Address: 3741 Graves Ave, Groves, Texas 77619</td><td>Address: {F({ k: "sub_addr", w: 190 })}</td></tr>
+              <tr><td>ATTN: Veronica Y Butanda</td><td>ATTN: {F({ k: "sub_attn", w: 200 })}</td></tr>
+              <tr><td>Telephone: 432-803-8003</td><td>Telephone: {F({ k: "sub_phone", w: 170 })}</td></tr>
+              <tr><td>Email: ronyxlogistics@gmail.com</td><td>Email: {F({ k: "sub_email", w: 190 })}</td></tr>
+              <tr><td></td><td>USDOT No: {F({ k: "sub_usdot", w: 180 })}</td></tr>
             </tbody>
           </table>
 
           <table>
             <tbody>
               <tr><th>Type of Truck</th><th>Truck Number</th></tr>
-              <tr><td>Tri-Axle</td><td>&nbsp;</td></tr>
-              <tr><td>Quad-Axle</td><td>&nbsp;</td></tr>
-              <tr><td>Quint-Axle</td><td>&nbsp;</td></tr>
-              <tr><td>End Dump</td><td>&nbsp;</td></tr>
-              <tr><td>Belly</td><td>&nbsp;</td></tr>
+              <tr><td>Tri-Axle</td><td>{F({ k: "tt_tri", w: 160 })}</td></tr>
+              <tr><td>Quad-Axle</td><td>{F({ k: "tt_quad", w: 160 })}</td></tr>
+              <tr><td>Quint-Axle</td><td>{F({ k: "tt_quint", w: 160 })}</td></tr>
+              <tr><td>End Dump</td><td>{F({ k: "tt_end", w: 160 })}</td></tr>
+              <tr><td>Belly</td><td>{F({ k: "tt_belly", w: 160 })}</td></tr>
             </tbody>
           </table>
           <p>Prime Carrier and Subhauler are sometimes collectively referred to herein as the &ldquo;Parties&rdquo; or individually as a &ldquo;Party.&rdquo; The Sub-Work described in Article I, below, shall be performed in accordance with the Subcontract Documents attached hereto as Exhibits A, B, and C, which are incorporated herein by reference.</p>
@@ -248,11 +257,10 @@ export default function OwnerOperatorAgreement() {
           <h2>FORM W-9 — Request for Taxpayer Identification</h2>
           <p>Subhauler to complete and return an IRS Form W-9 (name, business name, federal tax classification, address, and TIN/EIN), with the requester listed as Ronyx Logistics, LLC, 3741 Graves Ave, Groves, Texas 77619.</p>
           <table><tbody>
-            <tr><td>Name (as on tax return): __________________________</td></tr>
-            <tr><td>Business name (if different): ______________________</td></tr>
+            <tr><td>Name (as on tax return): {F({ k: "w9_name", w: 260 })}</td></tr>
+            <tr><td>Business name (if different): {F({ k: "w9_business", w: 250 })}</td></tr>
             <tr><td>Tax classification: ☐ Individual/Sole proprietor ☐ C-Corp ☐ S-Corp ☐ Partnership ☐ LLC ☐ Other</td></tr>
-            <tr><td>Address: __________________________  EIN / SSN: __________________</td></tr>
-            <tr><td>Signature: ______________________________  Date: ____________</td></tr>
+            <tr><td>Address: {F({ k: "w9_addr", w: 220 })}  EIN / SSN: {F({ k: "w9_ein", w: 150 })}</td></tr>
           </tbody></table>
         </div>
 
@@ -265,12 +273,11 @@ export default function OwnerOperatorAgreement() {
           <h2 style={{ marginTop: 28 }}>DIRECT DEPOSIT AUTHORIZATION</h2>
           <p>As a payment option, Ronyx Logistics, LLC offers payees electronic payment in lieu of check. Complete this form, attach a voided check, and return by email to ronyxlogistics@gmail.com.</p>
           <table><tbody>
-            <tr><td>Payee Name: ____________________</td><td>Email: ____________________</td></tr>
-            <tr><td>Address: ____________________</td><td>Phone: ____________________</td></tr>
-            <tr><td>Financial Institution: ____________________</td><td>Institution Address: ____________________</td></tr>
-            <tr><td>Routing Number: ____________________</td><td>Account Number: ____________________</td></tr>
+            <tr><td>Payee Name: {F({ k: "dd_payee", w: 150 })}</td><td>Email: {F({ k: "dd_email", w: 150 })}</td></tr>
+            <tr><td>Address: {F({ k: "dd_addr", w: 150 })}</td><td>Phone: {F({ k: "dd_phone", w: 150 })}</td></tr>
+            <tr><td>Financial Institution: {F({ k: "dd_bank", w: 130 })}</td><td>Institution Address: {F({ k: "dd_bankaddr", w: 120 })}</td></tr>
+            <tr><td>Routing Number: {F({ k: "dd_routing", w: 130 })}</td><td>Account Number: {F({ k: "dd_account", w: 130 })}</td></tr>
             <tr><td>Account Type: ☐ Checking ☐ Savings</td><td>Verification: ☐ Voided check ☐ Bank letter</td></tr>
-            <tr><td>Authorized Signature: ____________________</td><td>Printed Name / Title / Date: ____________________</td></tr>
           </tbody></table>
         </div>
 
@@ -282,7 +289,11 @@ export default function OwnerOperatorAgreement() {
           <p>List all trucks and trailers that may be utilized. Attach additional pages as necessary.</p>
           <table><tbody>
             <tr><th>Truck #</th><th>Type (truck/trailer/dump/belly)</th><th>Year/Make/Model</th><th>VIN #</th><th>License Plate &amp; State</th><th>License Exp. Date</th></tr>
-            {Array.from({ length: 8 }).map((_, i) => <tr key={i}><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>)}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <tr key={i}>
+                {(["tn", "type", "ymm", "vin", "plate", "exp"] as const).map(c => <td key={c}>{F({ k: `tl_${i}_${c}`, w: c === "ymm" || c === "vin" ? 120 : 80 })}</td>)}
+              </tr>
+            ))}
           </tbody></table>
         </div>
 
