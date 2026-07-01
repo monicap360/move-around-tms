@@ -302,7 +302,8 @@ export default function OwnerOperatorSignupPage() {
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
                 <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Company documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
                 <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 8px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
-                <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Read the Subhauler Agreement — you can <strong>e-sign it right after you submit</strong> (no printing needed)</a>
+                <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 6, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Read the Subhauler Agreement — you can <strong>e-sign it right after you submit</strong> (no printing needed)</a>
+                <a href="/w9" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>🧾 Need a W-9? Fill a blank W-9 here → then attach it above</a>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
                   {OO_DOCS.map(([label, type]) => <FileSlot key={type} label={label} file={files[type]} onPick={f => setFiles(s => ({ ...s, [type]: f }))} />)}
                 </div>
