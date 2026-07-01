@@ -1455,6 +1455,8 @@ export default function OwnerOperatorsPage() {
             // can review & activate. Flag those who attached documents at signup.
             const isNewSignup = (oo.status || "").toLowerCase() === "pending";
             const signupDocs  = oo.documents?.length || 0;
+            const contractDoc = oo.documents.find(d => d.type === "Contract");
+            const eSigned     = !!contractDoc && /e-?signed/i.test(contractDoc.file_name || "");
             const cardBg    = isNewSignup ? "#fef9c3" : eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fefce8":"#fff1f2");
             const stripBorder = isNewSignup ? "#eab308" : eligible ? "#86efac" : (health>=70?"#fde68a":"#fda4af");
             const expanded = expandedOOs.has(oo.id);
@@ -1470,6 +1472,7 @@ export default function OwnerOperatorsPage() {
                       <h3 style={{ margin: 0, fontWeight: 900, color: "#0f172a", fontSize: "1.05rem" }}>{oo.company_name}</h3>
                       {isNewSignup && <span style={{ background: "#fde68a", color: "#854d0e", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #eab308" }}>✨ NEW SIGN-UP</span>}
                       {isNewSignup && signupDocs > 0 && <span style={{ background: "#dcfce7", color: "#15803d", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #86efac" }}>📎 {signupDocs} doc{signupDocs>1?"s":""} attached</span>}
+                      {eSigned && <span title={contractDoc?.file_name} style={{ background: "#ecfdf5", color: "#047857", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #6ee7b7" }}>✍️ Agreement e-Signed</span>}
                       <span style={{ background: eligible?"#dcfce7":"#fee2e2", color: eligible?"#15803d":"#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: `1px solid ${eligible?"#86efac":"#fca5a5"}` }}>
                         {eligible ? "🟢 Dispatch Eligible" : "🔴 Dispatch Blocked"}
                       </span>
