@@ -126,8 +126,8 @@ export async function POST(req: Request) {
       if (!tn && !vin) continue;
       const ok = await insertTruckRow({
         oo_id: data.id, truck_number: tn || null, make: tr.make?.trim() || null, model: tr.model?.trim() || null,
-        year: tr.year?.trim() || null, vin: vin || null, license_plate: tr.license_plate?.trim() || null,
-        driver_name: tr.driver_name?.trim() || null, status: "active",
+        year: tr.year?.trim() || null, vin: vin || null, plate: tr.license_plate?.trim() || null,
+        assigned_driver_name: tr.driver_name?.trim() || null, status: "active",
       });
       if (ok) createdTrucks++;
     }
