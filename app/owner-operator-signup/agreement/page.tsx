@@ -232,8 +232,8 @@ export default function OwnerOperatorAgreement() {
           <p>In consideration of the mutual covenants set forth herein, Prime Carrier and Subhauler have signed this contract, which becomes binding and effective immediately, and shall be interpreted and construed according to applicable law.</p>
           <p>SIGNED AND EXECUTED THIS {F({ k: "exec_day", w: 130 })}, 20{F({ k: "exec_year", w: 45 })} (the &ldquo;Effective Date&rdquo;).</p>
           <div className="sigblock">
-            <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;&nbsp;{F({ k: "prime_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Manager</div>
-            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
+            <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />{F({ k: "prime_sig", w: 200 })} Signature&nbsp;&nbsp;&nbsp;&nbsp;{F({ k: "prime_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Manager</div>
+            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />{F({ k: "sub_sig", w: 200 })} Signature&nbsp;&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
           </div>
         </div>
 
@@ -287,8 +287,8 @@ export default function OwnerOperatorAgreement() {
           <p style={{ marginTop: 14 }}><strong>ATTENTION: THIS DOCUMENT HAS IMPORTANT LEGAL CONSEQUENCES. CONSULTATION WITH AN ATTORNEY PRIOR TO EXECUTION IS ENCOURAGED.</strong></p>
           <p>SIGNED AND EXECUTED THIS {F({ k: "exec_day", w: 130 })}, 20{F({ k: "exec_year", w: 45 })} (the &ldquo;Effective Date&rdquo;).</p>
           <div className="sigblock">
-            <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;{F({ k: "prime_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Manager</div>
-            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
+            <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />{F({ k: "prime_sig", w: 200 })} Signature&nbsp;&nbsp;&nbsp;{F({ k: "prime_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Manager</div>
+            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />{F({ k: "sub_sig", w: 200 })} Signature&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
           </div>
         </div>
 
@@ -308,8 +308,8 @@ export default function OwnerOperatorAgreement() {
           </ul>
           <p>BY SIGNING BELOW, PRIME CARRIER AND SUBHAULER AGREE TO THE SPECIFIC WORKING CONDITIONS AND RULES. SIGNED THIS {F({ k: "exec_day", w: 150 })}.</p>
           <div className="sigblock">
-            <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;{F({ k: "prime_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Manager</div>
-            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />______________________________ Signature&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
+            <div className="sigrow"><strong>BY: PRIME CARRIER — Ronyx Logistics, LLC</strong><br /><br />{F({ k: "prime_sig", w: 200 })} Signature&nbsp;&nbsp;&nbsp;{F({ k: "prime_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Manager</div>
+            <div className="sigrow"><strong>BY: SUBHAULER</strong><br /><br />{F({ k: "sub_sig", w: 200 })} Signature&nbsp;&nbsp;&nbsp;{F({ k: "sub_signer_name", w: 200 })} Printed Name&nbsp;&nbsp;&nbsp;Title {F({ k: "sub_signer_title", w: 120 })}</div>
           </div>
         </div>
 
