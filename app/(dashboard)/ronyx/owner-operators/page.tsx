@@ -1221,6 +1221,7 @@ export default function OwnerOperatorsPage() {
           <p style={{ margin: 0, color: "#64748b", fontSize: "0.88rem" }}>Manage OO companies as businesses — fleet, compliance, settlements, and profitability in one place.</p>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:10 }}>
             <a href="/ronyx/drivers/cdl-medical" style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#0f172a", color:"#fff", textDecoration:"none", padding:"8px 14px", borderRadius:9, fontWeight:800, fontSize:"0.82rem" }}>🪪 Edit CDL &amp; Medical for all owner operators →</a>
+            <a href="/ronyx/fleet-trucks" style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#0891b2", color:"#fff", textDecoration:"none", padding:"8px 14px", borderRadius:9, fontWeight:800, fontSize:"0.82rem" }}>🚛 Trucks by owner operator →</a>
             <a href="/ronyx/owner-operators/roster-import" style={{ display:"inline-flex", alignItems:"center", gap:7, background:"#1e40af", color:"#fff", textDecoration:"none", padding:"8px 14px", borderRadius:9, fontWeight:800, fontSize:"0.82rem" }}>📋 Import roster spreadsheet →</a>
           </div>
         </div>
