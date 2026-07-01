@@ -959,9 +959,10 @@ function LandingPageContent() {
         .logo {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 10px;
           text-decoration: none;
           position: relative;
+          flex-shrink: 0;
         }
 
         .logo-icon {
@@ -1009,20 +1010,22 @@ function LandingPageContent() {
 
         .nav-links {
           display: flex;
-          gap: 48px;
+          gap: 22px;
           align-items: center;
+          flex-wrap: nowrap;
         }
 
         .nav-link {
-          color: rgba(255, 255, 255, 0.8);
+          color: rgba(255, 255, 255, 0.82);
           text-decoration: none;
           font-weight: 700;
-          font-size: 0.95rem;
-          letter-spacing: 1px;
+          font-size: 0.8rem;
+          letter-spacing: 0.4px;
           text-transform: uppercase;
           transition: var(--speed-transition);
           position: relative;
           padding: 8px 0;
+          white-space: nowrap;
         }
 
         .nav-link::after {
@@ -1047,15 +1050,17 @@ function LandingPageContent() {
         .nav-cta {
           background: linear-gradient(135deg, #2563eb 0%, #22d3ee 100%);
           color: #061018;
-          padding: 13px 30px;
+          padding: 10px 20px;
           border-radius: var(--radius-pill);
           font-weight: 900;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           transition: var(--speed-transition);
           text-transform: uppercase;
-          letter-spacing: 1.5px;
+          letter-spacing: 0.6px;
           border: 1px solid rgba(255, 255, 255, 0.16);
           box-shadow: 0 0 22px rgba(34, 211, 238, 0.3);
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .nav-cta:hover {
