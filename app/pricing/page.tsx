@@ -20,6 +20,7 @@ const tiers = [
       "Up to 3 trucks included",
       "Core dispatch + digital tickets",
       "Driver mobile app",
+      "Self sign-up + e-sign onboarding",
       "Basic invoicing (PDF, email)",
       "Email support",
     ],
@@ -34,6 +35,8 @@ const tiers = [
     features: [
       "Everything in Owner-Operator",
       "Up to 10 trucks",
+      "Fleet CDL & Medical tracking",
+      "Smart Import (any file, deduped)",
       "Pit invoice reconciliation",
       "QuickBooks export",
       "Email support",
@@ -49,6 +52,9 @@ const tiers = [
     features: [
       "Everything in Starter",
       "Unlimited trucks",
+      "Accounting Command Center (ticket-to-cash)",
+      "CCB carrier/driver/truck clearance",
+      "Owner-Operator onboarding + e-sign packet",
       "Accounting Integration + IFTA",
       "Driver Payroll module",
       "Customer portal",
@@ -63,7 +69,7 @@ const tiers = [
     priceNote: "Unlimited trucks · annual",
     badge: null,
     features: [
-      "All modules included",
+      "All modules — incl. Capacity Network & CCB",
       "Dedicated account manager",
       "Custom reporting + API access",
       "ELD integration",
@@ -270,6 +276,12 @@ const addOns = [
   { name: "Customer Portal", price: "+$50–200/month" },
   { name: "Advanced Dispatching", price: "+$30–100/month" },
   { name: "Material Inventory", price: "+$50–150/month" },
+  { name: "Accounting Command Center (ticket-to-cash)", price: "Included in Professional+" },
+  { name: "Owner-Operator Onboarding + e-Sign", price: "Included (all plans)" },
+  { name: "Smart Import (any file, deduped)", price: "Included (Starter+)" },
+  { name: "Fleet CDL & Medical", price: "Included (Starter+)" },
+  { name: "CCB — Carrier Clearance Bureau", price: "Included in Professional+" },
+  { name: "Capacity Network (driver/carrier sourcing)", price: "Enterprise / contact us" },
 ];
 
 const competitiveRows = [
@@ -328,6 +340,27 @@ const competitiveRows = [
     telematics: "Asset utilization",
     accounting: "Profit and tax reports",
     movearound: "Revenue per ton, pit vs site idle time",
+  },
+  {
+    factor: "Carrier / Driver Compliance",
+    generic: "Manual or none",
+    telematics: "Basic doc alerts",
+    accounting: "Document storage",
+    movearound: "CCB clearance blocks dispatch + Fleet CDL/Medical",
+  },
+  {
+    factor: "Owner-Operator Onboarding",
+    generic: "Manual paperwork + email",
+    telematics: "—",
+    accounting: "—",
+    movearound: "Self sign-up + e-sign packet, auto-filed",
+  },
+  {
+    factor: "Ticket-to-Cash Accounting",
+    generic: "Hand-off to bookkeeping",
+    telematics: "—",
+    accounting: "Bookkeeping only",
+    movearound: "Ticket → invoice → A/R → settlement → payroll in one place",
   },
   {
     factor: "Pricing Transparency",
