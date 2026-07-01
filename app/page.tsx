@@ -790,20 +790,20 @@ function LandingPageContent() {
 
           --gradient-performance: linear-gradient(
             135deg,
-            #ffd700 0%,
-            #c0c0c0 50%,
-            #00b4ff 100%
+            #f0d888 0%,
+            #c8a24a 50%,
+            #a97f3d 100%
           );
           --gradient-bulletproof: linear-gradient(
             135deg,
-            rgba(255, 215, 0, 0.15),
-            rgba(0, 180, 255, 0.1)
+            rgba(200, 162, 74, 0.14),
+            rgba(148, 163, 184, 0.08)
           );
-          --gradient-speed: linear-gradient(90deg, #ffd700, #ff2800);
-          --gradient-success: linear-gradient(90deg, #00ff9d, #00b4ff);
+          --gradient-speed: linear-gradient(90deg, #e6c766, #c8a24a);
+          --gradient-success: linear-gradient(90deg, #7dd3a8, #6aa9d6);
 
           --shadow-performance: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-          --shadow-bulletproof: 0 0 60px rgba(255, 215, 0, 0.4);
+          --shadow-bulletproof: 0 0 60px rgba(200, 162, 74, 0.30);
           --shadow-chrome: 0 15px 50px rgba(232, 232, 232, 0.25);
           --shadow-speed: 0 0 40px rgba(255, 40, 0, 0.3);
 
