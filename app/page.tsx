@@ -6267,6 +6267,11 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               { icon: "fa-id-card", badge: "Carrier Clearance Bureau™ (CCB)", title: "Carrier, Driver, Truck & Insurance Clearance", desc: "Full carrier, driver, truck, document, insurance, and COI clearance checked before dispatch — CDL, medical card, MVR, drug tests, inspections, registration, authority, and customer-specific requirements. CCB Shield blocks dispatch when anything is expired or missing; CCB Radar flags risks early.", color: "#f43f5e" },
               { icon: "fa-tasks", badge: "Staff Work Queue", title: "Daily Office Priority List", desc: "Show office staff exactly what to fix, approve, hold, or escalate. Missing proof queue, payroll hold queue, compliance queue.", color: "#38bdf8" },
               { icon: "fa-database", badge: "Backup Center", title: "Original Upload Preservation", desc: "Every original uploaded sheet, schedule, ticket, or invoice is preserved as read-only evidence. Download originals anytime.", color: "#4ade80" },
+              { icon: "fa-calculator", badge: "Accounting Command Center", title: "Ticket-to-Cash Accounting", desc: "The full money workflow in one place: ticket → invoice, A/R aging, owner-operator settlements, driver payroll, job costing & margin, fuel allocation, and accounting exports.", color: "#22c55e" },
+              { icon: "fa-network-wired", badge: "Capacity Network", title: "Driver & Carrier Sourcing", desc: "Build a private capacity pipeline — source, verify, and convert drivers and owner-operators into onboarded, dispatch-ready carriers when you need trucks fast.", color: "#8b5cf6" },
+              { icon: "fa-file-signature", badge: "Owner-Operator Onboarding", title: "Self Sign-Up + e-Signature", desc: "Carriers register themselves, add their drivers and trucks, upload COI/W-9/CDL/medical, and e-sign the Subhauler Agreement online (DocuSign-style). Signed packet auto-files to Contract, W-9, and Banking slots.", color: "#14b8a6" },
+              { icon: "fa-id-card-alt", badge: "Fleet CDL & Medical", title: "Fleet-Wide Compliance", desc: "Edit every owner-operator's drivers — CDL, medical card, and truck # — in one table, sorted by soonest expiration, with expired / expiring / missing filters.", color: "#f59e0b" },
+              { icon: "fa-file-import", badge: "Smart Import", title: "Import Anything, Deduped", desc: "Drop in a spreadsheet, PDF, photo, or scan. Rosters auto-map and dedupe by person (fills truck #/CDL/medical) with a preview; single documents auto-file to the right carrier or driver.", color: "#38bdf8" },
             ].map((f) => (
               <div key={f.badge} style={{ background: "rgba(30,30,30,0.8)", borderRadius: 16, padding: "32px 28px", border: "1px solid rgba(255,215,0,0.15)", transition: "all 0.2s", position: "relative", overflow: "hidden" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = f.color + "55"; (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)"; }}
@@ -6580,6 +6585,33 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="product-demos" className="switch-benefits" style={{ paddingBottom: 0 }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }}>
+            <h2>Product <span className="speed-gradient">Demos</span></h2>
+            <p style={{ color: "rgba(255,255,255,0.8)" }}>See each module in action, or book a live walkthrough for your fleet.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {[
+              { name: "Fast Scan™", desc: "Scan tickets → matched, pay-ready data.", href: "#fast-scan", cta: "See it", color: "#F7931E" },
+              { name: "Dispatch Guard™", desc: "Daily dispatch import + compliance checks.", href: "#dispatch-guard", cta: "See it", color: "#00b4ff" },
+              { name: "Carrier Clearance Bureau™ (CCB)", desc: "Clear carriers/drivers/trucks before dispatch.", href: "#compliance-guard", cta: "See it", color: "#f43f5e" },
+              { name: "Accounting Command Center", desc: "Ticket-to-cash: invoices, A/R, settlements, payroll.", href: "mailto:sales@movearoundtms.com?subject=Accounting%20Command%20Center%20demo", cta: "Book demo", color: "#22c55e" },
+              { name: "Owner-Operator Onboarding + e-Sign", desc: "Try the live self sign-up & e-signature flow.", href: "/owner-operator-signup", cta: "Try it live", color: "#14b8a6" },
+              { name: "Capacity Network", desc: "Source & convert drivers/carriers on demand.", href: "mailto:sales@movearoundtms.com?subject=Capacity%20Network%20demo", cta: "Book demo", color: "#8b5cf6" },
+              { name: "Fleet CDL & Medical", desc: "Fleet-wide CDL/medical/truck compliance table.", href: "mailto:sales@movearoundtms.com?subject=Fleet%20CDL%20%26%20Medical%20demo", cta: "Book demo", color: "#f59e0b" },
+              { name: "Smart Import", desc: "Import any file — deduped, auto-filed.", href: "mailto:sales@movearoundtms.com?subject=Smart%20Import%20demo", cta: "Book demo", color: "#38bdf8" },
+            ].map((d) => (
+              <a key={d.name} href={d.href} target={d.href.startsWith("/") ? "_blank" : undefined} rel="noreferrer" className="benefit-card" style={{ textAlign: "left", textDecoration: "none", display: "block", borderTop: `3px solid ${d.color}` }}>
+                <h3 style={{ marginBottom: 8, color: "#fff" }}>{d.name}</h3>
+                <p style={{ color: "rgba(255,255,255,0.78)", fontSize: "0.95rem", minHeight: 44 }}>{d.desc}</p>
+                <span className="btn btn-primary" style={{ marginTop: 6, fontSize: "0.85rem", padding: "0.5rem 1rem", display: "inline-block" }}>{d.cta} →</span>
+              </a>
+            ))}
           </div>
         </div>
       </section>
