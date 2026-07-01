@@ -593,6 +593,7 @@ export default function OwnerOperatorsPage() {
 
   // COI upload state
   const [coiUploadForm, setCoiUploadForm] = useState({ document_type:"", coi_group:"ronyx_ma_mortenson", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
+  const [coiDateEdit, setCoiDateEdit] = useState<{ id:string; effective:string; expiration:string } | null>(null);
   const [showCoiUpload, setShowCoiUpload] = useState<string>(""); // document_type being uploaded
   const [activeCoiCompanies, setActiveCoiCompanies] = useState<CoiCompanyKey[]>(["ronyx_ma_mortenson"]);
   const [showCoiDropdown, setShowCoiDropdown] = useState(false);
@@ -905,13 +906,28 @@ export default function OwnerOperatorsPage() {
     form.append("file", file);
     form.append("bucket", "ronyx-imports");
     form.append("path", `oo-coi/${selected.id}/${docType}/${file.name}`);
+    flash("Reading the COI…");
     const upRes = await fetch("/api/ronyx/upload-file", { method:"POST", body:form });
     const upData = await upRes.json();
     const fileUrl = upData.url || null;
 
+    // Auto-read the COI (provider, policy #, effective/expiration dates) so staff
+    // don't retype them. Manual entries (if any) win; else use what was read.
+    let extracted: any = null;
+    try {
+      const exForm = new FormData(); exForm.append("file", file);
+      const exRes = await fetch("/api/ronyx/coi-extract", { method:"POST", body: exForm });
+      const exData = await exRes.json();
+      if (exData.ok) extracted = exData.fields;
+    } catch {}
+
     const coiType = COI_TYPES_CONST.find(t => t.value === docType);
     const body = {
       ...coiUploadForm,
+      insurance_provider: coiUploadForm.insurance_provider || extracted?.insurance_provider || "",
+      policy_number:      coiUploadForm.policy_number      || extracted?.policy_number      || "",
+      effective_date:     coiUploadForm.effective_date     || extracted?.effective_date     || "",
+      expiration_date:    coiUploadForm.expiration_date    || extracted?.expiration_date    || "",
       document_type: docType,
       coi_group: coiType?.group || "standard",
       file_name: file.name,
@@ -923,7 +939,9 @@ export default function OwnerOperatorsPage() {
     const newDoc: COIDoc = { id: data.coi.id, coi_group: data.coi.coi_group, document_type: data.coi.document_type, insurance_provider: body.insurance_provider||undefined, policy_number: body.policy_number||undefined, effective_date: body.effective_date||undefined, expiration_date: body.expiration_date||undefined, file_name: file.name, file_url: fileUrl||undefined, status: data.coi.status, review_status: data.coi.review_status, dispatch_blocked: false, settlement_hold: false };
     updateLocalState({ ...selected, coi_documents: [...(selected.coi_documents||[]).filter(d => d.document_type !== docType), newDoc] });
     setShowCoiUpload(""); setCoiUploadForm({ document_type:"", coi_group:"standard", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
-    flash(`COI uploaded: ${coiType?.label || docType}`);
+    flash(extracted && (extracted.effective_date || extracted.expiration_date || extracted.policy_number)
+      ? `COI uploaded — auto-read ${[extracted.insurance_provider && "provider", extracted.policy_number && "policy #", extracted.effective_date && "effective", extracted.expiration_date && "expiration"].filter(Boolean).join(", ")}. Verify & approve.`
+      : `COI uploaded: ${coiType?.label || docType}`);
   }
 
   async function updateCOIStatus(docId: string, patch: Partial<COIDoc>) {
@@ -4311,14 +4329,34 @@ export default function OwnerOperatorsPage() {
                         <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:"0.78rem", color:"#475569" }}>
                           {doc.insurance_provider && <div><span style={{ color:"#94a3b8" }}>Provider:</span> <strong style={{ color:"#0f172a" }}>{doc.insurance_provider}</strong></div>}
                           {doc.policy_number     && <div><span style={{ color:"#94a3b8" }}>Policy #:</span> {doc.policy_number}</div>}
-                          {doc.effective_date    && <div><span style={{ color:"#94a3b8" }}>Effective:</span> {fmtDate(doc.effective_date)}</div>}
-                          {doc.expiration_date   && (
-                            <div>
-                              <span style={{ color:"#94a3b8" }}>Expires:</span>{" "}
-                              <strong style={{ color: isExpired?"#dc2626":isExpiring?"#ca8a04":"#15803d" }}>
-                                {fmtDate(doc.expiration_date)} {days !== null ? (days < 0 ? `(${Math.abs(days)}d ago)` : `(${days}d)`) : ""}
-                              </strong>
+                          {coiDateEdit?.id === doc.id ? (
+                            <div style={{ display:"flex", flexDirection:"column", gap:6, margin:"2px 0", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px" }} onClick={e=>e.stopPropagation()}>
+                              <label style={{ fontSize:"0.68rem", fontWeight:700, color:"#64748b" }}>Effective date
+                                <input type="date" value={coiDateEdit.effective} onChange={e=>setCoiDateEdit(s=>s&&({...s, effective:e.target.value}))} style={{ display:"block", marginTop:2, padding:"5px 7px", borderRadius:6, border:"1px solid #cbd5e1", fontSize:"0.78rem" }} />
+                              </label>
+                              <label style={{ fontSize:"0.68rem", fontWeight:700, color:"#64748b" }}>Expiration date
+                                <input type="date" value={coiDateEdit.expiration} onChange={e=>setCoiDateEdit(s=>s&&({...s, expiration:e.target.value}))} style={{ display:"block", marginTop:2, padding:"5px 7px", borderRadius:6, border:"1px solid #cbd5e1", fontSize:"0.78rem" }} />
+                              </label>
+                              <div style={{ display:"flex", gap:6, marginTop:2 }}>
+                                <button onClick={async ()=>{ await updateCOIStatus(doc.id, { effective_date: coiDateEdit.effective || null, expiration_date: coiDateEdit.expiration || null } as any); setCoiDateEdit(null); }} style={{ background:"#16a34a", color:"#fff", border:"none", borderRadius:6, padding:"5px 14px", fontSize:"0.72rem", fontWeight:800, cursor:"pointer" }}>Save</button>
+                                <button onClick={()=>setCoiDateEdit(null)} style={{ background:"#fff", color:"#475569", border:"1px solid #e2e8f0", borderRadius:6, padding:"5px 12px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer" }}>Cancel</button>
+                              </div>
                             </div>
+                          ) : (
+                            <>
+                              <div>
+                                <span style={{ color:"#94a3b8" }}>Effective:</span> {doc.effective_date ? fmtDate(doc.effective_date) : <span style={{ color:"#cbd5e1" }}>—</span>}
+                                <button onClick={()=>setCoiDateEdit({ id:doc.id, effective:doc.effective_date||"", expiration:doc.expiration_date||"" })} style={{ marginLeft:8, background:"#eff6ff", color:"#1e40af", border:"1px solid #bfdbfe", borderRadius:5, padding:"1px 8px", fontSize:"0.64rem", fontWeight:800, cursor:"pointer" }}>✏ Edit dates</button>
+                              </div>
+                              {doc.expiration_date && (
+                                <div>
+                                  <span style={{ color:"#94a3b8" }}>Expires:</span>{" "}
+                                  <strong style={{ color: isExpired?"#dc2626":isExpiring?"#ca8a04":"#15803d" }}>
+                                    {fmtDate(doc.expiration_date)} {days !== null ? (days < 0 ? `(${Math.abs(days)}d ago)` : `(${days}d)`) : ""}
+                                  </strong>
+                                </div>
+                              )}
+                            </>
                           )}
                           {doc.file_name && <div><span style={{ color:"#94a3b8" }}>File:</span> {doc.file_name}</div>}
                           {doc.reviewed_by && <div style={{ color:"#15803d", fontSize:"0.68rem" }}>✓ Reviewed by {doc.reviewed_by}</div>}

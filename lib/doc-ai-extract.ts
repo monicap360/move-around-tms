@@ -81,3 +81,77 @@ Use null (not empty string) for anything you cannot determine. Do NOT guess.`;
     return null;
   }
 }
+
+export type CoiFields = {
+  insurance_provider: string | null; // insurer / agency
+  policy_number: string | null;
+  effective_date: string | null;     // YYYY-MM-DD
+  expiration_date: string | null;    // YYYY-MM-DD
+  named_insured: string | null;      // the insured carrier
+  auto_liability_amount: string | null;
+  general_liability_amount: string | null;
+};
+
+// YYYY-MM-DD or null
+function isoDate(v: any): string | null {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (!s || s.toLowerCase() === "null") return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+/**
+ * Reads a Certificate of Insurance (COI) with Claude vision and pulls the policy
+ * details so staff don't retype them: insurer, policy #, effective/expiration
+ * dates, named insured, and coverage limits. Returns null if no key / unsupported
+ * type / failure. Dates come back as YYYY-MM-DD.
+ */
+export async function extractCoiFields(buffer: Buffer, mimeType: string): Promise<CoiFields | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const isPDF = mimeType === "application/pdf";
+  const isImage = (mimeType || "").startsWith("image/");
+  if (!isPDF && !isImage) return null;
+
+  const base64 = buffer.toString("base64");
+  const contentBlock: any = isPDF
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
+    : { type: "image", source: { type: "base64", media_type: mimeType || "image/jpeg", data: base64 } };
+
+  const prompt = `You are reading an ACORD Certificate of Insurance (COI) for a trucking carrier. Extract exactly these fields:
+- insurance_provider: the insurer or issuing agency name (prefer the insurance carrier / "INSURER" name; else the agency/producer), or null
+- policy_number: the policy number for the Auto Liability line (or the primary policy shown), or null
+- effective_date: the policy EFFECTIVE date (policy start) in YYYY-MM-DD, or null
+- expiration_date: the policy EXPIRATION date (policy end) in YYYY-MM-DD, or null
+- named_insured: the "INSURED" company name (the carrier this COI covers), or null
+- auto_liability_amount: the Auto Liability combined single limit as a number with commas (e.g. "1,000,000"), or null
+- general_liability_amount: the General Liability each-occurrence limit (e.g. "1,000,000"), or null
+
+If multiple coverage lines have different dates, use the Auto Liability line's effective/expiration dates. Respond with ONLY this JSON and nothing else:
+{"insurance_provider":"...","policy_number":"...","effective_date":"YYYY-MM-DD","expiration_date":"YYYY-MM-DD","named_insured":"...","auto_liability_amount":"...","general_liability_amount":"..."}
+Use null (not "") for anything you cannot read. Do NOT guess dates.`;
+
+  try {
+    const resp = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 300,
+      messages: [{ role: "user", content: [contentBlock, { type: "text", text: prompt }] }],
+    } as any);
+    const text = (resp.content.find((c: any) => c.type === "text") as any)?.text ?? "";
+    const m = text.match(/\{[\s\S]*?\}/);
+    if (!m) return null;
+    const j = JSON.parse(m[0]);
+    const clean = (v: any) => (v && String(v).trim() && String(v).toLowerCase() !== "null" ? String(v).trim() : null);
+    return {
+      insurance_provider:        clean(j.insurance_provider),
+      policy_number:             clean(j.policy_number),
+      effective_date:            isoDate(j.effective_date),
+      expiration_date:           isoDate(j.expiration_date),
+      named_insured:             clean(j.named_insured),
+      auto_liability_amount:     clean(j.auto_liability_amount),
+      general_liability_amount:  clean(j.general_liability_amount),
+    };
+  } catch {
+    return null;
+  }
+}
