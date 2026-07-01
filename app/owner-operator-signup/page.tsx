@@ -12,10 +12,9 @@ const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: 
 // [tile label, stored doc_type]. doc_type must match the office's named slots so
 // uploads land automatically (the signed agreement files as "Contract").
 const OO_DOCS: [string, string][] = [
-  // Insurance certificates (COI) — 3 slots
+  // Insurance certificates (COI)
   ["Auto Liability (COI)", "Auto Liability Insurance"],
   ["General Liability (COI)", "General Liability Insurance"],
-  ["Cargo / Other (COI)", "Cargo Insurance"],
   // Driver credentials — front & back (owner-operator who drives)
   ["CDL Front", "CDL Front"],
   ["CDL Back", "CDL Back"],
