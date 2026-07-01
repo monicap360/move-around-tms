@@ -2567,9 +2567,23 @@ export default function OwnerOperatorsPage() {
                       <a href={`mailto:${selected.contact_email}?subject=${encodeURIComponent("W-9 Required — "+selected.company_name)}&body=${encodeURIComponent("Hi "+selected.contact_name+",\n\nWe need a completed W-9 form on file before we can process payment. Please complete and return at your earliest convenience.\n\nThank you,\nRonyx Logistics Operations")}`}
                         style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem", display:"block", textAlign:"center" }}>📄 Request W-9</a>
                     )}
-                    {(!autoIns||!cargoIns) && (selected.contact_email||selected.insurance_agent_email) && (
-                      <a href={`mailto:${selected.insurance_agent_email||selected.contact_email}?subject=${encodeURIComponent("COI Required — "+selected.company_name)}&body=${encodeURIComponent("Please provide an updated Certificate of Insurance (COI) for "+selected.company_name+". Insurance is required to maintain dispatch eligibility.\n\nThank you,\nRonyx Logistics Operations")}`}
-                        style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem", display:"block", textAlign:"center" }}>🛡 Request COI</a>
+                    {(selected.contact_email||selected.insurance_agent_email) && (
+                      <a href={`mailto:${selected.insurance_agent_email||selected.contact_email}?subject=${encodeURIComponent("COI Required — "+selected.company_name)}&body=${encodeURIComponent(
+                        "Please provide an updated Certificate of Insurance (COI) for "+selected.company_name+".\n\nRequirements:\n"+
+                        "• General Liability $1,000,000 and Auto Liability $1,000,000\n"+
+                        "• All certificate holders listed as Additional Insured with a Waiver of Subrogation:\n"+
+                        "   1. Ronyx Logistics LLC — 3741 Graves Ave, Groves, TX 77619\n"+
+                        "   2. Bas Equipment & Trucking LLC — P.O. Box 36, Throckmorton, TX 76483\n"+
+                        "   3. M.A. Mortenson Company — 700 Meadow Lane N, Minneapolis, MN 55422\n"+
+                        "   4. Bondco LLC — PO Box 95, West Monroe, LA 71294\n"+
+                        "• Truck VIN(s) must appear on the Auto Liability certificate\n\nInsurance is required to maintain dispatch eligibility.\n\nThank you,\nRonyx Logistics Operations")}`}
+                        style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem", display:"block", textAlign:"center" }}>🛡 Request COI{(!autoIns||!cargoIns) ? " ⚠" : ""}</a>
+                    )}
+                    {(selected.contact_email||selected.insurance_agent_email) && (
+                      <a href={`mailto:${selected.contact_email||selected.insurance_agent_email}?subject=${encodeURIComponent("Information / documents needed — "+selected.company_name)}&body=${encodeURIComponent(
+                        "Hi "+(selected.contact_name||"")+",\n\nTo keep "+selected.company_name+" active and dispatch-eligible, please send the following:\n\n"+
+                        "• Current Certificate of Insurance (COI)\n• W-9\n• Signed Subhauler Agreement\n• Driver CDL(s) & medical cards\n• Truck registration / annual inspection\n\nPlease reply with anything you have on file, or let us know if you have questions.\n\nThank you,\nRonyx Logistics Operations")}`}
+                        style={{ ...ghostBtn, textDecoration:"none", fontSize:"0.72rem", display:"block", textAlign:"center" }}>📋 Request Info / Docs</a>
                     )}
                     <button onClick={()=>{
                       const isBlocked = selected.dispatch_blocked_override;
