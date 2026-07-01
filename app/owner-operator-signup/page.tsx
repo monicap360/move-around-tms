@@ -12,8 +12,7 @@ const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: 
 // [tile label, stored doc_type]. doc_type must match the office's named slots so
 // uploads land automatically (the signed agreement files as "Contract").
 const OO_DOCS: [string, string][] = [
-  ["Auto Liability (COI)", "Auto Liability Insurance"],
-  ["General Liability (COI)", "General Liability Insurance"],
+  ["Insurance Certificate (COI)", "Insurance Certificate (COI)"],
   ["W-9 / Tax Form", "W-9 / Tax Form"],
   ["Signed Subhauler Agreement", "Contract"],
   ["Operating Authority (MC)", "Operating Authority (MC)"],
@@ -24,14 +23,13 @@ const OO_DOCS: [string, string][] = [
 const PER_DRIVER_DOCS: [string, string][] = [
   ["CDL Front", "CDL Front"],
   ["CDL Back", "CDL Back"],
-  ["Medical Front", "Medical Card"],
-  ["Medical Back", "Medical Card Back"],
+  ["Medical Card", "Medical Card"],
 ];
 type DriverRow = { name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string; files: Record<string, File | null> };
 const BLANK_DRIVER: DriverRow = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_expiration: "", med_card_expiration: "", files: {} };
 
-type TruckRow = { truck_number: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string; plateFile: File | null };
-const BLANK_TRUCK: TruckRow = { truck_number: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "", plateFile: null };
+type TruckRow = { truck_number: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string; plateFile: File | null; inspectionFile: File | null };
+const BLANK_TRUCK: TruckRow = { truck_number: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "", plateFile: null, inspectionFile: null };
 
 // Tap-to-upload tile (photo or PDF).
 function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
@@ -83,6 +81,7 @@ export default function OwnerOperatorSignupPage() {
   const removeTruck = (i: number) => setTrucks(t => t.filter((_, x) => x !== i));
   const setTruck = (i: number, k: keyof TruckRow, v: string) => setTrucks(t => t.map((row, x) => x === i ? { ...row, [k]: v } : row));
   const setTruckPlate = (i: number, f: File | null) => setTrucks(t => t.map((row, x) => x === i ? { ...row, plateFile: f } : row));
+  const setTruckInspection = (i: number, f: File | null) => setTrucks(t => t.map((row, x) => x === i ? { ...row, inspectionFile: f } : row));
 
   function checkPin() {
     if (pin.trim().length < 4) { setPinErr("Enter the access PIN."); return; }
@@ -102,7 +101,7 @@ export default function OwnerOperatorSignupPage() {
       // Upload company documents + each driver's documents to the new record.
       const chosen = OO_DOCS.filter(([, type]) => files[type]);
       const driverUploads = drivers.filter(dr => dr.name.trim()).flatMap(dr => PER_DRIVER_DOCS.filter(([slot]) => dr.files[slot]).map(([slot, type]) => ({ dr, slot, type })));
-      if (d.id && (chosen.length || driverUploads.length || trucks.some(t => t.plateFile))) {
+      if (d.id && (chosen.length || driverUploads.length || trucks.some(t => t.plateFile || t.inspectionFile))) {
         setUploadingDocs(true);
         for (const [, type] of chosen) {
           const fd = new FormData();
@@ -114,13 +113,19 @@ export default function OwnerOperatorSignupPage() {
           fd.append("file", u.dr.files[u.slot]!); fd.append("oo_id", d.id); fd.append("doc_type", `[${u.dr.name.trim()}] ${u.type}`);
           try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
         }
-        // License plate photos, labeled by truck.
+        // Truck documents (license plate photo + annual inspection), labeled by truck.
         for (const t of trucks) {
-          if (!t.plateFile) continue;
           const label = t.truck_number.trim() || t.license_plate.trim() || "Truck";
-          const fd = new FormData();
-          fd.append("file", t.plateFile); fd.append("oo_id", d.id); fd.append("doc_type", `[Truck ${label}] License Plate`);
-          try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+          if (t.plateFile) {
+            const fd = new FormData();
+            fd.append("file", t.plateFile); fd.append("oo_id", d.id); fd.append("doc_type", `[Truck ${label}] License Plate`);
+            try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+          }
+          if (t.inspectionFile) {
+            const fd = new FormData();
+            fd.append("file", t.inspectionFile); fd.append("oo_id", d.id); fd.append("doc_type", `[Truck ${label}] Annual Inspection`);
+            try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+          }
         }
         setUploadingDocs(false);
       }
@@ -193,7 +198,7 @@ export default function OwnerOperatorSignupPage() {
                   Your COIs must list <strong>General Liability $1,000,000</strong> and <strong>Auto Liability $1,000,000</strong>. Every certificate holder below must be listed as <strong>Additional Insured with a Waiver of Subrogation</strong>, and your <strong>truck VIN(s) must appear on the Auto Liability certificate</strong>.
                 </div>
                 <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", margin: "10px 0", fontSize: "0.8rem" }}>
-                  <div style={{ fontWeight: 800, color: "#334155", marginBottom: 6 }}>Certificate Holders</div>
+                  <div style={{ fontWeight: 800, color: "#334155", marginBottom: 6 }}>Certificate Holders — list ALL {CERT_HOLDERS.length} on every COI</div>
                   {CERT_HOLDERS.map(([name, addr], i) => (
                     <div key={name} style={{ padding: "4px 0", borderTop: i ? "1px solid #f1f5f9" : "none" }}>
                       <span style={{ fontWeight: 700, color: "#0f172a" }}>{i + 1}. {name}</span>
@@ -217,7 +222,7 @@ export default function OwnerOperatorSignupPage() {
 
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, cursor: "pointer" }}>
                   <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} style={{ marginTop: 3, width: 17, height: 17, flexShrink: 0 }} />
-                  <span style={{ fontSize: "0.82rem", color: "#334155", lineHeight: 1.45 }}>I agree to list all four certificate holders as <strong>Additional Insured with a Waiver of Subrogation</strong>, carry GL and AL of at least <strong>$1,000,000</strong> each, include my <strong>VIN(s) on the AL certificate</strong>, and send current COIs to {COI_EMAIL}.</span>
+                  <span style={{ fontSize: "0.82rem", color: "#334155", lineHeight: 1.45 }}>I agree to list all {CERT_HOLDERS.length} certificate holders shown above as <strong>Additional Insured with a Waiver of Subrogation</strong>, carry GL and AL of at least <strong>$1,000,000</strong> each, include my <strong>VIN(s) on the AL certificate</strong>, and send current COIs to {COI_EMAIL}.</span>
                 </label>
               </div>
 
@@ -278,6 +283,7 @@ export default function OwnerOperatorSignupPage() {
                     </div>
                     <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
                       <FileSlot label="License Plate photo" file={t.plateFile} onPick={f => setTruckPlate(i, f)} />
+                      <FileSlot label="Annual Inspection" file={t.inspectionFile} onPick={f => setTruckInspection(i, f)} />
                     </div>
                   </div>
                 ))}
