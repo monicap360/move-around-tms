@@ -20,6 +20,7 @@ const BLANK_ADD = { oo_id: "", name: "", phone: "", truck_number: "", cdl_number
 export default function FleetCdlMedical() {
   const [rows, setRows] = useState<Driver[]>([]);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [trucksByOo, setTrucksByOo] = useState<Record<string, string[]>>({});
   const [edits, setEdits] = useState<Record<string, Partial<Driver>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export default function FleetCdlMedical() {
 
   function load() {
     setLoading(true);
-    fetch("/api/ronyx/drivers/cdl-medical").then(r => r.json()).then(d => { setRows(d.drivers || []); setCompanies(d.companies || []); }).catch(() => {}).finally(() => setLoading(false));
+    fetch("/api/ronyx/drivers/cdl-medical").then(r => r.json()).then(d => { setRows(d.drivers || []); setCompanies(d.companies || []); setTrucksByOo(d.trucks_by_oo || {}); }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, []);
 
@@ -155,7 +156,12 @@ export default function FleetCdlMedical() {
             {([["Driver Name *", "name"], ["Truck #", "truck_number"], ["Phone", "phone"], ["CDL #", "cdl_number"], ["CDL State", "cdl_state"], ["Med Card #", "med_card_number"]] as const).map(([label, f]) => (
               <div key={f}>
                 <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>{label}</label>
-                <input value={(addForm as any)[f]} onChange={e => setAddForm(s => ({ ...s, [f]: f === "cdl_state" ? e.target.value.toUpperCase().slice(0, 2) : e.target.value }))} style={{ ...inp, marginTop: 3 }} />
+                <input list={f === "truck_number" ? "add-trucks" : undefined} value={(addForm as any)[f]} onChange={e => setAddForm(s => ({ ...s, [f]: f === "cdl_state" ? e.target.value.toUpperCase().slice(0, 2) : e.target.value }))} style={{ ...inp, marginTop: 3 }} />
+                {f === "truck_number" && (
+                  <datalist id="add-trucks">
+                    {(trucksByOo[addForm.oo_id] || []).map(t => <option key={t} value={t} />)}
+                  </datalist>
+                )}
               </div>
             ))}
             <div>
@@ -251,7 +257,12 @@ export default function FleetCdlMedical() {
                         <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}</div>
                         <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                       </td>
-                      <td style={{ padding: "5px 8px", width: 80 }}><input value={val(d, "truck_number")} onChange={e => setField(d.id, "truck_number", e.target.value)} placeholder="Truck #" style={inp} /></td>
+                      <td style={{ padding: "5px 8px", width: 96 }}>
+                        <input list={`trucks-${d.oo_id}`} value={val(d, "truck_number")} onChange={e => setField(d.id, "truck_number", e.target.value)} placeholder="Truck #" style={inp} />
+                        <datalist id={`trucks-${d.oo_id}`}>
+                          {(trucksByOo[d.oo_id] || []).map(t => <option key={t} value={t} />)}
+                        </datalist>
+                      </td>
                       <td style={{ padding: "5px 8px", minWidth: 120 }}><input autoFocus value={val(d, "cdl_number")} onChange={e => setField(d.id, "cdl_number", e.target.value)} style={inp} /></td>
                       <td style={{ padding: "5px 8px", width: 56 }}><input value={val(d, "cdl_state")} onChange={e => setField(d.id, "cdl_state", e.target.value)} maxLength={2} placeholder="TX" style={{ ...inp, textTransform: "uppercase" }} /></td>
                       <td style={{ padding: "5px 8px", width: 78 }}>

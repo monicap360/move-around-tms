@@ -27,12 +27,45 @@ export async function GET() {
     .in("oo_id", ooIds).neq("status", "inactive").limit(5000);
   if (error) return NextResponse.json({ drivers: [], error: error.message });
 
+  // Almost no driver row carries its own truck_number — the trucks live in
+  // ronyx_oo_trucks (assigned by name) and ronyx_driver_truck_assignments.
+  // Derive each driver's truck(s) so the Truck # column is actually populated.
+  const [{ data: trucks }, { data: assigns }] = await Promise.all([
+    sb.from("ronyx_oo_trucks").select("id, oo_id, truck_number, assigned_driver_name, status").in("oo_id", ooIds).limit(10000),
+    sb.from("ronyx_driver_truck_assignments").select("driver_id, truck_id, is_active").in("oo_id", ooIds).limit(10000),
+  ]);
+  const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const activeTruck = (t: any) => !["inactive", "deleted", "sold", "retired", "out_of_service"].includes((t.status || "").toLowerCase());
+  const truckNumById: Record<string, string> = {};
+  const trucksByName: Record<string, string[]> = {};   // `${oo_id}|${normName}` → [truck_number]
+  for (const t of trucks || []) {
+    if (!t.truck_number) continue;
+    truckNumById[t.id] = t.truck_number;
+    if (activeTruck(t) && t.assigned_driver_name) {
+      const k = `${t.oo_id}|${norm(t.assigned_driver_name)}`;
+      (trucksByName[k] ||= []).push(t.truck_number);
+    }
+  }
+  const trucksByDriverId: Record<string, string[]> = {};
+  for (const a of assigns || []) {
+    if (a.is_active === false) continue;
+    const num = truckNumById[a.truck_id];
+    if (num) (trucksByDriverId[a.driver_id] ||= []).push(num);
+  }
+  const uniqJoin = (arr?: string[]) => arr && arr.length ? [...new Set(arr)].join(", ") : "";
+
   const drivers = (data || []).map((d: any) => ({
     id: d.id, oo_id: d.oo_id, company: byId[d.oo_id] || "—", name: d.name || "",
     phone: d.phone || "", cdl_number: d.cdl_number || "", cdl_state: d.cdl_state || "",
     cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration || "",
     med_card_expiration: d.med_card_expiration || "", med_card_number: d.med_card_number || "",
-    truck_number: d.truck_number || "", imported: /\[IMPORTED/i.test(d.notes || ""), updated_at: d.updated_at || "",
+    // Own field wins (it's manually editable); otherwise fall back to the
+    // driver's active truck assignments, then trucks named to this driver.
+    truck_number: d.truck_number
+      || uniqJoin(trucksByDriverId[d.id])
+      || uniqJoin(trucksByName[`${d.oo_id}|${norm(d.name)}`])
+      || "",
+    imported: /\[IMPORTED/i.test(d.notes || ""), updated_at: d.updated_at || "",
   }));
   // Sort: soonest CDL/med expiration first (blanks last) so the at-risk drivers float up.
   drivers.sort((a, b) => {
@@ -43,7 +76,18 @@ export async function GET() {
   const companies = (cos as { id: string; company_name: string }[])
     .map(c => ({ id: c.id, name: c.company_name }))
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  return NextResponse.json({ drivers, companies });
+
+  // Each company's real truck numbers, so the sheet can offer them as a picker
+  // when staff assign a truck to a driver.
+  const trucksByOo: Record<string, string[]> = {};
+  for (const t of trucks || []) {
+    if (!t.truck_number || !activeTruck(t)) continue;
+    (trucksByOo[t.oo_id] ||= []);
+    if (!trucksByOo[t.oo_id].includes(t.truck_number)) trucksByOo[t.oo_id].push(t.truck_number);
+  }
+  for (const k of Object.keys(trucksByOo)) trucksByOo[k].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  return NextResponse.json({ drivers, companies, trucks_by_oo: trucksByOo });
 }
 
 // POST — add a new driver to an owner-operator company.
