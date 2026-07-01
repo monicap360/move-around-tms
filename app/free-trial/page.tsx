@@ -29,16 +29,16 @@ export default function FreeTrial() {
   return (
     <div style={{ minHeight: "100vh", background: "radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0b1220 55%, #070b14 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "Inter, system-ui, sans-serif" }}>
       <div style={{ width: "100%", maxWidth: 560, background: "rgba(15,23,42,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 20, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", padding: "34px 34px 30px", backdropFilter: "blur(6px)" }}>
-        <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.18em", color: "#c8a24a", textTransform: "uppercase" }}>MoveAround TMS</div>
+        <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.18em", color: "#2563eb", textTransform: "uppercase" }}>MoveAround TMS</div>
         {done ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 46 }}>✅</div>
             <h1 style={{ color: "#f8fafc", fontSize: "1.5rem", margin: "8px 0" }}>You're in — trial started</h1>
             <p style={{ color: "#94a3b8", fontSize: "0.95rem", lineHeight: 1.6 }}>
-              Thanks, <strong style={{ color: "#e2e8f0" }}>{f.name}</strong>. We've started the <strong style={{ color: "#c8a24a" }}>7-day free trial</strong> for <strong style={{ color: "#e2e8f0" }}>{f.company}</strong>{ends ? <> — free through <strong style={{ color: "#e2e8f0" }}>{new Date(ends + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })}</strong></> : null}.
+              Thanks, <strong style={{ color: "#e2e8f0" }}>{f.name}</strong>. We've started the <strong style={{ color: "#2563eb" }}>7-day free trial</strong> for <strong style={{ color: "#e2e8f0" }}>{f.company}</strong>{ends ? <> — free through <strong style={{ color: "#e2e8f0" }}>{new Date(ends + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })}</strong></> : null}.
             </p>
             <p style={{ color: "#94a3b8", fontSize: "0.9rem", lineHeight: 1.6 }}>Check your inbox — we're setting up your private workspace and will send your login link to fill in your fleet details and customize it.</p>
-            <a href="/" style={{ display: "inline-block", marginTop: 16, color: "#c8a24a", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem" }}>← Back to movearoundtms.com</a>
+            <a href="/" style={{ display: "inline-block", marginTop: 16, color: "#2563eb", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem" }}>← Back to movearoundtms.com</a>
           </div>
         ) : (
           <>
@@ -66,7 +66,7 @@ export default function FreeTrial() {
               </div>
             </div>
 
-            <button onClick={submit} disabled={busy} style={{ width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 11, border: "none", background: busy ? "#64748b" : "linear-gradient(135deg,#c8a24a,#e6c766)", color: "#0b1220", fontWeight: 900, fontSize: "1rem", cursor: busy ? "default" : "pointer", letterSpacing: "0.02em" }}>
+            <button onClick={submit} disabled={busy} style={{ width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 11, border: "none", background: busy ? "#64748b" : "linear-gradient(135deg,#2563eb,#1d4ed8)", color: "#ffffff", fontWeight: 900, fontSize: "1rem", cursor: busy ? "default" : "pointer", letterSpacing: "0.02em" }}>
               {busy ? "Starting your trial…" : "Start Free Trial →"}
             </button>
             <p style={{ color: "#64748b", fontSize: "0.72rem", textAlign: "center", marginTop: 12 }}>By starting a trial you agree to be contacted about your setup. No card required.</p>
