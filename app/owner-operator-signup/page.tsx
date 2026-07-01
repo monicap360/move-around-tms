@@ -4,7 +4,7 @@
 // fills out their company info, and submits — it lands in the office OO list as "pending"
 // for staff review. No staff login required.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid #cbd5e1", fontSize: "0.95rem", boxSizing: "border-box", outline: "none" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: 5 };
@@ -84,6 +84,38 @@ export default function OwnerOperatorSignupPage() {
   const setTruckPlate = (i: number, f: File | null) => setTrucks(t => t.map((row, x) => x === i ? { ...row, plateFile: f } : row));
   const setTruckInspection = (i: number, f: File | null) => setTrucks(t => t.map((row, x) => x === i ? { ...row, inspectionFile: f } : row));
 
+  // ── Save & resume: keep the carrier's progress on this device so they can come
+  // back to it. Files can't be saved in the browser, so those are re-attached. ──
+  const DRAFT_KEY = "oo_signup_draft";
+  const [hasDraft, setHasDraft] = useState(false);
+  const [savedMsg, setSavedMsg] = useState("");
+  useEffect(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (d && (d.form?.company_name || (d.drivers || []).length || (d.trucks || []).length)) setHasDraft(true);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!unlocked || done) return;
+    try {
+      const stripD = (arr: DriverRow[]) => arr.map(({ files, ...r }) => r);
+      const stripT = (arr: TruckRow[]) => arr.map(({ plateFile, inspectionFile, ...r }) => r);
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, ack, drivers: stripD(drivers), trucks: stripT(trucks), savedAt: Date.now() }));
+    } catch {}
+  }, [form, ack, drivers, trucks, unlocked, done]);
+  const restoreDraft = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+      if (d.form) setForm((s) => ({ ...s, ...d.form }));
+      if (typeof d.ack === "boolean") setAck(d.ack);
+      if (Array.isArray(d.drivers)) setDrivers(d.drivers.map((x: any) => ({ ...BLANK_DRIVER, ...x, files: {} })));
+      if (Array.isArray(d.trucks)) setTrucks(d.trucks.map((x: any) => ({ ...BLANK_TRUCK, ...x, plateFile: null, inspectionFile: null })));
+    } catch {}
+    setHasDraft(false);
+  };
+  const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} setHasDraft(false); };
+  const saveForLater = () => { setSavedMsg("✓ Saved on this device — come back anytime to finish."); setTimeout(() => setSavedMsg(""), 4000); };
+
   function checkPin() {
     if (pin.trim().length < 4) { setPinErr("Enter the access PIN."); return; }
     setUnlocked(true); setPinErr(""); // real validation happens server-side on submit
@@ -132,6 +164,7 @@ export default function OwnerOperatorSignupPage() {
       }
       setAcctNum(d.in_house_account_number || "");
       setNewOoId(d.id || "");
+      clearDraft();
       setDone(true);
     } catch { setErr("Network error — please try again."); }
     finally { setSubmitting(false); }
@@ -179,6 +212,14 @@ export default function OwnerOperatorSignupPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {err && <div style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 13px", fontSize: "0.85rem", fontWeight: 700 }}>⚠ {err}</div>}
+              {hasDraft && (
+                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "11px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e40af" }}>💾 You have a saved draft on this device.</span>
+                  <button onClick={restoreDraft} style={{ marginLeft: "auto", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "6px 13px", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer" }}>Resume</button>
+                  <button onClick={clearDraft} style={{ background: "transparent", color: "#64748b", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", textDecoration: "underline" }}>Start fresh</button>
+                </div>
+              )}
+              {savedMsg && <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", borderRadius: 10, padding: "10px 13px", fontSize: "0.84rem", fontWeight: 700 }}>{savedMsg}</div>}
               <div><label style={lbl}>Company / Owner-Operator Name *</label><input value={form.company_name} onChange={e => set("company_name", e.target.value)} style={inp} placeholder="e.g. Smith Trucking LLC" autoFocus /></div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div><label style={lbl}>Contact Name</label><input value={form.contact_name} onChange={e => set("contact_name", e.target.value)} style={inp} /></div>
@@ -309,10 +350,13 @@ export default function OwnerOperatorSignupPage() {
                 </div>
               </div>
 
-              <button onClick={submit} disabled={submitting || !form.company_name.trim() || !ack} style={{ marginTop: 6, padding: "13px 0", borderRadius: 10, border: "none", background: submitting || !form.company_name.trim() || !ack ? "#94a3b8" : "#16a34a", color: "#fff", fontWeight: 800, fontSize: "0.95rem", cursor: submitting || !form.company_name.trim() || !ack ? "default" : "pointer" }}>
-                {uploadingDocs ? "Uploading documents…" : submitting ? "Submitting…" : "Submit Registration"}
-              </button>
-              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>Documents you attach are sent straight to the Ronyx office. You can still email COIs to {COI_EMAIL}.</div>
+              <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+                <button onClick={submit} disabled={submitting || !form.company_name.trim() || !ack} style={{ flex: 2, minWidth: 200, padding: "13px 0", borderRadius: 10, border: "none", background: submitting || !form.company_name.trim() || !ack ? "#94a3b8" : "#16a34a", color: "#fff", fontWeight: 800, fontSize: "0.95rem", cursor: submitting || !form.company_name.trim() || !ack ? "default" : "pointer" }}>
+                  {uploadingDocs ? "Uploading documents…" : submitting ? "Submitting…" : "Submit Registration"}
+                </button>
+                <button onClick={saveForLater} type="button" style={{ flex: 1, minWidth: 150, padding: "13px 0", borderRadius: 10, border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer" }}>💾 Save &amp; finish later</button>
+              </div>
+              <div style={{ fontSize: "0.74rem", color: "#94a3b8", textAlign: "center" }}>Your info auto-saves on this device — you can close this and come back to finish. Documents are sent straight to the Ronyx office.</div>
             </div>
           )}
         </div>
