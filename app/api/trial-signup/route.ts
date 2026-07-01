@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       fleet_size: String(b.fleet_size || "").trim() || null,
       role: String(b.role || "").trim() || null,
       referral: String(b.referral || "").trim() || null,
+      founding: !!b.founding,
       status: "new", trial_ends_at: trialEndsStr,
     });
   } catch { /* table not migrated yet — email still goes out */ }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const inp: React.CSSProperties = { width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #33415580", fontSize: "0.95rem", boxSizing: "border-box", outline: "none", background: "#0f172a", color: "#f1f5f9" };
 const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" };
@@ -11,6 +11,8 @@ export default function FreeTrial() {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
   const [ends, setEnds] = useState("");
+  const [founding, setFounding] = useState(false);
+  useEffect(() => { try { if (new URLSearchParams(window.location.search).get("founding") === "1") setFounding(true); } catch {} }, []);
   const set = (k: string, v: string) => setF(s => ({ ...s, [k]: v }));
 
   async function submit() {
@@ -18,7 +20,7 @@ export default function FreeTrial() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) { setErr("Enter a valid email."); return; }
     setBusy(true); setErr("");
     try {
-      const res = await fetch("/api/trial-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
+      const res = await fetch("/api/trial-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, founding }) });
       const d = await res.json();
       if (res.ok && d.ok) { setEnds(d.trial_ends_at); setDone(true); }
       else setErr(d.error || "Something went wrong — try again.");
@@ -42,8 +44,9 @@ export default function FreeTrial() {
           </div>
         ) : (
           <>
+            {founding && <div style={{ display: "inline-block", background: "#fbbf24", color: "#0b1220", fontWeight: 900, fontSize: "0.68rem", letterSpacing: "0.06em", padding: "3px 10px", borderRadius: 999, marginTop: 8 }}>🚀 FOUNDING 100 — 50% OFF, LOCKED 12 MONTHS</div>}
             <h1 style={{ color: "#f8fafc", fontSize: "1.7rem", margin: "8px 0 4px", fontWeight: 800 }}>Start your 7-day free trial</h1>
-            <p style={{ color: "#94a3b8", fontSize: "0.95rem", marginBottom: 20 }}>No credit card. Set up your fleet, customize it, and run it free for a week.</p>
+            <p style={{ color: "#94a3b8", fontSize: "0.95rem", marginBottom: 20 }}>{founding ? "You're claiming a Founding-100 spot: 50% off locked for 12 months, full access, and a hand in shaping the product. " : ""}No credit card. Set up your fleet, customize it, and run it free for a week.</p>
 
             {err && <div style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 10, padding: "10px 13px", fontSize: "0.85rem", fontWeight: 600, marginBottom: 14 }}>⚠ {err}</div>}
 

@@ -375,6 +375,11 @@ const competitiveRows = [
 export default function PricingPage() {
   const [plan, setPlan] = useState<"OwnerOp" | "Basic" | "Pro" | "Enterprise">("OwnerOp");
   const [saving, setSaving] = useState(false);
+  const [founding, setFounding] = useState<{ remaining: number; total: number } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/founding-count").then(r => r.json()).then(d => setFounding({ remaining: d.remaining ?? 100, total: d.total ?? 100 })).catch(() => setFounding({ remaining: 100, total: 100 }));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -419,13 +424,31 @@ export default function PricingPage() {
         paddingBottom: "2rem"
       }}>
         <div style={{ marginBottom: "3rem" }}>
-          <h1 style={{ fontSize: "2.5rem", fontWeight: 700, color: "#F7931E", marginBottom: "0.5rem" }}>
+          <h1 style={{ fontSize: "2.5rem", fontWeight: 700, color: "#60a5fa", marginBottom: "0.5rem" }}>
             MoveAround TMS Pricing
           </h1>
           <p style={{ fontSize: "1.1rem", color: "rgba(255,255,255,0.8)" }}>
             Built for dirt, sand, and aggregate haulers.
           </p>
         </div>
+
+        {/* Founding 100 — 50% off */}
+        {founding && founding.remaining > 0 && (
+          <a href="/free-trial?founding=1" style={{ textDecoration: "none", display: "block", marginBottom: "2.5rem", background: "linear-gradient(135deg,#1d4ed8,#1e3a8a)", border: "1px solid rgba(96,165,250,0.5)", borderRadius: 16, padding: "20px 26px", boxShadow: "0 12px 40px rgba(37,99,235,0.35)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div style={{ display: "inline-block", background: "#fbbf24", color: "#0b1220", fontWeight: 900, fontSize: "0.7rem", letterSpacing: "0.08em", padding: "3px 10px", borderRadius: 999, marginBottom: 8 }}>🚀 FOUNDING 100 — LIMITED</div>
+                <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>50% off — locked for 12 months</div>
+                <div style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.95rem", marginTop: 4 }}>Full access to every module. Founding members help shape the product.</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "2.4rem", fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>{founding.remaining}</div>
+                <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>of {founding.total} spots left</div>
+              </div>
+              <span style={{ background: "#fff", color: "#1d4ed8", fontWeight: 900, padding: "12px 22px", borderRadius: 10, fontSize: "0.95rem", whiteSpace: "nowrap" }}>Claim your spot →</span>
+            </div>
+          </a>
+        )}
 
         <div style={{
           display: "grid",
