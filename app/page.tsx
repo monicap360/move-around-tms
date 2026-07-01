@@ -18,6 +18,10 @@ export default function LandingPage() {
 function LandingPageContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState("all");
+  const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
+  useEffect(() => { fetch("/api/founding-count").then(r => r.json()).then(d => setFoundingLeft(typeof d.remaining === "number" ? d.remaining : null)).catch(() => {}); }, []);
+  const [showStickyCta, setShowStickyCta] = useState(false);
+  useEffect(() => { const onScroll = () => setShowStickyCta(window.scrollY > 720); window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll); }, []);
   const { locale, setLocale } = useI18n();
   const language = locale;
   const router = useRouter();
@@ -2532,8 +2536,8 @@ function LandingPageContent() {
             <Link href="/faq" prefetch={false} className="nav-link" onClick={() => setMenuOpen(false)}>
               FAQ
             </Link>
-            <a href="#demo" className="nav-link nav-cta" onClick={() => setMenuOpen(false)}>
-              {t("navDemo")}
+            <a href="/free-trial?founding=1" className="nav-link nav-cta" onClick={() => setMenuOpen(false)}>
+              Start Free Trial
             </a>
           </div>
           <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
@@ -2580,14 +2584,20 @@ function LandingPageContent() {
               <strong>{t("heroBody3")}</strong>
             </p>
 
+            {foundingLeft !== null && foundingLeft > 0 && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(37,99,235,0.12)", border: "1px solid rgba(96,165,250,0.4)", borderRadius: 999, padding: "6px 14px", marginBottom: 14 }}>
+                <span style={{ background: "#22d3ee", color: "#04121f", fontWeight: 900, fontSize: "0.66rem", letterSpacing: "0.05em", padding: "2px 8px", borderRadius: 999 }}>FOUNDING 100</span>
+                <span style={{ color: "#e2e8f0", fontSize: "0.86rem", fontWeight: 700 }}>50% off, locked 12 months — only <span style={{ color: "#22d3ee" }}>{foundingLeft}</span> spots left</span>
+              </div>
+            )}
             <div className="hero-cta">
-              <a href="#roi-calculator" className="btn btn-primary">
+              <a href="/free-trial?founding=1" className="btn btn-primary">
+                <i className="fas fa-bolt"></i>
+                Start Free Trial — No Card
+              </a>
+              <a href="#roi-calculator" className="btn btn-secondary">
                 <i className="fas fa-chart-line"></i>
                 {t("heroCtaPrimary")}
-              </a>
-              <a href="#pit-to-pay" className="btn btn-secondary">
-                <i className="fas fa-industry"></i>
-                {t("heroCtaSecondary")}
               </a>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 18 }}>
@@ -2597,7 +2607,7 @@ function LandingPageContent() {
                   style={{
                     padding: "6px 12px",
                     borderRadius: 999,
-                    border: "1px solid rgba(255,215,0,0.3)",
+                    border: "1px solid rgba(96,165,250,0.35)",
                     color: "rgba(255,255,255,0.8)",
                     fontSize: "0.75rem",
                   }}
@@ -7013,6 +7023,14 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           </div>
         </div>
       </footer>
+
+      {/* Sticky conversion bar — appears after the hero */}
+      {showStickyCta && (
+        <a href="/free-trial?founding=1" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 900, background: "linear-gradient(90deg,#1d4ed8,#22d3ee)", color: "#04121f", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, padding: "11px 16px", fontWeight: 900, boxShadow: "0 -8px 30px rgba(2,6,23,0.5)", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "0.92rem" }}>🚀 Founding 100 — 50% off, locked 12 months{foundingLeft !== null && foundingLeft > 0 ? ` · ${foundingLeft} spots left` : ""}</span>
+          <span style={{ background: "#04121f", color: "#fff", padding: "8px 20px", borderRadius: 9, fontSize: "0.9rem", whiteSpace: "nowrap" }}>Start Free Trial — No Card →</span>
+        </a>
+      )}
     </div>
   );
 }
