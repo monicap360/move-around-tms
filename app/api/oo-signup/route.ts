@@ -82,6 +82,57 @@ export async function POST(req: Request) {
   const { data, error } = await trySave(insert);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Create any drivers the carrier listed on the sign-up (each with CDL/medical).
+  const createdDrivers: { id: string; name: string }[] = [];
+  async function insertDriverRow(row: Record<string, unknown>): Promise<{ id: string } | null> {
+    const res = await supabaseAdmin.from("ronyx_oo_drivers").insert(row).select("id").single();
+    if (res.error) {
+      const m = res.error.message?.match(/Could not find the '(.+?)' column/) || res.error.message?.match(/column "(.+?)" of relation/);
+      if (m && m[1] in row && m[1] !== "name" && m[1] !== "oo_id") { const r = { ...row }; delete r[m[1]]; return insertDriverRow(r); }
+      return null;
+    }
+    return res.data as { id: string };
+  }
+  if (Array.isArray(body.drivers)) {
+    const seen = new Set<string>();
+    for (const dr of body.drivers) {
+      const dn = String(dr?.name || "").trim(); if (!dn) continue;
+      const key = dn.toLowerCase(); if (seen.has(key)) continue; seen.add(key);
+      const ins = await insertDriverRow({
+        oo_id: data.id, name: dn, phone: dr.phone?.trim() || null,
+        cdl_number: dr.cdl_number?.trim() || null, cdl_state: dr.cdl_state?.trim() || "TX",
+        cdl_expiration: dr.cdl_expiration || null, med_card_expiration: dr.med_card_expiration || null,
+        status: "active", notes: "Added at owner-operator signup.",
+      });
+      if (ins?.id) createdDrivers.push({ id: ins.id, name: dn });
+    }
+  }
+
+  // Create any trucks the carrier listed.
+  let createdTrucks = 0;
+  async function insertTruckRow(row: Record<string, unknown>): Promise<boolean> {
+    const res = await supabaseAdmin.from("ronyx_oo_trucks").insert(row);
+    if (res.error) {
+      const m = res.error.message?.match(/Could not find the '(.+?)' column/) || res.error.message?.match(/column "(.+?)" of relation/);
+      if (m && m[1] in row && m[1] !== "oo_id") { const r = { ...row }; delete r[m[1]]; return insertTruckRow(r); }
+      return false;
+    }
+    return true;
+  }
+  if (Array.isArray(body.trucks)) {
+    for (const tr of body.trucks) {
+      const tn = String(tr?.truck_number || "").trim();
+      const vin = String(tr?.vin || "").trim();
+      if (!tn && !vin) continue;
+      const ok = await insertTruckRow({
+        oo_id: data.id, truck_number: tn || null, make: tr.make?.trim() || null, model: tr.model?.trim() || null,
+        year: tr.year?.trim() || null, vin: vin || null, license_plate: tr.license_plate?.trim() || null,
+        driver_name: tr.driver_name?.trim() || null, status: "active",
+      });
+      if (ok) createdTrucks++;
+    }
+  }
+
   // Notify the office (fire-and-forget — never blocks the signup).
   sendEmail({
     to: SIGNUP_NOTIFY,
@@ -90,5 +141,5 @@ export async function POST(req: Request) {
     html: `<div style="font-family:Inter,system-ui,sans-serif;color:#0f172a"><p><strong>New Owner-Operator sign-up</strong> — pending review.</p><p><strong>${name}</strong> · Account # <strong>${inHouseAcct}</strong></p><p>Contact: ${body.contact_name || "—"} · ${body.contact_phone || "—"} · ${body.contact_email || "—"}<br/>MC: ${body.mc_number || "—"} · DOT: ${body.dot_number || "—"}<br/>Insurance agent: ${body.insurance_agent_name || "—"} · ${body.insurance_agent_email || "—"}</p><p>Review &amp; activate in <strong>Owner Operators</strong>.</p></div>`,
   }).then(() => {}, () => {});
 
-  return NextResponse.json({ ok: true, id: data.id, company_name: name, in_house_account_number: inHouseAcct });
+  return NextResponse.json({ ok: true, id: data.id, company_name: name, in_house_account_number: inHouseAcct, drivers: createdDrivers, trucks: createdTrucks });
 }

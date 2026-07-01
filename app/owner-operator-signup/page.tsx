@@ -12,20 +12,26 @@ const lbl: React.CSSProperties = { fontSize: "0.78rem", fontWeight: 700, color: 
 // [tile label, stored doc_type]. doc_type must match the office's named slots so
 // uploads land automatically (the signed agreement files as "Contract").
 const OO_DOCS: [string, string][] = [
-  // Insurance certificates (COI)
   ["Auto Liability (COI)", "Auto Liability Insurance"],
   ["General Liability (COI)", "General Liability Insurance"],
-  // Driver credentials — front & back (owner-operator who drives)
-  ["CDL Front", "CDL Front"],
-  ["CDL Back", "CDL Back"],
-  ["Medical Card Front", "Medical Card"],
-  ["Medical Card Back", "Medical Card Back"],
-  // Business documents
   ["W-9 / Tax Form", "W-9 / Tax Form"],
   ["Signed Subhauler Agreement", "Contract"],
   ["Operating Authority (MC)", "Operating Authority (MC)"],
   ["Voided Check / Banking", "Voided Check / Banking"],
 ];
+// Per-driver document tiles. Medical FRONT keeps type "Medical Card" so it shows
+// in the office's existing medical tile. Stored as "[Driver Name] <type>".
+const PER_DRIVER_DOCS: [string, string][] = [
+  ["CDL Front", "CDL Front"],
+  ["CDL Back", "CDL Back"],
+  ["Medical Front", "Medical Card"],
+  ["Medical Back", "Medical Card Back"],
+];
+type DriverRow = { name: string; phone: string; cdl_number: string; cdl_state: string; cdl_expiration: string; med_card_expiration: string; files: Record<string, File | null> };
+const BLANK_DRIVER: DriverRow = { name: "", phone: "", cdl_number: "", cdl_state: "TX", cdl_expiration: "", med_card_expiration: "", files: {} };
+
+type TruckRow = { truck_number: string; make: string; model: string; year: string; vin: string; license_plate: string; driver_name: string };
+const BLANK_TRUCK: TruckRow = { truck_number: "", make: "", model: "", year: "", vin: "", license_plate: "", driver_name: "" };
 
 // Tap-to-upload tile (photo or PDF).
 function FileSlot({ label, file, onPick }: { label: string; file: File | null | undefined; onPick: (f: File | null) => void }) {
@@ -66,7 +72,16 @@ export default function OwnerOperatorSignupPage() {
   const [newOoId, setNewOoId] = useState("");
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [uploadingDocs, setUploadingDocs] = useState(false);
+  const [drivers, setDrivers] = useState<DriverRow[]>([]);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const addDriver = () => setDrivers(d => [...d, { ...BLANK_DRIVER, files: {} }]);
+  const removeDriver = (i: number) => setDrivers(d => d.filter((_, x) => x !== i));
+  const setDriver = (i: number, k: keyof DriverRow, v: string) => setDrivers(d => d.map((row, x) => x === i ? { ...row, [k]: k === "cdl_state" ? v.toUpperCase().slice(0, 2) : v } : row));
+  const setDriverFile = (i: number, slot: string, f: File | null) => setDrivers(d => d.map((row, x) => x === i ? { ...row, files: { ...row.files, [slot]: f } } : row));
+  const [trucks, setTrucks] = useState<TruckRow[]>([]);
+  const addTruck = () => setTrucks(t => [...t, { ...BLANK_TRUCK }]);
+  const removeTruck = (i: number) => setTrucks(t => t.filter((_, x) => x !== i));
+  const setTruck = (i: number, k: keyof TruckRow, v: string) => setTrucks(t => t.map((row, x) => x === i ? { ...row, [k]: v } : row));
 
   function checkPin() {
     if (pin.trim().length < 4) { setPinErr("Enter the access PIN."); return; }
@@ -78,18 +93,24 @@ export default function OwnerOperatorSignupPage() {
     if (!ack) { setErr("Please acknowledge the insurance requirements to continue."); return; }
     setSubmitting(true); setErr("");
     try {
-      const res = await fetch("/api/oo-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin }) });
+      const driverPayload = drivers.filter(dr => dr.name.trim()).map(dr => ({ name: dr.name.trim(), phone: dr.phone, cdl_number: dr.cdl_number, cdl_state: dr.cdl_state, cdl_expiration: dr.cdl_expiration, med_card_expiration: dr.med_card_expiration }));
+      const truckPayload = trucks.filter(t => t.truck_number.trim() || t.vin.trim()).map(t => ({ truck_number: t.truck_number.trim(), make: t.make, model: t.model, year: t.year, vin: t.vin, license_plate: t.license_plate, driver_name: t.driver_name }));
+      const res = await fetch("/api/oo-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, pin, drivers: driverPayload, trucks: truckPayload }) });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Could not submit. Please try again."); setSubmitting(false); return; }
-      // Upload any attached documents to the new owner-operator record.
+      // Upload company documents + each driver's documents to the new record.
       const chosen = OO_DOCS.filter(([, type]) => files[type]);
-      if (d.id && chosen.length) {
+      const driverUploads = drivers.filter(dr => dr.name.trim()).flatMap(dr => PER_DRIVER_DOCS.filter(([slot]) => dr.files[slot]).map(([slot, type]) => ({ dr, slot, type })));
+      if (d.id && (chosen.length || driverUploads.length)) {
         setUploadingDocs(true);
         for (const [, type] of chosen) {
           const fd = new FormData();
-          fd.append("file", files[type]!);
-          fd.append("oo_id", d.id);
-          fd.append("doc_type", type);
+          fd.append("file", files[type]!); fd.append("oo_id", d.id); fd.append("doc_type", type);
+          try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
+        }
+        for (const u of driverUploads) {
+          const fd = new FormData();
+          fd.append("file", u.dr.files[u.slot]!); fd.append("oo_id", d.id); fd.append("doc_type", `[${u.dr.name.trim()}] ${u.type}`);
           try { await fetch("/api/onboarding-docs", { method: "POST", body: fd }); } catch {}
         }
         setUploadingDocs(false);
@@ -103,17 +124,14 @@ export default function OwnerOperatorSignupPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f172a,#1e3a8a)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ width: "100%", maxWidth: 560, background: "#fff", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", overflow: "hidden" }}>
+      <div style={{ width: "100%", maxWidth: 820, background: "#fff", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", overflow: "hidden" }}>
         <div style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", padding: "24px 28px", color: "#fff", position: "relative" }}>
           {(unlocked || done) && (
             <button onClick={() => { setUnlocked(false); setPin(""); setDone(false); setErr(""); }} title="Log out / start over"
               style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.18)", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: "5px 11px", fontWeight: 700, fontSize: "0.74rem", cursor: "pointer" }}>⎋ Log out</button>
           )}
-          <div style={{ display: "inline-block", background: "#fff", borderRadius: 9, padding: "6px 11px", marginBottom: 10 }}>
-            <img src="/ronyx_logo.png" alt="Ronyx Logistics" style={{ height: 36, width: "auto", display: "block" }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-          </div>
-          <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.8 }}>RONYX LOGISTICS</div>
-          <div style={{ fontSize: "1.4rem", fontWeight: 900, marginTop: 4 }}>Owner-Operator Sign-Up</div>
+          <img src="/ronyx_logo.svg" alt="Ronyx Logistics" style={{ height: 52, width: "auto", display: "block", marginBottom: 8 }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          <div style={{ fontSize: "1.4rem", fontWeight: 900, marginTop: 2 }}>Owner-Operator Sign-Up</div>
           <div style={{ fontSize: "0.85rem", opacity: 0.9, marginTop: 4 }}>Register your trucking company to haul with Ronyx.</div>
         </div>
 
@@ -192,9 +210,60 @@ export default function OwnerOperatorSignupPage() {
                 </label>
               </div>
 
+              {/* Your Drivers */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+                <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>🚚 Your Drivers <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(add everyone who drives for you)</span></div>
+                <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 10px" }}>Add each driver with their CDL and medical card. You can add yourself here too.</div>
+                {drivers.map((dr, i) => (
+                  <div key={i} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px", marginBottom: 10, background: "#fafcff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontWeight: 800, fontSize: "0.86rem" }}>Driver {i + 1}{dr.name ? ` — ${dr.name}` : ""}</span>
+                      <button onClick={() => removeDriver(i)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 8, padding: "5px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>Remove</button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Driver Name *</label><input value={dr.name} onChange={e => setDriver(i, "name", e.target.value)} style={inp} placeholder="Full name" /></div>
+                      <div><label style={lbl}>Phone</label><input value={dr.phone} onChange={e => setDriver(i, "phone", e.target.value)} style={inp} type="tel" /></div>
+                      <div><label style={lbl}>CDL #</label><input value={dr.cdl_number} onChange={e => setDriver(i, "cdl_number", e.target.value)} style={inp} /></div>
+                      <div><label style={lbl}>CDL State</label><input value={dr.cdl_state} onChange={e => setDriver(i, "cdl_state", e.target.value)} style={inp} maxLength={2} /></div>
+                      <div><label style={lbl}>CDL Expiration</label><input value={dr.cdl_expiration} onChange={e => setDriver(i, "cdl_expiration", e.target.value)} style={inp} type="date" /></div>
+                      <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Medical Card Expiration</label><input value={dr.med_card_expiration} onChange={e => setDriver(i, "med_card_expiration", e.target.value)} style={inp} type="date" /></div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginTop: 10 }}>
+                      {PER_DRIVER_DOCS.map(([slot]) => <FileSlot key={slot} label={slot} file={dr.files[slot]} onPick={f => setDriverFile(i, slot, f)} />)}
+                    </div>
+                  </div>
+                ))}
+                <button onClick={addDriver} style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px dashed #93c5fd", borderRadius: 10, padding: "10px 0", width: "100%", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>+ Add {drivers.length ? "another " : ""}driver</button>
+              </div>
+
+              {/* Your Trucks */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+                <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>🚛 Your Trucks <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(add your fleet)</span></div>
+                <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 10px" }}>List each truck — make/model, year, VIN, plate, and which driver runs it.</div>
+                <datalist id="oo-driver-names">{drivers.filter(d => d.name.trim()).map((d, i) => <option key={i} value={d.name} />)}</datalist>
+                {trucks.map((t, i) => (
+                  <div key={i} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px", marginBottom: 10, background: "#fafcff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontWeight: 800, fontSize: "0.86rem" }}>Truck {i + 1}{t.truck_number ? ` — #${t.truck_number}` : ""}</span>
+                      <button onClick={() => removeTruck(i)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 8, padding: "5px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>Remove</button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div><label style={lbl}>Truck #</label><input value={t.truck_number} onChange={e => setTruck(i, "truck_number", e.target.value)} style={inp} placeholder="e.g. 8164" /></div>
+                      <div><label style={lbl}>Assigned Driver</label><input list="oo-driver-names" value={t.driver_name} onChange={e => setTruck(i, "driver_name", e.target.value)} style={inp} placeholder="Driver name" /></div>
+                      <div><label style={lbl}>Make</label><input value={t.make} onChange={e => setTruck(i, "make", e.target.value)} style={inp} placeholder="e.g. Peterbilt" /></div>
+                      <div><label style={lbl}>Model</label><input value={t.model} onChange={e => setTruck(i, "model", e.target.value)} style={inp} placeholder="e.g. 567" /></div>
+                      <div><label style={lbl}>Year</label><input value={t.year} onChange={e => setTruck(i, "year", e.target.value)} style={inp} placeholder="e.g. 2022" maxLength={4} /></div>
+                      <div><label style={lbl}>License Plate</label><input value={t.license_plate} onChange={e => setTruck(i, "license_plate", e.target.value)} style={inp} placeholder="Plate & state" /></div>
+                      <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>VIN</label><input value={t.vin} onChange={e => setTruck(i, "vin", e.target.value)} style={inp} placeholder="17-character VIN" /></div>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={addTruck} style={{ background: "#f0fdf4", color: "#15803d", border: "1px dashed #86efac", borderRadius: 10, padding: "10px 0", width: "100%", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}>+ Add {trucks.length ? "another " : ""}truck</button>
+              </div>
+
               {/* Document uploads */}
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
-                <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Upload your documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
+                <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Company documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
                 <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 8px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
                 <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Read the Subhauler Agreement — you can <strong>e-sign it right after you submit</strong> (no printing needed)</a>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
