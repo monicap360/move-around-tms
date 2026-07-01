@@ -1997,45 +1997,62 @@ export default function OwnerOperatorsPage() {
             </div>
 
             {/* per-document status tiles */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(214px, 1fr))", gap: 12 }}>
               {enriched.map(e => {
                 const p = pillOf(e);
                 const f = e.onFile;
+                const missingFile = !!f && !f.file_url;
+                // Left accent bar communicates status at a glance across the whole row of tiles.
+                const accent = missingFile ? "#f59e0b"
+                  : e.state === "ok"       ? "#22c55e"
+                  : e.state === "expiring" ? "#f59e0b"
+                  : e.state === "expired"  ? "#ef4444"
+                  :                          "#cbd5e1"; // missing (no file at all)
+                const iconBtn: React.CSSProperties = { width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0, background: "#fff", color: "#475569", fontSize: "0.82rem", border: "1px solid #e2e8f0", borderRadius: 7, cursor: "pointer", lineHeight: 1, flexShrink: 0 };
                 return (
-                  <div key={e.type} style={{ border: `1px solid ${e.state === "ok" ? "#e2e8f0" : p.bd}`, background: e.state === "ok" ? "#fff" : p.bg, borderRadius: 10, padding: "10px 11px", display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6 }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e293b", lineHeight: 1.2 }}>
-                        {e.icon} {e.short}{e.required && !f && <span style={{ color: "#dc2626" }}> *</span>}
-                      </span>
-                      {f && !f.file_url
-                        ? <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", whiteSpace: "nowrap" }}>⚠ File missing</span>
-                        : <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: p.bg, color: p.fg, border: `1px solid ${p.bd}`, whiteSpace: "nowrap" }}>{p.txt}</span>}
+                  <div key={e.type} style={{ border: `1px solid ${e.state === "ok" ? "#e2e8f0" : p.bd}`, background: "#fff", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                    {/* header: accent + icon + name + status */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", borderLeft: `4px solid ${accent}` }}>
+                      <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>{e.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {e.short}{e.required && !f && <span style={{ color: "#dc2626" }}> *</span>}
+                        </div>
+                        <div style={{ marginTop: 4 }}>
+                          {missingFile
+                            ? <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", whiteSpace: "nowrap" }}>⚠ File missing</span>
+                            : <span style={{ fontSize: "0.62rem", fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: p.bg, color: p.fg, border: `1px solid ${p.bd}`, whiteSpace: "nowrap" }}>{p.txt}</span>}
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                      <label style={{ flex: f && f.file_url ? "0 0 auto" : "1 1 auto", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "5px 10px", fontSize: "0.72rem", fontWeight: 700, color: "#fff", background: f && !f.file_url ? "#d97706" : f ? "#64748b" : "#1e40af", borderRadius: 7, cursor: "pointer" }}>
-                        {f ? (f.file_url ? "Replace" : "⬆ Re-upload") : "Upload"}
+                    {/* action bar */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 13px", borderTop: "1px solid #f1f5f9", background: "#fafbfc", marginTop: "auto" }}>
+                      <label style={{ flex: "1 1 auto", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 10px", fontSize: "0.72rem", fontWeight: 800, color: "#fff", background: missingFile ? "#d97706" : f ? "#475569" : "#1e40af", borderRadius: 7, cursor: "pointer", whiteSpace: "nowrap" }}>
+                        {f ? (missingFile ? "⬆ Re-upload" : "↻ Replace") : "⬆ Upload"}
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={ev => {
                           const file = ev.target.files?.[0];
                           if (file) smartDocUpload(e.type, file);
                           ev.target.value = "";
                         }} />
                       </label>
-                      {f && (<>
-                        <button title={f.file_url ? "View document" : "No file stored — Replace to upload"}
-                          onClick={() => f.file_url ? openDoc(f.file_url, false, f.file_name, selected.id, e.type) : flash("No file stored — use Replace to upload.")}
-                          style={docIconBtn}>👁</button>
-                        <button title={f.file_url ? "Email document" : "No file stored"} disabled={!f.file_url}
-                          onClick={() => f.file_url && setDocEmailModal({
-                            docType: e.type, fileUrl: f.file_url, fileName: f.file_name || `${e.type}.pdf`,
-                            to: selected.contact_email || "", subject: `${e.type} — ${selected.company_name}`,
-                            message: `Please find the attached ${e.type} for ${selected.company_name}.\n\nIf you have any questions, contact us at dispatch@ronyxlogistics.com.\n\n— Ronyx Logistics / MoveAround TMS`,
-                            sending: false,
-                          })}
-                          style={{ ...docIconBtn, opacity: f.file_url ? 1 : 0.4, cursor: f.file_url ? "pointer" : "default" }}>✉</button>
-                        <button title={f.file_url ? "Print document" : "No file stored"} disabled={!f.file_url}
-                          onClick={() => f.file_url && openDoc(f.file_url, true, f.file_name)}
-                          style={{ ...docIconBtn, opacity: f.file_url ? 1 : 0.4, cursor: f.file_url ? "pointer" : "default" }}>🖨</button>
-                      </>)}
+                      {f && (
+                        <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                          <button title={f.file_url ? "View document" : "No file stored — Re-upload first"}
+                            onClick={() => f.file_url ? openDoc(f.file_url, false, f.file_name, selected.id, e.type) : flash("No file stored — use Re-upload.")}
+                            style={{ ...iconBtn, opacity: f.file_url ? 1 : 0.4 }}>👁</button>
+                          <button title={f.file_url ? "Email document" : "No file stored"} disabled={!f.file_url}
+                            onClick={() => f.file_url && setDocEmailModal({
+                              docType: e.type, fileUrl: f.file_url, fileName: f.file_name || `${e.type}.pdf`,
+                              to: selected.contact_email || "", subject: `${e.type} — ${selected.company_name}`,
+                              message: `Please find the attached ${e.type} for ${selected.company_name}.\n\nIf you have any questions, contact us at dispatch@ronyxlogistics.com.\n\n— Ronyx Logistics / MoveAround TMS`,
+                              sending: false,
+                            })}
+                            style={{ ...iconBtn, opacity: f.file_url ? 1 : 0.4, cursor: f.file_url ? "pointer" : "default" }}>✉</button>
+                          <button title={f.file_url ? "Print document" : "No file stored"} disabled={!f.file_url}
+                            onClick={() => f.file_url && openDoc(f.file_url, true, f.file_name)}
+                            style={{ ...iconBtn, opacity: f.file_url ? 1 : 0.4, cursor: f.file_url ? "pointer" : "default" }}>🖨</button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
