@@ -649,8 +649,15 @@ export default function OwnerOperatorsPage() {
     setOoLoading(true);
     setOoError(null);
     fetch("/api/ronyx/owner-operators")
-      .then(r => r.json())
+      .then(async r => {
+        // Session expired / signed out → the PIN gate returns 401. Send the user
+        // to the lock screen to re-enter their PIN instead of showing an empty
+        // list with a cryptic "PIN required" error.
+        if (r.status === 401) { window.location.href = `/ronyx-lock?next=${encodeURIComponent(window.location.pathname)}`; return null; }
+        return r.json();
+      })
       .then((res) => {
+        if (!res) return; // redirected to lock screen
         if (res.error) { setOoError(res.error); setCompanies([]); }
         else { setCompanies(res.companies || []); }
       })
@@ -669,6 +676,14 @@ export default function OwnerOperatorsPage() {
   const liveBadge = useLiveBadgeProps(syncStatus, lastSync);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3500); }
+  // When the PIN session has expired, any /api/ronyx call returns 401. Bounce to
+  // the lock screen to re-enter the PIN (so edits/saves aren't silently dropped
+  // with a confusing "PIN required" error). Returns true if it redirected.
+  function sessionExpired(r: Response): boolean {
+    if (r.status !== 401) return false;
+    window.location.href = `/ronyx-lock?next=${encodeURIComponent(window.location.pathname)}`;
+    return true;
+  }
   function persist(updated: OOCompany[]) { setCompanies(updated); }
   function updateLocalState(oo: OOCompany) { setSelected(oo); setCompanies(prev => prev.map(c => c.id === oo.id ? oo : c)); }
   // Mark an owner-operator active/inactive (e.g. when a company quits Ronyx).
@@ -947,6 +962,7 @@ export default function OwnerOperatorsPage() {
   async function updateCOIStatus(docId: string, patch: Partial<COIDoc>) {
     if (!selected) return;
     const r = await fetch(`/api/ronyx/owner-operators/${selected.id}/coi/${docId}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(patch) });
+    if (sessionExpired(r)) return;
     const data = await r.json();
     if (data.error) { flash(`Error: ${data.error}`); return; }
     updateLocalState({ ...selected, coi_documents: (selected.coi_documents||[]).map(d => d.id === docId ? { ...d, ...patch, status: data.coi.status } : d) });
