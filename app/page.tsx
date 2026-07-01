@@ -2494,8 +2494,11 @@ function LandingPageContent() {
       <nav className="navbar">
         <div className="container navbar-container">
           <Link href="/" prefetch={false} className="logo" onClick={() => setMenuOpen(false)}>
-            <div className="logo-icon">M</div>
-            <div className="logo-text">MoveAround TMS</div>
+            {/* Real logo when present; falls back to the M-icon + text if the file isn't uploaded yet. */}
+            <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 44, width: "auto", display: "block" }}
+              onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const p = img.parentElement!; (p.querySelector(".logo-icon") as HTMLElement).style.display = ""; (p.querySelector(".logo-text") as HTMLElement).style.display = ""; }} />
+            <div className="logo-icon" style={{ display: "none" }}>M</div>
+            <div className="logo-text" style={{ display: "none" }}>MoveAround TMS</div>
           </Link>
 
           <button
@@ -6880,8 +6883,10 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div className="footer-grid">
             <div>
               <div className="logo" style={{ marginBottom: 30 }}>
-                <div className="logo-icon">M</div>
-                <div className="logo-text">MoveAround TMS</div>
+                <img src="/movearound_logo.png" alt="MoveAround TMS" style={{ height: 52, width: "auto", display: "block" }}
+                  onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const p = img.parentElement!; (p.querySelector(".logo-icon") as HTMLElement).style.display = ""; (p.querySelector(".logo-text") as HTMLElement).style.display = ""; }} />
+                <div className="logo-icon" style={{ display: "none" }}>M</div>
+                <div className="logo-text" style={{ display: "none" }}>MoveAround TMS</div>
               </div>
               <p style={{ color: "rgba(255, 255, 255, 0.7)", marginBottom: 30, maxWidth: 400 }}>
                 Bulletproof fleet intelligence. 99.99% uptime. 30-day implementation. 214% average ROI.
