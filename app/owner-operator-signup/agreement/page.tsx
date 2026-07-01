@@ -373,6 +373,20 @@ export default function OwnerOperatorAgreement() {
           </tbody></table>
         </div>
 
+        <div className="page">
+          <div className="brand"><div className="name">RONYX</div><div className="sub">L O G I S T I C S&nbsp;&nbsp;L L C</div></div>
+          <h2>DRIVER LIST</h2>
+          <p>List all drivers who will operate under this Agreement. Attach additional pages as necessary.</p>
+          <table><tbody>
+            <tr><th>Driver Name</th><th>CDL #</th><th>State</th><th>CDL Exp.</th><th>Medical Exp.</th><th>Phone</th></tr>
+            {Array.from({ length: 25 }).map((_, i) => (
+              <tr key={i}>
+                {(["name", "cdl", "st", "cdlexp", "medexp", "phone"] as const).map(c => <td key={c}>{F({ k: `dl_${i}_${c}`, w: c === "name" ? 130 : c === "st" ? 50 : 90 })}</td>)}
+              </tr>
+            ))}
+          </tbody></table>
+        </div>
+
         {/* ── Electronic execution (DocuSign-style) ── */}
         <div className="page" id="esign">
           <h2>ELECTRONIC EXECUTION — SUBHAULER</h2>
