@@ -55,6 +55,7 @@ export default function OwnerOperatorAgreement() {
   const [err, setErr] = useState("");
   const [ooId, setOoId] = useState("");
   const [achSig, setAchSig] = useState("");
+  const [filing, setFiling] = useState("");
   const [fields, setFields] = useState<Record<string, string>>({});
   const setF = (k: string, v: string) => setFields(s => ({ ...s, [k]: v }));
   // Fillable blank — type on screen; prints with the typed value.
@@ -93,6 +94,40 @@ export default function OwnerOperatorAgreement() {
     g.fillText(text, 24, c.height / 2); return c.toDataURL("image/png");
   }
 
+  // Capture the packet's sections and file each to its matching document slot.
+  async function fileSplitDocs() {
+    if (!ooId) return;
+    try {
+      setFiling("Filing your documents to the office…");
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      const groups: { docType: string; nodes: Element[] }[] = [
+        { docType: "Contract", nodes: Array.from(document.querySelectorAll(".doc .page:not(.doc-w9):not(.doc-banking)")) },
+        { docType: "W-9 / Tax Form", nodes: Array.from(document.querySelectorAll(".doc .page.doc-w9")) },
+        { docType: "Voided Check / Banking", nodes: Array.from(document.querySelectorAll(".doc .page.doc-banking")) },
+      ];
+      for (const grp of groups) {
+        if (!grp.nodes.length) continue;
+        const pdf = new jsPDF({ unit: "pt", format: "a4" });
+        const pw = pdf.internal.pageSize.getWidth(); const ph = pdf.internal.pageSize.getHeight();
+        let first = true;
+        for (const node of grp.nodes) {
+          const canvas = await html2canvas(node as HTMLElement, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+          let w = pw, h = (canvas.height / canvas.width) * pw;
+          if (h > ph) { h = ph; w = (canvas.width / canvas.height) * ph; }
+          if (!first) pdf.addPage(); first = false;
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.82), "JPEG", (pw - w) / 2, 0, w, h);
+        }
+        const blob = pdf.output("blob");
+        const fd = new FormData();
+        fd.append("file", new File([blob], `${grp.docType.replace(/[^a-z0-9]+/gi, "_")}.pdf`, { type: "application/pdf" }));
+        fd.append("oo_id", ooId); fd.append("doc_type", grp.docType);
+        await fetch("/api/onboarding-docs", { method: "POST", body: fd });
+      }
+      setFiling("✓ Filed: Subhauler Agreement, W-9/DWC, and ACH/Banking to your record.");
+    } catch { setFiling(""); }
+  }
+
   async function sign() {
     setErr("");
     if (!name.trim()) { setErr("Enter your printed name."); return; }
@@ -106,17 +141,11 @@ export default function OwnerOperatorAgreement() {
       const res = await fetch("/api/onboarding-sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oo_id: ooId || undefined, company_name: company || undefined, signer_name: name.trim(), signer_title: title.trim(), signature_data_url: dataUrl, signed_at: new Date().toISOString() }) });
       const d = await res.json();
       if (res.ok && d.ok) {
-        // Split the ACH authorization to its own place (banking slot) if signed.
-        if (achSig && ooId) {
-          try {
-            const blob = await (await fetch(achSig)).blob();
-            const fd = new FormData();
-            fd.append("file", new File([blob], "ACH-authorization.png", { type: "image/png" }));
-            fd.append("oo_id", ooId); fd.append("doc_type", "Voided Check / Banking");
-            await fetch("/api/onboarding-docs", { method: "POST", body: fd });
-          } catch {}
-        }
-        setSignedImg(dataUrl); setSignedAt(at); setDone(true); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 60);
+        setSignedImg(dataUrl); setSignedAt(at); setDone(true);
+        // Split the packet: capture each section and file it to its slot
+        // (Subhauler Agreement -> Contract, DWC/W-9 -> W-9, ACH/Direct Deposit
+        // -> Banking). Runs after the signature renders into the document.
+        setTimeout(() => { void fileSplitDocs(); window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); }, 400);
       }
       else setErr(d.error || "Could not submit your signature. Try again.");
     } catch { setErr("Network error — please try again."); }
@@ -285,7 +314,7 @@ export default function OwnerOperatorAgreement() {
         </div>
 
         {/* ── Supplementary forms ── */}
-        <div className="page">
+        <div className="page doc-w9">
           <h2>TEXAS DWC FORM-85 — Independent Contractor Notice</h2>
           <p>Agreement between General Contractor (Ronyx Logistics, LLC) and Subcontractor to establish an independent relationship under the Texas Workers&rsquo; Compensation Act, Section 406.121. <em>Do not send this agreement to TDI-DWC.</em></p>
           <table><tbody>
@@ -304,7 +333,7 @@ export default function OwnerOperatorAgreement() {
           </tbody></table>
         </div>
 
-        <div className="page">
+        <div className="page doc-banking">
           <h2>ACH PAYMENT AUTHORIZATION</h2>
           <p>Ronyx Logistics, LLC offers ACH payments for your convenience, making secure electronic payments directly to your bank account. A processing fee will apply to each ACH transaction. Funds will be deposited the next business day after processing.</p>
           <p><strong>I agree to the ACH processing terms, including the processing fee of $14.99 per transaction.</strong></p>
@@ -336,7 +365,7 @@ export default function OwnerOperatorAgreement() {
           <p>List all trucks and trailers that may be utilized. Attach additional pages as necessary.</p>
           <table><tbody>
             <tr><th>Truck #</th><th>Type (truck/trailer/dump/belly)</th><th>Year/Make/Model</th><th>VIN #</th><th>License Plate &amp; State</th><th>License Exp. Date</th></tr>
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 25 }).map((_, i) => (
               <tr key={i}>
                 {(["tn", "type", "ymm", "vin", "plate", "exp"] as const).map(c => <td key={c}>{F({ k: `tl_${i}_${c}`, w: c === "ymm" || c === "vin" ? 120 : 80 })}</td>)}
               </tr>
@@ -352,7 +381,8 @@ export default function OwnerOperatorAgreement() {
           {done ? (
             <div style={{ marginTop: 16 }}>
               <div style={{ border: "1px solid #16a34a", background: "#f0fdf4", borderRadius: 10, padding: "16px 18px" }}>
-                <div style={{ fontWeight: 800, color: "#15803d", fontSize: 15, marginBottom: 10 }} className="no-print">✅ Signed &amp; submitted — a copy has been filed to your Ronyx record.</div>
+                <div style={{ fontWeight: 800, color: "#15803d", fontSize: 15, marginBottom: 4 }} className="no-print">✅ Signed &amp; submitted — a copy has been filed to your Ronyx record.</div>
+                {filing && <div style={{ fontSize: 12, color: "#166534", marginBottom: 10 }} className="no-print">{filing}</div>}
                 <div style={{ display: "flex", gap: 30, flexWrap: "wrap", alignItems: "flex-end" }}>
                   <div>
                     <img src={signedImg} alt="Signature" style={{ height: 70, display: "block", borderBottom: "1px solid #000", paddingBottom: 2 }} />
