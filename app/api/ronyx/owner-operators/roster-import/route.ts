@@ -186,10 +186,14 @@ export async function POST(req: NextRequest) {
   if (mode !== "commit") return NextResponse.json({ ok: true, mode: "preview", ...summary });
 
   // ── COMMIT ──
+  // Records created by an import are stamped so the office can tell them apart
+  // from hand-entered records (surfaced as an "Imported — needs review" badge).
+  const IMPORT_STAMP = `[IMPORTED ${new Date().toISOString().slice(0, 10)} — needs review]`;
+
   // 1) create new companies
   const createdCompanyId = new Map<string, string>();
   for (const [nkey, display] of newCompanies) {
-    const { data, error } = await sb.from("ronyx_owner_operators").insert({ organization_id: orgId, company_name: display, status: "active" }).select("id, company_name").single();
+    const { data, error } = await sb.from("ronyx_owner_operators").insert({ organization_id: orgId, company_name: display, status: "active", notes: IMPORT_STAMP }).select("id, company_name").single();
     if (!error && data) { createdCompanyId.set(nkey, data.id); ooByNorm.set(norm(data.company_name), data); }
   }
   const resolveId = (company: string) => (matchOO(company)?.id) || createdCompanyId.get(norm(company)) || null;
@@ -211,7 +215,7 @@ export async function POST(req: NextRequest) {
   let driversCreated = 0;
   for (const d of newDrivers) {
     const oo_id = resolveId(d._company); if (!oo_id) continue;
-    const notes = [d.notes, d.email ? `Email: ${d.email}` : ""].filter(Boolean).join(" · ");
+    const notes = [IMPORT_STAMP, d.notes, d.email ? `Email: ${d.email}` : ""].filter(Boolean).join(" · ");
     const id = await insertDriver({
       oo_id, name: d.name, status: "active",
       cdl_number: d.cdl_number || null, cdl_expiration: d.cdl_expiration || null,

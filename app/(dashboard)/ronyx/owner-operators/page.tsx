@@ -1457,6 +1457,7 @@ export default function OwnerOperatorsPage() {
             const signupDocs  = oo.documents?.length || 0;
             const contractDoc = oo.documents.find(d => d.type === "Contract");
             const eSigned     = !!contractDoc && /e-?signed/i.test(contractDoc.file_name || "");
+            const imported    = /\[IMPORTED/i.test((oo as any).notes || "");
             const cardBg    = isNewSignup ? "#fef9c3" : eligible ? (health>=85?"#f0fdf4":"#f0fdf4") : (health>=70?"#fff7ed":"#fff1f2");
             const stripBorder = isNewSignup ? "#eab308" : eligible ? "#86efac" : (health>=70?"#fdba74":"#fda4af");
             const expanded = expandedOOs.has(oo.id);
@@ -1473,6 +1474,7 @@ export default function OwnerOperatorsPage() {
                       {isNewSignup && <span style={{ background: "#fde68a", color: "#854d0e", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #eab308" }}>✨ NEW SIGN-UP</span>}
                       {isNewSignup && signupDocs > 0 && <span style={{ background: "#dcfce7", color: "#15803d", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #86efac" }}>📎 {signupDocs} doc{signupDocs>1?"s":""} attached</span>}
                       {eSigned && <span title={contractDoc?.file_name} style={{ background: "#ecfdf5", color: "#047857", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #6ee7b7" }}>✍️ Agreement e-Signed</span>}
+                      {imported && <span title="Created by an import — verify the details" style={{ background: "#ffedd5", color: "#9a3412", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: "1px solid #fdba74" }}>📥 Imported — needs review</span>}
                       <span style={{ background: eligible?"#dcfce7":"#fee2e2", color: eligible?"#15803d":"#dc2626", padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 800, border: `1px solid ${eligible?"#86efac":"#fca5a5"}` }}>
                         {eligible ? "🟢 Dispatch Eligible" : "🔴 Dispatch Blocked"}
                       </span>

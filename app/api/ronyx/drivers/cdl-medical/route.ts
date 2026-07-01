@@ -23,7 +23,7 @@ export async function GET() {
   if (!ooIds.length) return NextResponse.json({ drivers: [] });
 
   const { data, error } = await sb.from("ronyx_oo_drivers")
-    .select("id, oo_id, name, phone, cdl_number, cdl_state, cdl_class, cdl_expiration, med_card_expiration, med_card_number, truck_number, status, updated_at")
+    .select("id, oo_id, name, phone, cdl_number, cdl_state, cdl_class, cdl_expiration, med_card_expiration, med_card_number, truck_number, notes, status, updated_at")
     .in("oo_id", ooIds).neq("status", "inactive").limit(5000);
   if (error) return NextResponse.json({ drivers: [], error: error.message });
 
@@ -32,7 +32,7 @@ export async function GET() {
     phone: d.phone || "", cdl_number: d.cdl_number || "", cdl_state: d.cdl_state || "",
     cdl_class: d.cdl_class || "", cdl_expiration: d.cdl_expiration || "",
     med_card_expiration: d.med_card_expiration || "", med_card_number: d.med_card_number || "",
-    truck_number: d.truck_number || "", updated_at: d.updated_at || "",
+    truck_number: d.truck_number || "", imported: /\[IMPORTED/i.test(d.notes || ""), updated_at: d.updated_at || "",
   }));
   // Sort: soonest CDL/med expiration first (blanks last) so the at-risk drivers float up.
   drivers.sort((a, b) => {

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 type Driver = {
   id: string; oo_id: string; company: string; name: string; phone: string;
   cdl_number: string; cdl_state: string; cdl_class: string; truck_number: string;
-  cdl_expiration: string; med_card_expiration: string; med_card_number: string; updated_at: string;
+  cdl_expiration: string; med_card_expiration: string; med_card_number: string; updated_at: string; imported?: boolean;
 };
 
 const EDITABLE = ["cdl_number", "cdl_state", "cdl_class", "cdl_expiration", "med_card_expiration", "med_card_number"] as const;
@@ -218,7 +218,7 @@ export default function FleetCdlMedical() {
                     return (
                       <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", background: recent ? "#fef9c3" : undefined, boxShadow: recent ? "inset 3px 0 0 #eab308" : undefined }}>
                         <td style={{ ...cell, minWidth: 150 }}>
-                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}{recent && <span style={{ marginLeft: 6, fontSize: "0.6rem", fontWeight: 800, color: "#854d0e", background: "#fde68a", padding: "1px 6px", borderRadius: 999, verticalAlign: "middle" }}>✨ NEW</span>}</div>
+                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{d.name}{recent && <span style={{ marginLeft: 6, fontSize: "0.6rem", fontWeight: 800, color: "#854d0e", background: "#fde68a", padding: "1px 6px", borderRadius: 999, verticalAlign: "middle" }}>✨ NEW</span>}{d.imported && <span title="Created by an import — verify the details" style={{ marginLeft: 6, fontSize: "0.6rem", fontWeight: 800, color: "#9a3412", background: "#ffedd5", padding: "1px 6px", borderRadius: 999, verticalAlign: "middle" }}>📥 IMPORTED</span>}</div>
                           <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{d.company}</div>
                         </td>
                         <td style={cell}>{d.truck_number ? <span style={{ background: "#f1f5f9", color: "#0f172a", padding: "2px 8px", borderRadius: 6, fontWeight: 800, fontSize: "0.74rem" }}>{d.truck_number}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
