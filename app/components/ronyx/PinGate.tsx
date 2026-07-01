@@ -80,11 +80,14 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
     <div style={{ position: "fixed", inset: 0, zIndex: 100000, background: "linear-gradient(160deg,#0f172a,#1e293b)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 460, background: "#fff", borderRadius: 18, padding: "26px 26px 22px", boxShadow: "0 30px 80px rgba(0,0,0,0.5)" }}>
         <div style={{ textAlign: "center", marginBottom: 18 }}>
-          <div style={{ width: 52, height: 52, margin: "0 auto 8px", borderRadius: 14, background: "linear-gradient(135deg,#4f46e5,#0891b2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🔐</div>
-          <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#0f172a" }}>MoveAround TMS</div>
+          <img src="/ronyx_logo.png" alt="Ronyx Logistics" style={{ height: 56, width: "auto", margin: "0 auto 8px", display: "block" }}
+            onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const ic = img.parentElement?.querySelector(".pin-fallback-icon"); if (ic) (ic as HTMLElement).style.display = "flex"; }} />
+          <div className="pin-fallback-icon" style={{ width: 52, height: 52, margin: "0 auto 8px", borderRadius: 14, background: "linear-gradient(135deg,#4f46e5,#0891b2)", display: "none", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🔐</div>
+          <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#0f172a" }}>Ronyx Logistics</div>
           <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
             {view === "manage" ? "Manage staff & PINs" : view === "pin" ? `Enter PIN for ${selected?.name}` : "Who's working? Tap your name."}
           </div>
+          <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Powered by MoveAround TMS</div>
         </div>
 
         {view === "pick" && (
