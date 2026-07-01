@@ -11,6 +11,33 @@ function Line({ w = 240, label }: { w?: number; label?: string }) {
   return <span style={{ display: "inline-block" }}>{label ? <span style={{ fontWeight: 600 }}>{label} </span> : null}<span style={{ ...RULE, minWidth: w }}>&nbsp;</span></span>;
 }
 
+// Reusable inline signature pad (draw or type). The visible canvas prints, so
+// the signature appears on the saved/printed copy; onChange gives a PNG dataURL.
+function MiniSign({ onChange }: { onChange: (dataUrl: string) => void }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const [mode, setMode] = useState<"draw" | "type">("draw");
+  const [typed, setTyped] = useState("");
+  const g = () => ref.current?.getContext("2d") || null;
+  const xy = (e: React.PointerEvent<HTMLCanvasElement>) => { const c = ref.current!; const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }; };
+  const down = (e: React.PointerEvent<HTMLCanvasElement>) => { const ctx = g(); if (!ctx || mode !== "draw") return; drawing.current = true; ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round"; const { x, y } = xy(e); ctx.beginPath(); ctx.moveTo(x, y); ref.current!.setPointerCapture(e.pointerId); };
+  const move = (e: React.PointerEvent<HTMLCanvasElement>) => { if (!drawing.current) return; const ctx = g(); if (!ctx) return; const { x, y } = xy(e); ctx.lineTo(x, y); ctx.stroke(); };
+  const up = () => { if (!drawing.current) return; drawing.current = false; if (ref.current) onChange(ref.current.toDataURL("image/png")); };
+  const drawTyped = (t: string) => { const c = ref.current, ctx = g(); if (!c || !ctx) return; ctx.clearRect(0, 0, c.width, c.height); ctx.fillStyle = "#0f172a"; ctx.font = "40px 'Segoe Script','Brush Script MT',cursive"; ctx.textBaseline = "middle"; ctx.fillText(t, 14, c.height / 2); onChange(t ? c.toDataURL("image/png") : ""); };
+  const clear = () => { const c = ref.current, ctx = g(); if (c && ctx) ctx.clearRect(0, 0, c.width, c.height); setTyped(""); onChange(""); };
+  return (
+    <div>
+      <div className="no-print" style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+        {(["draw", "type"] as const).map(m => <button key={m} onClick={() => { setMode(m); clear(); }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${mode === m ? "#1d4ed8" : "#cbd5e1"}`, background: mode === m ? "#eff6ff" : "#fff", color: mode === m ? "#1d4ed8" : "#64748b", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{m === "draw" ? "✍️ Draw" : "⌨️ Type"}</button>)}
+        <button onClick={clear} style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Clear</button>
+      </div>
+      <canvas ref={ref} width={420} height={90} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}
+        style={{ width: "100%", maxWidth: 420, height: 90, border: "1px solid #94a3b8", borderRadius: 8, background: "#fff", touchAction: "none", cursor: mode === "draw" ? "crosshair" : "default", display: "block" }} />
+      {mode === "type" && <input className="no-print" value={typed} onChange={e => { setTyped(e.target.value); drawTyped(e.target.value); }} placeholder="Type your name" style={{ marginTop: 4, width: "100%", maxWidth: 420, padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" }} />}
+    </div>
+  );
+}
+
 export default function OwnerOperatorAgreement() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
@@ -27,6 +54,7 @@ export default function OwnerOperatorAgreement() {
   const [signedAt, setSignedAt] = useState("");
   const [err, setErr] = useState("");
   const [ooId, setOoId] = useState("");
+  const [achSig, setAchSig] = useState("");
   const [fields, setFields] = useState<Record<string, string>>({});
   const setF = (k: string, v: string) => setFields(s => ({ ...s, [k]: v }));
   // Fillable blank — type on screen; prints with the typed value.
@@ -77,7 +105,19 @@ export default function OwnerOperatorAgreement() {
     try {
       const res = await fetch("/api/onboarding-sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oo_id: ooId || undefined, company_name: company || undefined, signer_name: name.trim(), signer_title: title.trim(), signature_data_url: dataUrl, signed_at: new Date().toISOString() }) });
       const d = await res.json();
-      if (res.ok && d.ok) { setSignedImg(dataUrl); setSignedAt(at); setDone(true); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 60); }
+      if (res.ok && d.ok) {
+        // Split the ACH authorization to its own place (banking slot) if signed.
+        if (achSig && ooId) {
+          try {
+            const blob = await (await fetch(achSig)).blob();
+            const fd = new FormData();
+            fd.append("file", new File([blob], "ACH-authorization.png", { type: "image/png" }));
+            fd.append("oo_id", ooId); fd.append("doc_type", "Voided Check / Banking");
+            await fetch("/api/onboarding-docs", { method: "POST", body: fd });
+          } catch {}
+        }
+        setSignedImg(dataUrl); setSignedAt(at); setDone(true); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 60);
+      }
       else setErr(d.error || "Could not submit your signature. Try again.");
     } catch { setErr("Network error — please try again."); }
     finally { setSigning(false); }
@@ -268,7 +308,14 @@ export default function OwnerOperatorAgreement() {
           <h2>ACH PAYMENT AUTHORIZATION</h2>
           <p>Ronyx Logistics, LLC offers ACH payments for your convenience, making secure electronic payments directly to your bank account. A processing fee will apply to each ACH transaction. Funds will be deposited the next business day after processing.</p>
           <p><strong>I agree to the ACH processing terms, including the processing fee of $14.99 per transaction.</strong></p>
-          <p>Name: {F({ k: "sub_signer_name", w: 200 })}  Signature: ______________________________  Date: {F({ k: "ach_date", w: 110 })}</p>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-end", marginTop: 8 }}>
+            <div style={{ fontSize: 13 }}>Name: {F({ k: "sub_signer_name", w: 180 })}</div>
+            <div style={{ fontSize: 13 }}>Date: {F({ k: "ach_date", w: 110 })}</div>
+          </div>
+          <div style={{ marginTop: 8, maxWidth: 420 }}>
+            <div style={{ fontSize: 11, marginBottom: 3, color: "#334155" }}>Signature (ACH authorization):</div>
+            <MiniSign onChange={setAchSig} />
+          </div>
 
           <h2 style={{ marginTop: 28 }}>DIRECT DEPOSIT AUTHORIZATION</h2>
           <p>As a payment option, Ronyx Logistics, LLC offers payees electronic payment in lieu of check. Complete this form, attach a voided check, and return by email to ronyxlogistics@gmail.com.</p>
