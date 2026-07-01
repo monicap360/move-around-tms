@@ -1,9 +1,10 @@
 "use client";
 
-// Blank, Ronyx-branded New Owner-Operator (Subhauler) Agreement for sign-ups.
-// Print/Save-as-PDF friendly. Mirrors the Ronyx Logistics, LLC packet:
-// Subhauler Agreement + Exhibits A/B/C, DWC-85 note, W-9 note, ACH authorization,
-// Direct Deposit form, and the Truck/Trailer list.
+// Ronyx-branded New Owner-Operator (Subhauler) Agreement — now e-signable
+// (DocuSign-style): the carrier draws or types a signature, agrees, and it is
+// captured, filed to their owner-operator record as the Contract, and stamped.
+
+import { useEffect, useRef, useState } from "react";
 
 const RULE: React.CSSProperties = { borderBottom: "1px solid #000", display: "inline-block", minWidth: 240 };
 function Line({ w = 240, label }: { w?: number; label?: string }) {
@@ -11,6 +12,71 @@ function Line({ w = 240, label }: { w?: number; label?: string }) {
 }
 
 export default function OwnerOperatorAgreement() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef(false);
+  const [hasInk, setHasInk] = useState(false);
+  const [mode, setMode] = useState<"draw" | "type">("draw");
+  const [typed, setTyped] = useState("");
+  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
+  const [company, setCompany] = useState("");
+  const [agree, setAgree] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [done, setDone] = useState(false);
+  const [signedImg, setSignedImg] = useState("");
+  const [signedAt, setSignedAt] = useState("");
+  const [err, setErr] = useState("");
+  const [ooId, setOoId] = useState("");
+
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      setOoId(p.get("oo_id") || "");
+      if (p.get("company")) setCompany(p.get("company") || "");
+    } catch {}
+  }, []);
+
+  const ctx = () => canvasRef.current?.getContext("2d") || null;
+  const xy = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const c = canvasRef.current!; const r = c.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
+  };
+  const down = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const g = ctx(); if (!g) return; drawingRef.current = true; setHasInk(true);
+    g.strokeStyle = "#0f172a"; g.lineWidth = 2.6; g.lineCap = "round"; g.lineJoin = "round";
+    const { x, y } = xy(e); g.beginPath(); g.moveTo(x, y); canvasRef.current!.setPointerCapture(e.pointerId);
+  };
+  const moveP = (e: React.PointerEvent<HTMLCanvasElement>) => { if (!drawingRef.current) return; const g = ctx(); if (!g) return; const { x, y } = xy(e); g.lineTo(x, y); g.stroke(); };
+  const up = () => { drawingRef.current = false; };
+  const clearSig = () => { const g = ctx(); const c = canvasRef.current; if (g && c) g.clearRect(0, 0, c.width, c.height); setHasInk(false); };
+
+  function renderTyped(text: string): string {
+    const c = document.createElement("canvas"); c.width = 560; c.height = 170;
+    const g = c.getContext("2d")!; g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = "#0f172a"; g.font = "52px 'Segoe Script','Brush Script MT','Snell Roundhand',cursive"; g.textBaseline = "middle";
+    g.fillText(text, 24, c.height / 2); return c.toDataURL("image/png");
+  }
+
+  async function sign() {
+    setErr("");
+    if (!name.trim()) { setErr("Enter your printed name."); return; }
+    if (!agree) { setErr("Please check the box to agree before signing."); return; }
+    let dataUrl = "";
+    if (mode === "draw") { if (!hasInk) { setErr("Draw your signature in the box."); return; } dataUrl = canvasRef.current!.toDataURL("image/png"); }
+    else { if (!typed.trim()) { setErr("Type your signature."); return; } dataUrl = renderTyped(typed.trim()); }
+    const at = new Date().toLocaleString();
+    setSigning(true);
+    try {
+      const res = await fetch("/api/onboarding-sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oo_id: ooId || undefined, company_name: company || undefined, signer_name: name.trim(), signer_title: title.trim(), signature_data_url: dataUrl, signed_at: new Date().toISOString() }) });
+      const d = await res.json();
+      if (res.ok && d.ok) { setSignedImg(dataUrl); setSignedAt(at); setDone(true); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 60); }
+      else setErr(d.error || "Could not submit your signature. Try again.");
+    } catch { setErr("Network error — please try again."); }
+    finally { setSigning(false); }
+  }
+
+  const fieldInp: React.CSSProperties = { width: "100%", padding: "9px 11px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box", fontFamily: "system-ui, sans-serif" };
+
   return (
     <div style={{ background: "#fff", color: "#111", minHeight: "100vh" }}>
       <style>{`
@@ -30,10 +96,13 @@ export default function OwnerOperatorAgreement() {
         .sigrow { margin: 22px 0; }
       `}</style>
 
-      <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 10, background: "#0f172a", color: "#fff", padding: "12px 20px", display: "flex", alignItems: "center", gap: 14, fontFamily: "system-ui, sans-serif" }}>
-        <strong style={{ fontSize: 15 }}>Ronyx Logistics — New Owner-Operator Agreement (blank)</strong>
-        <span style={{ fontSize: 12, color: "#94a3b8" }}>Fill in by hand or have the carrier complete it, then sign.</span>
-        <button onClick={() => window.print()} style={{ marginLeft: "auto", background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer" }}>🖨️ Print / Save as PDF</button>
+      <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 10, background: "#0f172a", color: "#fff", padding: "12px 20px", display: "flex", alignItems: "center", gap: 14, fontFamily: "system-ui, sans-serif", flexWrap: "wrap" }}>
+        <strong style={{ fontSize: 15 }}>Ronyx Logistics — Subhauler Agreement</strong>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>Read the agreement, then sign electronically at the bottom.</span>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          {!done && <button onClick={() => document.getElementById("esign")?.scrollIntoView({ behavior: "smooth" })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 800, cursor: "pointer" }}>✍️ Sign the agreement ↓</button>}
+          <button onClick={() => window.print()} style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer" }}>🖨️ Print / Save PDF</button>
+        </div>
       </div>
 
       <div className="doc" style={{ boxShadow: "0 1px 10px rgba(0,0,0,0.1)" }}>
@@ -215,6 +284,66 @@ export default function OwnerOperatorAgreement() {
             <tr><th>Truck #</th><th>Type (truck/trailer/dump/belly)</th><th>Year/Make/Model</th><th>VIN #</th><th>License Plate &amp; State</th><th>License Exp. Date</th></tr>
             {Array.from({ length: 8 }).map((_, i) => <tr key={i}><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>)}
           </tbody></table>
+        </div>
+
+        {/* ── Electronic execution (DocuSign-style) ── */}
+        <div className="page" id="esign">
+          <h2>ELECTRONIC EXECUTION — SUBHAULER</h2>
+          <p>By signing below, the Subhauler agrees to and executes this Subhauler Agreement together with Exhibits A, B, and C and the forms herein, and intends this electronic signature to have the same legal force and effect as a handwritten signature.</p>
+
+          {done ? (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ border: "1px solid #16a34a", background: "#f0fdf4", borderRadius: 10, padding: "16px 18px" }}>
+                <div style={{ fontWeight: 800, color: "#15803d", fontSize: 15, marginBottom: 10 }} className="no-print">✅ Signed &amp; submitted — a copy has been filed to your Ronyx record.</div>
+                <div style={{ display: "flex", gap: 30, flexWrap: "wrap", alignItems: "flex-end" }}>
+                  <div>
+                    <img src={signedImg} alt="Signature" style={{ height: 70, display: "block", borderBottom: "1px solid #000", paddingBottom: 2 }} />
+                    <div style={{ fontSize: 11, marginTop: 3 }}>Subhauler Signature</div>
+                  </div>
+                  <div style={{ fontSize: 13 }}>
+                    <div><strong>{name}</strong>{title ? `, ${title}` : ""}</div>
+                    {company && <div>{company}</div>}
+                    <div style={{ color: "#475569" }}>Executed electronically on {signedAt}</div>
+                  </div>
+                </div>
+              </div>
+              <button className="no-print" onClick={() => window.print()} style={{ marginTop: 14, background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 800, cursor: "pointer", fontFamily: "system-ui" }}>🖨️ Print / save your signed copy</button>
+            </div>
+          ) : (
+            <div className="no-print" style={{ marginTop: 16, fontFamily: "system-ui, sans-serif" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Company (Subhauler)</label><input value={company} onChange={e => setCompany(e.target.value)} style={fieldInp} placeholder="Your trucking company" /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Printed Name *</label><input value={name} onChange={e => setName(e.target.value)} style={fieldInp} placeholder="Full name" /></div>
+                <div><label style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Title</label><input value={title} onChange={e => setTitle(e.target.value)} style={fieldInp} placeholder="Owner / Manager" /></div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                {(["draw", "type"] as const).map(m => (
+                  <button key={m} onClick={() => setMode(m)} style={{ padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${mode === m ? "#1d4ed8" : "#cbd5e1"}`, background: mode === m ? "#eff6ff" : "#fff", color: mode === m ? "#1d4ed8" : "#64748b", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{m === "draw" ? "✍️ Draw signature" : "⌨️ Type signature"}</button>
+                ))}
+                <button onClick={clearSig} style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Clear</button>
+              </div>
+
+              {mode === "draw" ? (
+                <canvas ref={canvasRef} width={560} height={170} onPointerDown={down} onPointerMove={moveP} onPointerUp={up} onPointerLeave={up}
+                  style={{ width: "100%", maxWidth: 560, height: 170, border: "1.5px dashed #94a3b8", borderRadius: 10, background: "#fff", touchAction: "none", cursor: "crosshair", display: "block" }} />
+              ) : (
+                <input value={typed} onChange={e => setTyped(e.target.value)} placeholder="Type your full name" style={{ ...fieldInp, maxWidth: 560, height: 84, fontSize: 40, fontFamily: "'Segoe Script','Brush Script MT',cursive", color: "#0f172a" }} />
+              )}
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Sign in the box above ({mode === "draw" ? "use your mouse or finger" : "your typed name becomes your signature"}).</div>
+
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 9, margin: "14px 0", cursor: "pointer" }}>
+                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} style={{ marginTop: 3, width: 17, height: 17 }} />
+                <span style={{ fontSize: 13, color: "#334155", lineHeight: 1.45 }}>I have read and agree to be legally bound by this Subhauler Agreement and all Exhibits, and I consent to sign electronically.</span>
+              </label>
+
+              {err && <div style={{ color: "#dc2626", fontWeight: 700, fontSize: 13, marginBottom: 10 }}>⚠ {err}</div>}
+              <button onClick={sign} disabled={signing} style={{ background: signing ? "#94a3b8" : "#16a34a", color: "#fff", border: "none", borderRadius: 9, padding: "12px 26px", fontWeight: 800, fontSize: 15, cursor: signing ? "default" : "pointer" }}>
+                {signing ? "Submitting…" : "✔ Sign & Submit Agreement"}
+              </button>
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 8 }}>Your signature is filed to your Ronyx owner-operator record automatically.</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -64,6 +64,7 @@ export default function OwnerOperatorSignupPage() {
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
   const [acctNum, setAcctNum] = useState("");
+  const [newOoId, setNewOoId] = useState("");
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -95,6 +96,7 @@ export default function OwnerOperatorSignupPage() {
         setUploadingDocs(false);
       }
       setAcctNum(d.in_house_account_number || "");
+      setNewOoId(d.id || "");
       setDone(true);
     } catch { setErr("Network error — please try again."); }
     finally { setSubmitting(false); }
@@ -130,7 +132,7 @@ export default function OwnerOperatorSignupPage() {
                   <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#15803d" }}>{acctNum}</div>
                 </div>
               )}
-              <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, background: "#1d4ed8", color: "#fff", padding: "11px 20px", borderRadius: 10, fontWeight: 800, fontSize: "0.9rem", textDecoration: "none" }}>📄 Review &amp; print the Subhauler Agreement</a>
+              <a href={`/owner-operator-signup/agreement?oo_id=${encodeURIComponent(newOoId)}&company=${encodeURIComponent(form.company_name)}`} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, background: "#16a34a", color: "#fff", padding: "11px 20px", borderRadius: 10, fontWeight: 800, fontSize: "0.9rem", textDecoration: "none" }}>✍️ Review &amp; e-sign the Subhauler Agreement</a>
             </div>
           ) : !unlocked ? (
             <div>
@@ -195,7 +197,7 @@ export default function OwnerOperatorSignupPage() {
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
                 <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a" }}>📎 Upload your documents <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(optional — speeds up onboarding)</span></div>
                 <div style={{ fontSize: "0.78rem", color: "#475569", margin: "4px 0 8px" }}>Attach them here instead of emailing — they go straight to your file in the office system.</div>
-                <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Open, print &amp; sign the Subhauler Agreement → then attach it below</a>
+                <a href="/owner-operator-signup/agreement" target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 10, fontSize: "0.78rem", fontWeight: 800, color: "#1d4ed8", textDecoration: "none" }}>📄 Read the Subhauler Agreement — you can <strong>e-sign it right after you submit</strong> (no printing needed)</a>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
                   {OO_DOCS.map(([label, type]) => <FileSlot key={type} label={label} file={files[type]} onPick={f => setFiles(s => ({ ...s, [type]: f }))} />)}
                 </div>
