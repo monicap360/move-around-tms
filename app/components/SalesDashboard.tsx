@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Lead = {
   id: string;
@@ -38,7 +38,7 @@ const BLANK = { owner_name: "Andrew", company_name: "", contact_name: "", phone:
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 const lbl: React.CSSProperties = { fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 3 };
 
-export default function SalesDashboard({ apiPath = apiPath, title = "Sales Pipeline", subtitle = "Track every lead from first contact to close." }: { apiPath?: string; title?: string; subtitle?: string }) {
+export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sales Pipeline", subtitle = "Track every lead from first contact to close." }: { apiPath?: string; title?: string; subtitle?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -47,7 +47,35 @@ export default function SalesDashboard({ apiPath = apiPath, title = "Sales Pipel
   const [toast, setToast] = useState("");
   const [form, setForm] = useState<any | null>(null); // add/edit form (null = closed)
   const [saving, setSaving] = useState(false);
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3000); };
+  const [importing, setImporting] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 4500); };
+
+  // Parse a CSV (handles quoted fields) and map flexible headers → lead fields.
+  function parseCsv(text: string): any[] {
+    const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim().length);
+    if (!lines.length) return [];
+    const splitRow = (l: string) => { const out: string[] = []; let cur = "", q = false; for (let i = 0; i < l.length; i++) { const c = l[i]; if (c === '"') { if (q && l[i + 1] === '"') { cur += '"'; i++; } else q = !q; } else if (c === "," && !q) { out.push(cur); cur = ""; } else cur += c; } out.push(cur); return out.map(s => s.trim()); };
+    const headers = splitRow(lines[0]).map(h => h.toLowerCase());
+    const find = (...names: string[]) => headers.findIndex(h => names.some(n => h.includes(n)));
+    const iCompany = find("company", "carrier", "legal name", "name"), iContact = find("contact", "owner name", "dba"), iPhone = find("phone", "tel"), iEmail = find("email"), iTrucks = find("truck", "power unit", "fleet", "units", "vehicles"), iSource = find("source");
+    return lines.slice(1).map(l => { const c = splitRow(l); return { company_name: c[iCompany] || "", contact_name: iContact >= 0 ? c[iContact] : "", phone: iPhone >= 0 ? c[iPhone] : "", email: iEmail >= 0 ? c[iEmail] : "", trucks_count: iTrucks >= 0 ? c[iTrucks] : "", source: iSource >= 0 ? c[iSource] : "" }; });
+  }
+
+  async function importCsv(file: File) {
+    setImporting(true);
+    try {
+      const rows = parseCsv(await file.text());
+      if (!rows.length) { flash("Couldn't read any rows from that file."); return; }
+      const res = await fetch(`${apiPath}/import`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows, min_trucks: 75, owner_name: ownerFilter !== "All" ? ownerFilter : "Andrew" }) });
+      if (res.status === 401) { window.location.href = `/ronyx-lock?next=${encodeURIComponent(location.pathname)}`; return; }
+      const j = await res.json();
+      if (j.error) { flash(`Import error: ${j.error}`); return; }
+      flash(`Imported ${j.added} carriers with 75+ trucks (${j.skipped_low || 0} under 75 skipped).`);
+      load();
+    } catch { flash("Import failed — check the file format."); }
+    finally { setImporting(false); }
+  }
 
   function load() {
     setLoading(true);
@@ -155,6 +183,8 @@ export default function SalesDashboard({ apiPath = apiPath, title = "Sales Pipel
             ))}
           </div>
           <button onClick={() => setForm({ ...BLANK, owner_name: ownerFilter !== "All" ? ownerFilter : "Andrew" })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Lead</button>
+          <button onClick={() => importRef.current?.click()} disabled={importing} title="Upload a carrier CSV — auto-adds every company with 75+ trucks" style={{ background: "#fff", border: "1px solid #2563eb", borderRadius: 8, padding: "9px 14px", fontWeight: 800, fontSize: "0.84rem", cursor: importing ? "default" : "pointer", color: "#2563eb" }}>{importing ? "Importing…" : "⬆ Import 75+"}</button>
+          <input ref={importRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) importCsv(f); e.target.value = ""; }} />
           <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 13px", fontWeight: 700, fontSize: "0.84rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
         </div>
       </div>
