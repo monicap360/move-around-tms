@@ -787,10 +787,10 @@ function LandingPageContent() {
           --racing-silver: #c0c0c0;
           --performance-red: #ff2800;
           --speed-white: #ffffff;
-          --turbo-blue: #00b4ff;
+          --turbo-blue: #38bdf8;
           --chrome-accent: #e8e8e8;
           --kevlar-gray: #2a2a2a;
-          --success-green: #00ff9d;
+          --success-green: #22d3ee;
 
           --gradient-performance: linear-gradient(
             135deg,
@@ -6282,15 +6282,15 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, marginTop: 48 }}>
             {[
               { icon: "fa-bolt", badge: "Fast Scan™", title: "Ticket OCR & Payout Import", desc: "Scan tickets, invoices, and payout sheets into usable operational data. Match scanned proof to dispatch records automatically.", color: "#2563eb" },
-              { icon: "fa-shield-alt", badge: "Dispatch Guard™", title: "Daily Dispatch Import", desc: "Import daily dispatch schedules, track compliance notes, identify driver/truck readiness issues, and catch compliance blockers before dispatch.", color: "#00b4ff" },
-              { icon: "fa-lock", badge: "Payroll Guard™", title: "Proof-Before-Pay Controls", desc: "Stop payroll from being released when ticket proof is missing. Flag duplicates, rate mismatches, and deductions before settlement.", color: "#00ff9d" },
+              { icon: "fa-shield-alt", badge: "Dispatch Guard™", title: "Daily Dispatch Import", desc: "Import daily dispatch schedules, track compliance notes, identify driver/truck readiness issues, and catch compliance blockers before dispatch.", color: "#38bdf8" },
+              { icon: "fa-lock", badge: "Payroll Guard™", title: "Proof-Before-Pay Controls", desc: "Stop payroll from being released when ticket proof is missing. Flag duplicates, rate mismatches, and deductions before settlement.", color: "#22d3ee" },
               { icon: "fa-search-dollar", badge: "Revenue Guard™", title: "Find Unbilled Work", desc: "Find worked loads that have not been billed. Detect invoice mismatches and catch missing customer rates before money is lost.", color: "#ffd700" },
-              { icon: "fa-file-invoice-dollar", badge: "Billing Guard™", title: "Invoice Verification", desc: "Verify ticket totals, invoice lines, customer rates, pit invoices, and material types before billing is sent to the customer.", color: "#a855f7" },
+              { icon: "fa-file-invoice-dollar", badge: "Billing Guard™", title: "Invoice Verification", desc: "Verify ticket totals, invoice lines, customer rates, pit invoices, and material types before billing is sent to the customer.", color: "#38bdf8" },
               { icon: "fa-id-card", badge: "Carrier Clearance Bureau™ (CCB)", title: "Carrier, Driver, Truck & Insurance Clearance", desc: "Full carrier, driver, truck, document, insurance, and COI clearance checked before dispatch — CDL, medical card, MVR, drug tests, inspections, registration, authority, and customer-specific requirements. CCB Shield blocks dispatch when anything is expired or missing; CCB Radar flags risks early.", color: "#f43f5e" },
               { icon: "fa-tasks", badge: "Staff Work Queue", title: "Daily Office Priority List", desc: "Show office staff exactly what to fix, approve, hold, or escalate. Missing proof queue, payroll hold queue, compliance queue.", color: "#38bdf8" },
-              { icon: "fa-database", badge: "Backup Center", title: "Original Upload Preservation", desc: "Every original uploaded sheet, schedule, ticket, or invoice is preserved as read-only evidence. Download originals anytime.", color: "#4ade80" },
+              { icon: "fa-database", badge: "Backup Center", title: "Original Upload Preservation", desc: "Every original uploaded sheet, schedule, ticket, or invoice is preserved as read-only evidence. Download originals anytime.", color: "#38bdf8" },
               { icon: "fa-calculator", badge: "Accounting Command Center", title: "Ticket-to-Cash Accounting", desc: "The full money workflow in one place: ticket → invoice, A/R aging, owner-operator settlements, driver payroll, job costing & margin, fuel allocation, and accounting exports.", color: "#22c55e" },
-              { icon: "fa-network-wired", badge: "Capacity Network", title: "Driver & Carrier Sourcing", desc: "Build a private capacity pipeline — source, verify, and convert drivers and owner-operators into onboarded, dispatch-ready carriers when you need trucks fast.", color: "#8b5cf6" },
+              { icon: "fa-network-wired", badge: "Capacity Network", title: "Driver & Carrier Sourcing", desc: "Build a private capacity pipeline — source, verify, and convert drivers and owner-operators into onboarded, dispatch-ready carriers when you need trucks fast.", color: "#2563eb" },
               { icon: "fa-file-signature", badge: "Owner-Operator Onboarding", title: "Self Sign-Up + e-Signature", desc: "Carriers register themselves, add their drivers and trucks, upload COI/W-9/CDL/medical, and e-sign the Subhauler Agreement online (DocuSign-style). Signed packet auto-files to Contract, W-9, and Banking slots.", color: "#14b8a6" },
               { icon: "fa-id-card-alt", badge: "Fleet CDL & Medical", title: "Fleet-Wide Compliance", desc: "Edit every owner-operator's drivers — CDL, medical card, and truck # — in one table, sorted by soonest expiration, with expired / expiring / missing filters.", color: "#f59e0b" },
               { icon: "fa-file-import", badge: "Smart Import", title: "Import Anything, Deduped", desc: "Drop in a spreadsheet, PDF, photo, or scan. Rosters auto-map and dedupe by person (fills truck #/CDL/medical) with a preview; single documents auto-file to the right carrier or driver.", color: "#38bdf8" },
@@ -6338,10 +6338,10 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
             <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(37,99,235,0.25)", padding: 32 }}>
               <div style={{ marginBottom: 16, fontWeight: 800, color: "#2563eb", fontSize: "0.85rem", letterSpacing: "0.1em" }}>FAST SCAN™ — LIVE TICKET QUEUE</div>
               {[
-                { ticket: "TKT-4821", driver: "D. Perez · Truck #12", status: "Matched", statusColor: "#00ff9d", note: "Proof verified · Ready for payroll" },
+                { ticket: "TKT-4821", driver: "D. Perez · Truck #12", status: "Matched", statusColor: "#22d3ee", note: "Proof verified · Ready for payroll" },
                 { ticket: "TKT-4822", driver: "K. Alston · Truck #23", status: "Missing Proof", statusColor: "#ff6b6b", note: "No scale ticket found · Payroll held" },
                 { ticket: "TKT-4823", driver: "S. Grant · Truck #18", status: "Rate Mismatch", statusColor: "#ffd700", note: "Invoice $850 vs dispatch $780 · Review" },
-                { ticket: "TKT-4824", driver: "M. Chen · Truck #07", status: "Matched", statusColor: "#00ff9d", note: "Proof verified · Billing-ready" },
+                { ticket: "TKT-4824", driver: "M. Chen · Truck #07", status: "Matched", statusColor: "#22d3ee", note: "Proof verified · Billing-ready" },
               ].map((row) => (
                 <div key={row.ticket} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                   <div>
@@ -6365,13 +6365,13 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
         <div className="container">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
             <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(0,180,255,0.25)", padding: 32 }}>
-              <div style={{ marginBottom: 16, fontWeight: 800, color: "#00b4ff", fontSize: "0.85rem", letterSpacing: "0.1em" }}>DISPATCH GUARD™ — COMPLIANCE ALERTS</div>
+              <div style={{ marginBottom: 16, fontWeight: 800, color: "#38bdf8", fontSize: "0.85rem", letterSpacing: "0.1em" }}>DISPATCH GUARD™ — COMPLIANCE ALERTS</div>
               {[
                 { driver: "J. Williams", issue: "Medical card expires in 3 days", severity: "CRITICAL", color: "#ff2800" },
                 { driver: "R. Thompson", issue: "Missing back-of-DL — See Compliance Notes!!", severity: "HIGH", color: "#ff6b6b" },
                 { driver: "A. Davis", issue: "Inspection follow-up pending", severity: "WARNING", color: "#ffd700" },
-                { driver: "K. Alston", issue: "CDL renewal due in 14 days", severity: "LOW", color: "#00b4ff" },
-                { driver: "M. Chen", issue: "All documents current", severity: "CLEAR", color: "#00ff9d" },
+                { driver: "K. Alston", issue: "CDL renewal due in 14 days", severity: "LOW", color: "#38bdf8" },
+                { driver: "M. Chen", issue: "All documents current", severity: "CLEAR", color: "#22d3ee" },
               ].map((alert) => (
                 <div key={alert.driver} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                   <div>
@@ -6383,17 +6383,17 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               ))}
             </div>
             <div>
-              <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24, background: "rgba(0,180,255,0.1)", borderColor: "rgba(0,180,255,0.4)", color: "#00b4ff" }}>
+              <div className="hero-badge" style={{ display: "inline-flex", marginBottom: 24, background: "rgba(0,180,255,0.1)", borderColor: "rgba(0,180,255,0.4)", color: "#38bdf8" }}>
                 <i className="fas fa-shield-alt"></i> Dispatch Guard™
               </div>
-              <h2>Import Dispatch Schedules. <span style={{ background: "linear-gradient(90deg,#00b4ff,#00ff9d)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Catch Blockers.</span></h2>
+              <h2>Import Dispatch Schedules. <span style={{ background: "linear-gradient(90deg,#38bdf8,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Catch Blockers.</span></h2>
               <p style={{ color: "rgba(255,255,255,0.8)" }}>
                 Dispatch Guard helps staff import daily dispatch schedules, check driver and truck readiness, identify compliance problems, and connect dispatch activity to ticket proof and payroll.
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 24 }}>
                 {["Daily dispatch schedule import","Driver, truck, vendor matching","Compliance note tracking","Compliance issue alerts","Expected ticket count by job","Dispatch-to-Fast Scan matching","Dispatch-to-payroll validation","Dispatch block recommendations"].map((b) => (
                   <div key={b} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(0,180,255,0.06)", borderRadius: 10, border: "1px solid rgba(0,180,255,0.2)" }}>
-                    <i className="fas fa-check" style={{ color: "#00b4ff", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
+                    <i className="fas fa-check" style={{ color: "#38bdf8", fontSize: 12, marginTop: 3, flexShrink: 0 }}></i>
                     <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{b}</span>
                   </div>
                 ))}
@@ -6412,9 +6412,9 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
             <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(0,255,157,0.25)", padding: 36 }}>
               <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(0,255,157,0.12)", border: "1px solid rgba(0,255,157,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                <i className="fas fa-lock" style={{ color: "#00ff9d", fontSize: 22 }}></i>
+                <i className="fas fa-lock" style={{ color: "#22d3ee", fontSize: 22 }}></i>
               </div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#00ff9d", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Payroll Guard™</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#22d3ee", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Payroll Guard™</div>
               <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Proof-Before-Pay Controls</h3>
               <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
                 Payroll Guard protects companies from paying loads without proof. It checks scanned tickets, dispatch records, payout sheets, rates, deductions, and approvals before payroll is released.
@@ -6422,7 +6422,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
                 {["Proof-before-pay controls","Missing ticket payroll holds","Duplicate ticket detection","Rate mismatch alerts","Deduction review","Manager override logging","Settlement packet support"].map((b) => (
                   <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.82)", fontSize: "0.88rem" }}>
-                    <i className="fas fa-check-circle" style={{ color: "#00ff9d", fontSize: 13 }}></i>{b}
+                    <i className="fas fa-check-circle" style={{ color: "#22d3ee", fontSize: 13 }}></i>{b}
                   </li>
                 ))}
               </ul>
@@ -6496,9 +6496,9 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
             <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(168,85,247,0.25)", padding: 36 }}>
               <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                <i className="fas fa-users-cog" style={{ color: "#a855f7", fontSize: 22 }}></i>
+                <i className="fas fa-users-cog" style={{ color: "#38bdf8", fontSize: 22 }}></i>
               </div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#a855f7", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Owner Operator Command Center</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#38bdf8", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Owner Operator Command Center</div>
               <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Complete OO Management</h3>
               <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
                 Manage owner operators as businesses — fleet, compliance, contracts, settlements, and performance in one place. Track every document, settlement status, and dispatch eligibility score.
@@ -6506,7 +6506,7 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {["OO company profile","Driver roster","Fleet roster","Document tracking","Settlement status","Compliance score","Dispatch eligibility","Performance score"].map((b) => (
                   <div key={b} style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.82)", fontSize: "0.83rem" }}>
-                    <i className="fas fa-check" style={{ color: "#a855f7", fontSize: 11 }}></i>{b}
+                    <i className="fas fa-check" style={{ color: "#38bdf8", fontSize: 11 }}></i>{b}
                   </div>
                 ))}
               </div>
@@ -6514,9 +6514,9 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
             </div>
             <div style={{ background: "rgba(20,20,20,0.9)", borderRadius: 20, border: "1px solid rgba(74,222,128,0.25)", padding: 36 }}>
               <div style={{ width: 52, height: 52, borderRadius: 12, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                <i className="fas fa-database" style={{ color: "#4ade80", fontSize: 22 }}></i>
+                <i className="fas fa-database" style={{ color: "#38bdf8", fontSize: 22 }}></i>
               </div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Original Upload Backup Center</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#38bdf8", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Original Upload Backup Center</div>
               <h3 style={{ color: "#fff", marginBottom: 14, fontSize: "1.4rem" }}>Every File Preserved</h3>
               <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.7, marginBottom: 20 }}>
                 Every original uploaded sheet, schedule, ticket, invoice, or backup file is preserved as read-only source evidence. Staff can correct parsed records without ever changing the original file.
@@ -6524,11 +6524,11 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
               <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
                 {["Original files preserved permanently","Download original sheets anytime","Parsed row backup","Raw row JSON storage","Import history","Staff upload history","Audit-safe document archive"].map((b) => (
                   <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.82)", fontSize: "0.88rem" }}>
-                    <i className="fas fa-lock" style={{ color: "#4ade80", fontSize: 11 }}></i>{b}
+                    <i className="fas fa-lock" style={{ color: "#38bdf8", fontSize: 11 }}></i>{b}
                   </li>
                 ))}
               </ul>
-              <a href="/ronyx/backup" className="btn btn-secondary" style={{ marginTop: 24, fontSize: "0.85rem", padding: "10px 22px", color: "#4ade80", borderColor: "#4ade80" }}>Open Backup Center</a>
+              <a href="/ronyx/backup" className="btn btn-secondary" style={{ marginTop: 24, fontSize: "0.85rem", padding: "10px 22px", color: "#38bdf8", borderColor: "#38bdf8" }}>Open Backup Center</a>
             </div>
           </div>
         </div>
@@ -6596,10 +6596,10 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
             </div>
             <div style={{ display: "flex", gap: 32, justifyContent: "center", marginTop: 40, flexWrap: "wrap" }}>
               {[
-                { icon: "fa-check-circle", label: "No long-term contracts", color: "#00ff9d" },
+                { icon: "fa-check-circle", label: "No long-term contracts", color: "#22d3ee" },
                 { icon: "fa-bolt", label: "30-day implementation", color: "#2563eb" },
                 { icon: "fa-chart-line", label: "214% average ROI", color: "#ffd700" },
-                { icon: "fa-lock", label: "Proof-before-pay controls", color: "#00b4ff" },
+                { icon: "fa-lock", label: "Proof-before-pay controls", color: "#38bdf8" },
               ].map((item) => (
                 <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.75)", fontSize: "0.88rem" }}>
                   <i className={`fas ${item.icon}`} style={{ color: item.color }}></i>
@@ -6620,11 +6620,11 @@ Accounting Suites (TruckingOffice, QuickBooks)`}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
             {[
               { name: "Fast Scan™", desc: "Scan tickets → matched, pay-ready data.", href: "#fast-scan", cta: "See it", color: "#2563eb" },
-              { name: "Dispatch Guard™", desc: "Daily dispatch import + compliance checks.", href: "#dispatch-guard", cta: "See it", color: "#00b4ff" },
+              { name: "Dispatch Guard™", desc: "Daily dispatch import + compliance checks.", href: "#dispatch-guard", cta: "See it", color: "#38bdf8" },
               { name: "Carrier Clearance Bureau™ (CCB)", desc: "Clear carriers/drivers/trucks before dispatch.", href: "#compliance-guard", cta: "See it", color: "#f43f5e" },
               { name: "Accounting Command Center", desc: "Ticket-to-cash: invoices, A/R, settlements, payroll.", href: "mailto:sales@movearoundtms.com?subject=Accounting%20Command%20Center%20demo", cta: "Book demo", color: "#22c55e" },
               { name: "Owner-Operator Onboarding + e-Sign", desc: "Try the live self sign-up & e-signature flow.", href: "/owner-operator-signup", cta: "Try it live", color: "#14b8a6" },
-              { name: "Capacity Network", desc: "Source & convert drivers/carriers on demand.", href: "mailto:sales@movearoundtms.com?subject=Capacity%20Network%20demo", cta: "Book demo", color: "#8b5cf6" },
+              { name: "Capacity Network", desc: "Source & convert drivers/carriers on demand.", href: "mailto:sales@movearoundtms.com?subject=Capacity%20Network%20demo", cta: "Book demo", color: "#2563eb" },
               { name: "Fleet CDL & Medical", desc: "Fleet-wide CDL/medical/truck compliance table.", href: "mailto:sales@movearoundtms.com?subject=Fleet%20CDL%20%26%20Medical%20demo", cta: "Book demo", color: "#f59e0b" },
               { name: "Smart Import", desc: "Import any file — deduped, auto-filed.", href: "mailto:sales@movearoundtms.com?subject=Smart%20Import%20demo", cta: "Book demo", color: "#38bdf8" },
             ].map((d) => (
