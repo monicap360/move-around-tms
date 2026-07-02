@@ -911,7 +911,7 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       {pinReady && !activeStaff && !pinSkipped && <PinGate onUnlock={unlockStaff} onSkip={skipPin} showSignupLinks />}
 
       {/* Office Assistant — available once staff are in (not on the lock screen) */}
-      {(activeStaff || pinSkipped) && <AssistantWidget />}
+      {(activeStaff || pinSkipped) && <AssistantWidget staffName={activeStaff?.name || displayName} />}
 
       {trainingOpen && <StaffTraining name={activeStaff?.name?.split(" ")[0] || displayName} onClose={() => setTrainingOpen(false)} />}
 

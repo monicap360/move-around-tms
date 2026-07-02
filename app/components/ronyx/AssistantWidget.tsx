@@ -8,10 +8,18 @@ import { useEffect, useRef, useState } from "react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const GREETING =
-  "Hi! I'm your office assistant. Ask me anything about your drivers, trucks, or compliance — or tell me what to do. Try:\n• \"Patrick Hendrick is duplicated, fix it\"\n• \"How many drivers are missing a truck?\"\n• \"Find drivers for Grit Logistics\"";
+function greetingFor(name?: string): string {
+  const first = (name || "").trim().split(/\s+/)[0];
+  const f = first.toLowerCase();
+  const hi = first ? `Hi ${first}!` : "Hi!";
+  if (f === "tabitha")
+    return `${hi} I'm your dispatch assistant. Ask me about today's dispatch, loads, carriers, or onboarding — or tell me what to do. Try:\n• "How's today's dispatch?"\n• "What loads is Grit running today?"\n• "Which loads are missing a truck?"`;
+  if (f === "sylvia")
+    return `${hi} I'm your compliance assistant. Ask about drivers, CDL/medical, COIs — or tell me what to do. Try:\n• "Patrick Hendrick is duplicated, fix it"\n• "How many drivers are missing a truck?"\n• "Find drivers for Grit Logistics"`;
+  return `${hi} I'm your office assistant. Ask me anything about your drivers, trucks, dispatch, or compliance — or tell me what to do.`;
+}
 
-export default function AssistantWidget() {
+export default function AssistantWidget({ staffName }: { staffName?: string }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -26,7 +34,7 @@ export default function AssistantWidget() {
     const next = [...msgs, { role: "user" as const, content: text }];
     setMsgs(next); setInput(""); setBusy(true);
     try {
-      const res = await fetch("/api/ronyx/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: next }) });
+      const res = await fetch("/api/ronyx/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: next, staff: staffName || "" }) });
       if (res.status === 401) { window.location.href = `/ronyx-lock?next=${encodeURIComponent(location.pathname)}`; return; }
       const data = await res.json();
       setMsgs(m => [...m, { role: "assistant", content: data.reply || "Done." }]);
@@ -63,7 +71,7 @@ export default function AssistantWidget() {
           {/* Messages */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 14, background: "#f8fafc", display: "flex", flexDirection: "column", gap: 10 }}>
             {msgs.length === 0 && (
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", fontSize: "0.82rem", color: "#334155", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{GREETING}</div>
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", fontSize: "0.82rem", color: "#334155", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{greetingFor(staffName)}</div>
             )}
             {msgs.map((m, i) => (
               <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "88%" }}>
