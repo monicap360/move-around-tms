@@ -69,11 +69,12 @@ export default function HqLogin() {
               <button onClick={() => { setPicked(null); setPin(""); setErr(""); }} style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.72rem", cursor: "pointer", marginTop: 2 }}>← not you?</button>
             </div>
             {/* PIN dots */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 12, margin: "8px 0 18px" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12, margin: "8px 0 6px" }}>
               {[0, 1, 2, 3, 4, 5].map(i => (
-                <span key={i} style={{ width: 12, height: 12, borderRadius: "50%", background: i < pin.length ? "linear-gradient(135deg,#2563eb,#06b6d4)" : "rgba(148,163,184,0.2)", boxShadow: i < pin.length ? "0 0 12px rgba(56,189,248,0.7)" : "none", transition: "all .15s" }} />
+                <span key={i} style={{ width: 12, height: 12, borderRadius: "50%", background: i < pin.length ? "linear-gradient(135deg,#2563eb,#06b6d4)" : "rgba(148,163,184,0.2)", boxShadow: i < pin.length ? "0 0 12px rgba(56,189,248,0.7)" : "none", transition: "all .15s", visibility: i < 4 || i < pin.length ? "visible" : "hidden" }} />
               ))}
             </div>
+            <div style={{ textAlign: "center", fontSize: "0.72rem", color: "#64748b", marginBottom: 12 }}>Enter your PIN</div>
             {err && <div style={{ textAlign: "center", color: "#fca5a5", fontSize: "0.78rem", marginBottom: 10 }}>{err}</div>}
             {/* keypad */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
