@@ -16,8 +16,11 @@ type Lead = {
   notes: string | null;
   next_follow_up: string | null;
   last_contact_date: string | null;
+  current_tools: string[] | null;
   updated_at: string;
 };
+
+type Battlecard = { id: string; system_name: string; category: string | null; our_edge: string | null; talk_track: string | null; avoid: string | null; sort_order: number };
 
 const STAGES = [
   { key: "new",       label: "New",       color: "#2563eb", bg: "#eff6ff" },
@@ -33,13 +36,14 @@ const money = (n: number | null | undefined) => "$" + Number(n || 0).toLocaleStr
 // The sales team — each person's leads are tagged with their name (Owner).
 const SALESPEOPLE = ["Andrew", "Laura", "Sylvia", "Veronica", "Monica"];
 
-const BLANK = { owner_name: "", company_name: "", contact_name: "", phone: "", email: "", source: "", stage: "new", estimated_value: "", trucks_count: "", notes: "", next_follow_up: "" };
+const BLANK = { owner_name: "", company_name: "", contact_name: "", phone: "", email: "", source: "", stage: "new", estimated_value: "", trucks_count: "", notes: "", next_follow_up: "", current_tools: [] };
 
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 const lbl: React.CSSProperties = { fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 3 };
 
 export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sales Pipeline", subtitle = "Track every lead from first contact to close." }: { apiPath?: string; title?: string; subtitle?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [battlecards, setBattlecards] = useState<Battlecard[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("All");
@@ -86,6 +90,8 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
       .finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => { fetch("/api/hq/battlecards").then(r => r.ok ? r.json() : null).then(d => { if (d) setBattlecards(d.battlecards || []); }).catch(() => {}); }, []);
+  const toggleTool = (name: string) => setForm((f: any) => { const cur: string[] = Array.isArray(f.current_tools) ? f.current_tools : []; return { ...f, current_tools: cur.includes(name) ? cur.filter(t => t !== name) : [...cur, name] }; });
 
   // Scope everything to the selected salesperson (or All).
   const ownerScoped = useMemo(() => {
@@ -372,6 +378,42 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
               <div><label style={lbl}>Fleet Size (trucks)</label><input type="number" value={form.trucks_count} onChange={e => setForm({ ...form, trucks_count: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Next Follow-up</label><input type="date" value={form.next_follow_up} onChange={e => setForm({ ...form, next_follow_up: e.target.value })} style={inp} /></div>
               <div style={{ gridColumn: "1 / -1" }}><label style={lbl}>Notes</label><textarea value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} style={{ ...inp, minHeight: 70, resize: "vertical" }} /></div>
+
+              {/* What are they currently using? → live talk tracks (no knocking) */}
+              {battlecards.length > 0 && (
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={lbl}>What are they using now? (check all)</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                    {battlecards.map(bc => {
+                      const on = Array.isArray(form.current_tools) && form.current_tools.includes(bc.system_name);
+                      return (
+                        <button key={bc.id} type="button" onClick={() => toggleTool(bc.system_name)}
+                          style={{ cursor: "pointer", padding: "6px 11px", borderRadius: 999, fontSize: "0.76rem", fontWeight: 700, background: on ? "#0f172a" : "#fff", color: on ? "#fff" : "#475569", border: "1px solid " + (on ? "#0f172a" : "#e2e8f0") }}>
+                          {on ? "✓ " : ""}{bc.system_name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {Array.isArray(form.current_tools) && form.current_tools.length > 0 && (
+                <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {form.current_tools.map((t: string) => {
+                    const bc = battlecards.find(b => b.system_name === t);
+                    if (!bc) return null;
+                    return (
+                      <div key={t} style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+                        <div style={{ background: "#0f172a", color: "#fff", padding: "7px 12px", fontWeight: 800, fontSize: "0.8rem" }}>🎯 They use: {bc.system_name}</div>
+                        <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                          {bc.talk_track && <div style={{ fontSize: "0.82rem", color: "#334155", lineHeight: 1.55, background: "#eff6ff", border: "1px solid #dbeafe", borderRadius: 8, padding: "8px 10px" }}><strong style={{ color: "#1e40af" }}>💬 What to say:</strong> {bc.talk_track}</div>}
+                          {bc.our_edge && <div style={{ fontSize: "0.8rem", color: "#334155", lineHeight: 1.5 }}><strong style={{ color: "#15803d" }}>Our edge:</strong> {bc.our_edge}</div>}
+                          {bc.avoid && <div style={{ fontSize: "0.78rem", color: "#7f1d1d", lineHeight: 1.5, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "6px 10px" }}><strong>⚠ Don't:</strong> {bc.avoid}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 18, alignItems: "center" }}>
               <button onClick={save} disabled={saving} style={{ background: saving ? "#94a3b8" : "#16a34a", color: "#fff", border: "none", borderRadius: 9, padding: "10px 22px", fontWeight: 800, fontSize: "0.86rem", cursor: saving ? "default" : "pointer" }}>{saving ? "Saving…" : form.id ? "Save Changes" : "Add Lead"}</button>

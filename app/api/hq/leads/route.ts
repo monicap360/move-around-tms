@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 const FIELDS = [
   "owner_name", "company_name", "contact_name", "phone", "email", "source",
   "stage", "estimated_value", "trucks_count", "notes", "next_follow_up", "last_contact_date",
+  "current_tools",
 ] as const;
 
 const clean = (body: any) => {
@@ -17,6 +18,7 @@ const clean = (body: any) => {
   for (const f of FIELDS) {
     if (!(f in body)) continue;
     let v = body[f];
+    if (f === "current_tools") { row[f] = Array.isArray(v) ? v : []; continue; }
     if (v === "") v = f === "estimated_value" ? 0 : null;
     row[f] = v;
   }
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
   if (!orgId) return NextResponse.json({ error: "Could not resolve your organization." }, { status: 400 });
   const body = await req.json().catch(() => ({}));
   if (!body.company_name?.trim()) return NextResponse.json({ error: "Company name is required." }, { status: 400 });
-  const row = { ...clean(body), organization_id: orgId, owner_name: body.owner_name || "Andrew" };
+  const row = { ...clean(body), organization_id: orgId, owner_name: (body.owner_name || "").trim() || null };
   const { data, error } = await supabaseAdmin.from("ronyx_sales_leads").insert(row).select("*").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, lead: data });
