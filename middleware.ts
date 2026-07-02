@@ -63,6 +63,7 @@ export async function middleware(req: NextRequest) {
       path === "/ronyx-lock" ||
       path === "/api/ronyx/staff-pins/verify" ||
       path === "/api/ronyx/staff-pins/logout" ||
+      path === "/api/ronyx/logo" ||
       (path === "/api/ronyx/staff-pins" && req.method === "GET");
 
     if (gated && !allow) {

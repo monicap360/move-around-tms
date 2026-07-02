@@ -4,7 +4,7 @@
 // Staff pick their name and enter a PIN to act as themselves (attribution). Has a
 // built-in "Manage staff" panel to add people and set PINs — no separate page.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { safePrompt } from "@/lib/safePrompt";
 
 export type ActiveStaff = { id: string; name: string; role: string };
@@ -18,6 +18,21 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { fetch("/api/ronyx/logo").then(r => r.json()).then(d => setLogoUrl(d.logo_url || null)).catch(() => {}); }, []);
+  async function uploadLogo(file: File) {
+    setUploadingLogo(true); setErr("");
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const r = await fetch("/api/ronyx/logo", { method: "POST", body: fd });
+      const d = await r.json();
+      if (d.logo_url) setLogoUrl(d.logo_url); else setErr(d.error || "Logo upload failed.");
+    } catch { setErr("Logo upload failed."); }
+    finally { setUploadingLogo(false); }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,7 +97,7 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
       <div style={{ position: "absolute", bottom: "-15%", right: "10%", width: 440, height: 440, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.22), transparent 65%)", filter: "blur(18px)" }} />
       <div style={{ position: "relative", width: "100%", maxWidth: 460, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(99,179,237,0.22)", borderRadius: 22, padding: "30px 28px 24px", boxShadow: "0 30px 90px rgba(0,0,0,0.6)" }}>
         <div style={{ textAlign: "center", marginBottom: 18 }}>
-          <img src="/ronyx_logo.png" alt="Ronyx Logistics" style={{ height: 56, width: "auto", margin: "0 auto 8px", display: "block" }}
+          <img src={logoUrl || "/ronyx_logo.png"} alt="Ronyx Logistics" style={{ height: 56, width: "auto", margin: "0 auto 8px", display: "block", maxWidth: 220, objectFit: "contain" }}
             onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const ic = img.parentElement?.querySelector(".pin-fallback-icon"); if (ic) (ic as HTMLElement).style.display = "flex"; }} />
           <div className="pin-fallback-icon" style={{ width: 52, height: 52, margin: "0 auto 8px", borderRadius: 14, background: "linear-gradient(135deg,#4f46e5,#0891b2)", display: "none", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🔐</div>
           <div style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff", letterSpacing: "0.01em" }}>Ronyx Logistics</div>
@@ -90,6 +105,12 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
             {view === "manage" ? "Manage staff & PINs" : view === "pin" ? `Enter PIN for ${selected?.name}` : "Who's working? Tap your name."}
           </div>
           <div style={{ fontSize: 10, color: "#475569", marginTop: 8, fontWeight: 800, letterSpacing: "0.28em", textTransform: "uppercase" }}>Powered by MoveAround TMS</div>
+          {view === "pick" && (
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => logoRef.current?.click()} disabled={uploadingLogo} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(148,163,184,0.22)", color: "#94a3b8", borderRadius: 8, padding: "5px 11px", fontWeight: 700, fontSize: 11, cursor: uploadingLogo ? "default" : "pointer" }}>{uploadingLogo ? "Uploading…" : logoUrl ? "🖼 Change logo" : "🖼 Upload your logo"}</button>
+              <input ref={logoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.target.value = ""; }} />
+            </div>
+          )}
         </div>
 
         {view === "pick" && (
