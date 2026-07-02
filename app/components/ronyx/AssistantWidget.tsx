@@ -16,6 +16,8 @@ function greetingFor(name?: string): string {
     return `${hi} I'm your accounting assistant. Ask me about settlements, unpaid tickets, invoices, payroll, or the dispatch-to-pay list — or tell me what to do. Try:\n• "What's pending settlement?"\n• "How much revenue and margin so far?"\n• "How's today's dispatch list?"`;
   if (f === "sylvia")
     return `${hi} I'm your compliance assistant. Ask about drivers, CDL/medical, COIs — or tell me what to do. Try:\n• "Patrick Hendrick is duplicated, fix it"\n• "How many drivers are missing a truck?"\n• "Find drivers for Grit Logistics"`;
+  if (f === "norma")
+    return `${hi} I'm your CCB assistant. Ask about carrier clearance — who's cleared, who's blocked, who needs review — or tell me what to do. Try:\n• "How does clearance look today?"\n• "Check clearance for ABC Trucking"\n• "Add a task to re-check their insurance"`;
   return `${hi} I'm your office assistant. Ask me anything about your drivers, trucks, dispatch, or compliance — or tell me what to do.`;
 }
 

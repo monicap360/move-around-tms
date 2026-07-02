@@ -55,6 +55,21 @@ const TOOLS: Anthropic.Tool[] = [
     description: "Search the latest dispatch import by driver, carrier/company, or truck number. Returns matching loads with driver, truck, carrier, matched owner-operator, and status.",
     input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
   },
+  {
+    name: "get_ccb_snapshot",
+    description: "CCB (Carrier Clearance Board) snapshot from the latest dispatch: how many carriers are Clear, Low, Warning, and Dispatch-Block (critical), plus the carriers that need attention. Use for 'how does clearance look / what's blocked / who needs review'.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "search_carrier_clearance",
+    description: "Search carrier clearance notes from the latest dispatch by carrier, driver, or truck. Returns each match's compliance note, classification, and severity (clear/low/warning/critical). Use to check a specific carrier's clearance.",
+    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+  },
+  {
+    name: "create_ccb_task",
+    description: "Create a CCB follow-up task (e.g. 're-check ABC Trucking's insurance', 'call carrier about expired authority'). Assigns it to the CCB queue. Use when told to follow up, remind, or add a to-do.",
+    input_schema: { type: "object", properties: { title: { type: "string", description: "Short task description" }, priority: { type: "string", enum: ["low", "normal", "high"], description: "Optional priority" } }, required: ["title"] },
+  },
 ];
 
 async function runTool(name: string, input: any, orgId: string): Promise<any> {
@@ -189,6 +204,44 @@ async function runTool(name: string, input: any, orgId: string): Promise<any> {
     return { count: hits.length, loads: hits };
   }
 
+  if (name === "get_ccb_snapshot" || name === "search_carrier_clearance") {
+    const { data: latest } = await sb.from("dispatch_import_rows").select("dispatch_import_id").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return { note: "No dispatch has been imported yet, so there's no clearance data to review." };
+    const { data: rows } = await sb.from("dispatch_import_rows")
+      .select("company_name, driver_name, truck_number, rmis_note, rmis_classification, rmis_severity, matched_company_name")
+      .eq("dispatch_import_id", latest.dispatch_import_id).limit(5000);
+    const r = rows || [];
+    if (name === "get_ccb_snapshot") {
+      const bySev = (s: string) => r.filter(x => (x.rmis_severity || "clear") === s);
+      const attention = [...bySev("critical"), ...bySev("warning")].slice(0, 20)
+        .map(x => ({ carrier: x.company_name || x.driver_name || "—", truck: x.truck_number || null, severity: x.rmis_severity, note: x.rmis_note || null }));
+      return {
+        clear: bySev("clear").length,
+        low: bySev("low").length,
+        warning: bySev("warning").length,
+        dispatch_block: bySev("critical").length,
+        total_carriers: new Set(r.map(x => x.company_name).filter(Boolean)).size,
+        needs_attention: attention,
+      };
+    }
+    const q = (input.query || "").toLowerCase();
+    const hits = r.filter(x => [x.company_name, x.driver_name, x.truck_number, x.rmis_note, x.matched_company_name].some(v => (v || "").toLowerCase().includes(q)))
+      .slice(0, 30)
+      .map(x => ({ carrier: x.company_name || "—", driver: x.driver_name || null, truck: x.truck_number || null, severity: x.rmis_severity || "clear", classification: x.rmis_classification || null, note: x.rmis_note || null }));
+    return { count: hits.length, carriers: hits };
+  }
+
+  if (name === "create_ccb_task") {
+    const title = String(input.title || "").trim();
+    if (!title) return { error: "Need a task description." };
+    const pri = ["low", "normal", "high"].includes(String(input.priority)) ? String(input.priority) : "normal";
+    const { data, error } = await sb.from("ronyx_staff_tasks")
+      .insert({ assigned_to_name: "CCB", title, status: "pending", priority: pri, task_type: "ccb_followup", source_type: "assistant", source_label: "Office Assistant" })
+      .select("id").single();
+    if (error) return { error: error.message };
+    return { ok: true, created: `CCB task added: "${title}" (${pri} priority).`, id: data?.id };
+  }
+
   return { error: `Unknown tool ${name}` };
 }
 
@@ -201,6 +254,8 @@ function personaFor(staff: string): string {
     focus = `You are speaking with TABITHA, who runs ACCOUNTING (the "Money" section) at Ronyx — invoices, unpaid tickets, payroll, driver pay, owner-operator settlements, and receivables. Lead with her financial world: use get_money_snapshot for "how much is pending settlement / what's outstanding / revenue" questions. She also just set up the daily dispatch list, and dispatch feeds settlements & pay, so use get_dispatch_snapshot / search_dispatch when she connects loads to money. Help her reconcile, chase unpaid items, and keep the books tidy.`;
   } else if (f === "sylvia") {
     focus = `You are speaking with SYLVIA, who runs driver compliance and the owner-operator office. Lead with her world: drivers, CDL/medical, COIs, duplicates, and owner-operator records. Proactively catch data problems (duplicates, missing trucks/cards).`;
+  } else if (f === "norma") {
+    focus = `You are speaking with NORMA, who runs the CCB (Carrier Clearance Board) — carrier clearance and compliance monitoring. Lead with her world: which carriers are cleared vs blocked, clearance notes, authority/insurance/safety concerns, and what needs review before dispatch. Use get_ccb_snapshot for "how does clearance look / what's blocked / who needs review", and search_carrier_clearance to check a specific carrier. When she says to follow up on a carrier (re-check insurance, call about authority), use create_ccb_task. Her goal is to make sure only cleared carriers roll.`;
   } else {
     focus = `You are speaking with ${first || "an office staff member"} at Ronyx.`;
   }
