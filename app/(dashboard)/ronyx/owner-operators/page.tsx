@@ -1808,6 +1808,11 @@ export default function OwnerOperatorsPage() {
               {!ooIsActive(selected) && (
                 <span style={{ padding: "3px 10px", borderRadius: 999, background: "rgba(239,68,68,0.18)", color: "#fca5a5", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.04em" }}>NOT ACTIVE</span>
               )}
+              <a href={`/api/ronyx/owner-operators/${selected.id}/agreement-pdf`}
+                title="Download a fillable Subhauler Agreement, pre-filled with this company's registration info"
+                style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", textDecoration: "none" }}>
+                📄 Fillable Agreement
+              </a>
               <button
                 onClick={() => setEditProfile({
                   company_name:     selected.company_name || "",
@@ -1823,7 +1828,7 @@ export default function OwnerOperatorsPage() {
                   active:           ooIsActive(selected),
                 })}
                 title="Edit this owner-operator's profile"
-                style={{ marginLeft: "auto", padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 ✏ Edit Profile
               </button>
               <button
