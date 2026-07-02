@@ -16,12 +16,20 @@ const money = (n: number | null | undefined) => "$" + Number(n || 0).toLocaleStr
 const BLANK = { customer_company: "", contact_name: "", email: "", phone: "", plan_name: "MoveAround TMS", amount: "", billing_cycle: "monthly", status: "active", start_date: "", next_due_date: "", notes: "" };
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 const lbl: React.CSSProperties = { fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 3 };
+const chip: React.CSSProperties = { cursor: "pointer", padding: "5px 11px", borderRadius: 999, fontSize: "0.74rem", fontWeight: 800, background: "#fff", color: "#15803d", border: "1px solid #bbf7d0" };
 
 export default function HqBillingPage() {
   const [rows, setRows] = useState<Sub[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [form, setForm] = useState<any | null>(null);
+  const [ccbCount, setCcbCount] = useState("");
+  const applyCcb = () => {
+    const n = Number(ccbCount) || 0;
+    const tier = n <= 50 ? "Starter" : n <= 200 ? "Growth" : "Fleet";
+    const amt = n <= 50 ? 299 : n * 5;
+    setForm((f: any) => ({ ...f, plan_name: `CCB — ${tier} (${n} carriers)`, amount: String(amt) }));
+  };
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any | null>(null); // billing settings modal
   const [savingSettings, setSavingSettings] = useState(false);
@@ -158,6 +166,17 @@ export default function HqBillingPage() {
               <div><label style={lbl}>Contact Name</label><input value={form.contact_name || ""} onChange={e => setForm({ ...form, contact_name: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Email</label><input value={form.email || ""} onChange={e => setForm({ ...form, email: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Phone</label><input value={form.phone || ""} onChange={e => setForm({ ...form, phone: e.target.value })} style={inp} /></div>
+              <div style={{ gridColumn: "1 / -1", background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: 10, padding: "10px 12px" }}>
+                <label style={lbl}>Quick-fill plan</label>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  <button type="button" onClick={() => setForm({ ...form, plan_name: "MoveAround TMS" })} style={chip}>MoveAround TMS</button>
+                  <button type="button" onClick={() => setForm({ ...form, plan_name: "CCB — Starter", amount: "299" })} style={chip}>CCB Starter · $299</button>
+                  <span style={{ width: 1, height: 22, background: "#cbd5e1" }} />
+                  <span style={{ fontSize: "0.72rem", color: "#15803d", fontWeight: 700 }}>CCB by carriers:</span>
+                  <input type="number" value={ccbCount} onChange={e => setCcbCount(e.target.value)} placeholder="#" style={{ ...inp, width: 80 }} />
+                  <button type="button" onClick={applyCcb} style={{ ...chip, background: "#16a34a", color: "#fff", border: "none" }}>Apply ($5/carrier)</button>
+                </div>
+              </div>
               <div><label style={lbl}>Plan</label><input value={form.plan_name || ""} onChange={e => setForm({ ...form, plan_name: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Amount ($)</label><input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Billing Cycle</label><select value={form.billing_cycle} onChange={e => setForm({ ...form, billing_cycle: e.target.value })} style={inp}><option value="monthly">Monthly</option><option value="annual">Annual</option></select></div>

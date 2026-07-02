@@ -266,6 +266,13 @@ export default function CarrierClearanceBureauPage() {
             </div>
           </div>
 
+          {/* Switch incentive */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap", background: "linear-gradient(135deg,rgba(22,163,74,0.16),rgba(21,128,61,0.08))", border: "1px solid rgba(34,197,94,0.4)", borderRadius: 14, padding: "14px 20px", marginBottom: 28, textAlign: "center" }}>
+            <span style={{ fontSize: "1.3rem" }}>🔄</span>
+            <span style={{ fontSize: "0.9rem", color: "#e2e8f0", fontWeight: 600 }}>Switching from another monitor? <strong style={{ color: "#4ade80" }}>First 3 months 50% off</strong> + free migration.</span>
+            <Link href={demo} style={{ background: greenBtn, color: "#fff", padding: "8px 18px", borderRadius: 8, fontWeight: 800, fontSize: "0.8rem", textDecoration: "none" }}>Claim offer</Link>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
             {PLANS.map(plan => (
               <div key={plan.tier} style={{ background: plan.highlight ? "#12294d" : CARD, border: `1.5px solid ${plan.highlight ? GREEN : BORDER}`, borderRadius: 16, padding: "28px 24px", boxShadow: plan.highlight ? "0 0 40px rgba(34,197,94,0.18)" : "none" }}>
