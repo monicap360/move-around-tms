@@ -99,6 +99,8 @@ export default function HqShell({ active, children }: { active: string; children
           <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ position: "relative", zIndex: 1, marginLeft: "auto", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: uploading ? "default" : "pointer" }}>{uploading ? "Uploading…" : logo ? "🖼 Change logo" : "🖼 Upload logo"}</button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.target.value = ""; }} />
           <a href="/" style={{ position: "relative", zIndex: 1, fontSize: "0.78rem", color: "#38bdf8", textDecoration: "none", fontWeight: 700 }}>↗ movearoundtms.com</a>
+          <button onClick={() => window.location.reload()} title="Refresh" style={{ position: "relative", zIndex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>↻ Refresh</button>
+          <button onClick={logout} title="Sign out" style={{ position: "relative", zIndex: 1, background: "rgba(239,68,68,0.14)", border: "1px solid rgba(248,113,113,0.35)", color: "#fca5a5", borderRadius: 8, padding: "6px 12px", fontWeight: 800, fontSize: "0.76rem", cursor: "pointer" }}>⏻ Logout</button>
         </div>
         {children}
       </main>
