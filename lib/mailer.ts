@@ -20,7 +20,11 @@ const PLACEHOLDER = /your-|placeholder|REPLACE|example\.com|changeme/i;
 //                  is still in-app). Set MOVEAROUND_SMTP_HOST/PORT/USER/PASS +
 //                  MOVEAROUND_MAIL_FROM (default support@movearoundtms.com) to enable.
 export const MOVEAROUND_FROM = process.env.MOVEAROUND_MAIL_FROM || "support@movearoundtms.com";
-type Channel = "ronyx" | "movearound";
+// CCB (Carrier Clearance Bureau) is its own brand — its own inbox, separate from
+// MoveAround HQ and Ronyx. Set CCB_SMTP_HOST/PORT/USER/PASS + CCB_MAIL_FROM to enable.
+// Not set up yet → CCB mail stays unsent (capture stays in-app); never uses Ronyx.
+export const CCB_FROM = process.env.CCB_MAIL_FROM || "clearance@movearoundtms.com";
+type Channel = "ronyx" | "movearound" | "ccb";
 
 function creds(channel: Channel) {
   if (channel === "movearound") {
@@ -30,6 +34,15 @@ function creds(channel: Channel) {
       user: process.env.MOVEAROUND_SMTP_USER || "",
       pass: process.env.MOVEAROUND_SMTP_PASS || "",
       from: MOVEAROUND_FROM,
+    };
+  }
+  if (channel === "ccb") {
+    return {
+      host: process.env.CCB_SMTP_HOST || "",
+      port: process.env.CCB_SMTP_PORT ? Number(process.env.CCB_SMTP_PORT) : 587,
+      user: process.env.CCB_SMTP_USER || "",
+      pass: process.env.CCB_SMTP_PASS || "",
+      from: CCB_FROM,
     };
   }
   return {
@@ -48,6 +61,7 @@ function channelConfigured(channel: Channel): boolean {
 
 export function emailConfigured(): boolean { return channelConfigured("ronyx"); }
 export function moveAroundEmailConfigured(): boolean { return channelConfigured("movearound"); }
+export function ccbEmailConfigured(): boolean { return channelConfigured("ccb"); }
 
 export type SendResult = { ok: boolean; id?: string; simulated?: boolean; error?: string };
 
@@ -82,4 +96,9 @@ export async function sendEmail(opts: { to: string; subject: string; text?: stri
 // Always sends as MoveAround (support@movearoundtms.com) via MoveAround's own creds.
 export async function sendMoveAroundEmail(opts: { to: string; subject: string; text?: string; html?: string; replyTo?: string }): Promise<SendResult> {
   return sendEmail({ ...opts, channel: "movearound" });
+}
+
+// Always sends as CCB (Carrier Clearance Bureau) via CCB's own creds.
+export async function sendCcbEmail(opts: { to: string; subject: string; text?: string; html?: string; replyTo?: string }): Promise<SendResult> {
+  return sendEmail({ ...opts, channel: "ccb" });
 }
