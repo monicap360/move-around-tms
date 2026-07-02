@@ -19,6 +19,15 @@ const OO_DOC_OPTIONS: DocOption[] = [
   { value: "Vehicle Inspection",          label: "Inspection" },
 ];
 
+// COI slot destinations for the splitter — lets staff separate a bundled PDF into
+// the correct certificate-holder slots (matches the named COI slots in the UI).
+const COI_SPLIT_OPTIONS: DocOption[] = [
+  { value: "named_coi_ma_mortenson",  label: "M.A. Mortenson COI" },
+  { value: "named_coi_ronyx",         label: "Ronyx Logistics COI" },
+  { value: "named_coi_bas_equipment", label: "BAS Equipment COI" },
+  { value: "named_coi_tc_redwine",    label: "TC Redwine COI" },
+];
+
 /* ─── Types ─────────────────────────────────────────── */
 type OODriver = {
   id: string;
@@ -567,7 +576,7 @@ export default function OwnerOperatorsPage() {
   const [ooEditModal, setOoEditModal] = useState<{ id: string; form: Partial<OOCompany>; saving: boolean } | null>(null);
   const [moveModal, setMoveModal] = useState<{ ooId: string; ooName: string; targetId: string } | null>(null);
   const [editProfile, setEditProfile] = useState<{ company_name: string; contact_name: string; contact_phone: string; contact_email: string; business_address: string; mc_number: string; dot_number: string; ein: string; start_date: string; in_house_account_number: string; active: boolean } | null>(null);
-  const [pdfSplit, setPdfSplit] = useState<{ mode: "doc" | "card"; file: File; defaultType: string; ooId?: string; ooName?: string; moduleName?: string } | null>(null);
+  const [pdfSplit, setPdfSplit] = useState<{ mode: "doc" | "card" | "coi"; file: File; defaultType: string; ooId?: string; ooName?: string; moduleName?: string } | null>(null);
   const [reassignModal, setReassignModal] = useState<{ driverId: string; driverName: string; targetId: string } | null>(null);
   const [driverEditModal, setDriverEditModal] = useState<{ driver: OODriver; form: Partial<OODriver>; saving: boolean } | null>(null);
   const [verifyDrawerOO, setVerifyDrawerOO] = useState<{ id: string; name: string } | null>(null);
@@ -916,13 +925,19 @@ export default function OwnerOperatorsPage() {
   }
 
   // COI upload handler
-  async function handleCOIUpload(docType: string, file: File) {
+  async function handleCOIUpload(docType: string, file: File, fromSplit = false): Promise<COIDoc | void> {
     if (!selected) return;
+    // A single PDF often bundles several named COIs (Ronyx, M.A. Mortenson, BAS,
+    // TC Redwine). Open the divider so staff can send each page to the right slot.
+    if (!fromSplit && file.type === "application/pdf" && (await pdfPageCount(file)) > 1) {
+      setPdfSplit({ mode: "coi", file, defaultType: docType });
+      return;
+    }
     const form = new FormData();
     form.append("file", file);
     form.append("bucket", "ronyx-imports");
     form.append("path", `oo-coi/${selected.id}/${docType}/${file.name}`);
-    flash("Reading the COI…");
+    if (!fromSplit) flash("Reading the COI…");
     const upRes = await fetch("/api/ronyx/upload-file", { method:"POST", body:form });
     const upData = await upRes.json();
     const fileUrl = upData.url || null;
@@ -938,12 +953,13 @@ export default function OwnerOperatorsPage() {
     } catch {}
 
     const coiType = COI_TYPES_CONST.find(t => t.value === docType);
+    const m = fromSplit ? { insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" } : coiUploadForm;
     const body = {
-      ...coiUploadForm,
-      insurance_provider: coiUploadForm.insurance_provider || extracted?.insurance_provider || "",
-      policy_number:      coiUploadForm.policy_number      || extracted?.policy_number      || "",
-      effective_date:     coiUploadForm.effective_date     || extracted?.effective_date     || "",
-      expiration_date:    coiUploadForm.expiration_date    || extracted?.expiration_date    || "",
+      ...m,
+      insurance_provider: m.insurance_provider || extracted?.insurance_provider || "",
+      policy_number:      m.policy_number      || extracted?.policy_number      || "",
+      effective_date:     m.effective_date     || extracted?.effective_date     || "",
+      expiration_date:    m.expiration_date    || extracted?.expiration_date    || "",
       document_type: docType,
       coi_group: coiType?.group || "standard",
       file_name: file.name,
@@ -951,8 +967,9 @@ export default function OwnerOperatorsPage() {
     };
     const r = await fetch(`/api/ronyx/owner-operators/${selected.id}/coi`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
     const data = await r.json();
-    if (data.error) { flash(`Error: ${data.error}`); return; }
+    if (data.error) { if (!fromSplit) flash(`Error: ${data.error}`); return; }
     const newDoc: COIDoc = { id: data.coi.id, coi_group: data.coi.coi_group, document_type: data.coi.document_type, insurance_provider: body.insurance_provider||undefined, policy_number: body.policy_number||undefined, effective_date: body.effective_date||undefined, expiration_date: body.expiration_date||undefined, file_name: file.name, file_url: fileUrl||undefined, status: data.coi.status, review_status: data.coi.review_status, dispatch_blocked: false, settlement_hold: false };
+    if (fromSplit) return newDoc;
     updateLocalState({ ...selected, coi_documents: [...(selected.coi_documents||[]).filter(d => d.document_type !== docType), newDoc] });
     setShowCoiUpload(""); setCoiUploadForm({ document_type:"", coi_group:"standard", insurance_provider:"", policy_number:"", effective_date:"", expiration_date:"", notes:"" });
     flash(extracted && (extracted.effective_date || extracted.expiration_date || extracted.policy_number)
@@ -4919,14 +4936,26 @@ export default function OwnerOperatorsPage() {
       {pdfSplit && (
         <PdfSplitModal
           file={pdfSplit.file}
-          docOptions={OO_DOC_OPTIONS}
+          docOptions={pdfSplit.mode === "coi" ? COI_SPLIT_OPTIONS : OO_DOC_OPTIONS}
           defaultType={pdfSplit.defaultType}
-          title="Split & Assign Documents"
+          title={pdfSplit.mode === "coi" ? "Split & Assign COIs" : "Split & Assign Documents"}
           onCancel={() => setPdfSplit(null)}
           onComplete={async (pieces) => {
-            for (const p of pieces) {
-              if (pdfSplit.mode === "doc") await handleDocUpload(p.type, p.file);
-              else await cardUpload(pdfSplit.ooId!, pdfSplit.ooName!, p.type, pdfSplit.moduleName || "compliance", p.file);
+            if (pdfSplit.mode === "coi") {
+              // Each page → its named-COI slot; apply one combined state update after.
+              const added: COIDoc[] = [];
+              for (const p of pieces) { const nd = await handleCOIUpload(p.type, p.file, true); if (nd) added.push(nd); }
+              if (added.length && selected) {
+                const map = new Map((selected.coi_documents || []).map(d => [d.document_type, d] as [string, COIDoc]));
+                for (const nd of added) map.set(nd.document_type, nd);
+                updateLocalState({ ...selected, coi_documents: [...map.values()] });
+              }
+              flash(`Filed ${added.length} COI${added.length === 1 ? "" : "s"} from the packet.`);
+            } else {
+              for (const p of pieces) {
+                if (pdfSplit.mode === "doc") await handleDocUpload(p.type, p.file);
+                else await cardUpload(pdfSplit.ooId!, pdfSplit.ooName!, p.type, pdfSplit.moduleName || "compliance", p.file);
+              }
             }
             setPdfSplit(null);
           }}
