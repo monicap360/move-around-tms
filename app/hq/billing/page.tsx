@@ -23,8 +23,25 @@ export default function HqBillingPage() {
   const [toast, setToast] = useState("");
   const [form, setForm] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState<any | null>(null); // billing settings modal
+  const [savingSettings, setSavingSettings] = useState(false);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 4000); };
   const lock = () => { window.location.href = "/hq/login?next=/hq/billing"; };
+
+  async function openSettings() {
+    const d = await fetch("/api/hq/settings").then(r => r.json()).catch(() => ({ settings: {} }));
+    setSettings({ ...(d.settings || {}), gocardless_token: "" });
+  }
+  async function saveSettings() {
+    setSavingSettings(true);
+    try {
+      const res = await fetch("/api/hq/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+      if (res.status === 401) { lock(); return; }
+      const j = await res.json();
+      if (j.error) { flash(`Error: ${j.error}`); return; }
+      setSettings(null); flash("Billing settings saved.");
+    } finally { setSavingSettings(false); }
+  }
 
   function load() {
     setLoading(true);
@@ -80,7 +97,10 @@ export default function HqBillingPage() {
             <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900 }}>💳 Billing &amp; Subscriptions</h1>
             <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Customer subscriptions billed by <strong>ACH / check</strong> — money goes straight to your bank. Auto-pay via GoCardless (no Stripe).</p>
           </div>
-          <button onClick={() => setForm({ ...BLANK })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Subscription</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={openSettings} style={{ background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 14px", fontWeight: 700, fontSize: "0.84rem", cursor: "pointer" }}>⚙ Settings</button>
+            <button onClick={() => setForm({ ...BLANK })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Subscription</button>
+          </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, margin: "18px 0" }}>
@@ -150,6 +170,33 @@ export default function HqBillingPage() {
               <button onClick={save} disabled={saving} style={{ background: saving ? "#94a3b8" : "#16a34a", color: "#fff", border: "none", borderRadius: 9, padding: "10px 22px", fontWeight: 800, fontSize: "0.86rem", cursor: saving ? "default" : "pointer" }}>{saving ? "Saving…" : form.id ? "Save Changes" : "Add Subscription"}</button>
               <button onClick={() => setForm(null)} style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 9, padding: "10px 18px", fontWeight: 700, fontSize: "0.86rem", cursor: "pointer" }}>Cancel</button>
               {form.id && <button onClick={() => del(form)} style={{ marginLeft: "auto", background: "#fff", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 9, padding: "10px 16px", fontWeight: 700, fontSize: "0.86rem", cursor: "pointer" }}>🗑 Delete</button>}
+            </div>
+          </div>
+        </div>
+      )}
+      {settings && (
+        <div onClick={() => setSettings(null)} style={{ position: "fixed", inset: 0, zIndex: 9300, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "22px 24px", width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto" }}>
+            <div style={{ fontWeight: 900, fontSize: "1.05rem", marginBottom: 4 }}>⚙ Billing Settings</div>
+            <div style={{ fontSize: "0.78rem", color: "#64748b", marginBottom: 16 }}>These appear on your invoices and power auto-pay. Money goes straight to your bank.</div>
+            <div style={{ fontWeight: 800, fontSize: "0.72rem", color: "#475569", textTransform: "uppercase", marginBottom: 8 }}>Invoice / ACH details</div>
+            <div style={{ display: "grid", gap: 10 }}>
+              <div><label style={lbl}>Your Business Name (on invoice)</label><input value={settings.billing_from || ""} onChange={e => setSettings({ ...settings, billing_from: e.target.value })} style={inp} placeholder="MoveAround TMS LLC" /></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div><label style={lbl}>Bank Name</label><input value={settings.billing_bank || ""} onChange={e => setSettings({ ...settings, billing_bank: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>Routing #</label><input value={settings.billing_routing || ""} onChange={e => setSettings({ ...settings, billing_routing: e.target.value })} style={inp} /></div>
+              </div>
+              <div><label style={lbl}>Account #</label><input value={settings.billing_account || ""} onChange={e => setSettings({ ...settings, billing_account: e.target.value })} style={inp} /></div>
+              <div><label style={lbl}>Check Remit-To Address</label><input value={settings.billing_remit || ""} onChange={e => setSettings({ ...settings, billing_remit: e.target.value })} style={inp} placeholder="123 Main St, Houston, TX 77001" /></div>
+            </div>
+            <div style={{ fontWeight: 800, fontSize: "0.72rem", color: "#475569", textTransform: "uppercase", margin: "18px 0 8px" }}>Auto-pay (GoCardless ACH)</div>
+            <div style={{ display: "grid", gap: 10 }}>
+              <div><label style={lbl}>GoCardless Access Token {settings.gocardless_connected && <span style={{ color: "#15803d" }}>· connected (…{settings.gocardless_last4})</span>}</label><input value={settings.gocardless_token || ""} onChange={e => setSettings({ ...settings, gocardless_token: e.target.value })} style={inp} placeholder={settings.gocardless_connected ? "leave blank to keep current" : "paste your token"} /></div>
+              <div><label style={lbl}>Environment</label><select value={settings.gocardless_env || "sandbox"} onChange={e => setSettings({ ...settings, gocardless_env: e.target.value })} style={inp}><option value="sandbox">Sandbox (testing)</option><option value="live">Live</option></select></div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button onClick={saveSettings} disabled={savingSettings} style={{ background: savingSettings ? "#94a3b8" : "#16a34a", color: "#fff", border: "none", borderRadius: 9, padding: "10px 22px", fontWeight: 800, fontSize: "0.86rem", cursor: savingSettings ? "default" : "pointer" }}>{savingSettings ? "Saving…" : "Save Settings"}</button>
+              <button onClick={() => setSettings(null)} style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 9, padding: "10px 18px", fontWeight: 700, fontSize: "0.86rem", cursor: "pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
