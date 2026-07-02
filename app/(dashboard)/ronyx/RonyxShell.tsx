@@ -66,7 +66,8 @@ const NAV_GROUPS: NavGroup[] = [
         { label: "Be Audit Ready™",       href: "/ronyx/compliance/audit-ready",   icon: "✅" },
         { label: "Clearance Check™",      href: "/ronyx/compliance/customer-dispatch-requirements", icon: "🔍" },
         { label: "Expiring Docs",         href: "/ronyx/compliance/expiring",      icon: "⏰" },
-        { label: "CCB Sentinel",            href: "/ronyx/compliance/ccb-sentinel",  icon: "📡" },
+        { label: "Clearance Command",     href: "/ronyx/compliance/ccb-command",   icon: "📡" },
+        { label: "CCB Sentinel",            href: "/ronyx/compliance/ccb-sentinel",  icon: "🔎" },
       ]},
       { label: "Drivers",          href: "/ronyx/drivers",                 icon: "👤", color: "#0891b2", children: [
         { label: "Driver List",           href: "/ronyx/drivers?tab=list",         icon: "👤" },

@@ -6,10 +6,11 @@ import { useEffect, useRef, useState } from "react";
 // MoveAround HQ shell — the product company's cockpit, distinct from any tenant.
 // Dark, futuristic MoveAround brand (navy/blue/cyan) with an animated starfield.
 const NAV = [
-  { key: "sales",    label: "TMS Sales",        href: "/hq/sales",     icon: "📈" },
-  { key: "saleskit", label: "Sales Kit",        href: "/hq/sales-kit", icon: "📚" },
-  { key: "signups",  label: "Signups & Trials", href: "/hq/signups",   icon: "🚀" },
-  { key: "billing",  label: "Billing",          href: "/hq/billing",   icon: "💳" },
+  { key: "sales",    label: "TMS Sales",        href: "/hq/sales",         icon: "📈" },
+  { key: "saleskit", label: "Sales Kit",        href: "/hq/sales-kit",     icon: "📚" },
+  { key: "drivers",  label: "Find Drivers",     href: "/hq/find-drivers",  icon: "🧑‍✈️" },
+  { key: "signups",  label: "Signups & Trials", href: "/hq/signups",       icon: "🚀" },
+  { key: "billing",  label: "Billing",          href: "/hq/billing",       icon: "💳" },
 ];
 
 const STARS = `
