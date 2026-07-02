@@ -11,6 +11,8 @@ const NAV = [
   { key: "drivers",  label: "Find Drivers",     href: "/hq/find-drivers",  icon: "🧑‍✈️" },
   { key: "signups",  label: "Signups & Trials", href: "/hq/signups",       icon: "🚀" },
   { key: "billing",  label: "Billing",          href: "/hq/billing",       icon: "💳" },
+  { key: "support",  label: "Support",          href: "/hq/support",       icon: "🎫" },
+  { key: "users",    label: "Users & Access",   href: "/hq/users",         icon: "👥" },
 ];
 
 const STARS = `
