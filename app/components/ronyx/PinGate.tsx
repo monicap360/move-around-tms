@@ -77,17 +77,19 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
   const initials = (n: string) => n.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 100000, background: "linear-gradient(160deg,#0f172a,#1e293b)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ width: "100%", maxWidth: 460, background: "#fff", borderRadius: 18, padding: "26px 26px 22px", boxShadow: "0 30px 80px rgba(0,0,0,0.5)" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 100000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflow: "hidden", background: "radial-gradient(1100px 550px at 15% -10%, #172554 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #0e2a3d 0%, transparent 55%), #05070f" }}>
+      <div style={{ position: "absolute", top: "-12%", left: "12%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(37,99,235,0.30), transparent 65%)", filter: "blur(18px)" }} />
+      <div style={{ position: "absolute", bottom: "-15%", right: "10%", width: 440, height: 440, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.22), transparent 65%)", filter: "blur(18px)" }} />
+      <div style={{ position: "relative", width: "100%", maxWidth: 460, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(99,179,237,0.22)", borderRadius: 22, padding: "30px 28px 24px", boxShadow: "0 30px 90px rgba(0,0,0,0.6)" }}>
         <div style={{ textAlign: "center", marginBottom: 18 }}>
           <img src="/ronyx_logo.png" alt="Ronyx Logistics" style={{ height: 56, width: "auto", margin: "0 auto 8px", display: "block" }}
             onError={(e) => { const img = e.currentTarget; img.style.display = "none"; const ic = img.parentElement?.querySelector(".pin-fallback-icon"); if (ic) (ic as HTMLElement).style.display = "flex"; }} />
           <div className="pin-fallback-icon" style={{ width: 52, height: 52, margin: "0 auto 8px", borderRadius: 14, background: "linear-gradient(135deg,#4f46e5,#0891b2)", display: "none", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🔐</div>
-          <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#0f172a" }}>Ronyx Logistics</div>
-          <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+          <div style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff", letterSpacing: "0.01em" }}>Ronyx Logistics</div>
+          <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 3 }}>
             {view === "manage" ? "Manage staff & PINs" : view === "pin" ? `Enter PIN for ${selected?.name}` : "Who's working? Tap your name."}
           </div>
-          <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Powered by MoveAround TMS</div>
+          <div style={{ fontSize: 10, color: "#475569", marginTop: 8, fontWeight: 800, letterSpacing: "0.28em", textTransform: "uppercase" }}>Powered by MoveAround TMS</div>
         </div>
 
         {view === "pick" && (
@@ -103,10 +105,10 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginBottom: 14 }}>
                   {staff.map(s => (
                     <button key={s.id} onClick={() => { setSelected(s); setPin(""); setErr(""); setView("pin"); }}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 8px", border: "1px solid #e2e8f0", borderRadius: 12, background: "#f8fafc", cursor: "pointer" }}>
-                      <span style={{ width: 42, height: 42, borderRadius: "50%", background: "#4f46e5", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15 }}>{initials(s.name)}</span>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", textAlign: "center", lineHeight: 1.2 }}>{s.name}</span>
-                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{s.role}</span>
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 8px", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.04)", cursor: "pointer" }}>
+                      <span style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#2563eb,#06b6d4)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, boxShadow: "0 6px 16px rgba(37,99,235,0.45)" }}>{initials(s.name)}</span>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: "#e2e8f0", textAlign: "center", lineHeight: 1.2 }}>{s.name}</span>
+                      <span style={{ fontSize: 11, color: "#64748b" }}>{s.role}</span>
                     </button>
                   ))}
                 </div>
@@ -114,8 +116,8 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
               </>
             )}
             {showSignupLinks && (
-              <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #e2e8f0", textAlign: "center" }}>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 9, fontWeight: 800 }}>New to Ronyx? Sign up here</div>
+              <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(148,163,184,0.15)", textAlign: "center" }}>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 9, fontWeight: 800 }}>New to Ronyx? Sign up here</div>
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                   <a href="/owner-operator-signup" style={signupBtn("#1d4ed8")}>🚛 Owner-Operator Sign-Up</a>
                   <a href="/driver-signup" style={signupBtn("#0e7490")}>🧑‍✈️ Driver Sign-Up</a>
@@ -129,7 +131,7 @@ export default function PinGate({ onUnlock, onSkip, showSignupLinks = false }: {
           <div>
             <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "6px 0 16px" }}>
               {[0, 1, 2, 3, 4, 5].map(i => (
-                <span key={i} style={{ width: 14, height: 14, borderRadius: "50%", background: i < pin.length ? "#4f46e5" : "#e2e8f0", visibility: i < 4 || i < pin.length ? "visible" : "hidden" }} />
+                <span key={i} style={{ width: 14, height: 14, borderRadius: "50%", background: i < pin.length ? "linear-gradient(135deg,#2563eb,#06b6d4)" : "rgba(148,163,184,0.2)", boxShadow: i < pin.length ? "0 0 12px rgba(56,189,248,0.7)" : "none", visibility: i < 4 || i < pin.length ? "visible" : "hidden", transition: "all .15s" }} />
               ))}
             </div>
             {err && <div style={{ textAlign: "center", color: err.startsWith("✓") ? "#15803d" : "#dc2626", fontSize: 13, marginBottom: 10, fontWeight: err.startsWith("✓") ? 700 : 400 }}>{err}</div>}
@@ -181,9 +183,9 @@ function ManagePanel({ staff, reload, onDone }: { staff: StaffLite[]; reload: ()
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 180, overflowY: "auto" }}>
         {staff.length === 0 && <div style={{ fontSize: 13, color: "#94a3b8", textAlign: "center" }}>No staff yet — add one below.</div>}
         {staff.map(s => (
-          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 9 }}>
-            <span style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{s.name}</span>
-            <span style={{ fontSize: 11, color: "#94a3b8" }}>{s.role}</span>
+          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 9 }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: "#e2e8f0" }}>{s.name}</span>
+            <span style={{ fontSize: 11, color: "#64748b" }}>{s.role}</span>
             <span style={{ marginLeft: "auto", fontSize: 11, color: s.has_pin ? "#16a34a" : "#dc2626" }}>{s.has_pin ? "PIN set" : "no PIN"}</span>
             <button onClick={async () => { const p = safePrompt(`New 4–6 digit PIN for ${s.name}:`); if (p) await call({ action: "set_pin", id: s.id, pin: p }); }} style={miniBtn}>Set PIN</button>
             <button onClick={async () => { if (confirm(`Remove ${s.name}?`)) await call({ action: "remove", id: s.id }); }} style={{ ...miniBtn, color: "#dc2626", borderColor: "#fecaca" }}>Remove</button>
@@ -207,9 +209,9 @@ function ManagePanel({ staff, reload, onDone }: { staff: StaffLite[]; reload: ()
   );
 }
 
-const btnPrimary: React.CSSProperties = { padding: "11px 18px", background: "#4f46e5", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 14, cursor: "pointer" };
-const btnGhost: React.CSSProperties = { padding: "9px 14px", background: "none", color: "#4f46e5", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" };
-const keyBtn: React.CSSProperties = { padding: "16px 0", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 12, fontWeight: 800, fontSize: 20, color: "#0f172a", cursor: "pointer" };
+const btnPrimary: React.CSSProperties = { padding: "12px 18px", background: "linear-gradient(135deg,#2563eb,#06b6d4)", color: "#fff", border: "none", borderRadius: 12, fontWeight: 800, fontSize: 14, cursor: "pointer", boxShadow: "0 10px 26px rgba(37,99,235,0.45)" };
+const btnGhost: React.CSSProperties = { padding: "9px 14px", background: "none", color: "#38bdf8", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" };
+const keyBtn: React.CSSProperties = { padding: "16px 0", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: 12, fontWeight: 800, fontSize: 20, color: "#e2e8f0", cursor: "pointer" };
 const signupBtn = (bg: string): React.CSSProperties => ({ display: "inline-block", padding: "9px 13px", background: bg, color: "#fff", borderRadius: 9, fontWeight: 800, fontSize: 12.5, textDecoration: "none", whiteSpace: "nowrap" });
-const miniBtn: React.CSSProperties = { padding: "4px 9px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#475569", cursor: "pointer" };
-const inp: React.CSSProperties = { padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13, boxSizing: "border-box", width: "100%" };
+const miniBtn: React.CSSProperties = { padding: "4px 9px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#cbd5e1", cursor: "pointer" };
+const inp: React.CSSProperties = { padding: "9px 11px", border: "1px solid rgba(148,163,184,0.25)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", width: "100%", background: "rgba(255,255,255,0.05)", color: "#e2e8f0", outline: "none" };
