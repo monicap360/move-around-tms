@@ -7,6 +7,7 @@ import PageProtection from "@/app/components/security/PageProtection";
 import IntelImportCenter from "@/app/components/ronyx/IntelImportCenter";
 import GuidedTour, { tourDone, type TourStep } from "@/app/components/ronyx/GuidedTour";
 import PinGate, { type ActiveStaff } from "@/app/components/ronyx/PinGate";
+import AssistantWidget from "@/app/components/ronyx/AssistantWidget";
 import StaffTraining from "@/app/components/ronyx/StaffTraining";
 
 // ── Guided tour steps (highlights the main modules in the sidebar) ──────────────
@@ -908,6 +909,9 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
       <GuidedTour steps={RONYX_TOUR} open={tourOpen} onClose={() => setTourOpen(false)} tourId="ronyx_v1" />
 
       {pinReady && !activeStaff && !pinSkipped && <PinGate onUnlock={unlockStaff} onSkip={skipPin} showSignupLinks />}
+
+      {/* Office Assistant — available once staff are in (not on the lock screen) */}
+      {(activeStaff || pinSkipped) && <AssistantWidget />}
 
       {trainingOpen && <StaffTraining name={activeStaff?.name?.split(" ")[0] || displayName} onClose={() => setTrainingOpen(false)} />}
 
