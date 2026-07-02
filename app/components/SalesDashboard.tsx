@@ -43,7 +43,7 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("All");
-  const [view, setView] = useState<"owner" | "board">("owner"); // owner = team rollup, board = kanban
+  const [view, setView] = useState<"owner" | "board" | "list">("list"); // owner = rollup, board = kanban, list = table
   const [toast, setToast] = useState("");
   const [form, setForm] = useState<any | null>(null); // add/edit form (null = closed)
   const [saving, setSaving] = useState(false);
@@ -175,10 +175,10 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
-            {(["owner", "board"] as const).map(v => (
+            {(["list", "board", "owner"] as const).map(v => (
               <button key={v} onClick={() => { setView(v); if (v === "owner") setOwnerFilter("All"); }}
                 style={{ padding: "9px 14px", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "0.8rem", background: view === v ? "#0f172a" : "#fff", color: view === v ? "#fff" : "#475569" }}>
-                {v === "owner" ? "📊 Owner View" : "📋 Board"}
+                {v === "list" ? "📋 List" : v === "board" ? "▦ Board" : "📊 Owner"}
               </button>
             ))}
           </div>
@@ -254,7 +254,7 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
         </div>
       )}
 
-      {view === "board" && (<>
+      {view !== "owner" && (<>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search company, contact, phone…" style={{ ...inp, maxWidth: 300, marginBottom: 0 }} />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -268,8 +268,40 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
         </div>
       </div>
 
+      {/* LIST view — table with contact info */}
+      {!loading && view === "list" && (
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "auto" }}>
+          <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", fontSize: "0.78rem", color: "#64748b", fontWeight: 700 }}>{shown.length} lead{shown.length === 1 ? "" : "s"}{ownerFilter !== "All" ? ` · ${ownerFilter}` : ""}</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 940 }}>
+            <thead><tr style={{ background: "#f8fafc" }}>
+              {["Company", "Contact", "Phone", "Email", "Trucks", "Stage", "Rep", "Value"].map(h => (
+                <th key={h} style={{ padding: "9px 12px", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc" }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {shown.length === 0 && <tr><td colSpan={8} style={{ padding: 34, textAlign: "center", color: "#94a3b8" }}>No leads in this view.</td></tr>}
+              {shown.map(l => {
+                const st = stageOf(l.stage);
+                return (
+                  <tr key={l.id} onClick={() => setForm({ ...l, estimated_value: l.estimated_value ?? "", trucks_count: l.trucks_count ?? "", next_follow_up: l.next_follow_up || "" })} style={{ borderTop: "1px solid #f1f5f9", cursor: "pointer" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 800, color: "#0f172a", fontSize: "0.84rem" }}>{l.company_name}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "0.82rem", color: "#334155" }}>{l.contact_name || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "0.82rem" }}>{l.phone ? <a href={`tel:${l.phone}`} onClick={e => e.stopPropagation()} style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>{l.phone}</a> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "0.82rem" }}>{l.email ? <a href={`mailto:${l.email}`} onClick={e => e.stopPropagation()} style={{ color: "#2563eb", textDecoration: "none" }}>{l.email}</a> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "0.82rem", fontWeight: 700 }}>{l.trucks_count ? `${l.trucks_count} 🚚` : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: "0.7rem", fontWeight: 800, color: st.color, background: st.bg, border: `1px solid ${st.color}44`, borderRadius: 999, padding: "2px 9px" }}>{st.label}</span></td>
+                    <td style={{ padding: "10px 12px", fontSize: "0.82rem" }}>{l.owner_name || "—"}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "0.82rem", fontWeight: 700, color: "#d97706" }}>{l.estimated_value ? money(l.estimated_value) : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* pipeline board */}
-      {loading ? <div style={{ color: "#94a3b8", padding: 50, textAlign: "center" }}>Loading leads…</div> : (
+      {loading ? <div style={{ color: "#94a3b8", padding: 50, textAlign: "center" }}>Loading leads…</div> : view === "board" && (
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${STAGES.length}, minmax(230px, 1fr))`, gap: 12, overflowX: "auto", paddingBottom: 10 }}>
           {STAGES.map(st => {
             const col = shown.filter(l => l.stage === st.key);
