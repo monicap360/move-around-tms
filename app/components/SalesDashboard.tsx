@@ -34,7 +34,9 @@ const stageOf = (k: string) => STAGES.find(s => s.key === k) || STAGES[0];
 const money = (n: number | null | undefined) => "$" + Number(n || 0).toLocaleString();
 
 // The sales team — each person's leads are tagged with their name (Owner).
-const SALESPEOPLE = ["Andrew", "Laura", "Sylvia", "Veronica", "Monica"];
+const SALESPEOPLE = ["Andrew", "Laura", "Sylvia", "Veronica", "Monica", "Miriam Garza"];
+// Optional territory focus shown next to a rep in the Owner View.
+const REP_FOCUS: Record<string, string> = { "Miriam Garza": "Colorado" };
 
 const BLANK = { owner_name: "", company_name: "", contact_name: "", phone: "", email: "", source: "", stage: "new", estimated_value: "", trucks_count: "", notes: "", next_follow_up: "", current_tools: [] };
 
@@ -232,7 +234,7 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
                     const winRate = r.leads ? Math.round((r.won / r.leads) * 100) : 0;
                     return (
                       <tr key={r.name} onClick={() => { setOwnerFilter(r.name); setView("board"); }} title="Open this rep's board" style={{ borderTop: "1px solid #f1f5f9", cursor: "pointer" }}>
-                        <td style={{ padding: "10px 14px", fontWeight: 800, color: "#0f172a" }}>{r.name}</td>
+                        <td style={{ padding: "10px 14px", fontWeight: 800, color: "#0f172a" }}>{r.name}{REP_FOCUS[r.name] && <span style={{ marginLeft: 8, fontSize: "0.66rem", fontWeight: 800, color: "#0369a1", background: "#e0f2fe", border: "1px solid #bae6fd", borderRadius: 999, padding: "2px 8px" }}>📍 {REP_FOCUS[r.name]}</span>}</td>
                         <td style={{ padding: "10px 14px", textAlign: "right" }}>{r.leads}</td>
                         <td style={{ padding: "10px 14px", textAlign: "right", color: "#2563eb", fontWeight: 700 }}>{r.active}</td>
                         <td style={{ padding: "10px 14px", textAlign: "right", color: "#d97706", fontWeight: 800 }}>{money(r.pipeline)}</td>
