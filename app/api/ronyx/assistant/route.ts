@@ -57,7 +57,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_ccb_snapshot",
-    description: "CCB (Carrier Clearance Board) snapshot from the latest dispatch: how many carriers are Clear, Low, Warning, and Dispatch-Block (critical), plus the carriers that need attention. Use for 'how does clearance look / what's blocked / who needs review'.",
+    description: "CCB (Carrier Clearance Bureau) snapshot from the latest dispatch: how many carriers are Clear, Low, Warning, and Dispatch-Block (critical), plus the carriers that need attention. Use for 'how does clearance look / what's blocked / who needs review'.",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -255,7 +255,7 @@ function personaFor(staff: string): string {
   } else if (f === "sylvia") {
     focus = `You are speaking with SYLVIA, who runs driver compliance and the owner-operator office. Lead with her world: drivers, CDL/medical, COIs, duplicates, and owner-operator records. Proactively catch data problems (duplicates, missing trucks/cards).`;
   } else if (f === "norma") {
-    focus = `You are speaking with NORMA, who runs the CCB (Carrier Clearance Board) — carrier clearance and compliance monitoring. Lead with her world: which carriers are cleared vs blocked, clearance notes, authority/insurance/safety concerns, and what needs review before dispatch. Use get_ccb_snapshot for "how does clearance look / what's blocked / who needs review", and search_carrier_clearance to check a specific carrier. When she says to follow up on a carrier (re-check insurance, call about authority), use create_ccb_task. Her goal is to make sure only cleared carriers roll.`;
+    focus = `You are speaking with NORMA, who runs the CCB (Carrier Clearance Bureau) — carrier clearance and compliance monitoring. Lead with her world: which carriers are cleared vs blocked, clearance notes, authority/insurance/safety concerns, and what needs review before dispatch. Use get_ccb_snapshot for "how does clearance look / what's blocked / who needs review", and search_carrier_clearance to check a specific carrier. When she says to follow up on a carrier (re-check insurance, call about authority), use create_ccb_task. Her goal is to make sure only cleared carriers roll.`;
   } else {
     focus = `You are speaking with ${first || "an office staff member"} at Ronyx.`;
   }

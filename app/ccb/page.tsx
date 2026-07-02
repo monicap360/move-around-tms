@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import AssistantWidget from "@/app/components/ronyx/AssistantWidget";
+import { CcbShield } from "@/app/components/CcbLogo";
 
-// CCB Sentinel™ — Norma's own universal (cross-company) clearance console.
+// Carrier Clearance Bureau™ — Norma's own universal (cross-company) clearance console.
 // Its own portal (/ccb, separate login) — she works for CCB, not any tenant.
 
 type Roll = { org_id: string; name: string; clear: number; low: number; warning: number; critical: number; review: number; carriers: number; attention: number; import_date: string | null };
@@ -13,7 +14,7 @@ type Data = { companies_managed: number; companies_with_data: number; totals: { 
 const SEVMETA: Record<string, { color: string; bg: string; label: string }> = {
   critical: { color: "#dc2626", bg: "#fee2e2", label: "Dispatch Block" },
   warning:  { color: "#ea580c", bg: "#ffedd5", label: "Warning" },
-  review:   { color: "#7c3aed", bg: "#f3e8ff", label: "Needs Review" },
+  review:   { color: "#0891b2", bg: "#ecfeff", label: "Needs Review" },
 };
 
 export default function CcbHome() {
@@ -62,10 +63,10 @@ export default function CcbHome() {
   return (
     <div style={{ fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
       {/* Top bar */}
-      <div style={{ background: "linear-gradient(90deg,#2e1065,#1e2d6b)", padding: "12px 26px", display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: "1.2rem" }}>📡</span>
-        <span style={{ fontWeight: 900, color: "#fff", fontSize: "0.95rem" }}>Carrier Clearance <span style={{ color: "#a78bfa" }}>Board</span></span>
-        <span style={{ fontSize: "0.68rem", color: "#c4b5fd", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(167,139,250,0.3)", padding: "3px 10px", borderRadius: 999, fontWeight: 700 }}>All Companies</span>
+      <div style={{ background: "linear-gradient(90deg,#0a1428,#12294d)", padding: "10px 22px", display: "flex", alignItems: "center", gap: 11 }}>
+        <CcbShield size={30} />
+        <span style={{ fontWeight: 900, color: "#fff", fontSize: "0.95rem" }}>Carrier Clearance <span style={{ color: "#4ade80" }}>Bureau</span><span style={{ color: "#cbd5e1", fontSize: "0.7em", verticalAlign: "super" }}>™</span></span>
+        <span style={{ fontSize: "0.68rem", color: "#86efac", background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", padding: "3px 10px", borderRadius: 999, fontWeight: 700 }}>All Companies</span>
         <button onClick={() => { setPinErr(""); setPinOpen(true); }} style={{ marginLeft: "auto", background: pinStatus?.should_change ? "rgba(250,204,21,0.18)" : "rgba(255,255,255,0.08)", border: `1px solid ${pinStatus?.should_change ? "rgba(250,204,21,0.5)" : "rgba(148,163,184,0.25)"}`, color: pinStatus?.should_change ? "#fde68a" : "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>🔑 Change PIN</button>
         <button onClick={() => window.location.reload()} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>↻ Refresh</button>
         <button onClick={logout} style={{ background: "rgba(239,68,68,0.14)", border: "1px solid rgba(248,113,113,0.35)", color: "#fca5a5", borderRadius: 8, padding: "6px 12px", fontWeight: 800, fontSize: "0.76rem", cursor: "pointer" }}>⏻ Logout</button>
@@ -80,9 +81,10 @@ export default function CcbHome() {
       {pinDone && <div style={{ background: "#dcfce7", borderBottom: "1px solid #bbf7d0", color: "#166534", padding: "9px 26px", fontSize: "0.82rem", fontWeight: 700 }}>{pinDone}</div>}
 
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg,#7c3aed 0%,#1d4ed8 100%)", padding: "24px 32px 20px" }}>
+      <div style={{ background: "linear-gradient(135deg,#0d1d38 0%,#12294d 55%,#0a1428 100%)", padding: "24px 32px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#fff" }}>CCB Sentinel™ · Clearance Command</h1>
+          <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#fff" }}>Clearance Command</h1>
+          <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "#86efac", letterSpacing: "0.14em", textTransform: "uppercase" }}>Cleared to Move · Trusted to Deliver</span>
         </div>
         <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", fontSize: "0.9rem" }}>
           {name ? `Hi ${name}! ` : ""}You keep <strong>every company's</strong> carriers cleared to dispatch. Your job: make sure only cleared carriers roll.
@@ -94,7 +96,7 @@ export default function CcbHome() {
         <>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 22 }}>
             {kpi("Cleared", t?.clear || 0, "#15803d", "#dcfce7")}
-            {kpi("Needs Review", t?.review || 0, "#7c3aed", "#f3e8ff")}
+            {kpi("Needs Review", t?.review || 0, "#0891b2", "#ecfeff")}
             {kpi("Warnings", t?.warning || 0, "#ea580c", "#ffedd5")}
             {kpi("Dispatch Blocks", t?.critical || 0, "#dc2626", "#fee2e2")}
             {kpi("Companies", data?.companies_managed || 0, "#1e40af", "#dbeafe")}
@@ -110,9 +112,9 @@ export default function CcbHome() {
                 { n: 3, title: "Follow up on Warnings", count: t?.warning || 0, cta: "Expiring authority/insurance. Ask the 🤖 assistant to add a follow-up task.", done: "No warnings to chase." },
               ].map(step => (
                 <li key={step.n} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 12px", borderRadius: 10, background: step.count > 0 ? "#f8fafc" : "#f0fdf4", border: `1px solid ${step.count > 0 ? "#e2e8f0" : "#dcfce7"}` }}>
-                  <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: step.count > 0 ? "#7c3aed" : "#16a34a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.82rem" }}>{step.count > 0 ? step.n : "✓"}</span>
+                  <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: step.count > 0 ? "#0891b2" : "#16a34a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "0.82rem" }}>{step.count > 0 ? step.n : "✓"}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>{step.title} {step.count > 0 && <span style={{ color: "#7c3aed" }}>· {step.count}</span>}</div>
+                    <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>{step.title} {step.count > 0 && <span style={{ color: "#0891b2" }}>· {step.count}</span>}</div>
                     <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2 }}>{step.count > 0 ? step.cta : step.done}</div>
                   </div>
                 </li>
@@ -135,7 +137,7 @@ export default function CcbHome() {
                       <td style={{ padding: "9px 14px", fontWeight: 700, color: "#0f172a" }}>{c.name}</td>
                       <td style={{ padding: "9px 14px", color: "#475569" }}>{c.carriers}</td>
                       <td style={{ padding: "9px 14px", color: "#15803d", fontWeight: 700 }}>{c.clear}</td>
-                      <td style={{ padding: "9px 14px", color: c.review ? "#7c3aed" : "#94a3b8", fontWeight: 700 }}>{c.review}</td>
+                      <td style={{ padding: "9px 14px", color: c.review ? "#0891b2" : "#94a3b8", fontWeight: 700 }}>{c.review}</td>
                       <td style={{ padding: "9px 14px", color: c.warning ? "#ea580c" : "#94a3b8", fontWeight: 700 }}>{c.warning}</td>
                       <td style={{ padding: "9px 14px", color: c.critical ? "#dc2626" : "#94a3b8", fontWeight: 800 }}>{c.critical}</td>
                       <td style={{ padding: "9px 14px", color: "#94a3b8" }}>{c.import_date || "—"}</td>
@@ -174,7 +176,7 @@ export default function CcbHome() {
               { key: "assistant", icon: "🤖", title: "Your Office Assistant", blurb: "Ask it anything — or tell it what to do" },
             ].map(card => (
               <button key={card.key} onClick={() => setLearn(learn === card.key ? null : card.key)}
-                style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: `1px solid ${learn === card.key ? "#7c3aed" : "#e2e8f0"}`, borderRadius: 14, padding: "16px 18px" }}>
+                style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: `1px solid ${learn === card.key ? "#0891b2" : "#e2e8f0"}`, borderRadius: 14, padding: "16px 18px" }}>
                 <div style={{ fontSize: "1.6rem" }}>{card.icon}</div>
                 <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginTop: 6 }}>{card.title}</div>
                 <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: 2 }}>{card.blurb}</div>
@@ -185,7 +187,7 @@ export default function CcbHome() {
           {learn === "about" && (
             <div style={panel}>
               <h3 style={ph}>📖 About CCB Sentinel™</h3>
-              <p style={pp}>CCB Sentinel™ is MoveAround's <strong>Carrier Clearance Board</strong>. It watches every carrier's authority, insurance, and safety so a company only ever dispatches cleared trucks. You run it across <strong>all companies</strong> — one place, one standard.</p>
+              <p style={pp}>CCB Sentinel™ is MoveAround's <strong>Carrier Clearance Bureau</strong>. It watches every carrier's authority, insurance, and safety so a company only ever dispatches cleared trucks. You run it across <strong>all companies</strong> — one place, one standard.</p>
               <p style={pp}><strong>Why it matters:</strong> dispatching a carrier with lapsed authority or insurance is a claim and a failed audit waiting to happen. When you keep this board clean, every company you serve is protected.</p>
             </div>
           )}
@@ -240,7 +242,7 @@ export default function CcbHome() {
             </div>
             {pinErr && <div style={{ color: "#dc2626", fontSize: "0.78rem", marginTop: 10, fontWeight: 600 }}>{pinErr}</div>}
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-              <button onClick={changePin} disabled={pinBusy} style={{ flex: 1, background: pinBusy ? "#94a3b8" : "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: "0.88rem", cursor: pinBusy ? "default" : "pointer" }}>{pinBusy ? "Saving…" : "Update PIN"}</button>
+              <button onClick={changePin} disabled={pinBusy} style={{ flex: 1, background: pinBusy ? "#94a3b8" : "linear-gradient(135deg,#0891b2,#2563eb)", color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: "0.88rem", cursor: pinBusy ? "default" : "pointer" }}>{pinBusy ? "Saving…" : "Update PIN"}</button>
               <button onClick={() => setPinOpen(false)} style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 10, padding: "11px 16px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>Cancel</button>
             </div>
           </div>

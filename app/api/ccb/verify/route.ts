@@ -4,7 +4,7 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-// CCB (Carrier Clearance Board) auth — separate from Ronyx and from HQ.
+// CCB (Carrier Clearance Bureau) auth — separate from Ronyx and from HQ.
 // Signed, stateless HMAC-SHA256 session; middleware verifies with the same secret.
 const SECRET = () => process.env.CCB_SESSION_SECRET || process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "movearound-ccb-dev-secret";
 const b64url = (buf: Buffer | string) => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

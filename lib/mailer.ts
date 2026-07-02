@@ -21,7 +21,7 @@ export function emailConfigured(): boolean {
 
 export type SendResult = { ok: boolean; id?: string; simulated?: boolean; error?: string };
 
-export async function sendEmail(opts: { to: string; subject: string; text?: string; html?: string; from?: string }): Promise<SendResult> {
+export async function sendEmail(opts: { to: string; subject: string; text?: string; html?: string; from?: string; replyTo?: string }): Promise<SendResult> {
   if (!opts.to) return { ok: false, error: "No recipient address" };
   if (!emailConfigured()) {
     return { ok: false, simulated: true, error: "Email isn't configured yet — set SMTP_HOST / SMTP_USER / SMTP_PASS (Proton)." };
@@ -40,6 +40,7 @@ export async function sendEmail(opts: { to: string; subject: string; text?: stri
       subject: opts.subject,
       text: opts.text,
       html: opts.html,
+      replyTo: opts.replyTo,
     });
     return { ok: true, id: info.messageId };
   } catch (e: any) {

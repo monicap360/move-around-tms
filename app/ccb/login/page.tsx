@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CcbShield } from "@/app/components/CcbLogo";
 
 type CcbUser = { id: string; name: string; role: string };
 
@@ -27,16 +28,16 @@ export default function CcbLogin() {
   const key = (d: string) => { if (d === "del") setPin(p => p.slice(0, -1)); else if (pin.length < 6) setPin(p => p + d); };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "Inter, system-ui, sans-serif", position: "relative", overflow: "hidden", background: "radial-gradient(1200px 600px at 20% -10%, #2e1065 0%, transparent 60%), radial-gradient(1000px 500px at 100% 100%, #0b2b3a 0%, transparent 55%), #070510" }}>
-      <div style={{ position: "absolute", top: "-10%", left: "10%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.35), transparent 65%)", filter: "blur(20px)" }} />
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "Inter, system-ui, sans-serif", position: "relative", overflow: "hidden", background: "radial-gradient(1200px 600px at 20% -10%, #12294d 0%, transparent 60%), radial-gradient(1000px 500px at 100% 100%, #0b2b3a 0%, transparent 55%), #070510" }}>
+      <div style={{ position: "absolute", top: "-10%", left: "10%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(34,197,94,0.35), transparent 65%)", filter: "blur(20px)" }} />
       <div style={{ position: "absolute", bottom: "-15%", right: "8%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(37,99,235,0.28), transparent 65%)", filter: "blur(20px)" }} />
 
-      <div style={{ position: "relative", width: "100%", maxWidth: 400, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(139,92,246,0.24)", borderRadius: 22, padding: "34px 30px 30px", boxShadow: "0 30px 90px rgba(0,0,0,0.55)" }}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 400, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(34,197,94,0.24)", borderRadius: 22, padding: "34px 30px 30px", boxShadow: "0 30px 90px rgba(0,0,0,0.55)" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 22 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 16, background: "linear-gradient(135deg,#7c3aed,#2563eb)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.4rem", color: "#fff", boxShadow: "0 10px 30px rgba(124,58,237,0.55)" }}>📡</div>
+          <CcbShield size={72} />
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#fff" }}>Carrier Clearance <span style={{ color: "#a78bfa" }}>Board</span></div>
-            <div style={{ fontSize: "0.66rem", letterSpacing: "0.3em", color: "#64748b", fontWeight: 700, marginTop: 3 }}>CCB SENTINEL™ · ALL COMPANIES</div>
+            <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#fff" }}>Carrier Clearance <span style={{ color: "#4ade80" }}>Bureau</span><span style={{ color: "#cbd5e1", fontSize: "0.65em", verticalAlign: "super" }}>™</span></div>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "0.22em", color: "#8ea3c0", fontWeight: 700, marginTop: 4 }}>CLEARED TO MOVE · TRUSTED TO DELIVER</div>
           </div>
         </div>
 
@@ -47,9 +48,9 @@ export default function CcbLogin() {
               {users.length === 0 && <div style={{ color: "#475569", fontSize: "0.8rem", textAlign: "center", padding: "10px 0" }}>Loading…</div>}
               {users.map(u => (
                 <button key={u.id} onClick={() => { setPicked(u); setPin(""); setErr(""); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(148,163,184,0.18)", color: "#e2e8f0", textAlign: "left" }}>
-                  <span style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#2563eb)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.85rem", color: "#fff" }}>{u.name.charAt(0)}</span>
+                  <span style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#16a34a,#15803d)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.85rem", color: "#fff" }}>{u.name.charAt(0)}</span>
                   <span style={{ flex: 1 }}><span style={{ fontWeight: 800, fontSize: "0.9rem" }}>{u.name}</span><span style={{ display: "block", fontSize: "0.68rem", color: "#64748b" }}>{u.role}</span></span>
-                  <span style={{ color: "#a78bfa" }}>→</span>
+                  <span style={{ color: "#4ade80" }}>→</span>
                 </button>
               ))}
             </div>
@@ -62,7 +63,7 @@ export default function CcbLogin() {
             </div>
             <div style={{ display: "flex", justifyContent: "center", gap: 12, margin: "8px 0 6px" }}>
               {[0, 1, 2, 3, 4, 5].map(i => (
-                <span key={i} style={{ width: 12, height: 12, borderRadius: "50%", background: i < pin.length ? "linear-gradient(135deg,#7c3aed,#2563eb)" : "rgba(148,163,184,0.2)", boxShadow: i < pin.length ? "0 0 12px rgba(139,92,246,0.7)" : "none", visibility: i < 4 || i < pin.length ? "visible" : "hidden" }} />
+                <span key={i} style={{ width: 12, height: 12, borderRadius: "50%", background: i < pin.length ? "linear-gradient(135deg,#16a34a,#15803d)" : "rgba(148,163,184,0.2)", boxShadow: i < pin.length ? "0 0 12px rgba(34,197,94,0.7)" : "none", visibility: i < 4 || i < pin.length ? "visible" : "hidden" }} />
               ))}
             </div>
             <div style={{ textAlign: "center", fontSize: "0.72rem", color: "#64748b", marginBottom: 12 }}>Enter your PIN</div>
@@ -73,7 +74,7 @@ export default function CcbLogin() {
               <button onClick={() => key("0")} style={keyBtn}>0</button>
               <button onClick={() => key("del")} style={{ ...keyBtn, fontSize: "1.1rem", color: "#94a3b8" }}>⌫</button>
             </div>
-            <button onClick={submit} disabled={busy || pin.length < 4} style={{ width: "100%", marginTop: 16, padding: "13px", borderRadius: 12, border: "none", cursor: busy || pin.length < 4 ? "default" : "pointer", fontWeight: 800, fontSize: "0.92rem", color: "#fff", background: busy || pin.length < 4 ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg,#7c3aed,#2563eb)", boxShadow: pin.length >= 4 ? "0 10px 26px rgba(124,58,237,0.5)" : "none" }}>{busy ? "Signing in…" : "Sign in"}</button>
+            <button onClick={submit} disabled={busy || pin.length < 4} style={{ width: "100%", marginTop: 16, padding: "13px", borderRadius: 12, border: "none", cursor: busy || pin.length < 4 ? "default" : "pointer", fontWeight: 800, fontSize: "0.92rem", color: "#fff", background: busy || pin.length < 4 ? "rgba(34,197,94,0.4)" : "linear-gradient(135deg,#16a34a,#15803d)", boxShadow: pin.length >= 4 ? "0 10px 26px rgba(34,197,94,0.5)" : "none" }}>{busy ? "Signing in…" : "Sign in"}</button>
           </>
         )}
       </div>
