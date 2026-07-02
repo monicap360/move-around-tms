@@ -62,9 +62,11 @@ export default function HqShell({ active, children }: { active: string; children
         <div className="hq-stars" />
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px 18px" }}>
-            {logo
-              ? <img src={logo} alt="MoveAround" style={{ width: 40, height: 40, borderRadius: 10, objectFit: "contain", background: "rgba(255,255,255,0.06)", padding: 2 }} />
-              : <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#2563eb,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.05rem", color: "#fff", boxShadow: "0 4px 18px rgba(37,99,235,0.6)" }}>MA</div>}
+            <span onClick={() => fileRef.current?.click()} title="Click to upload / replace your logo" style={{ cursor: "pointer", display: "inline-flex" }}>
+              {logo
+                ? <img src={logo} alt="MoveAround" style={{ width: 40, height: 40, borderRadius: 10, objectFit: "contain", background: "rgba(255,255,255,0.06)", padding: 2 }} />
+                : <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#2563eb,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.05rem", color: "#fff", boxShadow: "0 4px 18px rgba(37,99,235,0.6)" }}>MA</div>}
+            </span>
             <div>
               <div style={{ fontWeight: 900, fontSize: "0.95rem", letterSpacing: "0.02em", color: "#fff" }}>MoveAround</div>
               <div style={{ fontSize: "0.6rem", letterSpacing: "0.28em", color: "#5eead4", fontWeight: 700 }}>HQ · TMS</div>

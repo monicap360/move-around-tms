@@ -84,7 +84,7 @@ export async function middleware(req: NextRequest) {
   // 3) MoveAround HQ gate (always on) — product-company area, separate login.
   {
     const gated = path === "/hq" || path.startsWith("/hq/") || path.startsWith("/api/hq/");
-    const allow = path === "/hq/login" || path === "/api/hq/verify" || path === "/api/hq/logout";
+    const allow = path === "/hq/login" || path === "/api/hq/verify" || path === "/api/hq/logout" || (path === "/api/hq/logo" && req.method === "GET");
     if (gated && !allow) {
       const ok = await validSession(req.cookies.get("hq_session")?.value, HQ_SECRET);
       if (!ok) {

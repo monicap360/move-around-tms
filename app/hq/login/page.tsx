@@ -10,9 +10,11 @@ export default function HqLogin() {
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [logo, setLogo] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/hq/verify").then(r => r.json()).then(d => setUsers(d.users || [])).catch(() => {});
+    fetch("/api/hq/logo").then(r => r.json()).then(d => setLogo(d.logo_url || null)).catch(() => {});
   }, []);
 
   async function submit() {
@@ -41,7 +43,9 @@ export default function HqLogin() {
       <div style={{ position: "relative", width: "100%", maxWidth: 400, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(99,179,237,0.22)", borderRadius: 22, padding: "34px 30px 30px", boxShadow: "0 30px 90px rgba(0,0,0,0.55)" }}>
         {/* brand */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 22 }}>
-          <div style={{ width: 60, height: 60, borderRadius: 16, background: "linear-gradient(135deg,#2563eb,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.5rem", color: "#fff", boxShadow: "0 10px 30px rgba(37,99,235,0.55)" }}>MA</div>
+          {logo
+            ? <img src={logo} alt="Logo" style={{ width: 68, height: 68, borderRadius: 16, objectFit: "contain", background: "rgba(255,255,255,0.06)", padding: 4, boxShadow: "0 10px 30px rgba(37,99,235,0.35)" }} />
+            : <div style={{ width: 60, height: 60, borderRadius: 16, background: "linear-gradient(135deg,#2563eb,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.5rem", color: "#fff", boxShadow: "0 10px 30px rgba(37,99,235,0.55)" }}>MA</div>}
           <div style={{ textAlign: "center" }}>
             <div style={{ fontWeight: 900, fontSize: "1.15rem", color: "#fff", letterSpacing: "0.01em" }}>MoveAround <span style={{ color: "#38bdf8" }}>HQ</span></div>
             <div style={{ fontSize: "0.66rem", letterSpacing: "0.34em", color: "#64748b", fontWeight: 700, marginTop: 3 }}>PRODUCT COMPANY COCKPIT</div>
