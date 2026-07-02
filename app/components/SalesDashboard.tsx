@@ -43,7 +43,7 @@ const BLANK = { owner_name: "", company_name: "", contact_name: "", phone: "", e
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 const lbl: React.CSSProperties = { fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 3 };
 
-export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sales Pipeline", subtitle = "Track every lead from first contact to close." }: { apiPath?: string; title?: string; subtitle?: string }) {
+export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sales Pipeline", subtitle = "Track every lead from first contact to close.", scopeToUser = false }: { apiPath?: string; title?: string; subtitle?: string; scopeToUser?: boolean }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [battlecards, setBattlecards] = useState<Battlecard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +92,14 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
       .finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, []);
+  // A logged-in sales rep lands on their own leads (owners/admins see everyone).
+  useEffect(() => {
+    if (!scopeToUser) return;
+    fetch("/api/hq/me").then(r => r.json()).then(d => {
+      const role = d.user?.role || "", nm = d.user?.name || "";
+      if (nm && /sales|rep/i.test(role) && !/owner|admin/i.test(role)) setOwnerFilter(nm);
+    }).catch(() => {});
+  }, [scopeToUser]);
   useEffect(() => { fetch("/api/hq/battlecards").then(r => r.ok ? r.json() : null).then(d => { if (d) setBattlecards(d.battlecards || []); }).catch(() => {}); }, []);
   const toggleTool = (name: string) => setForm((f: any) => { const cur: string[] = Array.isArray(f.current_tools) ? f.current_tools : []; return { ...f, current_tools: cur.includes(name) ? cur.filter(t => t !== name) : [...cur, name] }; });
 

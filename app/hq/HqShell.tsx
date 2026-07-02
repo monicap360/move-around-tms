@@ -40,9 +40,15 @@ const STARS = `
 export default function HqShell({ active, children }: { active: string; children: React.ReactNode }) {
   const [logo, setLogo] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetch("/api/hq/logo").then(r => r.json()).then(d => setLogo(d.logo_url || null)).catch(() => {}); }, []);
+  useEffect(() => { fetch("/api/hq/me").then(r => r.json()).then(d => setRole(d.user?.role || "")).catch(() => {}); }, []);
+
+  // Sales reps are scoped to just the pipeline + kit; owners/admins see everything.
+  const isRep = role != null && /sales|rep/i.test(role) && !/owner|admin/i.test(role);
+  const visibleNav = isRep ? NAV.filter(n => n.key === "sales" || n.key === "saleskit") : NAV;
 
   async function uploadLogo(file: File) {
     setUploading(true);
@@ -77,7 +83,7 @@ export default function HqShell({ active, children }: { active: string; children
             </div>
           </div>
           <nav style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-            {NAV.map(n => (
+            {visibleNav.map(n => (
               <Link key={n.key} href={n.href} style={{
                 display: "flex", alignItems: "center", gap: 11, padding: "10px 12px", borderRadius: 10, textDecoration: "none",
                 fontWeight: 700, fontSize: "0.86rem",

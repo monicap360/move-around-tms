@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AssistantWidget from "@/app/components/ronyx/AssistantWidget";
 import { CcbShield } from "@/app/components/CcbLogo";
+import CcbTour from "@/app/components/CcbTour";
 
 // Carrier Clearance Bureau™ — Norma's own universal (cross-company) clearance console.
 // Its own portal (/ccb, separate login) — she works for CCB, not any tenant.
@@ -63,11 +64,12 @@ export default function CcbHome() {
   return (
     <div style={{ fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
       {/* Top bar */}
-      <div style={{ background: "linear-gradient(90deg,#0a1428,#12294d)", padding: "10px 22px", display: "flex", alignItems: "center", gap: 11 }}>
-        <CcbShield size={30} />
-        <span style={{ fontWeight: 900, color: "#fff", fontSize: "0.95rem" }}>Carrier Clearance <span style={{ color: "#4ade80" }}>Bureau</span><span style={{ color: "#cbd5e1", fontSize: "0.7em", verticalAlign: "super" }}>™</span></span>
-        <span style={{ fontSize: "0.68rem", color: "#86efac", background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", padding: "3px 10px", borderRadius: 999, fontWeight: 700 }}>All Companies</span>
-        <button onClick={() => { setPinErr(""); setPinOpen(true); }} style={{ marginLeft: "auto", background: pinStatus?.should_change ? "rgba(250,204,21,0.18)" : "rgba(255,255,255,0.08)", border: `1px solid ${pinStatus?.should_change ? "rgba(250,204,21,0.5)" : "rgba(148,163,184,0.25)"}`, color: pinStatus?.should_change ? "#fde68a" : "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>🔑 Change PIN</button>
+      <div style={{ background: "linear-gradient(90deg,#0a1428,#12294d)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 14 }}>
+        <CcbShield size={52} />
+        <span style={{ fontWeight: 900, color: "#fff", fontSize: "1.35rem", letterSpacing: "0.01em" }}>Carrier Clearance <span style={{ color: "#4ade80" }}>Bureau</span><span style={{ color: "#cbd5e1", fontSize: "0.6em", verticalAlign: "super" }}>™</span></span>
+        <span style={{ fontSize: "0.8rem", color: "#86efac", background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", padding: "5px 13px", borderRadius: 999, fontWeight: 800 }}>All Companies</span>
+        <button onClick={() => window.dispatchEvent(new Event("ccb-open-tour"))} style={{ marginLeft: "auto", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>❔ Tour</button>
+        <button onClick={() => { setPinErr(""); setPinOpen(true); }} style={{ background: pinStatus?.should_change ? "rgba(250,204,21,0.18)" : "rgba(255,255,255,0.08)", border: `1px solid ${pinStatus?.should_change ? "rgba(250,204,21,0.5)" : "rgba(148,163,184,0.25)"}`, color: pinStatus?.should_change ? "#fde68a" : "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>🔑 Change PIN</button>
         <button onClick={() => window.location.reload()} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>↻ Refresh</button>
         <button onClick={logout} style={{ background: "rgba(239,68,68,0.14)", border: "1px solid rgba(248,113,113,0.35)", color: "#fca5a5", borderRadius: 8, padding: "6px 12px", fontWeight: 800, fontSize: "0.76rem", cursor: "pointer" }}>⏻ Logout</button>
       </div>
@@ -249,6 +251,7 @@ export default function CcbHome() {
         </div>
       )}
 
+      <CcbTour />
       <AssistantWidget staffName={name || "Norma"} endpoint="/api/ccb/assistant" lockHref="/ccb/login?next=/ccb" />
     </div>
   );
