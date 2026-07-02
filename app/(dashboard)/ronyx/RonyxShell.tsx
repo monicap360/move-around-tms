@@ -177,6 +177,26 @@ export default function RonyxShell({ children, user }: { children: React.ReactNo
   const searchParams = useSearchParams();
   const currentTab   = searchParams.get("tab");
 
+  // Global save safety net: if ANY /api/ronyx call returns 401 (the PIN session
+  // expired), send the user to the lock screen to re-enter their PIN. This means
+  // no page for any user can silently drop an auto-save/edit on session timeout.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const orig = window.fetch;
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const res = await orig.apply(window, args as any);
+      try {
+        const req = args[0] as any;
+        const url = typeof req === "string" ? req : (req?.url || "");
+        if (res.status === 401 && url.includes("/api/ronyx/") && !window.location.pathname.startsWith("/ronyx-lock")) {
+          window.location.href = `/ronyx-lock?next=${encodeURIComponent(window.location.pathname)}`;
+        }
+      } catch {}
+      return res;
+    };
+    return () => { window.fetch = orig; };
+  }, []);
+
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [importOpen,   setImportOpen]   = useState(false);
   const [fabHidden,    setFabHidden]    = useState(false);

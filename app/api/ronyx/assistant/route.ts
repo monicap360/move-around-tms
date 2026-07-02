@@ -41,6 +41,11 @@ const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: "object", properties: {} },
   },
   {
+    name: "get_money_snapshot",
+    description: "Accounting summary across owner-operator jobs/loads: total loads, loads pending settlement, verified tickets, gross revenue, owed to owner-operators, and margin. Use for 'what's outstanding / pending settlement / revenue / margin' questions.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "get_dispatch_snapshot",
     description: "Summary of the most recent daily dispatch import: total loads, number of carriers, and how many rows are missing a truck, missing a company, or not yet matched to an owner-operator. Use for 'how's today's dispatch' / 'what's outstanding on dispatch'.",
     input_schema: { type: "object", properties: {} },
@@ -134,6 +139,24 @@ async function runTool(name: string, input: any, orgId: string): Promise<any> {
     return { ok: true, merged: `Kept ${keep.name} (${keep_id.slice(0, 8)}), removed duplicate ${remove.name} (${remove_id.slice(0, 8)}).` };
   }
 
+  if (name === "get_money_snapshot") {
+    const { data: jobs } = await sb.from("ronyx_oo_jobs")
+      .select("settlement_status, ticket_status, gross_revenue, oo_rate, margin")
+      .in("oo_id", ooIds).limit(50000);
+    const j = jobs || [];
+    const sum = (f: string) => j.reduce((s, x: any) => s + Number(x[f] || 0), 0);
+    const money = (n: number) => "$" + Math.round(n).toLocaleString();
+    return {
+      total_loads: j.length,
+      pending_settlement: j.filter((x: any) => /pending/i.test(x.settlement_status || "")).length,
+      verified_tickets: j.filter((x: any) => /verified/i.test(x.ticket_status || "")).length,
+      gross_revenue: money(sum("gross_revenue")),
+      owed_to_owner_operators: money(sum("oo_rate")),
+      margin: money(sum("margin")),
+      note: j.length < 5 ? "Very little job/settlement data is loaded yet — these numbers will grow as loads and payouts are imported." : undefined,
+    };
+  }
+
   if (name === "get_dispatch_snapshot") {
     const { data: latest } = await sb.from("dispatch_import_rows").select("dispatch_import_id, created_at").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (!latest) return { note: "No dispatch has been imported yet." };
@@ -175,7 +198,7 @@ function personaFor(staff: string): string {
   // Per-person focus so the assistant is tuned to what each person actually does.
   let focus = "";
   if (f === "tabitha") {
-    focus = `You are speaking with TABITHA, who runs DISPATCH and subhauler onboarding at Ronyx. Lead with her world: today's dispatch (get_dispatch_snapshot / search_dispatch), loads and carriers, and subhauler onboarding. When she asks "how's dispatch" or "what's outstanding," use get_dispatch_snapshot and highlight what needs attention (missing trucks, unmatched carriers). You can still look up drivers/companies when relevant.`;
+    focus = `You are speaking with TABITHA, who runs ACCOUNTING (the "Money" section) at Ronyx — invoices, unpaid tickets, payroll, driver pay, owner-operator settlements, and receivables. Lead with her financial world: use get_money_snapshot for "how much is pending settlement / what's outstanding / revenue" questions. She also just set up the daily dispatch list, and dispatch feeds settlements & pay, so use get_dispatch_snapshot / search_dispatch when she connects loads to money. Help her reconcile, chase unpaid items, and keep the books tidy.`;
   } else if (f === "sylvia") {
     focus = `You are speaking with SYLVIA, who runs driver compliance and the owner-operator office. Lead with her world: drivers, CDL/medical, COIs, duplicates, and owner-operator records. Proactively catch data problems (duplicates, missing trucks/cards).`;
   } else {

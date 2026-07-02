@@ -13,7 +13,7 @@ function greetingFor(name?: string): string {
   const f = first.toLowerCase();
   const hi = first ? `Hi ${first}!` : "Hi!";
   if (f === "tabitha")
-    return `${hi} I'm your dispatch assistant. Ask me about today's dispatch, loads, carriers, or onboarding — or tell me what to do. Try:\n• "How's today's dispatch?"\n• "What loads is Grit running today?"\n• "Which loads are missing a truck?"`;
+    return `${hi} I'm your accounting assistant. Ask me about settlements, unpaid tickets, invoices, payroll, or the dispatch-to-pay list — or tell me what to do. Try:\n• "What's pending settlement?"\n• "How much revenue and margin so far?"\n• "How's today's dispatch list?"`;
   if (f === "sylvia")
     return `${hi} I'm your compliance assistant. Ask about drivers, CDL/medical, COIs — or tell me what to do. Try:\n• "Patrick Hendrick is duplicated, fix it"\n• "How many drivers are missing a truck?"\n• "Find drivers for Grit Logistics"`;
   return `${hi} I'm your office assistant. Ask me anything about your drivers, trucks, dispatch, or compliance — or tell me what to do.`;
