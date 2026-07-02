@@ -30,6 +30,9 @@ const STAGES = [
 const stageOf = (k: string) => STAGES.find(s => s.key === k) || STAGES[0];
 const money = (n: number | null | undefined) => "$" + Number(n || 0).toLocaleString();
 
+// The sales team — each person's leads are tagged with their name (Owner).
+const SALESPEOPLE = ["Andrew", "Laura", "Sylvia", "Veronica", "Monica"];
+
 const BLANK = { owner_name: "Andrew", company_name: "", contact_name: "", phone: "", email: "", source: "", stage: "new", estimated_value: "", trucks_count: "", notes: "", next_follow_up: "" };
 
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
@@ -39,6 +42,7 @@ export default function SalesDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("All");
   const [toast, setToast] = useState("");
   const [form, setForm] = useState<any | null>(null); // add/edit form (null = closed)
   const [saving, setSaving] = useState(false);
@@ -54,20 +58,24 @@ export default function SalesDashboard() {
   }
   useEffect(() => { load(); }, []);
 
+  // Scope everything to the selected salesperson (or All).
+  const ownerScoped = useMemo(() => ownerFilter === "All" ? leads : leads.filter(l => (l.owner_name || "") === ownerFilter), [leads, ownerFilter]);
+
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return leads;
-    return leads.filter(l => [l.company_name, l.contact_name, l.phone, l.email, l.source].some(v => (v || "").toLowerCase().includes(s)));
-  }, [leads, q]);
+    if (!s) return ownerScoped;
+    return ownerScoped.filter(l => [l.company_name, l.contact_name, l.phone, l.email, l.source].some(v => (v || "").toLowerCase().includes(s)));
+  }, [ownerScoped, q]);
 
   const kpis = useMemo(() => {
-    const active = leads.filter(l => l.stage !== "won" && l.stage !== "lost");
+    const base = ownerScoped;
+    const active = base.filter(l => l.stage !== "won" && l.stage !== "lost");
     const pipeline = active.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
     const thisMonth = new Date().toISOString().slice(0, 7);
-    const wonMonth = leads.filter(l => l.stage === "won" && (l.updated_at || "").slice(0, 7) === thisMonth);
-    const wonValue = leads.filter(l => l.stage === "won").reduce((s, l) => s + Number(l.estimated_value || 0), 0);
-    return { total: leads.length, active: active.length, pipeline, wonMonth: wonMonth.length, wonValue };
-  }, [leads]);
+    const wonMonth = base.filter(l => l.stage === "won" && (l.updated_at || "").slice(0, 7) === thisMonth);
+    const wonValue = base.filter(l => l.stage === "won").reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    return { total: base.length, active: active.length, pipeline, wonMonth: wonMonth.length, wonValue };
+  }, [ownerScoped]);
 
   async function save() {
     if (!form.company_name?.trim()) { flash("Company name is required."); return; }
@@ -113,7 +121,7 @@ export default function SalesDashboard() {
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Track every lead from first contact to close. Drag between stages with the arrows on each card.</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setForm({ ...BLANK })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Lead</button>
+          <button onClick={() => setForm({ ...BLANK, owner_name: ownerFilter !== "All" ? ownerFilter : "Andrew" })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Lead</button>
           <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 13px", fontWeight: 700, fontSize: "0.84rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
         </div>
       </div>
@@ -134,7 +142,18 @@ export default function SalesDashboard() {
         ))}
       </div>
 
-      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search company, contact, phone…" style={{ ...inp, maxWidth: 340, marginBottom: 16 }} />
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search company, contact, phone…" style={{ ...inp, maxWidth: 300, marginBottom: 0 }} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase" }}>Rep:</span>
+          {["All", ...SALESPEOPLE].map(name => (
+            <button key={name} onClick={() => setOwnerFilter(name)}
+              style={{ cursor: "pointer", padding: "6px 12px", borderRadius: 999, fontSize: "0.78rem", fontWeight: 800, background: ownerFilter === name ? "#0f172a" : "#fff", color: ownerFilter === name ? "#fff" : "#475569", border: "1px solid " + (ownerFilter === name ? "#0f172a" : "#e2e8f0") }}>
+              {name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* pipeline board */}
       {loading ? <div style={{ color: "#94a3b8", padding: 50, textAlign: "center" }}>Loading leads…</div> : (
@@ -192,7 +211,12 @@ export default function SalesDashboard() {
               <div><label style={lbl}>Stage</label>
                 <select value={form.stage} onChange={e => setForm({ ...form, stage: e.target.value })} style={inp}>{STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}</select>
               </div>
-              <div><label style={lbl}>Owner</label><input value={form.owner_name || ""} onChange={e => setForm({ ...form, owner_name: e.target.value })} style={inp} /></div>
+              <div><label style={lbl}>Owner (Rep)</label>
+                <select value={form.owner_name || "Andrew"} onChange={e => setForm({ ...form, owner_name: e.target.value })} style={inp}>
+                  {SALESPEOPLE.map(p => <option key={p} value={p}>{p}</option>)}
+                  {form.owner_name && !SALESPEOPLE.includes(form.owner_name) && <option value={form.owner_name}>{form.owner_name}</option>}
+                </select>
+              </div>
               <div><label style={lbl}>Est. Value ($)</label><input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Fleet Size (trucks)</label><input type="number" value={form.trucks_count} onChange={e => setForm({ ...form, trucks_count: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Next Follow-up</label><input type="date" value={form.next_follow_up} onChange={e => setForm({ ...form, next_follow_up: e.target.value })} style={inp} /></div>
