@@ -21,11 +21,33 @@ export default function CcbHome() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [learn, setLearn] = useState<string | null>(null);
+  const [pinStatus, setPinStatus] = useState<{ should_change: boolean; pin_age_days: number } | null>(null);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pinForm, setPinForm] = useState({ current: "", next: "", confirm: "" });
+  const [pinErr, setPinErr] = useState("");
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinDone, setPinDone] = useState("");
 
+  function loadPinStatus() { fetch("/api/ccb/change-pin").then(r => r.ok ? r.json() : null).then(d => d && setPinStatus(d)).catch(() => {}); }
   useEffect(() => {
     try { setName((localStorage.getItem("ccb_user") || "").split(" ")[0] || ""); } catch {}
     fetch("/api/ccb/universal").then(r => r.status === 401 ? (window.location.href = "/ccb/login?next=/ccb", null) : r.json()).then(d => d && setData(d)).catch(() => {}).finally(() => setLoading(false));
+    loadPinStatus();
   }, []);
+
+  async function changePin() {
+    setPinErr("");
+    if (!/^\d{4,6}$/.test(pinForm.next)) { setPinErr("New PIN must be 4–6 digits."); return; }
+    if (pinForm.next !== pinForm.confirm) { setPinErr("New PIN and confirmation don't match."); return; }
+    setPinBusy(true);
+    try {
+      const res = await fetch("/api/ccb/change-pin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current_pin: pinForm.current, new_pin: pinForm.next }) });
+      const j = await res.json();
+      if (j.ok) { setPinDone("✓ PIN updated. Use it next time you sign in."); setPinForm({ current: "", next: "", confirm: "" }); setPinOpen(false); loadPinStatus(); setTimeout(() => setPinDone(""), 5000); }
+      else setPinErr(j.error || "Could not change PIN.");
+    } catch { setPinErr("Network error — try again."); }
+    finally { setPinBusy(false); }
+  }
 
   async function logout() { try { await fetch("/api/ccb/logout", { method: "POST" }); } catch {} window.location.href = "/ccb/login"; }
 
@@ -44,9 +66,18 @@ export default function CcbHome() {
         <span style={{ fontSize: "1.2rem" }}>📡</span>
         <span style={{ fontWeight: 900, color: "#fff", fontSize: "0.95rem" }}>Carrier Clearance <span style={{ color: "#a78bfa" }}>Board</span></span>
         <span style={{ fontSize: "0.68rem", color: "#c4b5fd", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(167,139,250,0.3)", padding: "3px 10px", borderRadius: 999, fontWeight: 700 }}>All Companies</span>
-        <button onClick={() => window.location.reload()} style={{ marginLeft: "auto", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>↻ Refresh</button>
+        <button onClick={() => { setPinErr(""); setPinOpen(true); }} style={{ marginLeft: "auto", background: pinStatus?.should_change ? "rgba(250,204,21,0.18)" : "rgba(255,255,255,0.08)", border: `1px solid ${pinStatus?.should_change ? "rgba(250,204,21,0.5)" : "rgba(148,163,184,0.25)"}`, color: pinStatus?.should_change ? "#fde68a" : "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>🔑 Change PIN</button>
+        <button onClick={() => window.location.reload()} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>↻ Refresh</button>
         <button onClick={logout} style={{ background: "rgba(239,68,68,0.14)", border: "1px solid rgba(248,113,113,0.35)", color: "#fca5a5", borderRadius: 8, padding: "6px 12px", fontWeight: 800, fontSize: "0.76rem", cursor: "pointer" }}>⏻ Logout</button>
       </div>
+
+      {pinStatus?.should_change && (
+        <div style={{ background: "#fef9c3", borderBottom: "1px solid #fde68a", color: "#854d0e", padding: "9px 26px", fontSize: "0.82rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>
+          <span>🔐 Your temporary PIN is {pinStatus.pin_age_days} days old — please set your own PIN now.</span>
+          <button onClick={() => { setPinErr(""); setPinOpen(true); }} style={{ background: "#854d0e", color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontWeight: 800, fontSize: "0.74rem", cursor: "pointer" }}>Change PIN</button>
+        </div>
+      )}
+      {pinDone && <div style={{ background: "#dcfce7", borderBottom: "1px solid #bbf7d0", color: "#166534", padding: "9px 26px", fontSize: "0.82rem", fontWeight: 700 }}>{pinDone}</div>}
 
       {/* Header */}
       <div style={{ background: "linear-gradient(135deg,#7c3aed 0%,#1d4ed8 100%)", padding: "24px 32px 20px" }}>
@@ -187,6 +218,34 @@ export default function CcbHome() {
         </>
         )}
       </div>
+
+      {pinOpen && (
+        <div onClick={() => setPinOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9700, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "24px 26px", width: "100%", maxWidth: 400 }}>
+            <div style={{ fontWeight: 900, fontSize: "1.05rem", marginBottom: 4 }}>🔑 Change your PIN</div>
+            <div style={{ fontSize: "0.78rem", color: "#64748b", marginBottom: 16 }}>4–6 digits. You'll use the new PIN next time you sign in.</div>
+            <div style={{ display: "grid", gap: 11 }}>
+              {[
+                { k: "current", label: "Current PIN" },
+                { k: "next", label: "New PIN" },
+                { k: "confirm", label: "Confirm New PIN" },
+              ].map(f => (
+                <div key={f.k}>
+                  <label style={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: 3 }}>{f.label}</label>
+                  <input type="password" inputMode="numeric" maxLength={6} value={(pinForm as any)[f.k]}
+                    onChange={e => setPinForm({ ...pinForm, [f.k]: e.target.value.replace(/\D/g, "") })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #e2e8f0", fontSize: "1.1rem", letterSpacing: "0.3em", textAlign: "center", outline: "none", boxSizing: "border-box" }} />
+                </div>
+              ))}
+            </div>
+            {pinErr && <div style={{ color: "#dc2626", fontSize: "0.78rem", marginTop: 10, fontWeight: 600 }}>{pinErr}</div>}
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button onClick={changePin} disabled={pinBusy} style={{ flex: 1, background: pinBusy ? "#94a3b8" : "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontWeight: 800, fontSize: "0.88rem", cursor: pinBusy ? "default" : "pointer" }}>{pinBusy ? "Saving…" : "Update PIN"}</button>
+              <button onClick={() => setPinOpen(false)} style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 10, padding: "11px 16px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AssistantWidget staffName={name || "Norma"} endpoint="/api/ccb/assistant" lockHref="/ccb/login?next=/ccb" />
     </div>
