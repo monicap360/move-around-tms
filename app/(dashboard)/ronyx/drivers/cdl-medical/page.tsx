@@ -6,6 +6,7 @@ type Driver = {
   id: string; oo_id: string; company: string; name: string; phone: string;
   cdl_number: string; cdl_state: string; cdl_class: string; truck_number: string;
   cdl_expiration: string; med_card_expiration: string; med_card_number: string; updated_at: string; imported?: boolean;
+  cdl_card_url?: string; med_card_url?: string;
 };
 
 const EDITABLE = ["cdl_number", "cdl_state", "cdl_class", "cdl_expiration", "med_card_expiration", "med_card_number"] as const;
@@ -33,7 +34,25 @@ export default function FleetCdlMedical() {
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ ...BLANK_ADD });
   const [adding, setAdding] = useState(false);
+  const [uploadingCard, setUploadingCard] = useState("");
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3200); };
+
+  // Upload a driver's CDL or medical CARD image and file it to that driver.
+  async function uploadCard(d: Driver, kind: "cdl" | "med", file: File) {
+    const key = `${d.id}:${kind}`;
+    setUploadingCard(key);
+    try {
+      const docType = kind === "cdl" ? `[${d.name}] CDL License` : `[${d.name}] Medical Card`;
+      const fd = new FormData();
+      fd.append("file", file); fd.append("module", "drivers"); fd.append("oo_id", d.oo_id); fd.append("skip_routing", "1");
+      const up = await fetch("/api/ronyx/upload-file", { method: "POST", body: fd }).then(r => r.json()).catch(() => null);
+      if (!up?.url) { flash("Upload failed — please try again."); return; }
+      const rec = await fetch(`/api/ronyx/owner-operators/${d.oo_id}/documents`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc_type: docType, file_name: file.name, file_url: up.url }) }).then(r => r.json()).catch(() => null);
+      if (rec?.error) { flash(`Stored the file but recording it failed: ${rec.error}`); return; }
+      setRows(rs => rs.map(r => r.id === d.id ? { ...r, [kind === "cdl" ? "cdl_card_url" : "med_card_url"]: up.url } : r));
+      flash(`${kind === "cdl" ? "CDL" : "Medical card"} filed to ${d.name}.`);
+    } finally { setUploadingCard(""); }
+  }
 
   function load() {
     setLoading(true);
@@ -209,7 +228,7 @@ export default function FleetCdlMedical() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem", minWidth: 940 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Company / Driver", "Truck #", "CDL #", "State", "Class", "CDL Expiration", "Med Card Expiration", "Med Card #", ""].map((h, i, arr) => (
+                  {["Company / Driver", "Truck #", "CDL #", "State", "Class", "CDL Expiration", "Med Card Expiration", "Med Card #", "Cards on File", ""].map((h, i, arr) => (
                     <th key={h || "actions"} style={{ padding: "9px 10px", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: "left", whiteSpace: "nowrap", position: "sticky", top: 0, background: "#f8fafc", ...(i === arr.length - 1 ? { right: 0, zIndex: 2 } : {}) }}>{h}</th>
                   ))}
                 </tr>
@@ -244,6 +263,26 @@ export default function FleetCdlMedical() {
                           </div>
                         </td>
                         <td style={cell}>{d.med_card_number || <span style={{ color: "#cbd5e1" }}>—</span>}</td>
+                        <td style={cell}>
+                          <div style={{ display: "flex", gap: 5 }}>
+                            {(["cdl", "med"] as const).map(kind => {
+                              const url = kind === "cdl" ? d.cdl_card_url : d.med_card_url;
+                              const label = kind === "cdl" ? "CDL" : "Med";
+                              const busy = uploadingCard === `${d.id}:${kind}`;
+                              return url ? (
+                                <a key={kind} href={url} target="_blank" rel="noreferrer" title={`View ${label} card`}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 6, padding: "3px 8px", fontSize: "0.68rem", fontWeight: 800, textDecoration: "none" }}>📎 {label}</a>
+                              ) : (
+                                <label key={kind} title={busy ? "Uploading…" : `Upload ${label} card`}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", borderRadius: 6, padding: "3px 8px", fontSize: "0.68rem", fontWeight: 800, cursor: busy ? "default" : "pointer" }}>
+                                  {busy ? "…" : `⬆ ${label}`}
+                                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} disabled={busy}
+                                    onChange={ev => { const f = ev.target.files?.[0]; if (f) uploadCard(d, kind, f); ev.target.value = ""; }} />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </td>
                         <td style={{ padding: "6px 10px", whiteSpace: "nowrap", position: "sticky", right: 0, background: recent ? "#fef9c3" : "#fff" }}>
                           <button onClick={() => { setEditingId(d.id); }} disabled={!!editingId}
                             style={{ background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", borderRadius: 8, padding: "6px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: editingId ? "not-allowed" : "pointer", opacity: editingId && !editing ? 0.4 : 1 }}>✏ Edit</button>
@@ -283,6 +322,7 @@ export default function FleetCdlMedical() {
                         </div>
                       </td>
                       <td style={{ padding: "5px 8px", minWidth: 110 }}><input value={val(d, "med_card_number")} onChange={e => setField(d.id, "med_card_number", e.target.value)} style={inp} /></td>
+                      <td style={{ padding: "5px 8px", color: "#94a3b8", fontSize: "0.7rem" }}>Save first</td>
                       <td style={{ padding: "5px 10px", whiteSpace: "nowrap", position: "sticky", right: 0, background: "#fffbeb" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => save(d)} disabled={saving === d.id}

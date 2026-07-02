@@ -30,11 +30,23 @@ export async function GET() {
   // Almost no driver row carries its own truck_number — the trucks live in
   // ronyx_oo_trucks (assigned by name) and ronyx_driver_truck_assignments.
   // Derive each driver's truck(s) so the Truck # column is actually populated.
-  const [{ data: trucks }, { data: assigns }] = await Promise.all([
+  const [{ data: trucks }, { data: assigns }, { data: driverDocs }] = await Promise.all([
     sb.from("ronyx_oo_trucks").select("id, oo_id, truck_number, assigned_driver_name, status").in("oo_id", ooIds).limit(10000),
     sb.from("ronyx_driver_truck_assignments").select("driver_id, truck_id, is_active").in("oo_id", ooIds).limit(10000),
+    // Driver-tagged docs ("[Name] CDL License" / "[Name] Medical Card") so we can
+    // flag which drivers still need their actual CARD image on file.
+    sb.from("ronyx_oo_documents").select("oo_id, doc_type, file_url").in("oo_id", ooIds).like("doc_type", "[%]%").limit(20000),
   ]);
   const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  // Map driver (oo_id + normalized name) → whether a CDL / medical card file exists.
+  const cardByDriver: Record<string, { cdl?: string; med?: string }> = {};
+  for (const doc of driverDocs || []) {
+    const m = /^\[(.*?)\]/.exec(doc.doc_type || ""); if (!m) continue;
+    const k = `${doc.oo_id}|${norm(m[1])}`;
+    const e = (cardByDriver[k] ||= {});
+    if (/cdl|licen/i.test(doc.doc_type) && doc.file_url) e.cdl = doc.file_url;
+    if (/medical|med.?card|physical/i.test(doc.doc_type) && doc.file_url) e.med = doc.file_url;
+  }
   const activeTruck = (t: any) => !["inactive", "deleted", "sold", "retired", "out_of_service"].includes((t.status || "").toLowerCase());
   const truckNumById: Record<string, string> = {};
   const trucksByName: Record<string, string[]> = {};   // `${oo_id}|${normName}` → [truck_number]
@@ -65,6 +77,9 @@ export async function GET() {
       || uniqJoin(trucksByDriverId[d.id])
       || uniqJoin(trucksByName[`${d.oo_id}|${norm(d.name)}`])
       || "",
+    // Whether the actual CDL / medical CARD image is on file for this driver.
+    cdl_card_url: cardByDriver[`${d.oo_id}|${norm(d.name)}`]?.cdl || "",
+    med_card_url: cardByDriver[`${d.oo_id}|${norm(d.name)}`]?.med || "",
     imported: /\[IMPORTED/i.test(d.notes || ""), updated_at: d.updated_at || "",
   }));
   // Sort: soonest CDL/med expiration first (blanks last) so the at-risk drivers float up.
