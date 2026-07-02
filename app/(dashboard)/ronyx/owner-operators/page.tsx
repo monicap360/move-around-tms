@@ -193,16 +193,30 @@ type OOCompany = {
 /* ─── helpers ────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
+// If the PIN session has expired, every /api/ronyx call returns 401. Bounce to the
+// lock screen so saves (auto-save, edits) prompt a re-login instead of silently
+// failing with a "PIN required" error. Returns true if it redirected.
+function bounceIfLocked(r: Response): boolean {
+  if (r.status === 401 && typeof window !== "undefined") {
+    window.location.href = `/ronyx-lock?next=${encodeURIComponent(window.location.pathname)}`;
+    return true;
+  }
+  return false;
+}
 async function apiPost(path: string, body: unknown) {
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (bounceIfLocked(r)) return {};
   return r.json();
 }
 async function apiPut(path: string, body: unknown) {
   const r = await fetch(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (bounceIfLocked(r)) return {};
   return r.json();
 }
 async function apiDelete(path: string) {
-  return fetch(path, { method: "DELETE" });
+  const r = await fetch(path, { method: "DELETE" });
+  bounceIfLocked(r);
+  return r;
 }
 
 /* ─── COI type constants ─────────────────────────────── */
