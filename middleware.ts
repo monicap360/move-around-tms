@@ -13,6 +13,8 @@ const GATE_ON = process.env.RONYX_PIN_GATE === "true";
 const SECRET = process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "ronyx-dev-secret";
 // MoveAround HQ (product company) gate — always on; its own login/cookie, separate from Ronyx.
 const HQ_SECRET = process.env.HQ_SESSION_SECRET || process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "movearound-hq-dev-secret";
+// CCB (Carrier Clearance Board) gate — Norma's cross-company clearance portal; its own login/cookie.
+const CCB_SECRET = process.env.CCB_SESSION_SECRET || process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "movearound-ccb-dev-secret";
 
 const enc = new TextEncoder();
 function b64urlToBytes(s: string): Uint8Array {
@@ -98,9 +100,26 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // 4) CCB gate (always on) — Norma's cross-company clearance portal, separate login.
+  {
+    const gated = path === "/ccb" || path.startsWith("/ccb/") || path.startsWith("/api/ccb/");
+    const allow = path === "/ccb/login" || path === "/api/ccb/verify" || path === "/api/ccb/logout";
+    if (gated && !allow) {
+      const ok = await validSession(req.cookies.get("ccb_session")?.value, CCB_SECRET);
+      if (!ok) {
+        if (path.startsWith("/api/")) return NextResponse.json({ error: "CCB login required" }, { status: 401 });
+        const u = url.clone();
+        u.pathname = "/ccb/login";
+        u.search = "";
+        u.searchParams.set("next", path + url.search);
+        return NextResponse.redirect(u);
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/", "/ronyx", "/ronyx/:path*", "/api/ronyx/:path*", "/ronyx-lock", "/hq", "/hq/:path*", "/api/hq/:path*"],
+  matcher: ["/", "/ronyx", "/ronyx/:path*", "/api/ronyx/:path*", "/ronyx-lock", "/hq", "/hq/:path*", "/api/hq/:path*", "/ccb", "/ccb/:path*", "/api/ccb/:path*"],
 };

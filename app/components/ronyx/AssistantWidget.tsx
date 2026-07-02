@@ -21,7 +21,7 @@ function greetingFor(name?: string): string {
   return `${hi} I'm your office assistant. Ask me anything about your drivers, trucks, dispatch, or compliance — or tell me what to do.`;
 }
 
-export default function AssistantWidget({ staffName }: { staffName?: string }) {
+export default function AssistantWidget({ staffName, endpoint = "/api/ronyx/assistant", lockHref }: { staffName?: string; endpoint?: string; lockHref?: string }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -36,8 +36,8 @@ export default function AssistantWidget({ staffName }: { staffName?: string }) {
     const next = [...msgs, { role: "user" as const, content: text }];
     setMsgs(next); setInput(""); setBusy(true);
     try {
-      const res = await fetch("/api/ronyx/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: next, staff: staffName || "" }) });
-      if (res.status === 401) { window.location.href = `/ronyx-lock?next=${encodeURIComponent(location.pathname)}`; return; }
+      const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: next, staff: staffName || "" }) });
+      if (res.status === 401) { window.location.href = lockHref || `/ronyx-lock?next=${encodeURIComponent(location.pathname)}`; return; }
       const data = await res.json();
       setMsgs(m => [...m, { role: "assistant", content: data.reply || "Done." }]);
     } catch {

@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AssistantWidget from "@/app/components/ronyx/AssistantWidget";
 
-// Norma's universal CCB Sentinel™ console — simple + guided. Tells her what to do
-// next, aggregates carrier clearance across EVERY company, and links to About /
-// How-to / Training. The floating 🤖 Office Assistant (RonyxShell) answers + acts.
+// CCB Sentinel™ — Norma's own universal (cross-company) clearance console.
+// Its own portal (/ccb, separate login) — she works for CCB, not any tenant.
 
 type Roll = { org_id: string; name: string; clear: number; low: number; warning: number; critical: number; review: number; carriers: number; attention: number; import_date: string | null };
 type Att = { company: string; carrier: string; truck: string | null; severity: string; note: string | null };
@@ -17,20 +16,20 @@ const SEVMETA: Record<string, { color: string; bg: string; label: string }> = {
   review:   { color: "#7c3aed", bg: "#f3e8ff", label: "Needs Review" },
 };
 
-export default function CcbCommandPage() {
+export default function CcbHome() {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [learn, setLearn] = useState<string | null>(null);
 
   useEffect(() => {
-    try { const s = JSON.parse(localStorage.getItem("ronyx_active_staff") || "{}"); setName((s?.name || "").split(" ")[0] || ""); } catch {}
-    fetch("/api/ronyx/ccb-universal").then(r => r.json()).then(setData).catch(() => {}).finally(() => setLoading(false));
+    try { setName((localStorage.getItem("ccb_user") || "").split(" ")[0] || ""); } catch {}
+    fetch("/api/ccb/universal").then(r => r.status === 401 ? (window.location.href = "/ccb/login?next=/ccb", null) : r.json()).then(d => d && setData(d)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const t = data?.totals;
-  const needsReview = (t?.critical || 0) + (t?.warning || 0) + (t?.review || 0);
+  async function logout() { try { await fetch("/api/ccb/logout", { method: "POST" }); } catch {} window.location.href = "/ccb/login"; }
 
+  const t = data?.totals;
   const kpi = (label: string, value: number, color: string, bg: string) => (
     <div style={{ background: bg, borderRadius: 12, padding: "16px 18px", flex: "1 1 150px", border: `1px solid ${color}22` }}>
       <div style={{ fontSize: "2rem", fontWeight: 900, color }}>{value}</div>
@@ -40,22 +39,28 @@ export default function CcbCommandPage() {
 
   return (
     <div style={{ fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
+      {/* Top bar */}
+      <div style={{ background: "linear-gradient(90deg,#2e1065,#1e2d6b)", padding: "12px 26px", display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: "1.2rem" }}>📡</span>
+        <span style={{ fontWeight: 900, color: "#fff", fontSize: "0.95rem" }}>Carrier Clearance <span style={{ color: "#a78bfa" }}>Board</span></span>
+        <span style={{ fontSize: "0.68rem", color: "#c4b5fd", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(167,139,250,0.3)", padding: "3px 10px", borderRadius: 999, fontWeight: 700 }}>All Companies</span>
+        <button onClick={() => window.location.reload()} style={{ marginLeft: "auto", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(148,163,184,0.25)", color: "#e2e8f0", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}>↻ Refresh</button>
+        <button onClick={logout} style={{ background: "rgba(239,68,68,0.14)", border: "1px solid rgba(248,113,113,0.35)", color: "#fca5a5", borderRadius: 8, padding: "6px 12px", fontWeight: 800, fontSize: "0.76rem", cursor: "pointer" }}>⏻ Logout</button>
+      </div>
+
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg,#7c3aed 0%,#1d4ed8 100%)", padding: "26px 32px 22px" }}>
+      <div style={{ background: "linear-gradient(135deg,#7c3aed 0%,#1d4ed8 100%)", padding: "24px 32px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <span style={{ fontSize: "1.5rem" }}>📡</span>
-          <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 900, color: "#fff" }}>CCB Sentinel™ · Clearance Command</h1>
+          <h1 style={{ margin: 0, fontSize: "1.55rem", fontWeight: 900, color: "#fff" }}>CCB Sentinel™ · Clearance Command</h1>
         </div>
         <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", fontSize: "0.9rem" }}>
           {name ? `Hi ${name}! ` : ""}You keep <strong>every company's</strong> carriers cleared to dispatch. Your job: make sure only cleared carriers roll.
         </p>
       </div>
 
-      <div style={{ padding: "22px 32px 60px", maxWidth: 1100 }}>
-
+      <div style={{ padding: "22px 32px 90px", maxWidth: 1100 }}>
         {loading ? <div style={{ color: "#94a3b8", padding: 40, textAlign: "center" }}>Loading clearance across all companies…</div> : (
         <>
-          {/* Cross-company snapshot */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 22 }}>
             {kpi("Cleared", t?.clear || 0, "#15803d", "#dcfce7")}
             {kpi("Needs Review", t?.review || 0, "#7c3aed", "#f3e8ff")}
@@ -64,11 +69,10 @@ export default function CcbCommandPage() {
             {kpi("Companies", data?.companies_managed || 0, "#1e40af", "#dbeafe")}
           </div>
 
-          {/* Guided: what to do next */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "18px 20px", marginBottom: 22 }}>
             <div style={{ fontWeight: 900, fontSize: "1rem", color: "#0f172a", marginBottom: 4 }}>✅ What to do next</div>
             <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: 14 }}>Work top to bottom. When everything reads zero, every company is clear to dispatch.</div>
-            <ol style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+            <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 { n: 1, title: "Review carriers waiting on clearance", count: t?.review || 0, cta: "These have a compliance note but no decision yet. Clear them or place a hold.", done: "No carriers waiting — nice." },
                 { n: 2, title: "Clear the Dispatch Blocks", count: t?.critical || 0, cta: "Critical issues. These carriers must NOT roll until resolved.", done: "Nothing blocked right now." },
@@ -85,7 +89,6 @@ export default function CcbCommandPage() {
             </ol>
           </div>
 
-          {/* Companies rollup */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden", marginBottom: 22 }}>
             <div style={{ padding: "14px 18px", borderBottom: "1px solid #f1f5f9", fontWeight: 900, fontSize: "0.95rem" }}>🏢 Companies you clear for</div>
             {(!data?.companies?.length) ? (
@@ -112,11 +115,10 @@ export default function CcbCommandPage() {
             )}
           </div>
 
-          {/* Attention list */}
           {!!data?.attention?.length && (
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden", marginBottom: 22 }}>
               <div style={{ padding: "14px 18px", borderBottom: "1px solid #f1f5f9", fontWeight: 900, fontSize: "0.95rem" }}>🚨 Carriers needing your attention</div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
+              <div>
                 {data.attention.map((a, i) => {
                   const m = SEVMETA[a.severity] || SEVMETA.review;
                   return (
@@ -134,7 +136,6 @@ export default function CcbCommandPage() {
             </div>
           )}
 
-          {/* Learn / About / Training */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 20 }}>
             {[
               { key: "about", icon: "📖", title: "About CCB Sentinel™", blurb: "What it is & why it matters" },
@@ -161,11 +162,11 @@ export default function CcbCommandPage() {
             <div style={panel}>
               <h3 style={ph}>🎓 How to clear a carrier — step by step</h3>
               <ol style={{ ...pp, paddingLeft: 18, lineHeight: 1.9 }}>
-                <li>Open the company's dispatch in <Link href="/ronyx/compliance/ccb-sentinel" style={link}>CCB Sentinel detail</Link>.</li>
+                <li>Open the company with carriers <strong>Needs Review</strong> in the table above.</li>
                 <li>Read the carrier's clearance note (authority, insurance, safety).</li>
-                <li>If everything is current → mark <strong>Clear</strong>. The truck is good to roll.</li>
-                <li>If something's expired or missing → place a <strong>Dispatch Block</strong> and note why.</li>
-                <li>If it expires soon → leave a <strong>Warning</strong> and ask the assistant to add a follow-up task.</li>
+                <li>If everything is current → it's <strong>Clear</strong>. The truck is good to roll.</li>
+                <li>If something's expired or missing → it's a <strong>Dispatch Block</strong>; note why.</li>
+                <li>If it expires soon → it's a <strong>Warning</strong>; ask the assistant to add a follow-up task.</li>
                 <li>Re-check anything on Warning before its date passes.</li>
               </ol>
               <p style={pp}>Golden rule: <strong>when in doubt, hold it.</strong> A blocked load is cheaper than a claim.</p>
@@ -174,7 +175,7 @@ export default function CcbCommandPage() {
           {learn === "assistant" && (
             <div style={panel}>
               <h3 style={ph}>🤖 Your Office Assistant</h3>
-              <p style={pp}>Tap the <strong>🤖 button (bottom-right)</strong> any time. It knows your clearance data and can take actions. Try:</p>
+              <p style={pp}>Tap the <strong>🤖 button (bottom-right)</strong> any time. It knows clearance across every company and can take actions. Try:</p>
               <ul style={{ ...pp, paddingLeft: 18, lineHeight: 1.9 }}>
                 <li>“How does clearance look today?”</li>
                 <li>“Check clearance for ABC Trucking.”</li>
@@ -183,18 +184,11 @@ export default function CcbCommandPage() {
               </ul>
             </div>
           )}
-
-          <div style={{ background: "linear-gradient(135deg,#0f172a,#1e2d45)", color: "#fff", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-            <span style={{ fontSize: "1.6rem" }}>🤖</span>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>Need a hand? Ask your assistant.</div>
-              <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.7)" }}>It's the 🤖 button in the bottom-right corner — ask a question or tell it what to do.</div>
-            </div>
-            <Link href="/ronyx/compliance/ccb-sentinel" style={{ background: "#7c3aed", color: "#fff", padding: "9px 18px", borderRadius: 8, fontWeight: 800, fontSize: "0.82rem", textDecoration: "none" }}>Open CCB Sentinel detail →</Link>
-          </div>
         </>
         )}
       </div>
+
+      <AssistantWidget staffName={name || "Norma"} endpoint="/api/ccb/assistant" lockHref="/ccb/login?next=/ccb" />
     </div>
   );
 }
@@ -202,4 +196,3 @@ export default function CcbCommandPage() {
 const panel: React.CSSProperties = { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 22px", marginBottom: 20 };
 const ph: React.CSSProperties = { margin: "0 0 8px", fontSize: "1.05rem", fontWeight: 900, color: "#0f172a" };
 const pp: React.CSSProperties = { margin: "0 0 10px", fontSize: "0.86rem", color: "#334155", lineHeight: 1.6 };
-const link: React.CSSProperties = { color: "#7c3aed", fontWeight: 700, textDecoration: "none" };

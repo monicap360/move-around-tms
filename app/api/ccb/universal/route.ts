@@ -4,9 +4,7 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // CCB Sentinel™ — UNIVERSAL (cross-company) carrier clearance rollup for Norma.
-// Aggregates every company's most recent dispatch import into one clearance picture:
-// how many carriers are Clear / Low / Warning / Dispatch-Block, and who needs review.
-
+// Aggregates every company's most recent dispatch import into one clearance picture.
 type CompanyRoll = {
   org_id: string; name: string;
   clear: number; low: number; warning: number; critical: number; review: number;
@@ -16,12 +14,10 @@ type CompanyRoll = {
 export async function GET() {
   const sb = supabaseAdmin;
 
-  // All companies we manage clearance for.
   const { data: orgs } = await sb.from("organizations").select("id, name, legal_name").limit(1000);
   const nameById: Record<string, string> = {};
   for (const o of orgs || []) nameById[o.id] = o.name || o.legal_name || "Company";
 
-  // Latest dispatch import per org (one row per org, newest first).
   const { data: recent } = await sb
     .from("dispatch_import_rows")
     .select("organization_id, dispatch_import_id, created_at")
@@ -45,7 +41,6 @@ export async function GET() {
       .eq("dispatch_import_id", latestImport[orgId]).limit(5000);
     const r = rows || [];
     const sev = (s: string) => r.filter(x => (x.rmis_severity || "") === s).length;
-    // rows that carry a compliance note but haven't been classified yet = "needs review"
     const review = r.filter(x => !x.rmis_severity && (x.rmis_note || "").trim()).length;
     const roll: CompanyRoll = {
       org_id: orgId, name: nameById[orgId] || "Company",
