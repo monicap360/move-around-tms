@@ -70,6 +70,35 @@ export default function OwnerOperatorAgreement() {
       setOoId(p.get("oo_id") || "");
       const co = p.get("company") || "";
       if (co) { setCompany(co); setFields(s => ({ ...s, sub_name: co, w9_business: co })); }
+
+      // Auto-fill from the registration the subhauler just completed (saved draft).
+      // Existing values (from the URL) win; blanks get filled from the sign-up form.
+      const draft = JSON.parse(localStorage.getItem("oo_signup_draft") || "null");
+      const f = draft?.form;
+      if (f) {
+        const addr = [f.business_address, f.city, f.state].filter(Boolean).join(", ");
+        if (f.company_name) setCompany(prev => prev || f.company_name);
+        if (f.contact_name) setName(prev => prev || f.contact_name);
+        setFields(s => ({
+          ...s,
+          sub_name:        s.sub_name        || f.company_name  || "",
+          w9_business:     s.w9_business     || f.company_name  || "",
+          w9_name:         s.w9_name         || f.company_name  || "",
+          dwc_emp:         s.dwc_emp         || f.company_name  || "",
+          dd_payee:        s.dd_payee        || f.company_name  || "",
+          sub_addr:        s.sub_addr        || addr,
+          w9_addr:         s.w9_addr         || addr,
+          dd_addr:         s.dd_addr         || addr,
+          sub_attn:        s.sub_attn        || f.contact_name  || "",
+          sub_signer_name: s.sub_signer_name || f.contact_name  || "",
+          sub_phone:       s.sub_phone       || f.contact_phone || "",
+          dd_phone:        s.dd_phone        || f.contact_phone || "",
+          sub_email:       s.sub_email       || f.contact_email || "",
+          dd_email:        s.dd_email        || f.contact_email || "",
+          sub_usdot:       s.sub_usdot       || f.dot_number    || "",
+          w9_ein:          s.w9_ein          || f.ein           || "",
+        }));
+      }
     } catch {}
   }, []);
 
