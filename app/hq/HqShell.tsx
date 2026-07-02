@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 const NAV = [
   { key: "sales",   label: "TMS Sales",        href: "/hq/sales",   icon: "📈" },
   { key: "signups", label: "Signups & Trials", href: "/hq/signups", icon: "🚀" },
+  { key: "billing", label: "Billing",          href: "/hq/billing", icon: "💳" },
 ];
 
 const STARS = `
