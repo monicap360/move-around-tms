@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CcbShield, CcbSeal, CcbLockup } from "@/app/components/CcbLogo";
+import { CcbShield, CcbSeal } from "@/app/components/CcbLogo";
 
 // ─── Public marketing page for Carrier Clearance Bureau™ (CCB) ──────────────────
 // Brand: navy shield · steel silver · green "sentinel" clearance light.
@@ -58,8 +58,8 @@ const COMPARE: [string, boolean, boolean][] = [
 
 const PLANS = [
   { tier: "Starter", price: "$299/mo", sub: "Up to 50 carriers", color: "#38bdf8", highlight: false, note: "Continuous monitoring · dispatch holds · audit log" },
-  { tier: "Growth", price: "$4 / carrier /mo", sub: "51–200 carriers", color: "#22c55e", highlight: true, note: "Everything in Starter · follow-up tasks · office assistant" },
-  { tier: "Fleet", price: "$3 / carrier /mo", sub: "200+ carriers · custom", color: "#cbd5e1", highlight: false, note: "Volume pricing · universal cross-company board · priority support" },
+  { tier: "Growth", price: "$5 / carrier /mo", sub: "51–200 carriers", color: "#22c55e", highlight: true, note: "Everything in Starter · follow-up tasks · office assistant" },
+  { tier: "Fleet", price: "$5 / carrier /mo", sub: "200+ carriers · volume rates", color: "#cbd5e1", highlight: false, note: "Universal cross-company board · priority support · switch incentives" },
 ];
 
 const NAVY = "#0a1428", CARD = "#0f2039", ALT = "#0b1832", BORDER = "#1e3a5f", GREEN = "#22c55e", STEEL = "#cbd5e1", MUTED = "#8ea3c0";
@@ -67,7 +67,7 @@ const greenBtn = "linear-gradient(135deg,#16a34a,#15803d)";
 
 export default function CarrierClearanceBureauPage() {
   const [trucks, setTrucks] = useState(120);
-  const monthly = trucks <= 50 ? 299 : trucks <= 200 ? trucks * 4 : trucks * 3;
+  const monthly = trucks <= 50 ? 299 : trucks * 5;
   const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   const demo = "/request-demo?product=Carrier%20Clearance%20Bureau";
 
@@ -219,8 +219,8 @@ export default function CarrierClearanceBureauPage() {
         <div style={{ maxWidth: 820, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <div style={{ color: GREEN, fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>More Than Monitoring</div>
-            <h2 style={{ margin: 0, fontSize: "clamp(1.4rem, 3vw, 2rem)", fontWeight: 900, color: "#fff" }}>We Do More — For Less</h2>
-            <p style={{ margin: "10px auto 0", color: MUTED, fontSize: "0.86rem", maxWidth: 560 }}>Legacy services just watch documents. The Bureau turns clearance into action — and connects it to the load that's about to roll.</p>
+            <h2 style={{ margin: 0, fontSize: "clamp(1.4rem, 3vw, 2rem)", fontWeight: 900, color: "#fff" }}>Same Price. Far More Protection.</h2>
+            <p style={{ margin: "10px auto 0", color: MUTED, fontSize: "0.86rem", maxWidth: 560 }}>For the same per-carrier rate as a legacy monitor, the Bureau turns clearance into action — and connects it to the load that's about to roll.</p>
           </div>
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 130px", background: ALT, borderBottom: `1px solid ${BORDER}` }}>
@@ -236,12 +236,12 @@ export default function CarrierClearanceBureauPage() {
               </div>
             ))}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 130px", background: "#0d2136", borderTop: `2px solid ${BORDER}`, alignItems: "center" }}>
-              <div style={{ padding: "14px 18px", fontSize: "0.82rem", fontWeight: 800, color: "#fff" }}>Typical monthly cost</div>
-              <div style={{ padding: "14px 10px", textAlign: "center", fontSize: "0.9rem", fontWeight: 800, color: "#f87171" }}>~$3,000</div>
-              <div style={{ padding: "14px 10px", textAlign: "center", fontSize: "0.9rem", fontWeight: 900, color: GREEN }}>from $299</div>
+              <div style={{ padding: "14px 18px", fontSize: "0.82rem", fontWeight: 800, color: "#fff" }}>Per-carrier rate</div>
+              <div style={{ padding: "14px 10px", textAlign: "center", fontSize: "0.82rem", fontWeight: 800, color: "#f87171" }}>~$5<br /><span style={{ fontSize: "0.62rem", fontWeight: 600, color: MUTED }}>monitoring only</span></div>
+              <div style={{ padding: "14px 10px", textAlign: "center", fontSize: "0.82rem", fontWeight: 900, color: GREEN }}>~$5<br /><span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#86efac" }}>everything above</span></div>
             </div>
           </div>
-          <p style={{ textAlign: "center", color: MUTED, fontSize: "0.72rem", marginTop: 12 }}>Comparison vs typical legacy carrier-monitoring services. Your price scales with fleet size.</p>
+          <p style={{ textAlign: "center", color: MUTED, fontSize: "0.72rem", marginTop: 12 }}>Same per-carrier rate as a typical legacy monitor — with the full clearance workflow built in.</p>
         </div>
       </section>
 
@@ -251,7 +251,7 @@ export default function CarrierClearanceBureauPage() {
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <div style={{ color: GREEN, fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Pricing</div>
             <h2 style={{ margin: 0, fontSize: "clamp(1.4rem, 3vw, 2rem)", fontWeight: 900, color: "#fff" }}>Simple, Per-Truck Pricing</h2>
-            <p style={{ margin: "10px auto 0", color: MUTED, fontSize: "0.86rem", maxWidth: 520 }}>Scales with your fleet — a fraction of what legacy monitoring services charge.</p>
+            <p style={{ margin: "10px auto 0", color: MUTED, fontSize: "0.86rem", maxWidth: 520 }}>Same per-carrier rate as legacy monitors — with the entire clearance workflow included.</p>
           </div>
 
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: "26px 28px", marginBottom: 28, maxWidth: 620, margin: "0 auto 28px" }}>
