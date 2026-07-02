@@ -102,7 +102,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     section: "Money",
     items: [
-      { label: "Sales Pipeline",   href: "/ronyx/sales",                   icon: "📈", color: "#16a34a" },
       { label: "Invoice Center",   href: "/ronyx/billing",                 icon: "🧾", color: "#1d4ed8", children: [
         { label: "Customer Billing",      href: "/ronyx/billing?tab=customer_billing", icon: "💵" },
         { label: "Payroll Invoices",      href: "/ronyx/billing?tab=payroll_queue",    icon: "📋" },

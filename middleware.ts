@@ -11,6 +11,8 @@ const CARRIERS = ["ronyx", "solis", "garcia", "ymr", "leah", "jjalvarado"];
 // pages redirect to /ronyx-lock and APIs return 401.
 const GATE_ON = process.env.RONYX_PIN_GATE === "true";
 const SECRET = process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "ronyx-dev-secret";
+// MoveAround HQ (product company) gate — always on; its own login/cookie, separate from Ronyx.
+const HQ_SECRET = process.env.HQ_SESSION_SECRET || process.env.PIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "movearound-hq-dev-secret";
 
 const enc = new TextEncoder();
 function b64urlToBytes(s: string): Uint8Array {
@@ -23,14 +25,14 @@ function b64urlToBytes(s: string): Uint8Array {
   return arr;
 }
 
-async function validSession(token: string | undefined): Promise<boolean> {
+async function validSession(token: string | undefined, secret: string = SECRET): Promise<boolean> {
   if (!token) return false;
   const dot = token.lastIndexOf(".");
   if (dot < 0) return false;
   const payloadB64 = token.slice(0, dot);
   const sigB64 = token.slice(dot + 1);
   try {
-    const key = await crypto.subtle.importKey("raw", enc.encode(SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const ok = await crypto.subtle.verify("HMAC", key, b64urlToBytes(sigB64) as BufferSource, enc.encode(payloadB64) as BufferSource);
     if (!ok) return false;
     const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(payloadB64)));
@@ -78,9 +80,26 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // 3) MoveAround HQ gate (always on) — product-company area, separate login.
+  {
+    const gated = path === "/hq" || path.startsWith("/hq/") || path.startsWith("/api/hq/");
+    const allow = path === "/hq/login" || path === "/api/hq/verify" || path === "/api/hq/logout";
+    if (gated && !allow) {
+      const ok = await validSession(req.cookies.get("hq_session")?.value, HQ_SECRET);
+      if (!ok) {
+        if (path.startsWith("/api/")) return NextResponse.json({ error: "HQ login required" }, { status: 401 });
+        const u = url.clone();
+        u.pathname = "/hq/login";
+        u.search = "";
+        u.searchParams.set("next", path + url.search);
+        return NextResponse.redirect(u);
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/", "/ronyx", "/ronyx/:path*", "/api/ronyx/:path*", "/ronyx-lock"],
+  matcher: ["/", "/ronyx", "/ronyx/:path*", "/api/ronyx/:path*", "/ronyx-lock", "/hq", "/hq/:path*", "/api/hq/:path*"],
 };
