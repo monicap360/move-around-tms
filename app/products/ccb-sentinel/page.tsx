@@ -57,9 +57,9 @@ const COMPARE: [string, boolean, boolean][] = [
 ];
 
 const PLANS = [
-  { tier: "Starter", price: "$299/mo", sub: "Up to 50 trucks", color: "#38bdf8", highlight: false, note: "Continuous monitoring · dispatch holds · audit log" },
-  { tier: "Growth", price: "$6 / truck /mo", sub: "51–200 trucks", color: "#22c55e", highlight: true, note: "Everything in Starter · follow-up tasks · office assistant" },
-  { tier: "Fleet", price: "$5 / truck /mo", sub: "200+ trucks · custom", color: "#cbd5e1", highlight: false, note: "Volume pricing · universal cross-company board · priority support" },
+  { tier: "Starter", price: "$299/mo", sub: "Up to 50 carriers", color: "#38bdf8", highlight: false, note: "Continuous monitoring · dispatch holds · audit log" },
+  { tier: "Growth", price: "$4 / carrier /mo", sub: "51–200 carriers", color: "#22c55e", highlight: true, note: "Everything in Starter · follow-up tasks · office assistant" },
+  { tier: "Fleet", price: "$3 / carrier /mo", sub: "200+ carriers · custom", color: "#cbd5e1", highlight: false, note: "Volume pricing · universal cross-company board · priority support" },
 ];
 
 const NAVY = "#0a1428", CARD = "#0f2039", ALT = "#0b1832", BORDER = "#1e3a5f", GREEN = "#22c55e", STEEL = "#cbd5e1", MUTED = "#8ea3c0";
@@ -67,7 +67,7 @@ const greenBtn = "linear-gradient(135deg,#16a34a,#15803d)";
 
 export default function CarrierClearanceBureauPage() {
   const [trucks, setTrucks] = useState(120);
-  const monthly = trucks <= 50 ? 299 : trucks <= 200 ? trucks * 6 : trucks * 5;
+  const monthly = trucks <= 50 ? 299 : trucks <= 200 ? trucks * 4 : trucks * 3;
   const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   const demo = "/request-demo?product=Carrier%20Clearance%20Bureau";
 
@@ -256,8 +256,8 @@ export default function CarrierClearanceBureauPage() {
 
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: "26px 28px", marginBottom: 28, maxWidth: 620, margin: "0 auto 28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-              <label style={{ color: "#aebfd6", fontSize: "0.82rem", fontWeight: 600 }}>How many trucks do you clear?</label>
-              <span style={{ color: "#fff", fontWeight: 800 }}>{trucks} trucks</span>
+              <label style={{ color: "#aebfd6", fontSize: "0.82rem", fontWeight: 600 }}>How many carriers do you clear?</label>
+              <span style={{ color: "#fff", fontWeight: 800 }}>{trucks} carriers</span>
             </div>
             <input type="range" min={5} max={1000} value={trucks} onChange={e => setTrucks(Number(e.target.value))} style={{ width: "100%", accentColor: GREEN }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 16, paddingTop: 16, borderTop: `1px solid ${BORDER}` }}>
