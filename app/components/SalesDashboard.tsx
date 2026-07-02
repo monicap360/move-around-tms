@@ -33,7 +33,7 @@ const money = (n: number | null | undefined) => "$" + Number(n || 0).toLocaleStr
 // The sales team — each person's leads are tagged with their name (Owner).
 const SALESPEOPLE = ["Andrew", "Laura", "Sylvia", "Veronica", "Monica"];
 
-const BLANK = { owner_name: "Andrew", company_name: "", contact_name: "", phone: "", email: "", source: "", stage: "new", estimated_value: "", trucks_count: "", notes: "", next_follow_up: "" };
+const BLANK = { owner_name: "", company_name: "", contact_name: "", phone: "", email: "", source: "", stage: "new", estimated_value: "", trucks_count: "", notes: "", next_follow_up: "" };
 
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
 const lbl: React.CSSProperties = { fontSize: "0.66rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 3 };
@@ -67,7 +67,7 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
     try {
       const rows = parseCsv(await file.text());
       if (!rows.length) { flash("Couldn't read any rows from that file."); return; }
-      const res = await fetch(`${apiPath}/import`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows, min_trucks: 75, owner_name: ownerFilter !== "All" ? ownerFilter : "Andrew" }) });
+      const res = await fetch(`${apiPath}/import`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows, min_trucks: 75, owner_name: "" }) });
       if (res.status === 401) { window.location.href = `/ronyx-lock?next=${encodeURIComponent(location.pathname)}`; return; }
       const j = await res.json();
       if (j.error) { flash(`Import error: ${j.error}`); return; }
@@ -88,7 +88,11 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
   useEffect(() => { load(); }, []);
 
   // Scope everything to the selected salesperson (or All).
-  const ownerScoped = useMemo(() => ownerFilter === "All" ? leads : leads.filter(l => (l.owner_name || "") === ownerFilter), [leads, ownerFilter]);
+  const ownerScoped = useMemo(() => {
+    if (ownerFilter === "All") return leads;
+    if (ownerFilter === "Unassigned") return leads.filter(l => !l.owner_name);
+    return leads.filter(l => (l.owner_name || "") === ownerFilter);
+  }, [leads, ownerFilter]);
 
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -182,7 +186,7 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
               </button>
             ))}
           </div>
-          <button onClick={() => setForm({ ...BLANK, owner_name: ownerFilter !== "All" ? ownerFilter : "Andrew" })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Lead</button>
+          <button onClick={() => setForm({ ...BLANK, owner_name: (ownerFilter !== "All" && ownerFilter !== "Unassigned") ? ownerFilter : "" })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Lead</button>
           <button onClick={() => importRef.current?.click()} disabled={importing} title="Upload a carrier CSV — auto-adds every company with 75+ trucks" style={{ background: "#fff", border: "1px solid #2563eb", borderRadius: 8, padding: "9px 14px", fontWeight: 800, fontSize: "0.84rem", cursor: importing ? "default" : "pointer", color: "#2563eb" }}>{importing ? "Importing…" : "⬆ Import 75+"}</button>
           <input ref={importRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) importCsv(f); e.target.value = ""; }} />
           <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 13px", fontWeight: 700, fontSize: "0.84rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
@@ -259,7 +263,7 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search company, contact, phone…" style={{ ...inp, maxWidth: 300, marginBottom: 0 }} />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase" }}>Rep:</span>
-          {["All", ...SALESPEOPLE].map(name => (
+          {["All", "Unassigned", ...SALESPEOPLE].map(name => (
             <button key={name} onClick={() => setOwnerFilter(name)}
               style={{ cursor: "pointer", padding: "6px 12px", borderRadius: 999, fontSize: "0.78rem", fontWeight: 800, background: ownerFilter === name ? "#0f172a" : "#fff", color: ownerFilter === name ? "#fff" : "#475569", border: "1px solid " + (ownerFilter === name ? "#0f172a" : "#e2e8f0") }}>
               {name}
@@ -358,7 +362,8 @@ export default function SalesDashboard({ apiPath = "/api/hq/leads", title = "Sal
                 <select value={form.stage} onChange={e => setForm({ ...form, stage: e.target.value })} style={inp}>{STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}</select>
               </div>
               <div><label style={lbl}>Owner (Rep)</label>
-                <select value={form.owner_name || "Andrew"} onChange={e => setForm({ ...form, owner_name: e.target.value })} style={inp}>
+                <select value={form.owner_name || ""} onChange={e => setForm({ ...form, owner_name: e.target.value })} style={inp}>
+                  <option value="">— Unassigned (pool) —</option>
                   {SALESPEOPLE.map(p => <option key={p} value={p}>{p}</option>)}
                   {form.owner_name && !SALESPEOPLE.includes(form.owner_name) && <option value={form.owner_name}>{form.owner_name}</option>}
                 </select>

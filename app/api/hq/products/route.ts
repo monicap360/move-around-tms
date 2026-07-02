@@ -4,7 +4,7 @@ import supabaseAdmin from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 // MoveAround HQ — product catalog / demo content (CCB, Fast Scan, etc.).
-const FIELDS = ["name", "tagline", "description", "demo_notes", "demo_url", "icon", "sort_order", "active"] as const;
+const FIELDS = ["name", "tagline", "description", "ideal_buyer", "why_it_matters", "demo_notes", "demo_url", "icon", "sort_order", "active"] as const;
 const clean = (b: any) => {
   const row: Record<string, unknown> = {};
   for (const f of FIELDS) { if (!(f in b)) continue; let v = b[f]; if (v === "") v = f === "sort_order" ? 0 : null; row[f] = v; }

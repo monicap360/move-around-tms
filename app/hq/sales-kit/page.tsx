@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import HqShell from "../HqShell";
 
-type Product = { id: string; name: string; tagline: string | null; description: string | null; demo_notes: string | null; demo_url: string | null; icon: string | null; sort_order: number; active: boolean };
+type Product = { id: string; name: string; tagline: string | null; description: string | null; ideal_buyer: string | null; why_it_matters: string | null; demo_notes: string | null; demo_url: string | null; icon: string | null; sort_order: number; active: boolean };
 type Script = { id: string; title: string; category: string; content: string | null; sort_order: number };
 
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", background: "#fff" };
@@ -69,7 +69,7 @@ export default function SalesKitPage() {
               ))}
             </div>
             {tab === "products"
-              ? <button onClick={() => setPForm({ name: "", tagline: "", description: "", demo_notes: "", demo_url: "", icon: "🧩", sort_order: (products.length + 1), active: true })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>+ Product</button>
+              ? <button onClick={() => setPForm({ name: "", tagline: "", description: "", ideal_buyer: "", why_it_matters: "", demo_notes: "", demo_url: "", icon: "🧩", sort_order: (products.length + 1), active: true })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>+ Product</button>
               : <button onClick={() => setSForm({ title: "", category: "Pitch", content: "", sort_order: (scripts.length + 1) })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>+ Script</button>}
           </div>
         </div>
@@ -84,7 +84,9 @@ export default function SalesKitPage() {
                 </div>
                 {p.tagline && <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#2563eb", marginBottom: 6 }}>{p.tagline}</div>}
                 {p.description && <div style={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>{p.description}</div>}
-                {p.demo_notes && <div style={{ marginTop: 10, fontSize: "0.78rem", color: "#334155", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "8px 10px" }}><strong>Demo:</strong> {p.demo_notes}</div>}
+                {p.ideal_buyer && <div style={{ marginTop: 10, fontSize: "0.78rem", color: "#334155", background: "#f0f9ff", border: "1px solid #e0f2fe", borderRadius: 8, padding: "8px 10px" }}><strong style={{ color: "#0369a1" }}>👤 Who needs it:</strong> {p.ideal_buyer}</div>}
+                {p.why_it_matters && <div style={{ marginTop: 8, fontSize: "0.78rem", color: "#334155", background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: 8, padding: "8px 10px" }}><strong style={{ color: "#15803d" }}>💡 Why it matters:</strong> {p.why_it_matters}</div>}
+                {p.demo_notes && <div style={{ marginTop: 8, fontSize: "0.78rem", color: "#334155", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "8px 10px" }}><strong>Demo:</strong> {p.demo_notes}</div>}
                 {p.demo_url && <a href={p.demo_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ display: "inline-block", marginTop: 8, fontSize: "0.78rem", color: "#2563eb", fontWeight: 700, textDecoration: "none" }}>▶ Demo link</a>}
               </div>
             ))}
@@ -124,6 +126,8 @@ export default function SalesKitPage() {
               </div>
               <div><label style={lbl}>Tagline</label><input value={pForm.tagline || ""} onChange={e => setPForm({ ...pForm, tagline: e.target.value })} style={inp} /></div>
               <div><label style={lbl}>Description</label><textarea value={pForm.description || ""} onChange={e => setPForm({ ...pForm, description: e.target.value })} style={{ ...inp, minHeight: 60, resize: "vertical" }} /></div>
+              <div><label style={lbl}>👤 Who Needs It (ideal buyer)</label><textarea value={pForm.ideal_buyer || ""} onChange={e => setPForm({ ...pForm, ideal_buyer: e.target.value })} style={{ ...inp, minHeight: 56, resize: "vertical" }} placeholder="Who is this for and what does their operation look like?" /></div>
+              <div><label style={lbl}>💡 Why It Matters (the pain it solves)</label><textarea value={pForm.why_it_matters || ""} onChange={e => setPForm({ ...pForm, why_it_matters: e.target.value })} style={{ ...inp, minHeight: 56, resize: "vertical" }} placeholder="What does it cost them today, and how does this fix it?" /></div>
               <div><label style={lbl}>Demo Notes / Talking Points</label><textarea value={pForm.demo_notes || ""} onChange={e => setPForm({ ...pForm, demo_notes: e.target.value })} style={{ ...inp, minHeight: 60, resize: "vertical" }} /></div>
               <div><label style={lbl}>Demo Link (video/URL)</label><input value={pForm.demo_url || ""} onChange={e => setPForm({ ...pForm, demo_url: e.target.value })} style={inp} placeholder="https://…" /></div>
             </div>

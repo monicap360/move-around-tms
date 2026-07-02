@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const rows: any[] = Array.isArray(body.rows) ? body.rows : [];
   const minTrucks = Number(body.min_trucks ?? 75) || 75;
-  const owner = (body.owner_name || "Andrew").toString();
+  const owner = (body.owner_name || "").toString().trim() || null; // imports land unassigned in the pool
   if (!rows.length) return NextResponse.json({ error: "No rows provided." }, { status: 400 });
 
   let skippedLow = 0, skippedNoName = 0;
