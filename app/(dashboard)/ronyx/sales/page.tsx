@@ -43,6 +43,7 @@ export default function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("All");
+  const [view, setView] = useState<"owner" | "board">("owner"); // owner = team rollup, board = kanban
   const [toast, setToast] = useState("");
   const [form, setForm] = useState<any | null>(null); // add/edit form (null = closed)
   const [saving, setSaving] = useState(false);
@@ -76,6 +77,30 @@ export default function SalesDashboard() {
     const wonValue = base.filter(l => l.stage === "won").reduce((s, l) => s + Number(l.estimated_value || 0), 0);
     return { total: base.length, active: active.length, pipeline, wonMonth: wonMonth.length, wonValue };
   }, [ownerScoped]);
+
+  // Per-rep leaderboard (team-wide) for the owner view — selling the TMS system.
+  const repStats = useMemo(() => {
+    const by: Record<string, any> = {};
+    for (const name of SALESPEOPLE) by[name] = { name, leads: 0, active: 0, pipeline: 0, won: 0, wonValue: 0 };
+    for (const l of leads) {
+      const r = l.owner_name || "Unassigned";
+      const b = (by[r] ||= { name: r, leads: 0, active: 0, pipeline: 0, won: 0, wonValue: 0 });
+      b.leads++;
+      if (l.stage !== "won" && l.stage !== "lost") { b.active++; b.pipeline += Number(l.estimated_value || 0); }
+      if (l.stage === "won") { b.won++; b.wonValue += Number(l.estimated_value || 0); }
+    }
+    return Object.values(by).sort((a: any, z: any) => z.wonValue - a.wonValue || z.pipeline - a.pipeline);
+  }, [leads]);
+  const teamKpis = useMemo(() => {
+    const active = leads.filter(l => l.stage !== "won" && l.stage !== "lost");
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    return {
+      total: leads.length, active: active.length,
+      pipeline: active.reduce((s, l) => s + Number(l.estimated_value || 0), 0),
+      wonMonth: leads.filter(l => l.stage === "won" && (l.updated_at || "").slice(0, 7) === thisMonth).length,
+      wonValue: leads.filter(l => l.stage === "won").reduce((s, l) => s + Number(l.estimated_value || 0), 0),
+    };
+  }, [leads]);
 
   async function save() {
     if (!form.company_name?.trim()) { flash("Company name is required."); return; }
@@ -120,7 +145,15 @@ export default function SalesDashboard() {
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900 }}>📈 Sales Pipeline</h1>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.86rem" }}>Track every lead from first contact to close. Drag between stages with the arrows on each card.</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+            {(["owner", "board"] as const).map(v => (
+              <button key={v} onClick={() => { setView(v); if (v === "owner") setOwnerFilter("All"); }}
+                style={{ padding: "9px 14px", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "0.8rem", background: view === v ? "#0f172a" : "#fff", color: view === v ? "#fff" : "#475569" }}>
+                {v === "owner" ? "📊 Owner View" : "📋 Board"}
+              </button>
+            ))}
+          </div>
           <button onClick={() => setForm({ ...BLANK, owner_name: ownerFilter !== "All" ? ownerFilter : "Andrew" })} style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer" }}>+ Add Lead</button>
           <button onClick={load} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "9px 13px", fontWeight: 700, fontSize: "0.84rem", cursor: "pointer", color: "#475569" }}>↻ Refresh</button>
         </div>
@@ -142,6 +175,56 @@ export default function SalesDashboard() {
         ))}
       </div>
 
+      {/* ── OWNER VIEW: rep leaderboard + team stage breakdown ── */}
+      {view === "owner" && (
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", fontWeight: 900, fontSize: "0.95rem", color: "#0f172a" }}>👥 Rep Leaderboard — TMS System Sales</div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
+                <thead><tr style={{ background: "#f8fafc" }}>
+                  {["Rep", "Leads", "Active", "Pipeline $", "Won", "Won $", "Win rate"].map((h, i) => (
+                    <th key={h} style={{ padding: "9px 14px", textAlign: i === 0 ? "left" : "right", fontSize: "0.66rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {repStats.map((r: any) => {
+                    const winRate = r.leads ? Math.round((r.won / r.leads) * 100) : 0;
+                    return (
+                      <tr key={r.name} onClick={() => { setOwnerFilter(r.name); setView("board"); }} title="Open this rep's board" style={{ borderTop: "1px solid #f1f5f9", cursor: "pointer" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 800, color: "#0f172a" }}>{r.name}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right" }}>{r.leads}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#2563eb", fontWeight: 700 }}>{r.active}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#d97706", fontWeight: 800 }}>{money(r.pipeline)}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#15803d", fontWeight: 700 }}>{r.won}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#15803d", fontWeight: 800 }}>{money(r.wonValue)}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700 }}>{winRate}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 8 }}>Tap a rep to open their board. KPI cards above are team-wide.</div>
+          <div style={{ fontWeight: 800, fontSize: "0.8rem", color: "#475569", margin: "16px 0 8px" }}>Team pipeline by stage</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
+            {STAGES.map(st => {
+              const c = leads.filter(l => l.stage === st.key);
+              const v = c.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+              return (
+                <div key={st.key} style={{ background: st.bg, border: `1px solid ${st.color}22`, borderRadius: 12, padding: "10px 12px" }}>
+                  <div style={{ fontSize: "0.66rem", fontWeight: 800, color: st.color, textTransform: "uppercase" }}>{st.label}</div>
+                  <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", marginTop: 2 }}>{c.length}</div>
+                  {v > 0 && <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700 }}>{money(v)}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {view === "board" && (<>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search company, contact, phone…" style={{ ...inp, maxWidth: 300, marginBottom: 0 }} />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -196,6 +279,7 @@ export default function SalesDashboard() {
           })}
         </div>
       )}
+      </>)}
 
       {/* add / edit modal */}
       {form && (
